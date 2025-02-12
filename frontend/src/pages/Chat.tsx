@@ -79,6 +79,15 @@ export default function Chat() {
         setCurrentThreadId(payload.threadId || null);
     }, [payload.threadId]);
 
+    const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const textarea = e.target;
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        // Set new height based on scrollHeight, capped at 200px
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+        setPayload({ ...payload, query: e.target.value });
+    };
+
     return (
         <ChatLayout>
             <div className={`
@@ -155,14 +164,14 @@ export default function Chat() {
                         </div>
                     </div>
 
-                    <div className="sticky bottom-0 bg-background border-t border-border">
+                    <div className="sticky bottom-0 bg-background border-border">
                         <div className="flex gap-3 p-3">
                             <textarea 
-                                className="flex-1 resize-none min-h-[44px] max-h-[200px] p-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                                className="flex-1 resize-none overflow-y-auto min-h-[44px] max-h-[200px] p-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                                 placeholder="Type your message here..."
                                 rows={1}
                                 value={payload.query}
-                                onChange={(e) => setPayload({ ...payload, query: e.target.value })}
+                                onChange={handleTextareaResize}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
