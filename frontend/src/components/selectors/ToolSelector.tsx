@@ -5,6 +5,7 @@ import { Wrench, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useChatContext } from "@/context/ChatContext";
 
+
 export function ToolSelector() {
   const { availableTools, payload, setPayload, useToolsEffect } = useChatContext();
 
@@ -36,16 +37,22 @@ export function ToolSelector() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button 
+        {/* <Button 
           variant="outline" 
           size={enabledCount > 0 ? "default" : "icon"}
           className={enabledCount > 0 ? "px-3" : "w-9 h-9"}
           title="Select Tools"
         >
           <Wrench className="h-4 w-4" />
+        </Button> */}
+        <Button
+          variant="outline"
+          className="rounded-full bg-foreground/10 text-foreground-500 px-3"
+        >
+          <Wrench className="h-4 w-4" /> Tools {enabledCount > 0 && `(${enabledCount} enabled)`}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
+      <PopoverContent className="w-80 mr-2" align="start">
         <ScrollArea className="h-72">
           <div className="grid gap-4">
             <div className="flex items-center justify-between">
