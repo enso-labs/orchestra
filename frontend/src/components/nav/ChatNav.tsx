@@ -7,7 +7,6 @@ import { useSearchParams } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import { Model } from "@/services/modelService";
 import { Menu } from "lucide-react";
-import { ToolSelector } from "../selectors/ToolSelector";
 import GroqIcon from "../icons/GroqIcon";
 
 interface ChatNavProps {
@@ -95,7 +94,6 @@ export function ChatNav({
                             ))}
                         </SelectContent>
                     </Select>
-                    <ToolSelector />
                     <Button
                         variant="outline"
                         size="icon"
