@@ -1,6 +1,6 @@
-# Thread Agent - Prompt Engineers AI 🤖
+# LangGraph FastAPI Starter - Prompt Engineers AI 🤖
 
-Thread Agent is a Python-based chatbot application that utilizes the LangGraph and LangChain libraries to process and respond to user inputs. The bot is designed to handle conversational flows and can be configured to use different language models.
+LangGraph FastAPI Starter is a Python-based chatbot application that utilizes the LangGraph and LangChain libraries to process and respond to user inputs. The bot is designed to handle conversational flows and can be configured to use different language models.
 
 # Project Documentation
 
