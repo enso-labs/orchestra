@@ -38,7 +38,9 @@ def upgrade() -> None:
             onupdate=sa.text('now()'),
             nullable=True
         ),
-        # Composite primary key ensures no duplicate (user_id, key) pair can exist
+        # Create a unique constraint on user_id and key
+        sa.UniqueConstraint('user_id', 'key', name='uq_tokens_user_id_key'),
+        # Primary key constraint
         sa.PrimaryKeyConstraint('user_id', 'key', name='tokens_pkey')
     )
     

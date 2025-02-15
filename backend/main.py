@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles 
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth
+from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token
 from src.constants import (
     HOST,
     PORT,
@@ -58,6 +58,7 @@ app.include_router(thread, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
 app.include_router(retrieve, prefix=PREFIX)
 app.include_router(source, prefix=PREFIX)
+app.include_router(token, prefix=PREFIX)
 
 
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
