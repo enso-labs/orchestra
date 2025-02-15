@@ -44,3 +44,6 @@ SHELL_EXEC_SERVER_URL = os.getenv("SHELL_EXEC_SERVER_URL", "http://exec_server:3
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "this-is-a-secret-key")  # Change this in production!
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+
+# Token Encryption
+TOKEN_ENCRYPTION_KEY = os.getenv("TOKEN_ENCRYPTION_KEY", "your-secret-key-here")  # Change this in production!

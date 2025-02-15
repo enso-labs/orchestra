@@ -42,7 +42,7 @@ services:
   ## Graphchat
   ##############################################
   graphchat:
-    image: ryaneggz/graphchat:0.0.1-rc71
+    image: ryaneggz/graphchat:0.0.1-rc76
     # build:
     #   context: ./backend
     #   dockerfile: Dockerfile
@@ -87,6 +87,8 @@ services:
     container_name: exec_server
     ports:
       - "3005:3005"
+    volumes:
+      - ${HOME}/.ssh:/root/.ssh:ro
 
 volumes:
   ollama:
