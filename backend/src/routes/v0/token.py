@@ -20,6 +20,10 @@ class TokenCreate(BaseModel):
             raise ValueError(f"Invalid key. Must be one of: {', '.join(UserTokenKey.values())}")
         return v
 
+class TokenStatus(BaseModel):
+    key: str
+    is_set: bool
+
 @router.post(
     "/tokens",
     status_code=status.HTTP_201_CREATED,
@@ -125,4 +129,47 @@ def delete_token(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
+        )
+
+@router.get(
+    "/tokens",
+    response_model=dict[str, list[TokenStatus]],
+    responses={
+        status.HTTP_200_OK: {
+            "description": "List of token statuses",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "tokens": [
+                            {"key": "ANTHROPIC_API_KEY", "is_set": True},
+                            {"key": "OPENAI_API_KEY", "is_set": False}
+                        ]
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_tokens(
+    user: User = Depends(verify_credentials),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Get all tokens for the user
+        existing_tokens = db.query(Token.key).filter(Token.user_id == user.id).all()
+        existing_token_keys = {token[0] for token in existing_tokens}
+
+        # Create status list for all possible tokens
+        token_statuses = [
+            TokenStatus(key=key, is_set=key in existing_token_keys)
+            for key in UserTokenKey.values()
+        ]
+
+        return {"tokens": token_statuses}
+
+    except Exception as e:
+        logger.error(f"Error getting token statuses: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get token statuses"
         ) 
