@@ -87,9 +87,9 @@ async def list_threads(
                     'total': len(threads),
                     'page': page,
                     'per_page': per_page
-                    },
-                    status_code=status.HTTP_200_OK
-                )
+                },
+                status_code=status.HTTP_200_OK
+            )
     except Exception as e:
         logger.error(f"Error listing threads: {e}")
         raise e

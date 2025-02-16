@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 from src.models import User, Token
-from src.constants import TOKEN_ENCRYPTION_KEY
+from src.constants import APP_SECRET_KEY
 
 class UserRepo:
     def __init__(self, db: Session):
@@ -30,7 +30,7 @@ class UserRepo:
         ).first()
 
         if token:
-            return Token.decrypt_value(token.value, TOKEN_ENCRYPTION_KEY)
+            return Token.decrypt_value(token.value, APP_SECRET_KEY)
         return None
 
     def get_all_tokens(self, user_id: str) -> list[dict]:
@@ -39,7 +39,7 @@ class UserRepo:
         return [
             {
                 "key": token.key,
-                "value": Token.decrypt_value(token.value, TOKEN_ENCRYPTION_KEY)
+                "value": Token.decrypt_value(token.value, APP_SECRET_KEY)
             }
             for token in tokens
         ]

@@ -21,7 +21,7 @@ def get_db():
 
 def verify_credentials(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: SessionLocal = Depends(get_db)
+    db: SessionLocal = Depends(get_db) # type: ignore
 ) -> User:
     try:
         # Verify JWT token

@@ -1,6 +1,9 @@
 from fastapi import status, Depends, APIRouter
 from fastapi.responses import JSONResponse
-from src.utils.auth import verify_credentials
+from sqlalchemy.orm import Session
+from src.models import ProtectedUser
+from src.repos.user_repo import UserRepo
+from src.utils.auth import get_db, verify_credentials
 
 TAG = "Agent"
 router = APIRouter(tags=[TAG])
@@ -44,15 +47,16 @@ from src.constants.llm import get_available_models
             "content": {
                 "application/json": {
                     "example": {
-                        "models": get_available_models()
+                        "models": []
                     }
                 }
             }
         }
     }
 )
-def list_models(username: str = Depends(verify_credentials)):
+def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session = Depends(get_db)):
+    user_repo = UserRepo(db=db)
     return JSONResponse(
-        content={"models": get_available_models()},
+        content={"models": get_available_models(user_repo=user_repo, user_id=user.id)},
         status_code=status.HTTP_200_OK
     )
