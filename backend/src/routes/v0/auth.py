@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from src.utils.auth import get_db
 from src.models import User
-from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter(tags=["Auth"])
 
@@ -36,7 +36,7 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
     
     # Create JWT payload with user data
     to_encode = {
@@ -54,6 +54,7 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
 
 @router.post(
     "/auth/register",
+    include_in_schema=False,
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
     responses={

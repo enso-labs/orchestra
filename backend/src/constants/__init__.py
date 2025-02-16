@@ -2,6 +2,7 @@ import os
 import json
 import base64
 from dotenv import load_dotenv
+from enum import Enum
 load_dotenv()
 
 def fix_base64_padding(s):
@@ -13,14 +14,16 @@ HOST = str(os.getenv("HOST", "0.0.0.0"))
 PORT = int(os.getenv("PORT", 8000))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
 
+# JWT Settings
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "this-is-a-secret-key")  # Change this in production!
+JWT_ALGORITHM = "HS256"
+JWT_TOKEN_EXPIRE_MINUTES = 60 * 24
+
 # App
-DEFAULT_VECTOR_STORE_PATH = './sandbox/db/vectorstore.json'
-DEFAULT_APP_USER_LIST = '[{"username": "admin", "password": "test1234", "name": "Admin User", "email": "admin@example.com"}]'
-base64_str = os.getenv("APP_USER_LIST", base64.b64encode(DEFAULT_APP_USER_LIST.encode('utf-8')).decode('utf-8'))
-fixed_base64_str = fix_base64_padding(base64_str)
-APP_USER_LIST = json.loads(base64.b64decode(fixed_base64_str).decode('utf-8'))
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
+APP_SECRET_KEY = os.getenv("APP_SECRET_KEY", "this-is-a-secret-key")
 APP_LOG_LEVEL = os.getenv("APP_LOG_LEVEL", "INFO").upper()
+DEFAULT_VECTOR_STORE_PATH = './sandbox/db/vectorstore.json'
 
 # Database
 DB_URI = os.getenv("POSTGRES_CONNECTION_STRING", "postgresql://admin:test1234@localhost:5432/lg_template_dev?sslmode=disable")
@@ -30,20 +33,30 @@ CONNECTION_POOL_KWARGS = {
     "prepare_threshold": 0,
 }
 
+class UserTokenKey(Enum):
+    
+    ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"
+    OPENAI_API_KEY = "OPENAI_API_KEY"
+    GROQ_API_KEY = "GROQ_API_KEY"
+    GEMINI_API_KEY = "GEMINI_API_KEY"
+    OLLAMA_BASE_URL = "OLLAMA_BASE_URL"
+    ## TOOLS
+    SHELL_EXEC_SERVER_URL = "SHELL_EXEC_SERVER_URL"
+    
+    @classmethod
+    def values(cls) -> list[str]:
+        return [key.value for key in cls]
+
 # LLM API Keys
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv(UserTokenKey.ANTHROPIC_API_KEY.value)
+OPENAI_API_KEY = os.getenv(UserTokenKey.OPENAI_API_KEY.value)
+OLLAMA_BASE_URL = os.getenv(UserTokenKey.OLLAMA_BASE_URL.value)
+GROQ_API_KEY = os.getenv(UserTokenKey.GROQ_API_KEY.value)
+GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
 
 # Tools
-SHELL_EXEC_SERVER_URL = os.getenv("SHELL_EXEC_SERVER_URL", "http://exec_server:3005/exec")
+SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://exec_server:3005/exec")
 
-# JWT Settings
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "this-is-a-secret-key")  # Change this in production!
-JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
-# Token Encryption
-TOKEN_ENCRYPTION_KEY = os.getenv("TOKEN_ENCRYPTION_KEY", "your-secret-key-here")  # Change this in production!
+
+

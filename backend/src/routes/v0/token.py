@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from src.models import Token, User
 from src.utils.auth import verify_credentials, get_db
-from src.constants import TOKEN_ENCRYPTION_KEY
+from src.constants import APP_SECRET_KEY, UserTokenKey
 from src.utils.logger import logger
 
 router = APIRouter(tags=["Tokens"])
@@ -13,6 +13,12 @@ router = APIRouter(tags=["Tokens"])
 class TokenCreate(BaseModel):
     key: str
     value: str
+
+    @validator('key')
+    def validate_key(cls, v):
+        if v not in UserTokenKey.values():
+            raise ValueError(f"Invalid key. Must be one of: {', '.join(UserTokenKey.values())}")
+        return v
 
 @router.post(
     "/tokens",
@@ -35,7 +41,7 @@ def create_token(
 ):
     try:
         # Encrypt the token value
-        encrypted_value = Token.encrypt_value(token_data.value, TOKEN_ENCRYPTION_KEY)
+        encrypted_value = Token.encrypt_value(token_data.value, APP_SECRET_KEY)
         
         # Create new token
         token = Token(
