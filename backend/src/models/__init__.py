@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from passlib.context import CryptContext
 from pydantic import BaseModel
-Base = declarative_base()
+Base = sa.orm.declarative_base()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class ProtectedUser(BaseModel):
