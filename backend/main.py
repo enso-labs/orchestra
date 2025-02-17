@@ -29,8 +29,11 @@ app = FastAPI(
     docs_url="/api"
 )
 
-@app.on_event("startup")
-async def startup_event():
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     print("Starting up...")
     print(f"Environment Settings:")
     print(f"APP_VERSION: {APP_VERSION}")
@@ -38,6 +41,27 @@ async def startup_event():
     print(f"HOST: {HOST}")
     print(f"PORT: {PORT}")
     run_migrations()
+    yield
+    # Shutdown
+    pass
+
+app = FastAPI(
+    title="Thread Agent by Prompt Engineers AI 🤖",
+    version=APP_VERSION,
+    description=(
+        "This is a simple API for building chatbots with LangGraph. " 
+        "It allows you to create new threads, query existing threads, "
+        "and get the history of a thread.\n Check out the repo on "
+        f"<a href='https://github.com/ryaneggz/langgraph-template'>Github</a>"
+    ),
+    contact={
+        "name": "Ryan Eggleston",
+        "email": "ryaneggleston@promptengineers.ai"
+    },
+    debug=True,
+    docs_url="/api",
+    lifespan=lifespan
+)
 
 
 # Add CORS middleware

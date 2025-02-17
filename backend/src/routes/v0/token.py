@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -14,7 +14,7 @@ class TokenCreate(BaseModel):
     key: str
     value: str
 
-    @validator('key')
+    @field_validator('key')
     def validate_key(cls, v):
         if v not in UserTokenKey.values():
             raise ValueError(f"Invalid key. Must be one of: {', '.join(UserTokenKey.values())}")
