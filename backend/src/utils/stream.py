@@ -1,7 +1,7 @@
-import logging
 import json
 from langgraph.graph import StateGraph
 from langchain_core.messages import AnyMessage, ToolMessage, AIMessageChunk, ToolMessageChunk, HumanMessage
+from src.utils.logger import logger
 
 async def event_stream(
     graph: StateGraph, 
@@ -126,9 +126,9 @@ def stream_chunks(
                     yield f"data: {json.dumps(tool_data)}\n\n"
     
     except Exception as e:
-        print("Error in stream_chunks", e)
+        logger.error("Error in stream_chunks", e)
     finally:
-        print("Closing stream")
+        logger.info("Closing stream")
         # Send end event
         end_data = {
             "thread_id": thread_id,

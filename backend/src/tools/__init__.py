@@ -24,3 +24,15 @@ def collect_tools(selected_tools: list[str]):
         raise ValueError(f"No tools found by the names: {selected_tools.join(', ')}")
     return filtered_tools
 
+
+def dynamic_tools(selected_tools: list[str], metadata: dict = None):
+    # Filter tools by name
+    filtered_tools = [tool for tool in tools if tool.name in selected_tools]
+    if len(filtered_tools) == 0:
+        raise ValueError(f"No tools found by the names: {selected_tools.join(', ')}")
+    
+    # Update metadata for each tool
+    for tool in filtered_tools:
+        tool.metadata = metadata
+        
+    return filtered_tools

@@ -4,11 +4,13 @@ from src.models import User, Token
 from src.constants import APP_SECRET_KEY
 
 class UserRepo:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_id: str = None):
         self.db = db
+        self.user_id = user_id
 
-    def get_by_id(self, user_id: str) -> Optional[User]:
+    def get_by_id(self) -> Optional[User]:
         """Get user by ID."""
+        user_id = self.user_id
         return self.db.query(User).filter(User.id == user_id).first()
 
     def get_by_email(self, email: str) -> Optional[User]:
@@ -19,11 +21,12 @@ class UserRepo:
         """Get user by username."""
         return self.db.query(User).filter(User.username == username).first()
 
-    def get_token(self, user_id: str, key: str) -> Optional[str]:
+    def get_token(self, key: str = None) -> Optional[str]:
         """
         Get decrypted token value for a user by key.
         Returns None if token doesn't exist.
         """
+        user_id = self.user_id
         token = self.db.query(Token).filter(
             Token.user_id == user_id,
             Token.key == key
@@ -33,8 +36,9 @@ class UserRepo:
             return Token.decrypt_value(token.value, APP_SECRET_KEY)
         return None
 
-    def get_all_tokens(self, user_id: str) -> list[dict]:
+    def get_all_tokens(self) -> list[dict]:
         """Get all tokens for a user."""
+        user_id = self.user_id
         tokens = self.db.query(Token).filter(Token.user_id == user_id).all()
         return [
             {
@@ -52,8 +56,9 @@ class UserRepo:
         self.db.refresh(user)
         return user
 
-    def update(self, user_id: str, user_data: dict) -> Optional[User]:
+    def update(self, user_data: dict = None) -> Optional[User]:
         """Update user data."""
+        user_id = self.user_id
         user = self.get_by_id(user_id)
         if user:
             for key, value in user_data.items():
@@ -62,8 +67,9 @@ class UserRepo:
             self.db.refresh(user)
         return user
 
-    def delete(self, user_id: str) -> bool:
+    def delete(self) -> bool:
         """Delete a user."""
+        user_id = self.user_id
         user = self.get_by_id(user_id)
         if user:
             self.db.delete(user)

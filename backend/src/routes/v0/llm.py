@@ -50,7 +50,7 @@ def new_thread(
         thread_id = str(uuid.uuid4())
         tools_str = f"and Tools: {', '.join(body.tools)}" if body.tools else ""
         logger.info(f"Creating new thread with ID: {thread_id} {tools_str} and Query: {body.query}")
-        user_repo = UserRepo(db=db)
+        user_repo = UserRepo(db=db, user_id=user.id)
         if "text/event-stream" in request.headers.get("accept", ""):
             pool = ConnectionPool(
                 conninfo=DB_URI,
@@ -118,7 +118,7 @@ def existing_thread(
     try:
         tools_str = f"and Tools: {', '.join(body.tools)}" if body.tools else ""
         logger.info(f"Querying existing thread with ID: {thread_id} {tools_str} and Query: {body.query}")
-        user_repo = UserRepo(db=db)
+        user_repo = UserRepo(db=db, user_id=user.id)
         if "text/event-stream" in request.headers.get("accept", ""):
             pool = ConnectionPool(
                 conninfo=DB_URI,

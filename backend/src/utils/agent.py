@@ -14,7 +14,7 @@ from langgraph.prebuilt import create_react_agent
 from psycopg_pool import ConnectionPool
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL
-from src.tools import collect_tools
+from src.tools import collect_tools, dynamic_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
 from src.entities import Answer
@@ -135,8 +135,8 @@ class Agent:
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_5_SONNET,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ) -> StateGraph:
-        self.tools = [] if len(tools) == 0 else collect_tools(tools)
-        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo, user_id=self.user_id)
+        self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
+        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         self.checkpointer = self._checkpointer()
         if self.tools:
             graph = create_react_agent(self.llm, tools=self.tools, checkpointer=self.checkpointer)

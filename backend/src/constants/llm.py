@@ -204,9 +204,9 @@ MODEL_CONFIG = [
     # }
 ]
 
-def get_available_models(user_repo: UserRepo, user_id: str):
+def get_available_models(user_repo: UserRepo):
     available_models = []
-    user_tokens = {token["key"] for token in user_repo.get_all_tokens(user_id)}
+    user_tokens = {token["key"] for token in user_repo.get_all_tokens()}
     for model in MODEL_CONFIG:
         provider = model["provider"]
         
