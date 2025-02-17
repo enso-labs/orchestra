@@ -5,5 +5,6 @@ from .retrieve import router as retrieve
 from .source import router as source
 from .info import router as info
 from .auth import router as auth
+from .token import router as token
 
-__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth"]
+__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth", "token"]

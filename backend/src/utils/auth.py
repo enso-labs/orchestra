@@ -65,16 +65,12 @@ def verify_credentials(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Convert UUID to string for response
-        user.id = str(user.id)
-        # Remove sensitive data
-        del user.hashed_password
         
-        return user
+        return user.protected()
 
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
-        ) 
+        )
