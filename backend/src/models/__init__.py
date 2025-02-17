@@ -1,4 +1,4 @@
-import uuid
+from typing import Optional
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy import Column, String, DateTime, Text, ForeignKey
@@ -16,7 +16,7 @@ class ProtectedUser(BaseModel):
     email: str
     name: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
 class User(Base):
     __tablename__ = "users"
