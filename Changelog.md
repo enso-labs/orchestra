@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feature/145-update-settings-to-remote-dropdown (2025-02-17)
   - feature/76-user-can-configure-their-own-keys (2025-02-13)
   - feature/132-autosize-textarea (2025-02-11)
   - feature/139-individual-user-accounts (2025-02-09)
