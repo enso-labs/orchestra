@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import AuthLayout from '../layouts/AuthLayout';
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Eye, EyeOff } from 'lucide-react';
 import apiClient from '../lib/utils/apiClient';
 
 // Reference the enum values from backend/src/constants/__init__.py
@@ -19,10 +19,15 @@ interface Token {
     is_set: boolean;
 }
 
-// For creating new tokens
-interface TokenCreate {
-    key: string;
+interface TokenEdit {
     value: string;
+    showValue: boolean;
+}
+
+interface PasswordForm {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
 }
 
 interface TokenEdit {
