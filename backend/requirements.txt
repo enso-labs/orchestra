@@ -20,6 +20,9 @@ pypdf
 rapidocr-onnxruntime
 loguru
 nest_asyncio
+minio
+ujson
+python-multipart
 mkdocs
 mkdocs-material
 mkdocstrings[python]

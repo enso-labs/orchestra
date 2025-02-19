@@ -57,6 +57,10 @@ GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
 # Tools
 SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://exec_server:3005/exec")
 
-
-
-
+# Storage
+MINIO_HOST = os.getenv("MINIO_HOST", "localhost:9000")
+S3_REGION = os.getenv("S3_REGION", "us-east-1")
+ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID", "minioadmin")
+ACCESS_SECRET_KEY = os.getenv("ACCESS_SECRET_KEY", "minioadmin")
+BUCKET = os.getenv("BUCKET", "lg_template_dev")
+TEST_USER_ID = os.getenv("TEST_USER_ID", "1")
