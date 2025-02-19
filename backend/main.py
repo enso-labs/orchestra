@@ -75,7 +75,7 @@ app.add_middleware(
 
 # Include routers
 PREFIX = "/api"
-app.include_router(auth)
+app.include_router(auth, prefix=PREFIX)
 app.include_router(info, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)

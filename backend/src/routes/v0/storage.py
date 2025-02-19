@@ -196,7 +196,8 @@ async def upload_files_with_urls(
             files=files,
             bucket=BUCKET,
             prefix=f"users/{user.id or TEST_USER_ID}",  # You might want to make this dynamic based on user
-            expiration=3600  # 1 hour expiration
+            expiration=3600,  # 1 hour expiration
+            include_presigned=False
         )
         return {
             "status": "success",

@@ -9,6 +9,7 @@ import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
+import apiClient from "@/lib/utils/apiClient"
 
 const MAX_IMAGES = 10
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -19,13 +20,31 @@ export default function ChatInput() {
   const [previewImage, setPreviewImage] = useState<File | null>(null)
   const [previewImageIndex, setPreviewImageIndex] = useState<number>(0)
 
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = (error) => reject(error)
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const formData = new FormData()
+    files.forEach(file => {
+      // Create a new file with timestamped name
+      const timestamp = Math.floor(Date.now()) // Unix timestamp
+      const newFileName = `${timestamp}_${file.name}`
+      const newFile = new File([file], newFileName, { type: file.type })
+      formData.append('files', newFile)
     })
+
+    try {
+      const response = await apiClient.post('/storage/presigned', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      if (response.data.status === 'success') {
+        return response.data.files.map((file: any) => file.url)
+      }
+      throw new Error('Failed to upload images')
+    } catch (error) {
+      console.error('Error uploading images:', error)
+      toast.error('Failed to upload images')
+      return []
+    }
   }
 
   const addImages = useCallback(async (files: File[]) => {
@@ -60,13 +79,12 @@ export default function ChatInput() {
       return newImages
     })
 
-    // Convert new valid images to base64 and update payload
-    const base64Promises = validImages.map(convertToBase64)
-    const base64Images = await Promise.all(base64Promises)
+    // Upload images and get presigned URLs
+    const presignedUrls = await uploadImages(validImages)
     
     setPayload((prev: any) => ({
       ...prev,
-      images: [...prev.images, ...base64Images]
+      images: [...prev.images, ...presignedUrls]
     }))
   }, [setPayload])
 

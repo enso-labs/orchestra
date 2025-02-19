@@ -168,18 +168,19 @@ class StorageService:
 				continue
 		return urls
 
-	def upload_and_get_presigned_urls(self, files, bucket, prefix=None, expiration=3600):
-		"""Upload files and return their presigned URLs
+	def upload_and_get_presigned_urls(self, files, bucket, prefix=None, expiration=3600, include_presigned=False):
+		"""Upload files and return their info with direct URLs and optional presigned URLs
 		:param files: List of FastAPI UploadFile objects
 		:param bucket: Bucket to upload to
 		:param prefix: Optional prefix for organizing files
 		:param expiration: Expiration time for presigned URLs in seconds
-		:return: List of dictionaries containing file info and presigned URLs
+		:param include_presigned: Whether to include presigned URLs in the response
+		:return: List of dictionaries containing file info and URLs
 		"""
 		# First upload all files
 		upload_results = self.upload_files(files, bucket, prefix)
 		
-		# Get object names for all uploaded files
+		# Get object names and generate URLs for all uploaded files
 		object_names = []
 		for file in files:
 			extension = os.path.splitext(file.filename)[1].lower()
@@ -187,17 +188,28 @@ class StorageService:
 			object_name = os.path.join(directory, file.filename)
 			object_names.append(object_name)
 		
-		# Generate presigned URLs
-		presigned_urls = self.create_presigned_urls(bucket, object_names, expiration=expiration)
+		# Generate presigned URLs if requested
+		presigned_urls = {}
+		if include_presigned:
+			presigned_urls = self.create_presigned_urls(bucket, object_names, expiration=expiration)
 		
-		# Combine upload results with presigned URLs
+		# Combine results with direct URLs and optional presigned URLs
 		results = []
 		for upload_info, object_name in zip(upload_results, object_names):
+			# Generate direct URL using the MinIO server endpoint
+			direct_url = f"{self.minio_server}/{bucket}/{object_name}"
+			if direct_url.startswith('http://localhost'):
+				# Replace localhost with your actual domain if needed
+				direct_url = direct_url.replace('http://localhost', 'http://127.0.0.1')
+			
 			result = {
 				**upload_info,
-				"presigned_url": presigned_urls.get(object_name),
-				"object_name": object_name
+				"object_name": object_name,
+				"directory": os.path.dirname(object_name),
+				"url": "https://" + direct_url  # Direct URL without authentication
 			}
+			if include_presigned:
+				result["presigned_url"] = presigned_urls.get(object_name)
 			results.append(result)
 		
 		return results
