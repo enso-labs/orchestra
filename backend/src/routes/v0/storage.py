@@ -182,7 +182,7 @@ def get_storage_service():
         minio_server=MINIO_HOST
     )
   
-@router.post("/storage/presigned")
+@router.post("/storage/presigned", tags=[TAG])
 async def upload_files_with_urls(
     files: List[UploadFile] = File(...),
     user: User = Depends(verify_credentials),

@@ -42,16 +42,33 @@ class StorageService:
 		return files
 
 	def retrieve_all_files(self, bucket: str, prefix: str = ''):
-		"""Retrieve all filenames from a bucket"""
+		"""Retrieve all files from a bucket with detailed information
+		
+		:param bucket: The bucket name
+		:param prefix: Optional prefix to filter files
+		:return: List of dictionaries containing file details
+		"""
 		files = []
 		try:
 			objects = self.client.list_objects(bucket, prefix=prefix, recursive=True)
 			for obj in objects:
-				filename = obj.object_name.split('/')[-1]
-				if filename:
-					files.append(filename)
+				# Get the file extension
+				_, extension = os.path.splitext(obj.object_name)
+				extension = extension.lower().strip('.')
+				
+				# Create a response similar to upload_and_get_presigned_urls
+				file_info = {
+					"filename": os.path.basename(obj.object_name),
+					"size": obj.size,
+					"content_type": mimetypes.guess_type(obj.object_name)[0] or 'application/octet-stream',
+					"object_name": obj.object_name,
+					"last_modified": obj.last_modified.isoformat(),
+					"etag": obj.etag,
+					"directory": os.path.dirname(obj.object_name)
+				}
+				files.append(file_info)
 		except S3Error as err:
-			logging.error("Error retrieving filenames: %s", err)
+			logging.error("Error retrieving files: %s", err)
 		return files
 
 	def retrieve_file(self, bucket: str, path: str):
