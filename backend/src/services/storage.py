@@ -150,3 +150,37 @@ class StorageService:
 				logging.error(f"Error generating presigned URL for {object_name}: {err}")
 				continue
 		return urls
+
+	def upload_and_get_presigned_urls(self, files, bucket, prefix=None, expiration=3600):
+		"""Upload files and return their presigned URLs
+		:param files: List of FastAPI UploadFile objects
+		:param bucket: Bucket to upload to
+		:param prefix: Optional prefix for organizing files
+		:param expiration: Expiration time for presigned URLs in seconds
+		:return: List of dictionaries containing file info and presigned URLs
+		"""
+		# First upload all files
+		upload_results = self.upload_files(files, bucket, prefix)
+		
+		# Get object names for all uploaded files
+		object_names = []
+		for file in files:
+			extension = os.path.splitext(file.filename)[1].lower()
+			directory = f"{prefix}/{extension.strip('.')}" if prefix else extension.strip('.')
+			object_name = os.path.join(directory, file.filename)
+			object_names.append(object_name)
+		
+		# Generate presigned URLs
+		presigned_urls = self.create_presigned_urls(bucket, object_names, expiration=expiration)
+		
+		# Combine upload results with presigned URLs
+		results = []
+		for upload_info, object_name in zip(upload_results, object_names):
+			result = {
+				**upload_info,
+				"presigned_url": presigned_urls.get(object_name),
+				"object_name": object_name
+			}
+			results.append(result)
+		
+		return results

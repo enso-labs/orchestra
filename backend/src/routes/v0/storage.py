@@ -172,3 +172,38 @@ async def delete_file(
 			status_code=404,
 			detail=str(err)
 		) from err
+  
+  
+def get_storage_service():
+    from src.constants import ACCESS_KEY_ID, ACCESS_SECRET_KEY, MINIO_HOST
+    return StorageService(
+        access_key_id=ACCESS_KEY_ID,
+        secret_access_key=ACCESS_SECRET_KEY,
+        minio_server=MINIO_HOST
+    )
+  
+@router.post("/storage/presigned")
+async def upload_files_with_urls(
+    files: List[UploadFile] = File(...),
+    user: User = Depends(verify_credentials),
+    storage_service: StorageService = Depends(get_storage_service)
+):
+    """
+    Upload multiple files and return their presigned URLs
+    """
+    try:
+        results = storage_service.upload_and_get_presigned_urls(
+            files=files,
+            bucket=BUCKET,
+            prefix=f"users/{user.id or TEST_USER_ID}",  # You might want to make this dynamic based on user
+            expiration=3600  # 1 hour expiration
+        )
+        return {
+            "status": "success",
+            "files": results
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
