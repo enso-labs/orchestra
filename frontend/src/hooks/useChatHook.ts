@@ -142,7 +142,7 @@ export default function useChatHook() {
                 return;
             }
 
-            setPayload({ ...payload, query: '', threadId: data.thread_id });
+            setPayload({ ...payload, query: '', threadId: data.thread_id, images: [] });
         });
         source.stream();
         return true;
@@ -186,7 +186,7 @@ export default function useChatHook() {
 
     const useGetHistoryEffect = () => {
         useEffect(() => {
-            getHistory();
+            getHistory(history.page, history.per_page);
 
             return () => {
                 // Cleanup logic if needed

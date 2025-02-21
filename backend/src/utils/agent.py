@@ -218,7 +218,7 @@ class Agent:
         query: str, 
         system: str = None, 
         images: list[str] = None,
-        base64_encode: bool = True
+        base64_encode: bool = False
     ) -> list[AnyMessage]:
         # Create message content based on whether images are present
         if images:
