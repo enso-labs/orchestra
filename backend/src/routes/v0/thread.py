@@ -50,7 +50,7 @@ async def list_threads(
             await checkpointer.setup()  
             config = {"user_id": user.id}
             agent = Agent(config=config, pool=pool)
-            user_threads = await agent.user_threads(page=page, per_page=per_page, sort_order='asc')
+            user_threads = await agent.user_threads(page=page, per_page=per_page, sort_order='desc')
             # First collect all unique threads without the per_page limit
             seen_thread_ids = set()
             threads = []
