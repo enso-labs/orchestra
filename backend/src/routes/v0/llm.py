@@ -40,7 +40,7 @@ router = APIRouter(tags=[TAG])
         }
     }
 )
-def new_thread(
+async def new_thread(
     request: Request,
     body: Annotated[NewThread, Body()],
     user: User = Depends(verify_credentials),

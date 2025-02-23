@@ -27,6 +27,7 @@ mkdocs
 mkdocs-material
 mkdocstrings[python]
 aiofiles
+browser-use
 alembic
 sqlalchemy
 passlib[bcrypt]

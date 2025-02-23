@@ -173,7 +173,7 @@ class Agent:
                 state = {"messages": messages}
                 for chunk in stream_chunks(self.graph, state, self.config):
                     if chunk:
-                        print(chunk)
+                        logger.debug(chunk)
                         yield chunk
             finally:
                 # Ensure pool is closed after streaming is complete

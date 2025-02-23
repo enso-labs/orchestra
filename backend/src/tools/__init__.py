@@ -3,6 +3,7 @@ from langgraph.prebuilt import ToolNode
 from src.tools.retrieval import retrieval_query, retrieval_add, retrieval_load
 from src.tools.agent import agent_builder, available_tools
 from src.tools.sql import sql_query_read, sql_query_write
+from src.tools.browser import browser_use
 from src.tools.shell import shell_exec
 
 tools = [       
@@ -14,6 +15,7 @@ tools = [
     agent_builder,
     sql_query_read,
     sql_query_write,
+    browser_use,
 ]
 tool_node = ToolNode(tools)
 
