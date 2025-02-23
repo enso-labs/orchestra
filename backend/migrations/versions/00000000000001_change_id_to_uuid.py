@@ -34,7 +34,7 @@ def upgrade() -> None:
     op.drop_constraint('users_pkey', 'users', type_='primary')
     
     # 4. Drop the index on the integer id column if it exists.
-    op.drop_index('ix_users_id', table_name='users')
+    op.drop_index(op.f('ix_users_id'), table_name='users', if_exists=True)
     
     # 5. Drop the old integer id column.
     op.drop_column('users', 'id')
