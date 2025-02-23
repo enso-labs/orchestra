@@ -107,5 +107,20 @@ services:
     volumes:
       - ${HOME}/.ssh:/root/.ssh:ro
 
+  ##############################################
+  ## Search Engine
+  ##############################################
+  search_engine:
+    image: searxng/searxng
+    container_name: search_engine
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/searxng:/etc/searxng
+    environment:
+      BASE_URL: "http://localhost:8080/"
+      INSTANCE_NAME: "my-instance"
+
 volumes:
   ollama:

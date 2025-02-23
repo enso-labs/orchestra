@@ -10,7 +10,8 @@ const TOKEN_KEYS = [
   'GROQ_API_KEY',
   'GEMINI_API_KEY',
   'OLLAMA_BASE_URL',
-  'SHELL_EXEC_SERVER_URL'
+  'SHELL_EXEC_SERVER_URL',
+  'SEARX_SEARCH_HOST_URL'
 ] as const;
 
 // For displaying existing tokens
