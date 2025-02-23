@@ -1,5 +1,8 @@
 from enum import Enum
 
+from src.constants import UserTokenKey
+from src.repos.user_repo import UserRepo
+
 class ModelName(str, Enum):
     OPENAI_GPT_4O = "openai-gpt-4o"
     OPENAI_GPT_4O_MINI = "openai-gpt-4o-mini"
@@ -11,8 +14,12 @@ class ModelName(str, Enum):
     OLLAMA_LLAMA_3_2_VISION = "ollama-llama3.2-vision"
     OLLAMA_DEEPSEEK_R1_8B = "ollama-deepseek-r1:8b"
     OLLAMA_DEEPSEEK_R1_14B = "ollama-deepseek-r1:14b"
+    GROQ_DEEPSEEK_R1_DISTILL_LLAMA_70B = "deepseek-r1-distill-llama-70b"
+    GROQ_LLAMA_3_3_70B_VERSATILE = "groq-llama-3.3-70b-versatile"
+    GROQ_LLAMA_3_3_70B_SPECDEC = "groq-llama-3.3-70b-specdec"
     GROQ_LLAMA_3_2_90B_VISION = "groq-llama-3.2-90b-vision-preview"
-    GROQ_LLAMA_3_1_70B_TOOL_USE = "llama3-groq-70b-8192-tool-use-preview"
+    GEMINI_PRO_1_5 = "google-gemini-1.5-pro"
+    GEMINI_PRO_2 = "google-gemini-2-pro"
     
 MODEL_CONFIG = [
     {
@@ -135,15 +142,27 @@ MODEL_CONFIG = [
             "embedding": False,
         }
     },
+    # {
+    #     "id": ModelName.GROQ_DEEPSEEK_R1_DISTILL_LLAMA_70B,
+    #     "label": "DeepSeek R1 Distill Llama 70B",
+    #     "provider": "groq",
+    #     "metadata": {
+    #         "system_message": True,
+    #         "reasoning": False,
+    #         "tool_calling": True,
+    #         "multimodal": True,
+    #         "embedding": False,
+    #     }
+    # },
     {
-        "id": ModelName.GROQ_LLAMA_3_1_70B_TOOL_USE,
-        "label": "Llama 3.1 70B Tool Use",
+        "id": ModelName.GROQ_LLAMA_3_3_70B_VERSATILE,
+        "label": "Llama 3.3 70B Versatile",
         "provider": "groq",
         "metadata": {
             "system_message": True,
             "reasoning": False,
             "tool_calling": True,
-            "multimodal": False,
+            "multimodal": True,
             "embedding": False,
         }
     },
@@ -158,23 +177,46 @@ MODEL_CONFIG = [
             "multimodal": True,
             "embedding": False,
         }
-    }
+    },
+    {
+        "id": ModelName.GEMINI_PRO_1_5,
+        "label": "Gemini 1.5 Pro",
+        "provider": "google",
+        "metadata": {
+            "system_message": True,
+            "reasoning": False,
+            "tool_calling": True,
+            "multimodal": True,
+            "embedding": False,
+        },
+    },
+    # {
+    #     "id": ModelName.GEMINI_PRO_2,
+    #     "label": "Gemini 2 Pro",
+    #     "provider": "google",
+    #     "metadata": {
+    #         "system_message": True,
+    #         "reasoning": False,
+    #         "tool_calling": False,
+    #         "multimodal": True,
+    #         "embedding": False,
+    #     }
+    # }
 ]
 
-def get_available_models():
-    from src.constants import OPENAI_API_KEY, ANTHROPIC_API_KEY, OLLAMA_BASE_URL, GROQ_API_KEY
-    
+def get_available_models(user_repo: UserRepo):
     available_models = []
-    
+    user_tokens = {token["key"] for token in user_repo.get_all_tokens()}
     for model in MODEL_CONFIG:
         provider = model["provider"]
         
         # Check if the provider's API key exists
         if (
-            (provider == "openai" and OPENAI_API_KEY) or
-            (provider == "anthropic" and ANTHROPIC_API_KEY) or
-            (provider == "ollama" and OLLAMA_BASE_URL) or
-            (provider == "groq" and GROQ_API_KEY)
+            (provider == "openai" and UserTokenKey.OPENAI_API_KEY.name in user_tokens) or
+            (provider == "anthropic" and UserTokenKey.ANTHROPIC_API_KEY.name in user_tokens) or
+            (provider == "ollama" and UserTokenKey.OLLAMA_BASE_URL.name in user_tokens) or
+            (provider == "groq" and UserTokenKey.GROQ_API_KEY.name in user_tokens) or
+            (provider == "google" and UserTokenKey.GEMINI_API_KEY.name in user_tokens)
         ):
             available_models.append(model)
     

@@ -13,6 +13,7 @@ import Dashboard from '../pages/Dashboard';
 import Settings from '../pages/Settings';
 import Chat from '../pages/Chat';
 import Login from '../pages/Login';
+import Register from '@/pages/Register';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -28,6 +29,11 @@ const AppRoutes: React.FC = () => {
           <Route path="login" element={
             <PublicRoute>
               <Login />
+            </PublicRoute>
+          } />
+          <Route path="register" element={
+            <PublicRoute>
+              <Register />
             </PublicRoute>
           } />
           <Route path="*" element={<NotFound />} />

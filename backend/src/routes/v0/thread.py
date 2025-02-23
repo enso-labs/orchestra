@@ -2,14 +2,17 @@
 
 from fastapi import Response, status, Depends, APIRouter, Query
 from fastapi.responses import JSONResponse
-from psycopg_pool import ConnectionPool
+from psycopg_pool import ConnectionPool, AsyncConnectionPool
 from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import Optional
 
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 from src.entities import Thread, Threads
 from src.utils.agent import Agent
 from src.utils.auth import verify_credentials
+from src.models import User
+from src.utils.logger import logger
 
 TAG = "Agent"
 router = APIRouter(tags=[TAG])
@@ -31,61 +34,65 @@ router = APIRouter(tags=[TAG])
         }
     }
 )
-def list_threads(
-    username: str = Depends(verify_credentials),
+async def list_threads(
+    user: User = Depends(verify_credentials),
     page: Optional[int] = Query(1, description="Page number", ge=1),
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
 ):
-    with ConnectionPool(
-        conninfo=DB_URI,
-        max_size=20,
-        kwargs=CONNECTION_POOL_KWARGS,
-    ) as pool:
-        checkpointer = PostgresSaver(pool)
-        checkpoints = checkpointer.list(
-            config={},
-            before=None,
-            limit=None
-        )
-        # First collect all unique threads without the per_page limit
-        seen_thread_ids = set()
-        threads = []
-        for checkpoint in checkpoints:
-            thread_id = checkpoint.config['configurable']['thread_id']
-            if thread_id not in seen_thread_ids:
-                seen_thread_ids.add(thread_id)
-                agent = Agent(thread_id, pool)
-                checkpoint = agent.checkpoint()
-                messages = checkpoint.get('channel_values', {}).get('messages')
-                if isinstance(messages, list):
-                    thread = Thread(
-                        thread_id=thread_id,
-                        checkpoint_ns='',
-                        checkpoint_id=checkpoint.get('id'),
-                        messages=messages,
-                        ts=checkpoint.get('ts'),
-                        v=checkpoint.get('v')
-                    )
-                    threads.append(thread.model_dump())
-                    
-        # Calculate pagination after collecting all threads
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated_threads = threads[start_idx:end_idx]
-        
-        # Get the timestamp of the last thread for pagination
-        last_ts = paginated_threads[-1]['ts'] if paginated_threads else None
-        
-        return JSONResponse(
-            content={
-                'threads': paginated_threads,
-                'next_page': last_ts,
-                'total': len(paginated_threads),
-                'page': page,
-                'per_page': per_page
-            },
-            status_code=status.HTTP_200_OK
-        )
+    try:
+        async with AsyncConnectionPool(
+            # Example configuration
+            conninfo=DB_URI,
+            max_size=20,
+            kwargs=CONNECTION_POOL_KWARGS,
+        ) as pool:
+            checkpointer = AsyncPostgresSaver(pool)
+            await checkpointer.setup()  
+            config = {"user_id": user.id}
+            agent = Agent(config=config, pool=pool)
+            user_threads = await agent.user_threads(page=page, per_page=per_page, sort_order='desc')
+            # First collect all unique threads without the per_page limit
+            seen_thread_ids = set()
+            threads = []
+            for thread_id in user_threads:
+                if thread_id not in seen_thread_ids:
+                    seen_thread_ids.add(thread_id)
+                    agent = Agent(config={"thread_id": thread_id, "user_id": user.id}, pool=pool)
+                    checkpoint = await agent.acheckpoint(checkpointer)
+                    if checkpoint:
+                        messages = checkpoint.get('channel_values', {}).get('messages')
+                        if isinstance(messages, list):
+                                thread = Thread(
+                                    thread_id=thread_id,
+                                    checkpoint_ns='',
+                                    checkpoint_id=checkpoint.get('id'),
+                                    messages=messages,
+                                    ts=checkpoint.get('ts'),
+                                    v=checkpoint.get('v')
+                                )
+                                threads.append(thread.model_dump())
+                        
+            # # Calculate pagination after collecting all threads
+            # start_idx = (page - 1) * per_page
+            # end_idx = start_idx + per_page
+            # paginated_threads = threads[start_idx:end_idx]
+            
+            # # Get the timestamp of the last thread for pagination
+            # last_ts = paginated_threads[-1]['ts'] if paginated_threads else None
+            
+            return JSONResponse(
+                content={
+                    'threads': threads,
+                    'next_page': page + 1,
+                    'total': len(threads),
+                    'page': page,
+                    'per_page': per_page
+                },
+                status_code=status.HTTP_200_OK
+            )
+    except Exception as e:
+        logger.error(f"Error listing threads: {e}")
+        raise e
 
 ################################################################################
 ### Query Thread History
@@ -113,7 +120,7 @@ def find_thread(
         max_size=20,
         kwargs=CONNECTION_POOL_KWARGS,
     ) as pool:
-        agent = Agent(thread_id, pool)
+        agent = Agent(config={"thread_id": thread_id}, pool=pool)
         checkpoint = agent.checkpoint()
         response = Thread(
             thread_id=thread_id, 
@@ -145,7 +152,7 @@ def delete_thread(
         max_size=20,
         kwargs=CONNECTION_POOL_KWARGS,
     ) as pool:
-        agent = Agent(thread_id, pool)
+        agent = Agent(config={"thread_id": thread_id}, pool=pool)
         agent.delete()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
         

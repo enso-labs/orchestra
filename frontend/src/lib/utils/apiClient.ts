@@ -19,7 +19,7 @@ apiClient.interceptors.request.use(
   (config: any) => {
     const token = localStorage.getItem(TOKEN_NAME); // Replace with your token logic
     if (token) {
-      config.headers.Authorization = `Basic ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

@@ -100,7 +100,7 @@ class VectorStore:
 ## Retrieval Utils
 def get_embedding_model():
     from src.utils.llm import LLMWrapper
-    llm = LLMWrapper(model_name="openai-text-embedding-3-large", api_key=os.getenv('OPENAI_API_KEY'))
+    llm = LLMWrapper(model_name="openai-text-embedding-3-large", api_key=os.getenv('OPENAI_API_KEY')),
     return llm.embedding_model()
 
 def get_vector_store():

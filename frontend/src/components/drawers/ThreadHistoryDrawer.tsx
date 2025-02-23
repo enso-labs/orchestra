@@ -2,7 +2,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatContext } from "@/context/ChatContext";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { truncateFrom } from "@/lib/utils/format";
+import { combineToolMessages, truncateFrom } from "@/lib/utils/format";
 import { Plus } from "lucide-react";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 
@@ -15,7 +15,7 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
   const { history, setMessages, setPayload, deleteThread, payload } = useChatContext();
 
   const handleThreadClick = (threadId: string, messages: any[]) => {
-    setMessages(messages);
+    setMessages(combineToolMessages(messages));
     setPayload((prev: any) => ({ ...prev, threadId }));
     onClose(); // Close drawer after selection on mobile
   };
@@ -60,7 +60,7 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
 
           <ScrollArea className="flex-1">
               <div className="p-2 space-y-2">
-                  {history?.threads?.map((thread: any) => (
+                  {history?.threads?.sort((a: any, b: any) => new Date(b.ts).getTime() - new Date(a.ts).getTime()).map((thread: any) => (
                       <div
                           key={thread.thread_id}
                           className="group relative"
@@ -80,7 +80,7 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
                           >
                               <div className="w-full pr-8">
                                   <p className="text-sm font-medium line-clamp-2 max-w-60">
-                                      {thread.messages[1]?.content ? truncateFrom(thread.messages[1].content, 'end', "...", 100) : "New Chat"}
+                                      {thread.messages[1]?.content && typeof(thread.messages[1]?.content) === "string" ? truncateFrom(thread.messages[1].content, 'end', "...", 70) : "New Chat"}
                                   </p>
                                   <p className="text-xs text-muted-foreground mt-1 truncate">
                                       {formatDistanceToNow(new Date(thread.ts), {

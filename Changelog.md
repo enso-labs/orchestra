@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.1
 
 ### Fixed
+  - bugfix/137-migrations-auto-up (2025-02-07)
+  - bugfix/131-action-log-overflow (2025-02-04)
+  - bugfix/128-fix-remote-container-exec (2025-02-03)
   - bugfix/109-open-sidebar-mobile (2025-01-17)
   - bugfix/105-fix-chat-selection (2025-01-12)
   - bugfix/104-model-select-stopped-working (2025-01-12)
@@ -19,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed 
   - feature/122-browser-use (2025-02-02)
+  - feature/148-add-storage-endpoints (2025-02-18)
+  - feature/145-update-settings-to-remote-dropdown (2025-02-17)
+  - feature/76-user-can-configure-their-own-keys (2025-02-13)
+  - feature/132-autosize-textarea (2025-02-11)
+  - feature/139-individual-user-accounts (2025-02-09)
+  - feature/135-google-llm-provider (2025-02-07)
+  - feature/130-edit-system-message (2025-02-04)
   - feature/125-add-03-mini (2025-02-02)
   - feature/120-popout-drawer-action-log (2025-01-29)
   - feature/114-add-chat-ollama (2025-01-22)

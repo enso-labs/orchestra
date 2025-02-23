@@ -7,7 +7,7 @@ from src.utils.llm import LLMWrapper
 from src.utils.logger import logger
 
 @tool
-def browser_use(task: str, model: str = "openai-gpt-4o"):
+def browser_use(task: str, model: str = "openai-o3-mini"):
     """Use the browser to perform a task.
     
     Example:

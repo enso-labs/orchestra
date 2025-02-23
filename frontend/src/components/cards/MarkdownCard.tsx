@@ -4,8 +4,10 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import CopyButton from "../buttons/CopyButton";
+import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
+import useImageHook from "@/hooks/useImageHook";
 
-const MarkdownCard = ({ content }: { content: string }) => {
+const BaseCard = ({ content }: { content: string }) => {
     return (
         <ReactMarkdown
             components={{
@@ -39,14 +41,15 @@ const MarkdownCard = ({ content }: { content: string }) => {
                             </div>
                         </div>
                     ) : (
-                        <div className="overflow-y-auto text-left">
-                            <code
-                                className="rounded px-1 py-0.5 font-bold"
-                                {...props}
-                            />
-                        </div>
+                        <code
+                            className="rounded text-green-400 bg-green-400/10 py-0.5 px-1 font-bold"
+                            {...props}
+                        />
                     );
                 },
+                // pre: ({ node, ...props }) => (
+                //     <pre className="bg-gray-950 text-white p-2 rounded-md" {...props} />
+                // ),
                 ul: ({ node, ...props }) => (
                     <ul className="list-disc pl-5 my-2" {...props} />
                 ),
@@ -100,6 +103,39 @@ const MarkdownCard = ({ content }: { content: string }) => {
             {content}
         </ReactMarkdown>
     );
+}
+
+const MarkdownCard = ({ content }: { content: string | any[] }) => {
+    const { handleImageClick, handleImageClear, previewImage, previewImageIndex } = useImageHook();
+
+    // If string, return a single card
+    if (typeof content === "string") {
+        return <BaseCard content={content} />;
+    }
+    // If array, return a list of cards
+    if (Array.isArray(content)) {
+        return content.map((item, index) => {
+            if (item.type === "text") {
+                return <BaseCard content={item.text} key={index} />;
+            }
+            if (item.type === "image_url") {
+                return (
+                    <div className="flex justify-center items-center py-1" key={index}>
+                        <img src={item.image_url.url} alt="image" className="cursor-pointer" onClick={() => handleImageClick(item.image_url.url, index)} />
+                        {previewImage && (
+                            <ImagePreviewModal
+                                image={previewImage}
+                                index={previewImageIndex}
+                                onClose={() => handleImageClear()}
+                            />
+                        )}
+                    </div>
+                );
+            }
+        });
+    }
+    console.error("Invalid content");
+    return null;
 };
 
 export default MarkdownCard;

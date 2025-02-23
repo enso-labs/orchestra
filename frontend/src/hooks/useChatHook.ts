@@ -65,7 +65,7 @@ export default function useChatHook() {
                 headers: {
                     'Content-Type': 'application/json', 
                     'Accept': 'text/event-stream',
-                    'Authorization': `Basic ${token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 payload: JSON.stringify(payload),
                 method: 'POST'
@@ -112,6 +112,24 @@ export default function useChatHook() {
                 
                 const updatedMessages = [...messages, toolCallData];
                 setMessages(updatedMessages);
+            } else if (data.event === 'tool_chunk') {
+                const toolChunkData = {
+                    content: message.content || message,
+                    type: 'tool',
+                    name: message.name,
+                    status: 'success',
+                    tool_call_id: message.id,
+                    isOutput: true
+                };
+                
+                setCurrentToolCall((prev: any) => ({
+                    ...prev,
+                    output: toolChunkData.content,
+                    status: 'success'
+                }));
+                
+                const updatedMessages = [...messages, toolChunkData];
+                setMessages(updatedMessages);
             } else if (data.event === 'end') {
                 if (toolCallMessage) {
                     const updatedMessages = [...messages, toolCallMessage];
@@ -124,7 +142,7 @@ export default function useChatHook() {
                 return;
             }
 
-            setPayload({ ...payload, query: '', threadId: data.thread_id });
+            setPayload({ ...payload, query: '', threadId: data.thread_id, images: [] });
         });
         source.stream();
         return true;
@@ -136,7 +154,7 @@ export default function useChatHook() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json', 
-                    'Authorization': `Basic ${token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 method: 'GET'
             });
@@ -168,7 +186,7 @@ export default function useChatHook() {
 
     const useGetHistoryEffect = () => {
         useEffect(() => {
-            getHistory();
+            getHistory(history.page, history.per_page);
 
             return () => {
                 // Cleanup logic if needed
@@ -219,7 +237,7 @@ export default function useChatHook() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': `Basic ${token}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
             // Refresh the thread list after deletion

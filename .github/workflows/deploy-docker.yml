@@ -47,9 +47,9 @@ jobs:
             docker pull ryaneggz/graphchat:$TAG
 
             echo '--- Starting staging container (graphchat_new) on port 8006 ---'
-            # Stop/remove any leftover staging container from a previous run
-            docker stop graphchat_new || true
-            docker rm graphchat_new || true
+            # Stop/remove any leftover staging container from a previous run (ignore errors if not found)
+            docker stop graphchat_new 2>/dev/null || true
+            docker rm graphchat_new 2>/dev/null || true
 
             docker run -d \
               --name graphchat_new \
@@ -62,34 +62,41 @@ jobs:
             sleep 10
 
             echo '--- Health check on staging container (graphchat_new) ---'
-            if curl -f http://localhost:8006/api/info; then
-              echo 'New container on port 8006 is healthy!'
-              
-              echo '--- Stopping and removing old container (graphchat) if it exists ---'
-              docker stop graphchat || true
-              docker rm graphchat || true
+            for i in {1..3}; do
+              if curl -f http://localhost:8006/api/info; then
+                echo 'New container on port 8006 is healthy!'
+                break
+              else
+                echo "Attempt $i failed. Waiting 10 seconds before retry..."
+                sleep 10
+                if [ $i -eq 3 ]; then
+                  echo 'All retry attempts failed.'
+                  exit 1
+                fi
+              fi
+            done
 
-              echo '--- Stopping and removing staging container (graphchat_new) ---'
-              docker stop graphchat_new || true
-              docker rm graphchat_new || true
+            echo '--- Stopping and removing old container (graphchat) if it exists ---'
+            docker stop graphchat || true
+            docker rm graphchat || true
 
-              echo '--- Running new container on production port (8005) as graphchat ---'
-              docker run -d \
-                --name graphchat \
-                --network graphchat_default \
-                --restart always \
-                --env-file ./backend/.env \
-                -e APP_VERSION=$TAG \
-                -e VITE_APP_VERSION=$TAG \
-                -p 8005:8000 \
-                ryaneggz/graphchat:$TAG
+            echo '--- Stopping and removing staging container (graphchat_new) ---'
+            docker stop graphchat_new 2>/dev/null || true
+            docker rm graphchat_new 2>/dev/null || true
 
-              echo '--- Deployment successful! ---'
-            else
-              echo 'Deployment failed - health check did not pass.'
-              echo '--- Cleaning up staging container (graphchat_new) ---'
-              docker stop graphchat_new || true
-              docker rm graphchat_new || true
-              exit 1
-            fi
+            echo '--- Running new container on production port (8005) as graphchat ---'
+            docker run -d \
+              --name graphchat \
+              --network graphchat_default \
+              --restart always \
+              --env-file ./backend/.env \
+              -e APP_VERSION=$TAG \
+              -e VITE_APP_VERSION=$TAG \
+              -p 8005:8000 \
+              ryaneggz/graphchat:$TAG
+
+            echo '--- Cleaning up old images ---'
+            docker system prune -a --filter "until=24h" -f
+            
+            echo '--- Deployment successful! ---'
           "

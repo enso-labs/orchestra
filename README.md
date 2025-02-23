@@ -1,6 +1,6 @@
-# Thread Agent - Prompt Engineers AI 🤖
+# LangGraph FastAPI Starter - Prompt Engineers AI 🤖
 
-Thread Agent is a Python-based chatbot application that utilizes the LangGraph and LangChain libraries to process and respond to user inputs. The bot is designed to handle conversational flows and can be configured to use different language models.
+LangGraph FastAPI Starter is a Python-based chatbot application that utilizes the LangGraph and LangChain libraries to process and respond to user inputs. The bot is designed to handle conversational flows and can be configured to use different language models.
 
 # Project Documentation
 
@@ -62,3 +62,43 @@ This project includes tools for running shell commands and Docker container oper
    ```
 
 ## Deployment
+
+## Database Migrations
+
+This project uses Alembic for database migrations. Here's how to work with migrations:
+
+### Initial Setup
+
+1. Create the database (if not exists):
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+```bash
+python -m seeds.user_seeder
+```
+
+2. Create new
+
+```bash
+alembic revision -m "description_of_changes"
+```
+
+``bash
+### Appliy Next
+alembic upgrade +1
+
+### Speicif revision
+alembic upgrade <revis_id>
+
+### Appliy Down
+alembic downgrade -1
+
+### Appliy Down
+alembic downgrade <revis_id>
+
+### History
+alembic history
+```

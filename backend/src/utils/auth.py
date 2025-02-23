@@ -1,29 +1,76 @@
-from fastapi import status
-from fastapi.security import HTTPBasicCredentials, HTTPBasic
-from fastapi import Depends, HTTPException
-import secrets
-from src.constants import APP_USER_LIST
+from fastapi import status, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import JWTError, jwt
+from datetime import datetime
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from src.constants import DB_URI, JWT_SECRET_KEY, JWT_ALGORITHM
+from src.models import User
 
-def verify_credentials(credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
-    for user in APP_USER_LIST:
-        current_username_bytes = credentials.username.encode("utf8")
-        correct_username_bytes = user["username"].encode("utf8")
-        is_correct_username = secrets.compare_digest(
-            current_username_bytes, correct_username_bytes
+engine = create_engine(DB_URI)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+security = HTTPBearer()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def verify_credentials(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: SessionLocal = Depends(get_db) # type: ignore
+) -> User:
+    try:
+        # Verify JWT token
+        payload = jwt.decode(
+            credentials.credentials, 
+            JWT_SECRET_KEY, 
+            algorithms=[JWT_ALGORITHM]
         )
         
-        if is_correct_username:
-            current_password_bytes = credentials.password.encode("utf8")
-            correct_password_bytes = user["password"].encode("utf8")
-            is_correct_password = secrets.compare_digest(
-                current_password_bytes, correct_password_bytes
+        # Check if token has expired
+        exp = payload.get("exp")
+        if exp is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token is missing expiration",
+                headers={"WWW-Authenticate": "Bearer"},
             )
-            
-            if is_correct_password:
-                return user
-                
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Incorrect username or password",
-        headers={"WWW-Authenticate": "Basic"},
-    ) 
+        
+        if datetime.utcnow().timestamp() > exp:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Extract user data from token
+        user_data = payload.get("user")
+        if user_data is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Verify user exists in database
+        user = db.query(User).filter(User.email == user_data["email"]).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        
+        return user.protected()
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
