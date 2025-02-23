@@ -56,7 +56,7 @@ GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
 
 # Tools
 SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://exec_server:3005/exec")
-SEARX_SEARCH_HOST_URL = os.getenv(UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://localhost:8080")
+SEARX_SEARCH_HOST_URL = os.getenv(UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://search_engine:8080")
 
 # Storage
 MINIO_HOST = os.getenv("MINIO_HOST")
