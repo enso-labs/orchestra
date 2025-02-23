@@ -11,9 +11,16 @@ from src.models import User
 TAG = "Settings"
 router = APIRouter(tags=[TAG])
 
+DEFAULT_SETTING_VALUE = {
+    "system": "You are a helpful assistant.",
+    "model": "openai-gpt-4o-mini",
+    "tools": ["search_engine"],
+    "indexes": [],
+}
+
 class SettingBase(BaseModel):
     name: str
-    value: dict = Field(default={"system": "You are a helpful assistant.", "tools": ["search_engine"], "model": "openai-gpt-4o"})
+    value: dict = Field(default=DEFAULT_SETTING_VALUE)
 
 class SettingCreate(SettingBase):
     pass
