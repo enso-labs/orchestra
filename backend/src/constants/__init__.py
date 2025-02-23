@@ -42,7 +42,7 @@ class UserTokenKey(Enum):
     OLLAMA_BASE_URL = "OLLAMA_BASE_URL"
     ## TOOLS
     SHELL_EXEC_SERVER_URL = "SHELL_EXEC_SERVER_URL"
-    
+    SEARX_SEARCH_HOST_URL = "SEARX_SEARCH_HOST_URL"
     @classmethod
     def values(cls) -> list[str]:
         return [key.value for key in cls]
@@ -56,6 +56,7 @@ GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
 
 # Tools
 SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://exec_server:3005/exec")
+SEARX_SEARCH_HOST_URL = os.getenv(UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://localhost:8080")
 
 # Storage
 MINIO_HOST = os.getenv("MINIO_HOST")

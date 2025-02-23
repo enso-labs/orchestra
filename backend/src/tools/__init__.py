@@ -4,7 +4,7 @@ from src.tools.retrieval import retrieval_query, retrieval_add, retrieval_load
 from src.tools.agent import agent_builder, available_tools
 from src.tools.sql import sql_query_read, sql_query_write
 from src.tools.shell import shell_exec
-
+from src.tools.search import search_engine
 tools = [       
     available_tools,
     shell_exec,
@@ -14,6 +14,7 @@ tools = [
     agent_builder,
     sql_query_read,
     sql_query_write,
+    search_engine,
 ]
 tool_node = ToolNode(tools)
 
