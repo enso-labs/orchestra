@@ -23,19 +23,21 @@ class StreamInput(BaseModel):
     messages: list
     configurable: Configurable
     
-class ExistingThread(BaseModel):
-    query: str = Field(...)
+class BaseSetting(BaseModel):
+    system: Optional[str] = Field(default="You are a helpful assistant.")
     tools: Optional[List[Any]] = Field(default_factory=list)
+    model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
+    
+class ExistingThread(BaseSetting):
+    query: str = Field(...)
     stream: Optional[bool] = Field(default=False)
     images: Optional[List[str]] = Field(default_factory=list)
-    model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
     
     model_config = {
         "json_schema_extra": {"example": EXISTING_THREAD_QUERY_EXAMPLE}
     }
     
 class NewThread(ExistingThread):
-    system: Optional[str] = Field(default="You are a helpful assistant.")
     visualize: Optional[bool] = Field(default=False)
     
     model_config = {

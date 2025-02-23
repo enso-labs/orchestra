@@ -1,8 +1,8 @@
 from typing import Optional
 from datetime import datetime
 import sqlalchemy as sa
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Boolean
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from passlib.context import CryptContext
@@ -77,3 +77,32 @@ class Token(Base):
         from cryptography.fernet import Fernet
         f = Fernet(secret_key.encode())
         return f.decrypt(encrypted_value.encode()).decode()
+
+class Agent(Base):
+    __tablename__ = "agents"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()"))
+    owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    name = Column(String, nullable=False)
+    is_public = Column(Boolean, server_default='false', nullable=False)
+    current_setting_key = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    owner = relationship("User", back_populates="agents")
+    settings = relationship("Setting", back_populates="agent")
+
+class Setting(Base):
+    __tablename__ = "settings"
+    
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey('agents.id', ondelete='CASCADE'), primary_key=True)
+    key = Column(String, primary_key=True)
+    value = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="settings")
+    agent = relationship("Agent", back_populates="settings")
