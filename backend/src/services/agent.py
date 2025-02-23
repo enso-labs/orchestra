@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 
 from src.repos.agent_repo import AgentRepo
 from src.repos.setting_repo import SettingRepo
-from src.entities import NewThread, ExistingThread
+from src.entities import BaseSetting
 from src.utils.logger import logger
 
 class AgentService:
@@ -15,7 +15,7 @@ class AgentService:
         self.agent_repo = AgentRepo(db, user_id)
         self.setting_repo = SettingRepo(db, user_id)
 
-    def create_agent(self, name: str, settings: NewThread, is_public: bool = False) -> Dict[str, Any]:
+    def create_agent(self, name: str, settings: BaseSetting, is_public: bool = False) -> Dict[str, Any]:
         """Create a new agent with initial settings"""
         try:
             # Create the agent first
@@ -73,13 +73,13 @@ class AgentService:
             "id": str(agent.id),
             "name": agent.name,
             "is_public": agent.is_public,
-            "settings": NewThread.model_validate_json(setting.value).model_dump()
+            "settings": BaseSetting.model_validate_json(setting.value).model_dump()
         }
 
     def update_agent_settings(
         self, 
         agent_id: str, 
-        settings: NewThread,
+        settings: BaseSetting,
         setting_key: str = None
     ) -> Dict[str, Any]:
         """Update agent settings"""
@@ -126,7 +126,7 @@ class AgentService:
         return [
             {
                 "key": setting.key,
-                "settings": NewThread.model_validate_json(setting.value).model_dump(),
+                "settings": BaseSetting.model_validate_json(setting.value).model_dump(),
                 "is_current": setting.key == agent.current_setting_key
             }
             for setting in settings

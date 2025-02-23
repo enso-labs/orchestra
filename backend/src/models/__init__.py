@@ -33,6 +33,10 @@ class User(Base):
     hashed_password = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Add relationships
+    agents = relationship("Agent", back_populates="owner")
+    settings = relationship("Setting", back_populates="user")
 
     @staticmethod
     def get_password_hash(password: str) -> str:
