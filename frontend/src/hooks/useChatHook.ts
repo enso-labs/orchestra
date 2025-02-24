@@ -14,6 +14,8 @@ const initChatState = {
     response: null,
     responseRef: "",
     messages: [],
+    settings: [],
+    preset: null,
     toolCallMessage: null,
     payload: {
         threadId: '',
@@ -43,12 +45,13 @@ export default function useChatHook() {
     const [messages, setMessages] = useState<any[]>(initChatState.messages);
     const [payload, setPayload] = useState(initChatState.payload);
     const [history, setHistory] = useState<any>(initChatState.history);
+    const [settings, setSettings] = useState<any>(initChatState.settings);
     const [models, setModels] = useState<Model[]>(initChatState.models);
     const [availableTools, setAvailableTools] = useState([]);
     const [toolCallMessage, setToolCallMessage] = useState<any>(initChatState.toolCallMessage);
     const [isToolCallInProgress, setIsToolCallInProgress] = useState(false);
     const [currentToolCall, setCurrentToolCall] = useState<any>(null);
-
+    const [preset, setPreset] = useState<any>(initChatState.preset);
     
     const handleQuery = () => {
         queryThread(payload);
@@ -165,6 +168,16 @@ export default function useChatHook() {
         }
     }
 
+    // Add this function after fetchTools
+    const fetchSettings = async () => {
+        try {
+            const response = await apiClient.get('/settings');
+            setSettings(response.data.settings || []);
+        } catch (error) {
+            console.error('Failed to fetch settings:', error);
+        }
+    };
+
     const fetchModels = async (setSearchParams: (params: any) => void, currentModel: string) => {
         try {
             const response = await listModels();
@@ -192,6 +205,17 @@ export default function useChatHook() {
                 // Cleanup logic if needed
             };
         }, []);
+    };
+
+    // Add this effect hook after useToolsEffect
+    const useSettingsEffect = () => {
+        useEffect(() => {
+            fetchSettings();
+        }, []);
+
+        return () => {
+            // Cleanup logic if needed
+        };
     };
 
     const useFetchModelsEffect = (setSearchParams: (params: any) => void, currentModel: string) => {
@@ -278,6 +302,12 @@ export default function useChatHook() {
         setIsToolCallInProgress,
         currentToolCall,
         setCurrentToolCall,
+        settings,
+        setSettings,
+        useSettingsEffect,
+        fetchSettings,
+        preset,
+        setPreset
     };
 }
 

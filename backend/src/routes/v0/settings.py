@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, UUID4, Field
+from src.utils.logger import logger
 
 from src.utils.auth import verify_credentials, get_db
 
@@ -90,8 +91,20 @@ async def create_setting(
     db: Session = Depends(get_db)
 ):
     """Create a new setting."""
-    repo = SettingsRepo(db, user.id)
-    return {"setting": repo.create(name=setting.name, value=setting.value)}
+    try:
+        repo = SettingsRepo(db, user.id)
+        return {"setting": repo.create(name=setting.name, value=setting.value)}
+    except Exception as e:
+        if "UniqueViolation" in str(e) and "uq_settings_slug" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A setting with this name already exists"
+            )
+        logger.error(f"Error creating setting: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 @router.put("/settings/{setting_id}", response_model=SingleSettingResponse)
 async def update_setting(

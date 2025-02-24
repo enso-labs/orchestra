@@ -1,5 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from 'react-icons/si';
+import { SiAnthropic, SiOpenai, SiOllama, SiGoogle, SiPayloadcms } from 'react-icons/si';
 import { FaPlus } from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
@@ -8,6 +8,7 @@ import { useChatContext } from "@/context/ChatContext";
 import { Model } from "@/services/modelService";
 import { Menu } from "lucide-react";
 import GroqIcon from "../icons/GroqIcon";
+import { useEffect } from "react";
 
 interface ChatNavProps {
   onMenuClick: () => void;
@@ -23,12 +24,17 @@ export function ChatNav({
     
     const { 
         models,
-        handleNewChat
+        handleNewChat,
+        payload
     } = useChatContext();
 
     const handleModelChange = (modelId: string) => {
         setSearchParams({ model: modelId });
     }
+
+    useEffect(() => {
+        setSearchParams({ model: payload.model });
+    }, [payload.model]);
 
     return (
         <header className="bg-card border-b border-border">

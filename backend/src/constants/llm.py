@@ -1,6 +1,6 @@
 from enum import Enum
 
-from src.constants import UserTokenKey
+from src.constants import OPENAI_API_KEY, ANTHROPIC_API_KEY, OLLAMA_BASE_URL, GROQ_API_KEY, GEMINI_API_KEY
 from src.repos.user_repo import UserRepo
 
 class ModelName(str, Enum):
@@ -204,19 +204,18 @@ MODEL_CONFIG = [
     # }
 ]
 
-def get_available_models(user_repo: UserRepo):
+def get_available_models():
     available_models = []
-    user_tokens = {token["key"] for token in user_repo.get_all_tokens()}
     for model in MODEL_CONFIG:
         provider = model["provider"]
         
         # Check if the provider's API key exists
         if (
-            (provider == "openai" and UserTokenKey.OPENAI_API_KEY.name in user_tokens) or
-            (provider == "anthropic" and UserTokenKey.ANTHROPIC_API_KEY.name in user_tokens) or
-            (provider == "ollama" and UserTokenKey.OLLAMA_BASE_URL.name in user_tokens) or
-            (provider == "groq" and UserTokenKey.GROQ_API_KEY.name in user_tokens) or
-            (provider == "google" and UserTokenKey.GEMINI_API_KEY.name in user_tokens)
+            (provider == "openai" and OPENAI_API_KEY) or
+            (provider == "anthropic" and ANTHROPIC_API_KEY) or
+            (provider == "ollama" and OLLAMA_BASE_URL) or
+            (provider == "groq" and GROQ_API_KEY) or
+            (provider == "google" and GEMINI_API_KEY)
         ):
             available_models.append(model)
     
