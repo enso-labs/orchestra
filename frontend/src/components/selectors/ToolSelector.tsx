@@ -49,7 +49,7 @@ export function ToolSelector() {
           variant="outline"
           className="rounded-full bg-foreground/10 text-foreground-500 px-3"
         >
-          <Wrench className="h-4 w-4" /> Tools {enabledCount > 0 && `(${enabledCount} enabled)`}
+          <Wrench className="h-4 w-4" /> Tools {enabledCount > 0 && `(${enabledCount})`}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 mr-2" align="start">

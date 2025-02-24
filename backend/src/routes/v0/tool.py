@@ -55,8 +55,7 @@ from src.constants.llm import get_available_models
     }
 )
 def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session = Depends(get_db)):
-    user_repo = UserRepo(db=db, user_id=user.id)
     return JSONResponse(
-        content={"models": get_available_models(user_repo=user_repo)},
+        content={"models": get_available_models()},
         status_code=status.HTTP_200_OK
     )

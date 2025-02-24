@@ -7,7 +7,7 @@ import { ImagePreviewModal } from "./ImagePreviewModal"
 import useImageHook from "@/hooks/useImageHook"
 import { useChatContext } from "@/context/ChatContext"
 import { useCallback } from "react"
-
+import { PresetPopover } from "../popovers/PresetPopover"
 export default function ChatInput() {
   const { payload, handleQuery, setPayload } = useChatContext();
   const {
@@ -83,7 +83,9 @@ export default function ChatInput() {
               <Plus className="h-4 w-4" />
             </Button>
           </MainToolTip>
+          <PresetPopover />
           <ToolSelector />
+          
         </div>
         <MainToolTip content="Send Message" delayDuration={500}>
           <Button
