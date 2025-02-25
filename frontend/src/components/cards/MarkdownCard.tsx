@@ -1,6 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
-import remarkGfm from "remark-gfm";
+// import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import CopyButton from "../buttons/CopyButton";
@@ -97,7 +97,7 @@ const BaseCard = ({ content }: { content: string }) => {
                     <hr className="my-5" />
                 ),
             }}
-            remarkPlugins={[remarkGfm]}
+            // remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeSanitize, rehypeRaw, rehypeHighlight]}
         >
             {content}
