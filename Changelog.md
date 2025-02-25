@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.1
 
 ### Fixed
+  - bugfix/106-resolve-break-on-mobile (2025-02-25)
   - bugfix/111-resolves-break-on-mobile (2025-02-25)
   - bugfix/137-migrations-auto-up (2025-02-07)
   - bugfix/131-action-log-overflow (2025-02-04)
