@@ -97,7 +97,7 @@ const BaseCard = ({ content }: { content: string }) => {
                     <hr className="my-5" />
                 ),
             }}
-            remarkPlugins={[remarkGfm]}
+            // remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeSanitize, rehypeRaw, rehypeHighlight]}
         >
             {content}
