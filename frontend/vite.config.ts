@@ -32,11 +32,11 @@ const MANIFEST: Partial<VitePWAOptions> = {
       }
     ]
   },
-  devOptions: {
-    enabled: true, // Enable PWA in development
-    type: 'module',
-    navigateFallback: 'index.html'
-  }
+  // devOptions: {
+  //   enabled: true, // Enable PWA in development
+  //   type: 'module',
+  //   navigateFallback: 'index.html'
+  // }
 }
 
 // https://vitejs.dev/config/

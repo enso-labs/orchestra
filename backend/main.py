@@ -86,13 +86,24 @@ app.include_router(token, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
 app.include_router(settings, prefix=PREFIX)
 
+# Mount specific directories
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
 app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
+app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
 
+# Serve PWA-related files
+@app.get("/manifest.webmanifest", include_in_schema=False)
+@app.get("/sw.js", include_in_schema=False) 
+@app.get("/favicon.ico", include_in_schema=False)
+async def serve_pwa_file(request: Request):
+    file_path = f"src/public{request.url.path}"
+    return FileResponse(file_path)
+
+# Keep this as the fallback for SPA routing
 @app.get("/{full_path:path}", include_in_schema=False)
 async def serve_index(request: Request, full_path: str):
     print(f"Received request for {request.url}")
-    return FileResponse(f"src/public/index.html")
+    return FileResponse("src/public/index.html")
 
 ### Run Server
 if __name__ == "__main__":
