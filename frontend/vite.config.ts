@@ -3,10 +3,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa'
 
-
 const MANIFEST: Partial<VitePWAOptions> = {
   registerType: 'autoUpdate',
-  devOptions: { enabled: true },
+  strategies: 'generateSW',
+  includeAssets: ['favicon.ico', 'icons/*.png'],
+  injectRegister: null, // Handle registration manually
   manifest: {
     name: 'Threadable Chat',
     short_name: 'Threadable Chat',
@@ -15,7 +16,7 @@ const MANIFEST: Partial<VitePWAOptions> = {
     background_color: '#000000',
     display: 'standalone',
     scope: '/',
-    start_url: '.',
+    start_url: '/',
     orientation: 'portrait',
     categories: ['education', 'productivity'],
     icons: [
@@ -30,6 +31,11 @@ const MANIFEST: Partial<VitePWAOptions> = {
         type: 'image/png'
       }
     ]
+  },
+  devOptions: {
+    enabled: true, // Enable PWA in development
+    type: 'module',
+    navigateFallback: 'index.html'
   }
 }
 

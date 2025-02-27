@@ -8,10 +8,16 @@ import ThemeProvider from './context/ThemeContext'
 
 const Contexts = () => {
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
+    navigator.serviceWorker.register(
+      import.meta.env.MODE === 'production' ? '/sw.js' : '/dev-sw.js?dev-sw',
+      { type: import.meta.env.MODE === 'production' ? 'classic' : 'module' }
+    ).then(registration => {
+      console.log('Service worker registered successfully:', registration);
+    }).catch(error => {
+      console.error('Service worker registration failed:', error);
     });
   }
+
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
