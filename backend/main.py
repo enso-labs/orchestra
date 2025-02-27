@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles 
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings
 from src.constants import (
@@ -86,23 +87,29 @@ app.include_router(token, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
 app.include_router(settings, prefix=PREFIX)
 
-# Mount specific directories
+# Mount specific directories only if they exist
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
 app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
-app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
 
-# Serve PWA-related files
-@app.get("/manifest.webmanifest", include_in_schema=False)
-@app.get("/sw.js", include_in_schema=False) 
-@app.get("/favicon.ico", include_in_schema=False)
-async def serve_pwa_file(request: Request):
-    file_path = f"src/public{request.url.path}"
-    return FileResponse(file_path)
+# Check if icons directory exists before mounting
+if os.path.exists("src/public/icons"):
+    app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
 
-# Keep this as the fallback for SPA routing
-@app.get("/{full_path:path}", include_in_schema=False)
-async def serve_index(request: Request, full_path: str):
-    print(f"Received request for {request.url}")
+# Function to serve static files with fallback
+@app.get("/{filename:path}")
+async def serve_static_or_index(filename: str, request: Request):
+    # List of static files to check for at the root
+    static_files = ["manifest.json", "sw.js", "favicon.ico", "robots.txt"]
+    
+    # If the request is for a known static file and it exists, serve it
+    if filename in static_files and os.path.exists(f"src/public/{filename}"):
+        return FileResponse(f"src/public/{filename}")
+    
+    # For /icons/* paths, check if the file exists
+    if filename.startswith("icons/") and os.path.exists(f"src/public/{filename}"):
+        return FileResponse(f"src/public/{filename}")
+    
+    # For all other routes, serve the index.html for SPA routing
     return FileResponse("src/public/index.html")
 
 ### Run Server
