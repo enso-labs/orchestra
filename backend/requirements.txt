@@ -1,7 +1,7 @@
 python-dotenv
 anthropic
 cryptography
-langgraph
+langgraph==0.2.76
 langgraph-checkpoint-postgres
 langchain_anthropic
 langchain_openai
