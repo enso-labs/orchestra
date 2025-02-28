@@ -52,6 +52,24 @@ export default function useChatHook() {
     const [isToolCallInProgress, setIsToolCallInProgress] = useState(false);
     const [currentToolCall, setCurrentToolCall] = useState<any>(null);
     const [preset, setPreset] = useState<any>(initChatState.preset);
+
+    const currentModel = models.find((model: Model) => model.id === payload.model);
+    const enabledTools = availableTools
+        .filter((tool: any) => payload.tools.includes(tool.id));
+
+
+    const constructSystemPrompt = (systemPrompt: string) => {
+        return `${systemPrompt}
+---
+Current Date and Time: ${new Date().toLocaleString()}
+Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+Language: ${navigator.language}
+User Agent: ${navigator.userAgent}
+Platform: ${navigator.platform}
+Screen Resolution: ${window.screen.width}x${window.screen.height}
+Color Depth: ${window.screen.colorDepth}-bit
+`;
+    }
     
     const handleQuery = () => {
         queryThread(payload);
@@ -63,6 +81,7 @@ export default function useChatHook() {
         setMessages(updatedMessages);
         setResponse("");
         responseRef.current = "";
+        payload.system = constructSystemPrompt(payload.system);
         const source = new SSE(`${VITE_API_URL}/llm${payload.threadId ? `/${payload.threadId}` : ''}`,
             {
                 headers: {
@@ -185,7 +204,7 @@ export default function useChatHook() {
             
             // Set default model if none selected
             if (!currentModel && response.models.length > 0) {
-                setSearchParams({ model: response.models[0].id });
+                setSearchParams({ model: response.models.find((model: Model) => model.id === "openai-gpt-4o-mini")?.id });
             }
         } catch (error) {
             console.error('Failed to fetch models:', error);
@@ -307,7 +326,9 @@ export default function useChatHook() {
         useSettingsEffect,
         fetchSettings,
         preset,
-        setPreset
+        setPreset,
+        currentModel,
+        enabledTools
     };
 }
 

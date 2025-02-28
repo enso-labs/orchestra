@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/153-clear-chat-inputs (2025-02-27)
   - feature/61-make-pwa (2025-02-25)
   - feature/151-add-settings-table (2025-02-23)
   - feature/148-add-storage-endpoints (2025-02-18)
