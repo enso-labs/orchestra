@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ArrowUp, Plus } from "lucide-react"
-import { ToolSelector } from "../selectors/ToolSelector"
+import { ToolSelector} from "../selectors/ToolSelector"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
@@ -81,7 +81,7 @@ export default function ChatInput() {
       />
       <div className="flex justify-between items-center bg-background border border-input rounded-b-2xl border-t-0">
         <div className="flex gap-1 mb-1">
-          {/* <MainToolTip content="Upload Files">
+          <MainToolTip content="Upload Files">
             <Button
               size="icon"
               variant="outline"
@@ -102,7 +102,7 @@ export default function ChatInput() {
               />
               <Plus className="h-4 w-4" />
             </Button>
-          </MainToolTip> */}
+          </MainToolTip>
           
           {isMobile() && (
             <MainToolTip content="Take Photo">
@@ -110,7 +110,7 @@ export default function ChatInput() {
                 <Button
                   size="icon"
                   variant="outline"
-                  className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+                  className="rounded-full bg-foreground/10 text-foreground-500 cursor-pointer"
                   onClick={triggerCameraInput}
                 >
                   <FaCamera className="h-4 w-4" />
