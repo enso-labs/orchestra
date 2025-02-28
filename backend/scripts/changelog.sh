@@ -37,9 +37,9 @@ if grep -q " $branch " $changelog_path; then
     echo "Branch $branch has already been added to the Changelog."
 else
     # Determine the appropriate header based on the branch prefix
-    if [[ $branch == feature/* ]]; then
+    if [[ $branch == feature/* ]] || [[ $branch == feat/* ]]; then
         add_branch_entry "Changed" "$branch" "$date"
-    elif [[ $branch == bugfix/* ]]; then
+    elif [[ $branch == bugfix/* ]] || [[ $branch == bug/* ]]; then
         add_branch_entry "Fixed" "$branch" "$date"
     else
         echo "Branch $branch does not match any known prefix (feature/ or bugfix/)."
