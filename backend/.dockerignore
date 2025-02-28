@@ -9,5 +9,4 @@
 **.cursorignore
 **/vscode
 **Dockerfile
-**/requirements.txt
 **/requirements-dev.txt
