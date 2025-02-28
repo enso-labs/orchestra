@@ -99,7 +99,7 @@ if os.path.exists("src/public/icons"):
 @app.get("/{filename:path}")
 async def serve_static_or_index(filename: str, request: Request):
     # List of static files to check for at the root
-    static_files = ["manifest.json", "sw.js", "favicon.ico", "robots.txt"]
+    static_files = ["manifest.json", "sw.js", "favicon.ico", "robots.txt", "manifest.webmanifest"]
     
     # If the request is for a known static file and it exists, serve it
     if filename in static_files and os.path.exists(f"src/public/{filename}"):
