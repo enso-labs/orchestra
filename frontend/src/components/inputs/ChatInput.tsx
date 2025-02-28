@@ -6,10 +6,16 @@ import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
 import useImageHook from "@/hooks/useImageHook"
 import { useChatContext } from "@/context/ChatContext"
-import { useCallback } from "react"
+import { useCallback, useRef } from "react"
 import { PresetPopover } from "../popovers/PresetPopover"
+import useAppHook from "@/hooks/useAppHook"
+import { FaCamera } from "react-icons/fa"
+
 export default function ChatInput() {
   const { payload, handleQuery, setPayload } = useChatContext();
+  const { isMobile } = useAppHook();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const {
     images,
     previewImage,
@@ -33,6 +39,18 @@ export default function ChatInput() {
 			images: []
 		}))
 	}, [handleQuery, setPayload])
+
+  const triggerFileInput = (e: React.MouseEvent) => {
+    e.preventDefault();
+    fileInputRef.current?.click();
+  };
+  
+  const triggerCameraInput = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click();
+    }
+  };
 
   return (
     <div className="flex flex-col">
@@ -63,15 +81,17 @@ export default function ChatInput() {
       />
       <div className="flex justify-between items-center bg-background border border-input rounded-b-2xl border-t-0">
         <div className="flex gap-1 mb-1">
-          <MainToolTip content="Upload Files">
+          {/* <MainToolTip content="Upload Files">
             <Button
               size="icon"
               variant="outline"
               className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+              onClick={triggerFileInput}
             >
               <input
                 type="file"
                 className="hidden"
+                ref={fileInputRef}
                 multiple
                 accept="image/*"
                 onChange={(e) => {
@@ -82,10 +102,36 @@ export default function ChatInput() {
               />
               <Plus className="h-4 w-4" />
             </Button>
-          </MainToolTip>
+          </MainToolTip> */}
+          
+          {isMobile() && (
+            <MainToolTip content="Take Photo">
+              <>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+                  onClick={triggerCameraInput}
+                >
+                  <FaCamera className="h-4 w-4" />
+                </Button>
+                <input
+                    type="file"
+                    className="hidden"
+                    ref={cameraInputRef}
+                    accept="image/*"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || [])
+                      addImages(files)
+                      e.target.value = "" // Reset input
+                    }}
+                  />
+              </>
+            </MainToolTip>
+          )}
+          
           <PresetPopover />
           <ToolSelector />
-          
         </div>
         <MainToolTip content="Send Message" delayDuration={500}>
           <Button
