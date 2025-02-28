@@ -30,6 +30,7 @@ export default function Chat() {
     setIsToolCallInProgress,
     currentToolCall,
     setCurrentToolCall,
+    currentModel
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -95,7 +96,7 @@ export default function Chat() {
           />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
-              {!messages.find((message: ChatMessage) => message.type === "system") && (
+              {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
                 <SystemMessageCard content={payload.system} />
               )}
               {messages?.map((message: ChatMessage, index: number) => {

@@ -75,10 +75,10 @@ MODEL_CONFIG = [
         "label": "o3 Mini",
         "provider": "openai",
         "metadata": {
-            "system_message": False,
+            "system_message": True,
             "reasoning": True,
-            "tool_calling": False,
-            "multimodal": False,
+            "tool_calling": True,
+            "multimodal": True,
             "embedding": False,
         }
     },
