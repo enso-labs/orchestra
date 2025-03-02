@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import NoAuthLayout from '../layouts/NoAuthLayout';
 import { TOKEN_NAME, VITE_API_URL } from '../config';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
+import HelpfulIcons from '@/components/icons/HelpfulIcons';
+import { SiGoogle, SiGithub, } from 'react-icons/si';
+import { FaMicrosoft } from 'react-icons/fa';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -44,15 +47,32 @@ export default function Login() {
         }
     };
 
+    const handleOAuthLogin = async (provider: string) => {
+        try {
+            const res = await fetch(`${VITE_API_URL}/auth/${provider}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await res.json();
+            window.location.href = data.url;
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error: ' + error);
+        }
+    };
+
     return (
         <NoAuthLayout>
-            <main className="mt-[25vh] flex flex-col items-center justify-center bg-background">
+            <main className="mt-[10vh] flex flex-col items-center justify-center bg-background">
                 <div className="absolute top-4 right-4">
                     <ColorModeButton />
                 </div>
                 
                 <div className="w-full max-w-md space-y-8 p-8 bg-card rounded-lg shadow-md border border-border">
                     <div className="text-center">
+                        <img src="https://promptengineersai-dev.netlify.app/icons/512.png" alt="Logo" className="w-10 h-10 mx-auto" />
                         <h1 className="text-3xl font-bold text-foreground">Login</h1>
                         <p className="mt-2 text-sm text-muted-foreground">Sign in to your account</p>
                     </div>
@@ -69,30 +89,45 @@ export default function Login() {
                                 <label htmlFor="email" className="block text-sm font-medium text-foreground">
                                     Email
                                 </label>
-                                <input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="mt-1 block w-full px-3 py-2 bg-background border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    placeholder="Enter your email"
-                                    required
-                                />
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="mt-1 block w-full pl-10 px-3 py-2 bg-background border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Enter your email"
+                                        required
+                                    />
+                                </div>
                             </div>
 
                             <div>
                                 <label htmlFor="password" className="block text-sm font-medium text-foreground">
                                     Password
                                 </label>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="mt-1 block w-full px-3 py-2 bg-background border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    placeholder="Enter your password"
-                                    required
-                                />
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted-foreground" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="mt-1 block w-full pl-10 px-3 py-2 bg-background border border-input rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Enter your password"
+                                        required
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -103,6 +138,47 @@ export default function Login() {
                         >
                             {isLoading ? 'Signing in...' : 'Sign in'}
                         </button>
+
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-border"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-2 bg-card text-muted-foreground">
+                                    Or continue with
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                type="button"
+                                // onClick={() => handleOAuthLogin('google')
+                                onClick={() => alert('Coming soon!')}
+                                className="flex items-center justify-center w-full p-2 border border-input rounded-md hover:bg-accent transition-colors"
+                                aria-label="Sign in with Google"
+                            >
+                                <SiGoogle className="h-5 w-5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleOAuthLogin('github')}
+                                className="flex items-center justify-center w-full p-2 border border-input rounded-md hover:bg-accent transition-colors"
+                                aria-label="Sign in with GitHub"
+                            >
+                                <SiGithub className="h-5 w-5" />
+                            </button>
+                            <button
+                                type="button"
+                                disabled={true}
+                                // onClick={() => handleOAuthLogin('azure')}
+                                onClick={() => alert('Coming soon!')}
+                                className="flex items-center justify-center w-full p-2 border border-input rounded-md hover:bg-accent transition-colors"
+                                aria-label="Sign in with Microsoft"
+                            >
+                                <FaMicrosoft className="h-5 w-5" />
+                            </button>
+                        </div>
 
                         <div className="text-center">
                             <span className="text-sm text-muted-foreground">
@@ -117,14 +193,7 @@ export default function Login() {
                         </div>
                     </form>
                 </div>
-                <div className="text-center flex justify-center gap-2 my-3">
-                    <a href="/docs/" target="_blank" className="hover:opacity-80 transition-opacity">
-                        <img src="https://img.shields.io/badge/View%20Documentation-Docs-blue" alt="Documentation" />
-                    </a>
-                    <a href="https://github.com/ryaneggz/langgraph-template" target="_blank" className="hover:opacity-80 transition-opacity">
-                        <img src="https://img.shields.io/badge/Join%20our%20community-Github-black" alt="Github" />
-                    </a>
-                </div>
+                <HelpfulIcons />
             </main>
         </NoAuthLayout>
     );
