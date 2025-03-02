@@ -14,6 +14,11 @@ HOST = str(os.getenv("HOST", "0.0.0.0"))
 PORT = int(os.getenv("PORT", 8000))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
 
+# OAuth2
+OAUTH_GITHUB_CLIENT_ID = os.getenv("OAUTH_GITHUB_CLIENT_ID")
+OAUTH_GITHUB_CLIENT_SECRET = os.getenv("OAUTH_GITHUB_CLIENT_SECRET")
+OAUTH_GITHUB_REDIRECT_URI = os.getenv("OAUTH_GITHUB_REDIRECT_URI")
+
 # JWT Settings
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "this-is-a-secret-key")  # Change this in production!
 JWT_ALGORITHM = "HS256"

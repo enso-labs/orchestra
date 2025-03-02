@@ -1,3 +1,4 @@
+authlib
 python-dotenv
 anthropic
 cryptography

@@ -14,6 +14,7 @@ import Settings from '../pages/Settings';
 import Chat from '../pages/Chat';
 import Login from '../pages/Login';
 import Register from '@/pages/Register';
+import OAuthCallback from '@/pages/OAuthCallback';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -36,6 +37,7 @@ const AppRoutes: React.FC = () => {
               <Register />
             </PublicRoute>
           } />
+          <Route path="auth/:provider/callback" element={<OAuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
