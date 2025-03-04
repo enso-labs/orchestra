@@ -20,6 +20,6 @@ export interface ModelsResponse {
 }
 
 export const listModels = async () => {
-  const response = await apiClient.get<ModelsResponse>('/models');
+  const response = await apiClient.get<ModelsResponse>('/v0/models');
   return response.data;
 }; 

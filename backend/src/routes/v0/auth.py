@@ -59,7 +59,7 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 @router.post(
-    "/auth/register",
+    "/register",
     include_in_schema=False,
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
@@ -134,7 +134,7 @@ def register(
     )
 
 @router.post(
-    "/auth/login",
+    "/login",
     response_model=TokenResponse,
     responses={
         status.HTTP_200_OK: {
@@ -196,14 +196,14 @@ def login(
         user=user_response
     )
     
-@router.get("/auth/user", tags=['Auth'])
+@router.get("/user", tags=['Auth'])
 async def read_user_details(user: User = Depends(verify_credentials)):
     return {"user": user.model_dump()}
     
 ##################################################################################################################
 ## OAuth2
 ##################################################################################################################
-@router.get('/auth/{provider}', tags=["Auth"], include_in_schema=False)
+@router.get('/{provider}', tags=["Auth"], include_in_schema=False)
 async def auth(provider: str = Literal["github", "google", "azure"]):
 	try:
 		oauth_service = OAuthService(provider)
@@ -211,7 +211,7 @@ async def auth(provider: str = Literal["github", "google", "azure"]):
 	except Exception as e:
 		return UJSONResponse(detail=str(e), status_code=status.HTTP_400_BAD_REQUEST)
 
-@router.get("/auth/{provider}/callback", tags=['Auth'], include_in_schema=False)
+@router.get("/{provider}/callback", tags=['Auth'], include_in_schema=False)
 async def auth_callback(provider: str, code: str, db: Session = Depends(get_db)):
 	try:
 		# Get the user info from the OAuth provider

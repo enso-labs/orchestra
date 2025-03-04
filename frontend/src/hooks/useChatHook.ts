@@ -81,7 +81,7 @@ Language: ${navigator.language}
             ...payload,
             system: constructSystemPrompt(payload.system)
         }
-        const source = new SSE(`${VITE_API_URL}/llm${payload.threadId ? `/${payload.threadId}` : ''}`,
+        const source = new SSE(`${VITE_API_URL}/v0/llm${payload.threadId ? `/${payload.threadId}` : ''}`,
             {
                 headers: {
                     'Content-Type': 'application/json', 
@@ -171,7 +171,7 @@ Language: ${navigator.language}
 
     const getHistory = async (page: number = 1, perPage: number = 20) => {
         try {
-            const res = await apiClient.get(`/threads?page=${page}&per_page=${perPage}`, {
+            const res = await apiClient.get(`/v0/threads?page=${page}&per_page=${perPage}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json', 
@@ -189,7 +189,7 @@ Language: ${navigator.language}
     // Add this function after fetchTools
     const fetchSettings = async () => {
         try {
-            const response = await apiClient.get('/settings');
+            const response = await apiClient.get('/v0/settings');
             setSettings(response.data.settings || []);
         } catch (error) {
             console.error('Failed to fetch settings:', error);
@@ -275,7 +275,7 @@ Language: ${navigator.language}
 
     const deleteThread = async (threadId: string) => {
         try {
-            await apiClient.delete(`/threads/${threadId}`, {
+            await apiClient.delete(`/v0/threads/${threadId}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',

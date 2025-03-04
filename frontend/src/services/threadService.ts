@@ -1,6 +1,6 @@
 import apiClient from '@/lib/utils/apiClient';
 
 export const findThread = async (threadId: string) => {
-  const response = await apiClient.get(`/thread/${threadId}`);
+  const response = await apiClient.get(`/v0/thread/${threadId}`);
   return response.data;
 };
