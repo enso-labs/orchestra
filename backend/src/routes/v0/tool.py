@@ -1,6 +1,7 @@
 from fastapi import status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from src.constants import APP_LOG_LEVEL
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import get_db, verify_credentials
@@ -134,7 +135,7 @@ async def test_tool(
     """
     try:
         # Find the tool by id
-        from src.tools import tools
+        from src.tools import tools, dynamic_tools
         selected_tool = next((tool for tool in tools if tool.name == tool_id), None)
         
         if not selected_tool:
@@ -143,24 +144,12 @@ async def test_tool(
                 status_code=status.HTTP_400_BAD_REQUEST
             )
         
-        # Update tool metadata if provided
-        if request.metadata:
-            # Save original metadata to restore later
-            original_metadata = selected_tool.metadata
-            selected_tool.metadata = request.metadata
-            
-            # Create user_repo for the tool if needed (for tools like shell_exec)
-            if 'user_repo' not in selected_tool.metadata and user:
-                user_repo = UserRepo(db)
-                selected_tool.metadata = selected_tool.metadata or {}
-                selected_tool.metadata['user_repo'] = user_repo
+        user_repo = UserRepo(db, user.id)
+        # Use dynamic_tools to properly set metadata
+        tool_with_metadata = dynamic_tools([tool_id], {"user_repo": user_repo})[0]
         
         # Execute the tool with the provided arguments
-        output = selected_tool.invoke(input=request.input)
-        
-        # Restore original metadata if needed
-        if request.metadata and 'original_metadata' in locals():
-            selected_tool.metadata = original_metadata
+        output = tool_with_metadata.invoke(input=request.args)
             
         return JSONResponse(
             content={"output": output, "success": True},
@@ -174,7 +163,7 @@ async def test_tool(
         return JSONResponse(
             content={
                 "error": error_message,
-                "traceback": error_traceback if "DEBUG" in os.environ.get("APP_LOG_LEVEL", "") else None,
+                "traceback": error_traceback if "DEBUG" in APP_LOG_LEVEL else None,
                 "success": False
             },
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
