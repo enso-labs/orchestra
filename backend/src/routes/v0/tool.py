@@ -59,3 +59,123 @@ def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session =
         content={"models": get_available_models()},
         status_code=status.HTTP_200_OK
     )
+
+################################################################################
+### Test Tool
+################################################################################
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+import traceback
+
+class ToolRequest(BaseModel):
+    tool_id: str
+    input: Dict[str, Any]
+    metadata: Optional[Dict[str, Any]] = None
+
+################################################################################
+### Test Tool
+################################################################################
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+import traceback
+import os
+
+class ToolRequest(BaseModel):
+    args: Dict[str, Any]
+    metadata: Optional[Dict[str, Any]] = None
+
+@router.post(
+    "/tools/{tool_id}/test",
+    tags=[TAG],
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Tool execution result.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "result": "Tool execution result",
+                        "success": True
+                    }
+                }
+            }
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Invalid tool or arguments.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Tool not found or invalid arguments",
+                        "success": False
+                    }
+                }
+            }
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "description": "Error executing tool.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Internal server error",
+                        "success": False
+                    }
+                }
+            }
+        }
+    }
+)
+async def test_tool(
+    tool_id: str,
+    request: ToolRequest, 
+    user: ProtectedUser = Depends(verify_credentials),
+    db: Session = Depends(get_db)
+):
+    """
+    Test a tool by executing it with the provided arguments.
+    """
+    try:
+        # Find the tool by id
+        from src.tools import tools
+        selected_tool = next((tool for tool in tools if tool.name == tool_id), None)
+        
+        if not selected_tool:
+            return JSONResponse(
+                content={"error": f"Tool with id '{tool_id}' not found", "success": False},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update tool metadata if provided
+        if request.metadata:
+            # Save original metadata to restore later
+            original_metadata = selected_tool.metadata
+            selected_tool.metadata = request.metadata
+            
+            # Create user_repo for the tool if needed (for tools like shell_exec)
+            if 'user_repo' not in selected_tool.metadata and user:
+                user_repo = UserRepo(db)
+                selected_tool.metadata = selected_tool.metadata or {}
+                selected_tool.metadata['user_repo'] = user_repo
+        
+        # Execute the tool with the provided arguments
+        output = selected_tool.invoke(input=request.input)
+        
+        # Restore original metadata if needed
+        if request.metadata and 'original_metadata' in locals():
+            selected_tool.metadata = original_metadata
+            
+        return JSONResponse(
+            content={"output": output, "success": True},
+            status_code=status.HTTP_200_OK
+        )
+        
+    except Exception as e:
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        
+        return JSONResponse(
+            content={
+                "error": error_message,
+                "traceback": error_traceback if "DEBUG" in os.environ.get("APP_LOG_LEVEL", "") else None,
+                "success": False
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
