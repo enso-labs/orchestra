@@ -64,10 +64,6 @@ export default function useChatHook() {
 Current Date and Time: ${new Date().toLocaleString()}
 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
 Language: ${navigator.language}
-User Agent: ${navigator.userAgent}
-Platform: ${navigator.platform}
-Screen Resolution: ${window.screen.width}x${window.screen.height}
-Color Depth: ${window.screen.colorDepth}-bit
 `;
     }
     
@@ -81,7 +77,10 @@ Color Depth: ${window.screen.colorDepth}-bit
         setMessages(updatedMessages);
         setResponse("");
         responseRef.current = "";
-        payload.system = constructSystemPrompt(payload.system);
+        const responseData = {
+            ...payload,
+            system: constructSystemPrompt(payload.system)
+        }
         const source = new SSE(`${VITE_API_URL}/llm${payload.threadId ? `/${payload.threadId}` : ''}`,
             {
                 headers: {
@@ -89,7 +88,7 @@ Color Depth: ${window.screen.colorDepth}-bit
                     'Accept': 'text/event-stream',
                     'Authorization': `Bearer ${token}`
                 },
-                payload: JSON.stringify(payload),
+                payload: JSON.stringify(responseData),
                 method: 'POST'
             }
         );
