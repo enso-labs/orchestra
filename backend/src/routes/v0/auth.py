@@ -1,11 +1,17 @@
-from typing import Annotated
-from fastapi import Body, HTTPException, status, Depends, APIRouter
+from typing import Annotated, Literal
+from fastapi import Body, HTTPException, Request, status, Depends, APIRouter
+from fastapi.responses import JSONResponse, UJSONResponse
+from sqlalchemy import text
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
-from src.utils.auth import get_db
+from src.services.oauth import OAuthService
+from src.utils.auth import get_db, verify_credentials
+from src.utils.logger import logger
 from src.models import User
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
 
@@ -189,3 +195,73 @@ def login(
         token_type="bearer",
         user=user_response
     )
+    
+@router.get("/auth/user", tags=['Auth'])
+async def read_user_details(user: User = Depends(verify_credentials)):
+    return {"user": user.model_dump()}
+    
+##################################################################################################################
+## OAuth2
+##################################################################################################################
+@router.get('/auth/{provider}', tags=["Auth"], include_in_schema=False)
+async def auth(provider: str = Literal["github", "google", "azure"]):
+	try:
+		oauth_service = OAuthService(provider)
+		return await oauth_service.oauth.create_authorization_url(redirect_uri=oauth_service.oauth.server_metadata['redirect_uri'])
+	except Exception as e:
+		return UJSONResponse(detail=str(e), status_code=status.HTTP_400_BAD_REQUEST)
+
+@router.get("/auth/{provider}/callback", tags=['Auth'], include_in_schema=False)
+async def auth_callback(provider: str, code: str, db: Session = Depends(get_db)):
+	try:
+		# Get the user info from the OAuth provider
+		oauth_service = OAuthService(provider)
+		user_info = oauth_service.login(code)
+  
+		# Check if the user_info has a status code
+		status_code = user_info.get('status') or None
+		if status_code and int(status_code) != 200:
+			raise HTTPException(status_code=int(status_code), detail=user_info.get('message'))
+  
+		# Check if the user already exists
+		existing_user = db.execute(select(User).where((User.email == user_info.get('email')) | (User.username == user_info.get('username'))))
+		existing_user = existing_user.scalars().first()
+		if existing_user:
+			access_token = create_access_token(existing_user)
+			return UJSONResponse(
+				content={"access_token": access_token, "token_type": "bearer"}, 
+    			status_code=status.HTTP_200_OK
+       		)
+			
+
+		# Create a new user instance
+		new_user = User(
+			full_name=user_info.get('name'), 
+			email=user_info.get('email'),
+			username=user_info.get('username'),
+			oauth_provider=provider,
+			access=1
+		)
+		# Add the new user to the database
+		db.add(new_user)
+		await db.commit()
+		await db.refresh(new_user)
+		
+		access_token = create_access_token({
+			"sub": str(new_user.id), 
+			"email": new_user.email,
+			"username": new_user.username
+		})
+		return UJSONResponse(
+			content={"access_token": access_token, "token_type": "bearer"}, 
+			status_code=status.HTTP_201_CREATED
+		)
+	except HTTPException as err:
+			logger.error(err.detail)
+			raise
+	except ValueError as e:
+		return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+	except Exception as e:
+		logger.exception(str(e))
+		return UJSONResponse(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
