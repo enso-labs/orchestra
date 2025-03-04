@@ -62,7 +62,7 @@ export default function Settings() {
 
     const fetchTokens = async () => {
         try {
-            const response = await apiClient.get('/tokens');
+            const response = await apiClient.get('/v0/tokens');
             setTokens(response.data.tokens || []);
         } catch (error) {
             console.error('Failed to fetch tokens');
@@ -75,7 +75,7 @@ export default function Settings() {
 
         setIsLoading(true);
         try {
-            await apiClient.post('/tokens', { key, value: tokenEdit.value });
+            await apiClient.post('/v0/tokens', { key, value: tokenEdit.value });
             console.log('Token updated successfully');
             // Clear the editing state for this token
             setEditingTokens(prev => {
@@ -93,7 +93,7 @@ export default function Settings() {
 
     const handleDeleteToken = async (key: string) => {
         try {
-            await apiClient.delete(`/tokens/${key}`);
+            await apiClient.delete(`/v0/tokens/${key}`);
             console.log('Token deleted successfully');
             fetchTokens();
         } catch (error) {
