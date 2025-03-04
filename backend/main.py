@@ -4,15 +4,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings
 from src.constants import (
     HOST,
     PORT,
     LOG_LEVEL,
     APP_VERSION
 )
+from src.routes import auth_app, app_v0, app_v1
 from src.utils.migrations import run_migrations
-
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -29,8 +28,9 @@ async def lifespan(app: FastAPI):
     # Shutdown
     pass
 
+# Create the main app with no routes
 app = FastAPI(
-    title="Armada by Prompt Engineers AI 🤖",
+    title="Enso - Be Preset",
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. " 
@@ -43,10 +43,20 @@ app = FastAPI(
         "email": "ryaneggleston@promptengineers.ai"
     },
     debug=True,
-    docs_url="/api",
+    docs_url=None,  # Disable the main app docs
+    redoc_url=None,  # Disable the main app redoc
     lifespan=lifespan
 )
 
+# Mount the apps to the main app
+app.mount("/api/auth", auth_app)
+app.mount("/api/v0", app_v0)
+app.mount("/api/v1", app_v1)
+
+# Create a redirector for the main docs page
+@app.get("/api", include_in_schema=False)
+async def api_docs_redirect():
+    return FileResponse("src/public/api-selector.html")
 
 # Add CORS middleware
 app.add_middleware(
@@ -57,20 +67,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-PREFIX = "/api"
-app.include_router(auth, prefix=PREFIX)
-app.include_router(info, prefix=PREFIX)
-app.include_router(llm, prefix=PREFIX)
-app.include_router(thread, prefix=PREFIX)
-app.include_router(tool, prefix=PREFIX)
-app.include_router(retrieve, prefix=PREFIX)
-app.include_router(source, prefix=PREFIX)
-app.include_router(token, prefix=PREFIX)
-app.include_router(storage, prefix=PREFIX)
-app.include_router(settings, prefix=PREFIX)
-
-# Mount specific directories only if they exist
+# Mount static directories
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
 app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
 
@@ -79,7 +76,7 @@ if os.path.exists("src/public/icons"):
     app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
 
 # Function to serve static files with fallback
-@app.get("/{filename:path}")
+@app.get("/{filename:path}", include_in_schema=False)
 async def serve_static_or_index(filename: str, request: Request):
     # List of static files to check for at the root
     static_files = ["manifest.json", "sw.js", "favicon.ico", "robots.txt", "manifest.webmanifest"]
