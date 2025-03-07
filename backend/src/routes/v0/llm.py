@@ -2,11 +2,12 @@ import uuid
 from typing import Annotated
 
 from fastapi import Body, HTTPException, status, Depends, APIRouter, Request
+from fastapi.responses import JSONResponse
 from loguru import logger
 from psycopg_pool import ConnectionPool
 from sqlalchemy.orm import Session
 from src.repos.user_repo import UserRepo
-from src.models import User
+from src.models import ProtectedUser, User
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 
 from src.entities import Answer, NewThread, ExistingThread
@@ -15,6 +16,32 @@ from src.utils.auth import get_db, verify_credentials
 
 TAG = "Agent"
 router = APIRouter(tags=[TAG])
+
+################################################################################
+### List Models
+################################################################################
+from src.constants.llm import get_available_models
+@router.get(
+    "/models", 
+    # tags=['Agent'],
+    responses={
+        status.HTTP_200_OK: {
+            "description": "All models.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "models": []
+                    }
+                }
+            }
+        }
+    }
+)
+def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session = Depends(get_db)):
+    return JSONResponse(
+        content={"models": get_available_models()},
+        status_code=status.HTTP_200_OK
+    )
 
 ################################################################################
 ### Create New Thread
