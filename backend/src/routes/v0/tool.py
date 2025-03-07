@@ -6,7 +6,7 @@ from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import get_db, verify_credentials
 
-TAG = "Agent"
+TAG = "Tools"
 router = APIRouter(tags=[TAG])
 
 ################################################################################
@@ -34,32 +34,6 @@ def list_tools(username: str = Depends(verify_credentials)):
         content=tools_response,
         status_code=status.HTTP_200_OK
     )
-    
-################################################################################
-### List Models
-################################################################################
-from src.constants.llm import get_available_models
-@router.get(
-    "/models", 
-    tags=[TAG],
-    responses={
-        status.HTTP_200_OK: {
-            "description": "All models.",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "models": []
-                    }
-                }
-            }
-        }
-    }
-)
-def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session = Depends(get_db)):
-    return JSONResponse(
-        content={"models": get_available_models()},
-        status_code=status.HTTP_200_OK
-    )
 
 ################################################################################
 ### Test Tool
@@ -83,10 +57,10 @@ import os
 
 class ToolRequest(BaseModel):
     args: Dict[str, Any]
-    metadata: Optional[Dict[str, Any]] = None
+    # metadata: Optional[Dict[str, Any]] = None
 
 @router.post(
-    "/tools/{tool_id}/test",
+    "/tools/{tool_id}/invoke",
     tags=[TAG],
     responses={
         status.HTTP_200_OK: {
@@ -124,14 +98,14 @@ class ToolRequest(BaseModel):
         }
     }
 )
-async def test_tool(
+async def invoke_tool(
     tool_id: str,
     request: ToolRequest, 
     user: ProtectedUser = Depends(verify_credentials),
     db: Session = Depends(get_db)
 ):
     """
-    Test a tool by executing it with the provided arguments.
+    Invoke a tool by executing it with the provided arguments.
     """
     try:
         # Find the tool by id
