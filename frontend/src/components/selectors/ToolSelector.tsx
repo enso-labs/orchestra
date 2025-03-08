@@ -6,7 +6,7 @@ import {
   Search, BookOpen, Globe, Infinity, Leaf, Play
 } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 // Map of tool icons - in a real implementation, you might want to map specific tool IDs to specific icons
 const TOOL_ICONS: Record<string, any> = {
