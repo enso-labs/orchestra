@@ -33,36 +33,47 @@ export default function SearchEngineTool({ selectedToolMessage }: { selectedTool
 					<div>
 						<span className="font-semibold">Input:</span>
 						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							<MarkdownCard content={selectedToolMessage.content} />
+							{selectedToolMessage.content ? <MarkdownCard content={selectedToolMessage.content} /> : <p>No input data available</p>}
 						</div>
 					</div>
 					<div>
 						<span className="font-semibold">Output:</span>
 						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							<div className="space-y-4">
-								{JSON.parse(selectedToolMessage.output).map((result: any, index: number) => (
-									<div key={index} className="border-b border-border pb-4 last:border-0 last:pb-0">
-										<a 
-											href={result.link} 
-											target="_blank" 
-											rel="noopener noreferrer"
-											className="text-primary hover:underline font-medium"
-										>
-											{result.title}
-										</a>
-										<p className="text-sm text-muted-foreground mt-1">{result.snippet}</p>
-										<div className="flex gap-2 mt-2">
-											{result.engines.map((engine: string, engineIndex: number) => (
-												<span 
-													key={engineIndex}
-													className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
-												>
-													{engine}
-												</span>
-											))}
-										</div>
-									</div>
-								))}
+								{selectedToolMessage.output && typeof selectedToolMessage.output === 'string' ? (
+									(() => {
+										try {
+											const parsedOutput = JSON.parse(selectedToolMessage.output);
+											return parsedOutput.map((result: any, index: number) => (
+												<div key={index} className="border-b border-border pb-4 last:border-0 last:pb-0">
+													<a 
+														href={result.link} 
+														target="_blank" 
+														rel="noopener noreferrer"
+														className="text-primary hover:underline font-medium"
+													>
+														{result.title}
+													</a>
+													<p className="text-sm text-muted-foreground mt-1">{result.snippet}</p>
+													<div className="flex gap-2 mt-2">
+														{result.engines.map((engine: string, engineIndex: number) => (
+															<span 
+																key={engineIndex}
+																className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+															>
+																{engine}
+															</span>
+														))}
+													</div>
+												</div>
+											));
+										} catch (e) {
+											return <p>Invalid output format</p>;
+										}
+									})()
+								) : (
+									<p>No output data available</p>
+								)}
 							</div>
 						</div>
 					</div>

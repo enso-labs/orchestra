@@ -20,11 +20,11 @@ export function ChatDrawer({ isOpen, onClose, children }: ChatDrawerProps) {
       )}
       
       <div className={`
-        fixed right-0 top-0 z-40 h-full w-[320px] border-l border-border
+        fixed right-0 top-0 h-full w-[320px] border-l border-border
         transform transition-all duration-200 ease-in-out
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         bg-background/80 backdrop-blur-sm
-      `}>
+      `} style={{ zIndex: 60 }}>
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border p-4">
