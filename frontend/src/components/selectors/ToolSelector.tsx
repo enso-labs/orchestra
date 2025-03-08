@@ -401,8 +401,8 @@ export function ToolSelector() {
             className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
             aria-label="Select tools for the AI to use"
           >
-            <Wrench className="h-4 w-4 mr-1" /> 
-            {enabledCount > 0 ? `Tools (${enabledCount})` : 'Tools'}
+            <Wrench className="h-4 w-4" /> 
+            {enabledCount > 0 ? ` (${enabledCount})` : null}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-96 p-4 mr-2 rounded-lg" align="start">
