@@ -8,7 +8,7 @@ import {
   Search, BookOpen, Globe, Infinity, Leaf, Play
 } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import apiClient from "@/lib/utils/apiClient";
 
 // Map of tool icons - in a real implementation, you might want to map specific tool IDs to specific icons
@@ -62,14 +62,6 @@ const animationStyles = `
   }
 `;
 
-interface TestResult {
-  output?: any;
-  error?: string;
-  traceback?: string;
-  success: boolean;
-  loading: boolean;
-}
-
 export function ToolSelector() {
   const { 
     availableTools, 
@@ -78,7 +70,6 @@ export function ToolSelector() {
     useToolsEffect,
     setIsToolCallInProgress,
     setCurrentToolCall,
-    setToolCallMessage
   } = useChatContext();
   
   const [toolFilter, setToolFilter] = useState("");
