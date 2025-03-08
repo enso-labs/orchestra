@@ -65,7 +65,7 @@ export default function ChatInput() {
       )}
       <textarea
         className="w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input rounded-t-2xl focus:outline-none border-b-0"
-        placeholder="Message PromptGPT..."
+        placeholder="Message EnsoChat..."
         rows={1}
         value={payload.query}
         onChange={handleTextareaResize}
