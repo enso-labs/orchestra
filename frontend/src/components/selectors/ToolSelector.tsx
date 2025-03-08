@@ -1,12 +1,15 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Wrench, X, Compass, Brain, Feather, Cloud, Database, 
   Search, BookOpen, Globe, Infinity, Leaf, Play
 } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import apiClient from "@/lib/utils/apiClient";
 
 // Map of tool icons - in a real implementation, you might want to map specific tool IDs to specific icons
 const TOOL_ICONS: Record<string, any> = {
@@ -59,11 +62,30 @@ const animationStyles = `
   }
 `;
 
+interface TestResult {
+  output?: any;
+  error?: string;
+  traceback?: string;
+  success: boolean;
+  loading: boolean;
+}
+
 export function ToolSelector() {
-  const { availableTools, payload, setPayload, useToolsEffect } = useChatContext();
+  const { 
+    availableTools, 
+    payload, 
+    setPayload, 
+    useToolsEffect,
+    setIsToolCallInProgress,
+    setCurrentToolCall,
+    setToolCallMessage
+  } = useChatContext();
+  
   const [toolFilter, setToolFilter] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [groupByCategory, setGroupByCategory] = useState(true);
+  const [testingTool, setTestingTool] = useState<any>(null);
+  const [testFormValues, setTestFormValues] = useState<Record<string, any>>({});
 
   const toggleTool = (toolId: string) => {
     setPayload((prev: { tools: any[]; }) => {
@@ -86,9 +108,95 @@ export function ToolSelector() {
     }));
   };
   
-  const testTool = (toolId: string, e: React.MouseEvent) => {
+  const testTool = (tool: any, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent toggling the tool selection
-    alert(`Testing tool: ${toolId}`);
+    
+    // Initialize form values with defaults
+    const initialValues: Record<string, any> = {};
+    if (tool.args) {
+      Object.entries(tool.args).forEach(([key, value]: [string, any]) => {
+        // If the arg has a default value, use it
+        if (value && value.default !== undefined) {
+          initialValues[key] = value.default;
+        } else {
+          // Otherwise initialize with appropriate empty value based on type
+          const type = value?.type || 'string';
+          initialValues[key] = type === 'integer' || type === 'number' ? 0 : 
+                               type === 'boolean' ? false : 
+                               type === 'array' ? [] : '';
+        }
+      });
+    }
+    
+    setTestFormValues(initialValues);
+    setTestingTool(tool);
+  };
+
+  const handleTestFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!testingTool) return;
+    
+    // Create a tool call message for the Action Log
+    const toolCallData = {
+      id: `test-${Date.now()}`,
+      role: 'tool',
+      name: testingTool.id,
+      content: JSON.stringify(testFormValues, null, 2),
+      status: 'running',
+      type: 'tool_call',
+      timestamp: new Date().toISOString()
+    };
+
+    // Update the UI to show that a tool call is in progress
+    setCurrentToolCall(toolCallData);
+    setIsToolCallInProgress(true);
+    
+    // Close the form
+    setTestingTool(null);
+    
+    try {
+      // Call the API with the tool ID and form values
+      const response = await apiClient.post(`/tools/${testingTool.id}/invoke`, {
+        args: testFormValues
+      });
+      
+      // Update the tool call with the result
+      const updatedToolCall = {
+        ...toolCallData,
+        status: 'success',
+        output: typeof response.data.output === 'object' 
+          ? JSON.stringify(response.data.output, null, 2) 
+          : response.data.output
+      };
+      
+      // Send the updated tool call to the context
+      setCurrentToolCall(updatedToolCall);
+      
+    } catch (error: any) {
+      // Update the tool call with the error
+      const updatedToolCall = {
+        ...toolCallData,
+        status: 'error',
+        output: error.response?.data?.error || 'An error occurred',
+        error: error.response?.data?.error,
+        traceback: error.response?.data?.traceback
+      };
+      
+      // Send the updated tool call to the context
+      setCurrentToolCall(updatedToolCall);
+    }
+  };
+
+  const handleInputChange = (key: string, value: any) => {
+    setTestFormValues(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const cancelTesting = () => {
+    setTestingTool(null);
   };
 
   const enabledCount = payload.tools?.length || 0;
@@ -113,6 +221,103 @@ export function ToolSelector() {
     return acc;
   }, {});
 
+  // Render form field based on argument type
+  const renderFormField = (key: string, argDef: any) => {
+    const type = argDef?.type || 'string';
+    const title = argDef?.title || key;
+    const description = argDef?.description || '';
+    
+    switch (type) {
+      case 'string':
+        return (
+          <div key={key} className="mb-3">
+            <Label htmlFor={key} className="text-sm font-medium">
+              {title}
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+            <Input
+              id={key}
+              value={testFormValues[key] || ''}
+              onChange={(e) => handleInputChange(key, e.target.value)}
+              className="mt-1"
+              placeholder={argDef?.placeholder || ''}
+            />
+          </div>
+        );
+        
+      case 'integer':
+      case 'number':
+        return (
+          <div key={key} className="mb-3">
+            <Label htmlFor={key} className="text-sm font-medium">
+              {title}
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+            <Input
+              id={key}
+              type="number"
+              value={testFormValues[key] || 0}
+              onChange={(e) => handleInputChange(key, Number(e.target.value))}
+              className="mt-1"
+            />
+          </div>
+        );
+        
+      case 'boolean':
+        return (
+          <div key={key} className="mb-3 flex items-center">
+            <input
+              id={key}
+              type="checkbox"
+              checked={!!testFormValues[key]}
+              onChange={(e) => handleInputChange(key, e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor={key} className="ml-2 text-sm font-medium">
+              {title}
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+          </div>
+        );
+        
+      // For more complex types like arrays, you might need more sophisticated controls
+      default:
+        return (
+          <div key={key} className="mb-3">
+            <Label htmlFor={key} className="text-sm font-medium">
+              {title} ({type})
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+            <Input
+              id={key}
+              value={typeof testFormValues[key] === 'object' 
+                ? JSON.stringify(testFormValues[key]) 
+                : testFormValues[key] || ''}
+              onChange={(e) => {
+                try {
+                  // Try to parse as JSON if it's supposed to be an object/array
+                  const parsed = JSON.parse(e.target.value);
+                  handleInputChange(key, parsed);
+                } catch {
+                  // If parsing fails, store as string
+                  handleInputChange(key, e.target.value);
+                }
+              }}
+              className="mt-1"
+            />
+          </div>
+        );
+    }
+  };
+
   useToolsEffect();
 
   // Tool card component to avoid duplication
@@ -129,7 +334,7 @@ export function ToolSelector() {
       {/* Test Tool Button */}
       <button
         className="test-button absolute top-2 right-2 p-1 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground transition-colors flex items-center"
-        onClick={(e) => testTool(tool.id, e)}
+        onClick={(e) => testTool(tool, e)}
         title="Test this tool"
       >
         <Play className="h-3.5 w-3.5 flex-shrink-0" />
@@ -205,94 +410,142 @@ export function ToolSelector() {
             className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
             aria-label="Select tools for the AI to use"
           >
-            <Wrench className="h-4 w-4" /> 
-            {enabledCount > 0 ? ` (${enabledCount})` : null}
+            <Wrench className="h-4 w-4 mr-1" /> 
+            {enabledCount > 0 ? `Tools (${enabledCount})` : 'Tools'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-96 p-4 mr-2 rounded-lg" align="start">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-lg leading-none">
-              Tools ({enabledCount} enabled)
-            </h4>
-            <div className="flex space-x-2">
-              {enabledCount > 0 && (
+          {testingTool ? (
+            // Test Tool Form
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-lg">
+                  Test Tool: {testingTool.id}
+                </h3>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                  onClick={clearTools}
+                  className="h-7 w-7 p-0"
+                  onClick={cancelTesting}
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  Clear
+                  <X className="h-4 w-4" />
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                onClick={() => setGroupByCategory(!groupByCategory)}
-                title={groupByCategory ? "Show as list" : "Group by category"}
-              >
-                {groupByCategory ? <Database className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-          
-          <p className="text-sm text-muted-foreground mb-4">
-            Choose the tools that will help you be more present in this moment.
-          </p>
-          
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Find a tool..."
-                className="w-full pl-8 p-2 text-sm rounded-md bg-background border border-input"
-                onChange={(e) => setToolFilter(e.target.value)}
-                value={toolFilter}
-              />
-              {toolFilter && (
-                <button 
-                  className="absolute right-2 top-2.5"
-                  onClick={() => setToolFilter("")}
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {enabledCount === 0 && (
-            <div className="text-center py-6 px-4 bg-muted/20 rounded-lg border border-dashed border-muted-foreground/30 my-4">
-              <Leaf className="h-10 w-10 text-primary/40 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Select tools mindfully to enhance your experience.
-                <br />Each tool brings unique abilities to your assistant.
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-4">
+                {testingTool.description}
               </p>
+              
+              <form onSubmit={handleTestFormSubmit}>
+                <div className="space-y-2 mb-4">
+                  {testingTool.args && Object.entries(testingTool.args).map(([key, argDef]: [string, any]) => 
+                    renderFormField(key, argDef)
+                  )}
+                </div>
+                
+                <div className="flex justify-end space-x-2 mt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={cancelTesting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    <Play className="h-4 w-4 mr-1" />
+                    Run Test
+                  </Button>
+                </div>
+              </form>
             </div>
-          )}
-          
-          <ScrollArea className="h-[350px] pr-3">
-            <div className="grid gap-4">
-              {groupByCategory ? (
-                Object.entries(toolsByCategory).map(([category, tools]) => (
-                  <div key={category} className="mb-2">
-                    <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-medium">{category}</h3>
-                    <div className="grid gap-2">
-                      {(tools as any[]).map((tool: any) => (
-                        <ToolCard key={tool.id} tool={tool} />
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                filteredTools.map((tool: any) => (
-                  <ToolCard key={tool.id} tool={tool} />
-                ))
+          ) : (
+            // Normal Tool Selection View
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium text-lg leading-none">
+                  Tools ({enabledCount} enabled)
+                </h4>
+                <div className="flex space-x-2">
+                  {enabledCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                      onClick={clearTools}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setGroupByCategory(!groupByCategory)}
+                    title={groupByCategory ? "Show as list" : "Group by category"}
+                  >
+                    {groupByCategory ? <Database className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-4">
+                Choose the tools that will help you be more present in this moment.
+              </p>
+              
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Find a tool..."
+                    className="w-full pl-8 p-2 text-sm rounded-md bg-background border border-input"
+                    onChange={(e) => setToolFilter(e.target.value)}
+                    value={toolFilter}
+                  />
+                  {toolFilter && (
+                    <button 
+                      className="absolute right-2 top-2.5"
+                      onClick={() => setToolFilter("")}
+                    >
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {enabledCount === 0 && (
+                <div className="text-center py-6 px-4 bg-muted/20 rounded-lg border border-dashed border-muted-foreground/30 my-4">
+                  <Leaf className="h-10 w-10 text-primary/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Select tools mindfully to enhance your experience.
+                    <br />Each tool brings unique abilities to your assistant.
+                  </p>
+                </div>
               )}
-            </div>
-          </ScrollArea>
+              
+              <ScrollArea className="h-[350px] pr-3">
+                <div className="grid gap-4">
+                  {groupByCategory ? (
+                    Object.entries(toolsByCategory).map(([category, tools]) => (
+                      <div key={category} className="mb-2">
+                        <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-medium">{category}</h3>
+                        <div className="grid gap-2">
+                          {(tools as any[]).map((tool: any) => (
+                            <ToolCard key={tool.id} tool={tool} />
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    filteredTools.map((tool: any) => (
+                      <ToolCard key={tool.id} tool={tool} />
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </>
+          )}
         </PopoverContent>
       </Popover>
     </>
