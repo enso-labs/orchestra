@@ -14,7 +14,7 @@ from src.entities import Answer, NewThread, ExistingThread
 from src.utils.agent import Agent
 from src.utils.auth import get_db, verify_credentials
 
-TAG = "Agent"
+TAG = "Chat"
 router = APIRouter(tags=[TAG])
 
 ################################################################################

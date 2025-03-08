@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings
+from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings, agent
 from src.constants import (
     HOST,
     PORT,
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     pass
 
 app = FastAPI(
-    title="Armada by Prompt Engineers AI 🤖",
+    title="Enso by Prompt Engineers AI 🤖",
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. " 
@@ -59,16 +59,17 @@ app.add_middleware(
 
 # Include routers
 PREFIX = "/api"
-app.include_router(auth, prefix=PREFIX)
 app.include_router(info, prefix=PREFIX)
+app.include_router(auth, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
+app.include_router(settings, prefix=PREFIX)
+app.include_router(agent, prefix=PREFIX)
 app.include_router(retrieve, prefix=PREFIX)
 app.include_router(source, prefix=PREFIX)
 app.include_router(token, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
-app.include_router(settings, prefix=PREFIX)
 
 # Mount specific directories only if they exist
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")

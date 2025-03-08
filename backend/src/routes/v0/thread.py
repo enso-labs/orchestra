@@ -14,7 +14,7 @@ from src.utils.auth import verify_credentials
 from src.models import User
 from src.utils.logger import logger
 
-TAG = "Agent"
+TAG = "Thread"
 router = APIRouter(tags=[TAG])
 
 ################################################################################
