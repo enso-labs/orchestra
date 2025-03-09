@@ -1,7 +1,7 @@
 from alembic import op
 import sqlalchemy as sa
 
-revision = '0000_init'
+revision = '00000000000000_init'
 down_revision = None
 branch_labels = None
 depends_on = None

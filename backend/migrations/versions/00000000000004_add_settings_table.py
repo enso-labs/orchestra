@@ -1,7 +1,7 @@
 """Create settings table for storing application settings
 
-Revision ID: 0004_add_settings_table
-Revises: 0003_add_tokens_table
+Revision ID: 00000000000004_add_settings_table
+Revises: 00000000000003_add_tokens_table
 Create Date: 2025-02-09 00:00:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '0004_add_settings_table'
-down_revision = '0003_add_tokens_table'
+revision = '00000000000004_add_settings_table'
+down_revision = '00000000000003_add_tokens_table'
 branch_labels = None
 depends_on = None
 

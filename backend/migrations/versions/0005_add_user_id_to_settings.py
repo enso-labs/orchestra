@@ -1,7 +1,7 @@
 """Add user_id to settings table
 
 Revision ID: 0005_add_user_id_to_settings
-Revises: 0004_add_settings_table
+Revises: 00000000000004_add_settings_table
 Create Date: 2023-02-10 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '0005_add_user_id_to_settings'
-down_revision = '0004_add_settings_table'
+down_revision = '00000000000004_add_settings_table'
 branch_labels = None
 depends_on = None
 
