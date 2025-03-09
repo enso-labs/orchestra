@@ -11,5 +11,6 @@
 **/logs/
 **/sandbox/db/*
 **/site
+**/docker/searxng/settings.yml.new
 
 backend/src/public
