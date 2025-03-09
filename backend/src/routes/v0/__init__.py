@@ -8,5 +8,6 @@ from .auth import router as auth
 from .token import router as token
 from .storage import router as storage
 from .settings import router as settings
+from .agent import router as agent
 
-__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth", "token", "storage", "settings"]
+__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth", "token", "storage", "settings", "agent"]

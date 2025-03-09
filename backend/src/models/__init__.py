@@ -1,12 +1,16 @@
+import json
 from typing import Optional
 from datetime import datetime
 import sqlalchemy as sa
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import text
+
 Base = sa.orm.declarative_base()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -86,11 +90,24 @@ class Settings(Base):
         primary_key=True,
         server_default=sa.text("gen_random_uuid()")
     )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='CASCADE'),
+        primary_key=True
+    )
     name = Column(String, nullable=False)
     slug = Column(String, nullable=False, unique=True, index=True)
     value = Column(sa.JSON, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "slug": self.slug,
+            "value": self.value
+        }
 
     @staticmethod
     def generate_slug(name: str) -> str:
@@ -109,5 +126,62 @@ class Settings(Base):
         super().__init__(**kwargs)
         self.name = name
         self.value = value
+        if 'slug' not in kwargs:
+            self.slug = self.generate_slug(name)
+
+class Agent(Base):
+    __tablename__ = "agents"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='CASCADE'),
+        primary_key=True
+    )
+    name = Column(String, nullable=False)
+    slug = Column(String, nullable=False, unique=True)
+    description = Column(String)
+    public = Column(Boolean, nullable=False, server_default='false')
+    settings_id = Column(UUID(as_uuid=True), ForeignKey("settings.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=text("now()"), onupdate=text("now()"), nullable=False)
+    
+    # Relationship with lazy="select" (the default) will not load settings when querying agents
+    # But will allow loading the relationship when accessing agent.setting
+    setting = relationship("Settings", lazy="select")
+    
+    def to_dict(self, include_setting: bool = True) -> dict:
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "slug": self.slug,
+            "description": self.description,
+            "public": self.public,
+            "settings": self.setting.to_dict() if include_setting else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
+    @staticmethod
+    def generate_slug(name: str) -> str:
+        """Generate a URL-friendly slug from the name."""
+        import re
+        # Convert to lowercase and replace spaces with dashes
+        slug = name.lower().strip().replace(' ', '-')
+        # Remove special characters
+        slug = re.sub(r'[^a-z0-9-]', '', slug)
+        # Replace multiple dashes with single dash
+        slug = re.sub(r'-+', '-', slug)
+        return slug
+
+    def __init__(self, name: str, description: str, public: bool, **kwargs):
+        """Initialize a new setting with auto-generated slug."""
+        super().__init__(**kwargs)
+        self.name = name
+        self.description = description
+        self.public = public
         if 'slug' not in kwargs:
             self.slug = self.generate_slug(name)

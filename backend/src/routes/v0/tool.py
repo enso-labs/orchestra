@@ -6,7 +6,7 @@ from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import get_db, verify_credentials
 
-TAG = "Tools"
+TAG = "Tool"
 router = APIRouter(tags=[TAG])
 
 ################################################################################

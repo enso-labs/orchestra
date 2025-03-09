@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings
+from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings, agent
 from src.constants import (
     HOST,
     PORT,
@@ -69,7 +69,7 @@ app.include_router(source, prefix=PREFIX)
 app.include_router(token, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
 app.include_router(settings, prefix=PREFIX)
-
+app.include_router(agent, prefix=PREFIX)
 # Mount specific directories only if they exist
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
 app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")

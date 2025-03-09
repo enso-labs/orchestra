@@ -14,7 +14,7 @@ from src.entities import Answer, NewThread, ExistingThread
 from src.utils.agent import Agent
 from src.utils.auth import get_db, verify_credentials
 
-TAG = "Agent"
+TAG = "Chat"
 router = APIRouter(tags=[TAG])
 
 ################################################################################
@@ -23,7 +23,7 @@ router = APIRouter(tags=[TAG])
 from src.constants.llm import get_available_models
 @router.get(
     "/models", 
-    # tags=['Agent'],
+    tags=['Model'],
     responses={
         status.HTTP_200_OK: {
             "description": "All models.",
