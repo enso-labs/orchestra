@@ -101,6 +101,9 @@ class Settings(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
+    # Only relationship to Revisions, not directly to Agents
+    revisions = relationship("Revision", back_populates="setting")
+    
     def to_dict(self) -> dict:
         return {
             "id": str(self.id),
@@ -136,31 +139,53 @@ class Agent(Base):
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey('users.id', ondelete='CASCADE'),
-        primary_key=True
+        nullable=False
     )
     name = Column(String, nullable=False)
     slug = Column(String, nullable=False, unique=True)
-    description = Column(String)
+    description = Column(String, nullable=True)
     public = Column(Boolean, nullable=False, server_default='false')
-    settings_id = Column(UUID(as_uuid=True), ForeignKey("settings.id"), nullable=False)
+    revision_number = Column(sa.Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=text("now()"), onupdate=text("now()"), nullable=False)
     
-    # Relationship with lazy="select" (the default) will not load settings when querying agents
-    # But will allow loading the relationship when accessing agent.setting
-    setting = relationship("Settings", lazy="select")
+    # No direct relationship to Settings anymore
+    # Only a relationship to Revisions
+    revisions = relationship("Revision", back_populates="agent", cascade="all, delete-orphan")
+    
+    # New method to get the current settings via the active revision
+    @property
+    def active_revision(self):
+        # Find the revision that matches the current revision_number
+        for revision in self.revisions:
+            if revision.revision_number == self.revision_number:
+                return revision
+        return None
+    
+    @property
+    def settings(self):
+        revision = self.active_revision
+        if revision:
+            return revision.setting
+        return None
     
     def to_dict(self, include_setting: bool = True) -> dict:
-        return {
+        result = {
             "id": str(self.id),
+            "user_id": str(self.user_id),
             "name": self.name,
             "slug": self.slug,
             "description": self.description,
             "public": self.public,
-            "settings": self.setting.to_dict() if include_setting else None,
+            "revision_number": self.revision_number,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
+        
+        if include_setting and self.settings:
+            result["setting"] = self.settings.to_dict()
+            
+        return result
     
     def to_json(self) -> str:
         return json.dumps(self.to_dict())
@@ -185,3 +210,33 @@ class Agent(Base):
         self.public = public
         if 'slug' not in kwargs:
             self.slug = self.generate_slug(name)
+
+class Revision(Base):
+    __tablename__ = "revisions"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    agent_id = Column(UUID(as_uuid=True), ForeignKey('agents.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    settings_id = Column(UUID(as_uuid=True), ForeignKey('settings.id', ondelete='CASCADE'), nullable=False)
+    revision_number = Column(sa.Integer, nullable=False)
+    name = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=text("now()"), onupdate=text("now()"), nullable=False)
+    
+    # Relationships
+    agent = relationship("Agent", back_populates="revisions")
+    setting = relationship("Settings", back_populates="revisions", foreign_keys=[settings_id])
+    
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            "agent_id": str(self.agent_id),
+            "user_id": str(self.user_id),
+            "settings_id": str(self.settings_id),
+            "revision_number": self.revision_number,
+            "name": self.name,
+            "description": self.description,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }

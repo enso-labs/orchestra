@@ -10,15 +10,11 @@ class AgentRepo:
 
     def get_by_id(self, agent_id: str) -> Optional[Agent]:
         """Get agent by ID with settings included."""
-        return self.db.query(Agent).options(
-            joinedload(Agent.setting)
-        ).filter(Agent.id == agent_id).first()
+        return self.db.query(Agent).filter(Agent.id == agent_id and Agent.user_id == self.user_id).first()
 
     def get_by_slug(self, slug: str) -> Optional[Agent]:
         """Get agent by slug with settings included."""
-        return self.db.query(Agent).options(
-            joinedload(Agent.setting)
-        ).filter(Agent.slug == slug).first()
+        return self.db.query(Agent).filter(Agent.slug == slug and Agent.user_id == self.user_id).first()
         
     def get_all_user_agents(self, public: bool = False) -> List[Agent]:
         if public:
@@ -33,21 +29,38 @@ class AgentRepo:
     def create(self, name: str, description: str, settings_id: str, public: bool = False) -> Agent:
         """Create a new agent."""
         try:
+            # Generate a slug for the agent name
+            slug = Agent.generate_slug(name)
+            
+            # Create a new agent with revision_number=1 (initial version)
             agent = Agent(
+                user_id=self.user_id,
                 name=name,
                 description=description,
-                settings_id=settings_id,
                 public=public,
-                user_id=self.user_id,
-                slug=Agent.generate_slug(name)
+                slug=slug,
+                revision_number=1  # Start with revision 1
             )
+            
             self.db.add(agent)
+            self.db.flush()  # This assigns an ID to the agent
+            
+            # Now create the first revision for this agent
+            from src.repos.revision_repo import RevisionRepo
+            revision_repo = RevisionRepo(db=self.db, user_id=self.user_id)
+            revision = revision_repo.create(
+                agent_id=str(agent.id),
+                settings_id=settings_id,
+                name="Initial version",
+                description="Initial agent configuration"
+            )
+            
             self.db.commit()
             self.db.refresh(agent)
             return agent
         except IntegrityError:
             self.db.rollback()
-            raise ValueError(f"An agent with name '{name}' already exists")
+            raise ValueError(f"Agent with name '{name}' already exists")
         except Exception as e:
             self.db.rollback()
             raise e
