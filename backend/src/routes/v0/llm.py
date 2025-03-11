@@ -13,6 +13,7 @@ from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 from src.entities import Answer, NewThread, ExistingThread
 from src.utils.agent import Agent
 from src.utils.auth import get_db, verify_credentials
+from src.controllers.agent import AgentController
 
 TAG = "Chat"
 router = APIRouter(tags=[TAG])
@@ -73,43 +74,9 @@ def new_thread(
     user: User = Depends(verify_credentials),
     db: Session = Depends(get_db)
 ):
-    try:
-        thread_id = str(uuid.uuid4())
-        tools_str = f"and Tools: {', '.join(body.tools)}" if body.tools else ""
-        logger.info(f"Creating new thread with ID: {thread_id} {tools_str} and Query: {body.query}")
-        user_repo = UserRepo(db=db, user_id=user.id)
-        if "text/event-stream" in request.headers.get("accept", ""):
-            pool = ConnectionPool(
-                conninfo=DB_URI,
-                max_size=20,
-                kwargs=CONNECTION_POOL_KWARGS,
-            )
-            agent = Agent(config={"thread_id": thread_id, "user_id": user.id}, pool=pool, user_repo=user_repo)
-            agent.builder(tools=body.tools, model_name=body.model)
-            messages = agent.messages(body.query, body.system, body.images)
-            return agent.process(messages, "text/event-stream")
-        
-        with ConnectionPool(
-            conninfo=DB_URI,
-            max_size=20,
-            kwargs=CONNECTION_POOL_KWARGS,
-        ) as pool:
-            agent = Agent(config={"thread_id": thread_id, "user_id": user.id}, pool=pool, user_repo=user_repo)
-            agent.builder(tools=body.tools, model_name=body.model)
-            messages = agent.messages(body.query, body.system, body.images)
-            return agent.process(messages, "application/json")
-    except ValueError as e:
-        logger.warning(f"Bad Request: {str(e)}")
-        if "Model" in str(e) and "not supported" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
-        raise e
-    except Exception as e:
-        logger.error(f"Error creating new thread: {str(e)}")
-        raise e
-    
+    controller = AgentController(db=db, user_id=user.id)
+    return controller.new_thread(request=request, new_thread=body)
+
 ################################################################################
 ### Query Existing Thread
 ################################################################################
@@ -142,38 +109,5 @@ def existing_thread(
     user: User = Depends(verify_credentials),
     db: Session = Depends(get_db)
 ):
-    try:
-        tools_str = f"and Tools: {', '.join(body.tools)}" if body.tools else ""
-        logger.info(f"Querying existing thread with ID: {thread_id} {tools_str} and Query: {body.query}")
-        user_repo = UserRepo(db=db, user_id=user.id)
-        if "text/event-stream" in request.headers.get("accept", ""):
-            pool = ConnectionPool(
-                conninfo=DB_URI,
-                max_size=20,
-                kwargs=CONNECTION_POOL_KWARGS,
-            )
-            agent = Agent(config={"thread_id": thread_id, "user_id": user.id}, pool=pool, user_repo=user_repo)
-            agent.builder(tools=body.tools, model_name=body.model)
-            messages = agent.messages(query=body.query, images=body.images)
-            return agent.process(messages, "text/event-stream")
-        
-        with ConnectionPool(
-            conninfo=DB_URI,
-            max_size=20,
-            kwargs=CONNECTION_POOL_KWARGS,
-        ) as pool:  
-            agent = Agent(config={"thread_id": thread_id, "user_id": user.id}, pool=pool, user_repo=user_repo)
-            agent.builder(tools=body.tools, model_name=body.model)
-            messages = agent.messages(query=body.query, images=body.images)
-            return agent.process(messages, "application/json")
-    except ValueError as e:
-        logger.warning(f"Bad Request: {str(e)}")
-        if "Model" in str(e) and "not supported" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
-        raise e
-    except Exception as e:
-        logger.error(f"Error creating new thread: {str(e)}")
-        raise e
+    controller = AgentController(db=db, user_id=user.id)
+    return controller.existing_thread(request=request, thread_id=thread_id, existing_thread=body)
