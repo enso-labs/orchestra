@@ -6,6 +6,7 @@ from src.tools.agent import agent_builder, available_tools
 from src.tools.sql import sql_query_read, sql_query_write
 from src.tools.shell import shell_exec
 from src.tools.search import search_engine
+from src.tools.finance import get_stock_price, get_stock_info, get_stock_news, get_stock_history, get_stock_dividends, get_stock_actions, get_stock_financials, get_stock_recommendations, get_stock_holders
 tools = [       
     # available_tools,
     shell_exec,
@@ -16,6 +17,16 @@ tools = [
     sql_query_read,
     sql_query_write,
     search_engine,
+    # finance
+    get_stock_price,
+    get_stock_info,
+    get_stock_news,
+    get_stock_history,
+    get_stock_dividends,
+    get_stock_actions,
+    get_stock_financials,
+    get_stock_recommendations,
+    get_stock_holders,
 ]
 tool_node = ToolNode(tools)
 
@@ -48,5 +59,6 @@ def attach_tool_details(tool):
         tool['tags'] = ["search"]
     elif tool['id'] == "retrieval_query" or tool['id'] == "retrieval_add" or tool['id'] == "retrieval_load":
         tool['tags'] = ["retrieval"]
-    
+    elif tool['id'] == "get_stock_price" or tool['id'] == "get_stock_info" or tool['id'] == "get_stock_news" or tool['id'] == "get_stock_history" or tool['id'] == "get_stock_dividends" or tool['id'] == "get_stock_actions" or tool['id'] == "get_stock_financials" or tool['id'] == "get_stock_recommendations" or tool['id'] == "get_stock_holders":
+        tool['tags'] = ["finance"]  
     return tool
