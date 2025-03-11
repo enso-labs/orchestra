@@ -5,7 +5,7 @@ from src.constants import APP_LOG_LEVEL
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import get_db, verify_credentials
-
+from src.tools import attach_tool_details
 TAG = "Tool"
 router = APIRouter(tags=[TAG])
 
@@ -13,7 +13,7 @@ router = APIRouter(tags=[TAG])
 ### List Tools
 ################################################################################
 from src.tools import tools
-tool_names = [{'id':tool.name, 'description':tool.description, 'args':tool.args} for tool in tools]
+tool_names = [attach_tool_details({'id':tool.name, 'description':tool.description, 'args':tool.args, 'tags':tool.tags}) for tool in tools]
 tools_response = {"tools": tool_names}
 @router.get(
     "/tools", 
