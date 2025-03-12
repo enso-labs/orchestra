@@ -28,6 +28,7 @@ class Agent:
         }
         self.user_id = config.get("user_id", None)
         self.thread_id = config.get("thread_id", None)
+        self.agent_id = config.get("agent_id", None)
         self.config = {"configurable": config}
         self.graph = None
         self.pool = pool
@@ -130,7 +131,7 @@ class Agent:
     def builder(
         self,
         tools: list[str] = None,
-        model_name: str = ModelName.ANTHROPIC_CLAUDE_3_5_SONNET,
+        model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ) -> StateGraph:
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})

@@ -1,17 +1,14 @@
 import uuid
-from typing import Annotated
-from fastapi import Request, Depends, Body, HTTPException, status
+from fastapi import Request, HTTPException, status
 from sqlalchemy.orm import Session
 from psycopg_pool import ConnectionPool
 
 from src.repos.agent_repo import AgentRepo
-from src.entities import ExistingThread, NewThread, AgentThread
-from src.models import User
+from src.entities import ExistingThread, NewThread
 from src.utils.agent import Agent
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
-from src.utils.auth import verify_credentials, get_db
 
 class AgentController:
     def __init__(self, db: Session, user_id: str, agent_id: str = None):
