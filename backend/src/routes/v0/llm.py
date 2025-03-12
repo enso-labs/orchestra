@@ -11,40 +11,15 @@ from src.utils.agent import Agent
 from src.utils.auth import get_db, verify_credentials
 from src.controllers.agent import AgentController
 
-TAG = "Chat"
+TAG = "Thread"
 router = APIRouter(tags=[TAG])
-
-################################################################################
-### List Models
-################################################################################
-from src.constants.llm import get_available_models
-@router.get(
-    "/models", 
-    tags=['Model'],
-    responses={
-        status.HTTP_200_OK: {
-            "description": "All models.",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "models": []
-                    }
-                }
-            }
-        }
-    }
-)
-def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session = Depends(get_db)):
-    return JSONResponse(
-        content={"models": get_available_models()},
-        status_code=status.HTTP_200_OK
-    )
 
 ################################################################################
 ### Create New Thread
 ################################################################################
 @router.post(
-    "/llm", 
+    "/threads",
+    name="Create New Thread",
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from new thread.",
@@ -77,7 +52,8 @@ def new_thread(
 ### Query Existing Thread
 ################################################################################
 @router.post(
-    "/llm/{thread_id}", 
+    "/threads/{thread_id}", 
+    name="Query Existing Thread",
     tags=[TAG],
     responses={
         status.HTTP_200_OK: {

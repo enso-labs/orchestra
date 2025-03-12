@@ -9,5 +9,6 @@ from .token import router as token
 from .storage import router as storage
 from .settings import router as settings
 from .agent import router as agent
+from .model import router as model
 
-__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth", "token", "storage", "settings", "agent"]
+__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth", "token", "storage", "settings", "agent", "model"]

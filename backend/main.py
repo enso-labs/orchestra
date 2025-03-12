@@ -4,12 +4,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings, agent
+from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings, agent, model
 from src.constants import (
     HOST,
     PORT,
     LOG_LEVEL,
-    APP_VERSION
+    APP_VERSION,
+    APP_ENV
 )
 from src.utils.migrations import run_migrations
 
@@ -24,7 +25,9 @@ async def lifespan(app: FastAPI):
     print(f"LOG_LEVEL: {LOG_LEVEL}")
     print(f"HOST: {HOST}")
     print(f"PORT: {PORT}")
-    run_migrations()
+    print(f"APP_ENV: {APP_ENV}")
+    if APP_ENV == "production" or APP_ENV == "staging":
+        run_migrations()
     yield
     # Shutdown
     pass
@@ -65,6 +68,7 @@ app.include_router(token, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
+app.include_router(model, prefix=PREFIX)
 app.include_router(settings, prefix=PREFIX)
 app.include_router(agent, prefix=PREFIX)
 app.include_router(retrieve, prefix=PREFIX)

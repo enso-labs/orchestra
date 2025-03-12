@@ -59,7 +59,7 @@ class AgentController:
                 )
             raise e
         except Exception as e:
-            logger.error(f"Error creating new thread: {str(e)}")
+            logger.exception(f"Error creating new thread: {str(e)}")
             raise e
         
     def existing_thread(
@@ -105,7 +105,7 @@ class AgentController:
                 )
             raise e
         except Exception as e:
-            logger.error(f"Error creating new thread: {str(e)}")
+            logger.exception(f"Error creating new thread: {str(e)}")
             raise e
         
     def agent_thread(
@@ -151,5 +151,5 @@ class AgentController:
                 )
             raise e
         except Exception as e:
-            logger.error(f"Error creating new thread: {str(e)}")
+            logger.exception(f"Error creating new thread: {str(e)}")
             raise e
