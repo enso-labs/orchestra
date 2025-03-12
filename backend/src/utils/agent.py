@@ -211,7 +211,7 @@ class Agent:
                 return None
 
 
-    def messages(
+    def     messages(
         self,
         query: str, 
         system: str = None, 

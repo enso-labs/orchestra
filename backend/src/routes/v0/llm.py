@@ -1,14 +1,10 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Body, HTTPException, status, Depends, APIRouter, Request
+from fastapi import Body,status, Depends, APIRouter, Request
 from fastapi.responses import JSONResponse
-from loguru import logger
-from psycopg_pool import ConnectionPool
 from sqlalchemy.orm import Session
-from src.repos.user_repo import UserRepo
 from src.models import ProtectedUser, User
-from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 
 from src.entities import Answer, NewThread, ExistingThread
 from src.utils.agent import Agent

@@ -1,9 +1,12 @@
-from fastapi import Query, Response, status, Depends, APIRouter, Path
+from typing import Annotated
+from fastapi import Query, Request, Response, status, Depends, APIRouter, Path, Body
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 
+from src.controllers.agent import AgentController
+from src.entities import Answer, AgentThread
 from src.repos.agent_repo import AgentRepo
 from src.repos.revision_repo import RevisionRepo
 from src.utils.auth import verify_credentials, get_db
@@ -225,7 +228,93 @@ def delete_agent(
             content={"error": str(e)},
             status_code=status.HTTP_400_BAD_REQUEST
         )
+        
+        
+        
+################################################################################
+### Create New Thread
+################################################################################
 
+@router.post(
+    "/agents/{agent_id}/thread", 
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Latest message from new thread.",
+            "content": {
+                "application/json": {
+                    "example": Answer.model_json_schema()['examples']['new_thread']
+                },
+                "text/event-stream": {
+                    "description": "Server-sent events stream",
+                    "schema": {
+                        "type": "string",
+                        "format": "binary",
+                        "example": 'data: {"thread_id": "e208fbc9-92cd-4f50-9286-6eab533693c4", "event": "ai_chunk", "content": [{"text": "Hello", "type": "text", "index": 0}]}\n\n'
+                    }
+                }
+            }
+        }
+    }
+)
+def agent_new_thread(
+    request: Request,
+    agent_id: str,
+    body: Annotated[AgentThread, Body()],
+    user: ProtectedUser = Depends(verify_credentials),
+    db: Session = Depends(get_db)
+):
+    try:
+        controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)
+        return controller.agent_thread(request=request, query=body.query)
+    except Exception as e:
+        return JSONResponse(
+            content={"error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@router.post(
+    "/agents/{agent_id}/thread/{thread_id}", 
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Latest message from new thread.",
+            "content": {
+                "application/json": {
+                    "example": Answer.model_json_schema()['examples']['new_thread']
+                },
+                "text/event-stream": {
+                    "description": "Server-sent events stream",
+                    "schema": {
+                        "type": "string",
+                        "format": "binary",
+                        "example": 'data: {"thread_id": "e208fbc9-92cd-4f50-9286-6eab533693c4", "event": "ai_chunk", "content": [{"text": "Hello", "type": "text", "index": 0}]}\n\n'
+                    }
+                }
+            }
+        }
+    }
+)
+def agent_existing_thread(
+    request: Request,
+    agent_id: str,
+    thread_id: str, 
+    body: Annotated[AgentThread, Body()],
+    user: ProtectedUser = Depends(verify_credentials),
+    db: Session = Depends(get_db)
+):
+    try:
+        controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)
+        return controller.agent_thread(request=request, query=body.query, thread_id=thread_id)
+    except Exception as e:
+        return JSONResponse(
+            content={"error": str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+
+################################################################################
+### Revisions
+################################################################################
 @router.get(
     "/agents/{agent_id}/v", 
     tags=[TAG],
