@@ -2,11 +2,9 @@ from fastapi import status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from src.constants import APP_VERSION
 
-TAG = "Info"
-router = APIRouter(tags=[TAG])
+router = APIRouter(tags=["Info"])
 @router.get(
     "/info", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All tools.",

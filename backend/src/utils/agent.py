@@ -28,6 +28,7 @@ class Agent:
         }
         self.user_id = config.get("user_id", None)
         self.thread_id = config.get("thread_id", None)
+        self.agent_id = config.get("agent_id", None)
         self.config = {"configurable": config}
         self.graph = None
         self.pool = pool
@@ -53,15 +54,16 @@ class Agent:
     
     async def user_threads(self, page=1, per_page=20, sort_order='desc'):
         """
-        Retrieve a paginated list of user_threads records for the configured user, ordered by created_at.
+        Retrieve a paginated list of threads records for the configured user, ordered by created_at.
         
         :param page: The page number (1-indexed).
         :param page_size: Number of records per page.
         :param sort_order: 'asc' for ascending or 'desc' for descending order based on created_at.
-        :return: A list of user_threads records.
+        :return: A list of thread IDs.
         """
         try:
             user_id = self.config["configurable"]["user_id"]
+            agent_id = self.config["configurable"].get("agent_id")
             # Calculate the offset for pagination.
             offset = (page - 1) * per_page
 
@@ -73,41 +75,65 @@ class Agent:
             # Build the query. "user" is quoted because it's a reserved keyword.
             query = f"""
                 SELECT thread
-                FROM user_threads
+                FROM threads
                 WHERE "user" = %s
+            """
+            
+            params = [user_id]
+            
+            # Add agent condition if agent_id is specified
+            if agent_id:
+                query += " AND agent = %s"
+                params.append(agent_id)
+                
+            query += f"""
                 ORDER BY created_at {order}
                 LIMIT %s OFFSET %s
             """
+            
+            params.extend([per_page, offset])
 
             # Acquire an asynchronous connection from the pool.
             async with self.pool.connection() as conn:
                 async with conn.cursor() as cur:
-                    await cur.execute(query, (user_id, per_page, offset))
+                    await cur.execute(query, params)
                     rows = await cur.fetchall()
-                    logger.info(f"Retrieved {len(rows)} user_threads for user {user_id} (page {page})")
+                    logger.info(f"Retrieved {len(rows)} threads for user {user_id} (page {page})")
                     # Convert the list of rows (tuples) into a set of thread UUIDs.
                     thread_ids = {str(row[0]) for row in rows}
                     return thread_ids
 
         except Exception as e:
-            logger.error(f"Failed to retrieve paginated user_threads for user {user_id}: {str(e)}")
+            logger.error(f"Failed to retrieve paginated threads for user {user_id}: {str(e)}")
             return []
     
     def create_user_thread(self):
         try:
             # Quote "user" since it is a reserved keyword in PostgreSQL.
-            query_user_threads = (
-                'INSERT INTO user_threads ("user", thread) '
-                'VALUES (%s, %s) '
-                'ON CONFLICT ("user", thread) DO NOTHING'
-            )
+            agent_id = self.config["configurable"].get("agent_id")
+            
+            if agent_id:
+                query = (
+                    'INSERT INTO threads ("user", thread, agent) '
+                    'VALUES (%s, %s, %s) '
+                    'ON CONFLICT ("user", thread) DO NOTHING'
+                )
+                params = (self.config["configurable"]["user_id"], self.thread_id, agent_id)
+            else:
+                query = (
+                    'INSERT INTO threads ("user", thread) '
+                    'VALUES (%s, %s) '
+                    'ON CONFLICT ("user", thread) DO NOTHING'
+                )
+                params = (self.config["configurable"]["user_id"], self.thread_id)
+            
             with self.pool.connection() as conn:  # Acquire a connection from the pool
                 with conn.cursor() as cur:
-                    cur.execute(query_user_threads, (self.config["configurable"]["user_id"], self.thread_id))
+                    cur.execute(query, params)
                     logger.info(f"Created {cur.rowcount} rows with thread_id = {self.thread_id}")
                     return cur.rowcount
         except Exception as e:
-            logger.error(f"Failed to create user thread: {str(e)}")
+            logger.error(f"Failed to create thread: {str(e)}")
             return 0
         
     def delete(self):
@@ -130,7 +156,7 @@ class Agent:
     def builder(
         self,
         tools: list[str] = None,
-        model_name: str = ModelName.ANTHROPIC_CLAUDE_3_5_SONNET,
+        model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ) -> StateGraph:
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})

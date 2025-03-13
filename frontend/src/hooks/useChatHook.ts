@@ -81,7 +81,7 @@ Language: ${navigator.language}
             ...payload,
             system: constructSystemPrompt(payload.system)
         }
-        const source = new SSE(`${VITE_API_URL}/llm${payload.threadId ? `/${payload.threadId}` : ''}`,
+        const source = new SSE(`${VITE_API_URL}/threads${payload.threadId ? `/${payload.threadId}` : ''}`,
             {
                 headers: {
                     'Content-Type': 'application/json', 

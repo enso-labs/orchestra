@@ -1,15 +1,17 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles 
 from fastapi.middleware.cors import CORSMiddleware
-import os
+from scalar_fastapi import get_scalar_api_reference
 
-from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings
+from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings, agent, model
 from src.constants import (
     HOST,
     PORT,
     LOG_LEVEL,
-    APP_VERSION
+    APP_VERSION,
+    APP_ENV
 )
 from src.utils.migrations import run_migrations
 
@@ -24,13 +26,15 @@ async def lifespan(app: FastAPI):
     print(f"LOG_LEVEL: {LOG_LEVEL}")
     print(f"HOST: {HOST}")
     print(f"PORT: {PORT}")
-    run_migrations()
+    print(f"APP_ENV: {APP_ENV}")
+    if APP_ENV == "production" or APP_ENV == "staging":
+        run_migrations()
     yield
     # Shutdown
     pass
 
 app = FastAPI(
-    title="Armada by Prompt Engineers AI 🤖",
+    title="Enso by Prompt Engineers AI 🤖",
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. " 
@@ -43,10 +47,9 @@ app = FastAPI(
         "email": "ryaneggleston@promptengineers.ai"
     },
     debug=True,
-    docs_url="/api",
+    docs_url=None,
     lifespan=lifespan
 )
-
 
 # Add CORS middleware
 app.add_middleware(
@@ -57,18 +60,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/api", include_in_schema=False)
+async def scalar_html():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title,
+    )
+
 # Include routers
 PREFIX = "/api"
 app.include_router(auth, prefix=PREFIX)
 app.include_router(info, prefix=PREFIX)
+app.include_router(token, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
+app.include_router(model, prefix=PREFIX)
+app.include_router(settings, prefix=PREFIX)
+app.include_router(agent, prefix=PREFIX)
 app.include_router(retrieve, prefix=PREFIX)
 app.include_router(source, prefix=PREFIX)
-app.include_router(token, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
-app.include_router(settings, prefix=PREFIX)
 
 # Mount specific directories only if they exist
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
@@ -79,7 +92,7 @@ if os.path.exists("src/public/icons"):
     app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
 
 # Function to serve static files with fallback
-@app.get("/{filename:path}")
+@app.get("/{filename:path}", include_in_schema=False)
 async def serve_static_or_index(filename: str, request: Request):
     # List of static files to check for at the root
     static_files = ["manifest.json", "sw.js", "favicon.ico", "robots.txt", "manifest.webmanifest"]

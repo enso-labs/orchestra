@@ -196,14 +196,14 @@ def login(
         user=user_response
     )
     
-@router.get("/auth/user", tags=['Auth'])
+@router.get("/auth/user")
 async def read_user_details(user: User = Depends(verify_credentials)):
     return {"user": user.model_dump()}
     
 ##################################################################################################################
 ## OAuth2
 ##################################################################################################################
-@router.get('/auth/{provider}', tags=["Auth"], include_in_schema=False)
+@router.get('/auth/{provider}', include_in_schema=False)
 async def auth(provider: str = Literal["github", "google", "azure"]):
 	try:
 		oauth_service = OAuthService(provider)
@@ -211,7 +211,7 @@ async def auth(provider: str = Literal["github", "google", "azure"]):
 	except Exception as e:
 		return UJSONResponse(detail=str(e), status_code=status.HTTP_400_BAD_REQUEST)
 
-@router.get("/auth/{provider}/callback", tags=['Auth'], include_in_schema=False)
+@router.get("/auth/{provider}/callback", include_in_schema=False)
 async def auth_callback(provider: str, code: str, db: Session = Depends(get_db)):
 	try:
 		# Get the user info from the OAuth provider

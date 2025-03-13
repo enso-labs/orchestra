@@ -20,13 +20,15 @@ class SettingsRepo:
         return self.db.query(Settings).all()
 
     def create(self, name: str, value: dict) -> Settings:
-        """Create a new setting."""
-        setting = Settings(name=name, value=value)
-        self.db.add(setting)
-        self.db.commit()
-        self.db.refresh(setting)
-        return setting
-
+        try:
+            setting = Settings(name=name, value=value)
+            self.db.add(setting)
+            self.db.commit()
+            self.db.refresh(setting)
+            return setting
+        except Exception as e:
+            raise e
+        
     def update(self, settings_id: str, data: dict) -> Optional[Settings]:
         """Update setting data."""
         setting = self.get_by_id(settings_id)
