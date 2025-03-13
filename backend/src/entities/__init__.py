@@ -34,6 +34,15 @@ class ExistingThread(BaseModel):
         "json_schema_extra": {"example": EXISTING_THREAD_QUERY_EXAMPLE}
     }
     
+    
+class AgentThread(BaseModel):
+    query: str
+    # model: Optional[str] = None
+    
+    model_config = {
+        "json_schema_extra": {"example": {"query": "What is the capital of France?"}}
+    }
+    
 class NewThread(ExistingThread):
     system: Optional[str] = Field(default="You are a helpful assistant.")
     visualize: Optional[bool] = Field(default=False)
