@@ -14,8 +14,7 @@ from src.utils.agent import Agent
 from src.models import ProtectedUser
 from src.utils.logger import logger
 
-TAG = "Agent"
-router = APIRouter(tags=[TAG])
+router = APIRouter()
 
 ################################################################################
 ### List Agent Threads
@@ -23,7 +22,6 @@ router = APIRouter(tags=[TAG])
 @router.get(
     "/agents/{agent_id}/threads", 
     name="List Agent Threads",
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All existing threads.",

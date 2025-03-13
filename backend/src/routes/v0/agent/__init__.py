@@ -9,8 +9,7 @@ from src.utils.auth import verify_credentials, get_db
 from src.models import ProtectedUser
 
 
-TAG = "Agent"
-router = APIRouter(tags=[TAG])
+router = APIRouter(tags=["Agent"])
 
 class AgentCreate(BaseModel):
     name: str
@@ -26,7 +25,6 @@ class AgentUpdate(BaseModel):
 
 @router.get(
     "/agents", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All agents.",
@@ -52,7 +50,6 @@ def list_agents(
 
 @router.post(
     "/agents", 
-    tags=[TAG],
     responses={
         status.HTTP_201_CREATED: {
             "description": "Agent created successfully.",
@@ -98,7 +95,6 @@ def create_agent(
 
 @router.get(
     "/agents/{agent_id}", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Agent retrieved successfully.",
@@ -135,7 +131,6 @@ def get_agent(
 
 @router.put(
     "/agents/{agent_id}", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Agent updated successfully.",
@@ -189,7 +184,6 @@ def update_agent(
 
 @router.delete(
     "/agents/{agent_id}", 
-    tags=[TAG],
     responses={
         status.HTTP_204_NO_CONTENT: {
             "description": "Agent deleted successfully."

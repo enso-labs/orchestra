@@ -14,15 +14,13 @@ from src.utils.auth import verify_credentials
 from src.models import User
 from src.utils.logger import logger
 
-TAG = "Thread"
-router = APIRouter(tags=[TAG])
+router = APIRouter(tags=["Thread"])
 
 ################################################################################
 ### List Checkpoints
 ################################################################################
 @router.get(
     "/threads", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All existing threads.",
@@ -99,7 +97,6 @@ async def list_threads(
 ################################################################################
 @router.get(
     "/threads/{thread_id}", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All messages from existing thread.",
@@ -136,7 +133,6 @@ def find_thread(
 ################################################################################
 @router.delete(
     "/threads/{thread_id}", 
-    tags=[TAG],
     responses={
         status.HTTP_204_NO_CONTENT: {
             "description": "Delete existing thread.",
@@ -161,7 +157,6 @@ def delete_thread(
 ################################################################################
 @router.get(
     "/checkpoints", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All existing checkpoints.",

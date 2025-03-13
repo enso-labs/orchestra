@@ -11,8 +11,7 @@ from src.utils.agent import Agent
 from src.utils.auth import get_db, verify_credentials
 from src.controllers.agent import AgentController
 
-TAG = "Thread"
-router = APIRouter(tags=[TAG])
+router = APIRouter(tags=["Thread"])
 
 ################################################################################
 ### Create New Thread
@@ -54,7 +53,6 @@ def new_thread(
 @router.post(
     "/threads/{thread_id}", 
     name="Query Existing Thread",
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from existing thread.",

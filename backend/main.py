@@ -1,8 +1,9 @@
+import os
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles 
 from fastapi.middleware.cors import CORSMiddleware
-import os
+from scalar_fastapi import get_scalar_api_reference
 
 from src.routes.v0 import tool, llm, thread, retrieve, source, info, auth, token, storage, settings, agent, model
 from src.constants import (
@@ -46,10 +47,9 @@ app = FastAPI(
         "email": "ryaneggleston@promptengineers.ai"
     },
     debug=True,
-    docs_url="/api",
+    docs_url=None,
     lifespan=lifespan
 )
-
 
 # Add CORS middleware
 app.add_middleware(
@@ -59,6 +59,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api", include_in_schema=False)
+async def scalar_html():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title=app.title,
+    )
 
 # Include routers
 PREFIX = "/api"

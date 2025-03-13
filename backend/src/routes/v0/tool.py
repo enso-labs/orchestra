@@ -6,8 +6,7 @@ from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import get_db, verify_credentials
 
-TAG = "Tool"
-router = APIRouter(tags=[TAG])
+router = APIRouter(tags=["Tool"])
 
 ################################################################################
 ### List Tools
@@ -17,7 +16,6 @@ tool_names = [{'id':tool.name, 'description':tool.description, 'args':tool.args}
 tools_response = {"tools": tool_names}
 @router.get(
     "/tools", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All tools.",
@@ -61,7 +59,6 @@ class ToolRequest(BaseModel):
 
 @router.post(
     "/tools/{tool_id}/invoke",
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Tool execution result.",

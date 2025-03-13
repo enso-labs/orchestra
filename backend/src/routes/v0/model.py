@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 from src.models import ProtectedUser
 from src.utils.auth import get_db, verify_credentials
 
-TAG = "Model"
-router = APIRouter(tags=[TAG])
+router = APIRouter(tags=["Model"])
 
 ################################################################################
 ### List Models
@@ -13,7 +12,6 @@ router = APIRouter(tags=[TAG])
 from src.constants.llm import get_available_models
 @router.get(
     "/models", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All models.",

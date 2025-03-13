@@ -15,8 +15,7 @@ from src.constants import ACCESS_KEY_ID, ACCESS_SECRET_KEY, BUCKET, TEST_USER_ID
 from src.services.storage import StorageService
 from src.utils.auth import verify_credentials
 
-TAG = "Storage"
-router = APIRouter()
+router = APIRouter(tags=["Storage"])
 storage_service = StorageService(ACCESS_KEY_ID, ACCESS_SECRET_KEY)
 
 #################################################
@@ -25,7 +24,6 @@ storage_service = StorageService(ACCESS_KEY_ID, ACCESS_SECRET_KEY)
 @router.get(
 	"/storage",
 	response_model=Any,
-	tags=[TAG],
 	name='storage_list_files',
 )
 async def list_files(
@@ -57,7 +55,6 @@ async def list_files(
 @router.get(
 	"/storage/presigned",
 	response_model=Any,
-	tags=["Storage"],  # Replace 'YourTagHere' with actual tag
 	name='storage_list_files',
 )
 async def list_presigned_urls(
@@ -115,7 +112,6 @@ async def list_presigned_urls(
 @router.post(
 	"/storage",
 	response_model=Any,
-	tags=[TAG],
 	name='storage_add_files',
 )
 async def save_files(
@@ -149,7 +145,6 @@ async def save_files(
 @router.delete(
 	"/storage",
 	status_code=status.HTTP_204_NO_CONTENT,
-	tags=[TAG],
 	name='storage_delete_files',
 )
 async def delete_file(
@@ -182,7 +177,7 @@ def get_storage_service():
         minio_server=MINIO_HOST
     )
   
-@router.post("/storage/presigned", tags=[TAG])
+@router.post("/storage/presigned")
 async def upload_files_with_urls(
     files: List[UploadFile] = File(...),
     user: User = Depends(verify_credentials),

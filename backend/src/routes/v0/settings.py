@@ -9,8 +9,7 @@ from src.utils.auth import verify_credentials, get_db
 from src.repos.settings_repo import SettingsRepo
 from src.models import User
 
-TAG = "Settings"
-router = APIRouter(tags=[TAG])
+router = APIRouter(tags=["Settings"])
 
 DEFAULT_SETTING_VALUE = {
     "system": "You are a helpful assistant.",

@@ -32,3 +32,4 @@ alembic
 sqlalchemy
 passlib[bcrypt]
 python-jose[cryptography]
+scalar-fastapi

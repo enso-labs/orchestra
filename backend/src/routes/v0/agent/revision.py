@@ -9,8 +9,7 @@ from src.repos.revision_repo import RevisionRepo
 from src.utils.auth import verify_credentials, get_db
 from src.models import ProtectedUser
 
-TAG = "Agent"
-router = APIRouter(tags=[TAG])
+router = APIRouter()
 
 class RevisionCreate(BaseModel):
     settings_id: str
@@ -22,7 +21,6 @@ class RevisionCreate(BaseModel):
 ################################################################################
 @router.get(
     "/agents/{agent_id}/v", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All revisions for an agent.",
@@ -62,7 +60,6 @@ def list_agent_revisions(
 
 @router.post(
     "/agents/{agent_id}/v", 
-    tags=[TAG],
     responses={
         status.HTTP_201_CREATED: {
             "description": "Revision created successfully.",
@@ -113,7 +110,6 @@ def create_agent_revision(
 
 @router.get(
     "/agents/{agent_id}/v/{revision_number}", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Revision retrieved successfully.",
@@ -151,7 +147,6 @@ def get_agent_revision(
 
 @router.put(
     "/agents/{agent_id}/v/{revision_number}", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Agent updated to use specified revision.",
@@ -197,7 +192,6 @@ def set_active_revision(
 
 @router.delete(
     "/agents/{agent_id}/v/{revision_number}", 
-    tags=[TAG],
     responses={
         status.HTTP_204_NO_CONTENT: {
             "description": "Revision deleted successfully."
