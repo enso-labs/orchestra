@@ -5,13 +5,13 @@ from langchain_community.utilities import SearxSearchWrapper
 @tool
 def search_engine(
     query: str,  # The search query.
-    num_results: int = 5,  # The number of results to return. Defaults to 5.
+    num_results: int = 10,  # The number of results to return. Defaults to 5.
     engines: list = [],  # The list of search engines to use. Defaults to None.
     categories: list = [],  # The list of search categories to use. Defaults to None.
     language: str = "en",  # The language to use for the search. Defaults to None.
 ) -> list:  # The search results.
     """
-    Searches for results using the SearxSearchWrapper.
+    Rewrite the users original query to be more specific and concise.
 
     Args:
         query (str): The search query.
