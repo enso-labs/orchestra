@@ -1,7 +1,7 @@
 """Create tokens table for storing encrypted third party tokens
 
-Revision ID: 00000000000003_add_tokens_table
-Revises: 00000000000002_add_user_threads
+Revision ID: 0003_add_tokens_table
+Revises: 0002_add_user_threads
 Create Date: 2025-02-09 00:00:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '00000000000003_add_tokens_table'
-down_revision = '00000000000002_add_user_threads'
+revision = '0003_add_tokens_table'
+down_revision = '0002_add_user_threads'
 branch_labels = None
 depends_on = None
 
