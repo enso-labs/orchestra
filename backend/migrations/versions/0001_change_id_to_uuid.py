@@ -1,7 +1,7 @@
 """Migrate users.id from integer to UUID
 
-Revision ID: 00000000000001_change_id_to_uuid
-Revises: 00000000000000_init
+Revision ID: 0001_change_id_to_uuid
+Revises: 0000_init
 Create Date: 2025-02-09 00:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '00000000000001_change_id_to_uuid'
-down_revision = '00000000000000_init'
+revision = '0001_change_id_to_uuid'
+down_revision = '0000_init'
 branch_labels = None
 depends_on = None
 
