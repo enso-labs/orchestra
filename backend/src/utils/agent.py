@@ -1,27 +1,33 @@
+import asyncio
 import os
 import base64
+from contextlib import asynccontextmanager
 import requests
+import json
 from typing import Optional
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from fastapi import status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from psycopg_pool import ConnectionPool
 from langgraph.graph import StateGraph
-from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage
+from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, AIMessageChunk
 from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
 from psycopg_pool import ConnectionPool
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL
-from src.tools import collect_tools, dynamic_tools
+from src.tools import collect_tools, dynamic_tools, get_mcp_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
 from src.entities import Answer
 from src.utils.logger import logger
 from src.utils.stream import stream_chunks
 from src.flows.chatbot import chatbot_builder
+
 class Agent:
-    def __init__(self, config: dict, pool: ConnectionPool, user_repo: UserRepo = None):
+    def __init__(self, config: dict, pool: ConnectionPool, user_repo: UserRepo = None, agent = None, llm = None):
         self.connection_kwargs = {
             "autocommit": True,
             "prepare_threshold": 0,
@@ -30,17 +36,23 @@ class Agent:
         self.thread_id = config.get("thread_id", None)
         self.agent_id = config.get("agent_id", None)
         self.config = {"configurable": config}
-        self.graph = None
+        self.graph = agent
         self.pool = pool
         self.user_repo = user_repo
         self.model_name = config.get("model_name", None)
-        self.llm: LLMWrapper = None
+        self.llm: LLMWrapper = llm
         self.tools = config.get("tools", [])
         self.checkpointer = None
+        self.agent = agent
         
     def _checkpointer(self):
         checkpointer = PostgresSaver(self.pool)
         checkpointer.setup()
+        return checkpointer
+    
+    async def _acheckpointer(self):
+        checkpointer = AsyncPostgresSaver(self.pool)
+        await checkpointer.setup()
         return checkpointer
     
     def checkpoint(self):
@@ -107,7 +119,7 @@ class Agent:
             logger.error(f"Failed to retrieve paginated threads for user {user_id}: {str(e)}")
             return []
     
-    def create_user_thread(self):
+    async def create_user_thread(self):
         try:
             # Quote "user" since it is a reserved keyword in PostgreSQL.
             agent_id = self.config["configurable"].get("agent_id")
@@ -127,13 +139,13 @@ class Agent:
                 )
                 params = (self.config["configurable"]["user_id"], self.thread_id)
             
-            with self.pool.connection() as conn:  # Acquire a connection from the pool
-                with conn.cursor() as cur:
-                    cur.execute(query, params)
+            async with self.pool.connection() as conn:  # Acquire a connection from the pool
+                async with conn.cursor() as cur:
+                    await cur.execute(query, params)
                     logger.info(f"Created {cur.rowcount} rows with thread_id = {self.thread_id}")
                     return cur.rowcount
         except Exception as e:
-            logger.error(f"Failed to create thread: {str(e)}")
+            logger.exception(f"Failed to create thread: {str(e)}")
             return 0
         
     def delete(self):
@@ -156,12 +168,17 @@ class Agent:
     def builder(
         self,
         tools: list[str] = None,
+        mcp: dict = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ) -> StateGraph:
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         self.checkpointer = self._checkpointer()
+        
+        if mcp and len(mcp.keys()) > 0:
+            self.tools.extend(asyncio.run(get_mcp_tools(mcp)))
+            
         if self.tools:
             graph = create_react_agent(self.llm, tools=self.tools, checkpointer=self.checkpointer)
         else:
@@ -171,6 +188,7 @@ class Agent:
         if debug:
             graph.debug = True
         self.graph = graph
+        self.graph.name = "EnsoAgent"
         return graph
         
     def process(
@@ -278,3 +296,122 @@ class Agent:
             if system and "o1" not in self.llm.model_name:
                 messages.insert(0, SystemMessage(content=system))
         return messages
+    
+    async def abuilder(
+        self,
+        tools: list[str] = None,
+        mcp: dict = None,
+        model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
+        debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
+    ):
+        self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
+        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
+        self.checkpointer = await self._acheckpointer()
+        
+        # Get MCP tools if provided
+        if mcp and len(mcp.keys()) > 0 and self.mcp_client:
+            # Get tools directly from the client that's already been set up
+            mcp_tools = self.mcp_client.get_tools()
+            self.tools.extend(mcp_tools)
+        
+        if self.tools:
+            # Use all tools, not just mcp_tools
+            graph = create_react_agent(self.llm, tools=self.tools, checkpointer=self.checkpointer)
+        else:
+            builder = chatbot_builder(config={"model": self.llm.model})
+            graph = builder.compile(checkpointer=self.checkpointer)
+            
+        if debug:
+            graph.debug = True
+        self.graph = graph
+        self.graph.name = "EnsoAgent"
+        return graph
+
+    async def aprocess(
+        self,
+        messages: list[AnyMessage], 
+        content_type: str = "application/json",
+    ) -> Response:
+        self.create_user_thread()
+        if content_type == "application/json":
+            invoke = await self.graph.ainvoke({"messages": messages}, {'configurable': self.config})
+            content = Answer(
+                thread_id=self.thread_id,
+                answer=invoke.get('messages')[-1]
+            ).model_dump()
+
+            return JSONResponse(
+                content=content,
+                status_code=status.HTTP_200_OK
+            )
+            
+        # Assume text/event-stream for streaming
+        async def astream_generator():
+            try:
+                state = {"messages": messages}
+                async for chunk in self.astream_chunks(self.graph, state, self.config):
+                    if chunk:
+                        print(chunk)
+                        yield chunk
+            finally:
+                # Ensure pool is closed after streaming is complete
+                if not self.pool.closed:
+                    await self.pool.close()
+
+        return StreamingResponse(
+            astream_generator(),
+            media_type="text/event-stream"
+        )
+    
+    async def astream_chunks(
+        self,
+        graph: StateGraph, 
+        state: dict,
+        config: dict = None,
+        stream_mode: str = "messages"
+    ):
+        first = True
+        try:
+            thread_id = config.get("configurable", {}).get("thread_id")
+            async for msg, metadata in graph.astream(
+                state, 
+                config,
+                stream_mode=stream_mode
+            ):
+                if msg.content and not isinstance(msg, HumanMessage):
+                    # Convert message content to SSE format
+                    content = msg.content
+                    if not isinstance(content, str):
+                        content = content[0].get('text')
+                    data = {
+                        "thread_id": thread_id,
+                        "event": "ai_chunk" if isinstance(msg, AIMessageChunk) else "tool_chunk",
+                        "content": content
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
+
+                if isinstance(msg, AIMessageChunk):
+                    if first:
+                        gathered = msg
+                        first = False
+                    else:
+                        gathered = gathered + msg
+
+                    if msg.tool_call_chunks:
+                        tool_data = {
+                            "event": "tool_call",
+                            "content": str(gathered.tool_calls)
+                        }
+                        yield f"data: {json.dumps(tool_data)}\n\n"
+        
+        except Exception as e:
+            logger.exception("Error in astream_chunks", e)
+        finally:
+            logger.info("Closing stream")
+            # Send end event
+            end_data = {
+                "thread_id": thread_id,
+                "event": "end",
+                "content": []
+            }
+            yield f"data: {json.dumps(end_data)}\n\n"

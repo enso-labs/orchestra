@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_anthropic import ChatAnthropic
@@ -28,7 +29,7 @@ class LLMWrapper:
             raise ValueError(f"Model {model_name} not supported")
         
         if 'openai' in model_name:
-            openai_token = self.user_repo.get_token(key=UserTokenKey.OPENAI_API_KEY.name) or OPENAI_API_KEY
+            openai_token = OPENAI_API_KEY
             if not openai_token:
                 raise ValueError("OpenAI API key not found")
             self.kwargs['api_key'] = openai_token

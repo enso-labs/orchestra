@@ -1,7 +1,7 @@
 import uuid
 from fastapi import Request, HTTPException, status
-from sqlalchemy.orm import Session
-from psycopg_pool import ConnectionPool
+from sqlalchemy.ext.asyncio import AsyncSession
+from psycopg_pool import AsyncConnectionPool
 
 from src.repos.agent_repo import AgentRepo
 from src.entities import ExistingThread, NewThread
@@ -11,10 +11,64 @@ from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
 
 class AgentController:
-    def __init__(self, db: Session, user_id: str, agent_id: str = None):
+    def __init__(self, db: AsyncSession, user_id: str, agent_id: str = None, agent = None, llm = None): # type: ignore
         self.user_repo = UserRepo(db=db, user_id=user_id)
         self.agent_repo = AgentRepo(db=db, user_id=user_id)
         self.agent_id = agent_id
+        self.agent = agent
+        self.llm = llm
+        
+    async def anew_thread(
+        self, 
+        request: Request, 
+        new_thread: NewThread,
+    ):
+        try:
+            thread_id = str(uuid.uuid4())
+            tools_str = f"and Tools: {', '.join(new_thread.tools)}" if new_thread.tools else ""
+            logger.info(f"Creating new thread with ID: {thread_id} {tools_str} and Query: {new_thread.query}")
+            config = {
+                "thread_id": thread_id, 
+                "user_id": self.user_repo.user_id, 
+                "agent_id": self.agent_id
+            }
+            if "text/event-stream" in request.headers.get("accept", ""):
+                pool = AsyncConnectionPool(
+                    conninfo=DB_URI,
+                    max_size=20,
+                    kwargs=CONNECTION_POOL_KWARGS,
+                )
+                agent = Agent(config=config, pool=pool, user_repo=self.user_repo, agent=self.agent, llm=self.llm)
+                # await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
+                messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
+                return await agent.aprocess(messages, "text/event-stream")
+            
+            # For JSON responses, we still need to manage the pool
+            pool = AsyncConnectionPool(
+                conninfo=DB_URI,
+                max_size=20,
+                kwargs=CONNECTION_POOL_KWARGS,
+            )
+            try:
+                agent = Agent(config=config, pool=pool, user_repo=self.user_repo, agent=self.agent, llm=self.llm)
+                # await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
+                messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
+                return await agent.aprocess(messages, "application/json")
+            finally:
+                if not pool.closed:
+                    await pool.close()
+            
+        except ValueError as e:
+            logger.warning(f"Bad Request: {str(e)}")
+            if "Model" in str(e) and "not supported" in str(e):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e)
+                )
+            raise e
+        except Exception as e:
+            logger.exception(f"Error creating new thread: {str(e)}")
+            raise e
 
     def new_thread(
         self, 

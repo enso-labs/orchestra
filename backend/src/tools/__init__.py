@@ -1,10 +1,13 @@
-
+import asyncio
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import ToolNode
+
 from src.tools.retrieval import retrieval_query, retrieval_add, retrieval_load
 from src.tools.agent import agent_builder, available_tools
 from src.tools.sql import sql_query_read, sql_query_write
 from src.tools.shell import shell_exec
 from src.tools.search import search_engine
+
 tools = [       
     available_tools,
     shell_exec,
@@ -26,7 +29,7 @@ def collect_tools(selected_tools: list[str]):
     return filtered_tools
 
 
-def dynamic_tools(selected_tools: list[str], metadata: dict = None):
+def dynamic_tools(selected_tools: list[str], metadata: dict = None, mcp: dict = None):
     # Filter tools by name
     filtered_tools = [tool for tool in tools if tool.name in selected_tools]
     if len(filtered_tools) == 0:
@@ -35,5 +38,13 @@ def dynamic_tools(selected_tools: list[str], metadata: dict = None):
     # Update metadata for each tool
     for tool in filtered_tools:
         tool.metadata = metadata
-        
+
     return filtered_tools
+
+async def mcp_client(config: dict):
+    async with MultiServerMCPClient(config) as client:
+        return client.get_tools()
+
+async def get_mcp_tools(config: dict):
+    async with MultiServerMCPClient(config) as client:
+        return client.get_tools()
