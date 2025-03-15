@@ -27,10 +27,12 @@ def sql_query_read(question: str):
     try:
         logger.info(f"Running READ SQL query: {question}")
         db = SQLDatabase.from_uri(DB_URI_SANDBOX, engine_args={"pool_size": 20})
+        user_repo = sql_query_read.metadata['user_repo']
         llm = LLMWrapper(
-            model_name=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET,
-            api_key=ANTHROPIC_API_KEY, 
-            tools=[]
+            model_name=ModelName.OPENAI_GPT_4O_MINI,
+            api_key=OPENAI_API_KEY, 
+            tools=[],
+            user_repo=user_repo
         )
         toolkit = SQLDatabaseToolkit(db=db, llm=llm.model)
         agent = create_sql_agent(
@@ -40,7 +42,7 @@ def sql_query_read(question: str):
         )
     
         response = agent.invoke(question)
-        return response
+        return response.get('output', 'Received empty response from SQL query')
     except ToolException as e:
         logger.error(f"Error running SQL query (READ): {str(e)}")
         raise e
@@ -63,10 +65,12 @@ def sql_query_write(question: str):
     try:
         logger.info(f"Running WRITE SQL query: {question}")
         db = SQLDatabase.from_uri(DB_URI_SANDBOX, engine_args={"pool_size": 20})
+        user_repo = sql_query_write.metadata['user_repo']
         llm = LLMWrapper(
-            model_name=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET,
+            model_name=ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
             api_key=ANTHROPIC_API_KEY, 
-            tools=[]
+            tools=[],
+            user_repo=user_repo
         )
         db_chain = SQLDatabaseChain.from_llm(llm.model, db)
     

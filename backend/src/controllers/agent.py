@@ -129,8 +129,11 @@ class AgentController:
                     kwargs=CONNECTION_POOL_KWARGS,
                 )
                 agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
-                agent.builder(tools=settings.get("tools"), model_name=settings.get("model"))
-                messages = agent.messages(query, settings.get("system"), settings.get("images"))
+                agent.builder(tools=settings.get("tools", []), model_name=settings.get("model"))
+                if thread_id:
+                    messages = agent.existing_thread(query, settings.get("images"))
+                else:
+                    messages = agent.messages(query, settings.get("system"), settings.get("images"))
                 return agent.process(messages, "text/event-stream")
             
             with ConnectionPool(
@@ -139,8 +142,11 @@ class AgentController:
                 kwargs=CONNECTION_POOL_KWARGS,
             ) as pool:
                 agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
-                agent.builder(tools=settings.get("tools"), model_name=settings.get("model"))
-                messages = agent.messages(query, settings.get("system"), settings.get("images"))
+                agent.builder(tools=settings.get("tools", []), model_name=settings.get("model"))
+                if thread_id:
+                    messages = agent.existing_thread(query, settings.get("images"))
+                else:
+                    messages = agent.messages(query, settings.get("system"), settings.get("images"))
                 return agent.process(messages, "application/json")
         except ValueError as e:
             logger.warning(f"Bad Request: {str(e)}")

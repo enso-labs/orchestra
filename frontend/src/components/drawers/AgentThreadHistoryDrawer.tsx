@@ -6,12 +6,12 @@ import { combineToolMessages, truncateFrom } from "@/lib/utils/format";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { Link } from "react-router-dom";
 
-interface ThreadHistoryDrawerProps {
+interface AgentThreadHistoryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProps) {
+export function AgentThreadHistoryDrawer({ isOpen, onClose }: AgentThreadHistoryDrawerProps) {
   const { history, setMessages, setPayload, deleteThread, payload } = useChatContext();
 
   const handleThreadClick = (threadId: string, messages: any[]) => {
