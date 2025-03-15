@@ -5,6 +5,7 @@ from src.tools.agent import agent_builder, available_tools
 from src.tools.sql import sql_query_read, sql_query_write
 from src.tools.shell import shell_exec
 from src.tools.search import search_engine
+from src.tools.web import playwright_toolkit
 tools = [       
     available_tools,
     shell_exec,
@@ -16,6 +17,7 @@ tools = [
     sql_query_write,
     search_engine,
 ]
+tools.extend(playwright_toolkit())
 tool_node = ToolNode(tools)
 
 ###################################### UTILS ######################################
