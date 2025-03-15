@@ -52,7 +52,7 @@ export function PresetPopover() {
     if (!agentName.trim() || !preset) return;
     
     try {
-      const response = await createAgent({
+      await createAgent({
         name: agentName,
         description: agentDescription,
         settings_id: preset.id,
