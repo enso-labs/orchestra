@@ -3,8 +3,8 @@ import { useChatContext } from "@/context/ChatContext";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { combineToolMessages, truncateFrom } from "@/lib/utils/format";
-import { Plus } from "lucide-react";
 import { SettingsPopover } from "../popovers/SettingsPopover";
+import { Link } from "react-router-dom";
 
 interface ThreadHistoryDrawerProps {
   isOpen: boolean;
@@ -48,14 +48,7 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
         bg-background z-40
       `}>
           <div className="p-4 border-b border-border">
-              <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleThreadClick("", [])}
-              >
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Chat
-              </Button>
+              <Link to="/"><h1 className="text-2xl font-bold text-foreground">Enso</h1></Link>
           </div>
 
           <ScrollArea className="flex-1">
