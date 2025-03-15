@@ -16,9 +16,9 @@ class AgentRepo:
         """Get agent by slug with settings included."""
         return self.db.query(Agent).filter(Agent.slug == slug and Agent.user_id == self.user_id).first()
         
-    def get_all_user_agents(self, public: bool = False) -> List[Agent]:
-        if public:
-            return self.db.query(Agent).filter(Agent.public == True).all()
+    def get_all_user_agents(self, public: Optional[bool] = None) -> List[Agent]:
+        if public is not None:
+            return self.db.query(Agent).filter(Agent.public == public).all()
         else:
             return self.db.query(Agent).filter(Agent.user_id == self.user_id).all()
 

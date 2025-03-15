@@ -41,7 +41,7 @@ class AgentUpdate(BaseModel):
 def list_agents(
     user: ProtectedUser = Depends(verify_credentials), 
     db: Session = Depends(get_db),
-    public: Optional[bool] = Query(default=True, description="Filter by public agents")
+    public: Optional[bool] = Query(default=None, description="Filter by public agents")
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
     agents = agent_repo.get_all_user_agents(public=public)

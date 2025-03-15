@@ -2,6 +2,8 @@ import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import AuthLayout from "../layouts/AuthLayout"
 import { Bot, Lock, Globe, Star, Users, Zap, Search, X, PencilIcon, TrashIcon, PlusIcon } from "lucide-react"
+import { getAgents, deleteAgent } from "../services/agentService"
+import { toast } from "sonner"
 
 // Agent categories
 const categories = [
@@ -15,234 +17,35 @@ const categories = [
   "Education",
 ]
 
-// Mock data - replace with real data
-const publicAgents = [
-  {
-    id: "1",
-    name: "Research Assistant",
-    description: "Expert at analyzing academic papers and research",
-    model: "GPT-4o",
-    users: 1205,
-    rating: 4.8,
-    isPublic: true,
-    categories: ["Research", "Education"],
-  },
-  {
-    id: "2",
-    name: "Code Wizard",
-    description: "Helps with programming tasks and debugging code",
-    model: "Claude 3",
-    users: 3420,
-    rating: 4.9,
-    isPublic: true,
-    categories: ["Coding"],
-  },
-  {
-    id: "3",
-    name: "Content Writer",
-    description: "Creates engaging blog posts and marketing copy",
-    model: "GPT-4o",
-    users: 2150,
-    rating: 4.7,
-    isPublic: true,
-    categories: ["Writing", "Creative"],
-  },
-  {
-    id: "4",
-    name: "Data Analyst",
-    description: "Analyzes and visualizes complex datasets",
-    model: "Claude 3",
-    users: 980,
-    rating: 4.6,
-    isPublic: true,
-    categories: ["Data Analysis"],
-  },
-  {
-    id: "5",
-    name: "Customer Support",
-    description: "Handles customer inquiries and troubleshooting",
-    model: "GPT-4o",
-    users: 1750,
-    rating: 4.5,
-    isPublic: true,
-    categories: ["Customer Support"],
-  },
-  {
-    id: "6",
-    name: "Creative Assistant",
-    description: "Helps with brainstorming and creative projects",
-    model: "Claude 3",
-    users: 1320,
-    rating: 4.7,
-    isPublic: true,
-    categories: ["Creative"],
-  },
-  {
-    id: "7",
-    name: "Financial Advisor",
-    description: "Provides financial analysis and investment advice",
-    model: "GPT-4o",
-    users: 890,
-    rating: 4.6,
-    isPublic: true,
-    categories: ["Finance"],
-  },
-  {
-    id: "8",
-    name: "Study Buddy",
-    description: "Helps with homework and exam preparation",
-    model: "Claude 3",
-    users: 2450,
-    rating: 4.8,
-    isPublic: true,
-    categories: ["Education"],
-  },
-  {
-    id: "9",
-    name: "Technical Writer",
-    description: "Creates documentation and technical guides",
-    model: "GPT-4o",
-    users: 760,
-    rating: 4.5,
-    isPublic: true,
-    categories: ["Writing", "Coding"],
-  },
-  {
-    id: "10",
-    name: "Market Researcher",
-    description: "Analyzes market trends and competitor data",
-    model: "Claude 3",
-    users: 1050,
-    rating: 4.7,
-    isPublic: true,
-    categories: ["Research", "Data Analysis"],
-  },
-  {
-    id: "11",
-    name: "Email Assistant",
-    description: "Drafts and organizes emails efficiently",
-    model: "GPT-4o",
-    users: 3100,
-    rating: 4.9,
-    isPublic: true,
-    categories: ["Writing"],
-  },
-  {
-    id: "12",
-    name: "Social Media Manager",
-    description: "Creates and schedules social media content",
-    model: "Claude 3",
-    users: 1870,
-    rating: 4.6,
-    isPublic: true,
-    categories: ["Writing", "Creative"],
-  },
-]
-
-const privateAgents = [
-  {
-    id: "p1",
-    name: "Custom Analyst",
-    description: "Personalized financial analysis assistant",
-    model: "GPT-4o",
-    users: 3,
-    rating: 5.0,
-    isPublic: false,
-    categories: ["Finance", "Data Analysis"],
-  },
-  {
-    id: "p2",
-    name: "Personal Researcher",
-    description: "Trained on your company's research papers",
-    model: "Claude 3",
-    users: 5,
-    rating: 4.9,
-    isPublic: false,
-    categories: ["Research"],
-  },
-  {
-    id: "p3",
-    name: "Team Coder",
-    description: "Specialized in your codebase and tech stack",
-    model: "GPT-4o",
-    users: 8,
-    rating: 4.8,
-    isPublic: false,
-    categories: ["Coding"],
-  },
-  {
-    id: "p4",
-    name: "Brand Writer",
-    description: "Writes in your company's tone and style",
-    model: "Claude 3",
-    users: 4,
-    rating: 4.7,
-    isPublic: false,
-    categories: ["Writing", "Creative"],
-  },
-  {
-    id: "p5",
-    name: "Internal Support",
-    description: "Handles employee questions about company policies",
-    model: "GPT-4o",
-    users: 12,
-    rating: 4.9,
-    isPublic: false,
-    categories: ["Customer Support"],
-  },
-  {
-    id: "p6",
-    name: "Project Manager",
-    description: "Helps track and manage team projects",
-    model: "Claude 3",
-    users: 7,
-    rating: 4.8,
-    isPublic: false,
-    categories: ["Data Analysis"],
-  },
-]
-
-// Add an "owner" field to the Agent type
+// Define Agent interface
 type Agent = {
   id: string
   name: string
   description: string
-  model: string
-  users: number
-  rating: number
-  isPublic: boolean
-  categories: string[]
-  owner?: string // Add this field to track ownership
+  setting?: {
+    value: {
+      model?: string
+    }
+  }
+  public: boolean
+  categories?: string[]
+  users?: number
+  rating?: number
+  owner?: string
+  created_at: string
 }
 
-// Add a few example "my agents" for the demo
-const myAgents = [
-  {
-    id: "m1",
-    name: "My Research Helper",
-    description: "Customized for my research workflow",
-    model: "GPT-4o",
-    users: 1,
-    rating: 5.0,
-    isPublic: false,
-    categories: ["Research", "Writing"],
-    owner: "current-user-id" // This would come from auth context in real app
-  },
-  {
-    id: "m2",
-    name: "Personal Coding Assistant",
-    description: "Trained on my coding style and projects",
-    model: "Claude 3",
-    users: 1,
-    rating: 4.9,
-    isPublic: false,
-    categories: ["Coding"],
-    owner: "current-user-id"
-  },
-  // More examples as needed
-]
-
-function AgentCard({ agent, editable = false }: { agent: Agent, editable?: boolean }) {
+function AgentCard({ agent, editable = false, onDelete }: { 
+  agent: Agent, 
+  editable?: boolean,
+  onDelete?: (id: string) => void
+}) {
+  // Extract model from settings if available
+  const model = agent.setting?.value?.model || "Unknown model"
+  
+  // Handle categories - use default empty array if not provided
+  const agentCategories = agent.categories || []
+  
   return (
     <div className="bg-card text-card-foreground rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-border flex flex-col h-full">
       <div className="p-5">
@@ -253,7 +56,7 @@ function AgentCard({ agent, editable = false }: { agent: Agent, editable?: boole
             </div>
             <div>
               <h3 className="text-base font-medium text-foreground">{agent.name}</h3>
-              <p className="text-xs text-muted-foreground">{agent.model}</p>
+              <p className="text-xs text-muted-foreground">{model}</p>
             </div>
           </div>
           
@@ -268,12 +71,13 @@ function AgentCard({ agent, editable = false }: { agent: Agent, editable?: boole
               <button 
                 className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"
                 aria-label="Delete agent"
+                onClick={() => onDelete && onDelete(agent.id)}
               >
                 <TrashIcon className="h-3.5 w-3.5" />
               </button>
             </div>
           ) : (
-            agent.isPublic ? (
+            agent.public ? (
               <Globe className="h-4 w-4 text-muted-foreground/70" />
             ) : (
               <Lock className="h-4 w-4 text-muted-foreground/70" />
@@ -284,7 +88,7 @@ function AgentCard({ agent, editable = false }: { agent: Agent, editable?: boole
         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{agent.description}</p>
         
         <div className="flex flex-wrap gap-1.5 mb-4">
-          {agent.categories.map((category) => (
+          {agentCategories.map((category) => (
             <span
               key={category}
               className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary/70 text-secondary-foreground"
@@ -300,11 +104,11 @@ function AgentCard({ agent, editable = false }: { agent: Agent, editable?: boole
           <div className="flex items-center space-x-3 text-xs text-muted-foreground">
             <div className="flex items-center">
               <Users className="h-3.5 w-3.5 mr-1" />
-              {agent.users.toLocaleString()}
+              {agent.users || 0}
             </div>
             <div className="flex items-center">
               <Star className="h-3.5 w-3.5 mr-1 text-amber-400" />
-              {agent.rating}
+              {agent.rating || 5.0}
             </div>
           </div>
           
@@ -334,10 +138,66 @@ function EmptyState({ message }: { message: string }) {
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [filteredPublicAgents, setFilteredPublicAgents] = useState(publicAgents)
-  const [filteredPrivateAgents, setFilteredPrivateAgents] = useState(privateAgents)
-  const [filteredMyAgents, setFilteredMyAgents] = useState(myAgents)
-  const [activeTab, setActiveTab] = useState("public")
+  const [myAgents, setMyAgents] = useState<Agent[]>([])
+  const [publicAgents, setPublicAgents] = useState<Agent[]>([])
+  const [privateAgents, setPrivateAgents] = useState<Agent[]>([])
+  const [filteredMyAgents, setFilteredMyAgents] = useState<Agent[]>([])
+  const [filteredPublicAgents, setFilteredPublicAgents] = useState<Agent[]>([])
+  const [filteredPrivateAgents, setFilteredPrivateAgents] = useState<Agent[]>([])
+  const [activeTab, setActiveTab] = useState("mine") // Changed default to "mine"
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch agents from API
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        setIsLoading(true)
+        const result = await getAgents()
+        const agents = result.agents || []
+        
+        // Filter agents into respective categories
+        const myAgentsList = agents.filter((agent: Agent) => !agent.public)
+        const publicAgentsList = agents.filter((agent: Agent) => agent.public)
+        
+        // For now, we'll keep privateAgents separate, but in a real app
+        // this might be agents shared with you but not owned by you
+        const privateAgentsList: Agent[] = []
+        
+        setMyAgents(myAgentsList)
+        setPublicAgents(publicAgentsList)
+        setPrivateAgents(privateAgentsList)
+        
+        setFilteredMyAgents(myAgentsList)
+        setFilteredPublicAgents(publicAgentsList)
+        setFilteredPrivateAgents(privateAgentsList)
+      } catch (error) {
+        console.error("Failed to fetch agents:", error)
+        toast.error("Failed to load agents")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchAgents()
+  }, [])
+
+  // Handle agent deletion
+  const handleDeleteAgent = async (agentId: string) => {
+    if (confirm("Are you sure you want to delete this agent?")) {
+      try {
+        await deleteAgent(agentId)
+        
+        // Update the agents list after deletion
+        setMyAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId))
+        setFilteredMyAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId))
+        
+        toast.success("Agent deleted successfully")
+      } catch (error) {
+        console.error("Failed to delete agent:", error)
+        toast.error("Failed to delete agent")
+      }
+    }
+  }
 
   // Filter agents based on search term and selected categories
   useEffect(() => {
@@ -348,25 +208,17 @@ export default function Dashboard() {
           agent.description.toLowerCase().includes(searchTerm.toLowerCase())
 
         const matchesCategories =
-          selectedCategories.length === 0 || selectedCategories.some((cat) => agent.categories.includes(cat))
+          selectedCategories.length === 0 || 
+          (agent.categories && selectedCategories.some(cat => agent.categories?.includes(cat)))
 
         return matchesSearch && matchesCategories
       })
     }
 
-    setFilteredPublicAgents(filterAgents(publicAgents).map(agent => ({
-      ...agent,
-      owner: agent.owner || '' // Ensure owner is always a string
-    })))
-    setFilteredPrivateAgents(filterAgents(privateAgents).map(agent => ({
-      ...agent, 
-      owner: agent.owner || ''
-    })))
-    setFilteredMyAgents(filterAgents(myAgents).map(agent => ({
-      ...agent,
-      owner: agent.owner || ''
-    })))
-  }, [searchTerm, selectedCategories])
+    setFilteredMyAgents(filterAgents(myAgents))
+    setFilteredPublicAgents(filterAgents(publicAgents))
+    setFilteredPrivateAgents(filterAgents(privateAgents))
+  }, [searchTerm, selectedCategories, myAgents, publicAgents, privateAgents])
 
   // Toggle category selection
   const toggleCategory = (category: string) => {
@@ -380,9 +232,6 @@ export default function Dashboard() {
     setSearchTerm("")
     setSelectedCategories([])
   }
-
-  // Log to help debug
-  console.log("Dashboard rendering", { filteredPublicAgents, filteredPrivateAgents, filteredMyAgents })
 
   return (
     <AuthLayout>
@@ -449,9 +298,24 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Updated Tabs */}
+          {/* Reordered Tabs - Mine first */}
           <div className="w-full">
             <div className="flex space-x-1 border-b border-border">
+              <button
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === "mine"
+                    ? "border-b-2 border-primary text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab("mine")}
+              >
+                Mine
+                {filteredMyAgents.length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                    {filteredMyAgents.length}
+                  </span>
+                )}
+              </button>
               <button
                 className={`px-4 py-2 text-sm font-medium ${
                   activeTab === "public"
@@ -482,28 +346,48 @@ export default function Dashboard() {
                   </span>
                 )}
               </button>
-              <button
-                className={`px-4 py-2 text-sm font-medium ${
-                  activeTab === "mine"
-                    ? "border-b-2 border-primary text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => setActiveTab("mine")}
-              >
-                Mine
-                {filteredMyAgents.length > 0 && (
-                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                    {filteredMyAgents.length}
-                  </span>
-                )}
-              </button>
             </div>
 
             {/* Tab content */}
             <div className="mt-4">
+              {activeTab === "mine" && (
+                <div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-medium">My Agents</h2>
+                    <Link to="/create-agent" className="flex items-center justify-center px-3 py-1.5 rounded-md bg-primary/90 text-primary-foreground hover:bg-primary transition-colors text-xs font-medium">
+                      <PlusIcon className="mr-1.5 h-3.5 w-3.5" />
+                      Create New Agent
+                    </Link>
+                  </div>
+                  
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-40">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : filteredMyAgents.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                      {filteredMyAgents.map((agent) => (
+                        <AgentCard 
+                          key={agent.id} 
+                          agent={agent} 
+                          editable={true}
+                          onDelete={handleDeleteAgent}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState message="You don't have any agents yet" />
+                  )}
+                </div>
+              )}
+
               {activeTab === "public" && (
                 <div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
-                  {filteredPublicAgents.length > 0 ? (
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-40">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : filteredPublicAgents.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
                       {filteredPublicAgents.map((agent) => (
                         <AgentCard key={agent.id} agent={agent} />
@@ -517,7 +401,11 @@ export default function Dashboard() {
 
               {activeTab === "private" && (
                 <div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
-                  {filteredPrivateAgents.length > 0 ? (
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-40">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : filteredPrivateAgents.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
                       {filteredPrivateAgents.map((agent) => (
                         <AgentCard key={agent.id} agent={agent} />
@@ -525,28 +413,6 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <EmptyState message="No private agents found" />
-                  )}
-                </div>
-              )}
-              
-              {activeTab === "mine" && (
-                <div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-medium">My Agents</h2>
-                    <button className="flex items-center justify-center px-3 py-1.5 rounded-md bg-primary/90 text-primary-foreground hover:bg-primary transition-colors text-xs font-medium">
-                      <PlusIcon className="mr-1.5 h-3.5 w-3.5" />
-                      Create New Agent
-                    </button>
-                  </div>
-                  
-                  {filteredMyAgents.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
-                      {filteredMyAgents.map((agent) => (
-                        <AgentCard key={agent.id} agent={agent} editable={true} />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState message="You don't have any agents yet" />
                   )}
                 </div>
               )}
