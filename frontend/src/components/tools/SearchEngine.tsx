@@ -1,7 +1,6 @@
 import { Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
 import JsonView from '@uiw/react-json-view';
-import { githubLightTheme } from '@uiw/react-json-view/githubLight';
 import { githubDarkTheme } from '@uiw/react-json-view/githubDark';
 
 export default function SearchEngineTool({ selectedToolMessage }: { selectedToolMessage: any }) {

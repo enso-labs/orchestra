@@ -43,11 +43,6 @@ export function truncateFrom(
   );
 }
 
-interface ToolCall {
-  tool_id: string;
-  [key: string]: any;
-}
-
 interface Message {
   id: string;
   type: string;
