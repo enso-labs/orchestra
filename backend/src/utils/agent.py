@@ -20,6 +20,7 @@ from src.entities import Answer
 from src.utils.logger import logger
 from src.utils.stream import stream_chunks
 from src.flows.chatbot import chatbot_builder
+from langchain.chat_models import init_chat_model
 class Agent:
     def __init__(self, config: dict, pool: ConnectionPool, user_repo: UserRepo = None):
         self.connection_kwargs = {
@@ -160,7 +161,9 @@ class Agent:
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ) -> StateGraph:
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
-        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
+        provider = self.user_repo.get_provider(model_name)
+        key = self.user_repo.get_token_by_provider(model_name)
+        self.llm = init_chat_model(model=model_name, model_provider=provider, temperature=0, api_key=key)
         self.checkpointer = self._checkpointer()
         if self.tools:
             graph = create_react_agent(self.llm, tools=self.tools, checkpointer=self.checkpointer)
