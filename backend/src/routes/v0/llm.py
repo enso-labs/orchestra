@@ -4,6 +4,7 @@ from fastapi import Body, HTTPException,status, Depends, APIRouter, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
+from src.services.mcp import McpService
 from src.models import User
 from src.entities import Answer, NewThread, ExistingThread
 from src.utils.auth import get_async_db, get_db, verify_credentials
@@ -75,17 +76,10 @@ async def new_thread(
     user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
-    session = AgentSession()
+    
     try:
-        llm = LLMWrapper(model_name='openai-gpt-4o-mini', tools=[])
-        await session.setup(llm)
-        
-        try:
-            controller = AgentController(db=db, user_id=user.id, agent=session.agent, llm=llm)
-            return await controller.anew_thread(request=request, new_thread=body)
-        finally:
-            # Ensure we always close the client properly
-            await session.cleanup()
+        controller = AgentController(db=db, user_id=user.id)
+        return await controller.anew_thread(request=request, new_thread=body)
     except Exception as e:
         logger.exception(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

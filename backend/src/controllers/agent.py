@@ -11,12 +11,10 @@ from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
 
 class AgentController:
-    def __init__(self, db: AsyncSession, user_id: str, agent_id: str = None, agent = None, llm = None): # type: ignore
+    def __init__(self, db: AsyncSession, user_id: str, agent_id: str = None): # type: ignore
         self.user_repo = UserRepo(db=db, user_id=user_id)
         self.agent_repo = AgentRepo(db=db, user_id=user_id)
         self.agent_id = agent_id
-        self.agent = agent
-        self.llm = llm
         
     async def anew_thread(
         self, 
@@ -38,8 +36,8 @@ class AgentController:
                     max_size=20,
                     kwargs=CONNECTION_POOL_KWARGS,
                 )
-                agent = Agent(config=config, pool=pool, user_repo=self.user_repo, agent=self.agent, llm=self.llm)
-                # await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
+                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+                await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
                 messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
                 return await agent.aprocess(messages, "text/event-stream")
             
@@ -50,8 +48,8 @@ class AgentController:
                 kwargs=CONNECTION_POOL_KWARGS,
             )
             try:
-                agent = Agent(config=config, pool=pool, user_repo=self.user_repo, agent=self.agent, llm=self.llm)
-                # await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
+                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+                await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
                 messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
                 return await agent.aprocess(messages, "application/json")
             finally:

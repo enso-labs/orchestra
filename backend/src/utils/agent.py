@@ -15,7 +15,8 @@ from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, AIM
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
-from psycopg_pool import ConnectionPool
+from psycopg_pool import AsyncConnectionPool
+from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL
 from src.tools import collect_tools, dynamic_tools, get_mcp_tools
@@ -26,8 +27,13 @@ from src.utils.logger import logger
 from src.utils.stream import stream_chunks
 from src.flows.chatbot import chatbot_builder
 
+# class ConfiguredAgent(BaseModel):
+#     user_id: str
+#     thread_id: str
+#     agent_id: str = None
+
 class Agent:
-    def __init__(self, config: dict, pool: ConnectionPool, user_repo: UserRepo = None, agent = None, llm = None):
+    def __init__(self, config: dict, pool: AsyncConnectionPool, user_repo: UserRepo = None):
         self.connection_kwargs = {
             "autocommit": True,
             "prepare_threshold": 0,
@@ -36,14 +42,14 @@ class Agent:
         self.thread_id = config.get("thread_id", None)
         self.agent_id = config.get("agent_id", None)
         self.config = {"configurable": config}
-        self.graph = agent
+        self.graph = None
         self.pool = pool
         self.user_repo = user_repo
         self.model_name = config.get("model_name", None)
-        self.llm: LLMWrapper = llm
+        self.llm: LLMWrapper = None
         self.tools = config.get("tools", [])
         self.checkpointer = None
-        self.agent = agent
+        self.agent_session = McpService()
         
     def _checkpointer(self):
         checkpointer = PostgresSaver(self.pool)
@@ -309,10 +315,9 @@ class Agent:
         self.checkpointer = await self._acheckpointer()
         
         # Get MCP tools if provided
-        if mcp and len(mcp.keys()) > 0 and self.mcp_client:
-            # Get tools directly from the client that's already been set up
-            mcp_tools = self.mcp_client.get_tools()
-            self.tools.extend(mcp_tools)
+        if mcp and len(mcp.keys()) > 0:
+            await self.agent_session.setup(mcp)
+            self.tools.extend(self.agent_session.tools())
         
         if self.tools:
             # Use all tools, not just mcp_tools
@@ -332,18 +337,20 @@ class Agent:
         messages: list[AnyMessage], 
         content_type: str = "application/json",
     ) -> Response:
-        self.create_user_thread()
+        await self.create_user_thread()
         if content_type == "application/json":
-            invoke = await self.graph.ainvoke({"messages": messages}, {'configurable': self.config})
-            content = Answer(
-                thread_id=self.thread_id,
-                answer=invoke.get('messages')[-1]
-            ).model_dump()
-
-            return JSONResponse(
-                content=content,
-                status_code=status.HTTP_200_OK
-            )
+            try:
+                invoke = await self.graph.ainvoke({"messages": messages}, self.config)
+                content = Answer(
+                    thread_id=self.thread_id,
+                    answer=invoke.get('messages')[-1]
+                ).model_dump()
+                return JSONResponse(
+                    content=content,
+                        status_code=status.HTTP_200_OK
+                    )
+            finally:
+                await self.agent_session.cleanup()
             
         # Assume text/event-stream for streaming
         async def astream_generator():
@@ -404,14 +411,25 @@ class Agent:
                         }
                         yield f"data: {json.dumps(tool_data)}\n\n"
         
+        except GeneratorExit:
+            # Handle client disconnection gracefully
+            logger.info("Client disconnected, cleaning up stream")
+            raise  # Re-raise to properly terminate the generator
         except Exception as e:
             logger.exception("Error in astream_chunks", e)
         finally:
             logger.info("Closing stream")
             # Send end event
-            end_data = {
-                "thread_id": thread_id,
-                "event": "end",
-                "content": []
-            }
-            yield f"data: {json.dumps(end_data)}\n\n"
+            try:
+                end_data = {
+                    "thread_id": thread_id,
+                    "event": "end",
+                    "content": []
+                }
+                yield f"data: {json.dumps(end_data)}\n\n"
+            except GeneratorExit:
+                # If client already disconnected during finally block
+                logger.info("Client disconnected during stream cleanup")
+                raise
+            except Exception as e:
+                logger.exception("Error sending final stream message", e)
