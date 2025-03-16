@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import ChatInput from "@/components/inputs/ChatInput"
 import DefaultTool from "@/components/tools/Default"
 import SearchEngineTool from "@/components/tools/SearchEngine"
+import { findToolCall } from "@/lib/utils/format"
 
 
 interface ChatMessage {
@@ -101,7 +102,7 @@ export default function Chat() {
               {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
                 <SystemMessageCard content={payload.system} />
               )}
-              {messages?.map((message: ChatMessage, index: number) => {
+              {messages?.map((message: any, index: number) => {
                 if (message.type === "tool") {
                   return (
                     <div key={index} className="flex justify-start">
@@ -111,7 +112,7 @@ export default function Chat() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setSelectedToolMessage(message)
+                              setSelectedToolMessage(findToolCall(message, messages))
                               setIsAssistantOpen(true)
                             }}
                             className="flex items-center gap-2"

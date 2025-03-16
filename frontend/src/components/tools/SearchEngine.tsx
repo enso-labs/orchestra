@@ -1,6 +1,8 @@
 import { Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
-import MarkdownCard from "@/components/cards/MarkdownCard"
+import JsonView from '@uiw/react-json-view';
+import { githubLightTheme } from '@uiw/react-json-view/githubLight';
+import { githubDarkTheme } from '@uiw/react-json-view/githubDark';
 
 export default function SearchEngineTool({ selectedToolMessage }: { selectedToolMessage: any }) {
 	return (
@@ -33,7 +35,7 @@ export default function SearchEngineTool({ selectedToolMessage }: { selectedTool
 					<div>
 						<span className="font-semibold">Input:</span>
 						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							{selectedToolMessage.content ? <MarkdownCard content={selectedToolMessage.content} /> : <p>No input data available</p>}
+							{selectedToolMessage.content ? <JsonView value={JSON.parse(selectedToolMessage.content)} style={githubDarkTheme} /> : <p>No input data available</p>}
 						</div>
 					</div>
 					<div>
