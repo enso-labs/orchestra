@@ -6,4 +6,5 @@ export interface ThreadPayload {
   tools: any[];
   visualize: boolean;
   model: string;
+  mcp: object|null;
 }

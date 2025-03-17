@@ -1,18 +1,49 @@
-import uuid
 from typing import Annotated
 
-from fastapi import Body,status, Depends, APIRouter, Request
-from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from src.models import ProtectedUser, User
+from fastapi import Body, HTTPException,status, Depends, APIRouter, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
+from src.services.mcp import McpService
+from src.models import User
 from src.entities import Answer, NewThread, ExistingThread
-from src.utils.agent import Agent
-from src.utils.auth import get_db, verify_credentials
+from src.utils.auth import get_async_db, get_db, verify_credentials
+from src.utils.logger import logger
 from src.controllers.agent import AgentController
+from langgraph.prebuilt import create_react_agent
+
+from src.utils.llm import LLMWrapper
 
 TAG = "Thread"
 router = APIRouter(tags=[TAG])
+
+
+class AgentSession:
+    def __init__(self):
+        self.mcp_client = None
+        self.agent = None
+        
+    async def setup(self, model):    
+        self.mcp_client = MultiServerMCPClient(
+            {
+                # "math": {
+                #     "command": "python",
+                #     "args": ["../server/math/main.py"],
+                #     "transport": "stdio",
+                # },
+                "weather": {
+                    "url": "http://localhost:8005/sse",
+                    "transport": "sse",
+                }
+            }
+        )
+        await self.mcp_client.__aenter__()
+        self.agent = create_react_agent(model, self.mcp_client.get_tools())
+        return self.agent
+    
+    async def cleanup(self):
+        if self.mcp_client:
+            await self.mcp_client.__aexit__(None, None, None)
 
 ################################################################################
 ### Create New Thread
@@ -39,14 +70,19 @@ router = APIRouter(tags=[TAG])
         }
     }
 )
-def new_thread(
+async def new_thread(
     request: Request,
     body: Annotated[NewThread, Body()],
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
-    controller = AgentController(db=db, user_id=user.id)
-    return controller.new_thread(request=request, new_thread=body)
+    
+    try:
+        controller = AgentController(db=db, user_id=user.id)
+        return await controller.anew_thread(request=request, new_thread=body)
+    except Exception as e:
+        logger.exception(f"Error creating new thread: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 ################################################################################
 ### Query Existing Thread
@@ -74,12 +110,12 @@ def new_thread(
         }
     }
 )
-def existing_thread(
+async def existing_thread(
     request: Request,
     thread_id: str, 
     body: Annotated[ExistingThread, Body()],
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     controller = AgentController(db=db, user_id=user.id)
-    return controller.existing_thread(request=request, thread_id=thread_id, existing_thread=body)
+    return await controller.aexisting_thread(request=request, thread_id=thread_id, existing_thread=body)

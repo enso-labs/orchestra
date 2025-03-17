@@ -32,3 +32,6 @@ alembic
 sqlalchemy
 passlib[bcrypt]
 python-jose[cryptography]
+langchain-mcp-adapters
+asyncpg
+sqlalchemy[asyncio]

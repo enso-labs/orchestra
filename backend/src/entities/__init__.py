@@ -26,6 +26,7 @@ class StreamInput(BaseModel):
 class ExistingThread(BaseModel):
     query: str = Field(...)
     tools: Optional[List[Any]] = Field(default_factory=list)
+    mcp: Optional[dict] = Field(default_factory=dict)
     stream: Optional[bool] = Field(default=False)
     images: Optional[List[str]] = Field(default_factory=list)
     model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)

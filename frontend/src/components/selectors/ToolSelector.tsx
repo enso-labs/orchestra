@@ -5,11 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
   Wrench, X, Compass, Brain, Feather, Cloud, Database, 
-  Search, BookOpen, Globe, Infinity, Leaf, Play
+  Search, BookOpen, Globe, Infinity, Leaf, Play,
+  PlusCircle, Save
 } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import apiClient from "@/lib/utils/apiClient";
+import Editor from 'react-simple-code-editor';
+import { highlight, languages } from 'prismjs';
+import 'prismjs/components/prism-json';
+// import 'prismjs/themes/prism.css';
+import 'highlight.js/styles/github-dark-dimmed.min.css';
 
 // Map of tool icons - in a real implementation, you might want to map specific tool IDs to specific icons
 const TOOL_ICONS: Record<string, any> = {
@@ -60,6 +66,20 @@ const animationStyles = `
     opacity: 1;
     transition-delay: 75ms;
   }
+  
+  .editor {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    min-height: 200px;
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    background-color: hsl(var(--background));
+  }
+  
+  .editor:focus-within {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 `;
 
 export function ToolSelector() {
@@ -70,13 +90,33 @@ export function ToolSelector() {
     useToolsEffect,
     setIsToolCallInProgress,
     setCurrentToolCall,
+    useMCPEffect
   } = useChatContext();
+
+  const defaultMCP = {
+    "weather": {
+      "transport": "sse",
+      "url": "http://localhost:8005/sse"
+    }
+  }
   
   const [toolFilter, setToolFilter] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [groupByCategory, setGroupByCategory] = useState(true);
   const [testingTool, setTestingTool] = useState<any>(null);
   const [testFormValues, setTestFormValues] = useState<Record<string, any>>({});
+  const [isAddingMCP, setIsAddingMCP] = useState(false);
+  const [mcpCode, setMcpCode] = useState(JSON.stringify(defaultMCP, null, 2));
+  const [mcpError, setMcpError] = useState('');
+  const [hasSavedMCP, setHasSavedMCP] = useState(false);
+
+  // Load MCP from payload
+  useEffect(() => {
+    if (payload.mcp) {
+      setMcpCode(JSON.stringify(payload.mcp, null, 2));
+      setHasSavedMCP(true);
+    }
+  }, [payload.mcp]);
 
   const toggleTool = (toolId: string) => {
     setPayload((prev: { tools: any[]; }) => {
@@ -188,6 +228,63 @@ export function ToolSelector() {
 
   const cancelTesting = () => {
     setTestingTool(null);
+  };
+
+  const startAddingMCP = () => {
+    setIsAddingMCP(true);
+  };
+
+  const cancelAddingMCP = () => {
+    setIsAddingMCP(false);
+    setMcpError('');
+    
+    // Reset the editor to the current payload MCP if one exists
+    if (payload.mcp) {
+      setMcpCode(JSON.stringify(payload.mcp, null, 2));
+    } else {
+      setMcpCode(JSON.stringify(defaultMCP, null, 2));
+    }
+  };
+
+  const saveMCPConfig = () => {
+    try {
+      // Validate JSON
+      const parsedConfig = JSON.parse(mcpCode);
+      
+      // Update payload
+      setPayload((prev: { mcp: any; }) => ({
+        ...prev,
+        mcp: parsedConfig
+      }));
+      
+      // Update state to show config is saved
+      setHasSavedMCP(true);
+      
+      // Clear any previous errors
+      setMcpError('');
+      
+    } catch (e) {
+      setMcpError('Invalid JSON format. Please check your configuration.');
+    }
+  };
+  
+  const removeMCPConfig = () => {
+    // Remove from payload
+    setPayload((prev: { mcp: any; }) => {
+      const { mcp, ...rest } = prev;
+      return rest;
+    });
+    
+    // Update state
+    setHasSavedMCP(false);
+    
+    // Reset to default
+    setMcpCode(JSON.stringify(defaultMCP, null, 2));
+    
+    // If removing while in edit mode, we'll keep it open
+    if (!isAddingMCP) {
+      setIsAddingMCP(false);
+    }
   };
 
   const enabledCount = payload.tools?.length || 0;
@@ -309,6 +406,7 @@ export function ToolSelector() {
     }
   };
 
+  useMCPEffect();
   useToolsEffect();
 
   // Tool card component to avoid duplication
@@ -406,7 +504,77 @@ export function ToolSelector() {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-96 p-4 mr-2 rounded-lg" align="start">
-          {testingTool ? (
+          {isAddingMCP ? (
+            // MCP Config Editor View
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-lg">
+                  {hasSavedMCP ? "Edit MCP Configuration" : "Add MCP Configuration"}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={cancelAddingMCP}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-4">
+                {hasSavedMCP 
+                  ? "Edit your MCP configuration in JSON format below." 
+                  : "Paste your MCP configuration in JSON format below."}
+              </p>
+              
+              <div className="mb-4">
+                <Editor
+                  value={mcpCode}
+                  onValueChange={code => setMcpCode(code)}
+                  highlight={code => highlight(code, languages.json, 'json')}
+                  padding={10}
+                  className="editor"
+                  style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 14,
+                  }}
+                />
+                
+                {mcpError && (
+                  <div className="text-sm text-red-500 mt-2">
+                    {mcpError}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={cancelAddingMCP}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="button" 
+                  variant={hasSavedMCP ? "destructive" : "default"} 
+                  onClick={hasSavedMCP ? removeMCPConfig : saveMCPConfig}
+                >
+                  {hasSavedMCP ? (
+                    <>
+                      <X className="h-4 w-4 mr-1" />
+                      Remove Configuration
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-1" />
+                      Save Configuration
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : testingTool ? (
             // Test Tool Form
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -468,6 +636,16 @@ export function ToolSelector() {
                       Clear
                     </Button>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                    onClick={startAddingMCP}
+                    title={hasSavedMCP ? "Edit or remove MCP configuration" : "Add MCP configuration"}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    {hasSavedMCP && <span className="ml-1 w-2 h-2 bg-green-500 rounded-full absolute top-0 right-0"></span>}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

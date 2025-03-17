@@ -4,7 +4,12 @@ NEW_THREAD_QUERY_EXAMPLE = {
     "model": "openai-gpt-4o",
     "tools": [],
     "images": [],
-    # "visualize": False
+    "mcp": {
+        "weather": {
+            "url": "http://localhost:8005/sse",
+            "transport": "sse",
+        }
+    },
 }
 
 NEW_THREAD_ANSWER_EXAMPLE = {
@@ -42,6 +47,12 @@ EXISTING_THREAD_QUERY_EXAMPLE = {
     "model": "openai-gpt-4o",
     "tools": [],
     "images": [],
+    "mcp": {
+        "weather": {
+            "url": "http://localhost:8005/sse",
+            "transport": "sse",
+        }
+    },
 }
 
 EXISTING_THREAD_ANSWER_EXAMPLE = {
