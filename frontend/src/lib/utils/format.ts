@@ -56,6 +56,32 @@ interface Message {
   [key: string]: any;
 }
 
+export function findToolCall(message: any, messages: any[]) {
+  for (const msg of messages) {
+    if (msg.tool_calls && msg.tool_calls.length > 0) {
+      const toolCalls = msg.tool_calls;
+
+      if (Array.isArray(toolCalls)) {
+        // tool_calls is an array: iterate through each call
+        for (const call of toolCalls) {
+          if (call && typeof call === 'object' && call.id === message.id) {
+            delete message.tool_call_id;
+            message.content = JSON.stringify(call.args)
+            return message;
+          }
+        }
+      } else if (typeof toolCalls === 'object') {
+        // tool_calls is a single object
+        if (toolCalls.tool_call_id === message.id) {
+          return toolCalls;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+
 /**
  * Combines a tool call (the “input”) with its corresponding tool message (the “output”)
  * by matching the tool call’s id to the tool message’s tool_call_id.

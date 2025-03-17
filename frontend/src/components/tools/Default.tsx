@@ -1,6 +1,8 @@
 import MarkdownCard from "@/components/cards/MarkdownCard"
 import { Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
+import JsonView from "@uiw/react-json-view"
+import { githubDarkTheme } from "@uiw/react-json-view/githubDark"
 
 export default function DefaultTool({ selectedToolMessage }: { selectedToolMessage: any }) {
 	return (
@@ -33,7 +35,7 @@ export default function DefaultTool({ selectedToolMessage }: { selectedToolMessa
 					<div>
 						<span className="font-semibold">Input:</span>
 						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							<MarkdownCard content={selectedToolMessage.content} />
+							<JsonView value={JSON.parse(selectedToolMessage.content.replace(/'/g, '"'))} style={githubDarkTheme} />
 						</div>
 					</div>
 					<div>

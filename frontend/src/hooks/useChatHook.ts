@@ -70,21 +70,24 @@ Language: ${navigator.language}
 `;
     }
     
-    const handleQuery = () => {
-        queryThread(payload);
+    const handleQuery = (agentId: string = '') => {
+        queryThread(payload, agentId);
     }
 
-    const queryThread = (payload: ThreadPayload) => {
+    const queryThread = (payload: ThreadPayload, agentId: string = '') => {
         logger("Querying thread:", payload);
         const updatedMessages = [...messages, { role: 'user', content: payload.query }];
         setMessages(updatedMessages);
         setResponse("");
         responseRef.current = "";
-        const responseData = {
+        const responseData = agentId ? {
+            query: payload.query,
+        } : {
             ...payload,
             system: constructSystemPrompt(payload.system)
         }
-        const source = new SSE(`${VITE_API_URL}/threads${payload.threadId ? `/${payload.threadId}` : ''}`,
+        const url = agentId ? `/agents/${agentId}/threads` : '/threads';
+        const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
             {
                 headers: {
                     'Content-Type': 'application/json', 
@@ -160,7 +163,7 @@ Language: ${navigator.language}
                     setMessages(updatedMessages);
                     setToolCallMessage(null);
                 }
-                getHistory(1, history.per_page);
+                getHistory(1, history.per_page, agentId);
                 source.close();
                 logger("Thread ended");
                 return;
@@ -172,16 +175,19 @@ Language: ${navigator.language}
         return true;
     };
 
-    const getHistory = async (page: number = 1, perPage: number = 20) => {
+    const getHistory = async (page: number = 1, perPage: number = 20, agentId: string = '') => {
         try {
-            const res = await apiClient.get(`/threads?page=${page}&per_page=${perPage}`, {
+            const url = agentId ? `/agents/${agentId}/threads` : '/threads';
+            const params = { page, perPage };
+            const res = await apiClient.get(url, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json', 
                     'Authorization': `Bearer ${token}`
                 },
-                method: 'GET'
-            });
+                method: 'GET',
+                params
+            }); 
             setHistory(res.data);
         } catch (error: any) {
             logger('Error listing threads:', error);
@@ -218,9 +224,9 @@ Language: ${navigator.language}
         setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
     };
 
-    const useGetHistoryEffect = () => {
+    const useGetHistoryEffect = (agentId: string = '') => {
         useEffect(() => {
-            getHistory(history.page, history.per_page);
+            getHistory(history.page, history.per_page, agentId);
 
             return () => {
                 // Cleanup logic if needed

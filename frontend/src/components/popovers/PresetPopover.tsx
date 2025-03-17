@@ -4,18 +4,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, Box } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatContext } from "@/context/ChatContext";
 import apiClient from "@/lib/utils/apiClient";
-import { deleteSetting } from "../../services/settingService";
+import { deleteSetting } from "@/services/settingService";
+import { createAgent } from "@/services/agentService";
 import { toast } from "sonner";
 
 export function PresetPopover() {
   const [isCreating, setIsCreating] = useState(false);
+  const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [filterText, setFilterText] = useState("");
+  const [agentName, setAgentName] = useState("");
+  const [agentDescription, setAgentDescription] = useState("");
+  const [agentPublic, setAgentPublic] = useState(false);
   const { payload, settings, setPayload, useSettingsEffect, fetchSettings, setPreset, preset } = useChatContext();
 
   const handleCreatePreset = async () => {
@@ -40,6 +45,28 @@ export function PresetPopover() {
     } catch (error) {
       console.error('Failed to create preset:', error);
       toast.error("Failed to create preset");
+    }
+  };
+
+  const handleCreateAgent = async () => {
+    if (!agentName.trim() || !preset) return;
+    
+    try {
+      await createAgent({
+        name: agentName,
+        description: agentDescription,
+        settings_id: preset.id,
+        public: agentPublic
+      });
+      
+      setAgentName("");
+      setAgentDescription("");
+      setAgentPublic(false);
+      setIsCreatingAgent(false);
+      toast.success("Agent created successfully");
+    } catch (error) {
+      console.error('Failed to create agent:', error);
+      toast.error("Failed to create agent");
     }
   };
 
@@ -134,6 +161,47 @@ export function PresetPopover() {
             </div>
           )}
 
+          {/* Agent creation form - only shown if a preset is selected */}
+          {preset && isCreatingAgent && (
+            <div className="space-y-2 p-2 border border-input rounded-md">
+              <h5 className="font-medium">Create Agent from Preset</h5>
+              <input
+                type="text"
+                value={agentName}
+                onChange={(e) => setAgentName(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md"
+                placeholder="Agent name"
+              />
+              <textarea
+                value={agentDescription}
+                onChange={(e) => setAgentDescription(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md"
+                placeholder="Agent description"
+                rows={3}
+              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="agentPublic"
+                  checked={agentPublic}
+                  onChange={(e) => setAgentPublic(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="agentPublic">Public agent</label>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Button onClick={handleCreateAgent} className="flex-1">Create Agent</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreatingAgent(false)} 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
           <ScrollArea className="h-[300px] pr-4">
             <div className="space-y-2">
               {filteredSettings.map((setting: any) => (
@@ -151,18 +219,30 @@ export function PresetPopover() {
                   </button>
                   <div className="flex gap-1">
                     {setting.id === preset?.id ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleUpdatePreset(setting)}
-                      >
-                        <Save className="h-4 w-4 text-primary" />
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleUpdatePreset(setting)}
+                          title="Update preset"
+                        >
+                          <Save className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setIsCreatingAgent(!isCreatingAgent)}
+                          title="Create agent from preset"
+                        >
+                          <Box className="h-4 w-4 text-primary" />
+                        </Button>
+                      </>
                     ) : (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeletePreset(setting.id)}
+                        title="Delete preset"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

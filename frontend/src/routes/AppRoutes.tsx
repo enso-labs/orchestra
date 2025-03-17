@@ -15,6 +15,7 @@ import Chat from '../pages/Chat';
 import Login from '../pages/Login';
 import Register from '@/pages/Register';
 import OAuthCallback from '@/pages/OAuthCallback';
+import AgentChat from '@/pages/AgentChat';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -66,6 +67,23 @@ const AppRoutes: React.FC = () => {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/agents/:agentId"
+          element={
+            <PrivateRoute>
+              <AgentChat />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agents/:agentId/threads/:threadId"
+          element={
+            <PrivateRoute>
+              <AgentChat />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

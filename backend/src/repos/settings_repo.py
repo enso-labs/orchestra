@@ -9,19 +9,27 @@ class SettingsRepo:
 
     def get_by_id(self, settings_id: str) -> Optional[Settings]:
         """Get setting by ID."""
-        return self.db.query(Settings).filter(Settings.id == settings_id).first()
+        return self.db.query(Settings).filter(
+            Settings.id == settings_id,
+            Settings.user_id == self.user_id
+        ).first()
 
     def get_by_slug(self, slug: str) -> Optional[Settings]:
         """Get setting by slug."""
-        return self.db.query(Settings).filter(Settings.slug == slug).first()
+        return self.db.query(Settings).filter(
+            Settings.slug == slug,
+            Settings.user_id == self.user_id
+        ).first()
 
     def get_all(self) -> List[Settings]:
         """Get all settings."""
-        return self.db.query(Settings).all()
+        return self.db.query(Settings).filter(
+            Settings.user_id == self.user_id
+        ).all()
 
     def create(self, name: str, value: dict) -> Settings:
         try:
-            setting = Settings(name=name, value=value)
+            setting = Settings(name=name, value=value, user_id=self.user_id)
             self.db.add(setting)
             self.db.commit()
             self.db.refresh(setting)
@@ -63,4 +71,4 @@ class SettingsRepo:
             self.db.refresh(setting)
         else:
             setting = self.create(name=name, value=value)
-        return setting 
+        return setting

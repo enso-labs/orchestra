@@ -1,7 +1,7 @@
 """Create user_threads join table
 
-Revision ID: 00000000000002_add_user_threads
-Revises: 00000000000001_change_id_to_uuid
+Revision ID: 0002_add_user_threads
+Revises: 0001_change_id_to_uuid
 Create Date: 2025-02-09 00:00:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '00000000000002_add_user_threads'
-down_revision = '00000000000001_change_id_to_uuid'
+revision = '0002_add_user_threads'
+down_revision = '0001_change_id_to_uuid'
 branch_labels = None
 depends_on = None
 

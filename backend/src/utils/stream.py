@@ -126,7 +126,7 @@ def stream_chunks(
                     yield f"data: {json.dumps(tool_data)}\n\n"
     
     except Exception as e:
-        logger.error("Error in stream_chunks", e)
+        logger.exception("Error in stream_chunks", e)
     finally:
         logger.info("Closing stream")
         # Send end event

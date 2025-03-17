@@ -9,10 +9,10 @@ import SystemMessageCard from "@/components/cards/SystemMessageCard"
 import { ChatDrawer } from "@/components/drawers/ChatDrawer"
 import { Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
-import ChatInput from "@/components/inputs/ChatInput"
 import DefaultTool from "@/components/tools/Default"
 import SearchEngineTool from "@/components/tools/SearchEngine"
-import { findToolCall } from "@/lib/utils/format"
+import { useParams } from "react-router-dom"
+import AgentChatInput from "@/components/inputs/AgentChatInput"
 
 
 interface ChatMessage {
@@ -25,6 +25,7 @@ interface ChatMessage {
 }
 
 export default function Chat() {
+	const { agentId } = useParams();
   const {
     messages,
     payload,
@@ -57,7 +58,7 @@ export default function Chat() {
     }
   }, [isToolCallInProgress, currentToolCall])
 
-  useGetHistoryEffect()
+  useGetHistoryEffect(agentId)
 
   const handleDrawerClose = () => {
     setIsAssistantOpen(false)
@@ -102,7 +103,7 @@ export default function Chat() {
               {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
                 <SystemMessageCard content={payload.system} />
               )}
-              {messages?.map((message: any, index: number) => {
+              {messages?.map((message: ChatMessage, index: number) => {
                 if (message.type === "tool") {
                   return (
                     <div key={index} className="flex justify-start">
@@ -112,7 +113,7 @@ export default function Chat() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setSelectedToolMessage(findToolCall(message, messages))
+                              setSelectedToolMessage(message)
                               setIsAssistantOpen(true)
                             }}
                             className="flex items-center gap-2"
@@ -166,7 +167,7 @@ export default function Chat() {
           <div className="sticky bottom-0 bg-background border-border">
             <div className="max-w-4xl mx-auto">
               <div className="flex flex-col gap-2 p-4 pb-25">
-                <ChatInput />
+                <AgentChatInput agentId={agentId || ''} />
               </div>
               
             </div>
