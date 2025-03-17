@@ -118,4 +118,4 @@ async def existing_thread(
     db: AsyncSession = Depends(get_async_db)
 ):
     controller = AgentController(db=db, user_id=user.id)
-    return controller.existing_thread(request=request, thread_id=thread_id, existing_thread=body)
+    return await controller.aexisting_thread(request=request, thread_id=thread_id, existing_thread=body)

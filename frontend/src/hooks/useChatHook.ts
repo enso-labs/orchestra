@@ -7,6 +7,8 @@ import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 
+const KEY_NAME = 'mcp-config';
+
 debug.enable('hooks:*');
 const logger = debug('hooks:useChatHook');
 
@@ -24,7 +26,8 @@ const initChatState = {
         system: 'You are a helpful assistant.',
         tools: [] as any[],
         visualize: false,
-        model: ''
+        model: '',
+        mcp: null
     },
     history: {
         threads: [],
@@ -163,7 +166,7 @@ Language: ${navigator.language}
                 return;
             }
 
-            setPayload({ ...payload, query: '', threadId: data.thread_id, images: [] });
+            setPayload((prev) => ({ ...prev, query: '', threadId: data.thread_id, images: [], mcp: prev.mcp }));
         });
         source.stream();
         return true;
@@ -234,6 +237,17 @@ Language: ${navigator.language}
         return () => {
             // Cleanup logic if needed
         };
+    };
+
+    const useMCPEffect = () => {
+        useEffect(() => {
+            // When payload.mcp changes, update localStorage
+            if (payload.mcp) {
+                localStorage.setItem(KEY_NAME, JSON.stringify(payload.mcp));
+            } else {
+                localStorage.removeItem(KEY_NAME);
+            }
+        }, [payload.mcp]);
     };
 
     const useFetchModelsEffect = (setSearchParams: (params: any) => void, currentModel: string) => {
@@ -327,8 +341,7 @@ Language: ${navigator.language}
         preset,
         setPreset,
         currentModel,
-        enabledTools
+        enabledTools,
+        useMCPEffect
     };
 }
-
-

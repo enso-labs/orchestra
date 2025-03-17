@@ -114,6 +114,56 @@ class AgentController:
             logger.exception(f"Error creating new thread: {str(e)}")
             raise e
         
+    async def aexisting_thread(
+        self,
+        request: Request,
+        thread_id: str,
+        existing_thread: ExistingThread,
+    ):
+        try:
+            tools_str = f"and Tools: {', '.join(existing_thread.tools)}" if existing_thread.tools else ""
+            logger.info(f"Querying existing thread with ID: {thread_id} {tools_str} and Query: {existing_thread.query}")
+            config = {
+                "thread_id": thread_id, 
+                "user_id": self.user_repo.user_id, 
+                "agent_id": self.agent_id
+            }
+            if "text/event-stream" in request.headers.get("accept", ""):
+                pool = AsyncConnectionPool(
+                    conninfo=DB_URI,
+                    max_size=20,
+                    kwargs=CONNECTION_POOL_KWARGS,
+                )
+                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+                await agent.abuilder(tools=existing_thread.tools, model_name=existing_thread.model, mcp=existing_thread.mcp)
+                messages = agent.messages(query=existing_thread.query, images=existing_thread.images)
+                return await agent.aprocess(messages, "text/event-stream")
+            
+            pool = AsyncConnectionPool(
+                conninfo=DB_URI,
+                max_size=20,
+                kwargs=CONNECTION_POOL_KWARGS,
+            )
+            try:
+                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+                await agent.abuilder(tools=existing_thread.tools, model_name=existing_thread.model, mcp=existing_thread.mcp)
+                messages = agent.messages(query=existing_thread.query, images=existing_thread.images)
+                return await agent.aprocess(messages, "application/json")
+            finally:
+                if not pool.closed:
+                    await pool.close()
+        except ValueError as e:
+            logger.warning(f"Bad Request: {str(e)}")
+            if "Model" in str(e) and "not supported" in str(e):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e)
+                )
+            raise e
+        except Exception as e:
+            logger.exception(f"Error creating new thread: {str(e)}")
+            raise e
+
     def existing_thread(
         self,
         request: Request,
