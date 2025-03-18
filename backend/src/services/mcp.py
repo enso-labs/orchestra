@@ -15,8 +15,6 @@ class McpService:
             for err in e.exceptions:
                 logger.error(f"Error setting up MCP client: {str(err)}")
                 raise err
-        finally:
-            await self.cleanup()
         
     def tools(self):
         return self.mcp_client.get_tools()
