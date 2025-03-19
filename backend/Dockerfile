@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM python:3.10-slim AS builder
+FROM python:3.11-slim AS builder
 
 # Set work directory
 WORKDIR /app
@@ -23,7 +23,7 @@ RUN pip install --upgrade pip \
     && uv pip install -v --system --no-cache-dir -r requirements.txt
 
 # Stage 2: Final stage
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set work directory
 WORKDIR /app
