@@ -53,6 +53,7 @@ class AgentController:
                 messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
                 return await agent.aprocess(messages, "application/json")
             finally:
+                
                 if not pool.closed:
                     await pool.close()
             

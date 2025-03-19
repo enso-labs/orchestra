@@ -1,5 +1,5 @@
 from typing import Annotated
-
+import httpx
 from fastapi import Body, HTTPException,status, Depends, APIRouter, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -80,6 +80,9 @@ async def new_thread(
     try:
         controller = AgentController(db=db, user_id=user.id)
         return await controller.anew_thread(request=request, new_thread=body)
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Error creating new thread: {str(e)}")
+        raise HTTPException(status_code=e.response.status_code , detail=str(e))
     except Exception as e:
         logger.exception(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -117,5 +120,12 @@ async def existing_thread(
     user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
-    controller = AgentController(db=db, user_id=user.id)
-    return await controller.aexisting_thread(request=request, thread_id=thread_id, existing_thread=body)
+    try:
+        controller = AgentController(db=db, user_id=user.id)
+        return await controller.aexisting_thread(request=request, thread_id=thread_id, existing_thread=body)
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Error creating new thread: {str(e)}")
+        raise HTTPException(status_code=e.response.status_code , detail=str(e))
+    except Exception as e:
+        logger.exception(f"Error creating new thread: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

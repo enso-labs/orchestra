@@ -397,6 +397,7 @@ class Agent:
                         print(chunk)
                         yield chunk
             finally:
+                await self.agent_session.cleanup()
                 # Ensure pool is closed after streaming is complete
                 if not self.pool.closed:
                     await self.pool.close()
