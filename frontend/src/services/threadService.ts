@@ -39,8 +39,10 @@ export const createJsonThread = async (payload: ThreadPayload) => {
 
 export const optimizeSystemPrompt = async (payload: ThreadPayload) => {
   payload.system = SYSTEM_PROMPT;
+  payload.model = 'anthropic:claude-3-7-sonnet-latest';
+  // payload.model = 'openai:gpt-4o-mini';
   try {
-    const response = await apiClient.post('/threads', payload);
+    const response = await apiClient.post('/llm/chat', payload);
     return response.data.answer.content;
   } catch (error: any) {
     console.error('Error optimizing system prompt:', error);
