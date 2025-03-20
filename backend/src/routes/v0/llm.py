@@ -1,48 +1,76 @@
 from typing import Annotated
+from fastapi.responses import JSONResponse
 import httpx
 from fastapi import Body, HTTPException,status, Depends, APIRouter, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain.chat_models import init_chat_model
 
-from src.services.mcp import McpService
 from src.models import User
-from src.entities import Answer, NewThread, ExistingThread
+from src.entities import Answer, ChatInput, NewThread, ExistingThread
 from src.services.db import get_async_db
 from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 from src.controllers.agent import AgentController
-from langgraph.prebuilt import create_react_agent
 
 TAG = "Thread"
-router = APIRouter(tags=[TAG])
+router = APIRouter()
 
-
-class AgentSession:
-    def __init__(self):
-        self.mcp_client = None
-        self.agent = None
-        
-    async def setup(self, model):    
-        self.mcp_client = MultiServerMCPClient(
-            {
-                # "math": {
-                #     "command": "python",
-                #     "args": ["../server/math/main.py"],
-                #     "transport": "stdio",
-                # },
-                "weather": {
-                    "url": "http://localhost:8005/sse",
-                    "transport": "sse",
-                }
+################################################################################
+### Create New Thread
+################################################################################
+@router.post(
+    "/llm/chat",
+    name="Chat Completion",
+    tags=["LLM"],
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Chat completion response.",
+            "content": {
+                "application/json": {
+                    "example": Answer.model_json_schema()['examples']['new_thread']
+                },
+                # "text/event-stream": {
+                #     "description": "Server-sent events stream",
+                #     "schema": {
+                #         "type": "string",
+                #         "format": "binary",
+                #         "example": 'data: {"event": "ai_chunk", "content": [{"text": "Hello", "type": "text", "index": 0}]}\n\n'
+                #     }
+                # }
             }
+        }
+    }
+)
+async def chat_completion(
+    request: Request,
+    body: Annotated[ChatInput, Body()],
+    user: User = Depends(verify_credentials),
+    # db: AsyncSession = Depends(get_async_db)
+):
+    try:
+        model = body.model.split(":")
+        provider = model[0]
+        model_name = model[1]
+        llm = init_chat_model(
+            model=model_name,
+            model_provider=provider,
+            temperature=0.9,
+            # max_tokens=1000,
+            max_retries=3,
+            # timeout=1000
         )
-        await self.mcp_client.__aenter__()
-        self.agent = create_react_agent(model, self.mcp_client.get_tools())
-        return self.agent
-    
-    async def cleanup(self):
-        if self.mcp_client:
-            await self.mcp_client.__aexit__(None, None, None)
+        response = llm.invoke([
+            {'role': 'system', 'content': body.system},
+            {'role': 'user', 'content': body.query}
+        ])
+        return JSONResponse(
+            content={"answer": response.model_dump()}, 
+            media_type="application/json", 
+            status_code=200
+        )
+    except Exception as e:
+        logger.exception(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 ################################################################################
 ### Create New Thread
@@ -50,6 +78,7 @@ class AgentSession:
 @router.post(
     "/threads",
     name="Create New Thread",
+    tags=["Thread"],
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from new thread.",
@@ -92,7 +121,7 @@ async def new_thread(
 @router.post(
     "/threads/{thread_id}", 
     name="Query Existing Thread",
-    tags=[TAG],
+    tags=["Thread"],
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from existing thread.",
