@@ -26,6 +26,7 @@ from src.entities import Answer
 from src.utils.logger import logger
 from src.utils.stream import stream_chunks
 from src.flows.chatbot import chatbot_builder
+from src.services.db import keep_pool_alive
 
 # class ConfiguredAgent(BaseModel):
 #     user_id: str
@@ -224,9 +225,8 @@ class Agent:
                         print(chunk)
                         yield chunk
             finally:
-                # Ensure pool is closed after streaming is complete
-                if not self.pool.closed:
-                    self.pool.close()
+                # Don't close the pool here, it's handled by the context manager
+                pass
 
         return StreamingResponse(
             stream_generator(),
@@ -368,6 +368,7 @@ class Agent:
         self.graph.name = "EnsoAgent"
         return graph
 
+    @keep_pool_alive
     async def aprocess(
         self,
         messages: list[AnyMessage], 
@@ -383,8 +384,8 @@ class Agent:
                 ).model_dump()
                 return JSONResponse(
                     content=content,
-                        status_code=status.HTTP_200_OK
-                    )
+                    status_code=status.HTTP_200_OK
+                )
             finally:
                 await self.agent_session.cleanup()
             
@@ -398,9 +399,8 @@ class Agent:
                         yield chunk
             finally:
                 await self.agent_session.cleanup()
-                # Ensure pool is closed after streaming is complete
-                if not self.pool.closed:
-                    await self.pool.close()
+                # Note: We don't close the pool here anymore
+                # The decorator will handle pool closing
 
         return StreamingResponse(
             astream_generator(),

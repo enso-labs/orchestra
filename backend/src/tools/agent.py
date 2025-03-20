@@ -36,19 +36,17 @@ def agent_builder(query: str, system: str, tools: list[str], thread_id: str = No
             )
     """
     try:
-        with ConnectionPool(
-            conninfo=DB_URI,
-            max_size=20,
-            kwargs=CONNECTION_POOL_KWARGS,
-        ) as pool:
-            from src.utils.agent import Agent
-            unique_id = str(uuid.uuid4())
-            logger.info(f"Agent Builder Request:\n"
-                    f"Thread ID: {thread_id or unique_id}\n"
-                    f"System: {system}\n"
-                    f"Tools: {', '.join(tools)}\n"
-                    f"Query: {query}\n")
-            
+        from src.services.db import get_connection_pool
+        from src.utils.agent import Agent
+        
+        unique_id = str(uuid.uuid4())
+        logger.info(f"Agent Builder Request:\n"
+                f"Thread ID: {thread_id or unique_id}\n"
+                f"System: {system}\n"
+                f"Tools: {', '.join(tools)}\n"
+                f"Query: {query}\n")
+        
+        with get_connection_pool() as pool:
             agent = Agent(thread_id or unique_id, pool)
             agent.builder(tools=tools)
             messages = agent.messages(query, system if not (thread_id or unique_id) else None)

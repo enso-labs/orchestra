@@ -7,12 +7,11 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from src.services.mcp import McpService
 from src.models import User
 from src.entities import Answer, NewThread, ExistingThread
-from src.utils.auth import get_async_db, get_db, verify_credentials
+from src.services.db import get_async_db
+from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 from src.controllers.agent import AgentController
 from langgraph.prebuilt import create_react_agent
-
-from src.utils.llm import LLMWrapper
 
 TAG = "Thread"
 router = APIRouter(tags=[TAG])

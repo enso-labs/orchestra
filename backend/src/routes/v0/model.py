@@ -2,7 +2,8 @@ from fastapi import status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from src.models import ProtectedUser
-from src.utils.auth import get_db, verify_credentials
+from src.utils.auth import verify_credentials
+from src.services.db import get_db
 
 TAG = "Model"
 router = APIRouter(tags=[TAG])

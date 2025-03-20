@@ -9,6 +9,7 @@ from src.utils.agent import Agent
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
+from src.services.db import get_async_connection_pool
 
 class AgentController:
     def __init__(self, db: AsyncSession, user_id: str, agent_id: str = None): # type: ignore
@@ -30,7 +31,9 @@ class AgentController:
                 "user_id": self.user_repo.user_id, 
                 "agent_id": self.agent_id
             }
+            
             if "text/event-stream" in request.headers.get("accept", ""):
+                # For streaming, create a regular pool and let the decorator manage its lifecycle
                 pool = AsyncConnectionPool(
                     conninfo=DB_URI,
                     max_size=20,
@@ -40,22 +43,13 @@ class AgentController:
                 await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
                 messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
                 return await agent.aprocess(messages, "text/event-stream")
-            
-            # For JSON responses, we still need to manage the pool
-            pool = AsyncConnectionPool(
-                conninfo=DB_URI,
-                max_size=20,
-                kwargs=CONNECTION_POOL_KWARGS,
-            )
-            try:
-                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
-                await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
-                messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
-                return await agent.aprocess(messages, "application/json")
-            finally:
-                
-                if not pool.closed:
-                    await pool.close()
+            else:
+                # For JSON, use the context manager as before
+                async with get_async_connection_pool() as pool:
+                    agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+                    await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
+                    messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
+                    return await agent.aprocess(messages, "application/json")
             
         except ValueError as e:
             logger.warning(f"Bad Request: {str(e)}")
@@ -129,7 +123,9 @@ class AgentController:
                 "user_id": self.user_repo.user_id, 
                 "agent_id": self.agent_id
             }
+            
             if "text/event-stream" in request.headers.get("accept", ""):
+                # For streaming, create a regular pool and let the decorator manage its lifecycle
                 pool = AsyncConnectionPool(
                     conninfo=DB_URI,
                     max_size=20,
@@ -139,20 +135,14 @@ class AgentController:
                 await agent.abuilder(tools=existing_thread.tools, model_name=existing_thread.model, mcp=existing_thread.mcp)
                 messages = agent.messages(query=existing_thread.query, images=existing_thread.images)
                 return await agent.aprocess(messages, "text/event-stream")
+            else:
+                # For JSON, use the context manager as before
+                async with get_async_connection_pool() as pool:
+                    agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+                    await agent.abuilder(tools=existing_thread.tools, model_name=existing_thread.model, mcp=existing_thread.mcp)
+                    messages = agent.messages(query=existing_thread.query, images=existing_thread.images)
+                    return await agent.aprocess(messages, "application/json")
             
-            pool = AsyncConnectionPool(
-                conninfo=DB_URI,
-                max_size=20,
-                kwargs=CONNECTION_POOL_KWARGS,
-            )
-            try:
-                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
-                await agent.abuilder(tools=existing_thread.tools, model_name=existing_thread.model, mcp=existing_thread.mcp)
-                messages = agent.messages(query=existing_thread.query, images=existing_thread.images)
-                return await agent.aprocess(messages, "application/json")
-            finally:
-                if not pool.closed:
-                    await pool.close()
         except ValueError as e:
             logger.warning(f"Bad Request: {str(e)}")
             if "Model" in str(e) and "not supported" in str(e):
@@ -225,40 +215,25 @@ class AgentController:
                 "agent_id": self.agent_id,
                 "thread_id": thread_id or str(uuid.uuid4())
             }
-            if "text/event-stream" in request.headers.get("accept", ""):
-                pool = ConnectionPool(
-                    conninfo=DB_URI,
-                    max_size=20,
-                    kwargs=CONNECTION_POOL_KWARGS,
-                )
-                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
-                agent.builder(tools=settings.get("tools", []), model_name=settings.get("model"))
-                if thread_id:
-                    messages = agent.existing_thread(query, settings.get("images"))
-                else:
-                    messages = agent.messages(query, settings.get("system"), settings.get("images"))
-                return agent.process(messages, "text/event-stream")
             
-            with ConnectionPool(
-                conninfo=DB_URI,
-                max_size=20,
-                kwargs=CONNECTION_POOL_KWARGS,
-            ) as pool:
+            from src.services.db import get_connection_pool
+            
+            with get_connection_pool() as pool:
                 agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
                 agent.builder(tools=settings.get("tools", []), model_name=settings.get("model"))
                 if thread_id:
                     messages = agent.existing_thread(query, settings.get("images"))
                 else:
                     messages = agent.messages(query, settings.get("system"), settings.get("images"))
-                return agent.process(messages, "application/json")
+                    
+                if "text/event-stream" in request.headers.get("accept", ""):
+                    return agent.process(messages, "text/event-stream")
+                else:
+                    return agent.process(messages, "application/json")
+                
         except ValueError as e:
             logger.warning(f"Bad Request: {str(e)}")
-            if "Model" in str(e) and "not supported" in str(e):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(e)
-                )
             raise e
         except Exception as e:
-            logger.exception(f"Error creating new thread: {str(e)}")
+            logger.exception(f"Error in agent thread: {str(e)}")
             raise e
