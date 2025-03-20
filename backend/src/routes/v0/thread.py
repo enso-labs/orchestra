@@ -13,6 +13,7 @@ from src.utils.agent import Agent
 from src.utils.auth import verify_credentials
 from src.models import User
 from src.utils.logger import logger
+from src.services.db import get_connection_pool
 
 TAG = "Thread"
 router = APIRouter(tags=[TAG])
@@ -147,11 +148,7 @@ def delete_thread(
     thread_id: str,
     username: str = Depends(verify_credentials)
 ):
-    with ConnectionPool(
-        conninfo=DB_URI,
-        max_size=20,
-        kwargs=CONNECTION_POOL_KWARGS,
-    ) as pool:
+    with get_connection_pool() as pool:
         agent = Agent(config={"thread_id": thread_id}, pool=pool)
         agent.delete()
         return Response(status_code=status.HTTP_204_NO_CONTENT)

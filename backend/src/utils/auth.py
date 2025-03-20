@@ -2,38 +2,17 @@ from fastapi import status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from datetime import datetime
-from sqlalchemy import create_engine, select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from src.constants import DB_URI, JWT_SECRET_KEY, JWT_ALGORITHM
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM
 from src.models import User
-
-
-engine = create_engine(DB_URI)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-async_engine = create_async_engine(DB_URI.replace("postgresql", "postgresql+asyncpg"))
-AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=async_engine, class_=AsyncSession)
+from src.services.db import get_async_db
 
 security = HTTPBearer()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        
-async def get_async_db():
-    db = AsyncSessionLocal()
-    try:
-        yield db
-    finally:
-        await db.close()
-
 async def verify_credentials(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSessionLocal = Depends(get_async_db) # type: ignore
+    db: AsyncSession = Depends(get_async_db) # type: ignore
 ) -> User:
     try:
         # Verify JWT token

@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from src.constants import APP_LOG_LEVEL
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
-from src.utils.auth import get_db, verify_credentials
+from src.utils.auth import verify_credentials
+from src.services.db import get_db
 
 TAG = "Tool"
 router = APIRouter(tags=[TAG])

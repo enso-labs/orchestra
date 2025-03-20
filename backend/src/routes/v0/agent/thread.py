@@ -9,7 +9,8 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 from src.controllers.agent import AgentController
 from src.entities import Answer, AgentThread, Threads, Thread
-from src.utils.auth import verify_credentials, get_db
+from src.utils.auth import verify_credentials
+from src.services.db import get_db
 from src.utils.agent import Agent
 from src.models import ProtectedUser
 from src.utils.logger import logger

@@ -10,7 +10,8 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
 from src.services.oauth import OAuthService
-from src.utils.auth import get_db, verify_credentials
+from src.services.db import get_db
+from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 from src.models import User
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES

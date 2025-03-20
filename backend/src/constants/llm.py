@@ -186,7 +186,7 @@ MODEL_CONFIG = [
         "metadata": {
             "system_message": True,
             "reasoning": False,
-            "tool_calling": True,
+            "tool_calling": False,
             "multimodal": True,
             "embedding": False,
         }

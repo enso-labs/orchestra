@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.1
 
 ### Fixed
+  - bug/204-async-db-timeout (2025-03-20)
   - bugfix/168-remove-system-message-metadata-redundancy (2025-03-04)
   - bugfix/106-resolve-break-on-mobile (2025-02-25)
   - bugfix/111-resolves-break-on-mobile (2025-02-25)
