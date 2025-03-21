@@ -104,7 +104,7 @@ export default function SystemMessage({ content }: { content: string }) {
       <div className={`text-sm ${!isExpanded ? "line-clamp-2" : ""}`}>
         <textarea
           className="w-full resize-none bg-transparent focus:outline-none"
-          rows={isExpanded ? 5 : 1}
+          rows={isExpanded ? 12 : 1}
           value={localContent}
           onChange={(e) => handleContentChange(e.target.value)}
         />
