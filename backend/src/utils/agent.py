@@ -398,9 +398,7 @@ class Agent:
                         print(chunk)
                         yield chunk
             finally:
-                await self.agent_session.cleanup()
-                # Note: We don't close the pool here anymore
-                # The decorator will handle pool closing
+                pass  # Cleanup happens in the outer aprocess method
 
         return StreamingResponse(
             astream_generator(),
