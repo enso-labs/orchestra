@@ -683,7 +683,7 @@ export function ToolSelector() {
                 </div>
               </div>
               
-              {enabledCount === 0 && (
+              {/* {enabledCount === 0 && (
                 <div className="text-center py-6 px-4 bg-muted/20 rounded-lg border border-dashed border-muted-foreground/30 my-4">
                   <Leaf className="h-10 w-10 text-primary/40 mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
@@ -691,7 +691,7 @@ export function ToolSelector() {
                     <br />Each tool brings unique abilities to your assistant.
                   </p>
                 </div>
-              )}
+              )} */}
               
               <ScrollArea className="h-[350px] pr-3">
                 <div className="grid gap-4">
