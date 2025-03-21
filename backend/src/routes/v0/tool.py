@@ -13,8 +13,8 @@ router = APIRouter(tags=[TAG])
 ################################################################################
 ### List Tools
 ################################################################################
-from src.tools import tools
-tool_names = [{'id':tool.name, 'description':tool.description, 'args':tool.args} for tool in tools]
+from src.tools import tools, attach_tool_details
+tool_names = [attach_tool_details({'id':tool.name, 'description':tool.description, 'args':tool.args, 'tags':tool.tags}) for tool in tools]
 tools_response = {"tools": tool_names}
 @router.get(
     "/tools", 

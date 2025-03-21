@@ -19,7 +19,7 @@ from psycopg_pool import AsyncConnectionPool
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL
-from src.tools import collect_tools, dynamic_tools, get_mcp_tools
+from src.tools import dynamic_tools, get_mcp_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
 from src.entities import Answer

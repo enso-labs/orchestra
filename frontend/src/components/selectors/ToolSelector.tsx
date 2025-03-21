@@ -303,7 +303,7 @@ export function ToolSelector() {
 
   // Group tools by category
   const toolsByCategory = filteredTools.reduce((acc: Record<string, any[]>, tool: any) => {
-    const category = tool.category || 'General';
+    const category = tool.tags && tool.tags.length > 0 ? tool.tags[0] : 'General';
     if (!acc[category]) acc[category] = [];
     acc[category].push(tool);
     return acc;
@@ -466,11 +466,11 @@ export function ToolSelector() {
           )}
           
           <div className="flex items-center mt-1 space-x-1">
-            {tool.category && (
-              <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-1.5 py-0.5 rounded-full">
-                {tool.category}
+            {tool.tags && tool.tags.map((tag: string) => (
+              <span key={tag} className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-1.5 py-0.5 rounded-full">
+                {tag}
               </span>
-            )}
+            ))}
             {tool.requiresInternet && (
               <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
                 Internet
