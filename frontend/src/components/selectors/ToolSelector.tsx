@@ -94,9 +94,9 @@ export function ToolSelector() {
   } = useChatContext();
 
   const defaultMCP = {
-    "weather": {
+    "python": {
       "transport": "sse",
-      "url": "http://localhost:8005/sse"
+      "url": "https://mcp.enso.sh/sse"
     }
   }
   
