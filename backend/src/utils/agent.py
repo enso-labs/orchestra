@@ -187,7 +187,7 @@ class Agent:
             self.tools.extend(asyncio.run(get_mcp_tools(mcp)))
             
         if self.tools:
-            graph = create_react_agent(self.llm, tools=self.tools, checkpointer=self.checkpointer)
+            graph = create_react_agent(self.llm, prompt=self.config.get("system"), tools=self.tools, checkpointer=self.checkpointer)
         else:
             builder = chatbot_builder(config={"model": self.llm.model})
             graph = builder.compile(checkpointer=self.checkpointer)
@@ -300,7 +300,6 @@ class Agent:
     def messages(
         self,
         query: str, 
-        system: str = None, 
         images: list[str] = None,
         base64_encode: bool = False
     ) -> list[AnyMessage]:
@@ -334,9 +333,9 @@ class Agent:
 
         messages = [HumanMessage(content=content)]
         
-        if not isinstance(messages[0], SystemMessage):
-            if system and "o1" not in self.llm.model_name:
-                messages.insert(0, SystemMessage(content=system))
+        # if not isinstance(messages[0], SystemMessage):
+        #     if system and "o1" not in self.llm.model_name:
+        #         messages.insert(0, SystemMessage(content=system))
         return messages
     
     async def abuilder(
@@ -349,17 +348,16 @@ class Agent:
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         self.checkpointer = await self._acheckpointer()
-        
+        system = self.config.get('configurable').get("system", None)
         # Get MCP tools if provided
         if mcp and len(mcp.keys()) > 0:
             await self.agent_session.setup(mcp)
             self.tools.extend(self.agent_session.tools())
         
         if self.tools:
-            # Use all tools, not just mcp_tools
-            graph = create_react_agent(self.llm, tools=self.tools, checkpointer=self.checkpointer)
+            graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
         else:
-            builder = chatbot_builder(config={"model": self.llm.model})
+            builder = chatbot_builder(config={"model": self.llm.model, "system": system})
             graph = builder.compile(checkpointer=self.checkpointer)
             
         if debug:

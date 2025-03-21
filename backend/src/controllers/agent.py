@@ -121,7 +121,8 @@ class AgentController:
             config = {
                 "thread_id": thread_id, 
                 "user_id": self.user_repo.user_id, 
-                "agent_id": self.agent_id
+                "agent_id": self.agent_id,
+                "system": existing_thread.system or None
             }
             
             if "text/event-stream" in request.headers.get("accept", ""):
