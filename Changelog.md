@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/171-able-to-update-system-message (2025-03-20)
   - feat/182-mcp-tool-adapter (2025-03-13)
   - feat/173-test-a-tool-call (2025-03-04)
   - feat/165-oauth-init (2025-03-01)

@@ -63,7 +63,7 @@ export default function AgentChatInput({ agentId }: { agentId: string }) {
       )}
       <textarea
         className="w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input rounded-t-2xl focus:outline-none border-b-0"
-        placeholder="Message EnsoChat..."
+        placeholder="How can I help you be present?"
         rows={1}
         value={payload.query}
         onChange={handleTextareaResize}
