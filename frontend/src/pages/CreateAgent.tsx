@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChevronLeft, X, Maximize2, CuboidIcon as Cube } from "lucide-react"
+import { ChevronLeft, X, Maximize2 } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import ChatMessages from "@/components/lists/ChatMessages";
