@@ -39,7 +39,7 @@ export const createJsonThread = async (payload: ThreadPayload) => {
 
 export const optimizeSystemPrompt = async (payload: ThreadPayload) => {
   payload.system = SYSTEM_PROMPT;
-  payload.model = 'anthropic:claude-3-7-sonnet-latest';
+  payload.model = 'openai:gpt-4o';
   // payload.model = 'openai:gpt-4o-mini';
   try {
     const response = await apiClient.post('/llm/chat', payload);
