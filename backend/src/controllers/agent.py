@@ -29,7 +29,8 @@ class AgentController:
             config = {
                 "thread_id": thread_id, 
                 "user_id": self.user_repo.user_id, 
-                "agent_id": self.agent_id
+                "agent_id": self.agent_id,
+                "system": new_thread.system or None
             }
             
             if "text/event-stream" in request.headers.get("accept", ""):
@@ -41,14 +42,14 @@ class AgentController:
                 )
                 agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
                 await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
-                messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
+                messages = agent.messages(new_thread.query, new_thread.images)
                 return await agent.aprocess(messages, "text/event-stream")
             else:
                 # For JSON, use the context manager as before
                 async with get_async_connection_pool() as pool:
                     agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
                     await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
-                    messages = agent.messages(new_thread.query, new_thread.system, new_thread.images)
+                    messages = agent.messages(new_thread.query, new_thread.images)
                     return await agent.aprocess(messages, "application/json")
             
         except ValueError as e:
@@ -214,7 +215,8 @@ class AgentController:
             config = {
                 "user_id": self.user_repo.user_id, 
                 "agent_id": self.agent_id,
-                "thread_id": thread_id or str(uuid.uuid4())
+                "thread_id": thread_id or str(uuid.uuid4()),
+                "system": settings.get("system") or None
             }
             
             from src.services.db import get_connection_pool
