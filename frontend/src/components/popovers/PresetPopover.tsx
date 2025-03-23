@@ -8,8 +8,7 @@ import { Plus, Save, Trash2, Box } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatContext } from "@/context/ChatContext";
-import apiClient from "@/lib/utils/apiClient";
-import { deleteSetting } from "@/services/settingService";
+import { createSetting, deleteSetting, updateSetting } from "@/services/settingService";
 import { createAgent } from "@/services/agentService";
 import { toast } from "sonner";
 
@@ -27,7 +26,7 @@ export function PresetPopover() {
     if (!presetName.trim()) return;
     
     try {
-      const response = await apiClient.post('/settings', {
+      const response = await createSetting({
         name: presetName,
         value: {
           system: payload.system,
@@ -97,7 +96,7 @@ export function PresetPopover() {
   const handleUpdatePreset = async (preset: any) => {
     if (confirm(`Are you sure you want to update (${preset.name}) preset?`)) {
       try {
-        const response = await apiClient.put(`/settings/${preset.id}`, {
+        const response = await updateSetting(preset.id, {
           name: preset.name,
           value: {
           system: payload.system,

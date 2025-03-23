@@ -156,7 +156,7 @@ async def agent_new_thread(
         }
     }
 )
-def agent_existing_thread(
+async def agent_existing_thread(
     request: Request,
     agent_id: str,
     thread_id: str, 
@@ -166,7 +166,7 @@ def agent_existing_thread(
 ):
     try:
         controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)
-        return controller.agent_thread(request=request, query=body.query, thread_id=thread_id)
+        return await controller.async_agent_thread(request=request, query=body.query, thread_id=thread_id)
     except Exception as e:
         return JSONResponse(
             content={"error": str(e)},

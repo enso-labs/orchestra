@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/resizable"
 // import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
+import { createSetting } from "@/services/settingService";
+import { createAgent } from "@/services/agentService";
 
 export default function CreateAgent() {
   const navigate = useNavigate();
@@ -31,6 +33,14 @@ export default function CreateAgent() {
   const [showPromptGenerator, setShowPromptGenerator] = useState(false);
   const [promptDescription, setPromptDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const [agentDetails, setAgentDetails] = useState({
+    name: "",
+    description: "",
+    settings_id: "",
+    public: false
+  });
 
   // const handleAddConversationStarter = () => {
   //   setConversationStarters([...conversationStarters, ""])
@@ -42,6 +52,44 @@ export default function CreateAgent() {
   //   setConversationStarters(newStarters)
   // }
 
+  const handleCreateAgent = async () => {
+    try {
+      if (!agentDetails.name.trim()) {
+        alert("Please enter a name for your agent");
+        return;
+      }
+
+      if (!payload.system.trim()) {
+        alert("Please enter a system prompt for your agent");
+        return;
+      }
+
+      setIsCreating(true);
+      const response = await createSetting({
+        name: agentDetails.name.replace(/\s+/g, '_').toLowerCase() + ":default",
+        value: {
+          system: payload.system,
+          model: payload.model,
+          tools: payload.tools,
+          mcp: payload.mcp
+        }
+      });
+      const settingId = response.data.setting.id;
+      const agentResponse = await createAgent({
+        name: agentDetails.name,
+        description: agentDetails.description,
+        settings_id: settingId,
+        public: agentDetails.public
+      });
+      alert(`Agent created ${agentResponse.agent.name} successfully`);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Failed to create agent:", error);
+      alert(JSON.stringify(error))
+    } finally {
+      setIsCreating(false);
+    }
+  }
   const handleGeneratePrompt = async (mode: 'replace' | 'alter') => {
     if (!promptDescription.trim()) return;
     
@@ -184,7 +232,13 @@ export default function CreateAgent() {
               <p className="text-xs text-muted-foreground">• Draft</p>
             </div>
             <div className="ml-auto">
-              <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => alert(JSON.stringify(payload))}>Create</Button>
+              <Button 
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" 
+                onClick={handleCreateAgent}
+                disabled={isCreating}
+              >
+                {isCreating ? "Creating..." : "Create"}
+              </Button>
             </div>
           </div>
 
@@ -192,7 +246,7 @@ export default function CreateAgent() {
           <div className="space-y-6">
             <div>
               <label className="block mb-2 text-sm font-medium">Name</label>
-              <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" />
+              <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" value={agentDetails.name} onChange={(e) => setAgentDetails({ ...agentDetails, name: e.target.value })} />
             </div>
 
             <div>
@@ -201,6 +255,8 @@ export default function CreateAgent() {
                 placeholder="Add a short description about what this Enso does"
                 className="bg-secondary/50 border-border resize-none"
                 rows={2}
+                value={agentDetails.description}
+                onChange={(e) => setAgentDetails({ ...agentDetails, description: e.target.value })}
               />
             </div>
 
@@ -369,7 +425,13 @@ export default function CreateAgent() {
                   <p className="text-xs text-muted-foreground">• Draft</p>
                 </div>
                 <div className="ml-auto">
-                  <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => alert(JSON.stringify(payload))}>Create</Button>
+                  <Button 
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" 
+                    onClick={handleCreateAgent}
+                    disabled={isCreating}
+                  >
+                    {isCreating ? "Creating..." : "Create"}
+                  </Button>
                 </div>
               </div>
 
@@ -393,7 +455,7 @@ export default function CreateAgent() {
                     <div className="space-y-4 max-w-full">
                       <div>
                         <label className="block mb-2 text-sm font-medium">Name</label>
-                        <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" />
+                        <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" value={agentDetails.name} onChange={(e) => setAgentDetails({ ...agentDetails, name: e.target.value })} />
                       </div>
 
                       <div>
@@ -402,6 +464,8 @@ export default function CreateAgent() {
                           placeholder="Add a short description about what this Enso does"
                           className="bg-secondary/50 border-border resize-none"
                           rows={2}
+                          value={agentDetails.description}
+                          onChange={(e) => setAgentDetails({ ...agentDetails, description: e.target.value })}
                         />
                       </div>
 
