@@ -2,7 +2,6 @@
 
 from fastapi import Response, status, Depends, APIRouter, Query
 from fastapi.responses import JSONResponse
-from psycopg_pool import ConnectionPool, AsyncConnectionPool
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import Optional
@@ -13,7 +12,7 @@ from src.utils.agent import Agent
 from src.utils.auth import verify_credentials
 from src.models import User
 from src.utils.logger import logger
-from src.services.db import get_connection_pool
+from src.services.db import ASYNC_DB_URI, get_async_connection_pool, get_connection_pool
 
 TAG = "Thread"
 router = APIRouter(tags=[TAG])
@@ -41,12 +40,7 @@ async def list_threads(
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
 ):
     try:
-        async with AsyncConnectionPool(
-            # Example configuration
-            conninfo=DB_URI,
-            max_size=20,
-            kwargs=CONNECTION_POOL_KWARGS,
-        ) as pool:
+        async with get_async_connection_pool() as pool:
             checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()  
             config = {"user_id": user.id}
@@ -116,11 +110,7 @@ def find_thread(
     thread_id: str,
     username: str = Depends(verify_credentials)
 ):
-    with ConnectionPool(
-        conninfo=DB_URI,
-        max_size=20,
-        kwargs=CONNECTION_POOL_KWARGS,
-    ) as pool:
+    with get_connection_pool() as pool:
         agent = Agent(config={"thread_id": thread_id}, pool=pool)
         checkpoint = agent.checkpoint()
         response = Thread(
@@ -177,11 +167,7 @@ def list_checkpoints(
     before: Optional[str] = Query(None, description="List checkpoints created before this configuration."),
     limit: Optional[int] = Query(None, description="Maximum number of threads to return")
 ):
-    with ConnectionPool(
-        conninfo=DB_URI,
-        max_size=20,
-        kwargs=CONNECTION_POOL_KWARGS,
-    ) as pool:
+    with get_connection_pool() as pool:
         checkpointer = PostgresSaver(pool)
         
         # Build the base config and filter

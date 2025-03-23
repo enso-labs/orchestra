@@ -332,10 +332,6 @@ class Agent:
             content = query
 
         messages = [HumanMessage(content=content)]
-        
-        # if not isinstance(messages[0], SystemMessage):
-        #     if system and "o1" not in self.llm.model_name:
-        #         messages.insert(0, SystemMessage(content=system))
         return messages
     
     async def abuilder(

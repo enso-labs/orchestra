@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/213-updates-to-create-agent-page (2025-03-23)
   - feat/210-create-agent-page (2025-03-21)
   - feat/171-able-to-update-system-message (2025-03-20)
   - feat/182-mcp-tool-adapter (2025-03-13)

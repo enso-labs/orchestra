@@ -37,7 +37,7 @@ export const updateAgent = async (
   data: {
     name?: string;
     description?: string;
-    settings_id?: string;
+    // settings_id?: string;
     public?: boolean;
   }
 ) => {
@@ -53,6 +53,20 @@ export const deleteAgent = async (agentId: string) => {
   try {
     const response = await apiClient.delete(`/agents/${agentId}`);
     return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const createAgentRevision = async (agentId: string, data: {
+  name: string;
+  description: string;
+  settings_id: string;
+}) => {
+  try {
+    const response = await apiClient.post(`/agents/${agentId}/v`, data);
+    return response;
   } catch (error) {
     throw error;
   }

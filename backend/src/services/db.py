@@ -10,11 +10,14 @@ from psycopg_pool import ConnectionPool, AsyncConnectionPool
 
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 
+MAX_CONNECTION_POOL_SIZE = 10
+
 # SQLAlchemy engines
 engine = create_engine(DB_URI)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-async_engine = create_async_engine(DB_URI.replace("postgresql", "postgresql+asyncpg"))
+ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
+async_engine = create_async_engine(ASYNC_DB_URI)
 AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=async_engine, class_=AsyncSession)
 
 # Session context managers
@@ -36,7 +39,7 @@ async def get_async_db() -> AsyncGenerator[AsyncSessionLocal, None]: # type: ign
 
 # Connection pool context managers
 @contextlib.contextmanager
-def get_connection_pool(max_size: int = 20) -> Generator[ConnectionPool, None, None]:
+def get_connection_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) -> Generator[ConnectionPool, None, None]:
     """Get a psycopg connection pool with proper cleanup."""
     pool = ConnectionPool(
         conninfo=DB_URI,
@@ -50,7 +53,7 @@ def get_connection_pool(max_size: int = 20) -> Generator[ConnectionPool, None, N
             pool.close()
 
 @contextlib.asynccontextmanager
-async def get_async_connection_pool(max_size: int = 20) -> AsyncGenerator[AsyncConnectionPool, None]:
+async def get_async_connection_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) -> AsyncGenerator[AsyncConnectionPool, None]:
     """Get an async psycopg connection pool with proper cleanup."""
     pool = AsyncConnectionPool(
         conninfo=DB_URI,
@@ -64,7 +67,7 @@ async def get_async_connection_pool(max_size: int = 20) -> AsyncGenerator[AsyncC
             await pool.close()
 
 # Direct pool creation for existing code that needs to be updated later
-def create_async_pool(max_size: int = 20) -> AsyncConnectionPool:
+def create_async_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) -> AsyncConnectionPool:
     """Create an async connection pool (use within a try-finally block)."""
     return AsyncConnectionPool(
         conninfo=DB_URI,
@@ -78,11 +81,7 @@ def keep_pool_alive(func: Callable) -> Callable:
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         # Create a pool that will be kept alive for the entire streaming duration
-        pool = AsyncConnectionPool(
-            conninfo=DB_URI,
-            max_size=20,
-            kwargs=CONNECTION_POOL_KWARGS,
-        )
+        pool = create_async_pool()
         
         try:
             # Replace the pool in Agent instance (assuming first arg is self)

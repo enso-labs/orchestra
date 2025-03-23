@@ -4,7 +4,8 @@ import AuthLayout from "../layouts/AuthLayout"
 import { Bot, Lock, Globe, Star, Users, Zap, Search, X, PencilIcon, TrashIcon, PlusIcon } from "lucide-react"
 import { getAgents, deleteAgent } from "../services/agentService"
 import { toast } from "sonner"
-
+import { useNavigate } from "react-router-dom"
+import { useAgentContext } from "@/context/AgentContext"
 // Agent categories
 const categories = [
   "Research",
@@ -40,6 +41,8 @@ function AgentCard({ agent, editable = false, onDelete }: {
   editable?: boolean,
   onDelete?: (id: string) => void
 }) {
+  const navigate = useNavigate();
+  const { handleSelectAgent } = useAgentContext();
   // Extract model from settings if available
   const model = agent.setting?.value?.model || "Unknown model"
   
@@ -65,6 +68,10 @@ function AgentCard({ agent, editable = false, onDelete }: {
               <button 
                 className="p-1.5 rounded-md hover:bg-secondary/80 text-muted-foreground"
                 aria-label="Edit agent"
+                onClick={() => {
+                  handleSelectAgent(agent);
+                  navigate(`/agents/${agent.id}/edit`);
+                }}
               >
                 <PencilIcon className="h-3.5 w-3.5" />
               </button>

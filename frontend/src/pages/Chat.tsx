@@ -86,8 +86,8 @@ export default function Chat() {
       <div
         className={`
                 flex min-h-[calc(100vh-0px)] max-h-[calc(100vh-0px)] relative
-                transition-[padding-right] duration-200 ease-in-out
-                ${isAssistantOpen ? "pr-[320px]" : ""}
+                transition-all duration-200 ease-in-out
+                ${isAssistantOpen ? "pr-[var(--chat-drawer-width,320px)]" : ""}
             `}
       >
         <ThreadHistoryDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />

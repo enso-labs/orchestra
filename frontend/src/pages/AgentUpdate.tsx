@@ -20,10 +20,10 @@ import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadServic
 import { useAgentContext } from "@/context/AgentContext";
 
 
-export default function CreateAgent() {
+export default function AgentUpdate() {
   const navigate = useNavigate();
   const { payload, setPayload } = useChatContext();
-  const { agentDetails, setAgentDetails, isCreating, handleCreateAgent } = useAgentContext();
+  const { agentDetails, setAgentDetails, isCreating, handleUpdateAgent } = useAgentContext();
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const { messages } = useChatContext()
@@ -76,10 +76,14 @@ export default function CreateAgent() {
 
   const processCreateAgent = async () => {
     try {
-      await handleCreateAgent();
+      await handleUpdateAgent(agentDetails.id, {
+        name: agentDetails.name,
+        description: agentDetails.description,
+        public: agentDetails.public
+      });
       navigate("/dashboard");
     } catch (error) {
-      console.error("Failed to create agent:", error);
+      console.error("Failed to update agent:", error);
     }
   }
 
@@ -200,7 +204,7 @@ export default function CreateAgent() {
                 onClick={processCreateAgent}
                 disabled={isCreating}
               >
-                {isCreating ? "Creating..." : "Create"}
+                {isCreating ? "Updating..." : "Update"}
               </Button>
             </div>
           </div>
@@ -393,7 +397,7 @@ export default function CreateAgent() {
                     onClick={processCreateAgent}
                     disabled={isCreating}
                   >
-                    {isCreating ? "Creating..." : "Create"}
+                    {isCreating ? "Updating..." : "Update"}
                   </Button>
                 </div>
               </div>

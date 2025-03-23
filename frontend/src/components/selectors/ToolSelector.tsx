@@ -4,34 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
-  Wrench, X, Compass, Brain, Feather, Cloud, Database, 
-  Search, BookOpen, Globe, Infinity, Leaf, Play,
+  Wrench, X, Database, 
+  Search, BookOpen, Play,
   PlusCircle, Save
 } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
-import { useState, useEffect } from "react";
-import apiClient from "@/lib/utils/apiClient";
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs';
 import 'prismjs/components/prism-json';
-// import 'prismjs/themes/prism.css';
 import 'highlight.js/styles/github-dark-dimmed.min.css';
-
-// Map of tool icons - in a real implementation, you might want to map specific tool IDs to specific icons
-const TOOL_ICONS: Record<string, any> = {
-  default: Wrench,
-  search: Search,
-  search_engine: Search,
-  knowledge: BookOpen,
-  web: Globe,
-  database: Database,
-  filestore: Feather,
-  assistant: Brain,
-  weather: Cloud,
-  navigation: Compass,
-  meditation: Infinity,
-  nature: Leaf,
-};
+import { useToolContext } from "@/context/ToolContext";
+import ToolCard from "@/components/cards/ToolCard";
 
 // CSS for animations
 const animationStyles = `
@@ -84,230 +67,39 @@ const animationStyles = `
 
 export function ToolSelector() {
   const { 
-    availableTools, 
     payload, 
-    setPayload, 
     useToolsEffect,
-    setIsToolCallInProgress,
-    setCurrentToolCall,
     useMCPEffect
   } = useChatContext();
-
-  const defaultMCP = {
-    "python": {
-      "transport": "sse",
-      "url": "https://mcp.enso.sh/sse"
-    }
-  }
-  
-  const [toolFilter, setToolFilter] = useState("");
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [groupByCategory, setGroupByCategory] = useState(true);
-  const [testingTool, setTestingTool] = useState<any>(null);
-  const [testFormValues, setTestFormValues] = useState<Record<string, any>>({});
-  const [isAddingMCP, setIsAddingMCP] = useState(false);
-  const [mcpCode, setMcpCode] = useState(JSON.stringify(defaultMCP, null, 2));
-  const [mcpError, setMcpError] = useState('');
-  const [hasSavedMCP, setHasSavedMCP] = useState(false);
+  const {
+    toolsByCategory,
+    filteredTools,
+    clearTools,
+    handleInputChange,
+    cancelTesting,
+    startAddingMCP,
+    cancelAddingMCP,
+    saveMCPConfig,
+    removeMCPConfig,
+    testingTool,
+    handleTestFormSubmit,
+    testFormValues,
+    isAddingMCP,
+    mcpCode,
+    setMcpCode,
+    mcpError,
+    hasSavedMCP,
+    toolFilter,
+    setToolFilter,
+    groupByCategory,
+    setGroupByCategory,
+    useLoadMCPFromPayloadEffect,
+  } = useToolContext();
 
   // Load MCP from payload
-  useEffect(() => {
-    if (payload.mcp) {
-      setMcpCode(JSON.stringify(payload.mcp, null, 2));
-      setHasSavedMCP(true);
-    }
-  }, [payload.mcp]);
-
-  const toggleTool = (toolId: string) => {
-    setPayload((prev: { tools: any[]; }) => {
-      const currentTools = prev.tools || [];
-      const isSelected = currentTools.includes(toolId);
-      
-      return {
-        ...prev,
-        tools: isSelected 
-          ? currentTools.filter(id => id !== toolId)
-          : [...currentTools, toolId]
-      };
-    });
-  };
-
-  const clearTools = () => {
-    setPayload((prev: { tools: any[]; }) => ({
-      ...prev,
-      tools: []
-    }));
-  };
-  
-  const testTool = (tool: any, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent toggling the tool selection
-    
-    // Initialize form values with defaults
-    const initialValues: Record<string, any> = {};
-    if (tool.args) {
-      Object.entries(tool.args).forEach(([key, value]: [string, any]) => {
-        // If the arg has a default value, use it
-        if (value && value.default !== undefined) {
-          initialValues[key] = value.default;
-        } else {
-          // Otherwise initialize with appropriate empty value based on type
-          const type = value?.type || 'string';
-          initialValues[key] = type === 'integer' || type === 'number' ? 0 : 
-                               type === 'boolean' ? false : 
-                               type === 'array' ? [] : '';
-        }
-      });
-    }
-    
-    setTestFormValues(initialValues);
-    setTestingTool(tool);
-  };
-
-  const handleTestFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!testingTool) return;
-    
-    // Create a tool call message for the Action Log
-    const toolCallData = {
-      id: `test-${Date.now()}`,
-      role: 'tool',
-      name: testingTool.id,
-      content: JSON.stringify(testFormValues, null, 2),
-      status: 'running',
-      type: 'tool_call',
-      timestamp: new Date().toISOString()
-    };
-
-    // Update the UI to show that a tool call is in progress
-    setCurrentToolCall(toolCallData);
-    setIsToolCallInProgress(true);
-    
-    // Close the form
-    setTestingTool(null);
-    
-    try {
-      // Call the API with the tool ID and form values
-      const response = await apiClient.post(`/tools/${testingTool.id}/invoke`, {
-        args: testFormValues
-      });
-      
-      // Update the tool call with the result
-      const updatedToolCall = {
-        ...toolCallData,
-        status: 'success',
-        output: typeof response.data.output === 'object' 
-          ? JSON.stringify(response.data.output, null, 2) 
-          : response.data.output
-      };
-      
-      // Send the updated tool call to the context
-      setCurrentToolCall(updatedToolCall);
-      
-    } catch (error: any) {
-      // Update the tool call with the error
-      const updatedToolCall = {
-        ...toolCallData,
-        status: 'error',
-        output: error.response?.data?.error || 'An error occurred',
-        error: error.response?.data?.error,
-        traceback: error.response?.data?.traceback
-      };
-      
-      // Send the updated tool call to the context
-      setCurrentToolCall(updatedToolCall);
-    }
-  };
-
-  const handleInputChange = (key: string, value: any) => {
-    setTestFormValues(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  const cancelTesting = () => {
-    setTestingTool(null);
-  };
-
-  const startAddingMCP = () => {
-    setIsAddingMCP(true);
-  };
-
-  const cancelAddingMCP = () => {
-    setIsAddingMCP(false);
-    setMcpError('');
-    
-    // Reset the editor to the current payload MCP if one exists
-    if (payload.mcp) {
-      setMcpCode(JSON.stringify(payload.mcp, null, 2));
-    } else {
-      setMcpCode(JSON.stringify(defaultMCP, null, 2));
-    }
-  };
-
-  const saveMCPConfig = () => {
-    try {
-      // Validate JSON
-      const parsedConfig = JSON.parse(mcpCode);
-      
-      // Update payload
-      setPayload((prev: { mcp: any; }) => ({
-        ...prev,
-        mcp: parsedConfig
-      }));
-      
-      // Update state to show config is saved
-      setHasSavedMCP(true);
-      
-      // Clear any previous errors
-      setMcpError('');
-      
-    } catch (e) {
-      setMcpError('Invalid JSON format. Please check your configuration.');
-    }
-  };
-  
-  const removeMCPConfig = () => {
-    // Remove from payload
-    setPayload((prev: { mcp: any; }) => {
-      const { mcp, ...rest } = prev;
-      return rest;
-    });
-    
-    // Update state
-    setHasSavedMCP(false);
-    
-    // Reset to default
-    setMcpCode(JSON.stringify(defaultMCP, null, 2));
-    
-    // If removing while in edit mode, we'll keep it open
-    if (!isAddingMCP) {
-      setIsAddingMCP(false);
-    }
-  };
+  useLoadMCPFromPayloadEffect();
 
   const enabledCount = payload.tools?.length || 0;
-
-  // Get the appropriate icon for a tool, or fall back to the default Wrench icon
-  const getToolIcon = (toolId: string) => {
-    const IconComponent = TOOL_ICONS[toolId.toLowerCase()] || TOOL_ICONS.default;
-    return <IconComponent className="h-5 w-5" />;
-  };
-
-  // Filter tools based on search input
-  const filteredTools = availableTools.filter((tool: any) => 
-    tool.id.toLowerCase().includes(toolFilter.toLowerCase()) || 
-    (tool.description && tool.description.toLowerCase().includes(toolFilter.toLowerCase()))
-  );
-
-  // Group tools by category
-  const toolsByCategory = filteredTools.reduce((acc: Record<string, any[]>, tool: any) => {
-    const category = tool.tags && tool.tags.length > 0 ? tool.tags[0] : 'General';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(tool);
-    return acc;
-  }, {});
 
   // Render form field based on argument type
   const renderFormField = (key: string, argDef: any) => {
@@ -408,86 +200,6 @@ export function ToolSelector() {
 
   useMCPEffect();
   useToolsEffect();
-
-  // Tool card component to avoid duplication
-  const ToolCard = ({ tool }: { tool: any }) => (
-    <div 
-      key={tool.id} 
-      className={`p-3 rounded-lg border transition-all cursor-pointer relative ${
-        payload.tools?.includes(tool.id) 
-          ? 'bg-primary/10 border-primary/30 shadow-sm' 
-          : 'bg-background hover:bg-accent/50 border-border'
-      }`}
-      onClick={() => toggleTool(tool.id)}
-    >
-      {/* Test Tool Button */}
-      <button
-        className="test-button absolute top-2 right-2 p-1 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground transition-colors flex items-center"
-        onClick={(e) => testTool(tool, e)}
-        title="Test this tool"
-      >
-        <Play className="h-3.5 w-3.5 flex-shrink-0" />
-        <span className="test-button-text ml-1 text-xs">Test</span>
-      </button>
-      
-      <div className="flex items-start gap-3">
-        <div className={`p-2.5 rounded-full ${
-          payload.tools?.includes(tool.id) 
-            ? 'bg-primary/20 text-primary' 
-            : 'bg-muted/60 text-muted-foreground'
-        }`}>
-          {getToolIcon(tool.id)}
-        </div>
-        
-        <div className="flex-1 pr-8"> {/* Increased right padding to avoid overlap with expanded test button */}
-          <h3 className="text-sm font-medium leading-none mb-1.5">
-            {tool.id}
-          </h3>
-          
-          {tool.description && tool.description.length > 100 ? (
-            <div>
-              <p className="text-xs text-muted-foreground">
-                {expanded[tool.id] 
-                  ? tool.description 
-                  : `${tool.description.slice(0, 100)}...`}
-              </p>
-              <button 
-                className="text-xs text-primary mt-1"
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  setExpanded({...expanded, [tool.id]: !expanded[tool.id]});
-                }}
-              >
-                {expanded[tool.id] ? 'Show less' : 'Show more'}
-              </button>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">{tool.description}</p>
-          )}
-          
-          <div className="flex items-center mt-1 space-x-1">
-            {tool.tags && tool.tags.map((tag: string) => (
-              <span key={tag} className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-1.5 py-0.5 rounded-full">
-                {tag}
-              </span>
-            ))}
-            {tool.requiresInternet && (
-              <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
-                Internet
-              </span>
-            )}
-          </div>
-          
-          {tool.examples && tool.examples.length > 0 && (
-            <div className="mt-2 bg-background rounded-md p-1.5">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Example:</p>
-              <p className="text-xs italic text-foreground/70">{tool.examples[0]}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <>
