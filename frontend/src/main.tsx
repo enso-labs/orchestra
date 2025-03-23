@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { AppRoutes } from './routes'
 import ChatProvider from './context/ChatContext'
 import ThemeProvider from './context/ThemeContext'
+import ToolProvider from './context/ToolContext';
 
 const Contexts = () => {
   if ('serviceWorker' in navigator) {
@@ -22,7 +23,9 @@ const Contexts = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <ChatProvider>
-        <AppRoutes />
+        <ToolProvider>
+          <AppRoutes />
+        </ToolProvider>
       </ChatProvider>
     </ThemeProvider>
   )
