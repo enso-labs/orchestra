@@ -1,5 +1,5 @@
 import { useChatContext } from '@/context/ChatContext';
-import { createAgent, createAgentRevision, updateAgent } from '@/services/agentService';
+import { createAgent, createAgentRevision } from '@/services/agentService';
 import { createSetting } from '@/services/settingService';
 import debug from 'debug';
 import { useState } from 'react';
