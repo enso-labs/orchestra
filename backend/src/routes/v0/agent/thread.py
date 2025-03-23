@@ -3,14 +3,12 @@ from fastapi import Request, status, Depends, APIRouter,  Body, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Optional
-from psycopg_pool import ConnectionPool, AsyncConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 from src.controllers.agent import AgentController
 from src.entities import Answer, AgentThread, Threads, Thread
 from src.utils.auth import verify_credentials
-from src.services.db import get_db
+from src.services.db import get_async_connection_pool, get_db
 from src.utils.agent import Agent
 from src.models import ProtectedUser
 from src.utils.logger import logger
@@ -43,12 +41,7 @@ async def list_agent_threads(
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
 ):
     try:
-        async with AsyncConnectionPool(
-            # Example configuration
-            conninfo=DB_URI,
-            max_size=20,
-            kwargs=CONNECTION_POOL_KWARGS,
-        ) as pool:
+        async with get_async_connection_pool() as pool:
             checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()  
             config = {"user_id": user.id, "agent_id": agent_id}
