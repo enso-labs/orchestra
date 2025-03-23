@@ -16,7 +16,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 // import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { optimizeSystemPrompt } from "@/services/threadService"
+import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
 
 export default function CreateAgent() {
   const navigate = useNavigate();
@@ -42,15 +42,23 @@ export default function CreateAgent() {
   //   setConversationStarters(newStarters)
   // }
 
-  const handleGeneratePrompt = async () => {
+  const handleGeneratePrompt = async (mode: 'replace' | 'alter') => {
     if (!promptDescription.trim()) return;
     
     setIsGenerating(true);
     try {
-      const result = await optimizeSystemPrompt({
-        ...payload,
-        query: promptDescription
-      });
+      let result;
+      if (mode === 'replace') {
+        result = await optimizeSystemPrompt({
+          ...payload,
+          query: promptDescription
+        });
+      } else {
+        result = await alterSystemPrompt({
+          ...payload,
+          query: promptDescription
+        });
+      }
       
       if (result) {
         setPayload({ ...payload, system: result });
@@ -100,7 +108,6 @@ export default function CreateAgent() {
                   placeholder="e.g., Act as a JavaScript expert"
                   value={promptDescription}
                   onChange={(e) => setPromptDescription(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleGeneratePrompt()}
                   autoFocus
                 />
                 <div className="flex justify-end gap-2">
@@ -112,11 +119,19 @@ export default function CreateAgent() {
                     Cancel
                   </Button>
                   <Button 
+                    variant="outline" 
                     size="sm" 
-                    onClick={handleGeneratePrompt}
+                    onClick={() => handleGeneratePrompt('alter')}
                     disabled={isGenerating || !promptDescription.trim()}
                   >
-                    {isGenerating ? "Generating..." : "Generate"}
+                    {isGenerating ? "Processing..." : "Alter"}
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleGeneratePrompt('replace')}
+                    disabled={isGenerating || !promptDescription.trim()}
+                  >
+                    {isGenerating ? "Processing..." : "Replace"}
                   </Button>
                 </div>
               </div>
@@ -237,7 +252,6 @@ export default function CreateAgent() {
                       placeholder="e.g., Act as a JavaScript expert"
                       value={promptDescription}
                       onChange={(e) => setPromptDescription(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleGeneratePrompt()}
                     />
                     <div className="flex justify-end gap-2">
                       <Button 
@@ -248,11 +262,19 @@ export default function CreateAgent() {
                         Cancel
                       </Button>
                       <Button 
+                        variant="outline" 
                         size="sm" 
-                        onClick={handleGeneratePrompt}
+                        onClick={() => handleGeneratePrompt('alter')}
                         disabled={isGenerating || !promptDescription.trim()}
                       >
-                        {isGenerating ? "Generating..." : "Generate"}
+                        {isGenerating ? "Processing..." : "Alter"}
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleGeneratePrompt('replace')}
+                        disabled={isGenerating || !promptDescription.trim()}
+                      >
+                        {isGenerating ? "Processing..." : "Replace"}
                       </Button>
                     </div>
                   </div>
@@ -431,7 +453,6 @@ export default function CreateAgent() {
                                 placeholder="e.g., Act as a JavaScript expert"
                                 value={promptDescription}
                                 onChange={(e) => setPromptDescription(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleGeneratePrompt()}
                               />
                               <div className="flex justify-end gap-2">
                                 <Button 
@@ -442,11 +463,19 @@ export default function CreateAgent() {
                                   Cancel
                                 </Button>
                                 <Button 
+                                  variant="outline" 
                                   size="sm" 
-                                  onClick={handleGeneratePrompt}
+                                  onClick={() => handleGeneratePrompt('alter')}
                                   disabled={isGenerating || !promptDescription.trim()}
                                 >
-                                  {isGenerating ? "Generating..." : "Generate"}
+                                  {isGenerating ? "Processing..." : "Alter"}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleGeneratePrompt('replace')}
+                                  disabled={isGenerating || !promptDescription.trim()}
+                                >
+                                  {isGenerating ? "Processing..." : "Replace"}
                                 </Button>
                               </div>
                             </div>

@@ -1,6 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { X, GripVertical } from "lucide-react";
+import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface ChatDrawerProps {

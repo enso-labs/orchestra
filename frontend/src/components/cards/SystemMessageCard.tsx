@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { ChevronDown, ChevronUp, Wand2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useChatContext } from "@/context/ChatContext"
-import { optimizeSystemPrompt } from "@/services/threadService"
+import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
 
 export default function SystemMessage({ content }: { content: string }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -21,15 +21,23 @@ export default function SystemMessage({ content }: { content: string }) {
     setPayload({ ...payload, system: value })
   }
 
-  const handleGeneratePrompt = async () => {
+  const handleGeneratePrompt = async (mode: 'replace' | 'alter') => {
     if (!promptDescription.trim()) return;
     
     setIsGenerating(true);
     try {
-      const result = await optimizeSystemPrompt({
-        ...payload,
-        query: promptDescription
-      });
+      let result;
+      if (mode === 'replace') {
+        result = await optimizeSystemPrompt({
+          ...payload,
+          query: promptDescription
+        });
+      } else {
+        result = await alterSystemPrompt({
+          ...payload,
+          query: promptDescription
+        });
+      }
       
       if (result) {
         handleContentChange(result);
@@ -79,7 +87,6 @@ export default function SystemMessage({ content }: { content: string }) {
               placeholder="e.g., Act as a JavaScript expert"
               value={promptDescription}
               onChange={(e) => setPromptDescription(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleGeneratePrompt()}
             />
             <div className="flex justify-end gap-2">
               <Button 
@@ -90,11 +97,19 @@ export default function SystemMessage({ content }: { content: string }) {
                 Cancel
               </Button>
               <Button 
+                variant="outline" 
                 size="sm" 
-                onClick={handleGeneratePrompt}
+                onClick={() => handleGeneratePrompt('alter')}
                 disabled={isGenerating || !promptDescription.trim()}
               >
-                {isGenerating ? "Generating..." : "Generate"}
+                {isGenerating ? "Processing..." : "Alter"}
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => handleGeneratePrompt('replace')}
+                disabled={isGenerating || !promptDescription.trim()}
+              >
+                {isGenerating ? "Processing..." : "Replace"}
               </Button>
             </div>
           </div>
