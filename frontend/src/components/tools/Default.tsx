@@ -34,7 +34,7 @@ export default function DefaultTool({ selectedToolMessage }: { selectedToolMessa
 					</div>
 					<div>
 						<span className="font-semibold">Input:</span>
-						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							{(() => {
 								try {
 									const parsedJSON = JSON.parse(selectedToolMessage.content.replace(/'/g, '"'));
@@ -56,7 +56,7 @@ export default function DefaultTool({ selectedToolMessage }: { selectedToolMessa
 					</div>
 					<div>
 						<span className="font-semibold">Output:</span>
-						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							<MarkdownCard content={selectedToolMessage.output} />
 						</div>
 					</div>

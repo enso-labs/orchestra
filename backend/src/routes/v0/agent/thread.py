@@ -115,7 +115,7 @@ async def list_agent_threads(
         }
     }
 )
-def agent_new_thread(
+async def agent_new_thread(
     request: Request,
     agent_id: str,
     body: Annotated[AgentThread, Body()],
@@ -124,7 +124,7 @@ def agent_new_thread(
 ):
     try:
         controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)
-        return controller.agent_thread(request=request, query=body.query)
+        return await controller.async_agent_thread(request=request, query=body.query)
     except Exception as e:
         return JSONResponse(
             content={"error": str(e)},

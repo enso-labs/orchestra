@@ -101,7 +101,7 @@ class AgentController:
             logger.exception(f"Error creating new thread: {str(e)}")
             raise e
         
-    def agent_thread(
+    async def async_agent_thread(
         self, 
         request: Request, 
         query: str,
@@ -117,20 +117,19 @@ class AgentController:
                 "system": settings.get("system") or None
             }
             
-            from src.services.db import get_connection_pool
-            
-            with get_connection_pool() as pool:
-                agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
-                agent.builder(tools=settings.get("tools", []), model_name=settings.get("model"))
-                if thread_id:
-                    messages = agent.existing_thread(query, settings.get("images"))
-                else:
-                    messages = agent.messages(query, settings.get("system"), settings.get("images"))
-                    
-                if "text/event-stream" in request.headers.get("accept", ""):
-                    return agent.process(messages, "text/event-stream")
-                else:
-                    return agent.process(messages, "application/json")
+            pool = create_async_pool()
+            agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+            await agent.abuilder(tools=settings.get("tools", []), model_name=settings.get("model"))
+            if thread_id:
+                messages = agent.existing_thread(query, settings.get("images"))
+            else:
+                messages = agent.messages(query, settings.get("images"))
+                
+            accept = request.headers.get("accept", "")
+            if "text/event-stream" in accept:
+                return await agent.aprocess(messages, "text/event-stream")
+            else:
+                return await agent.aprocess(messages, "application/json")
                 
         except ValueError as e:
             logger.warning(f"Bad Request: {str(e)}")

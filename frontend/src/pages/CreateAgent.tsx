@@ -561,18 +561,6 @@ export default function CreateAgent() {
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
-        
-        {/* Update the desktop maximize button */}
-        <div className="flex justify-end mt-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-5 w-5"
-            onClick={() => setIsFullscreen(true)}
-          >
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </ChatLayout>
   );

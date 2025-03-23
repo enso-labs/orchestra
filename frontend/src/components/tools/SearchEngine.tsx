@@ -33,13 +33,13 @@ export default function SearchEngineTool({ selectedToolMessage }: { selectedTool
 					</div>
 					<div>
 						<span className="font-semibold">Input:</span>
-						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							{selectedToolMessage.content ? <JsonView value={JSON.parse(selectedToolMessage.content)} style={githubDarkTheme} /> : <p>No input data available</p>}
 						</div>
 					</div>
 					<div>
 						<span className="font-semibold">Output:</span>
-						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							<div className="space-y-4">
 								{selectedToolMessage.output && typeof selectedToolMessage.output === 'string' ? (
 									(() => {
