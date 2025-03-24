@@ -42,41 +42,35 @@ async def list_threads(
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
 ):
     try:
-        async with get_async_connection_pool() as pool:
-            async with pool.connection() as conn:
-                checkpointer = AsyncPostgresSaver(conn)
-                await checkpointer.setup()  
-                config = {"user_id": user.id}
-                agent = Agent(config=config, pool=pool)
-                user_threads = await agent.user_threads(page=page, per_page=per_page, sort_order='desc')
-                # First collect all unique threads without the per_page limit
-                seen_thread_ids = set()
-                threads = []
-                for thread_id in user_threads:
-                    if thread_id not in seen_thread_ids:
-                        seen_thread_ids.add(thread_id)
-                        agent = Agent(config={"thread_id": thread_id, "user_id": user.id}, pool=pool)
-                        checkpoint = await agent.acheckpoint(checkpointer)
-                        if checkpoint:
-                            messages = checkpoint.get('channel_values', {}).get('messages')
-                            if isinstance(messages, list):
-                                    thread = Thread(
-                                        thread_id=thread_id,
-                                        checkpoint_ns='',
-                                        checkpoint_id=checkpoint.get('id'),
-                                        messages=messages,
-                                        ts=checkpoint.get('ts'),
-                                        v=checkpoint.get('v')
-                                    )
-                                    threads.append(thread.model_dump())
+        pool = create_async_pool()
+        await pool.open()
+        async with pool.connection() as conn:
+            checkpointer = AsyncPostgresSaver(conn)
+            await checkpointer.setup()  
+            config = {"user_id": user.id}
+            agent = Agent(config=config, pool=pool)
+            user_threads = await agent.user_threads(page=page, per_page=per_page, sort_order='desc')
+            # First collect all unique threads without the per_page limit
+            seen_thread_ids = set()
+            threads = []
+            for thread_id in user_threads:
+                if thread_id not in seen_thread_ids:
+                    seen_thread_ids.add(thread_id)
+                    agent = Agent(config={"thread_id": thread_id, "user_id": user.id}, pool=pool)
+                    checkpoint = await agent.acheckpoint(checkpointer)
+                    if checkpoint:
+                        messages = checkpoint.get('channel_values', {}).get('messages')
+                        if isinstance(messages, list):
+                                thread = Thread(
+                                    thread_id=thread_id,
+                                    checkpoint_ns='',
+                                    checkpoint_id=checkpoint.get('id'),
+                                    messages=messages,
+                                    ts=checkpoint.get('ts'),
+                                    v=checkpoint.get('v')
+                                )
+                                threads.append(thread.model_dump())
                         
-            # # Calculate pagination after collecting all threads
-            # start_idx = (page - 1) * per_page
-            # end_idx = start_idx + per_page
-            # paginated_threads = threads[start_idx:end_idx]
-            
-            # # Get the timestamp of the last thread for pagination
-            # last_ts = paginated_threads[-1]['ts'] if paginated_threads else None 
         return JSONResponse(
             content={
                 'threads': threads,
@@ -90,6 +84,8 @@ async def list_threads(
     except Exception as e:
         logger.error(f"Error listing threads: {e}")
         raise e
+    finally:
+        await pool.close()
 
 ################################################################################
 ### Query Thread History

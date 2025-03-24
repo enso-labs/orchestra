@@ -58,9 +58,10 @@ class Agent:
         return checkpointer
     
     async def _acheckpointer(self):
-        checkpointer = AsyncPostgresSaver(self.pool)
-        await checkpointer.setup()
-        return checkpointer
+        async with self.pool.connection() as conn:
+            checkpointer = AsyncPostgresSaver(conn)
+            await checkpointer.setup()
+            return checkpointer
     
     def checkpoint(self):
         checkpointer = self._checkpointer()

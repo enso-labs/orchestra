@@ -59,7 +59,7 @@ async def chat_completion(
             max_retries=3,
             # timeout=1000
         )
-        response = llm.invoke([
+        response = await llm.ainvoke([
             {'role': 'system', 'content': body.system},
             {'role': 'user', 'content': body.query}
         ])

@@ -61,7 +61,6 @@ async def get_async_connection_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) ->
         kwargs=CONNECTION_POOL_KWARGS,
         open=False
     )
-    await pool.open()
     try:
         yield pool
     finally:
@@ -85,6 +84,7 @@ def keep_pool_alive(func: Callable) -> Callable:
     async def wrapper(*args, **kwargs):
         # Create a pool that will be kept alive for the entire streaming duration
         pool = create_async_pool()
+        await pool.open()
         
         try:
             # Replace the pool in Agent instance (assuming first arg is self)
