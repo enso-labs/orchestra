@@ -59,22 +59,23 @@ async def get_async_connection_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) ->
         conninfo=DB_URI,
         max_size=max_size,
         kwargs=CONNECTION_POOL_KWARGS,
-        open=False
+        open=False  # Ensure pool is not opened in constructor
     )
     try:
+        await pool.open()  # Explicitly open the pool
         yield pool
     finally:
         if not pool.closed:
             await pool.close()
 
 # Direct pool creation for existing code that needs to be updated later
-def create_async_pool(max_size: int = MAX_CONNECTION_POOL_SIZE, open: bool = False) -> AsyncConnectionPool:
+def create_async_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) -> AsyncConnectionPool:
     """Create an async connection pool (use within a try-finally block)."""
     return AsyncConnectionPool(
         conninfo=DB_URI,
         max_size=max_size,
         kwargs=CONNECTION_POOL_KWARGS,
-        open=open
+        open=False  # Ensure pool is not opened in constructor
     )
 
 def keep_pool_alive(func: Callable) -> Callable:

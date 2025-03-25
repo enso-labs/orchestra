@@ -1,40 +1,28 @@
-import asyncio
-import os
 import base64
-from contextlib import asynccontextmanager
 import requests
 import json
 from typing import Optional
-from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from fastapi import status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
-from psycopg_pool import ConnectionPool
 from langgraph.graph import StateGraph
-from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, AIMessageChunk
+from langchain_core.messages import AnyMessage,  HumanMessage, AIMessageChunk
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
-from psycopg_pool import AsyncConnectionPool
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL
-from src.tools import dynamic_tools, get_mcp_tools
+from src.tools import dynamic_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
-from src.entities import Answer
+from src.entities import Answer, Thread
 from src.utils.logger import logger
-from src.utils.stream import stream_chunks
 from src.flows.chatbot import chatbot_builder
-from src.services.db import keep_pool_alive
-
-# class ConfiguredAgent(BaseModel):
-#     user_id: str
-#     thread_id: str
-#     agent_id: str = None
+from src.services.db import create_async_pool, get_async_connection_pool
 
 class Agent:
-    def __init__(self, config: dict, pool: AsyncConnectionPool, user_repo: UserRepo = None):
+    def __init__(self, config: dict, user_repo: UserRepo = None):
         self.connection_kwargs = {
             "autocommit": True,
             "prepare_threshold": 0,
@@ -44,7 +32,7 @@ class Agent:
         self.agent_id = config.get("agent_id", None)
         self.config = {"configurable": config}
         self.graph = None
-        self.pool = pool
+        self.pool = None  # Don't create pool in constructor
         self.user_repo = user_repo
         self.model_name = config.get("model_name", None)
         self.llm: LLMWrapper = None
@@ -58,10 +46,49 @@ class Agent:
         return checkpointer
     
     async def _acheckpointer(self):
-        async with self.pool.connection() as conn:
-            checkpointer = AsyncPostgresSaver(conn)
-            await checkpointer.setup()
+        async with get_async_connection_pool() as pool:
+            checkpointer = AsyncPostgresSaver(pool)
             return checkpointer
+        
+    async def list_threads(self, page=1, per_page=20, sort_order='desc'):
+        try:
+            user_threads = await self.user_threads(page=page, per_page=per_page, sort_order=sort_order)
+            async with get_async_connection_pool() as pool:
+                threads = []
+                for thread in user_threads:
+                    checkpointer = AsyncPostgresSaver(pool)
+                    latest_checkpoint = await checkpointer.aget_tuple({"configurable": {"thread_id": thread}})
+                    if latest_checkpoint:
+                        messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
+                        if isinstance(messages, list):
+                            thread = Thread(
+                                thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
+                                checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
+                                checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
+                                messages=messages,
+                                ts=latest_checkpoint.checkpoint.get('ts'),
+                                v=latest_checkpoint.checkpoint.get('v')
+                            )
+                            threads.append(thread.model_dump())
+                return threads
+        except Exception as e:
+            logger.exception(f"Failed to list threads: {str(e)}")
+            return []
+        
+    async def list_async_threads(self, before=None, limit=20, filter={}):
+        try:
+            async with get_async_connection_pool() as pool:
+                checkpointer = AsyncPostgresSaver(pool)
+                checkpoints = checkpointer.alist(config={}, before=before, limit=limit, filter=self.config.get("configurable", {}))
+                items = []
+                async for checkpoint in checkpoints:
+                    checkpointer = AsyncPostgresSaver(pool)
+                    thread = await checkpointer.aget_tuple(checkpoint.config)
+                    items.append(thread)
+                return items
+        except Exception as e:
+            logger.exception(f"Failed to list threads: {str(e)}")
+            return []
     
     def checkpoint(self):
         checkpointer = self._checkpointer()
@@ -114,12 +141,13 @@ class Agent:
             params.extend([per_page, offset])
 
             # Acquire an asynchronous connection from the pool.
-            async with self.pool.connection() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(query, params)
-                    rows = await cur.fetchall()
-                    logger.info(f"Retrieved {len(rows)} threads for user {user_id} (page {page})")
-                    # Convert the list of rows (tuples) into a set of thread UUIDs.
+            async with get_async_connection_pool() as pool:
+                async with pool.connection() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(query, params)
+                        rows = await cur.fetchall()
+                        logger.info(f"Retrieved {len(rows)} threads for user {user_id} (page {page})")
+                        # Convert the list of rows (tuples) into a set of thread UUIDs.
                     thread_ids = {str(row[0]) for row in rows}
                     return thread_ids
 
@@ -147,11 +175,12 @@ class Agent:
                 )
                 params = (self.config["configurable"]["user_id"], self.thread_id)
             
-            async with self.pool.connection() as conn:  # Acquire a connection from the pool
-                async with conn.cursor() as cur:
-                    await cur.execute(query, params)
-                    logger.info(f"Created {cur.rowcount} rows with thread_id = {self.thread_id}")
-                    return cur.rowcount
+            async with get_async_connection_pool() as pool:
+                async with pool.connection() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(query, params)
+                        logger.info(f"Created {cur.rowcount} rows with thread_id = {self.thread_id}")
+                        return cur.rowcount
         except Exception as e:
             logger.exception(f"Failed to create thread: {str(e)}")
             return 0
@@ -172,67 +201,6 @@ class Agent:
         except Exception as e:
             logger.error(f"Failed to delete checkpoint: {str(e)}")
             return 0
-        
-    def builder(
-        self,
-        tools: list[str] = None,
-        mcp: dict = None,
-        model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
-        debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
-    ) -> StateGraph:
-        self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
-        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
-        self.checkpointer = self._checkpointer()
-        
-        if mcp and len(mcp.keys()) > 0:
-            self.tools.extend(asyncio.run(get_mcp_tools(mcp)))
-            
-        if self.tools:
-            graph = create_react_agent(self.llm, prompt=self.config.get("system"), tools=self.tools, checkpointer=self.checkpointer)
-        else:
-            builder = chatbot_builder(config={"model": self.llm.model})
-            graph = builder.compile(checkpointer=self.checkpointer)
-            
-        if debug:
-            graph.debug = True
-        self.graph = graph
-        self.graph.name = "EnsoAgent"
-        return graph
-        
-    def process(
-        self,
-        messages: list[AnyMessage], 
-        content_type: str = "application/json",
-    ) -> Response:
-        self.create_user_thread()
-        if content_type == "application/json":
-            invoke = self.graph.invoke({"messages": messages}, {'configurable': self.config})
-            content = Answer(
-                thread_id=self.thread_id,
-                answer=invoke.get('messages')[-1]
-            ).model_dump()
-
-            return JSONResponse(
-                content=content,
-                status_code=status.HTTP_200_OK
-            )
-            
-        # Assume text/event-stream for streaming
-        def stream_generator():
-            try:
-                state = {"messages": messages}
-                for chunk in stream_chunks(self.graph, state, self.config):
-                    if chunk:
-                        print(chunk)
-                        yield chunk
-            finally:
-                # Don't close the pool here, it's handled by the context manager
-                pass
-
-        return StreamingResponse(
-            stream_generator(),
-            media_type="text/event-stream"
-        )
         
     @staticmethod
     def _get_base64_image(image_url: str) -> Optional[str]:
@@ -363,7 +331,7 @@ class Agent:
         self.graph.name = "EnsoAgent"
         return graph
 
-    @keep_pool_alive
+    # @keep_pool_alive
     async def aprocess(
         self,
         messages: list[AnyMessage], 
@@ -463,3 +431,10 @@ class Agent:
                 raise
             except Exception as e:
                 logger.exception("Error sending final stream message", e)
+
+    # Add cleanup method
+    async def cleanup(self):
+        """Cleanup resources when done."""
+        if self.pool and not self.pool.closed:
+            await self.pool.close()
+            self.pool = None

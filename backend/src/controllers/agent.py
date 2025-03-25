@@ -7,7 +7,6 @@ from src.entities import ExistingThread, NewThread
 from src.utils.agent import Agent
 from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
-from src.services.db import create_async_pool, get_async_connection_pool
 
 class AgentController:
     def __init__(self, db: AsyncSession, user_id: str, agent_id: str = None): # type: ignore
@@ -30,9 +29,8 @@ class AgentController:
                 "agent_id": self.agent_id,
                 "system": new_thread.system or None
             }
-            pool = create_async_pool()
-            await pool.open()
-            agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+
+            agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp)
             messages = agent.messages(new_thread.query, new_thread.images)
             if "text/event-stream" in request.headers.get("accept", ""):
@@ -51,8 +49,6 @@ class AgentController:
         except Exception as e:
             logger.exception(f"Error creating new thread: {str(e)}")
             raise e
-        finally:
-            await pool.close()
         
     async def aexisting_thread(
         self,
@@ -69,9 +65,7 @@ class AgentController:
                 "agent_id": self.agent_id,
                 "system": existing_thread.system or None
             }
-            pool = create_async_pool()
-            await pool.open()
-            agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+            agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=existing_thread.tools, model_name=existing_thread.model, mcp=existing_thread.mcp)
             messages = agent.messages(query=existing_thread.query, images=existing_thread.images)
                 
@@ -91,8 +85,6 @@ class AgentController:
         except Exception as e:
             logger.exception(f"Error creating new thread: {str(e)}")
             raise e
-        finally:
-            await pool.close()
         
     async def async_agent_thread(
         self, 
@@ -110,9 +102,7 @@ class AgentController:
                 "system": settings.get("system") or None
             }
             
-            pool = create_async_pool()
-            await pool.open()
-            agent = Agent(config=config, pool=pool, user_repo=self.user_repo)
+            agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=settings.get("tools", []), model_name=settings.get("model"))
             if thread_id:
                 messages = agent.existing_thread(query, settings.get("images"))
@@ -130,5 +120,3 @@ class AgentController:
         except Exception as e:
             logger.exception(f"Error in agent thread: {str(e)}")
             raise e
-        finally:
-            await pool.close()
