@@ -167,7 +167,6 @@ class Agent:
     async def list_threads(self, page=1, per_page=20, sort_order='desc'):
         try:
             user_threads = await self.user_threads(page=page, per_page=per_page, sort_order=sort_order)
-            await self.create_pool()
             threads = []
             for thread in user_threads:
                 checkpointer = AsyncPostgresSaver(self.pool)
