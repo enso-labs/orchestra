@@ -178,7 +178,7 @@ Language: ${navigator.language}
     const getHistory = async (page: number = 1, perPage: number = 20, agentId: string = '') => {
         try {
             const url = agentId ? `/agents/${agentId}/threads` : '/threads';
-            const params = { page, perPage };
+            const params = { page, per_page: perPage };
             const res = await apiClient.get(url, {
                 headers: {
                     'Content-Type': 'application/json',
