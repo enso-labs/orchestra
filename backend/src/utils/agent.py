@@ -19,7 +19,8 @@ from src.constants.llm import ModelName
 from src.entities import Answer, Thread
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
-from src.services.db import create_async_pool, get_async_connection_pool
+from src.services.db import create_async_pool
+from psycopg.connection_async import AsyncConnection
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None):
@@ -32,7 +33,7 @@ class Agent:
         self.agent_id = config.get("agent_id", None)
         self.config = {"configurable": config}
         self.graph = None
-        self.pool = None  # Don't create pool in constructor
+        self.pool: AsyncConnection = None  # Don't create pool in constructor
         self.user_repo = user_repo
         self.model_name = config.get("model_name", None)
         self.llm: LLMWrapper = None
@@ -44,164 +45,12 @@ class Agent:
         checkpointer = PostgresSaver(self.pool)
         checkpointer.setup()
         return checkpointer
-    
-    async def _acheckpointer(self):
-        async with get_async_connection_pool() as pool:
-            checkpointer = AsyncPostgresSaver(pool)
-            return checkpointer
-        
-    async def list_threads(self, page=1, per_page=20, sort_order='desc'):
-        try:
-            user_threads = await self.user_threads(page=page, per_page=per_page, sort_order=sort_order)
-            async with get_async_connection_pool() as pool:
-                threads = []
-                for thread in user_threads:
-                    checkpointer = AsyncPostgresSaver(pool)
-                    latest_checkpoint = await checkpointer.aget_tuple({"configurable": {"thread_id": thread}})
-                    if latest_checkpoint:
-                        messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
-                        if isinstance(messages, list):
-                            thread = Thread(
-                                thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
-                                checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
-                                checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
-                                messages=messages,
-                                ts=latest_checkpoint.checkpoint.get('ts'),
-                                v=latest_checkpoint.checkpoint.get('v')
-                            )
-                            threads.append(thread.model_dump())
-                return threads
-        except Exception as e:
-            logger.exception(f"Failed to list threads: {str(e)}")
-            return []
-        
-    async def list_async_threads(self, before=None, limit=20, filter={}):
-        try:
-            async with get_async_connection_pool() as pool:
-                checkpointer = AsyncPostgresSaver(pool)
-                checkpoints = checkpointer.alist(config={}, before=before, limit=limit, filter=self.config.get("configurable", {}))
-                items = []
-                async for checkpoint in checkpoints:
-                    checkpointer = AsyncPostgresSaver(pool)
-                    thread = await checkpointer.aget_tuple(checkpoint.config)
-                    items.append(thread)
-                return items
-        except Exception as e:
-            logger.exception(f"Failed to list threads: {str(e)}")
-            return []
-    
+
     def checkpoint(self):
         checkpointer = self._checkpointer()
         checkpoint = checkpointer.get(self.config)
         return checkpoint
     
-    async def acheckpoint(self, checkpointer):
-        checkpoint = await checkpointer.aget(self.config)
-        return checkpoint
-    
-    async def user_threads(self, page=1, per_page=20, sort_order='desc'):
-        """
-        Retrieve a paginated list of threads records for the configured user, ordered by created_at.
-        
-        :param page: The page number (1-indexed).
-        :param page_size: Number of records per page.
-        :param sort_order: 'asc' for ascending or 'desc' for descending order based on created_at.
-        :return: A list of thread IDs.
-        """
-        try:
-            user_id = self.config["configurable"]["user_id"]
-            agent_id = self.config["configurable"].get("agent_id")
-            # Calculate the offset for pagination.
-            offset = (page - 1) * per_page
-
-            # Validate sort_order.
-            order = sort_order.upper()
-            if order not in ('ASC', 'DESC'):
-                order = 'DESC'
-
-            # Build the query. "user" is quoted because it's a reserved keyword.
-            query = f"""
-                SELECT thread
-                FROM threads
-                WHERE "user" = %s
-            """
-            
-            params = [user_id]
-            
-            # Add agent condition if agent_id is specified
-            if agent_id:
-                query += " AND agent = %s"
-                params.append(agent_id)
-                
-            query += f"""
-                ORDER BY created_at {order}
-                LIMIT %s OFFSET %s
-            """
-            
-            params.extend([per_page, offset])
-
-            # Acquire an asynchronous connection from the pool.
-            async with get_async_connection_pool() as pool:
-                async with pool.connection() as conn:
-                    async with conn.cursor() as cur:
-                        await cur.execute(query, params)
-                        rows = await cur.fetchall()
-                        logger.info(f"Retrieved {len(rows)} threads for user {user_id} (page {page})")
-                        # Convert the list of rows (tuples) into a set of thread UUIDs.
-                    thread_ids = {str(row[0]) for row in rows}
-                    return thread_ids
-
-        except Exception as e:
-            logger.error(f"Failed to retrieve paginated threads for user {user_id}: {str(e)}")
-            return []
-    
-    async def create_user_thread(self):
-        try:
-            # Quote "user" since it is a reserved keyword in PostgreSQL.
-            agent_id = self.config["configurable"].get("agent_id")
-            
-            if agent_id:
-                query = (
-                    'INSERT INTO threads ("user", thread, agent) '
-                    'VALUES (%s, %s, %s) '
-                    'ON CONFLICT ("user", thread) DO NOTHING'
-                )
-                params = (self.config["configurable"]["user_id"], self.thread_id, agent_id)
-            else:
-                query = (
-                    'INSERT INTO threads ("user", thread) '
-                    'VALUES (%s, %s) '
-                    'ON CONFLICT ("user", thread) DO NOTHING'
-                )
-                params = (self.config["configurable"]["user_id"], self.thread_id)
-            
-            async with get_async_connection_pool() as pool:
-                async with pool.connection() as conn:
-                    async with conn.cursor() as cur:
-                        await cur.execute(query, params)
-                        logger.info(f"Created {cur.rowcount} rows with thread_id = {self.thread_id}")
-                        return cur.rowcount
-        except Exception as e:
-            logger.exception(f"Failed to create thread: {str(e)}")
-            return 0
-        
-    def delete(self):
-        try:
-            query_blobs = "DELETE FROM checkpoint_blobs WHERE thread_id = %s"
-            query_checkpoints = "DELETE FROM checkpoints WHERE thread_id = %s"
-            query_checkpoints_writes = "DELETE FROM checkpoint_writes WHERE thread_id = %s"
-            with self.pool.connection() as conn:  # Acquire a connection from the pool
-                with conn.cursor() as cur:
-                    cur.execute(query_blobs, (self.thread_id,))
-                    cur.execute(query_checkpoints, (self.thread_id,))
-                    cur.execute(query_checkpoints_writes, (self.thread_id,))
-                    logger.info(f"Deleted {cur.rowcount} rows with thread_id = {self.thread_id}")
-
-                    return cur.rowcount
-        except Exception as e:
-            logger.error(f"Failed to delete checkpoint: {str(e)}")
-            return 0
-        
     @staticmethod
     def _get_base64_image(image_url: str) -> Optional[str]:
         """Fetch image from URL and convert to base64, or return existing base64 string."""
@@ -303,6 +152,167 @@ class Agent:
         messages = [HumanMessage(content=content)]
         return messages
     
+    async def create_pool(self):
+        if not hasattr(self, 'pool') or self.pool is None or self.pool.closed:
+            self.pool = create_async_pool()
+            await self.pool.open()
+        
+    async def _acheckpointer(self):
+        await self.create_pool()
+        checkpointer = AsyncPostgresSaver(self.pool)
+        await checkpointer.setup()
+        return checkpointer
+        
+    async def list_threads(self, page=1, per_page=20, sort_order='desc'):
+        try:
+            user_threads = await self.user_threads(page=page, per_page=per_page, sort_order=sort_order)
+            await self.create_pool()
+            threads = []
+            for thread in user_threads:
+                checkpointer = AsyncPostgresSaver(self.pool)
+                latest_checkpoint = await checkpointer.aget_tuple({"configurable": {"thread_id": thread}})
+                if latest_checkpoint:
+                    messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
+                    if isinstance(messages, list):
+                        thread = Thread(
+                            thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
+                            checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
+                            checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
+                            messages=messages,
+                            ts=latest_checkpoint.checkpoint.get('ts'),
+                            v=latest_checkpoint.checkpoint.get('v')
+                        )
+                        threads.append(thread.model_dump())
+            return threads
+        except Exception as e:
+            logger.exception(f"Failed to list threads: {str(e)}")
+            await self.cleanup()
+            return []
+        
+    async def list_async_threads(self, before=None, limit=20, filter={}):
+        try:
+            await self.create_pool()
+            checkpointer = AsyncPostgresSaver(self.pool)
+            checkpoints = checkpointer.alist(config={}, before=before, limit=limit, filter=self.config.get("configurable", {}))
+            items = []
+            async for checkpoint in checkpoints:
+                    checkpointer = AsyncPostgresSaver(self.pool)
+                    thread = await checkpointer.aget_tuple(checkpoint.config)
+                    items.append(thread)
+            return items
+        except Exception as e:
+            logger.exception(f"Failed to list threads: {str(e)}")
+            await self.cleanup()
+            return []
+    
+    async def acheckpoint(self, checkpointer):
+        checkpoint = await checkpointer.aget(self.config)
+        return checkpoint
+    
+    async def user_threads(self, page=1, per_page=20, sort_order='desc'):
+        """
+        Retrieve a paginated list of threads records for the configured user, ordered by created_at.
+        
+        :param page: The page number (1-indexed).
+        :param page_size: Number of records per page.
+        :param sort_order: 'asc' for ascending or 'desc' for descending order based on created_at.
+        :return: A list of thread IDs.
+        """
+        try:
+            user_id = self.config["configurable"]["user_id"]
+            agent_id = self.config["configurable"].get("agent_id")
+            # Calculate the offset for pagination.
+            offset = (page - 1) * per_page
+
+            # Validate sort_order.
+            order = sort_order.upper()
+            if order not in ('ASC', 'DESC'):
+                order = 'DESC'
+
+            # Build the query. "user" is quoted because it's a reserved keyword.
+            query = f"""
+                SELECT thread
+                FROM threads
+                WHERE "user" = %s
+            """
+            
+            params = [user_id]
+            
+            # Add agent condition if agent_id is specified
+            if agent_id:
+                query += " AND agent = %s"
+                params.append(agent_id)
+                
+            query += f"""
+                ORDER BY created_at {order}
+                LIMIT %s OFFSET %s
+            """
+            
+            params.extend([per_page, offset])
+
+            # Acquire an asynchronous connection from the pool.
+            await self.create_pool()
+            async with self.pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(query, params)
+                    rows = await cur.fetchall()
+                    logger.info(f"Retrieved {len(rows)} threads for user {user_id} (page {page})")
+                    # Convert the list of rows (tuples) into a set of thread UUIDs.
+                thread_ids = {str(row[0]) for row in rows}
+                return thread_ids
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve paginated threads for user {user_id}: {str(e)}")
+            return []
+    
+    async def create_user_thread(self):
+        try:
+            # Quote "user" since it is a reserved keyword in PostgreSQL.
+            agent_id = self.config["configurable"].get("agent_id")
+            
+            if agent_id:
+                query = (
+                    'INSERT INTO threads ("user", thread, agent) '
+                    'VALUES (%s, %s, %s) '
+                    'ON CONFLICT ("user", thread) DO NOTHING'
+                )
+                params = (self.config["configurable"]["user_id"], self.thread_id, agent_id)
+            else:
+                query = (
+                    'INSERT INTO threads ("user", thread) '
+                    'VALUES (%s, %s) '
+                    'ON CONFLICT ("user", thread) DO NOTHING'
+                )
+                params = (self.config["configurable"]["user_id"], self.thread_id)
+            
+            await self.create_pool()
+            async with self.pool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(query, params)
+                    logger.info(f"Created {cur.rowcount} rows with thread_id = {self.thread_id}")
+                    return cur.rowcount
+                
+        except Exception as e:
+            logger.exception(f"Failed to create thread: {str(e)}")
+            return 0
+        
+    def delete(self):
+        try:
+            query_blobs = "DELETE FROM checkpoint_blobs WHERE thread_id = %s"
+            query_checkpoints = "DELETE FROM checkpoints WHERE thread_id = %s"
+            query_checkpoints_writes = "DELETE FROM checkpoint_writes WHERE thread_id = %s"
+            with self.pool.connection() as conn:  # Acquire a connection from the pool
+                with conn.cursor() as cur:
+                    cur.execute(query_blobs, (self.thread_id,))
+                    cur.execute(query_checkpoints, (self.thread_id,))
+                    cur.execute(query_checkpoints_writes, (self.thread_id,))
+                    logger.info(f"Deleted {cur.rowcount} rows with thread_id = {self.thread_id}")
+
+                    return cur.rowcount
+        except Exception as e:
+            logger.error(f"Failed to delete checkpoint: {str(e)}")
+            return 0
+    
     async def abuilder(
         self,
         tools: list[str] = None,
@@ -358,16 +368,17 @@ class Agent:
                 state = {"messages": messages}
                 async for chunk in self.astream_chunks(self.graph, state, self.config):
                     if chunk:
-                        print(chunk)
+                        logger.debug(f'chunk: {str(chunk)}')
                         yield chunk
             finally:
-                pass  # Cleanup happens in the outer aprocess method
+                await self.cleanup()
 
         return StreamingResponse(
             astream_generator(),
             media_type="text/event-stream"
         )
     
+    # https://langchain-ai.github.io/langgraph/how-tos/streaming/#messages
     async def astream_chunks(
         self,
         graph: StateGraph, 
@@ -376,22 +387,31 @@ class Agent:
         stream_mode: str = "messages"
     ):
         first = True
+        ctx = {}
         try:
-            thread_id = config.get("configurable", {}).get("thread_id")
             async for msg, metadata in graph.astream(
                 state, 
                 config,
                 stream_mode=stream_mode
-            ):
+            ):  
+                # Debug logs with proper formatting to show the data
+                logger.debug(f'msg: {str(msg.__dict__)}')
+                logger.debug(f'metadata: {str(metadata)}')
+                ctx['msg'] = msg
+                ctx['metadata'] = metadata
                 if msg.content and not isinstance(msg, HumanMessage):
                     # Convert message content to SSE format
                     content = msg.content
                     if not isinstance(content, str):
                         content = content[0].get('text')
+                
                     data = {
-                        "thread_id": thread_id,
+                        "thread_id": metadata.get("thread_id"),
                         "event": "ai_chunk" if isinstance(msg, AIMessageChunk) else "tool_chunk",
-                        "content": content
+                        "content": content,
+                        "checkpoint_ns": metadata.get("checkpoint_ns"),
+                        "provider": metadata.get("ls_provider"),
+                        "model": metadata.get("ls_model_name"),
                     }
                     yield f"data: {json.dumps(data)}\n\n"
 
@@ -420,7 +440,7 @@ class Agent:
             # Send end event
             try:
                 end_data = {
-                    "thread_id": thread_id,
+                    "thread_id": ctx['metadata'].get("thread_id"),
                     "event": "end",
                     "content": []
                 }
