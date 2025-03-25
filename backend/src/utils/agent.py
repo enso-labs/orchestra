@@ -156,6 +156,7 @@ class Agent:
         if not hasattr(self, 'pool') or self.pool is None or self.pool.closed:
             self.pool = create_async_pool()
             await self.pool.open()
+            await self.pool.wait()
         
     async def _acheckpointer(self):
         await self.create_pool()
@@ -456,5 +457,5 @@ class Agent:
     async def cleanup(self):
         """Cleanup resources when done."""
         if self.pool and not self.pool.closed:
-            await self.pool.close()
+            await self.pool.close(timeout=5.0)
             self.pool = None
