@@ -93,7 +93,7 @@ class AgentController:
         thread_id: str = None,
     ):
         try:
-            config = self.agent_repo.get_by_id(agent_id=self.agent_id)
+            config = await self.agent_repo.get_by_id(agent_id=self.agent_id)
             settings = config.settings.value
             config = {
                 "user_id": self.user_repo.user_id, 

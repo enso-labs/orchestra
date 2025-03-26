@@ -1,16 +1,26 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from src.models import Agent
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+from src.models import Agent, Revision
 
 class AgentRepo:
-    def __init__(self, db: Session, user_id: str):
+    def __init__(self, db: AsyncSession, user_id: str):
         self.db = db
         self.user_id = user_id
 
-    def get_by_id(self, agent_id: str) -> Optional[Agent]:
-        """Get agent by ID with settings included."""
-        return self.db.query(Agent).filter(Agent.id == agent_id and Agent.user_id == self.user_id).first()
+    async def get_by_id(self, agent_id: str) -> Optional[Agent]:
+        """Get agent by ID with revisions and settings included."""
+        stmt = select(Agent).options(
+            selectinload(Agent.revisions).selectinload(Revision.setting)
+        ).where(
+            Agent.id == agent_id,
+            Agent.user_id == self.user_id
+        )
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
 
     def get_by_slug(self, slug: str) -> Optional[Agent]:
         """Get agent by slug with settings included."""

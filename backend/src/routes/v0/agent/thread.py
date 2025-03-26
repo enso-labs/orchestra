@@ -3,12 +3,12 @@ from fastapi import Request, status, Depends, APIRouter,  Body, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Optional
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.repos.user_repo import UserRepo
 from src.controllers.agent import AgentController
-from src.entities import Answer, AgentThread, Threads, Thread
+from src.entities import Answer, AgentThread, Threads
 from src.utils.auth import verify_credentials
-from src.services.db import get_async_connection_pool, get_db
+from src.services.db import get_async_db, get_db
 from src.utils.agent import Agent
 from src.models import ProtectedUser
 from src.utils.logger import logger
@@ -39,10 +39,12 @@ async def list_agent_threads(
     user: ProtectedUser = Depends(verify_credentials),
     page: Optional[int] = Query(1, description="Page number", ge=1),
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
+    db: AsyncSession = Depends(get_async_db)
 ):
-    try:
-        agent = Agent(config={"user_id": user.id, "agent_id": agent_id})
-        threads = await agent.list_threads(page=page, per_page=per_page)
+    try:        
+        user_repo = UserRepo(db, user.id)
+        agent = Agent(config={"user_id": user.id, "agent_id": agent_id}, user_repo=user_repo)
+        threads = await agent.list_async_threads(page=page, per_page=per_page)
         
         return JSONResponse(
                 content={
@@ -89,7 +91,7 @@ async def agent_new_thread(
     agent_id: str,
     body: Annotated[AgentThread, Body()],
     user: ProtectedUser = Depends(verify_credentials),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     try:
         controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)
@@ -131,7 +133,7 @@ async def agent_existing_thread(
     thread_id: str, 
     body: Annotated[AgentThread, Body()],
     user: ProtectedUser = Depends(verify_credentials),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     try:
         controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)

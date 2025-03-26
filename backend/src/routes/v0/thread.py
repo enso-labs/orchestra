@@ -4,7 +4,9 @@ from fastapi import Response, status, Depends, APIRouter, Query, HTTPException
 from fastapi.responses import JSONResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import Optional
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.repos.user_repo import UserRepo
+from src.services.db import get_async_db
 from src.entities import Thread, Threads
 from src.utils.agent import Agent
 from src.utils.auth import verify_credentials
@@ -36,14 +38,22 @@ async def list_threads(
     user: User = Depends(verify_credentials),
     page: Optional[int] = Query(1, description="Page number", ge=1),
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
+    db: AsyncSession = Depends(get_async_db)
 ):
     try:
-        agent = Agent(config={"user_id": user.id})
-        threads = await agent.list_threads(page=page, per_page=per_page)
+        user_repo = UserRepo(db, user.id)
+        agent = Agent(config={"user_id": user.id}, user_repo=user_repo)
+        threads = await agent.list_async_threads(page=page, per_page=per_page)
         return JSONResponse(
-            content={'threads': threads},
-            status_code=status.HTTP_200_OK
-        )
+                content={
+                    'threads': threads,
+                    'next_page': page + 1,
+                    'total': len(threads),
+                    'page': page,
+                    'per_page': per_page
+                },
+                status_code=status.HTTP_200_OK
+            )
     except Exception as e:
         logger.error(f"Error listing threads: {e}")
         raise HTTPException(status_code=500, detail=str(e))

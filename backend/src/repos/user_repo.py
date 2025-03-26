@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.models import User, Token
+from src.models import Thread, User, Token
 from src.constants import APP_SECRET_KEY
 
 class UserRepo:
@@ -96,3 +96,13 @@ class UserRepo:
             await self.db.commit()
             return True
         return False
+
+    async def threads(self, page=1, per_page=20, sort_order='desc'):
+        """Get all threads for a user."""
+        result = await self.db.execute(
+            select(Thread).filter(Thread.user == self.user_id)
+            .order_by(Thread.created_at.desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+        )
+        return result.scalars().all()

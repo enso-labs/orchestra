@@ -1,8 +1,4 @@
-import base64
-import requests
 import json
-from typing import Optional
-
 from fastapi import status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from langgraph.graph import StateGraph
@@ -10,17 +6,20 @@ from langchain_core.messages import AnyMessage,  HumanMessage, AIMessageChunk
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
+from psycopg.connection_async import AsyncConnection
+
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
-from src.constants import APP_LOG_LEVEL
+from src.constants import APP_LOG_LEVEL, DB_URI
 from src.tools import dynamic_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
 from src.entities import Answer, Thread
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
-from src.services.db import create_async_pool
-from psycopg.connection_async import AsyncConnection
+from src.services.db import create_async_pool, get_async_connection_pool, keep_pool_alive
+
+from src.utils.format import get_base64_image
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None):
@@ -51,33 +50,6 @@ class Agent:
         checkpoint = checkpointer.get(self.config)
         return checkpoint
     
-    @staticmethod
-    def _get_base64_image(image_url: str) -> Optional[str]:
-        """Fetch image from URL and convert to base64, or return existing base64 string."""
-        # Check if the string is already a base64 data URL
-        if image_url.startswith('data:image/'):
-            return image_url
-        
-        # Check if it's a raw base64 string
-        try:
-            # Try to decode to check if it's valid base64
-            base64.b64decode(image_url)
-            # If successful, assume it's an image and add data URL prefix
-            return f"data:image/png;base64,{image_url}"
-        except Exception:
-            # Not base64, try to fetch as URL
-            try:
-                response = requests.get(image_url)
-                response.raise_for_status()
-                image_data = response.content
-                base64_image = base64.b64encode(image_data).decode('utf-8')
-                # Detect content type from response headers or default to png
-                content_type = response.headers.get('content-type', 'image/png')
-                return f"data:{content_type};base64,{base64_image}"
-            except Exception as e:
-                logger.error(f"Failed to fetch or encode image {image_url}: {str(e)}")
-                return None
-    
     def existing_thread(
         self,
         query: str, 
@@ -92,7 +64,7 @@ class Agent:
             
             for image in images:
                 if base64_encode:
-                    encoded_image = Agent._get_base64_image(image)
+                    encoded_image = get_base64_image(image)
                     if encoded_image:  # Only add if encoding was successful
                         content.append({
                             "type": "image_url",
@@ -129,7 +101,7 @@ class Agent:
             
             for image in images:
                 if base64_encode:
-                    encoded_image = Agent._get_base64_image(image)
+                    encoded_image = get_base64_image(image)
                     if encoded_image:  # Only add if encoding was successful
                         content.append({
                             "type": "image_url",
@@ -153,56 +125,72 @@ class Agent:
         return messages
     
     async def create_pool(self):
-        if not hasattr(self, 'pool') or self.pool is None or self.pool.closed:
-            self.pool = create_async_pool()
-            await self.pool.open()
-            await self.pool.wait()
+        try:
+            if not self.pool:
+                # Use create_async_pool instead of the context manager
+                # This way the pool stays alive outside this function
+                self.pool = create_async_pool()
+                await self.pool.open()
+        except Exception as e:
+            logger.exception(f"Failed to create pool: {str(e)}")
+            raise e
         
     async def _acheckpointer(self):
-        await self.create_pool()
-        checkpointer = AsyncPostgresSaver(self.pool)
-        await checkpointer.setup()
-        return checkpointer
+        async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
+            await checkpointer.setup()
+            self.checkpointer = checkpointer
+            return checkpointer
         
     async def list_threads(self, page=1, per_page=20, sort_order='desc'):
         try:
-            user_threads = await self.user_threads(page=page, per_page=per_page, sort_order=sort_order)
+            user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order=sort_order)
             threads = []
-            for thread in user_threads:
-                checkpointer = AsyncPostgresSaver(self.pool)
-                latest_checkpoint = await checkpointer.aget_tuple({"configurable": {"thread_id": thread}})
-                if latest_checkpoint:
-                    messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
-                    if isinstance(messages, list):
-                        thread = Thread(
-                            thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
-                            checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
-                            checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
-                            messages=messages,
-                            ts=latest_checkpoint.checkpoint.get('ts'),
-                            v=latest_checkpoint.checkpoint.get('v')
-                        )
-                        threads.append(thread.model_dump())
+            if user_threads:
+                await self._acheckpointer()
+                for thread in user_threads:
+                    latest_checkpoint = await self.checkpointer.aget_tuple({"configurable": {"thread_id": str(thread.thread)}})
+                    if latest_checkpoint:
+                        messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
+                        if isinstance(messages, list):
+                            thread = Thread(
+                                thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
+                                checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
+                                checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
+                                messages=messages,
+                                ts=latest_checkpoint.checkpoint.get('ts'),
+                                v=latest_checkpoint.checkpoint.get('v')
+                            )
+                            threads.append(thread.model_dump())
             return threads
         except Exception as e:
             logger.exception(f"Failed to list threads: {str(e)}")
-            await self.cleanup()
             return []
+        finally:
+            await self.cleanup()
         
-    async def list_async_threads(self, before=None, limit=20, filter={}):
+    async def list_async_threads(self, page=1, per_page=20):
         try:
-            await self.create_pool()
-            checkpointer = AsyncPostgresSaver(self.pool)
-            checkpoints = checkpointer.alist(config={}, before=before, limit=limit, filter=self.config.get("configurable", {}))
-            items = []
-            async for checkpoint in checkpoints:
-                    checkpointer = AsyncPostgresSaver(self.pool)
-                    thread = await checkpointer.aget_tuple(checkpoint.config)
-                    items.append(thread)
-            return items
+            user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order='desc')
+            threads = []
+            if user_threads:
+                async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
+                    for thread in user_threads:
+                        latest_checkpoint = await checkpointer.aget_tuple({"configurable": {"thread_id": str(thread.thread)}})
+                        if latest_checkpoint:
+                            messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
+                            if isinstance(messages, list):
+                                thread = Thread(
+                                    thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
+                                    checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
+                                    checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
+                                    messages=messages,
+                                    ts=latest_checkpoint.checkpoint.get('ts'),
+                                    v=latest_checkpoint.checkpoint.get('v')
+                                )
+                                threads.append(thread.model_dump())
+            return threads
         except Exception as e:
             logger.exception(f"Failed to list threads: {str(e)}")
-            await self.cleanup()
             return []
     
     async def acheckpoint(self, checkpointer):
@@ -250,8 +238,6 @@ class Agent:
             
             params.extend([per_page, offset])
 
-            # Acquire an asynchronous connection from the pool.
-            await self.create_pool()
             async with self.pool.connection() as conn:
                 async with conn.cursor() as cur:
                     await cur.execute(query, params)
@@ -318,11 +304,12 @@ class Agent:
         tools: list[str] = None,
         mcp: dict = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
+        checkpointer: AsyncPostgresSaver = None,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ):
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
-        self.checkpointer = await self._acheckpointer()
+        self.checkpointer = checkpointer
         system = self.config.get('configurable').get("system", None)
         # Get MCP tools if provided
         if mcp and len(mcp.keys()) > 0:
@@ -371,7 +358,7 @@ class Agent:
                         logger.debug(f'chunk: {str(chunk)}')
                         yield chunk
             finally:
-                await self.cleanup()
+                pass
 
         return StreamingResponse(
             astream_generator(),
@@ -389,46 +376,48 @@ class Agent:
         first = True
         ctx = {}
         try:
-            async for msg, metadata in graph.astream(
-                state, 
-                config,
-                stream_mode=stream_mode
-            ):  
-                # Debug logs with proper formatting to show the data
-                logger.debug(f'msg: {str(msg.__dict__)}')
-                logger.debug(f'metadata: {str(metadata)}')
-                ctx['msg'] = msg
-                ctx['metadata'] = metadata
-                if msg.content and not isinstance(msg, HumanMessage):
-                    # Convert message content to SSE format
-                    content = msg.content
-                    if not isinstance(content, str):
-                        content = content[0].get('text')
-                
-                    data = {
-                        "thread_id": metadata.get("thread_id"),
-                        "event": "ai_chunk" if isinstance(msg, AIMessageChunk) else "tool_chunk",
-                        "content": content,
-                        "checkpoint_ns": metadata.get("checkpoint_ns"),
-                        "provider": metadata.get("ls_provider"),
-                        "model": metadata.get("ls_model_name"),
-                    }
-                    yield f"data: {json.dumps(data)}\n\n"
-
-                if isinstance(msg, AIMessageChunk):
-                    if first:
-                        gathered = msg
-                        first = False
-                    else:
-                        gathered = gathered + msg
-
-                    if msg.tool_call_chunks:
-                        tool_data = {
-                            "event": "tool_call",
-                            "content": str(gathered.tool_calls)
+            async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer: 
+                graph.checkpointer = checkpointer
+                async for msg, metadata in graph.astream(
+                    state, 
+                    config,
+                    stream_mode=stream_mode
+                ):  
+                    # Debug logs with proper formatting to show the data
+                    logger.debug(f'msg: {str(msg.__dict__)}')
+                    logger.debug(f'metadata: {str(metadata)}')
+                    ctx['msg'] = msg
+                    ctx['metadata'] = metadata
+                    if msg.content and not isinstance(msg, HumanMessage):
+                        # Convert message content to SSE format
+                        content = msg.content
+                        if not isinstance(content, str):
+                            content = content[0].get('text')
+                    
+                        data = {
+                            "thread_id": metadata.get("thread_id"),
+                            "event": "ai_chunk" if isinstance(msg, AIMessageChunk) else "tool_chunk",
+                            "content": content,
+                            "checkpoint_ns": metadata.get("checkpoint_ns"),
+                            "provider": metadata.get("ls_provider"),
+                            "model": metadata.get("ls_model_name"),
                         }
-                        yield f"data: {json.dumps(tool_data)}\n\n"
-        
+                        yield f"data: {json.dumps(data)}\n\n"
+
+                    if isinstance(msg, AIMessageChunk):
+                        if first:
+                            gathered = msg
+                            first = False
+                        else:
+                            gathered = gathered + msg
+
+                        if msg.tool_call_chunks:
+                            tool_data = {
+                                "event": "tool_call",
+                                "content": str(gathered.tool_calls)
+                            }
+                            yield f"data: {json.dumps(tool_data)}\n\n"
+            
         except GeneratorExit:
             # Handle client disconnection gracefully
             logger.info("Client disconnected, cleaning up stream")

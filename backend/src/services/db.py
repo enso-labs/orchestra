@@ -10,7 +10,7 @@ from psycopg_pool import ConnectionPool, AsyncConnectionPool
 
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 
-MAX_CONNECTION_POOL_SIZE = 10
+MAX_CONNECTION_POOL_SIZE = None
 
 # SQLAlchemy engines
 engine = create_engine(DB_URI)
@@ -59,10 +59,10 @@ async def get_async_connection_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) ->
         conninfo=DB_URI,
         max_size=max_size,
         kwargs=CONNECTION_POOL_KWARGS,
-        open=False  # Ensure pool is not opened in constructor
+        # open=False  # Ensure pool is not opened in constructor
     )
     try:
-        await pool.open()  # Explicitly open the pool
+        # await pool.open()  # Explicitly open the pool
         yield pool
     finally:
         if not pool.closed:
@@ -98,7 +98,8 @@ def keep_pool_alive(func: Callable) -> Callable:
             return result
         finally:
             # Only close the pool when the entire response is done
-            if not pool.closed:
-                await pool.close()
+            # if not pool.closed:
+            #     await pool.close()
+            pass
     
     return wrapper 
