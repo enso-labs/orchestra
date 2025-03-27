@@ -72,15 +72,15 @@ export default function useAgentHook() {
 			}
 
 			setIsCreating(true);
-      const response = await createSetting({
-        name: agentDetails.name.replace(/\s+/g, '_').toLowerCase() + ":" + new Date().toISOString().slice(0, 16).replace('T', '_'),
-        value: {
-          system: payload.system,
-          model: payload.model,
-          tools: payload.tools,
-          mcp: payload.mcp
-        }
-      });
+			const response = await createSetting({
+				name: agentDetails.name.replace(/\s+/g, '_').toLowerCase() + ":" + new Date().toISOString().slice(0, 16).replace('T', '_'),
+				value: {
+				system: payload.system,
+				model: payload.model,
+				tools: payload.tools,
+				mcp: payload.mcp
+				}
+			});
 			const settingId = response.data.setting.id;
 			const agentResponse = await createAgentRevision(id, {
 				settings_id: settingId,

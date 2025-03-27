@@ -32,6 +32,7 @@ export function PresetPopover() {
           system: payload.system,
           model: payload.model,
           tools: payload.tools,
+          mcp: payload.mcp
         }
       });
 
@@ -102,6 +103,7 @@ export function PresetPopover() {
           system: payload.system,
           model: payload.model,
           tools: payload.tools,
+          mcp: payload.mcp
         }
       });
 

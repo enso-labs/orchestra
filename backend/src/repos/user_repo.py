@@ -97,12 +97,20 @@ class UserRepo:
             return True
         return False
 
-    async def threads(self, page=1, per_page=20, sort_order='desc'):
+    async def threads(self, page=1, per_page=20, sort_order='desc', agent=None):
         """Get all threads for a user."""
-        result = await self.db.execute(
-            select(Thread).filter(Thread.user == self.user_id)
-            .order_by(Thread.created_at.desc())
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-        )
+        query = select(Thread).filter(Thread.user == self.user_id)
+        
+        if agent:
+            query = query.filter(Thread.agent == agent)
+        
+        # Apply sort order
+        if sort_order.lower() == 'asc':
+            query = query.order_by(Thread.created_at.asc())
+        else:
+            query = query.order_by(Thread.created_at.desc())
+            
+        query = query.offset((page - 1) * per_page).limit(per_page)
+            
+        result = await self.db.execute(query)
         return result.scalars().all()
