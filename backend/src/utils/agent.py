@@ -170,7 +170,7 @@ class Agent:
         
     async def list_async_threads(self, page=1, per_page=20):
         try:
-            user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order='desc')
+            user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order='desc', agent=self.agent_id)
             threads = []
             if user_threads:
                 async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:

@@ -103,7 +103,7 @@ class AgentController:
             }
             
             agent = Agent(config=config, user_repo=self.user_repo)
-            await agent.abuilder(tools=settings.get("tools", []), model_name=settings.get("model"))
+            await agent.abuilder(tools=settings.get("tools", []), model_name=settings.get("model"), mcp=settings.get("mcp", None))
             if thread_id:
                 messages = agent.existing_thread(query, settings.get("images"))
             else:
