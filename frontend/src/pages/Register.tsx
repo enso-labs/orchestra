@@ -61,7 +61,7 @@ export default function Register() {
 
         <div className="w-full max-w-md space-y-8 p-8 bg-card rounded-lg shadow-md border border-border">
           <div className="text-center">
-            <img src="https://promptengineersai-dev.netlify.app/icons/512.png" alt="Logo" className="w-10 h-10 mx-auto" />
+            <img src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" alt="Logo" className="w-20 h-20 mx-auto rounded-full" />
             <h1 className="text-3xl font-bold text-foreground">Register</h1>
             <p className="mt-2 text-sm text-muted-foreground">Create your account</p>
           </div>
