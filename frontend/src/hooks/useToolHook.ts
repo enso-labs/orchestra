@@ -10,7 +10,7 @@ import apiClient from '@/lib/utils/apiClient';
 debug.enable('hooks:*');
 
 const defaultMCP = {
-    "python": {
+    "enso_mcp": {
       "transport": "sse",
       "url": "https://mcp.enso.sh/sse"
     }
@@ -42,6 +42,7 @@ const INIT_TOOL_STATE = {
 	mcpCode: JSON.stringify(defaultMCP, null, 2),
 	mcpError: '',
 	hasSavedMCP: false,
+  isAssistantOpen: false,
 }
 
 
@@ -53,6 +54,7 @@ export default function useToolHook() {
 		setCurrentToolCall,
 		setIsToolCallInProgress,
 	} = useChatContext();
+  const [isAssistantOpen, setIsAssistantOpen] = useState(INIT_TOOL_STATE.isAssistantOpen);
   const [toolFilter, setToolFilter] = useState(INIT_TOOL_STATE.toolFilter);
   const [expanded, setExpanded] = useState<Record<string, boolean>>(INIT_TOOL_STATE.expanded);
   const [groupByCategory, setGroupByCategory] = useState(INIT_TOOL_STATE.groupByCategory);
@@ -270,6 +272,7 @@ export default function useToolHook() {
 		mcpCode,
 		mcpError,
 		hasSavedMCP,
+		isAssistantOpen,
 		setToolFilter,
 		setExpanded,
 		setGroupByCategory,
@@ -279,6 +282,7 @@ export default function useToolHook() {
 		setMcpCode,
 		setMcpError,
 		setHasSavedMCP,
+		setIsAssistantOpen,
 		// actions
 		clearTools,
 		testTool,
