@@ -164,3 +164,33 @@ export function combineToolMessages(messages: Message[]): Message[] {
 
   return result;
 }
+
+export function handleStreamChunk(data: any) {
+  // Tool Calls
+  if (data.msg.type === 'AIMessageChunk' && data.msg.tool_calls.length > 0) {
+    const toolCallData = {
+      content: data.msg.content || data.msg,
+      type: 'tool',
+      name: data.msg.name || data.msg[0].name,
+      status: 'pending',
+      tool_call_id: data.msg.id,
+      id: data.msg.id
+    };
+    return toolCallData;
+  }
+  // Tool Chunk
+  if (data.msg.type === 'tool') {
+    const toolChunkData = {
+        content: data.msg.content || data.msg,
+        type: 'tool',
+        name: data.msg.name,
+        status: 'success',
+        tool_call_id: data.msg.id,
+        isOutput: true
+    };
+    return toolChunkData;
+  }
+  if (data.event === 'end') {
+    return data.msg;
+  }
+}

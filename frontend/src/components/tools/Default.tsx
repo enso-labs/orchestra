@@ -5,6 +5,8 @@ import JsonView from "@uiw/react-json-view"
 import { githubDarkTheme } from "@uiw/react-json-view/githubDark"
 
 export default function DefaultTool({ selectedToolMessage }: { selectedToolMessage: any }) {
+
+	if (!selectedToolMessage) return null;
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center space-x-2">

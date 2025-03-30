@@ -3,18 +3,29 @@ import { cn } from "@/lib/utils";
 import MarkdownCard from "../cards/MarkdownCard";
 import { Wrench } from "lucide-react";
 import SystemMessageCard from "../cards/SystemMessageCard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SearchEngineTool from "../tools/SearchEngine";
 import DefaultTool from "../tools/Default";
 import { useToolContext } from "@/context/ToolContext";
 
 
+
 const ChatMessages = ({ messages }: { messages: any[] }) => {
-	const { selectedToolMessage } = useToolContext();
 	const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
+	const { selectedToolMessage } = useToolContext();
+
+	useEffect(() => {
+		if (selectedToolMessage) {
+			console.log(selectedToolMessage);
+		}
+	}, [selectedToolMessage]);
 
 	const handleToolClick = (index: number) => {
 		setSelectedToolId(selectedToolId === index ? null : index);
+	}
+
+	const renderTool = (index: number) => {
+		return Boolean(selectedToolId === index || selectedToolMessage);
 	}
 
 	if (messages.length === 0) {
@@ -34,7 +45,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 							<div 
 								className={cn(
 									"border rounded-lg overflow-hidden",
-									selectedToolId === index 
+									renderTool(index) 
 										? "w-full bg-muted/50 shadow-sm" 
 										: "w-[200px] bg-transparent"
 								)}
@@ -44,7 +55,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 									onClick={() => handleToolClick(index)}
 									className={cn(
 										"flex items-center gap-3 p-3 rounded-none hover:bg-accent",
-										selectedToolId === index 
+										renderTool(index) 
 											? "w-full justify-between border-b" 
 											: "w-full justify-between"
 									)}
@@ -65,7 +76,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 									</span>
 								</Button>
 								
-								{(selectedToolId === index) || selectedToolMessage && (
+								{renderTool(index) && (
 									<div className="max-h-[600px] w-full overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-muted">
 										<div className="p-4">
 											{message.name === 'search_engine' ? (

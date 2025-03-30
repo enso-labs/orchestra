@@ -7,6 +7,27 @@ import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 
+
+const updateAssistantMessage = (messages: any[], toolCall: any) => {
+    const assistantMessages = messages.filter(message => message.role === 'assistant');
+    if (assistantMessages.length > 0) {
+        const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
+        if (!lastAssistantMessage.tools) {
+            lastAssistantMessage.tools = [];
+        }
+        lastAssistantMessage.tools.push(toolCall);
+    }
+    return messages;
+}
+
+const finalAssistantMessage = (messages: any[], aiMessage: string) => {
+    const assistantMessages = messages.filter(message => message.role === 'assistant');
+    if (assistantMessages.length > 0) {
+        const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
+        return { role: "assistant", content: lastAssistantMessage.content + aiMessage };
+    }
+}
+
 const KEY_NAME = 'mcp-config';
 
 debug.enable('hooks:*');
@@ -71,13 +92,11 @@ Language: ${navigator.language}
     }
     
     const handleQuery = (agentId: string = '') => {
-        queryThread(payload, agentId);
+        queryThread(payload, agentId, messages);
     }
 
-    const queryThread = (payload: ThreadPayload, agentId: string = '') => {
+    const queryThread = (payload: ThreadPayload, agentId: string = '', previousMessages: any[] = []) => {
         logger("Querying thread:", payload);
-        const updatedMessages = [...messages, { role: 'user', content: payload.query }];
-        setMessages(updatedMessages);
         setResponse("");
         responseRef.current = "";
         const responseData = agentId ? {
@@ -107,68 +126,50 @@ Language: ${navigator.language}
             throw new Error(errData?.detail);
         });
 
+        const messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }, { role: "assistant", content: "" }];
+
         source.addEventListener("open", () => {
-            const messagesWithAssistant = [...updatedMessages, { role: "assistant", content: "" }];
             setMessages(messagesWithAssistant);
         });
 
         source.addEventListener("message", (e: any) => {
             const data = JSON.parse(e.data);
-            const message = data.content;
+            const message = data;
             logger("Message received:", message);
 
-            if (data.event === 'ai_chunk') {
-                responseRef.current += message;
-                const finalMessages = [...messages, 
-                    { role: 'user', content: payload.query },
-                    { role: "assistant", content: responseRef.current }
-                ];
-                setMessages(finalMessages);
-            } else if (data.event === 'tool_call') {
-                const toolCallData = {
-                    content: message.content || message,
-                    type: 'tool',
-                    name: message.name,
-                    status: 'pending',
-                    tool_call_id: message.id,
-                    id: crypto.randomUUID()
-                };
-                
-                setCurrentToolCall(toolCallData);
+            if (data.msg.type === 'AIMessageChunk' && data.msg.tool_calls.length > 0) {
+                console.log("Tool call received:", data.msg);
+                const updateAssistantToolCall = updateAssistantMessage(messagesWithAssistant, data.msg);
+                setMessages(updateAssistantToolCall);
                 setIsToolCallInProgress(true);
+
+            } else if (data.msg.type === 'tool') {
+                console.log("Tool chunk received:", data.msg);
+                const updateAssistantToolCall = updateAssistantMessage(messagesWithAssistant, data.msg);
+                setMessages(updateAssistantToolCall);
                 
-                const updatedMessages = [...messages, toolCallData];
-                setMessages(updatedMessages);
-            } else if (data.event === 'tool_chunk') {
-                const toolChunkData = {
-                    content: message.content || message,
-                    type: 'tool',
-                    name: message.name,
-                    status: 'success',
-                    tool_call_id: message.id,
-                    isOutput: true
-                };
-                
-                setCurrentToolCall((prev: any) => ({
-                    ...prev,
-                    output: toolChunkData.content,
-                    status: 'success'
-                }));
-                
-                const updatedMessages = [...messages, toolChunkData];
-                setMessages(updatedMessages);
             } else if (data.event === 'end') {
-                if (toolCallMessage) {
-                    const updatedMessages = [...messages, toolCallMessage];
-                    setMessages(updatedMessages);
-                    setToolCallMessage(null);
-                }
+                // if (toolCallMessage) {
+                //     const updatedMessages = [...messages, toolCallMessage];
+                //     setMessages(updatedMessages);
+                // }
                 getHistory(1, history.per_page, agentId);
                 source.close();
                 logger("Thread ended");
                 return;
+            } else {
+                responseRef.current += data.msg.content;
+                // Find the assistant message and update it with the latest content
+                const updatedMessages = messagesWithAssistant.map(message => {
+                    if (message.role === 'assistant') {
+                        return { ...message, content: responseRef.current };
+                    }
+                    return message;
+                });
+                
+                // Update the messages state with the latest assistant message
+                setMessages(updatedMessages);
             }
-
             setPayload((prev) => ({ ...prev, query: '', threadId: data.thread_id, images: [], mcp: prev.mcp }));
         });
         source.stream();
