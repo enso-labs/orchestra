@@ -38,7 +38,7 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
-  const [selectedToolMessage, setSelectedToolMessage] = useState<any>(null)
+  const [selectedToolMessage, setSelectedToolMessage] = useState<any>(null);
 
   const [, setCurrentThreadId] = useState<string | null>(null)
 

@@ -6,10 +6,16 @@ import SystemMessageCard from "../cards/SystemMessageCard";
 import { useState } from "react";
 import SearchEngineTool from "../tools/SearchEngine";
 import DefaultTool from "../tools/Default";
+import { useToolContext } from "@/context/ToolContext";
 
 
 const ChatMessages = ({ messages }: { messages: any[] }) => {
+	const { selectedToolMessage } = useToolContext();
 	const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
+
+	const handleToolClick = (index: number) => {
+		setSelectedToolId(selectedToolId === index ? null : index);
+	}
 
 	if (messages.length === 0) {
 		return (
@@ -35,7 +41,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 							>
 								<Button
 									variant="ghost"
-									onClick={() => setSelectedToolId(selectedToolId === index ? null : index)}
+									onClick={() => handleToolClick(index)}
 									className={cn(
 										"flex items-center gap-3 p-3 rounded-none hover:bg-accent",
 										selectedToolId === index 
@@ -59,7 +65,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 									</span>
 								</Button>
 								
-								{selectedToolId === index && (
+								{(selectedToolId === index) || selectedToolMessage && (
 									<div className="max-h-[600px] w-full overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-muted">
 										<div className="p-4">
 											{message.name === 'search_engine' ? (
@@ -97,7 +103,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 								<MarkdownCard content={message.content} />
 							</div>
 						</div>
-					)
+					) 
 				}
 			})}
 		</div>

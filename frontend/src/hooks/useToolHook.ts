@@ -6,16 +6,9 @@ import {
   Search, BookOpen, Globe, Infinity, Leaf
 } from "lucide-react";
 import apiClient from '@/lib/utils/apiClient';
+import { INIT_TOOL_STATE, useToolReducer } from '@/reducers/toolReducer';
 
 debug.enable('hooks:*');
-
-const defaultMCP = {
-    "enso_mcp": {
-      "transport": "sse",
-      "url": "https://mcp.enso.sh/sse"
-    }
-  }
-
 
 const TOOL_ICONS: Record<string, any> = {
   default: Wrench,
@@ -32,20 +25,6 @@ const TOOL_ICONS: Record<string, any> = {
   nature: Leaf,
 };
 
-const INIT_TOOL_STATE = {
-	toolFilter: "",
-	expanded: {},
-	groupByCategory: true,
-	testingTool: null,
-	testFormValues: {},
-	isAddingMCP: false,
-	mcpCode: JSON.stringify(defaultMCP, null, 2),
-	mcpError: '',
-	hasSavedMCP: false,
-  isAssistantOpen: false,
-}
-
-
 export default function useToolHook() {
 	const { 
 		payload, 
@@ -54,16 +33,23 @@ export default function useToolHook() {
 		setCurrentToolCall,
 		setIsToolCallInProgress,
 	} = useChatContext();
-  const [isAssistantOpen, setIsAssistantOpen] = useState(INIT_TOOL_STATE.isAssistantOpen);
-  const [toolFilter, setToolFilter] = useState(INIT_TOOL_STATE.toolFilter);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>(INIT_TOOL_STATE.expanded);
-  const [groupByCategory, setGroupByCategory] = useState(INIT_TOOL_STATE.groupByCategory);
-  const [testingTool, setTestingTool] = useState<any>(INIT_TOOL_STATE.testingTool);
-  const [testFormValues, setTestFormValues] = useState<Record<string, any>>(INIT_TOOL_STATE.testFormValues);
-  const [isAddingMCP, setIsAddingMCP] = useState(INIT_TOOL_STATE.isAddingMCP);
-  const [mcpCode, setMcpCode] = useState(INIT_TOOL_STATE.mcpCode);
-  const [mcpError, setMcpError] = useState(INIT_TOOL_STATE.mcpError);
-  const [hasSavedMCP, setHasSavedMCP] = useState(INIT_TOOL_STATE.hasSavedMCP);
+  const {state, actions} = useToolReducer();
+  const {
+    testingTool,
+    testFormValues,
+    isAddingMCP,
+    mcpCode,
+    toolFilter,
+  } = state;
+  const {
+    setTestFormValues,
+    setTestingTool,
+    setIsAddingMCP,
+    setMcpCode,
+    setMcpError,
+    setHasSavedMCP,
+  } = actions;
+  const [isAssistantOpen,] = useState(INIT_TOOL_STATE.isAssistantOpen);
 
 	const clearTools = () => {
     setPayload((prev: { tools: any[]; }) => ({
@@ -111,7 +97,7 @@ export default function useToolHook() {
   };
 
 	const handleInputChange = (key: string, value: any) => {
-    setTestFormValues(prev => ({
+    setTestFormValues((prev: Record<string, any>) => ({
       ...prev,
       [key]: value
     }));
@@ -133,7 +119,7 @@ export default function useToolHook() {
     if (payload.mcp) {
       setMcpCode(JSON.stringify(payload.mcp, null, 2));
     } else {
-      setMcpCode(JSON.stringify(defaultMCP, null, 2));
+      setMcpCode(INIT_TOOL_STATE.mcpCode);
     }
   };
 
@@ -170,7 +156,7 @@ export default function useToolHook() {
     setHasSavedMCP(false);
     
     // Reset to default
-    setMcpCode(JSON.stringify(defaultMCP, null, 2));
+    setMcpCode(INIT_TOOL_STATE.mcpCode);
     
     // If removing while in edit mode, we'll keep it open
     if (!isAddingMCP) {
@@ -255,7 +241,7 @@ export default function useToolHook() {
 				setHasSavedMCP(true);
 			}
 			return () => {
-				setMcpCode(JSON.stringify(defaultMCP, null, 2));
+				setMcpCode(INIT_TOOL_STATE.mcpCode);
 				setHasSavedMCP(false);
 			}
 			
@@ -263,26 +249,9 @@ export default function useToolHook() {
 	}
 
 	return {
-		toolFilter,
-		expanded,
-		groupByCategory,
-		testingTool,
-		testFormValues,
-		isAddingMCP,
-		mcpCode,
-		mcpError,
-		hasSavedMCP,
+    ...state,
+    ...actions,
 		isAssistantOpen,
-		setToolFilter,
-		setExpanded,
-		setGroupByCategory,
-		setTestingTool,
-		setTestFormValues,
-		setIsAddingMCP,
-		setMcpCode,
-		setMcpError,
-		setHasSavedMCP,
-		setIsAssistantOpen,
 		// actions
 		clearTools,
 		testTool,
