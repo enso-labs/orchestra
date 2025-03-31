@@ -6,19 +6,8 @@ import { TOKEN_NAME, VITE_API_URL } from '../config';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
-
-
-const updateAssistantMessage = (messages: any[], toolCall: any) => {
-    const assistantMessages = messages.filter(message => message.role === 'assistant');
-    if (assistantMessages.length > 0) {
-        const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
-        if (!lastAssistantMessage.tools) {
-            lastAssistantMessage.tools = [];
-        }
-        lastAssistantMessage.tools.push(toolCall);
-    }
-    return messages;
-}
+import { constructSystemPrompt } from '@/lib/utils/format';
+import { list } from 'postcss';
 
 const KEY_NAME = 'mcp-config';
 
@@ -28,6 +17,7 @@ const logger = debug('hooks:useChatHook');
 const initChatState = {
     response: null,
     responseRef: "",
+    toolCallRef: "",
     messages: [],
     settings: [],
     preset: null,
@@ -52,11 +42,16 @@ const initChatState = {
     models: [],
     isToolCallInProgress: false,
     currentToolCall: null,
+    selectedToolMessage: null,
 }
 
 export default function useChatHook() {
     const token = localStorage.getItem(TOKEN_NAME);
     const responseRef = useRef(initChatState.responseRef);
+    const toolCallRef = useRef(initChatState.toolCallRef);
+    const [toolCall, setToolCall] = useState<any>({
+        input: "",
+    });
     const [response, setResponse] = useState<any>(initChatState.response);  
     const [messages, setMessages] = useState<any[]>(initChatState.messages);
     const [payload, setPayload] = useState(initChatState.payload);
@@ -68,35 +63,43 @@ export default function useChatHook() {
     const [isToolCallInProgress, setIsToolCallInProgress] = useState(false);
     const [currentToolCall, setCurrentToolCall] = useState<any>(null);
     const [preset, setPreset] = useState<any>(initChatState.preset);
-
+    const [selectedToolMessage, setSelectedToolMessage] = useState<any>(null);
     const currentModel = models.find((model: Model) => model.id === payload.model);
     const enabledTools = availableTools
-        .filter((tool: any) => payload.tools.includes(tool.id));
-
-
-    const constructSystemPrompt = (systemPrompt: string) => {
-        return `${systemPrompt}
----
-Current Date and Time: ${new Date().toLocaleString()}
-Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
-Language: ${navigator.language}
-`;
-    }
+        .filter((tool: any) => payload.tools.includes(tool.id))
     
     const handleQuery = (agentId: string = '') => {
         queryThread(payload, agentId, messages);
     }
 
-    const queryThread = (payload: ThreadPayload, agentId: string = '', previousMessages: any[] = []) => {
-        logger("Querying thread:", payload);
-        setResponse("");
-        responseRef.current = "";
-        const responseData = agentId ? {
+    const constructPayload = (payload: ThreadPayload, agentId?: string) => {
+        return agentId ? {
             query: payload.query,
         } : {
             ...payload,
             system: constructSystemPrompt(payload.system)
         }
+    }
+
+    const handleToolCallChunk = (chunk: string) => {
+        toolCallRef.current += chunk;
+        setToolCall({
+            input: toolCallRef.current,
+        });
+    }
+
+    const handleAIReply = (chunk: string) => {
+        responseRef.current += chunk;
+        setResponse(responseRef.current);
+    }
+
+    const queryThread = (payload: ThreadPayload, agentId: string = '', previousMessages: any[] = []) => {
+        logger("Querying thread:", payload);
+        let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
+        setMessages(messagesWithAssistant);
+        setResponse("");
+        responseRef.current = "";
+        const responseData = constructPayload(payload, agentId);
         const url = agentId ? `/agents/${agentId}/threads` : '/threads';
         const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
             {
@@ -118,41 +121,31 @@ Language: ${navigator.language}
             throw new Error(errData?.detail);
         });
 
-        let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
-        let ctx = {};
         source.addEventListener("open", () => {
-            setMessages(messagesWithAssistant);
+            // setMessages(messagesWithAssistant);
+            console.log("connection opened");
         });
 
         source.addEventListener("message", (e: any) => {
             const data = JSON.parse(e.data);
-            const message = data;
-            logger("Message received:", message);
+            const lastMessage = messagesWithAssistant[messagesWithAssistant.length - 1];
+            logger("Message received:", data);
 
-            if (data.msg.type === 'AIMessageChunk' && data.msg.tool_calls.length > 0) {
+            if (data.msg.type === 'AIMessageChunk' && data.msg.tool_call_chunks.length > 0) {
                 console.log("Tool call received:", data.msg);
-                const toolMessage = createToolMessage(messagesWithAssistant, data.msg);
-                // Check if the last message is a tool message
-                const lastMessage = messagesWithAssistant.length > 0 ? messagesWithAssistant[messagesWithAssistant.length - 1] : null;
-                if (lastMessage && lastMessage.role === 'tool') {
-                    // If last message is a tool message, add the tool call to its tool_calls array
-                    if (!lastMessage.tool_calls) {
-                        lastMessage.tool_calls = [];
-                    }
-                    lastMessage.tool_calls.push(data.msg);
-                } else {
-                    // Otherwise create a new tool message
-                    messagesWithAssistant.push(toolMessage);
+                const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
+                handleToolCallChunk(toolCallChunk);
+                if (lastMessage.role !== 'tool') {
+                    messagesWithAssistant = [...messagesWithAssistant, { role: "tool", input: toolCallRef.current }];
                 }
-                // setMessages(messagesWithAssistant);
-                setIsToolCallInProgress(true);
-
             } else if (data.msg.type === 'tool') {
                 console.log("Tool chunk received:", data.msg);
-                const messages = updateLatestToolMessage(messagesWithAssistant, data.msg);
-                messagesWithAssistant = messages;
-                setMessages(messages);
-                
+                const index = messagesWithAssistant.map(item => item.role).lastIndexOf('tool');
+                if (index !== -1) {
+                    // Create a new object with the updated property
+                    messagesWithAssistant[index] = { ...messagesWithAssistant[index], input: toolCallRef.current, ...data.msg };
+                }
+                setMessages(messagesWithAssistant);
             } else if (data.event === 'end') {
                 getHistory(1, history.per_page, agentId);
                 source.close();
@@ -161,14 +154,16 @@ Language: ${navigator.language}
             } else {
                 responseRef.current += data.msg.content;
                 // Find the assistant message and update it with the latest content
-                const updatedMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
+                const updatesMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
                 
                 // Update the messages state with the latest assistant message
-                setMessages(updatedMessages);
+                setMessages(updatesMessages);
             }
             setPayload((prev) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
         });
         source.stream();
+        responseRef.current = "";
+        toolCallRef.current = "";
         return true;
     };
 
@@ -308,24 +303,6 @@ Language: ${navigator.language}
         }
     };
 
-    const createToolMessage = (messages: any[], toolCall: any) => {
-        return { role: "tool", tool_calls: [toolCall] };
-    }
-
-    const updateLatestToolMessage = (messages: any[], toolCall: any) => {
-        // Find the latest tool message instead of just any tool message
-        const toolMessages = messages.filter(message => message.role === 'tool');
-        const latestToolMessage = toolMessages.length > 0 ? toolMessages[toolMessages.length - 1] : null;
-        
-        if (latestToolMessage) {
-            if (!latestToolMessage.tool_calls) {
-                latestToolMessage.tool_calls = [];
-            }
-            latestToolMessage.tool_calls.push(toolCall);
-        }
-        return messages;
-    }
-
     return {
         ...initChatState,
         messages,
@@ -363,6 +340,10 @@ Language: ${navigator.language}
         setPreset,
         currentModel,
         enabledTools,
-        useMCPEffect
+        useMCPEffect,
+        selectedToolMessage,
+        setSelectedToolMessage,
+        toolCall,
+        setToolCall,
     };
 }

@@ -196,3 +196,13 @@ export function handleStreamChunk(data: any) {
     return data.msg;
   }
 }
+
+
+export function constructSystemPrompt(systemPrompt: string) {
+        return `${systemPrompt}
+---
+Current Date and Time: ${new Date().toLocaleString()}
+Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+Language: ${navigator.language}
+`;
+    }

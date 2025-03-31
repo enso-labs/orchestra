@@ -43,7 +43,7 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							{(() => {
 								try {
-									const parsedJSON = JSON.parse(selectedToolMessage.args);
+									const parsedJSON = JSON.parse(selectedToolMessage.args || selectedToolMessage.input);
 									return <JsonView value={parsedJSON} style={githubDarkTheme} />;
 								} catch (error) {
 									return (

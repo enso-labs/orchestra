@@ -47,12 +47,12 @@ export default function Chat() {
     setIsToolCallInProgress,
     currentToolCall,
     setCurrentToolCall,
-    currentModel
+    currentModel,
+    setSelectedToolMessage
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
-  const [selectedToolMessage, setSelectedToolMessage] = useState<any>(null);
 
   const [, setCurrentThreadId] = useState<string | null>(null)
 
@@ -66,7 +66,8 @@ export default function Chat() {
 
   useEffect(() => {
     if (currentToolCall) {
-      setSelectedToolMessage(currentToolCall)
+      const foundToolCall = findToolCall(currentToolCall, messages)
+      setSelectedToolMessage(foundToolCall)
       setIsAssistantOpen(true)
     }
   }, [isToolCallInProgress, currentToolCall])
@@ -186,7 +187,7 @@ export default function Chat() {
         </div>
 
         <ChatDrawer isOpen={isAssistantOpen} onClose={handleDrawerClose}>
-          {currentToolCall && <ToolAction selectedToolMessage={findToolCall(currentToolCall, messages)} />}
+          {currentToolCall && <ToolAction selectedToolMessage={currentToolCall} />}
         </ChatDrawer>
       </div>
     </ChatLayout>
