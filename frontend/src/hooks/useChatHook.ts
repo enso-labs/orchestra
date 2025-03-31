@@ -20,14 +20,6 @@ const updateAssistantMessage = (messages: any[], toolCall: any) => {
     return messages;
 }
 
-const finalAssistantMessage = (messages: any[], aiMessage: string) => {
-    const assistantMessages = messages.filter(message => message.role === 'assistant');
-    if (assistantMessages.length > 0) {
-        const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
-        return { role: "assistant", content: lastAssistantMessage.content + aiMessage };
-    }
-}
-
 const KEY_NAME = 'mcp-config';
 
 debug.enable('hooks:*');
@@ -126,8 +118,8 @@ Language: ${navigator.language}
             throw new Error(errData?.detail);
         });
 
-        const messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }, { role: "assistant", content: "" }];
-
+        let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
+        let ctx = {};
         source.addEventListener("open", () => {
             setMessages(messagesWithAssistant);
         });
@@ -139,20 +131,29 @@ Language: ${navigator.language}
 
             if (data.msg.type === 'AIMessageChunk' && data.msg.tool_calls.length > 0) {
                 console.log("Tool call received:", data.msg);
-                const updateAssistantToolCall = updateAssistantMessage(messagesWithAssistant, data.msg);
-                setMessages(updateAssistantToolCall);
+                const toolMessage = createToolMessage(messagesWithAssistant, data.msg);
+                // Check if the last message is a tool message
+                const lastMessage = messagesWithAssistant.length > 0 ? messagesWithAssistant[messagesWithAssistant.length - 1] : null;
+                if (lastMessage && lastMessage.role === 'tool') {
+                    // If last message is a tool message, add the tool call to its tool_calls array
+                    if (!lastMessage.tool_calls) {
+                        lastMessage.tool_calls = [];
+                    }
+                    lastMessage.tool_calls.push(data.msg);
+                } else {
+                    // Otherwise create a new tool message
+                    messagesWithAssistant.push(toolMessage);
+                }
+                // setMessages(messagesWithAssistant);
                 setIsToolCallInProgress(true);
 
             } else if (data.msg.type === 'tool') {
                 console.log("Tool chunk received:", data.msg);
-                const updateAssistantToolCall = updateAssistantMessage(messagesWithAssistant, data.msg);
-                setMessages(updateAssistantToolCall);
+                const messages = updateLatestToolMessage(messagesWithAssistant, data.msg);
+                messagesWithAssistant = messages;
+                setMessages(messages);
                 
             } else if (data.event === 'end') {
-                // if (toolCallMessage) {
-                //     const updatedMessages = [...messages, toolCallMessage];
-                //     setMessages(updatedMessages);
-                // }
                 getHistory(1, history.per_page, agentId);
                 source.close();
                 logger("Thread ended");
@@ -160,17 +161,12 @@ Language: ${navigator.language}
             } else {
                 responseRef.current += data.msg.content;
                 // Find the assistant message and update it with the latest content
-                const updatedMessages = messagesWithAssistant.map(message => {
-                    if (message.role === 'assistant') {
-                        return { ...message, content: responseRef.current };
-                    }
-                    return message;
-                });
+                const updatedMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
                 
                 // Update the messages state with the latest assistant message
                 setMessages(updatedMessages);
             }
-            setPayload((prev) => ({ ...prev, query: '', threadId: data.thread_id, images: [], mcp: prev.mcp }));
+            setPayload((prev) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
         });
         source.stream();
         return true;
@@ -311,6 +307,24 @@ Language: ${navigator.language}
             throw new Error(error.response?.data?.detail || 'Failed to delete thread');
         }
     };
+
+    const createToolMessage = (messages: any[], toolCall: any) => {
+        return { role: "tool", tool_calls: [toolCall] };
+    }
+
+    const updateLatestToolMessage = (messages: any[], toolCall: any) => {
+        // Find the latest tool message instead of just any tool message
+        const toolMessages = messages.filter(message => message.role === 'tool');
+        const latestToolMessage = toolMessages.length > 0 ? toolMessages[toolMessages.length - 1] : null;
+        
+        if (latestToolMessage) {
+            if (!latestToolMessage.tool_calls) {
+                latestToolMessage.tool_calls = [];
+            }
+            latestToolMessage.tool_calls.push(toolCall);
+        }
+        return messages;
+    }
 
     return {
         ...initChatState,

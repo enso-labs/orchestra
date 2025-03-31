@@ -47,7 +47,9 @@ interface Message {
   id: string;
   type: string;
   name?: string | null;
-  content?: string;
+  args?: any;
+  content?: any;
+  output?: any;
   additional_kwargs?: any;
   response_metadata?: any;
   tool_call_id?: string;
@@ -66,7 +68,7 @@ export function findToolCall(message: any, messages: any[]) {
         for (const call of toolCalls) {
           if (call && typeof call === 'object' && call.id === message.id) {
             delete message.tool_call_id;
-            message.content = JSON.stringify(call.args)
+            message.args = JSON.stringify(call.args)
             return message;
           }
         }

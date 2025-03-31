@@ -24,7 +24,7 @@ interface ChatMessage {
   tool_calls?: any[]
 }
 
-function ToolAction(selectedToolMessage: any) {
+function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
   if (selectedToolMessage) return (
     <>
       {selectedToolMessage.name === 'search_engine' ? (
@@ -65,7 +65,7 @@ export default function Chat() {
   }, [messages]) // Scroll when messages change
 
   useEffect(() => {
-    if (isToolCallInProgress && currentToolCall) {
+    if (currentToolCall) {
       setSelectedToolMessage(currentToolCall)
       setIsAssistantOpen(true)
     }
@@ -117,7 +117,9 @@ export default function Chat() {
                 <SystemMessageCard content={payload.system} />
               )}
               {messages?.map((message: any, index: number) => {
-                if (message.type === "tool") {
+                if (message.type === "tool" || message.role === "tool") {
+
+                  const lastToolCall = !message.tool_calls ? message : message.tool_calls[message.tool_calls.length - 1];
                   return (
                     <div key={index} className="flex justify-start">
                       <div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 p-3 rounded-lg rounded-bl-sm">
@@ -125,23 +127,20 @@ export default function Chat() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              // setSelectedToolMessage(findToolCall(message, messages))
-                              setIsAssistantOpen(true)
-                            }}
+                            onClick={() => setCurrentToolCall(lastToolCall)}
                             className="flex items-center gap-2"
                           >
                             <Wrench className="h-4 w-4" />
-                            {message.name}
+                            {message.name || lastToolCall.name}
                             <span
                               className={cn(
                                 "text-xs px-2 py-0.5 rounded-full",
-                                message.status === "success"
+                                message.status === "success" || lastToolCall.status === "success"
                                   ? "bg-green-500/20 text-green-500"
                                   : "bg-red-500/20 text-red-500",
                               )}
                             >
-                              {message.status}
+                              {message.status || lastToolCall.status}
                             </span>
                           </Button>
                         </div>
@@ -187,7 +186,7 @@ export default function Chat() {
         </div>
 
         <ChatDrawer isOpen={isAssistantOpen} onClose={handleDrawerClose}>
-          <ToolAction selectedToolMessage={selectedToolMessage} />
+          {currentToolCall && <ToolAction selectedToolMessage={findToolCall(currentToolCall, messages)} />}
         </ChatDrawer>
       </div>
     </ChatLayout>
