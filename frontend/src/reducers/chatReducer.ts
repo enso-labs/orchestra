@@ -2,6 +2,24 @@ import { useReducer, useRef } from 'react';
 import { ThreadPayload } from '../entities';
 import { Model } from '@/services/modelService';
 
+// Action Types Enum
+export enum ChatActionType {
+    SET_RESPONSE = 'SET_RESPONSE',
+    SET_MESSAGES = 'SET_MESSAGES',
+    SET_PAYLOAD = 'SET_PAYLOAD',
+    SET_HISTORY = 'SET_HISTORY',
+    SET_MODELS = 'SET_MODELS',
+    SET_SETTINGS = 'SET_SETTINGS',
+    SET_PRESET = 'SET_PRESET',
+    SET_TOOL_CALL_MESSAGE = 'SET_TOOL_CALL_MESSAGE',
+    SET_IS_TOOL_CALL_IN_PROGRESS = 'SET_IS_TOOL_CALL_IN_PROGRESS',
+    SET_CURRENT_TOOL_CALL = 'SET_CURRENT_TOOL_CALL',
+    SET_SELECTED_TOOL_MESSAGE = 'SET_SELECTED_TOOL_MESSAGE',
+    SET_TOOL_CALL = 'SET_TOOL_CALL',
+    SET_AVAILABLE_TOOLS = 'SET_AVAILABLE_TOOLS',
+    RESET_STATE = 'RESET_STATE'
+}
+
 // Types
 type ChatState = {
     response: any | null;
@@ -28,7 +46,7 @@ type ChatState = {
 }
 
 type ChatAction = {
-    type: string;
+    type: ChatActionType;
     payload?: any;
 }
 
@@ -69,33 +87,33 @@ export const INIT_CHAT_STATE: ChatState = {
 // Reducer
 export const chatReducer = (state: ChatState, action: ChatAction) => {
     switch (action.type) {
-        case 'SET_RESPONSE':
+        case ChatActionType.SET_RESPONSE:
             return { ...state, response: action.payload };
-        case 'SET_MESSAGES':
+        case ChatActionType.SET_MESSAGES:
             return { ...state, messages: action.payload };
-        case 'UPDATE_PAYLOAD':
+        case ChatActionType.SET_PAYLOAD:
             return { ...state, payload: { ...state.payload, ...action.payload } };
-        case 'SET_HISTORY':
+        case ChatActionType.SET_HISTORY:
             return { ...state, history: action.payload };
-        case 'SET_MODELS':
+        case ChatActionType.SET_MODELS:
             return { ...state, models: action.payload };
-        case 'SET_SETTINGS':
+        case ChatActionType.SET_SETTINGS:
             return { ...state, settings: action.payload };
-        case 'SET_PRESET':
+        case ChatActionType.SET_PRESET:
             return { ...state, preset: action.payload };
-        case 'SET_TOOL_CALL_MESSAGE':
+        case ChatActionType.SET_TOOL_CALL_MESSAGE:
             return { ...state, toolCallMessage: action.payload };
-        case 'SET_IS_TOOL_CALL_IN_PROGRESS':
+        case ChatActionType.SET_IS_TOOL_CALL_IN_PROGRESS:
             return { ...state, isToolCallInProgress: action.payload };
-        case 'SET_CURRENT_TOOL_CALL':
+        case ChatActionType.SET_CURRENT_TOOL_CALL:
             return { ...state, currentToolCall: action.payload };
-        case 'SET_SELECTED_TOOL_MESSAGE':
+        case ChatActionType.SET_SELECTED_TOOL_MESSAGE:
             return { ...state, selectedToolMessage: action.payload };
-        case 'SET_TOOL_CALL':
+        case ChatActionType.SET_TOOL_CALL:
             return { ...state, toolCall: action.payload };
-        case 'SET_AVAILABLE_TOOLS':
+        case ChatActionType.SET_AVAILABLE_TOOLS:
             return { ...state, availableTools: action.payload };
-        case 'RESET_STATE':
+        case ChatActionType.RESET_STATE:
             return INIT_CHAT_STATE;
         default:
             return state;
@@ -110,46 +128,46 @@ export function useChatReducer() {
 
     const actions = {
         setResponse: (response: any) => 
-            dispatch({ type: 'SET_RESPONSE', payload: response }),
+            dispatch({ type: ChatActionType.SET_RESPONSE, payload: response }),
             
         setMessages: (messages: any[]) =>
-            dispatch({ type: 'SET_MESSAGES', payload: messages }),
+            dispatch({ type: ChatActionType.SET_MESSAGES, payload: messages }),
             
-        updatePayload: (payload: Partial<ThreadPayload>) =>
-            dispatch({ type: 'UPDATE_PAYLOAD', payload }),
+        setPayload: (payload: Partial<ThreadPayload>) =>
+            dispatch({ type: ChatActionType.SET_PAYLOAD, payload }),
             
         setHistory: (history: any) =>
-            dispatch({ type: 'SET_HISTORY', payload: history }),
+            dispatch({ type: ChatActionType.SET_HISTORY, payload: history }),
             
         setModels: (models: Model[]) =>
-            dispatch({ type: 'SET_MODELS', payload: models }),
+            dispatch({ type: ChatActionType.SET_MODELS, payload: models }),
             
         setSettings: (settings: any[]) =>
-            dispatch({ type: 'SET_SETTINGS', payload: settings }),
+            dispatch({ type: ChatActionType.SET_SETTINGS, payload: settings }),
             
         setPreset: (preset: any) =>
-            dispatch({ type: 'SET_PRESET', payload: preset }),
+            dispatch({ type: ChatActionType.SET_PRESET, payload: preset }),
             
         setToolCallMessage: (message: any) =>
-            dispatch({ type: 'SET_TOOL_CALL_MESSAGE', payload: message }),
+            dispatch({ type: ChatActionType.SET_TOOL_CALL_MESSAGE, payload: message }),
             
         setIsToolCallInProgress: (inProgress: boolean) =>
-            dispatch({ type: 'SET_IS_TOOL_CALL_IN_PROGRESS', payload: inProgress }),
+            dispatch({ type: ChatActionType.SET_IS_TOOL_CALL_IN_PROGRESS, payload: inProgress }),
             
         setCurrentToolCall: (toolCall: any) =>
-            dispatch({ type: 'SET_CURRENT_TOOL_CALL', payload: toolCall }),
+            dispatch({ type: ChatActionType.SET_CURRENT_TOOL_CALL, payload: toolCall }),
             
         setSelectedToolMessage: (message: any) =>
-            dispatch({ type: 'SET_SELECTED_TOOL_MESSAGE', payload: message }),
+            dispatch({ type: ChatActionType.SET_SELECTED_TOOL_MESSAGE, payload: message }),
             
         setToolCall: (toolCall: { input: string }) =>
-            dispatch({ type: 'SET_TOOL_CALL', payload: toolCall }),
+            dispatch({ type: ChatActionType.SET_TOOL_CALL, payload: toolCall }),
             
         setAvailableTools: (tools: any[]) =>
-            dispatch({ type: 'SET_AVAILABLE_TOOLS', payload: tools }),
+            dispatch({ type: ChatActionType.SET_AVAILABLE_TOOLS, payload: tools }),
             
         resetState: () =>
-            dispatch({ type: 'RESET_STATE' })
+            dispatch({ type: ChatActionType.RESET_STATE })
     };
 
     return {

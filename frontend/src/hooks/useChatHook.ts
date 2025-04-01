@@ -1,12 +1,13 @@
 import debug from 'debug';
 import { SSE } from "sse.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ThreadPayload } from '../entities';
 import { TOKEN_NAME, VITE_API_URL } from '../config';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 import { constructSystemPrompt } from '@/lib/utils/format';
+import { useChatReducer } from '@/reducers/chatReducer';
 
 const KEY_NAME = 'mcp-config';
 
@@ -44,25 +45,28 @@ const initChatState = {
     selectedToolMessage: null,
 }
 
+
 export default function useChatHook() {
+    const {state, actions} = useChatReducer();
+    const {
+        models, 
+        history,  
+        messages,
+        availableTools,
+        payload,
+    } = state;
+    const {
+        setSettings, 
+        setModels, 
+        setHistory, 
+        setToolCall, 
+        setResponse, 
+        setMessages,
+        setPayload,
+    } = actions;
     const token = localStorage.getItem(TOKEN_NAME);
     const responseRef = useRef(initChatState.responseRef);
     const toolCallRef = useRef(initChatState.toolCallRef);
-    const [toolCall, setToolCall] = useState<any>({
-        input: "",
-    });
-    const [response, setResponse] = useState<any>(initChatState.response);  
-    const [messages, setMessages] = useState<any[]>(initChatState.messages);
-    const [payload, setPayload] = useState(initChatState.payload);
-    const [history, setHistory] = useState<any>(initChatState.history);
-    const [settings, setSettings] = useState<any>(initChatState.settings);
-    const [models, setModels] = useState<Model[]>(initChatState.models);
-    const [availableTools, setAvailableTools] = useState([]);
-    const [toolCallMessage, setToolCallMessage] = useState<any>(initChatState.toolCallMessage);
-    const [isToolCallInProgress, setIsToolCallInProgress] = useState(false);
-    const [currentToolCall, setCurrentToolCall] = useState<any>(null);
-    const [preset, setPreset] = useState<any>(initChatState.preset);
-    const [selectedToolMessage, setSelectedToolMessage] = useState<any>(null);
     const currentModel = models.find((model: Model) => model.id === payload.model);
     const enabledTools = availableTools
         .filter((tool: any) => payload.tools.includes(tool.id))
@@ -153,7 +157,7 @@ export default function useChatHook() {
                 // Update the messages state with the latest assistant message
                 setMessages(updatesMessages);
             }
-            setPayload((prev) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
+            setPayload({ query: '', threadId: data.metadata.thread_id, images: [], mcp: payload.mcp });
         });
         source.stream();
         responseRef.current = "";
@@ -207,7 +211,7 @@ export default function useChatHook() {
 
     const handleNewChat = () => {
         setMessages([]);
-        setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
+        setPayload({ threadId: '', query: '' });
     };
 
     const useGetHistoryEffect = (agentId: string = '') => {
@@ -267,7 +271,7 @@ export default function useChatHook() {
     const fetchTools = async () => {
         try {
             const response = await listTools();
-            setAvailableTools(response.tools);
+            actions.setAvailableTools(response.tools);
         } catch (error) {
             console.error('Failed to fetch tools:', error);
         }
@@ -299,45 +303,21 @@ export default function useChatHook() {
 
     return {
         ...initChatState,
-        messages,
-        setMessages,
+        ...state,
+        ...actions,
         responseRef,
-        response,
-        setResponse,
         handleQuery,
-        payload,
-        setPayload,
-        toolCallMessage,
-        setToolCallMessage,
         getHistory,
-        history,
-        setHistory,
         useGetHistoryEffect,
         useFetchModelsEffect,
-        models,
-        setModels,
         useSelectModelEffect,
         handleNewChat,
-        availableTools,
-        setAvailableTools,
         useToolsEffect,
         deleteThread,
-        isToolCallInProgress,
-        setIsToolCallInProgress,
-        currentToolCall,
-        setCurrentToolCall,
-        settings,
-        setSettings,
         useSettingsEffect,
         fetchSettings,
-        preset,
-        setPreset,
         currentModel,
         enabledTools,
         useMCPEffect,
-        selectedToolMessage,
-        setSelectedToolMessage,
-        toolCall,
-        setToolCall,
     };
 }
