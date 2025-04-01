@@ -45,6 +45,8 @@ export const INIT_TOOL_STATE: ToolState = {
 // Reducer
 export const toolReducer = (state: ToolState, action: ToolAction) => {
 	switch (action.type) {
+		case 'SET_IS_ASSISTANT_OPEN':
+			return { ...state, isAssistantOpen: action.payload };
 		case 'SET_SELECTED_TOOL_MESSAGE':
 			return { ...state, selectedToolMessage: action.payload };
 		case 'SET_TOOL_FILTER':
@@ -65,16 +67,6 @@ export const toolReducer = (state: ToolState, action: ToolAction) => {
 			return { ...state, mcpError: action.payload };
 		case 'SET_HAS_SAVED_MCP':
 			return { ...state, hasSavedMCP: action.payload };
-		case 'SET_IS_ASSISTANT_OPEN':
-			return { ...state, isAssistantOpen: action.payload };
-		case 'SET_SELECTED_TOOL_MESSAGE':
-			return { ...state, selectedToolMessage: action.payload };
-		case 'SET_TOOL_FILTER':
-			return { ...state, toolFilter: action.payload };
-		case 'SET_EXPANDED':
-			return { ...state, expanded: action.payload };
-		case 'SET_GROUP_BY_CATEGORY':
-			return { ...state, groupByCategory: action.payload };
 		case 'RESET_STATE':
 			return INIT_TOOL_STATE;
 		default:

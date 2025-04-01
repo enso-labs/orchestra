@@ -242,8 +242,8 @@ export default function Dashboard() {
 
   return (
     <AuthLayout>
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6">
-        <div className="flex flex-col space-y-8">
+      <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6">
+        <div className="flex flex-col space-y-4">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-semibold text-foreground">Choose Your Agent</h1>
@@ -252,7 +252,7 @@ export default function Dashboard() {
           </div>
 
           {/* Adding explanation box */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card rounded-lg p-4 border border-border">
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card rounded-lg p-4 border border-border">
             <div className="flex flex-col h-full">
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
@@ -297,10 +297,10 @@ export default function Dashboard() {
                 </Link>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Search and filters */}
-          <div className="bg-background/50 backdrop-blur-sm sticky top-0 z-10 pb-4">
+          <div className="bg-background/50 backdrop-blur-sm sticky top-0 z-10">
             <div className="flex flex-col space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
@@ -334,7 +334,7 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
+              {/* <div className="flex flex-wrap gap-1.5">
                 {categories.map((category) => (
                   <button
                     key={category}
@@ -349,7 +349,7 @@ export default function Dashboard() {
                     {selectedCategories.includes(category) && <X className="ml-1 h-3 w-3" />}
                   </button>
                 ))}
-              </div>
+              </div> */}
             </div>
           </div>
 
