@@ -40,7 +40,7 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 					</div>
 					<div>
 						<span className="font-semibold">Input:</span>
-						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+						<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							{(() => {
 								try {
 									const parsedJSON = JSON.parse(selectedToolMessage.args || selectedToolMessage.input);
@@ -62,7 +62,7 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 					</div>
 					<div>
 						<span className="font-semibold">Output:</span>
-						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+						<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							<MarkdownCard content={selectedToolMessage.content || selectedToolMessage.output} />
 							{/* {(() => {
 								try {
