@@ -136,14 +136,14 @@ export default function useChatHook() {
                 const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
                 handleToolCallChunk(toolCallChunk);
                 if (lastMessage.role !== 'tool') {
-                    messagesWithAssistant = [...messagesWithAssistant, { role: "tool", input: toolCallRef.current }];
+                    messagesWithAssistant = [...messagesWithAssistant, { role: "tool", args: toolCallRef.current }];
                 }
             } else if (data.msg.type === 'tool') {
                 console.log("Tool chunk received:", data.msg);
                 const index = messagesWithAssistant.map(item => item.role).lastIndexOf('tool');
                 if (index !== -1) {
                     // Create a new object with the updated property
-                    messagesWithAssistant[index] = { ...messagesWithAssistant[index], input: toolCallRef.current, ...data.msg };
+                    messagesWithAssistant[index] = { ...messagesWithAssistant[index], args: toolCallRef.current, ...data.msg };
                 }
                 setMessages(messagesWithAssistant);
             } else if (data.event === 'end') {

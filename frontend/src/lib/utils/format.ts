@@ -138,16 +138,13 @@ export function combineToolMessages(messages: Message[]): Message[] {
           const toolChunk = toolChunksById[toolCall.id];
           const output = toolChunk ? toolChunk.content : "";
           // If there is no output (or it’s falsy), mark status as error.
-          const status = output ? (toolChunk.status || "success") : "error";
+          // const status = output ? (toolChunk.status || "success") : "error";
 
           // Build a combined message.
           const combinedMessage = {
+            ...toolChunk,
+            ...toolCall,
             id: toolCall.id,
-            name: toolCall.name,
-            status,
-            content: input,
-            output,
-            tool_call_id: toolCall.id,
             type: "tool" // Add required type property
           };
           result.push(combinedMessage);

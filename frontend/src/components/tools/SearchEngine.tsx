@@ -2,6 +2,7 @@ import { Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
 import JsonView from '@uiw/react-json-view';
 import { githubDarkTheme } from '@uiw/react-json-view/githubDark';
+import MarkdownCard from "../cards/MarkdownCard";
 
 export default function SearchEngineTool({ selectedToolMessage }: { selectedToolMessage: any }) {
 	return (
@@ -34,17 +35,33 @@ export default function SearchEngineTool({ selectedToolMessage }: { selectedTool
 					<div>
 						<span className="font-semibold">Input:</span>
 						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							{selectedToolMessage.content ? <JsonView value={JSON.parse(selectedToolMessage.content)} style={githubDarkTheme} /> : <p>No input data available</p>}
+							{(() => {
+								try {
+									const parsedJSON = JSON.parse(selectedToolMessage.args || selectedToolMessage.input);
+									return <JsonView value={parsedJSON} style={githubDarkTheme} />;
+								} catch (error) {
+									return (
+										<div className="text-red-500">
+											<p className="font-bold">Error parsing JSON:</p>
+											<p>{(error as Error).message}</p>
+											<p className="mt-2 font-bold">Raw content:</p>
+											<pre className="whitespace-pre-wrap text-xs mt-1 p-2 bg-slate-800 rounded overflow-x-auto">
+												{JSON.stringify(selectedToolMessage.args)}
+											</pre>
+										</div>
+									);
+								}
+							})()}
 						</div>
 					</div>
 					<div>
 						<span className="font-semibold">Output:</span>
 						<div className="max-w-[290px] lg:max-w-none max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 							<div className="space-y-4">
-								{selectedToolMessage.output && typeof selectedToolMessage.output === 'string' ? (
+								{selectedToolMessage.content && typeof selectedToolMessage.content === 'string' ? (
 									(() => {
 										try {
-											const parsedOutput = JSON.parse(selectedToolMessage.output);
+											const parsedOutput = JSON.parse(selectedToolMessage.content);
 											return parsedOutput.map((result: any, index: number) => (
 												<div key={index} className="border-b border-border pb-4 last:border-0 last:pb-0">
 													<a 
@@ -69,7 +86,7 @@ export default function SearchEngineTool({ selectedToolMessage }: { selectedTool
 												</div>
 											));
 										} catch (e) {
-											return <p>Invalid output format</p>;
+											return <MarkdownCard content={selectedToolMessage.content || selectedToolMessage.output} />;
 										}
 									})()
 								) : (
