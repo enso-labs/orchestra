@@ -7,7 +7,6 @@ import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 import { constructSystemPrompt } from '@/lib/utils/format';
-import { list } from 'postcss';
 
 const KEY_NAME = 'mcp-config';
 
@@ -86,11 +85,6 @@ export default function useChatHook() {
         setToolCall({
             input: toolCallRef.current,
         });
-    }
-
-    const handleAIReply = (chunk: string) => {
-        responseRef.current += chunk;
-        setResponse(responseRef.current);
     }
 
     const queryThread = (payload: ThreadPayload, agentId: string = '', previousMessages: any[] = []) => {

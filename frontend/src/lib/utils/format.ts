@@ -136,7 +136,6 @@ export function combineToolMessages(messages: Message[]): Message[] {
           
           // Look up the corresponding tool output (“tool–chunk”) using the tool call id.
           const toolChunk = toolChunksById[toolCall.id];
-          const output = toolChunk ? toolChunk.content : "";
           // If there is no output (or it’s falsy), mark status as error.
           // const status = output ? (toolChunk.status || "success") : "error";
 
