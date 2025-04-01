@@ -7,7 +7,7 @@ import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 import { constructSystemPrompt } from '@/lib/utils/format';
-
+import { useChatReducer } from '@/reducers/chatReducer';
 const KEY_NAME = 'mcp-config';
 
 debug.enable('hooks:*');
@@ -45,24 +45,40 @@ const initChatState = {
 }
 
 export default function useChatHook() {
+    const {state, actions} = useChatReducer();
+    const {
+        response,
+        settings,
+        models,
+        availableTools,
+        toolCallMessage,
+        isToolCallInProgress,
+        currentToolCall,
+        selectedToolMessage,
+        messages,
+        history,
+        preset,
+        toolCall,
+    } = state;
+    const {
+        setResponse,
+        setSettings, 
+        setModels,
+        setAvailableTools,
+        setToolCallMessage,
+        setIsToolCallInProgress,
+        setCurrentToolCall,
+        setSelectedToolMessage,
+        setHistory,
+        setPreset,
+        setToolCall,
+        setMessages,
+    } = actions;
+    
     const token = localStorage.getItem(TOKEN_NAME);
     const responseRef = useRef(initChatState.responseRef);
     const toolCallRef = useRef(initChatState.toolCallRef);
-    const [toolCall, setToolCall] = useState<any>({
-        input: "",
-    });
-    const [response, setResponse] = useState<any>(initChatState.response);  
-    const [messages, setMessages] = useState<any[]>(initChatState.messages);
     const [payload, setPayload] = useState(initChatState.payload);
-    const [history, setHistory] = useState<any>(initChatState.history);
-    const [settings, setSettings] = useState<any>(initChatState.settings);
-    const [models, setModels] = useState<Model[]>(initChatState.models);
-    const [availableTools, setAvailableTools] = useState([]);
-    const [toolCallMessage, setToolCallMessage] = useState<any>(initChatState.toolCallMessage);
-    const [isToolCallInProgress, setIsToolCallInProgress] = useState(false);
-    const [currentToolCall, setCurrentToolCall] = useState<any>(null);
-    const [preset, setPreset] = useState<any>(initChatState.preset);
-    const [selectedToolMessage, setSelectedToolMessage] = useState<any>(null);
     const currentModel = models.find((model: Model) => model.id === payload.model);
     const enabledTools = availableTools
         .filter((tool: any) => payload.tools.includes(tool.id))
