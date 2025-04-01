@@ -110,29 +110,6 @@ export function combineToolMessages(messages: Message[]): Message[] {
       // then for each such tool call create a combined message.
       if (msg.type === "ai" && Array.isArray(msg.tool_calls)) {
         for (const toolCall of msg.tool_calls) {
-          // Determine the “input” string.
-          // (Often the call contains the command in one of two places.)
-          let input = "";
-          if (toolCall.args && toolCall.args.commands) {
-            if (Array.isArray(toolCall.args.commands)) {
-              input = toolCall.args.commands.join(" ");
-            } else {
-              input = toolCall.args.commands;
-            }
-          } else if (toolCall.function && toolCall.function.arguments) {
-            // Sometimes the arguments are stored as a JSON string.
-            try {
-              const parsed = JSON.parse(toolCall.function.arguments);
-              if (parsed.commands) {
-                input = Array.isArray(parsed.commands)
-                  ? parsed.commands.join(" ")
-                  : parsed.commands;
-              }
-            } catch (err) {
-              // Fallback if parsing fails:
-              input = toolCall.function.arguments;
-            }
-          }
           
           // Look up the corresponding tool output (“tool–chunk”) using the tool call id.
           const toolChunk = toolChunksById[toolCall.id];
