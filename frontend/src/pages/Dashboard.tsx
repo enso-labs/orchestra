@@ -251,6 +251,54 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Adding explanation box */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card rounded-lg p-4 border border-border">
+            <div className="flex flex-col h-full">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  <h3 className="font-medium">Chat with Settings</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Explore and experiment with different AI configurations in an open format. 
+                  Perfect for discovering optimal settings and testing various approaches 
+                  before creating a dedicated agent. Agents can be created from the chat with settings page.
+                </p>
+              </div>
+              <div className="mt-auto pt-4 flex justify-end">
+                <Link 
+                  to="/chat" 
+                  className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-primary/90 text-primary-foreground hover:bg-primary transition-colors text-xs font-medium"
+                >
+                  <Zap className="mr-1.5 h-3.5 w-3.5" />
+                  Start Chatting
+                </Link>
+              </div>
+            </div>
+            <div className="flex flex-col h-full">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  <h3 className="font-medium">Agents</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Pre-configured AI assistants with specific purposes and settings. 
+                  Ideal for consistent, repeatable interactions where you want to keep 
+                  the configuration private and provide a streamlined experience.
+                </p>
+              </div>
+              <div className="mt-auto pt-4 flex justify-end">
+                <Link 
+                  to="/create-agent" 
+                  className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-primary/90 text-primary-foreground hover:bg-primary transition-colors text-xs font-medium"
+                >
+                  <PlusIcon className="mr-1.5 h-3.5 w-3.5" />
+                  Create New Agent
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Search and filters */}
           <div className="bg-background/50 backdrop-blur-sm sticky top-0 z-10 pb-4">
             <div className="flex flex-col space-y-4">
@@ -361,10 +409,6 @@ export default function Dashboard() {
                 <div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-medium">My Agents</h2>
-                    <Link to="/create-agent" className="flex items-center justify-center px-3 py-1.5 rounded-md bg-primary/90 text-primary-foreground hover:bg-primary transition-colors text-xs font-medium">
-                      <PlusIcon className="mr-1.5 h-3.5 w-3.5" />
-                      Create New Agent
-                    </Link>
                   </div>
                   
                   {isLoading ? (

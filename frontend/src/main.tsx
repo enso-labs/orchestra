@@ -8,7 +8,7 @@ import ThemeProvider from './context/ThemeContext'
 import ToolProvider from './context/ToolContext';
 import AgentProvider from './context/AgentContext';
 const Contexts = () => {
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
     navigator.serviceWorker.register(
       import.meta.env.MODE === 'production' ? '/sw.js' : '/dev-sw.js?dev-sw',
       { type: import.meta.env.MODE === 'production' ? 'classic' : 'module' }

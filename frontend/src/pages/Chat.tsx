@@ -24,6 +24,20 @@ interface ChatMessage {
   tool_calls?: any[]
 }
 
+function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
+  if (selectedToolMessage) return (
+    <>
+      {selectedToolMessage.name === 'search_engine' ? (
+        <SearchEngineTool selectedToolMessage={selectedToolMessage} />
+      ) : selectedToolMessage.name === 'available_tools' ? (
+        <DefaultTool selectedToolMessage={selectedToolMessage} />
+      ) : (
+        <DefaultTool selectedToolMessage={selectedToolMessage} />
+      )}
+    </>
+  )
+}
+
 export default function Chat() {
   const {
     messages,
@@ -33,12 +47,12 @@ export default function Chat() {
     setIsToolCallInProgress,
     currentToolCall,
     setCurrentToolCall,
-    currentModel
+    currentModel,
+    setSelectedToolMessage
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
-  const [selectedToolMessage, setSelectedToolMessage] = useState<any>(null)
 
   const [, setCurrentThreadId] = useState<string | null>(null)
 
@@ -51,8 +65,9 @@ export default function Chat() {
   }, [messages]) // Scroll when messages change
 
   useEffect(() => {
-    if (isToolCallInProgress && currentToolCall) {
-      setSelectedToolMessage(currentToolCall)
+    if (currentToolCall) {
+      const foundToolCall = findToolCall(currentToolCall, messages)
+      setSelectedToolMessage(foundToolCall)
       setIsAssistantOpen(true)
     }
   }, [isToolCallInProgress, currentToolCall])
@@ -103,7 +118,9 @@ export default function Chat() {
                 <SystemMessageCard content={payload.system} />
               )}
               {messages?.map((message: any, index: number) => {
-                if (message.type === "tool") {
+                if (message.type === "tool" || message.role === "tool") {
+
+                  const lastToolCall = !message.tool_calls ? message : message.tool_calls[message.tool_calls.length - 1];
                   return (
                     <div key={index} className="flex justify-start">
                       <div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 p-3 rounded-lg rounded-bl-sm">
@@ -111,23 +128,20 @@ export default function Chat() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setSelectedToolMessage(findToolCall(message, messages))
-                              setIsAssistantOpen(true)
-                            }}
+                            onClick={() => setCurrentToolCall(lastToolCall)}
                             className="flex items-center gap-2"
                           >
                             <Wrench className="h-4 w-4" />
-                            {message.name}
+                            {message.name || lastToolCall.name}
                             <span
                               className={cn(
                                 "text-xs px-2 py-0.5 rounded-full",
-                                message.status === "success"
+                                message.status === "success" || lastToolCall.status === "success"
                                   ? "bg-green-500/20 text-green-500"
                                   : "bg-red-500/20 text-red-500",
                               )}
                             >
-                              {message.status}
+                              {message.status || lastToolCall.status}
                             </span>
                           </Button>
                         </div>
@@ -168,45 +182,12 @@ export default function Chat() {
               <div className="flex flex-col gap-2 p-4 pb-25">
                 <ChatInput />
               </div>
-              
             </div>
           </div>
         </div>
 
         <ChatDrawer isOpen={isAssistantOpen} onClose={handleDrawerClose}>
-          {selectedToolMessage ? (
-            <>
-              {selectedToolMessage.name === 'search_engine' ? (
-                <SearchEngineTool selectedToolMessage={selectedToolMessage} />
-              ) : selectedToolMessage.name === 'available_tools' ? (
-                <DefaultTool selectedToolMessage={selectedToolMessage} />
-              ) : (
-                <DefaultTool selectedToolMessage={selectedToolMessage} />
-              )}
-            </>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-primary">AI</span>
-                </div>
-                <div>
-                  <h3 className="font-medium">GPT-4</h3>
-                  <p className="text-sm text-muted-foreground">Our most capable model</p>
-                </div>
-              </div>
-
-              <div className="prose prose-sm dark:prose-invert">
-                <p>The current model can:</p>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>Analyze complex problems</li>
-                  <li>Generate creative content</li>
-                  <li>Handle detailed conversations</li>
-                  <li>Process and explain code</li>
-                </ul>
-              </div>
-            </div>
-          )}
+          {currentToolCall && <ToolAction selectedToolMessage={currentToolCall} />}
         </ChatDrawer>
       </div>
     </ChatLayout>

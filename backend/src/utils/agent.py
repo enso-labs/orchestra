@@ -2,7 +2,7 @@ import json
 from fastapi import status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from langgraph.graph import StateGraph
-from langchain_core.messages import AnyMessage,  HumanMessage, AIMessageChunk
+from langchain_core.messages import AnyMessage,  HumanMessage
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
@@ -17,9 +17,16 @@ from src.constants.llm import ModelName
 from src.entities import Answer, Thread
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
-from src.services.db import create_async_pool, get_async_connection_pool, keep_pool_alive
-
+from src.services.db import create_async_pool
+from pydantic import BaseModel
 from src.utils.format import get_base64_image
+import sys
+
+
+class StreamContext(BaseModel):
+    msg: AnyMessage | None = None
+    metadata: dict = {}
+    event: str = ''
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None):
@@ -355,7 +362,7 @@ class Agent:
                 state = {"messages": messages}
                 async for chunk in self.astream_chunks(self.graph, state, self.config):
                     if chunk:
-                        logger.debug(f'chunk: {str(chunk)}')
+                        logger.info(f'chunk: {str(chunk)}')
                         yield chunk
             finally:
                 pass
@@ -365,7 +372,84 @@ class Agent:
             media_type="text/event-stream"
         )
     
+    
+    
     # https://langchain-ai.github.io/langgraph/how-tos/streaming/#messages
+    # async def astream_chunks(
+    #     self,
+    #     graph: StateGraph, 
+    #     state: dict,
+    #     config: dict = None,
+    #     stream_mode: str = "messages"
+    # ):
+    #     first = True
+    #     ctx = {}
+    #     try:
+    #         async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer: 
+    #             graph.checkpointer = checkpointer
+    #             async for msg, metadata in graph.astream(
+    #                 state, 
+    #                 config,
+    #                 stream_mode=stream_mode
+    #             ):  
+    #                 ctx = StreamContext(msg=msg, metadata=metadata)
+    #                 # Debug logs with proper formatting to show the data
+    #                 logger.debug(f'msg: {str(ctx.msg)}')
+    #                 logger.debug(f'metadata: {str(ctx.metadata)}')
+                    
+    #                 if msg.content and not isinstance(msg, HumanMessage):
+    #                     # Convert message content to SSE format
+    #                     content = msg.content
+    #                     if not isinstance(content, str):
+    #                         content = content[0].get('text')
+                    
+    #                     data = {
+    #                         "thread_id": ctx.metadata.get("thread_id"),
+    #                         "event": "ai_chunk" if isinstance(msg, AIMessageChunk) else "tool_chunk",
+    #                         "content": content,
+    #                         "checkpoint_ns": ctx.metadata.get("checkpoint_ns"),
+    #                         "provider": ctx.metadata.get("ls_provider"),
+    #                         "model": ctx.metadata.get("ls_model_name"),
+    #                     }
+    #                     yield f"data: {json.dumps(data)}\n\n"
+
+    #                 if isinstance(msg, AIMessageChunk):
+    #                     if first:
+    #                         gathered = msg
+    #                         first = False
+    #                     else:
+    #                         gathered = gathered + msg
+
+    #                     if msg.tool_call_chunks:
+    #                         tool_data = {
+    #                             "event": "tool_call",
+    #                             "content": gathered.tool_calls
+    #                         }
+    #                         yield f"data: {json.dumps(tool_data)}\n\n"
+            
+    #     except GeneratorExit:
+    #         # Handle client disconnection gracefully
+    #         logger.info("Client disconnected, cleaning up stream")
+    #         raise  # Re-raise to properly terminate the generator
+    #     except Exception as e:
+    #         logger.exception("Error in astream_chunks", e)
+    #     finally:
+    #         logger.info("Closing stream")
+    #         # Send end event
+    #         try:
+    #             end_data = {
+    #                 "thread_id": ctx['metadata'].get("thread_id"),
+    #                 "event": "end",
+    #                 "content": []
+    #             }
+    #             yield f"data: {json.dumps(end_data)}\n\n"
+    #         except GeneratorExit:
+    #             # If client already disconnected during finally block
+    #             logger.info("Client disconnected during stream cleanup")
+    #             raise
+    #         except Exception as e:
+    #             logger.exception("Error sending final stream message", e)
+
     async def astream_chunks(
         self,
         graph: StateGraph, 
@@ -373,9 +457,8 @@ class Agent:
         config: dict = None,
         stream_mode: str = "messages"
     ):
-        first = True
-        ctx = {}
         try:
+            ctx = StreamContext(msg=None, metadata={}, event=stream_mode)
             async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer: 
                 graph.checkpointer = checkpointer
                 async for msg, metadata in graph.astream(
@@ -383,63 +466,30 @@ class Agent:
                     config,
                     stream_mode=stream_mode
                 ):  
-                    # Debug logs with proper formatting to show the data
-                    logger.debug(f'msg: {str(msg.__dict__)}')
-                    logger.debug(f'metadata: {str(metadata)}')
-                    ctx['msg'] = msg
-                    ctx['metadata'] = metadata
-                    if msg.content and not isinstance(msg, HumanMessage):
-                        # Convert message content to SSE format
-                        content = msg.content
-                        if not isinstance(content, str):
-                            content = content[0].get('text')
-                    
-                        data = {
-                            "thread_id": metadata.get("thread_id"),
-                            "event": "ai_chunk" if isinstance(msg, AIMessageChunk) else "tool_chunk",
-                            "content": content,
-                            "checkpoint_ns": metadata.get("checkpoint_ns"),
-                            "provider": metadata.get("ls_provider"),
-                            "model": metadata.get("ls_model_name"),
-                        }
-                        yield f"data: {json.dumps(data)}\n\n"
-
-                    if isinstance(msg, AIMessageChunk):
-                        if first:
-                            gathered = msg
-                            first = False
-                        else:
-                            gathered = gathered + msg
-
-                        if msg.tool_call_chunks:
-                            tool_data = {
-                                "event": "tool_call",
-                                "content": str(gathered.tool_calls)
-                            }
-                            yield f"data: {json.dumps(tool_data)}\n\n"
+                    ctx.msg = msg
+                    ctx.metadata = metadata
+                    logger.debug(f'ctx: {str(ctx.model_dump())}')
+                    data = ctx.model_dump()
+                    yield f"data: {json.dumps(data)}\n\n"
             
         except GeneratorExit:
             # Handle client disconnection gracefully
             logger.info("Client disconnected, cleaning up stream")
-            raise  # Re-raise to properly terminate the generator
+            # Don't re-raise, just exit cleanly
+            return
         except Exception as e:
             logger.exception("Error in astream_chunks", e)
         finally:
             logger.info("Closing stream")
-            # Send end event
             try:
-                end_data = {
-                    "thread_id": ctx['metadata'].get("thread_id"),
-                    "event": "end",
-                    "content": []
-                }
-                yield f"data: {json.dumps(end_data)}\n\n"
-            except GeneratorExit:
-                # If client already disconnected during finally block
-                logger.info("Client disconnected during stream cleanup")
-                raise
+                # Only send end message if we haven't encountered GeneratorExit
+                if sys.exc_info()[0] is not GeneratorExit:
+                    ctx.event = "end"
+                    end_data = ctx.model_dump()
+                    yield f"data: {json.dumps(end_data)}\n\n"
             except Exception as e:
                 logger.exception("Error sending final stream message", e)
+
 
     # Add cleanup method
     async def cleanup(self):

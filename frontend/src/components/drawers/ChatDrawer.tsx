@@ -15,7 +15,7 @@ export function ChatDrawer({
   isOpen, 
   onClose, 
   children, 
-  defaultWidth = 320,
+  defaultWidth = 400,
   minWidth = 280,
 }: ChatDrawerProps) {
   const [width, setWidth] = useState(defaultWidth);
