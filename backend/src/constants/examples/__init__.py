@@ -55,6 +55,15 @@ EXISTING_THREAD_QUERY_EXAMPLE = {
     },
 }
 
+MCP_REQ_BODY_EXAMPLE = {
+    "mcp": {
+        "enso_mcp": {
+            "transport": "sse",
+            "url": "https://mcp.enso.sh/sse"
+        }
+    }
+}
+
 EXISTING_THREAD_ANSWER_EXAMPLE = {
     "thread_id": "443250c4-b9ec-4dfc-96fd-0eb3ec6ccb44",
     "answer": {

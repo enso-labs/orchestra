@@ -63,24 +63,14 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 					<div>
 						<span className="font-semibold">Output:</span>
 						<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							<MarkdownCard content={selectedToolMessage.content || selectedToolMessage.output} />
-							{/* {(() => {
+							{(() => {
 								try {
 									const parsedJSON = JSON.parse(selectedToolMessage.content || selectedToolMessage.output);
 									return <JsonView value={parsedJSON} style={githubDarkTheme} />;
 								} catch (error) {
-									return (
-										<div className="text-red-500">
-											<p className="font-bold">Error parsing JSON:</p>
-											<p>{(error as Error).message}</p>
-											<p className="mt-2 font-bold">Raw content:</p>
-											<pre className="whitespace-pre-wrap text-xs mt-1 p-2 bg-slate-800 rounded overflow-x-auto">
-												{JSON.stringify(selectedToolMessage)}
-											</pre>
-										</div>
-									);
+									return <MarkdownCard content={selectedToolMessage.content || selectedToolMessage.output} />
 								}
-							})()} */}
+							})()}
 						</div>
 					</div>
 				</div>

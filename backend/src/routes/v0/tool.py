@@ -1,12 +1,14 @@
+from typing import Dict, Any, Optional
 from fastapi import status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from src.constants.examples import MCP_REQ_BODY_EXAMPLE
 from src.constants import APP_LOG_LEVEL
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import verify_credentials
 from src.services.db import get_db
-
+from src.services.mcp import McpService
 TAG = "Tool"
 router = APIRouter(tags=[TAG])
 
@@ -35,6 +37,63 @@ def list_tools(username: str = Depends(verify_credentials)):
         content=tools_response,
         status_code=status.HTTP_200_OK
     )
+    
+    
+################################################################################
+### List MCP Info
+################################################################################
+from pydantic import BaseModel
+
+class MCPInfo(BaseModel):
+    mcp: Optional[Dict[str, Any]] = None
+    mcpServers: Optional[Dict[str, Any]] = None
+    
+    model_config = {
+        "json_schema_extra": {"example": MCP_REQ_BODY_EXAMPLE}
+    }
+    
+
+@router.post(
+    "/tools/mcp/info", 
+    tags=[TAG],
+    responses={
+        status.HTTP_200_OK: {
+            "description": "All tools.",
+            "content": {
+                "application/json": {
+                    "example": []
+                }
+            }
+        }
+    }
+)
+async def list_mcp_info(
+    config: MCPInfo
+):
+    try:
+        agent_session = McpService()
+        mcp_config = config.mcpServers or config.mcp
+        if not mcp_config:
+            return JSONResponse(
+                content={'error': 'No MCP servers or MCP config found'},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        await agent_session.setup(mcp_config)
+        tools = agent_session.tools()
+        return JSONResponse(
+            content={'mcpServers': [
+                {k: v for k, v in tool.model_dump().items() if k not in ['func', 'coroutine']}
+                for tool in tools
+            ]},
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return JSONResponse(
+            content={'error': str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    finally:
+        await agent_session.cleanup()
 
 ################################################################################
 ### Test Tool
