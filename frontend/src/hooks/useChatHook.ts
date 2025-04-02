@@ -162,7 +162,9 @@ export default function useChatHook() {
                 logger("Thread ended");
                 return;
             } else {
-                responseRef.current += data.msg.content;
+                responseRef.current += typeof data.msg.content === 'string' 
+                    ? data.msg.content 
+                    : (data.msg.content[0]?.text || '');
                 // Find the assistant message and update it with the latest content
                 const updatesMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
                 

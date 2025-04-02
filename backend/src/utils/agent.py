@@ -1,5 +1,5 @@
 import json
-from fastapi import status
+from fastapi import HTTPException, status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from langgraph.graph import StateGraph
 from langchain_core.messages import AnyMessage,  HumanMessage
@@ -479,16 +479,17 @@ class Agent:
             return
         except Exception as e:
             logger.exception("Error in astream_chunks", e)
-        finally:
-            logger.info("Closing stream")
-            try:
-                # Only send end message if we haven't encountered GeneratorExit
-                if sys.exc_info()[0] is not GeneratorExit:
-                    ctx.event = "end"
-                    end_data = ctx.model_dump()
-                    yield f"data: {json.dumps(end_data)}\n\n"
-            except Exception as e:
-                logger.exception("Error sending final stream message", e)
+            raise HTTPException(status_code=500, detail=str(e))
+        # finally:
+        #     logger.info("Closing stream")
+        #     try:
+        #         # Only send end message if we haven't encountered GeneratorExit
+        #         if sys.exc_info()[0] is not GeneratorExit:
+        #             ctx.event = "end"
+        #             end_data = ctx.model_dump()
+        #             yield f"data: {json.dumps(end_data)}\n\n"
+        #     except Exception as e:
+        #         logger.exception("Error sending final stream message", e)
 
 
     # Add cleanup method
