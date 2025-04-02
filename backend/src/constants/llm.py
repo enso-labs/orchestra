@@ -199,6 +199,7 @@ MODEL_CONFIG = [
             "system_message": True,
             "reasoning": False,
             "tool_calling": False, # TODO: Add tool calling, bug in google lib
+            # "tool_calling": True,
             "multimodal": True,
             "embedding": False,
         },
