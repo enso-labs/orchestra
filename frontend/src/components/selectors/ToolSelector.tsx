@@ -15,6 +15,8 @@ import 'prismjs/components/prism-json';
 import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useToolContext } from "@/context/ToolContext";
 import ToolCard from "@/components/cards/ToolCard";
+import { useState, useCallback, useEffect } from 'react';
+import apiClient from "@/lib/utils/apiClient";
 
 // CSS for animations
 const animationStyles = `
@@ -95,6 +97,56 @@ export function ToolSelector() {
     setGroupByCategory,
     useLoadMCPFromPayloadEffect,
   } = useToolContext();
+
+  // Add state for MCP info
+  const [mcpInfo, setMcpInfo] = useState<any[] | null>(null);
+  const [isLoadingMCPInfo, setIsLoadingMCPInfo] = useState(false);
+  const [mcpInfoError, setMcpInfoError] = useState<string | null>(null);
+
+  // Function to fetch MCP info
+  const fetchMCPInfo = useCallback(async () => {
+    if (!mcpCode) return;
+    
+    try {
+      setIsLoadingMCPInfo(true);
+      setMcpInfoError(null);
+      
+      let mcpConfig;
+      try {
+        mcpConfig = JSON.parse(mcpCode);
+      } catch (e) {
+        setMcpInfoError("Invalid JSON configuration");
+        return;
+      }
+      
+      try {
+        const response = await apiClient.post('/tools/mcp/info', { 
+          mcp: mcpConfig 
+        });
+        
+        setMcpInfo(response.data.mcp);
+      } catch (apiError: any) {
+        throw new Error(`Error fetching MCP info: ${apiError.message}`);
+      }
+    } catch (error: unknown) {
+      setMcpInfoError(error instanceof Error ? error.message : 'An unknown error occurred');
+    } finally {
+      setIsLoadingMCPInfo(false);
+    }
+  }, [mcpCode]);
+
+  // Reset mcpInfo when MCP configuration is removed
+  const handleRemoveMCPConfig = () => {
+    setMcpInfo(null);
+    removeMCPConfig();
+  };
+
+  // Fetch MCP info when entering MCP editor mode
+  useEffect(() => {
+    if (isAddingMCP && hasSavedMCP) {
+      fetchMCPInfo();
+    }
+  }, [isAddingMCP, hasSavedMCP, fetchMCPInfo]);
 
   // Load MCP from payload
   useLoadMCPFromPayloadEffect();
@@ -217,11 +269,11 @@ export function ToolSelector() {
         </PopoverTrigger>
         <PopoverContent className="w-96 p-4 mr-2 rounded-lg" align="start">
           {isAddingMCP ? (
-            // MCP Config Editor View
+            // MCP Config Editor View with API data display
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-lg">
-                  {hasSavedMCP ? "Edit MCP Configuration" : "Add MCP Configuration"}
+                  {hasSavedMCP ? "MCP Configuration" : "Add MCP Configuration"}
                 </h3>
                 <Button
                   variant="ghost"
@@ -233,31 +285,95 @@ export function ToolSelector() {
                 </Button>
               </div>
               
-              <p className="text-sm text-muted-foreground mb-4">
-                {hasSavedMCP 
-                  ? "Edit your MCP configuration in JSON format below." 
-                  : "Paste your MCP configuration in JSON format below."}
-              </p>
-              
-              <div className="mb-4">
-                <Editor
-                  value={mcpCode}
-                  onValueChange={code => setMcpCode(code)}
-                  highlight={code => highlight(code, languages.json, 'json')}
-                  padding={10}
-                  className="editor"
-                  style={{
-                    fontFamily: '"JetBrains Mono", monospace',
-                    fontSize: 14,
-                  }}
-                />
-                
-                {mcpError && (
-                  <div className="text-sm text-red-500 mt-2">
-                    {mcpError}
-                  </div>
-                )}
-              </div>
+              {isLoadingMCPInfo ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">Loading MCP information...</p>
+                </div>
+              ) : mcpInfoError ? (
+                <div>
+                  <p className="text-sm text-red-500 mb-4">{mcpInfoError}</p>
+                  <Editor
+                    value={mcpCode}
+                    onValueChange={code => setMcpCode(code)}
+                    highlight={code => highlight(code, languages.json, 'json')}
+                    padding={10}
+                    className="editor"
+                    style={{
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: 14,
+                    }}
+                  />
+                  <Button 
+                    onClick={fetchMCPInfo}
+                    className="mt-4"
+                    size="sm"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : mcpInfo ? (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Available MCP tools:
+                  </p>
+                  <ScrollArea className="h-[250px] pr-3">
+                    <div className="space-y-2">
+                      {mcpInfo.map((tool, index) => (
+                        <div key={index} className="border rounded-md p-3">
+                          <h4 className="font-medium">{tool.name}</h4>
+                          <p className="text-sm text-muted-foreground">{tool.description}</p>
+                          {tool.args && Object.keys(tool.args).length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs font-medium">Arguments:</p>
+                              <ul className="text-xs text-muted-foreground">
+                                {Object.entries(tool.args).map(([key, arg]) => (
+                                  <li key={key}>{key}: {(arg as any).type || 'string'}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {hasSavedMCP 
+                      ? "Edit your MCP configuration in JSON format below." 
+                      : "Paste your MCP configuration in JSON format below."}
+                  </p>
+                  
+                  <Editor
+                    value={mcpCode}
+                    onValueChange={code => setMcpCode(code)}
+                    highlight={code => highlight(code, languages.json, 'json')}
+                    padding={10}
+                    className="editor"
+                    style={{
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: 14,
+                    }}
+                  />
+                  
+                  {mcpError && (
+                    <div className="text-sm text-red-500 mt-2">
+                      {mcpError}
+                    </div>
+                  )}
+                  
+                  {hasSavedMCP && (
+                    <Button 
+                      onClick={fetchMCPInfo}
+                      className="mt-4"
+                      size="sm"
+                    >
+                      Fetch MCP Information
+                    </Button>
+                  )}
+                </div>
+              )}
               
               <div className="flex justify-end space-x-2 mt-4">
                 <Button 
@@ -270,7 +386,7 @@ export function ToolSelector() {
                 <Button 
                   type="button" 
                   variant={hasSavedMCP ? "destructive" : "default"} 
-                  onClick={hasSavedMCP ? removeMCPConfig : saveMCPConfig}
+                  onClick={hasSavedMCP ? handleRemoveMCPConfig : saveMCPConfig}
                 >
                   {hasSavedMCP ? (
                     <>

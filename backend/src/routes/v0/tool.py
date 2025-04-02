@@ -81,7 +81,7 @@ async def list_mcp_info(
         await agent_session.setup(mcp_config)
         tools = agent_session.tools()
         return JSONResponse(
-            content={'mcpServers': [
+            content={'mcp': [
                 {k: v for k, v in tool.model_dump().items() if k not in ['func', 'coroutine']}
                 for tool in tools
             ]},
