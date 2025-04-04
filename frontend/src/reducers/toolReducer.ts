@@ -22,10 +22,14 @@ type ToolAction = {
 
 // Constants
 const defaultMCP = {
-	"enso_mcp": {
-		"transport": "sse",
-		"url": "https://mcp.enso.sh/sse"
-	}
+  "enso_basic": {
+    "transport": "sse",
+    "url": "https://mcp.enso.sh/sse"
+  },
+  "enso_rag": {
+    "transport": "sse",
+    "url": "https://mcp-sse-o98o.onrender.com/sse"
+  },
 }
 
 export const INIT_TOOL_STATE: ToolState = {
