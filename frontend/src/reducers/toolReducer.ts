@@ -29,7 +29,7 @@ const defaultMCP = {
   "enso_rag": {
     "transport": "sse",
     "url": "https://mcp-sse-o98o.onrender.com/sse"
-  },
+  }
 }
 
 export const INIT_TOOL_STATE: ToolState = {
