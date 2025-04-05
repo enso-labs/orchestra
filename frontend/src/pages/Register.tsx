@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -18,9 +16,9 @@ export default function Register() {
   const navigate = useNavigate()
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       const response = await fetch(`${VITE_API_URL}/auth/register`, {
@@ -34,13 +32,13 @@ export default function Register() {
           name,
           password,
         }),
-      })
+      });
 
       if (response.ok) {
         const data = await response.json()
         // Store JWT token in localStorage
         localStorage.setItem(TOKEN_NAME, data.access_token)
-        navigate("/dashboard")
+        navigate("/dashboard");
       } else {
         const errorData = await response.json()
         setError(errorData.detail || "Registration failed")
