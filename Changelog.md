@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/238-public-use-page (2025-04-11)
   - feat/231-collect-register-event-to-slack (2025-04-04)
   - feat/225-simplify-chat-state-to-reducer (2025-03-31)
   - feat/219-persist-mcp-to-settings (2025-03-27)
