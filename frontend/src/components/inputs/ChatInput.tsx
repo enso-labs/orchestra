@@ -53,7 +53,7 @@ export default function ChatInput() {
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col w-full">
       {images.length > 0 && (
         <div className="px-4 py-2">
           <ImagePreview 
