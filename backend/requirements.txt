@@ -35,3 +35,5 @@ python-jose[cryptography]
 langchain-mcp-adapters
 asyncpg
 sqlalchemy[asyncio]
+celery>=5.3.6
+redis>=5.0.1

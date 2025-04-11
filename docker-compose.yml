@@ -1,5 +1,47 @@
 services:
   ##############################################
+  ## Redis
+  ##############################################
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  ##############################################
+  ## Celery Worker
+  ##############################################
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    command: celery -A src.celery.config worker --loglevel=info
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+      - postgres
+
+  ##############################################
+  ## Celery Beat (Scheduler)
+  ##############################################
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: celery_beat
+    command: celery -A src.celery.config beat --loglevel=info
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+      - postgres
+
+  ##############################################
   ## Database (Postgres)
   ##############################################
   postgres:
@@ -124,3 +166,4 @@ services:
 
 volumes:
   ollama:
+  redis_data:
