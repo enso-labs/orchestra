@@ -11,6 +11,7 @@ import { PresetPopover } from "../popovers/PresetPopover"
 import useAppHook from "@/hooks/useAppHook"
 
 export default function ChatInput() {
+  
   const { payload, handleQuery, setPayload, currentModel } = useChatContext();
   const { isMobile } = useAppHook();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,7 +54,7 @@ export default function ChatInput() {
   };
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full lg:w-[600px]">
       {images.length > 0 && (
         <div className="px-4 py-2">
           <ImagePreview 

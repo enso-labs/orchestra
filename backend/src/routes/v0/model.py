@@ -28,7 +28,7 @@ from src.constants.llm import get_available_models
         }
     }
 )
-def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session = Depends(get_db)):
+def list_models(db: Session = Depends(get_db)):
     return JSONResponse(
         content={"models": get_available_models()},
         status_code=status.HTTP_200_OK

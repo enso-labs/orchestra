@@ -1,8 +1,19 @@
 import NoAuthLayout from '../layouts/NoAuthLayout';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import ChatInput from '@/components/inputs/ChatInput';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function Home() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    
+    // Set default model in query params on component load if not already set
+    useEffect(() => {
+        if (!searchParams.get('model')) {
+            setSearchParams({ model: 'openai-gpt-4o-mini' });
+        }
+    }, [searchParams, setSearchParams]);
+
     return (
         <NoAuthLayout>
             <main className="flex-1 flex flex-col items-center justify-center bg-background">

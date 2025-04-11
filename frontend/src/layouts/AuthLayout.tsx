@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   const handleLogout = () => {
     localStorage.removeItem(TOKEN_NAME);
-    navigate('/login');
+    navigate('/');
   };
 
   return (
