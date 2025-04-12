@@ -335,13 +335,13 @@ class Agent:
         self.graph.name = "EnsoAgent"
         return graph
 
-    # @keep_pool_alive
     async def aprocess(
         self,
         messages: list[AnyMessage], 
         content_type: str = "application/json",
     ) -> Response:
-        await self.create_user_thread()
+        if self.user_id:
+            await self.create_user_thread()
         if content_type == "application/json":
             try:
                 invoke = await self.graph.ainvoke({"messages": messages}, self.config)
