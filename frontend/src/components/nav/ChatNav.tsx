@@ -12,12 +12,12 @@ import { useEffect } from "react";
 
 interface ChatNavProps {
   onMenuClick: () => void;
-//   onAssistantClick: () => void;
+  onNewChat?: () => void;
 }
 
 export function ChatNav({ 
     onMenuClick, 
-    // onAssistantClick 
+    onNewChat 
 }: ChatNavProps) {
     const [searchParams, setSearchParams] = useSearchParams();
     const currentModel = searchParams.get('model') || '';
@@ -41,30 +41,12 @@ export function ChatNav({
             <div className="mx-auto px-4 sm:px-6 lg:px-4 py-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                <button 
-                    onClick={onMenuClick}
-                    className="inline-flex md:hidden items-center text-muted-foreground hover:text-foreground transition-colors mr-4"
-                >
-                    <Menu className="h-5 w-5" />
-                </button>
-                {/* <button 
-                    onClick={() => navigate('/dashboard')}
-                    className="hidden md:inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mr-4"
-                >
-                    <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-5 w-5 mr-1" 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
+                    <button 
+                        onClick={onMenuClick}
+                        className="inline-flex md:hidden items-center text-muted-foreground hover:text-foreground transition-colors mr-4"
                     >
-                    <path 
-                        fillRule="evenodd" 
-                        d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" 
-                        clipRule="evenodd" 
-                    />
-                    </svg>
-                </button> */}
-                {/* <h1 className="text-2xl font-bold text-foreground">Chat</h1> */}
+                        <Menu className="h-5 w-5" />
+                    </button>
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -103,7 +85,7 @@ export function ChatNav({
                     <Button
                         variant="outline"
                         size="icon"
-                        onClick={handleNewChat}
+                        onClick={onNewChat || handleNewChat}
                         className="h-9 w-9"
                         title="New Chat"
                     >

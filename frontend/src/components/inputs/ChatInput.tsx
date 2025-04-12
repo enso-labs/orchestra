@@ -6,14 +6,18 @@ import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
 import useImageHook from "@/hooks/useImageHook"
 import { useChatContext } from "@/context/ChatContext"
-import { useCallback, useRef } from "react"
+import { useCallback, useRef, useEffect } from "react"
 import { PresetPopover } from "../popovers/PresetPopover"
 import useAppHook from "@/hooks/useAppHook"
+import { useLocation } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 export default function ChatInput() {
   
   const { payload, handleQuery, setPayload, currentModel, settings } = useChatContext();
   const { isMobile } = useAppHook();
+  const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -31,14 +35,14 @@ export default function ChatInput() {
   } = useImageHook();
 
   const handleSubmit = useCallback(() => {
-		handleQuery()
+		handleQuery();
 		// Clear images after sending
-		setImages([])
+		setImages([]);
 		setPayload((prev: any) => ({
 			...prev,
       query: "",
 			images: []
-		}))
+		}));
 	}, [handleQuery, setPayload])
 
   const triggerFileInput = (e: React.MouseEvent) => {
@@ -53,8 +57,14 @@ export default function ChatInput() {
     }
   };
 
+  useEffect(() => {
+    if (location.pathname === "/" && payload.threadId) {
+      navigate(`/thread/${payload.threadId}`);
+    }
+  }, [payload.threadId]);
+
   return (
-    <div className="flex flex-col w-full lg:w-[600px]">
+    <div className="flex flex-col w-full">
       {images.length > 0 && (
         <div className="px-4 py-2">
           <ImagePreview 

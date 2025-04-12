@@ -1,7 +1,7 @@
 import NoAuthLayout from '../layouts/NoAuthLayout';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import ChatInput from '@/components/inputs/ChatInput';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
 
@@ -26,6 +26,14 @@ export default function Home() {
     return (
         <NoAuthLayout>
             <main className="flex-1 flex flex-col items-center justify-center bg-background">
+                <div className="absolute top-4 left-4">
+                    <Link 
+                        to="/login" 
+                        className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm font-medium"
+                    >
+                        Login
+                    </Link>
+                </div>
                 <div className="absolute top-4 right-4">
                     <ColorModeButton />
                 </div>
@@ -36,7 +44,9 @@ export default function Home() {
                 />
                 <h1 className="text-4xl font-bold mt-2">Enso Labs</h1>
                 <p className="text-lg mb-6">The AI-powered agent builder</p>
-                <ChatInput />
+                <div className="flex flex-col w-full lg:w-[600px]">
+                    <ChatInput />
+                </div>
             </main>
         </NoAuthLayout>
     );
