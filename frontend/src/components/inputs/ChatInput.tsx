@@ -12,7 +12,7 @@ import useAppHook from "@/hooks/useAppHook"
 
 export default function ChatInput() {
   
-  const { payload, handleQuery, setPayload, currentModel } = useChatContext();
+  const { payload, handleQuery, setPayload, currentModel, settings } = useChatContext();
   const { isMobile } = useAppHook();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +138,9 @@ export default function ChatInput() {
           {currentModel?.metadata?.tool_calling && (
             <ToolSelector />
           )}
-          <PresetPopover />
+          {settings.length > 0 && (
+            <PresetPopover />
+          )}
         </div>
         <MainToolTip content="Send Message" delayDuration={500}>
           <Button

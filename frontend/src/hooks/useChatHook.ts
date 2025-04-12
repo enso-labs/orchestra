@@ -202,8 +202,8 @@ export default function useChatHook() {
     // Add this function after fetchTools
     const fetchSettings = async () => {
         try {
-            const response = await apiClient.get('/settings');
-            setSettings(response.data.settings || []);
+            const response = token ? await apiClient.get('/settings') : null;
+            setSettings(response?.data?.settings || []);
         } catch (error) {
             console.error('Failed to fetch settings:', error);
         }
