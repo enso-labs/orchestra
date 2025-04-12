@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
@@ -8,7 +9,19 @@ from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM
 from src.models import User
 from src.services.db import get_async_db
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # Make auto_error=False to not require the Authorization header
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_async_db)
+) -> Optional[User]:
+    if credentials is None:
+        return None
+        
+    try:
+        return await verify_credentials(credentials, db)
+    except HTTPException:
+        return None
 
 async def verify_credentials(
     credentials: HTTPAuthorizationCredentials = Depends(security),

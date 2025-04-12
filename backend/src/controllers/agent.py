@@ -9,7 +9,7 @@ from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
 
 class AgentController:
-    def __init__(self, db: AsyncSession, user_id: str, agent_id: str = None): # type: ignore
+    def __init__(self, db: AsyncSession, user_id: str = None, agent_id: str = None): # type: ignore
         self.user_repo = UserRepo(db=db, user_id=user_id)
         self.agent_repo = AgentRepo(db=db, user_id=user_id)
         self.agent_id = agent_id
@@ -25,8 +25,8 @@ class AgentController:
             logger.info(f"Creating new thread with ID: {thread_id} {tools_str} and Query: {new_thread.query}")
             config = {
                 "thread_id": thread_id, 
-                "user_id": self.user_repo.user_id, 
-                "agent_id": self.agent_id,
+                "user_id": self.user_repo.user_id or None, 
+                "agent_id": self.agent_id or None,
                 "system": new_thread.system or None
             }
 
@@ -61,8 +61,8 @@ class AgentController:
             logger.info(f"Querying existing thread with ID: {thread_id} {tools_str} and Query: {existing_thread.query}")
             config = {
                 "thread_id": thread_id, 
-                "user_id": self.user_repo.user_id, 
-                "agent_id": self.agent_id,
+                "user_id": self.user_repo.user_id or None, 
+                "agent_id": self.agent_id or None,
                 "system": existing_thread.system or None
             }
             agent = Agent(config=config, user_repo=self.user_repo)

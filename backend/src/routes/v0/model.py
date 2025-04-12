@@ -1,17 +1,18 @@
-from fastapi import status, Depends, APIRouter
+from fastapi import status, Depends, APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from src.models import ProtectedUser
-from src.utils.auth import verify_credentials
-from src.services.db import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.services.db import get_async_db
+from src.models import ProtectedUser
+from src.utils.auth import get_optional_user
+from src.utils.logger import logger
 TAG = "Model"
 router = APIRouter(tags=[TAG])
 
 ################################################################################
 ### List Models
 ################################################################################
-from src.constants.llm import get_available_models
+from src.constants.llm import get_available_models, get_public_models
 @router.get(
     "/models", 
     tags=[TAG],
@@ -28,8 +29,15 @@ from src.constants.llm import get_available_models
         }
     }
 )
-def list_models(user: ProtectedUser = Depends(verify_credentials), db: Session = Depends(get_db)):
-    return JSONResponse(
-        content={"models": get_available_models()},
-        status_code=status.HTTP_200_OK
-    )
+async def list_models(
+    user: ProtectedUser = Depends(get_optional_user),
+):
+    try:
+        models = get_available_models() if user else get_public_models()
+        return JSONResponse(
+            content={"models": models},
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        logger.exception(f"Error listing models: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

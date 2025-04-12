@@ -28,7 +28,7 @@ def collect_tools(selected_tools: list[str]):
     return filtered_tools
 
 
-def dynamic_tools(selected_tools: list[str], metadata: dict = None, mcp: dict = None):
+def dynamic_tools(selected_tools: list[str], metadata: dict = None):
     # Filter tools by name
     filtered_tools = [tool for tool in tools if tool.name in selected_tools]
     if len(filtered_tools) == 0:

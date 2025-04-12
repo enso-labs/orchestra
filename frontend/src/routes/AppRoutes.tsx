@@ -18,6 +18,7 @@ import OAuthCallback from '@/pages/OAuthCallback';
 import AgentChat from '@/pages/AgentChat';
 import CreateAgent from '@/pages/CreateAgent';
 import AgentUpdate from '@/pages/AgentUpdate';
+import ThreadPublic from '@/pages/ThreadPublic';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -25,21 +26,38 @@ const AppRoutes: React.FC = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<App />}>
-          <Route index element={
-            <PublicRoute>
-              <Home />
-            </PublicRoute>
-          } />
-          <Route path="login" element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } />
-          <Route path="register" element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          } />
+          <Route 
+            index 
+            element={
+              <PublicRoute>
+                <Home />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="login" 
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="register" 
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="thread/:threadId" 
+            element={
+              <PublicRoute>
+                <ThreadPublic />
+              </PublicRoute>
+            } 
+          />
           <Route path="auth/:provider/callback" element={<OAuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Route>

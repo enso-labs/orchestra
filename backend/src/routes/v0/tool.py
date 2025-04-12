@@ -32,7 +32,9 @@ tools_response = {"tools": tool_names}
         }
     }
 )
-def list_tools(username: str = Depends(verify_credentials)):
+def list_tools(
+    # user: ProtectedUser = Depends(verify_credentials)
+):
     return JSONResponse(
         content=tools_response,
         status_code=status.HTTP_200_OK

@@ -5,10 +5,10 @@ from fastapi import Body, HTTPException,status, Depends, APIRouter, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain.chat_models import init_chat_model
 
-from src.models import User
+from src.models import ProtectedUser, User
 from src.entities import Answer, ChatInput, NewThread, ExistingThread
 from src.services.db import get_async_db
-from src.utils.auth import verify_credentials
+from src.utils.auth import get_optional_user
 from src.utils.logger import logger
 from src.controllers.agent import AgentController
 
@@ -44,7 +44,7 @@ router = APIRouter()
 async def chat_completion(
     request: Request,
     body: Annotated[ChatInput, Body()],
-    user: User = Depends(verify_credentials),
+    user: ProtectedUser = Depends(get_optional_user),
     # db: AsyncSession = Depends(get_async_db)
 ):
     try:
@@ -101,12 +101,12 @@ async def chat_completion(
 async def new_thread(
     request: Request,
     body: Annotated[NewThread, Body()],
-    user: User = Depends(verify_credentials),
+    user: ProtectedUser = Depends(get_optional_user),
     db: AsyncSession = Depends(get_async_db)
 ):
     
     try:
-        controller = AgentController(db=db, user_id=user.id)
+        controller = AgentController(db=db, user_id=user.id if user else None)
         return await controller.anew_thread(request=request, new_thread=body)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
@@ -145,11 +145,11 @@ async def existing_thread(
     request: Request,
     thread_id: str, 
     body: Annotated[ExistingThread, Body()],
-    user: User = Depends(verify_credentials),
+    user: ProtectedUser = Depends(get_optional_user),
     db: AsyncSession = Depends(get_async_db)
 ):
     try:
-        controller = AgentController(db=db, user_id=user.id)
+        controller = AgentController(db=db, user_id=user.id if user else None)
         return await controller.aexisting_thread(request=request, thread_id=thread_id, existing_thread=body)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
