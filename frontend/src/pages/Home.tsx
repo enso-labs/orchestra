@@ -3,9 +3,15 @@ import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import ChatInput from '@/components/inputs/ChatInput';
 import { useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useChatContext } from '@/context/ChatContext';
 
 export default function Home() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const currentModel = searchParams.get('model') || '';
+    const { 
+        useFetchModelsEffect, 
+        useSelectModelEffect,
+    } = useChatContext();
     
     // Set default model in query params on component load if not already set
     useEffect(() => {
@@ -13,6 +19,9 @@ export default function Home() {
             setSearchParams({ model: 'openai-gpt-4o-mini' });
         }
     }, [searchParams, setSearchParams]);
+
+    useFetchModelsEffect(setSearchParams, currentModel);
+    useSelectModelEffect(currentModel);
 
     return (
         <NoAuthLayout>
