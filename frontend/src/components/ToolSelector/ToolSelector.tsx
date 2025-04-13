@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
-  Wrench, X, Database, 
-  Search, BookOpen, Play,
-  PlusCircle, Save
+  X,
+  Save
 } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
 import Editor from 'react-simple-code-editor';
@@ -13,7 +12,6 @@ import { highlight, languages } from 'prismjs';
 import 'prismjs/components/prism-json';
 import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useToolContext } from "@/context/ToolContext";
-import ToolCard from "@/components/cards/ToolCard";
 import { useState, useCallback, useEffect } from 'react';
 import apiClient from "@/lib/utils/apiClient";
 import {
@@ -24,64 +22,10 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
-
-// CSS for animations
-const animationStyles = `
-  .tool-card-enter {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  .tool-card-enter-active {
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 300ms, transform 300ms;
-  }
-  
-  .test-button {
-    overflow: hidden;
-    white-space: nowrap;
-    width: 24px;
-    transition: width 150ms ease-in-out;
-  }
-  
-  .test-button:hover {
-    width: 64px;
-  }
-  
-  .test-button-text {
-    opacity: 0;
-    transition: opacity 75ms ease-in-out;
-    transition-delay: 0ms;
-  }
-  
-  .test-button:hover .test-button-text {
-    opacity: 1;
-    transition-delay: 75ms;
-  }
-  
-  .editor {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    min-height: 200px;
-    border: 1px solid hsl(var(--border));
-    border-radius: 6px;
-    background-color: hsl(var(--background));
-  }
-  
-  .editor:focus-within {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-  }
-
-  @media (max-width: 640px) {
-    .tool-modal-content {
-      width: 100%;
-      max-width: calc(100% - 32px) !important;
-      height: calc(100% - 80px);
-      max-height: none;
-    }
-  }
-`;
+import DefaultToolContent from "./DefaultToolContent";
+import ModalButton from "./ModalButton";
+import TestToolContent from "./ToolContentTest";
+import styles from "./ToolSelector.module.css";
 
 export function ToolSelector() {
   const { 
@@ -159,17 +103,6 @@ export function ToolSelector() {
     setMcpInfo(null);
     removeMCPConfig();
   };
-
-  // Handle dialog close
-  // const handleDialogClose = () => {
-  //   setIsOpen(false);
-  //   if (isAddingMCP) {
-  //     cancelAddingMCP();
-  //   }
-  //   if (testingTool) {
-  //     cancelTesting();
-  //   }
-  // };
 
   // Fetch MCP info when entering MCP editor mode
   useEffect(() => {
@@ -285,22 +218,12 @@ export function ToolSelector() {
 
   return (
     <>
-      <style>{animationStyles}</style>
-      
       {/* Button to open the dialog */}
-      <Button
-        variant="outline"
-        className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
-        aria-label="Select tools for the AI to use"
-        onClick={() => setIsOpen(true)}
-      >
-        <Wrench className="h-4 w-4" /> 
-        {enabledCount > 0 ? ` (${enabledCount})` : null}
-      </Button>
+      <ModalButton enabledCount={enabledCount} setIsOpen={setIsOpen} />
       
       {/* Main dialog that replaces the popover */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="tool-modal-content sm:max-w-[600px] md:max-w-[800px] h-auto max-h-[90vh] overflow-hidden p-0">
+        <DialogContent className={`${styles.toolModalContent} sm:max-w-[600px] md:max-w-[800px] h-auto max-h-[90vh] overflow-hidden p-0`}>
           {isAddingMCP ? (
             // MCP Config Editor View with API data display
             <div className="p-6">
@@ -325,7 +248,7 @@ export function ToolSelector() {
                     onValueChange={code => setMcpCode(code)}
                     highlight={code => highlight(code, languages.json, 'json')}
                     padding={10}
-                    className="editor"
+                    className={styles.editor}
                     style={{
                       fontFamily: '"JetBrains Mono", monospace',
                       fontSize: 14,
@@ -378,7 +301,7 @@ export function ToolSelector() {
                     onValueChange={code => setMcpCode(code)}
                     highlight={code => highlight(code, languages.json, 'json')}
                     padding={10}
-                    className="editor"
+                    className={styles.editor}
                     style={{
                       fontFamily: '"JetBrains Mono", monospace',
                       fontSize: 14,
@@ -431,136 +354,30 @@ export function ToolSelector() {
               </DialogFooter>
             </div>
           ) : testingTool ? (
-            // Test Tool Form
-            <div className="p-6">
-              <DialogHeader className="mb-4">
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-lg font-medium">
-                    Test Tool: {testingTool.id}
-                  </DialogTitle>
-                  <DialogClose onClick={cancelTesting} className="h-7 w-7 p-0" />
-                </div>
-              </DialogHeader>
-              
-              <p className="text-sm text-muted-foreground mb-4">
-                {testingTool.description}
-              </p>
-              
-              <form onSubmit={handleTestFormSubmit}>
-                <div className="space-y-2 mb-4">
-                  {testingTool.args && Object.entries(testingTool.args).map(([key, argDef]: [string, any]) => 
-                    renderFormField(key, argDef)
-                  )}
-                </div>
-                
-                <DialogFooter className="mt-6">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={cancelTesting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    <Play className="h-4 w-4 mr-1" />
-                    Run Test
-                  </Button>
-                </DialogFooter>
-              </form>
-            </div>
+            <TestToolContent 
+              testingTool={testingTool} 
+              cancelTesting={cancelTesting} 
+              handleTestFormSubmit={handleTestFormSubmit} 
+              renderFormField={renderFormField} 
+            />
           ) : (
-            // Normal Tool Selection View
-            <div className="p-6">
-              <DialogHeader className="mb-4">
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-lg font-medium">
-                    Tools ({enabledCount} enabled)
-                  </DialogTitle>
-                  <div className="flex space-x-2">
-                    {enabledCount > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                        onClick={clearTools}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Clear
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                      onClick={startAddingMCP}
-                      title={hasSavedMCP ? "Edit or remove MCP configuration" : "Add MCP configuration"}
-                    >
-                      <PlusCircle className="h-4 w-4" />
-                      {hasSavedMCP && <span className="ml-1 w-2 h-2 bg-green-500 rounded-full absolute top-0 right-0"></span>}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                      onClick={() => setGroupByCategory(!groupByCategory)}
-                      title={groupByCategory ? "Show as list" : "Group by category"}
-                    >
-                      {groupByCategory ? <Database className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
-                    </Button>
-                    <DialogClose className="h-7 w-7 p-0" />
-                  </div>
-                </div>
-              </DialogHeader>
-              
-              <p className="text-sm text-muted-foreground mb-4">
-                Choose the tools that will help you be more present in this moment.
-              </p>
-              
-              <div className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Find a tool..."
-                    className="w-full pl-8 p-2 text-sm rounded-md bg-background border border-input"
-                    onChange={(e) => setToolFilter(e.target.value)}
-                    value={toolFilter}
-                  />
-                  {toolFilter && (
-                    <button 
-                      className="absolute right-2 top-2.5"
-                      onClick={() => setToolFilter("")}
-                    >
-                      <X className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              <ScrollArea className="h-[620px] sm:h-[500px] pr-3">
-                <div className="grid gap-4">
-                  {groupByCategory ? (
-                    Object.entries(toolsByCategory).map(([category, tools]) => (
-                      <div key={category} className="mb-2">
-                        <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2 font-medium">{category}</h3>
-                        <div className="grid gap-2">
-                          {(tools as any[]).map((tool: any) => (
-                            <ToolCard key={tool.id} tool={tool} />
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    filteredTools.map((tool: any) => (
-                      <ToolCard key={tool.id} tool={tool} />
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
+            <DefaultToolContent 
+              enabledCount={enabledCount} 
+              clearTools={clearTools} 
+              startAddingMCP={startAddingMCP} 
+              hasSavedMCP={hasSavedMCP} 
+              groupByCategory={groupByCategory} 
+              setGroupByCategory={setGroupByCategory}
+              toolFilter={toolFilter}
+              setToolFilter={setToolFilter}
+              toolsByCategory={toolsByCategory}
+              filteredTools={filteredTools}
+            />
           )}
         </DialogContent>
       </Dialog>
     </>
   );
 } 
+
+export default ToolSelector;
