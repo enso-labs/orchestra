@@ -13,6 +13,7 @@ import DefaultTool from "@/components/tools/Default"
 import SearchEngineTool from "@/components/tools/SearchEngine"
 import { findToolCall } from "@/lib/utils/format"
 import { useNavigate } from "react-router-dom"
+import ChatMessages from "@/components/lists/ChatMessages"
 
 interface ChatMessage {
   role: string
@@ -114,62 +115,7 @@ export default function ThreadPublic() {
               {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
                 <SystemMessageCard content={payload.system} />
               )}
-              {messages?.map((message: any, index: number) => {
-                if (message.type === "tool" || message.role === "tool") {
-
-                  const lastToolCall = !message.tool_calls ? message : message.tool_calls[message.tool_calls.length - 1];
-                  return (
-                    <div key={index} className="flex justify-start">
-                      <div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 p-3 rounded-lg rounded-bl-sm">
-                        <div className="flex items-center">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentToolCall(lastToolCall)}
-                            className="flex items-center gap-2"
-                          >
-                            <Wrench className="h-4 w-4" />
-                            {message.name || lastToolCall.name}
-                            <span
-                              className={cn(
-                                "text-xs px-2 py-0.5 rounded-full",
-                                message.status === "success" || lastToolCall.status === "success"
-                                  ? "bg-green-500/20 text-green-500"
-                                  : "bg-red-500/20 text-red-500",
-                              )}
-                            >
-                              {message.status || lastToolCall.status}
-                            </span>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                } else if (message.role === "user" || message.role === "human" || message.type === "human") {
-                  return (
-                    <div key={index} className="flex justify-end">
-                      <div className="max-w-[80%] md:max-w-[70%] bg-primary/90 text-primary-foreground p-3 rounded-lg rounded-br-sm">
-                        <MarkdownCard content={message.content} />
-                      </div>
-                    </div>
-                  )
-                } else if (message.role === "system" || message.type === "system") {
-                  return <SystemMessageCard key={index} content={message.content} />
-                } else if (
-                  message.role === "assistant" ||
-                  message.type === "assistant" ||
-                  message.role === "ai" ||
-                  (message.type === "ai" && message.tool_calls && !(message.tool_calls.length > 0))
-                ) {
-                  return (
-                    <div key={index} className="flex justify-start">
-                      <div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 p-3 rounded-lg rounded-bl-sm">
-                        <MarkdownCard content={message.content} />
-                      </div>
-                    </div>
-                  )
-                }
-              })}
+              <ChatMessages messages={messages} />
               <div ref={messagesEndRef} /> {/* Invisible element to scroll to */}
             </div>
           </div>
