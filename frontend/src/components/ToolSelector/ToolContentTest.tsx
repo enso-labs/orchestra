@@ -6,6 +6,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { useToolContext } from "@/context/ToolContext";
 
 /**
  * Test Tool Content
@@ -22,15 +25,112 @@ interface TestToolContentProps {
   testingTool: any;
   cancelTesting: () => void;
   handleTestFormSubmit: (e: React.FormEvent) => void;
-  renderFormField: (key: string, argDef: any) => React.ReactNode;
 }
 
 const TestToolContent = ({ 
   testingTool, 
   cancelTesting, 
-  handleTestFormSubmit, 
-  renderFormField 
+  handleTestFormSubmit
 }: TestToolContentProps) => {
+  const { handleInputChange, testFormValues } = useToolContext();
+
+  // Render form field based on argument type
+  const renderFormField = (key: string, argDef: any) => {
+    const type = argDef?.type || 'string';
+    const title = argDef?.title || key;
+    const description = argDef?.description || '';
+    
+    switch (type) {
+      case 'string':
+        return (
+          <div key={key} className="mb-3">
+            <Label htmlFor={key} className="text-sm font-medium">
+              {title}
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+            <Input
+              id={key}
+              value={testFormValues[key] || ''}
+              onChange={(e) => handleInputChange(key, e.target.value)}
+              className="mt-1"
+              placeholder={argDef?.placeholder || ''}
+            />
+          </div>
+        );
+        
+      case 'integer':
+      case 'number':
+        return (
+          <div key={key} className="mb-3">
+            <Label htmlFor={key} className="text-sm font-medium">
+              {title}
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+            <Input
+              id={key}
+              type="number"
+              value={testFormValues[key] || 0}
+              onChange={(e) => handleInputChange(key, Number(e.target.value))}
+              className="mt-1"
+            />
+          </div>
+        );
+        
+      case 'boolean':
+        return (
+          <div key={key} className="mb-3 flex items-center">
+            <input
+              id={key}
+              type="checkbox"
+              checked={!!testFormValues[key]}
+              onChange={(e) => handleInputChange(key, e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor={key} className="ml-2 text-sm font-medium">
+              {title}
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+          </div>
+        );
+        
+      // For more complex types like arrays, you might need more sophisticated controls
+      default:
+        return (
+          <div key={key} className="mb-3">
+            <Label htmlFor={key} className="text-sm font-medium">
+              {title} ({type})
+              {description && (
+                <span className="block text-xs text-muted-foreground mt-0.5">{description}</span>
+              )}
+            </Label>
+            <Input
+              id={key}
+              value={typeof testFormValues[key] === 'object' 
+                ? JSON.stringify(testFormValues[key]) 
+                : testFormValues[key] || ''}
+              onChange={(e) => {
+                try {
+                  // Try to parse as JSON if it's supposed to be an object/array
+                  const parsed = JSON.parse(e.target.value);
+                  handleInputChange(key, parsed);
+                } catch {
+                  // If parsing fails, store as string
+                  handleInputChange(key, e.target.value);
+                }
+              }}
+              className="mt-1"
+            />
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="p-6">
       <DialogHeader className="mb-4">
