@@ -1,5 +1,4 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +16,14 @@ import { useToolContext } from "@/context/ToolContext";
 import ToolCard from "@/components/cards/ToolCard";
 import { useState, useCallback, useEffect } from 'react';
 import apiClient from "@/lib/utils/apiClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
 
 // CSS for animations
 const animationStyles = `
@@ -65,6 +72,15 @@ const animationStyles = `
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
+
+  @media (max-width: 640px) {
+    .tool-modal-content {
+      width: 100%;
+      max-width: calc(100% - 32px) !important;
+      height: calc(100% - 80px);
+      max-height: none;
+    }
+  }
 `;
 
 export function ToolSelector() {
@@ -97,6 +113,9 @@ export function ToolSelector() {
     setGroupByCategory,
     useLoadMCPFromPayloadEffect,
   } = useToolContext();
+
+  // Add state for modal visibility
+  const [isOpen, setIsOpen] = useState(false);
 
   // Add state for MCP info
   const [mcpInfo, setMcpInfo] = useState<any[] | null>(null);
@@ -139,6 +158,17 @@ export function ToolSelector() {
   const handleRemoveMCPConfig = () => {
     setMcpInfo(null);
     removeMCPConfig();
+  };
+
+  // Handle dialog close
+  const handleDialogClose = () => {
+    setIsOpen(false);
+    if (isAddingMCP) {
+      cancelAddingMCP();
+    }
+    if (testingTool) {
+      cancelTesting();
+    }
   };
 
   // Fetch MCP info when entering MCP editor mode
@@ -256,34 +286,32 @@ export function ToolSelector() {
   return (
     <>
       <style>{animationStyles}</style>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
-            aria-label="Select tools for the AI to use"
-          >
-            <Wrench className="h-4 w-4" /> 
-            {enabledCount > 0 ? ` (${enabledCount})` : null}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-96 p-4 mr-2 rounded-lg" align="start">
+      
+      {/* Button to open the dialog */}
+      <Button
+        variant="outline"
+        className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
+        aria-label="Select tools for the AI to use"
+        onClick={() => setIsOpen(true)}
+      >
+        <Wrench className="h-4 w-4" /> 
+        {enabledCount > 0 ? ` (${enabledCount})` : null}
+      </Button>
+      
+      {/* Main dialog that replaces the popover */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="tool-modal-content sm:max-w-[600px] md:max-w-[800px] h-auto max-h-[90vh] overflow-hidden p-0">
           {isAddingMCP ? (
             // MCP Config Editor View with API data display
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-lg">
-                  {hasSavedMCP ? "MCP Configuration" : "Add MCP Configuration"}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  onClick={cancelAddingMCP}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="p-6">
+              <DialogHeader className="mb-4">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-lg font-medium">
+                    {hasSavedMCP ? "MCP Configuration" : "Add MCP Configuration"}
+                  </DialogTitle>
+                  <DialogClose onClick={cancelAddingMCP} className="h-7 w-7 p-0" />
+                </div>
+              </DialogHeader>
               
               {isLoadingMCPInfo ? (
                 <div className="text-center py-4">
@@ -316,7 +344,7 @@ export function ToolSelector() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Available MCP tools:
                   </p>
-                  <ScrollArea className="h-[250px] pr-3">
+                  <ScrollArea className="h-[350px] pr-3">
                     <div className="space-y-2">
                       {mcpInfo.map((tool, index) => (
                         <div key={index} className="border rounded-md p-3">
@@ -375,7 +403,7 @@ export function ToolSelector() {
                 </div>
               )}
               
-              <div className="flex justify-end space-x-2 mt-4">
+              <DialogFooter className="mt-6">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -400,24 +428,19 @@ export function ToolSelector() {
                     </>
                   )}
                 </Button>
-              </div>
+              </DialogFooter>
             </div>
           ) : testingTool ? (
             // Test Tool Form
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-lg">
-                  Test Tool: {testingTool.id}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  onClick={cancelTesting}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="p-6">
+              <DialogHeader className="mb-4">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-lg font-medium">
+                    Test Tool: {testingTool.id}
+                  </DialogTitle>
+                  <DialogClose onClick={cancelTesting} className="h-7 w-7 p-0" />
+                </div>
+              </DialogHeader>
               
               <p className="text-sm text-muted-foreground mb-4">
                 {testingTool.description}
@@ -430,7 +453,7 @@ export function ToolSelector() {
                   )}
                 </div>
                 
-                <div className="flex justify-end space-x-2 mt-4">
+                <DialogFooter className="mt-6">
                   <Button 
                     type="button" 
                     variant="outline" 
@@ -442,49 +465,52 @@ export function ToolSelector() {
                     <Play className="h-4 w-4 mr-1" />
                     Run Test
                   </Button>
-                </div>
+                </DialogFooter>
               </form>
             </div>
           ) : (
             // Normal Tool Selection View
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-medium text-lg leading-none">
-                  Tools ({enabledCount} enabled)
-                </h4>
-                <div className="flex space-x-2">
-                  {enabledCount > 0 && (
+            <div className="p-6">
+              <DialogHeader className="mb-4">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-lg font-medium">
+                    Tools ({enabledCount} enabled)
+                  </DialogTitle>
+                  <div className="flex space-x-2">
+                    {enabledCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                        onClick={clearTools}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Clear
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                      onClick={clearTools}
+                      onClick={startAddingMCP}
+                      title={hasSavedMCP ? "Edit or remove MCP configuration" : "Add MCP configuration"}
                     >
-                      <X className="h-4 w-4 mr-1" />
-                      Clear
+                      <PlusCircle className="h-4 w-4" />
+                      {hasSavedMCP && <span className="ml-1 w-2 h-2 bg-green-500 rounded-full absolute top-0 right-0"></span>}
                     </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                    onClick={startAddingMCP}
-                    title={hasSavedMCP ? "Edit or remove MCP configuration" : "Add MCP configuration"}
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    {hasSavedMCP && <span className="ml-1 w-2 h-2 bg-green-500 rounded-full absolute top-0 right-0"></span>}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                    onClick={() => setGroupByCategory(!groupByCategory)}
-                    title={groupByCategory ? "Show as list" : "Group by category"}
-                  >
-                    {groupByCategory ? <Database className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setGroupByCategory(!groupByCategory)}
+                      title={groupByCategory ? "Show as list" : "Group by category"}
+                    >
+                      {groupByCategory ? <Database className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
+                    </Button>
+                    <DialogClose className="h-7 w-7 p-0" />
+                  </div>
                 </div>
-              </div>
+              </DialogHeader>
               
               <p className="text-sm text-muted-foreground mb-4">
                 Choose the tools that will help you be more present in this moment.
@@ -511,17 +537,7 @@ export function ToolSelector() {
                 </div>
               </div>
               
-              {/* {enabledCount === 0 && (
-                <div className="text-center py-6 px-4 bg-muted/20 rounded-lg border border-dashed border-muted-foreground/30 my-4">
-                  <Leaf className="h-10 w-10 text-primary/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Select tools mindfully to enhance your experience.
-                    <br />Each tool brings unique abilities to your assistant.
-                  </p>
-                </div>
-              )} */}
-              
-              <ScrollArea className="h-[350px] pr-3">
+              <ScrollArea className="h-[620px] sm:h-[500px] pr-3">
                 <div className="grid gap-4">
                   {groupByCategory ? (
                     Object.entries(toolsByCategory).map(([category, tools]) => (
@@ -541,10 +557,10 @@ export function ToolSelector() {
                   )}
                 </div>
               </ScrollArea>
-            </>
+            </div>
           )}
-        </PopoverContent>
-      </Popover>
+        </DialogContent>
+      </Dialog>
     </>
   );
 } 
