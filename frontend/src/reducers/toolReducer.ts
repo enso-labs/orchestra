@@ -21,14 +21,21 @@ type ToolAction = {
 }
 
 // Constants
+// const defaultMCP = {
+//   "enso_basic": {
+//     "transport": "sse",
+//     "url": "https://mcp.enso.sh/sse"
+//   },
+//   "enso_rag": {
+//     "transport": "sse",
+//     "url": "https://mcp-sse-o98o.onrender.com/sse"
+//   }
+// }
+
 const defaultMCP = {
   "enso_basic": {
     "transport": "sse",
     "url": "https://mcp.enso.sh/sse"
-  },
-  "enso_rag": {
-    "transport": "sse",
-    "url": "https://mcp-sse-o98o.onrender.com/sse"
   }
 }
 

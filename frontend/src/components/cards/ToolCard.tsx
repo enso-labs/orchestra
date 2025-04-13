@@ -1,6 +1,8 @@
 import { useToolContext } from "@/context/ToolContext";
 import { useChatContext } from "@/context/ChatContext";
 import { Play } from "lucide-react";
+import styles from "@/components/ToolSelector/ToolSelector.module.css";
+
 export default function ToolCard({ tool }: { tool: any }) {
 	const { payload } = useChatContext();
 	const {
@@ -30,12 +32,12 @@ export default function ToolCard({ tool }: { tool: any }) {
     >
       {/* Test Tool Button */}
       <button
-        className="test-button absolute top-2 right-2 p-1 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground transition-colors flex items-center"
+        className={`${styles.testButton} absolute top-2 right-2 p-1 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground transition-colors flex items-center`}
         onClick={(e) => testTool(tool, e)}
         title="Test this tool"
       >
         <Play className="h-3.5 w-3.5 flex-shrink-0" />
-        <span className="test-button-text ml-1 text-xs">Test</span>
+        <span className={`${styles.testButtonText} ml-1 text-xs`}>Test</span>
       </button>
       
       <div className="flex items-start gap-3">

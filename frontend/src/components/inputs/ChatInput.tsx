@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ArrowUp, Plus } from "lucide-react"
-import { ToolSelector} from "../selectors/ToolSelector"
+import ToolSelector from "@/components/ToolSelector"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
