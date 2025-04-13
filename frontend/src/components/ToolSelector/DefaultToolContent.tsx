@@ -4,7 +4,7 @@ import {
   X, Database, 
   Search, BookOpen,
   PlusCircle, Settings,
-  CheckCircle, Filter
+  Filter
 } from "lucide-react";
 import ToolCard from "@/components/cards/ToolCard";
 import {
