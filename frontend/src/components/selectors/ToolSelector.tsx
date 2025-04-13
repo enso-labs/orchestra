@@ -161,15 +161,15 @@ export function ToolSelector() {
   };
 
   // Handle dialog close
-  const handleDialogClose = () => {
-    setIsOpen(false);
-    if (isAddingMCP) {
-      cancelAddingMCP();
-    }
-    if (testingTool) {
-      cancelTesting();
-    }
-  };
+  // const handleDialogClose = () => {
+  //   setIsOpen(false);
+  //   if (isAddingMCP) {
+  //     cancelAddingMCP();
+  //   }
+  //   if (testingTool) {
+  //     cancelTesting();
+  //   }
+  // };
 
   // Fetch MCP info when entering MCP editor mode
   useEffect(() => {
