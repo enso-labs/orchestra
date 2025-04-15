@@ -4,6 +4,10 @@ NEW_THREAD_QUERY_EXAMPLE = {
     "model": "openai-gpt-4o",
     "tools": [],
     "images": [],
+    "a2a": {
+        "base_url": "https://a2a.enso.sh",
+        "agent_card_path": "/.well-known/agent.json"
+    },
     "mcp": {
         "weather": {
             "url": "http://localhost:8005/sse",
@@ -47,6 +51,10 @@ EXISTING_THREAD_QUERY_EXAMPLE = {
     "model": "openai-gpt-4o",
     "tools": [],
     "images": [],
+    "a2a": {
+        "base_url": "https://a2a.enso.sh",
+        "agent_card_path": "/.well-known/agent.json"
+    },
     "mcp": {
         "weather": {
             "url": "http://localhost:8005/sse",

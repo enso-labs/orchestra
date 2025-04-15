@@ -8,6 +8,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
 from psycopg.connection_async import AsyncConnection
 
+from src.entities.a2a import A2AServer
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL, DB_URI
@@ -21,6 +22,8 @@ from src.services.db import create_async_pool
 from pydantic import BaseModel
 from src.utils.format import get_base64_image
 import sys
+
+from src.utils.a2a import A2ACardResolver
 
 
 class StreamContext(BaseModel):
@@ -310,6 +313,7 @@ class Agent:
         self,
         tools: list[str] = None,
         mcp: dict = None,
+        a2a: A2AServer = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         checkpointer: AsyncPostgresSaver = None,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
@@ -322,6 +326,10 @@ class Agent:
         if mcp and len(mcp.keys()) > 0:
             await self.agent_session.setup(mcp)
             self.tools.extend(self.agent_session.tools())
+            
+        # if a2a:
+        #     card = A2ACardResolver(base_url=a2a.base_url, agent_card_path=a2a.agent_card_path).get_agent_card()
+        #     self.tools.append(card)
         
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
