@@ -1,7 +1,12 @@
+import uuid
 import httpx
 import json
 from httpx_sse import connect_sse
 from typing import Any, AsyncIterable
+from src.entities import ExistingThread, NewThread
+from src.entities.a2a import A2AServer
+from src.utils.logger import logger
+from fastapi.responses import StreamingResponse, JSONResponse
 from src.common.types import (
     AgentCard,
     GetTaskRequest,
@@ -19,6 +24,7 @@ from src.common.types import (
     A2AClientJSONError,
     SendTaskStreamingRequest,
     SendTaskStreamingResponse,
+    Task,
 )
 
 class A2ACardResolver:
@@ -46,6 +52,13 @@ class A2AClient:
             raise ValueError("Must provide either agent_card or url")
 
     async def send_task(self, payload: dict[str, Any]) -> SendTaskResponse:
+        """
+        Send query to remote agent
+        Args:
+            payload: dict[str, Any]
+        Returns:
+            SendTaskResponse
+        """
         request = SendTaskRequest(params=payload)
         return SendTaskResponse(**await self._send_request(request))
 
@@ -98,3 +111,82 @@ class A2AClient:
     ) -> GetTaskPushNotificationResponse:
         request = GetTaskPushNotificationRequest(params=payload)
         return GetTaskPushNotificationResponse(**await self._send_request(request))
+
+
+async def process_a2a_streaming(
+    thread: NewThread | ExistingThread,
+    thread_id: str,
+    agent_id: str = None,
+):
+    if not agent_id:
+        agent_id = str(uuid.uuid4())
+    client = A2AClient(url=thread.a2a.base_url)
+    response = client.send_task_streaming(payload={
+        "id": agent_id,
+        "sessionId": thread_id,
+        "acceptedOutputModes": [
+            "text"
+        ],
+        "message": {
+            "role": "user",
+            "parts": [
+                {"type": "text", "text": thread.query}
+            ]
+        }
+    })
+    async def stream_generator():
+        async for chunk in response:
+            task = Task(**chunk.result.model_dump(), sessionId=thread_id)
+            logger.debug(f"chunk: {task.model_dump_json()}")
+            yield f"data: {task.model_dump_json()}\n\n"
+    return StreamingResponse(
+        stream_generator(),
+        media_type="text/event-stream"
+    )
+    
+async def process_a2a(
+    thread: NewThread | ExistingThread,
+    thread_id: str,
+    agent_id: str = None,
+):
+    if not agent_id:
+        agent_id = str(uuid.uuid4())
+    client = A2AClient(url=thread.a2a.base_url)
+    response = await client.send_task(payload={
+        "id": agent_id,
+        "sessionId": thread_id,
+        "acceptedOutputModes": [
+            "text"
+        ],
+        "message": {
+            "role": "user",
+            "parts": [
+                {"type": "text", "text": thread.query}
+            ]
+        }
+    })
+    return JSONResponse(content=response.result.model_dump())
+
+
+async def a2a_builder(
+    base_url: str,
+    query: str,
+    thread_id: str = None,
+):
+    if not thread_id:
+        thread_id = str(uuid.uuid4())
+    client = A2AClient(url=base_url)
+    response = await client.send_task(payload={
+        "id": thread_id,
+        "sessionId": thread_id,
+        "acceptedOutputModes": [
+            "text"
+        ],
+        "message": {
+            "role": "user",
+            "parts": [
+                {"type": "text", "text": query}
+            ]
+        }
+    })
+    return JSONResponse(content=response.result.model_dump())

@@ -6,6 +6,7 @@ from langchain_core.messages import AnyMessage,  HumanMessage
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
+from langchain_core.tools import StructuredTool, tool
 from psycopg.connection_async import AsyncConnection
 
 from src.entities.a2a import A2AServer
@@ -23,7 +24,7 @@ from pydantic import BaseModel
 from src.utils.format import get_base64_image
 import sys
 
-from src.utils.a2a import A2ACardResolver
+from src.utils.a2a import A2ACardResolver, A2AClient, a2a_builder
 
 
 class StreamContext(BaseModel):
@@ -327,9 +328,19 @@ class Agent:
             await self.agent_session.setup(mcp)
             self.tools.extend(self.agent_session.tools())
             
-        # if a2a:
-        #     card = A2ACardResolver(base_url=a2a.base_url, agent_card_path=a2a.agent_card_path).get_agent_card()
-        #     self.tools.append(card)
+        if a2a:
+            card = A2ACardResolver(base_url=a2a.base_url).get_agent_card()
+            
+            async def send_task(query: str):
+                return await a2a_builder(base_url=a2a.base_url, query=query, thread_id=self.thread_id)
+            send_task.__doc__ = (
+                f"Send query to remote agent: {card.name}. "
+                f"Agent Card: {card.model_dump_json()}"
+            )
+            tool = StructuredTool.from_function(coroutine=send_task)
+            tool.name = card.name.lower().replace(" ", "_")
+            tool.description = card.description
+            self.tools.append(tool)
         
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)

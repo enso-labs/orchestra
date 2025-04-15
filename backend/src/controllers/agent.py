@@ -10,61 +10,8 @@ from src.entities import ExistingThread, NewThread
 from src.utils.agent import Agent
 from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
-from src.utils.a2a import A2ACardResolver, A2AClient
+from src.utils.a2a import process_a2a_streaming, process_a2a
 
-async def process_a2a_streaming(
-    thread: NewThread | ExistingThread,
-    thread_id: str,
-    agent_id: str = None,
-):
-    if not agent_id:
-        agent_id = str(uuid.uuid4())
-    client = A2AClient(url=thread.a2a.base_url)
-    response = client.send_task_streaming(payload={
-        "id": agent_id,
-        "sessionId": thread_id,
-        "acceptedOutputModes": [
-            "text"
-        ],
-        "message": {
-            "role": "user",
-            "parts": [
-                {"type": "text", "text": thread.query}
-            ]
-        }
-    })
-    async def stream_generator():
-        async for chunk in response:
-            task = Task(**chunk.result.model_dump(), sessionId=thread_id)
-            logger.debug(f"chunk: {task.model_dump_json()}")
-            yield f"data: {task.model_dump_json()}\n\n"
-    return StreamingResponse(
-        stream_generator(),
-        media_type="text/event-stream"
-    )
-    
-async def process_a2a(
-    thread: NewThread | ExistingThread,
-    thread_id: str,
-    agent_id: str = None,
-):
-    if not agent_id:
-        agent_id = str(uuid.uuid4())
-    client = A2AClient(url=thread.a2a.base_url)
-    response = await client.send_task(payload={
-        "id": agent_id,
-        "sessionId": thread_id,
-        "acceptedOutputModes": [
-            "text"
-        ],
-        "message": {
-            "role": "user",
-            "parts": [
-                {"type": "text", "text": thread.query}
-            ]
-        }
-    })
-    return JSONResponse(content=response.result.model_dump())
 
 class AgentController:
     def __init__(self, db: AsyncSession, user_id: str = None, agent_id: str = None): # type: ignore
@@ -88,11 +35,11 @@ class AgentController:
                 "system": new_thread.system or None
             }
             
-            if new_thread.a2a:
-                if "text/event-stream" in request.headers.get("accept", ""):
-                    return await process_a2a_streaming(new_thread, thread_id)
-                else:
-                    return await process_a2a(new_thread, thread_id)
+            # if new_thread.a2a:
+            #     if "text/event-stream" in request.headers.get("accept", ""):
+            #         return await process_a2a_streaming(new_thread, thread_id)
+            #     else:
+            #         return await process_a2a(new_thread, thread_id)
                 
             agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp, a2a=new_thread.a2a)
