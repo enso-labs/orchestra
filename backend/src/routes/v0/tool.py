@@ -44,7 +44,7 @@ def list_tools(
 ################################################################################
 ### List MCP Info
 ################################################################################
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class MCPInfo(BaseModel):
     mcp: Optional[Dict[str, Any]] = None
@@ -103,9 +103,7 @@ async def list_mcp_info(
 from src.utils.a2a import A2ACardResolver
 
 class A2AInfo(BaseModel):
-    base_url: str = "https://a2a.enso.sh"
-    agent_card_path: str = "/.well-known/agent.json"
-
+    servers: List[dict] = Field(default=[{"base_url": "https://a2a.enso.sh", "agent_card_path": "/.well-known/agent.json"}])
 @router.post(
     "/tools/a2a/info", 
     tags=[TAG],
@@ -124,15 +122,24 @@ async def get_a2a_agent_card(
     body: A2AInfo
 ):
     try:
-        a2a_card_resolver = A2ACardResolver(body.base_url, body.agent_card_path)
-        if not body.base_url:
+        results = []
+        
+        if not body.servers:
             return JSONResponse(
                 content={'error': 'No A2A servers or A2A config found'},
                 status_code=status.HTTP_400_BAD_REQUEST
             )
-        agent_card = a2a_card_resolver.get_agent_card()
+            
+        for server in body.servers:
+            try:
+                a2a_card_resolver = A2ACardResolver(server["base_url"], server["agent_card_path"])
+                agent_card = a2a_card_resolver.get_agent_card()
+                results.append(agent_card.model_dump())
+            except Exception as server_error:
+                results.append({"error": str(server_error), "base_url": server["base_url"]})
+                
         return JSONResponse(
-            content={'agent_card': agent_card.model_dump()},
+            content={'agent_cards': results},
             status_code=status.HTTP_200_OK
         )
     except Exception as e:
