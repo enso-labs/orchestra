@@ -1,8 +1,8 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from fastapi import status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from src.constants.examples import MCP_REQ_BODY_EXAMPLE
+from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE, MCP_REQ_BODY_EXAMPLE
 from src.constants import APP_LOG_LEVEL
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
@@ -96,6 +96,50 @@ async def list_mcp_info(
         )
     finally:
         await agent_session.cleanup()
+
+################################################################################
+### List A2A Info
+################################################################################
+from src.utils.a2a import A2ACardResolver
+
+class A2AInfo(BaseModel):
+    base_url: str = "https://a2a.enso.sh"
+    agent_card_path: str = "/.well-known/agent.json"
+
+@router.post(
+    "/tools/a2a/info", 
+    tags=[TAG],
+    responses={
+        status.HTTP_200_OK: {
+            "description": "All capabilities.",
+            "content": {
+                "application/json": {
+                    "example": A2A_GET_AGENT_CARD_EXAMPLE
+                }
+            }
+        }
+    }
+)
+async def get_a2a_agent_card(
+    body: A2AInfo
+):
+    try:
+        a2a_card_resolver = A2ACardResolver(body.base_url, body.agent_card_path)
+        if not body.base_url:
+            return JSONResponse(
+                content={'error': 'No A2A servers or A2A config found'},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        agent_card = a2a_card_resolver.get_agent_card()
+        return JSONResponse(
+            content={'agent_card': agent_card.model_dump()},
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return JSONResponse(
+            content={'error': str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 ################################################################################
 ### Test Tool

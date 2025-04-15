@@ -230,3 +230,44 @@ LIST_DOCUMENTS_EXAMPLE = {
         }
     ]
 }
+
+A2A_GET_AGENT_CARD_EXAMPLE = {
+  "agent_card": {
+    "name": "Currency Agent",
+    "description": "Helps with exchange rates for currencies",
+    "url": "http://0.0.0.0:10000/",
+    "provider": None,
+    "version": "1.0.0",
+    "documentationUrl": None,
+    "capabilities": {
+      "streaming": True,
+      "pushNotifications": True,
+      "stateTransitionHistory": False
+    },
+    "authentication": None,
+    "defaultInputModes": [
+      "text",
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "text",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "convert_currency",
+        "name": "Currency Exchange Rates Tool",
+        "description": "Helps with exchange values between various currencies",
+        "tags": [
+          "currency conversion",
+          "currency exchange"
+        ],
+        "examples": [
+          "What is exchange rate between USD and GBP?"
+        ],
+        "inputModes": None,
+        "outputModes": None
+      }
+    ]
+  }
+}
