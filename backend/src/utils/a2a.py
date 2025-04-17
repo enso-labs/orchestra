@@ -116,13 +116,10 @@ class A2AClient:
 async def process_a2a_streaming(
     thread: NewThread | ExistingThread,
     thread_id: str,
-    agent_id: str = None,
 ):
-    if not agent_id:
-        agent_id = str(uuid.uuid4())
     client = A2AClient(url=thread.a2a.base_url)
     response = client.send_task_streaming(payload={
-        "id": agent_id,
+        "id": thread_id,
         "sessionId": thread_id,
         "acceptedOutputModes": [
             "text"
@@ -135,10 +132,15 @@ async def process_a2a_streaming(
         }
     })
     async def stream_generator():
-        async for chunk in response:
-            task = Task(**chunk.result.model_dump(), sessionId=thread_id)
-            logger.debug(f"chunk: {task.model_dump_json()}")
-            yield f"data: {task.model_dump_json()}\n\n"
+        try:
+            async for chunk in response:
+                d = chunk.result.model_dump()
+                d["sessionId"] = thread_id
+                yield f"data: {json.dumps(d)}\n\n"
+        except Exception as e:
+            logger.error(f"Error in stream_generator: {str(e)}")
+            logger.exception("Stream generation failed")
+            raise
     return StreamingResponse(
         stream_generator(),
         media_type="text/event-stream"
@@ -146,14 +148,11 @@ async def process_a2a_streaming(
     
 async def process_a2a(
     thread: NewThread | ExistingThread,
-    thread_id: str,
-    agent_id: str = None,
+    thread_id: str
 ):
-    if not agent_id:
-        agent_id = str(uuid.uuid4())
     client = A2AClient(url=thread.a2a.base_url)
     response = await client.send_task(payload={
-        "id": agent_id,
+        "id": thread_id,
         "sessionId": thread_id,
         "acceptedOutputModes": [
             "text"
@@ -165,7 +164,9 @@ async def process_a2a(
             ]
         }
     })
-    return JSONResponse(content=response.result.model_dump())
+    return JSONResponse(content={
+        'answer': response.result.model_dump()
+    })
 
 
 async def a2a_builder(
