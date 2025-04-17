@@ -48,6 +48,7 @@ export default function useToolHook() {
     setMcpCode,
     setMcpError,
     setHasSavedMCP,
+    setHasSavedA2A,
   } = actions;
   const [isAssistantOpen,] = useState(INIT_TOOL_STATE.isAssistantOpen);
 
@@ -248,6 +249,10 @@ export default function useToolHook() {
 		}, [payload.mcp]);
 	}
 
+  const startAddingA2A = () => {
+    setHasSavedA2A(true);
+  };
+
 	return {
     ...state,
     ...actions,
@@ -263,6 +268,7 @@ export default function useToolHook() {
 		removeMCPConfig,
 		toggleTool,
 		handleTestFormSubmit,
+    startAddingA2A,
 		// computed
 		filteredTools,
 		toolsByCategory,

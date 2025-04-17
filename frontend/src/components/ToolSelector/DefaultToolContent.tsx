@@ -42,6 +42,8 @@ interface DefaultToolContentProps {
   setToolFilter: (toolFilter: string) => void;
   toolsByCategory: any;
   filteredTools: any;
+  startAddingA2A: () => void;
+  hasSavedA2A: boolean;
 }
 
 const DefaultToolContent = ({ 
@@ -54,7 +56,9 @@ const DefaultToolContent = ({
   toolFilter, 
   setToolFilter, 
   toolsByCategory, 
-  filteredTools 
+  filteredTools,
+  startAddingA2A,
+  hasSavedA2A
 }: DefaultToolContentProps) => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -103,7 +107,34 @@ const DefaultToolContent = ({
                   </TooltipContent>
                 </Tooltip>
               )}
+
+              {/* A2A */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 relative"
+                    onClick={startAddingA2A}
+                  >
+                    {hasSavedA2A ? (
+                      <Settings className="h-4 w-4" />
+                    ) : (
+                      <PlusCircle className="h-4 w-4" />
+                    )}
+                    {hasSavedA2A && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">
+                    {hasSavedA2A ? "Edit A2A configuration" : "Add A2A configuration"}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
               
+              {/* MCP */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

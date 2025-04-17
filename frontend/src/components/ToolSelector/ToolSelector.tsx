@@ -39,6 +39,8 @@ export function ToolSelector() {
     groupByCategory,
     setGroupByCategory,
     useLoadMCPFromPayloadEffect,
+    startAddingA2A,
+    hasSavedA2A
   } = useToolContext();
 
   // Add state for modal visibility
@@ -142,6 +144,8 @@ export function ToolSelector() {
               setToolFilter={setToolFilter}
               toolsByCategory={toolsByCategory}
               filteredTools={filteredTools}
+              startAddingA2A={startAddingA2A}
+              hasSavedA2A={hasSavedA2A}
             />
           )}
         </DialogContent>
