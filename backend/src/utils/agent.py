@@ -314,7 +314,7 @@ class Agent:
         self,
         tools: list[str] = None,
         mcp: dict = None,
-        a2a: A2AServer = None,
+        a2a: dict[str, A2AServer] = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         checkpointer: AsyncPostgresSaver = None,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
@@ -329,18 +329,49 @@ class Agent:
             self.tools.extend(self.agent_session.tools())
             
         if a2a:
-            card = A2ACardResolver(base_url=a2a.base_url).get_agent_card()
-            
-            async def send_task(query: str):
-                return await a2a_builder(base_url=a2a.base_url, query=query, thread_id=self.thread_id)
-            send_task.__doc__ = (
-                f"Send query to remote agent: {card.name}. "
-                f"Agent Card: {card.model_dump_json()}"
-            )
-            tool = StructuredTool.from_function(coroutine=send_task)
-            tool.name = card.name.lower().replace(" ", "_")
-            tool.description = card.description
-            self.tools.append(tool)
+            # Check if a2a is a dictionary with multiple entries
+            if isinstance(a2a, dict) and len(a2a.keys()) > 0:
+                # Loop through each entry in the a2a dictionary
+                for key, config in a2a.items():
+                    
+                    card = A2ACardResolver(
+                        base_url=config.base_url, 
+                        agent_card_path=config.agent_card_path
+                    ).get_agent_card()
+                    
+                    async def send_task(query: str):    
+                        return await a2a_builder(
+                            base_url=config.base_url, 
+                            query=query, 
+                            thread_id=self.thread_id
+                        )
+                    send_task.__doc__ = (
+                        f"Send query to remote agent: {card.name}. "
+                        f"Agent Card: {card.model_dump_json()}"
+                    )
+                    tool = StructuredTool.from_function(coroutine=send_task)
+                    # tool.name = card.name.lower().replace(" ", "_")
+                    tool.name = key
+                    # tool.description = card.description
+                    self.tools.append(tool)
+            else:
+                # Handle the original single a2a case
+                card = A2ACardResolver(base_url=a2a.base_url).get_agent_card()
+                
+                async def send_task(query: str):
+                    return await a2a_builder(
+                        base_url=a2a.base_url, 
+                        query=query, 
+                        thread_id=self.thread_id
+                    )
+                send_task.__doc__ = (
+                    f"Send query to remote agent: {card.name}. "
+                    f"Agent Card: {card.model_dump_json()}"
+                )
+                tool = StructuredTool.from_function(coroutine=send_task)
+                tool.name = card.name.lower().replace(" ", "_")
+                tool.description = card.description
+                self.tools.append(tool)
         
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
@@ -468,47 +499,6 @@ class Agent:
     #             raise
     #         except Exception as e:
     #             logger.exception("Error sending final stream message", e)
-
-    async def astream_chunks(
-        self,
-        graph: StateGraph, 
-        state: dict,
-        config: dict = None,
-        stream_mode: str = "messages"
-    ):
-        try:
-            ctx = StreamContext(msg=None, metadata={}, event=stream_mode)
-            async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer: 
-                graph.checkpointer = checkpointer
-                async for msg, metadata in graph.astream(
-                    state, 
-                    config,
-                    stream_mode=stream_mode
-                ):  
-                    ctx.msg = msg
-                    ctx.metadata = metadata
-                    logger.debug(f'ctx: {str(ctx.model_dump())}')
-                    data = ctx.model_dump()
-                    yield f"data: {json.dumps(data)}\n\n"
-            
-        except GeneratorExit:
-            # Handle client disconnection gracefully
-            logger.info("Client disconnected, cleaning up stream")
-            # Don't re-raise, just exit cleanly
-            return
-        except Exception as e:
-            logger.exception("Error in astream_chunks", e)
-            raise HTTPException(status_code=500, detail=str(e))
-        # finally:
-        #     logger.info("Closing stream")
-        #     try:
-        #         # Only send end message if we haven't encountered GeneratorExit
-        #         if sys.exc_info()[0] is not GeneratorExit:
-        #             ctx.event = "end"
-        #             end_data = ctx.model_dump()
-        #             yield f"data: {json.dumps(end_data)}\n\n"
-        #     except Exception as e:
-        #         logger.exception("Error sending final stream message", e)
 
 
     # Add cleanup method

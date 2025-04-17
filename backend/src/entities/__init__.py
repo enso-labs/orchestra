@@ -33,7 +33,7 @@ class ChatInput(BaseModel):
 class ExistingThread(ChatInput):
     tools: Optional[List[Any]] = Field(default_factory=list)
     mcp: Optional[dict] = Field(default_factory=dict)
-    a2a: Optional[A2AServer] = Field(default_factory=dict)
+    a2a: Optional[dict[str, A2AServer]] = Field(default_factory=dict[str, A2AServer])
     images: Optional[List[str]] = Field(default_factory=list)
     model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
     

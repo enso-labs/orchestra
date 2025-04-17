@@ -190,4 +190,4 @@ async def a2a_builder(
             ]
         }
     })
-    return JSONResponse(content=response.result.model_dump())
+    return response.result.model_dump_json()

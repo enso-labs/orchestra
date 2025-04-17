@@ -3,7 +3,7 @@ from fastapi import status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from src.entities.a2a import A2AServers
+from src.entities.a2a import A2AServer
 from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE, MCP_REQ_BODY_EXAMPLE
 from src.constants import APP_LOG_LEVEL
 from src.models import ProtectedUser
@@ -120,7 +120,7 @@ from src.utils.a2a import A2ACardResolver, A2AClient
     }
 )
 async def get_a2a_agent_card(
-    body: A2AServers
+    body: dict[str, A2AServer]
 ):
     try:
         results = []

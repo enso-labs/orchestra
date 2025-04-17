@@ -35,11 +35,11 @@ class AgentController:
                 "system": new_thread.system or None
             }
             
-            if new_thread.a2a:
-                if "text/event-stream" in request.headers.get("accept", ""):
-                    return await process_a2a_streaming(new_thread, thread_id)
-                else:
-                    return await process_a2a(new_thread, thread_id)
+            # if new_thread.a2a:
+            #     if "text/event-stream" in request.headers.get("accept", ""):
+            #         return await process_a2a_streaming(new_thread, thread_id)
+            #     else:
+            #         return await process_a2a(new_thread, thread_id)
                 
             agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp, a2a=new_thread.a2a)
@@ -80,11 +80,11 @@ class AgentController:
                 "system": existing_thread.system or None
             }
             
-            if existing_thread.a2a:
-                if "text/event-stream" in request.headers.get("accept", ""):
-                    return await process_a2a_streaming(existing_thread, thread_id)
-                else:
-                    return await process_a2a(existing_thread, thread_id)
+            # if existing_thread.a2a:
+            #     if "text/event-stream" in request.headers.get("accept", ""):
+            #         return await process_a2a_streaming(existing_thread, thread_id)
+            #     else:
+            #         return await process_a2a(existing_thread, thread_id)
             
             agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=existing_thread.tools, 
