@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
 
 export default function Home() {
+    const { setPayload } = useChatContext();
     const [searchParams, setSearchParams] = useSearchParams();
     const currentModel = searchParams.get('model') || '';
     const { 
@@ -22,6 +23,13 @@ export default function Home() {
 
     useFetchModelsEffect(setSearchParams, currentModel);
     useSelectModelEffect(currentModel);
+
+    useEffect(() => {
+        const a2a = localStorage.getItem('a2a');
+        if (a2a) {
+            setPayload((prev: any) => ({ ...prev, a2a: JSON.parse(a2a) }));
+        }
+    }, []);
 
     return (
         <NoAuthLayout>

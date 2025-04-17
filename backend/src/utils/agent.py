@@ -328,9 +328,9 @@ class Agent:
             await self.agent_session.setup(mcp)
             self.tools.extend(self.agent_session.tools())
             
-        if a2a:
+        if a2a and len(a2a.keys()) > 0:
             # Check if a2a is a dictionary with multiple entries
-            if isinstance(a2a, dict) and len(a2a.keys()) > 0:
+            if isinstance(a2a, dict):
                 # Loop through each entry in the a2a dictionary
                 for key, config in a2a.items():
                     
@@ -352,26 +352,8 @@ class Agent:
                     tool = StructuredTool.from_function(coroutine=send_task)
                     # tool.name = card.name.lower().replace(" ", "_")
                     tool.name = key
-                    # tool.description = card.description
+                    tool.description = card.description
                     self.tools.append(tool)
-            else:
-                # Handle the original single a2a case
-                card = A2ACardResolver(base_url=a2a.base_url).get_agent_card()
-                
-                async def send_task(query: str):
-                    return await a2a_builder(
-                        base_url=a2a.base_url, 
-                        query=query, 
-                        thread_id=self.thread_id
-                    )
-                send_task.__doc__ = (
-                    f"Send query to remote agent: {card.name}. "
-                    f"Agent Card: {card.model_dump_json()}"
-                )
-                tool = StructuredTool.from_function(coroutine=send_task)
-                tool.name = card.name.lower().replace(" ", "_")
-                tool.description = card.description
-                self.tools.append(tool)
         
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)

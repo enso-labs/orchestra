@@ -29,7 +29,8 @@ const initChatState = {
         tools: [] as any[],
         visualize: false,
         model: '',
-        mcp: null
+        mcp: null,
+        a2a: null
     },
     history: {
         threads: [],
