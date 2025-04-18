@@ -132,6 +132,12 @@ export default function useMcpHook() {
 			
 		}, [payload.mcp]);
 	}
+
+	// Reset mcpInfo when MCP configuration is removed
+  const handleRemoveMCPConfig = () => {
+    setMcpInfo([]);
+    removeMCPConfig();
+  };
     
 	return {
 		mcpInfo,
@@ -156,5 +162,6 @@ export default function useMcpHook() {
 		removeMCPConfig,
 		// Effects
 		useLoadMCPFromPayloadEffect,
+		handleRemoveMCPConfig
 	}
 }

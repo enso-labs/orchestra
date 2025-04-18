@@ -17,35 +17,23 @@ import styles from "./ToolSelector.module.css";
 import 'prismjs/components/prism-json';
 import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useState, useEffect } from "react";
+import { useToolContext } from "@/context/ToolContext";
 
-interface MCPEditorProps {
-  isLoadingMCPInfo: boolean;
-  mcpInfoError: string | null;
-  mcpInfo: any[] | null;
-  mcpCode: string;
-  setMcpCode: (code: string) => void;
-  mcpError: string | null;
-  hasSavedMCP: boolean;
-  fetchMCPInfo: () => void;
-  cancelAddingMCP: () => void;
-  saveMCPConfig: () => void;
-  handleRemoveMCPConfig: () => void;
-}
-
-export function MCPEditor({
-  isLoadingMCPInfo,
-  mcpInfoError,
-  mcpInfo,
-  mcpCode,
-  setMcpCode,
-  mcpError,
-  hasSavedMCP,
-  fetchMCPInfo,
-  cancelAddingMCP,
-  saveMCPConfig,
-  handleRemoveMCPConfig
-}: MCPEditorProps) {
+export function MCPEditor() {
   const [isJsonValid, setIsJsonValid] = useState(true);
+  const {
+    mcpInfo,
+    isLoadingMCPInfo,
+    mcpInfoError,
+    mcpCode,
+    setMcpCode,
+    mcpError,
+    fetchMCPInfo,
+    cancelAddingMCP,
+    saveMCPConfig,
+    handleRemoveMCPConfig,
+    hasSavedMCP,
+  } = useToolContext();
   
   useEffect(() => {
     try {
@@ -118,7 +106,7 @@ export function MCPEditor({
           
           <ScrollArea className="h-[350px] pr-3 border rounded-md bg-muted/30 p-4">
             <div className="space-y-3">
-              {mcpInfo.map((tool, index) => (
+              {mcpInfo.map((tool: any, index: number) => (
                 <div key={index} className="border rounded-md p-4 bg-card hover:shadow-sm transition-shadow">
                   <h4 className="font-medium text-primary flex items-center justify-between">
                     {tool.name}

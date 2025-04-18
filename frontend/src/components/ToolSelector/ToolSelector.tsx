@@ -1,7 +1,6 @@
 import { useChatContext } from "@/context/ChatContext";
 import { useToolContext } from "@/context/ToolContext";
-import { useState, useCallback, useEffect } from 'react';
-import apiClient from "@/lib/utils/apiClient";
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,15 +23,10 @@ export function ToolSelector() {
     clearTools,
     cancelTesting,
     startAddingMCP,
-    cancelAddingMCP,
-    saveMCPConfig,
-    removeMCPConfig,
     testingTool,
     handleTestFormSubmit,
     isAddingMCP,
-    mcpCode,
-    setMcpCode,
-    mcpError,
+    fetchMCPInfo,
     hasSavedMCP,
     toolFilter,
     setToolFilter,
@@ -46,48 +40,6 @@ export function ToolSelector() {
   // Add state for modal visibility
   const [isOpen, setIsOpen] = useState(false);
 
-  // Add state for MCP info
-  const [mcpInfo, setMcpInfo] = useState<any[] | null>(null);
-  const [isLoadingMCPInfo, setIsLoadingMCPInfo] = useState(false);
-  const [mcpInfoError, setMcpInfoError] = useState<string | null>(null);
-
-  // Function to fetch MCP info
-  const fetchMCPInfo = useCallback(async () => {
-    if (!mcpCode) return;
-    
-    try {
-      setIsLoadingMCPInfo(true);
-      setMcpInfoError(null);
-      
-      let mcpConfig;
-      try {
-        mcpConfig = JSON.parse(mcpCode);
-      } catch (e) {
-        setMcpInfoError("Invalid JSON configuration");
-        return;
-      }
-      
-      try {
-        const response = await apiClient.post('/tools/mcp/info', { 
-          mcp: mcpConfig 
-        });
-        
-        setMcpInfo(response.data.mcp);
-      } catch (apiError: any) {
-        throw new Error(`Error fetching MCP info: ${apiError.message}`);
-      }
-    } catch (error: unknown) {
-      setMcpInfoError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
-      setIsLoadingMCPInfo(false);
-    }
-  }, [mcpCode]);
-
-  // Reset mcpInfo when MCP configuration is removed
-  const handleRemoveMCPConfig = () => {
-    setMcpInfo(null);
-    removeMCPConfig();
-  };
 
   // Fetch MCP info when entering MCP editor mode
   useEffect(() => {
@@ -112,21 +64,7 @@ export function ToolSelector() {
       {/* Main dialog that replaces the popover */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className={`${styles.toolModalContent} sm:max-w-[600px] md:max-w-[800px] h-auto max-h-[90vh] overflow-hidden p-0`}>
-          {isAddingMCP ? (
-            <MCPEditor
-              isLoadingMCPInfo={isLoadingMCPInfo}
-              mcpInfoError={mcpInfoError}
-              mcpInfo={mcpInfo}
-              mcpCode={mcpCode}
-              setMcpCode={setMcpCode}
-              mcpError={mcpError}
-              hasSavedMCP={hasSavedMCP}
-              fetchMCPInfo={fetchMCPInfo}
-              cancelAddingMCP={cancelAddingMCP}
-              saveMCPConfig={saveMCPConfig}
-              handleRemoveMCPConfig={handleRemoveMCPConfig}
-            />
-          ) : testingTool ? (
+          {isAddingMCP ? <MCPEditor /> : testingTool ? (
             <TestToolContent 
               testingTool={testingTool} 
               cancelTesting={cancelTesting} 
