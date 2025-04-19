@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/248-update-readme-dev-steps (2025-04-19)
   - feat/245-add-a2a-logic (2025-04-14)
   - feat/241-better-ui-for-tool-select (2025-04-13)
   - feat/238-public-use-page (2025-04-11)
