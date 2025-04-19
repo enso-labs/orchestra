@@ -29,7 +29,8 @@ const initChatState = {
         tools: [] as any[],
         visualize: false,
         model: '',
-        mcp: null
+        mcp: null,
+        a2a: null
     },
     history: {
         threads: [],
@@ -260,6 +261,17 @@ export default function useChatHook() {
         }, [payload.mcp]);
     };
 
+    const useA2AEffect = () => {
+        useEffect(() => {
+            // When payload.mcp changes, update localStorage
+            if (payload.a2a) {
+                localStorage.setItem("a2a-config", JSON.stringify(payload.a2a));
+            } else {
+                localStorage.removeItem("a2a-config");
+            }
+        }, [payload.a2a]);
+    };
+
     const useFetchModelsEffect = (setSearchParams: (params: any) => void, currentModel: string) => {
         useEffect(() => {
             fetchModels(setSearchParams, currentModel);
@@ -357,5 +369,6 @@ export default function useChatHook() {
         setSelectedToolMessage,
         toolCall,
         setToolCall,
+        useA2AEffect,
     };
 }

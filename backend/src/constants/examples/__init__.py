@@ -1,15 +1,31 @@
+MCP_REQ_BODY_EXAMPLE = {
+    "mcp": {
+        "enso_mcp": {
+            "transport": "sse",
+            "url": "https://mcp.enso.sh/sse",
+            "headers": {
+                "x-mcp-key": "your_api_key"
+            }
+        }
+    }
+}
+
+A2A_REQ_BODY_EXAMPLE = {
+    "a2a": {
+        "currency_agent": {
+            "base_url": "https://a2a.enso.sh",
+            "agent_card_path": "/.well-known/agent.json"
+        }
+    }
+}
 NEW_THREAD_QUERY_EXAMPLE = {
     "system": "You are a helpful assistant.",
     "query": "What is the capital of France?",
     "model": "openai-gpt-4o",
     "tools": [],
     "images": [],
-    "mcp": {
-        "weather": {
-            "url": "http://localhost:8005/sse",
-            "transport": "sse",
-        }
-    },
+    **A2A_REQ_BODY_EXAMPLE,
+    **MCP_REQ_BODY_EXAMPLE
 }
 
 NEW_THREAD_ANSWER_EXAMPLE = {
@@ -42,27 +58,18 @@ NEW_THREAD_ANSWER_EXAMPLE = {
     }
 }
 
+
+
 EXISTING_THREAD_QUERY_EXAMPLE = {
     "query": "What about Germany?",
     "model": "openai-gpt-4o",
     "tools": [],
     "images": [],
-    "mcp": {
-        "weather": {
-            "url": "http://localhost:8005/sse",
-            "transport": "sse",
-        }
-    },
+    **A2A_REQ_BODY_EXAMPLE,
+    **MCP_REQ_BODY_EXAMPLE
 }
 
-MCP_REQ_BODY_EXAMPLE = {
-    "mcp": {
-        "enso_mcp": {
-            "transport": "sse",
-            "url": "https://mcp.enso.sh/sse"
-        }
-    }
-}
+
 
 EXISTING_THREAD_ANSWER_EXAMPLE = {
     "thread_id": "443250c4-b9ec-4dfc-96fd-0eb3ec6ccb44",
@@ -229,4 +236,47 @@ LIST_DOCUMENTS_EXAMPLE = {
             }
         }
     ]
+}
+
+A2A_GET_AGENT_CARD_EXAMPLE = {
+  "agent_cards": [
+    {
+        "name": "Currency Agent",
+        "description": "Helps with exchange rates for currencies",
+        "url": "http://0.0.0.0:10000/",
+        "provider": None,
+        "version": "1.0.0",
+        "documentationUrl": None,
+        "capabilities": {
+            "streaming": True,
+            "pushNotifications": True,
+            "stateTransitionHistory": False
+        },
+        "authentication": None,
+        "defaultInputModes": [
+            "text",
+            "text/plain"
+        ],
+        "defaultOutputModes": [
+            "text",
+            "text/plain"
+        ],
+        "skills": [
+            {
+                "id": "convert_currency",
+                "name": "Currency Exchange Rates Tool",
+                "description": "Helps with exchange values between various currencies",
+                "tags": [
+                    "currency conversion",
+                    "currency exchange"
+                ],
+                "examples": [
+                    "What is exchange rate between USD and GBP?"
+                ],
+                "inputModes": None,
+                "outputModes": None
+            }
+        ]   
+    }
+  ]
 }

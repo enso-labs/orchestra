@@ -1,104 +1,59 @@
 import { useChatContext } from "@/context/ChatContext";
 import { useToolContext } from "@/context/ToolContext";
-import { useState, useCallback, useEffect } from 'react';
-import apiClient from "@/lib/utils/apiClient";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { useState } from 'react';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import DefaultToolContent from "./DefaultToolContent";
 import ModalButton from "./ModalButton";
 import TestToolContent from "./ToolContentTest";
 import MCPEditor from "./MCPEditor";
 import styles from "./ToolSelector.module.css";
+import A2AEditor from "./A2AEditor";
 
 export function ToolSelector() {
   const { 
     payload, 
     useToolsEffect,
-    useMCPEffect
+    useMCPEffect,
+    useA2AEffect,
   } = useChatContext();
   const {
     toolsByCategory,
     filteredTools,
     clearTools,
     cancelTesting,
-    startAddingMCP,
-    cancelAddingMCP,
-    saveMCPConfig,
-    removeMCPConfig,
     testingTool,
     handleTestFormSubmit,
-    isAddingMCP,
-    mcpCode,
-    setMcpCode,
-    mcpError,
-    hasSavedMCP,
     toolFilter,
     setToolFilter,
     groupByCategory,
     setGroupByCategory,
     useLoadMCPFromPayloadEffect,
+    // MCP
+    isAddingMCP,
+    hasSavedMCP,
+    startAddingMCP,
+    useMCPInfoEffect,
+    // A2A
+    isAddingA2A,
+    hasSavedA2A,
+    startAddingA2A,
+    useA2AInfoEffect,
   } = useToolContext();
+  
 
   // Add state for modal visibility
   const [isOpen, setIsOpen] = useState(false);
 
-  // Add state for MCP info
-  const [mcpInfo, setMcpInfo] = useState<any[] | null>(null);
-  const [isLoadingMCPInfo, setIsLoadingMCPInfo] = useState(false);
-  const [mcpInfoError, setMcpInfoError] = useState<string | null>(null);
-
-  // Function to fetch MCP info
-  const fetchMCPInfo = useCallback(async () => {
-    if (!mcpCode) return;
-    
-    try {
-      setIsLoadingMCPInfo(true);
-      setMcpInfoError(null);
-      
-      let mcpConfig;
-      try {
-        mcpConfig = JSON.parse(mcpCode);
-      } catch (e) {
-        setMcpInfoError("Invalid JSON configuration");
-        return;
-      }
-      
-      try {
-        const response = await apiClient.post('/tools/mcp/info', { 
-          mcp: mcpConfig 
-        });
-        
-        setMcpInfo(response.data.mcp);
-      } catch (apiError: any) {
-        throw new Error(`Error fetching MCP info: ${apiError.message}`);
-      }
-    } catch (error: unknown) {
-      setMcpInfoError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
-      setIsLoadingMCPInfo(false);
-    }
-  }, [mcpCode]);
-
-  // Reset mcpInfo when MCP configuration is removed
-  const handleRemoveMCPConfig = () => {
-    setMcpInfo(null);
-    removeMCPConfig();
-  };
-
   // Fetch MCP info when entering MCP editor mode
-  useEffect(() => {
-    if (isAddingMCP && hasSavedMCP) {
-      fetchMCPInfo();
-    }
-  }, [isAddingMCP, hasSavedMCP, fetchMCPInfo]);
+  useMCPInfoEffect();
+  useA2AInfoEffect();
 
   // Load MCP from payload
   useLoadMCPFromPayloadEffect();
 
   const enabledCount = payload.tools?.length || 0;
 
+  useA2AEffect();
   useMCPEffect();
   useToolsEffect();
 
@@ -110,21 +65,12 @@ export function ToolSelector() {
       {/* Main dialog that replaces the popover */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className={`${styles.toolModalContent} sm:max-w-[600px] md:max-w-[800px] h-auto max-h-[90vh] overflow-hidden p-0`}>
-          {isAddingMCP ? (
-            <MCPEditor
-              isLoadingMCPInfo={isLoadingMCPInfo}
-              mcpInfoError={mcpInfoError}
-              mcpInfo={mcpInfo}
-              mcpCode={mcpCode}
-              setMcpCode={setMcpCode}
-              mcpError={mcpError}
-              hasSavedMCP={hasSavedMCP}
-              fetchMCPInfo={fetchMCPInfo}
-              cancelAddingMCP={cancelAddingMCP}
-              saveMCPConfig={saveMCPConfig}
-              handleRemoveMCPConfig={handleRemoveMCPConfig}
-            />
-          ) : testingTool ? (
+          {isAddingMCP 
+          ? <MCPEditor /> 
+          : isAddingA2A 
+          ? <A2AEditor /> 
+          : testingTool 
+          ? (
             <TestToolContent 
               testingTool={testingTool} 
               cancelTesting={cancelTesting} 
@@ -142,6 +88,8 @@ export function ToolSelector() {
               setToolFilter={setToolFilter}
               toolsByCategory={toolsByCategory}
               filteredTools={filteredTools}
+              startAddingA2A={startAddingA2A}
+              hasSavedA2A={hasSavedA2A}
             />
           )}
         </DialogContent>

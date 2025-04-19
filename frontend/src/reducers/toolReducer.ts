@@ -11,6 +11,7 @@ type ToolState = {
 	mcpCode: string;
 	mcpError: string;
 	hasSavedMCP: boolean;
+	hasSavedA2A: boolean;
 	isAssistantOpen: boolean;
 	selectedToolMessage: any | null;
 }
@@ -49,6 +50,7 @@ export const INIT_TOOL_STATE: ToolState = {
 	mcpCode: JSON.stringify(defaultMCP, null, 2),
 	mcpError: '',
 	hasSavedMCP: false,
+	hasSavedA2A: false,
 	isAssistantOpen: false,
 	selectedToolMessage: null,
 }
@@ -72,6 +74,8 @@ export const toolReducer = (state: ToolState, action: ToolAction) => {
 			return { ...state, testFormValues: action.payload };
 		case 'SET_IS_ADDING_MCP':
 			return { ...state, isAddingMCP: action.payload };
+		case 'SET_HAS_SAVED_A2A':
+			return { ...state, hasSavedA2A: action.payload };
 		case 'SET_MCP_CODE':
 			return { ...state, mcpCode: action.payload };
 		case 'SET_MCP_ERROR':
@@ -108,6 +112,9 @@ export function useToolReducer() {
 		
 		setIsAddingMCP: (value: boolean) => 
 			dispatch({ type: 'SET_IS_ADDING_MCP', payload: value }),
+		
+		setHasSavedA2A: (value: boolean) => 
+			dispatch({ type: 'SET_HAS_SAVED_A2A', payload: value }),
 		
 		setMcpCode: (code: string) => 
 			dispatch({ type: 'SET_MCP_CODE', payload: code }),

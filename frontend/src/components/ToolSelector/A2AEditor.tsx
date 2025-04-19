@@ -19,63 +19,63 @@ import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useState, useEffect } from "react";
 import { useToolContext } from "@/context/ToolContext";
 
-export function MCPEditor() {
+export function A2AEditor() {
   const {
-    mcpInfo,
-    isLoadingMCPInfo,
-    mcpInfoError,
-    fetchMCPInfo,
-    cancelAddingMCP,
-    saveMCPConfig,
-    handleRemoveMCPConfig,
-    mcpCode,
-    setMcpCode,
-    mcpError,
-    hasSavedMCP,
+    a2aInfo,
+    a2aCode,
+    setA2ACode,
+    hasSavedA2A,
+    cancelAddingA2A,
+    isLoadingA2AInfo,
+    a2aInfoError,
+    fetchA2AInfo,
+    a2aError,
+    saveA2AConfig,
+    handleRemoveA2AConfig,
   } = useToolContext();
   const [isJsonValid, setIsJsonValid] = useState(true);
   
   useEffect(() => {
     try {
-      if (mcpCode) {
-        JSON.parse(mcpCode);
+      if (a2aCode) {
+        JSON.parse(a2aCode);
         setIsJsonValid(true);
       }
     } catch (e) {
       setIsJsonValid(false);
     }
-  }, [mcpCode]);
+  }, [a2aCode]);
 
   return (
     <div className="p-6">
       <DialogHeader className="mb-6 pb-4 border-b">
         <div className="flex items-center justify-between">
           <DialogTitle className="text-xl font-semibold flex items-center">
-            {hasSavedMCP ? (
+            {hasSavedA2A ? (
               <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
             ) : null}
-            {hasSavedMCP ? "MCP Configuration" : "Add MCP Configuration"}
+            {hasSavedA2A ? "A2A Configuration" : "Add A2A Configuration"}
           </DialogTitle>
-          <DialogClose onClick={cancelAddingMCP} className="h-7 w-7 p-0 hover:bg-muted rounded-full" />
+          <DialogClose onClick={cancelAddingA2A} className="h-7 w-7 p-0 hover:bg-muted rounded-full" />
         </div>
       </DialogHeader>
       
-      {isLoadingMCPInfo ? (
+      {isLoadingA2AInfo ? (
         <div className="text-center py-8 space-y-3">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Loading MCP information...</p>
+          <p className="text-sm text-muted-foreground">Loading A2A information...</p>
         </div>
-      ) : mcpInfoError ? (
+      ) : a2aInfoError ? (
         <div className="space-y-4">
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4 mr-2" />
-            <AlertDescription>{mcpInfoError}</AlertDescription>
+            <AlertDescription>{a2aInfoError}</AlertDescription>
           </Alert>
           
           <div className="bg-muted/30 rounded-md p-1">
             <Editor
-              value={mcpCode}
-              onValueChange={code => setMcpCode(code)}
+              value={a2aCode}
+              onValueChange={code => setA2ACode(code)}
               highlight={code => highlight(code, languages.json, 'json')}
               padding={16}
               className={`${styles.editor} ${!isJsonValid ? 'border border-red-400 bg-red-50/10' : ''}`}
@@ -89,7 +89,7 @@ export function MCPEditor() {
           </div>
           
           <Button 
-            onClick={fetchMCPInfo}
+            onClick={fetchA2AInfo}
             className="mt-4"
             size="sm"
             variant="outline"
@@ -98,34 +98,59 @@ export function MCPEditor() {
             Retry
           </Button>
         </div>
-      ) : mcpInfo ? (
+      ) : a2aInfo ? (
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground flex items-center">
-            Available MCP tools:
+            Available A2A tools:
           </h3>
           
           <ScrollArea className="h-[350px] pr-3 border rounded-md bg-muted/30 p-4">
             <div className="space-y-3">
-              {mcpInfo.map((tool: any, index: number) => (
+              {a2aInfo.map((agent: any, index: number) => (
                 <div key={index} className="border rounded-md p-4 bg-card hover:shadow-sm transition-shadow">
-                  <h4 className="font-medium text-primary flex items-center justify-between">
-                    {tool.name}
-                    <Badge variant="outline" className="ml-2 text-xs">tool</Badge>
-                  </h4>
-                  <p className="text-sm text-muted-foreground mt-1">{tool.description}</p>
-                  {tool.args && Object.keys(tool.args).length > 0 && (
+                  <a href={agent.documentationUrl} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                    <h4 className="font-medium text-primary flex items-center justify-between">
+                      {agent.name}
+                      <div className="flex items-center gap-2">
+                        {agent.version && <Badge variant="secondary" className="text-xs">v{agent.version}</Badge>}
+                        <Badge variant="outline" className="text-xs">agent</Badge>
+                      </div>
+                    </h4>
+                  </a>
+                  <p className="text-sm text-muted-foreground mt-1">{agent.description}</p>
+                  
+                  {agent.skills && agent.skills.length > 0 && (
                     <div className="mt-3 pt-2 border-t border-dashed">
-                      <p className="text-xs font-medium mb-1">Arguments:</p>
-                      <ul className="text-xs space-y-1">
-                        {Object.entries(tool.args).map(([key, arg]) => (
-                          <li key={key} className="flex items-center">
-                            <span className="font-mono text-primary-foreground/80">{key}:</span> 
-                            <Badge variant="secondary" className="ml-1 text-[10px]">
-                              {(arg as any).type || 'string'}
-                            </Badge>
-                          </li>
+                      <p className="text-xs font-medium mb-1">Skills:</p>
+                      <div className="space-y-3">
+                        {agent.skills.map((skill: any) => (
+                          <div key={skill.id} className="ml-2">
+                            <p className="text-xs font-medium text-primary">{skill.name}</p>
+                            <p className="text-xs text-muted-foreground">{skill.description}</p>
+                            
+                            {skill.examples && skill.examples.length > 0 && (
+                              <div className="mt-1">
+                                <p className="text-[10px] italic text-muted-foreground">Examples:</p>
+                                <ul className="list-disc pl-4 text-xs text-muted-foreground">
+                                  {skill.examples.map((example: string, i: number) => (
+                                    <li key={i} className="text-[10px]">{example}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {skill.tags && skill.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {skill.tags.map((tag: string) => (
+                                  <Badge key={tag} variant="secondary" className="text-[10px]">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -139,9 +164,9 @@ export function MCPEditor() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <p className="text-sm text-muted-foreground mb-2 flex items-center">
-                  {hasSavedMCP 
-                    ? "Edit your MCP configuration in JSON format below." 
-                    : "Paste your MCP configuration in JSON format below."}
+                  {hasSavedA2A 
+                    ? "Edit your A2A configuration in JSON format below." 
+                    : "Paste your A2A configuration in JSON format below."}
                   <AlertCircle className="h-4 w-4 ml-1 text-muted-foreground/70" />
                 </p>
               </TooltipTrigger>
@@ -153,8 +178,8 @@ export function MCPEditor() {
           
           <div className="bg-muted/30 rounded-md p-1">
             <Editor
-              value={mcpCode}
-              onValueChange={code => setMcpCode(code)}
+              value={a2aCode}
+              onValueChange={code => setA2ACode(code)}
               highlight={code => highlight(code, languages.json, 'json')}
               padding={16}
               className={`${styles.editor} ${!isJsonValid ? 'border border-red-400 bg-red-50/10' : ''}`}
@@ -174,22 +199,22 @@ export function MCPEditor() {
             </Alert>
           )}
           
-          {mcpError && (
+          {a2aError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4 mr-2" />
-              <AlertDescription>{mcpError}</AlertDescription>
+              <AlertDescription>{a2aError}</AlertDescription>
             </Alert>
           )}
           
-          {hasSavedMCP && (
+          {hasSavedA2A && (
             <Button 
-              onClick={fetchMCPInfo}
+              onClick={fetchA2AInfo}
               className="mt-2"
               size="sm"
               variant="outline"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Fetch MCP Information
+              Fetch A2A Information
             </Button>
           )}
         </div>
@@ -199,17 +224,17 @@ export function MCPEditor() {
         <Button 
           type="button" 
           variant="outline" 
-          onClick={cancelAddingMCP}
+          onClick={cancelAddingA2A}
         >
           Cancel
         </Button>
         <Button 
           type="button" 
-          variant={hasSavedMCP ? "destructive" : "default"} 
-          onClick={hasSavedMCP ? handleRemoveMCPConfig : saveMCPConfig}
-          disabled={!isJsonValid && !hasSavedMCP}
+          variant={hasSavedA2A ? "destructive" : "default"} 
+          onClick={hasSavedA2A ? handleRemoveA2AConfig : saveA2AConfig}
+          disabled={!isJsonValid && !hasSavedA2A}
         >
-          {hasSavedMCP ? (
+          {hasSavedA2A ? (
             <>
               <X className="h-4 w-4 mr-2" />
               Remove Configuration
@@ -226,4 +251,4 @@ export function MCPEditor() {
   );
 }
 
-export default MCPEditor;
+export default A2AEditor;

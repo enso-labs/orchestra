@@ -1,6 +1,6 @@
 import { useChatContext } from '@/context/ChatContext';
 import debug from 'debug';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Wrench, Compass, Brain, Feather, Cloud, Database, 
   Search, BookOpen, Globe, Infinity, Leaf
@@ -27,28 +27,14 @@ const TOOL_ICONS: Record<string, any> = {
 
 export default function useToolHook() {
 	const { 
-		payload, 
 		setPayload, 
 		availableTools,
 		setCurrentToolCall,
 		setIsToolCallInProgress,
 	} = useChatContext();
   const {state, actions} = useToolReducer();
-  const {
-    testingTool,
-    testFormValues,
-    isAddingMCP,
-    mcpCode,
-    toolFilter,
-  } = state;
-  const {
-    setTestFormValues,
-    setTestingTool,
-    setIsAddingMCP,
-    setMcpCode,
-    setMcpError,
-    setHasSavedMCP,
-  } = actions;
+  const {testingTool, testFormValues, toolFilter} = state;
+  const {setTestFormValues, setTestingTool, setHasSavedA2A} = actions;
   const [isAssistantOpen,] = useState(INIT_TOOL_STATE.isAssistantOpen);
 
 	const clearTools = () => {
@@ -105,63 +91,6 @@ export default function useToolHook() {
 
   const cancelTesting = () => {
     setTestingTool(null);
-  };
-
-  const startAddingMCP = () => {
-    setIsAddingMCP(true);
-  };
-
-  const cancelAddingMCP = () => {
-    setIsAddingMCP(false);
-    setMcpError('');
-    
-    // Reset the editor to the current payload MCP if one exists
-    if (payload.mcp) {
-      setMcpCode(JSON.stringify(payload.mcp, null, 2));
-    } else {
-      setMcpCode(INIT_TOOL_STATE.mcpCode);
-    }
-  };
-
-  const saveMCPConfig = () => {
-    try {
-      // Validate JSON
-      const parsedConfig = JSON.parse(mcpCode);
-      
-      // Update payload
-      setPayload((prev: { mcp: any; }) => ({
-        ...prev,
-        mcp: parsedConfig
-      }));
-      
-      // Update state to show config is saved
-      setHasSavedMCP(true);
-      
-      // Clear any previous errors
-      setMcpError('');
-      
-    } catch (e) {
-      setMcpError('Invalid JSON format. Please check your configuration.');
-    }
-  };
-  
-  const removeMCPConfig = () => {
-    // Remove from payload
-    setPayload((prev: { mcp: any; }) => {
-      const { mcp, ...rest } = prev;
-      return rest;
-    });
-    
-    // Update state
-    setHasSavedMCP(false);
-    
-    // Reset to default
-    setMcpCode(INIT_TOOL_STATE.mcpCode);
-    
-    // If removing while in edit mode, we'll keep it open
-    if (!isAddingMCP) {
-      setIsAddingMCP(false);
-    }
   };
 
   // Filter tools based on search input
@@ -234,19 +163,9 @@ export default function useToolHook() {
     }
   };
 
-	const useLoadMCPFromPayloadEffect = () => {
-		useEffect(() => {
-			if (payload.mcp) {
-				setMcpCode(JSON.stringify(payload.mcp, null, 2));
-				setHasSavedMCP(true);
-			}
-			return () => {
-				setMcpCode(INIT_TOOL_STATE.mcpCode);
-				setHasSavedMCP(false);
-			}
-			
-		}, [payload.mcp]);
-	}
+  const startAddingA2A = () => {
+    setHasSavedA2A(true);
+  };
 
 	return {
     ...state,
@@ -257,17 +176,13 @@ export default function useToolHook() {
 		testTool,
 		handleInputChange,
 		cancelTesting,
-		startAddingMCP,
-		cancelAddingMCP,
-		saveMCPConfig,
-		removeMCPConfig,
 		toggleTool,
 		handleTestFormSubmit,
+    startAddingA2A,
 		// computed
 		filteredTools,
 		toolsByCategory,
 		// effects
-		useLoadMCPFromPayloadEffect,
 		TOOL_ICONS,
 	}
 }
