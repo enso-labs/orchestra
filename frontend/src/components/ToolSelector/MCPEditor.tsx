@@ -106,7 +106,7 @@ export function MCPEditor() {
           
           <ScrollArea className="h-[350px] pr-3 border rounded-md bg-muted/30 p-4">
             <div className="space-y-3">
-              {mcpInfo.map((tool, index) => (
+              {mcpInfo.map((tool: any, index: number) => (
                 <div key={index} className="border rounded-md p-4 bg-card hover:shadow-sm transition-shadow">
                   <h4 className="font-medium text-primary flex items-center justify-between">
                     {tool.name}
