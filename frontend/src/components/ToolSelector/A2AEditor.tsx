@@ -30,8 +30,8 @@ export function A2AEditor() {
     a2aInfoError,
     fetchA2AInfo,
     a2aError,
-    removeA2AConfig,
     saveA2AConfig,
+    handleRemoveA2AConfig,
   } = useToolContext();
   const [isJsonValid, setIsJsonValid] = useState(true);
   
@@ -231,7 +231,7 @@ export function A2AEditor() {
         <Button 
           type="button" 
           variant={hasSavedA2A ? "destructive" : "default"} 
-          onClick={hasSavedA2A ? removeA2AConfig : saveA2AConfig}
+          onClick={hasSavedA2A ? handleRemoveA2AConfig : saveA2AConfig}
           disabled={!isJsonValid && !hasSavedA2A}
         >
           {hasSavedA2A ? (

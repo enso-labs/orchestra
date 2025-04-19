@@ -13,7 +13,8 @@ export function ToolSelector() {
   const { 
     payload, 
     useToolsEffect,
-    useMCPEffect
+    useMCPEffect,
+    useA2AEffect,
   } = useChatContext();
   const {
     toolsByCategory,
@@ -36,6 +37,7 @@ export function ToolSelector() {
     isAddingA2A,
     hasSavedA2A,
     startAddingA2A,
+    useA2AInfoEffect,
   } = useToolContext();
   
 
@@ -44,12 +46,14 @@ export function ToolSelector() {
 
   // Fetch MCP info when entering MCP editor mode
   useMCPInfoEffect();
+  useA2AInfoEffect();
 
   // Load MCP from payload
   useLoadMCPFromPayloadEffect();
 
   const enabledCount = payload.tools?.length || 0;
 
+  useA2AEffect();
   useMCPEffect();
   useToolsEffect();
 

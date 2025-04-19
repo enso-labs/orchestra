@@ -1,7 +1,7 @@
 import { useChatContext } from '@/context/ChatContext';
 import apiClient from '@/lib/utils/apiClient';
 import debug from 'debug';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 debug.enable('hooks:*');
 // const logger = debug('hooks:useMcpHook');
@@ -120,6 +120,21 @@ export default function useA2AHook() {
 			setIsAddingA2A(false);
 		}
 	};
+
+	// Reset mcpInfo when MCP configuration is removed
+  const handleRemoveA2AConfig = () => {
+    setA2aInfo(null);
+    removeA2AConfig();
+  };
+
+	const useA2AInfoEffect = () => {
+		// Fetch MCP info when entering MCP editor mode
+		useEffect(() => {
+			if (isAddingA2A && hasSavedA2A) {
+				fetchA2AInfo();
+			}
+		}, [isAddingA2A, hasSavedA2A, fetchA2AInfo]);
+	}
 	
 
 	return {
@@ -142,6 +157,9 @@ export default function useA2AHook() {
 		cancelAddingA2A,
 		saveA2AConfig,
 		removeA2AConfig,
+		handleRemoveA2AConfig,
 		fetchA2AInfo,
+		// Effects
+		useA2AInfoEffect,
 	}
 }
