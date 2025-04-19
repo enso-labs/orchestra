@@ -104,7 +104,8 @@ async def list_mcp_info(
 ### List A2A Info
 ################################################################################
 from src.utils.a2a import A2ACardResolver, A2AClient
-    
+from src.entities.a2a import A2AServers
+
 @router.post(
     "/tools/a2a/info", 
     tags=[TAG],
@@ -120,24 +121,24 @@ from src.utils.a2a import A2ACardResolver, A2AClient
     }
 )
 async def get_a2a_agent_card(
-    body: dict[str, A2AServer]
+    body: A2AServers
 ):
     try:
         results = []
         
-        if not body.servers:
+        if not body.a2a:
             return JSONResponse(
                 content={'error': 'No A2A servers or A2A config found'},
                 status_code=status.HTTP_400_BAD_REQUEST
             )
             
-        for server in body.servers:
+        for server_name, server in body.a2a.items():
             try:
-                a2a_card_resolver = A2ACardResolver(server["base_url"], server["agent_card_path"])
+                a2a_card_resolver = A2ACardResolver(server.base_url, server.agent_card_path)
                 agent_card = a2a_card_resolver.get_agent_card()
                 results.append(agent_card.model_dump())
             except Exception as server_error:
-                results.append({"error": str(server_error), "base_url": server["base_url"]})
+                results.append({"error": str(server_error), "base_url": server.base_url})
                 
         return JSONResponse(
             content={'agent_cards': results},

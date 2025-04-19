@@ -1,6 +1,7 @@
 import { useChatContext } from '@/context/ChatContext';
+import apiClient from '@/lib/utils/apiClient';
 import debug from 'debug';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 debug.enable('hooks:*');
 // const logger = debug('hooks:useMcpHook');
@@ -32,6 +33,38 @@ export default function useA2AHook() {
   const [isLoadingA2AInfo, setIsLoadingA2AInfo] = useState(INIT_A2A_STATE.isLoadingA2AInfo);
   const [a2aInfoError, setA2aInfoError] = useState<string | null>(INIT_A2A_STATE.a2aInfoError);
 
+	// Function to fetch MCP info
+	const fetchA2AInfo = useCallback(async () => {
+		if (!a2aCode) return;
+		
+		try {
+			setIsLoadingA2AInfo(true);
+			setA2aInfoError(null);
+			
+			let a2aConfig;
+			try {
+				a2aConfig = JSON.parse(a2aCode);
+			} catch (e) {
+				setA2aInfoError("Invalid JSON configuration");
+				return;
+			}
+			
+			try {
+				const response = await apiClient.post('/tools/a2a/info', { 
+					a2a: a2aConfig 
+				});
+				
+				setA2aInfo(response.data.agent_cards);
+			} catch (apiError: any) {
+				throw new Error(`Error fetching A2A info: ${apiError.message}`);
+			}
+		} catch (error: unknown) {
+			setA2aInfoError(error instanceof Error ? error.message : 'An unknown error occurred');
+		} finally {
+			setIsLoadingA2AInfo(false);
+		}
+	}, [a2aCode])
+	
 	const startAddingA2A = () => {
     setIsAddingA2A(true);
   };
@@ -109,5 +142,6 @@ export default function useA2AHook() {
 		cancelAddingA2A,
 		saveA2AConfig,
 		removeA2AConfig,
+		fetchA2AInfo,
 	}
 }

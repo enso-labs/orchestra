@@ -106,26 +106,51 @@ export function A2AEditor() {
           
           <ScrollArea className="h-[350px] pr-3 border rounded-md bg-muted/30 p-4">
             <div className="space-y-3">
-              {a2aInfo.map((tool: any, index: number) => (
+              {a2aInfo.map((agent: any, index: number) => (
                 <div key={index} className="border rounded-md p-4 bg-card hover:shadow-sm transition-shadow">
-                  <h4 className="font-medium text-primary flex items-center justify-between">
-                    {tool.name}
-                    <Badge variant="outline" className="ml-2 text-xs">tool</Badge>
-                  </h4>
-                  <p className="text-sm text-muted-foreground mt-1">{tool.description}</p>
-                  {tool.args && Object.keys(tool.args).length > 0 && (
+                  <a href={agent.documentationUrl} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                    <h4 className="font-medium text-primary flex items-center justify-between">
+                      {agent.name}
+                      <div className="flex items-center gap-2">
+                        {agent.version && <Badge variant="secondary" className="text-xs">v{agent.version}</Badge>}
+                        <Badge variant="outline" className="text-xs">agent</Badge>
+                      </div>
+                    </h4>
+                  </a>
+                  <p className="text-sm text-muted-foreground mt-1">{agent.description}</p>
+                  
+                  {agent.skills && agent.skills.length > 0 && (
                     <div className="mt-3 pt-2 border-t border-dashed">
-                      <p className="text-xs font-medium mb-1">Arguments:</p>
-                      <ul className="text-xs space-y-1">
-                        {Object.entries(tool.args).map(([key, arg]) => (
-                          <li key={key} className="flex items-center">
-                            <span className="font-mono text-primary-foreground/80">{key}:</span> 
-                            <Badge variant="secondary" className="ml-1 text-[10px]">
-                              {(arg as any).type || 'string'}
-                            </Badge>
-                          </li>
+                      <p className="text-xs font-medium mb-1">Skills:</p>
+                      <div className="space-y-3">
+                        {agent.skills.map((skill: any) => (
+                          <div key={skill.id} className="ml-2">
+                            <p className="text-xs font-medium text-primary">{skill.name}</p>
+                            <p className="text-xs text-muted-foreground">{skill.description}</p>
+                            
+                            {skill.examples && skill.examples.length > 0 && (
+                              <div className="mt-1">
+                                <p className="text-[10px] italic text-muted-foreground">Examples:</p>
+                                <ul className="list-disc pl-4 text-xs text-muted-foreground">
+                                  {skill.examples.map((example: string, i: number) => (
+                                    <li key={i} className="text-[10px]">{example}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {skill.tags && skill.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {skill.tags.map((tag: string) => (
+                                  <Badge key={tag} variant="secondary" className="text-[10px]">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
                 </div>
