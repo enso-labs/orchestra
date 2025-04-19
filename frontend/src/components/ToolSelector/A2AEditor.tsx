@@ -17,34 +17,22 @@ import styles from "./ToolSelector.module.css";
 import 'prismjs/components/prism-json';
 import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useState, useEffect } from "react";
+import { useToolContext } from "@/context/ToolContext";
 
-interface A2AEditorProps {
-  isLoadingA2AInfo: boolean;
-  a2aInfoError: string | null;
-  a2aInfo: any[] | null;
-  a2aCode: string;
-  setA2aCode: (code: string) => void;
-  a2aError: string | null;
-  hasSavedA2A: boolean;
-  fetchA2AInfo: () => void;
-  cancelAddingA2A: () => void;
-  saveA2AConfig: () => void;
-  handleRemoveA2AConfig: () => void;
-}
-
-export function A2AEditor({
-  isLoadingA2AInfo,
-  a2aInfoError,
-  a2aInfo,
-  a2aCode,
-  setA2aCode,
-  a2aError,
-  hasSavedA2A,
-  fetchA2AInfo,
-  cancelAddingA2A,
-  saveA2AConfig,
-  handleRemoveA2AConfig
-}: A2AEditorProps) {
+export function A2AEditor() {
+  const {
+    a2aInfo,
+    a2aCode,
+    setA2ACode,
+    hasSavedA2A,
+    cancelAddingA2A,
+    isLoadingA2AInfo,
+    a2aInfoError,
+    fetchA2AInfo,
+    a2aError,
+    removeA2AConfig,
+    saveA2AConfig,
+  } = useToolContext();
   const [isJsonValid, setIsJsonValid] = useState(true);
   
   useEffect(() => {
@@ -66,7 +54,7 @@ export function A2AEditor({
             {hasSavedA2A ? (
               <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
             ) : null}
-            {hasSavedA2A ? "A2A Configuration" : "Add A2A Configuration"}
+            {hasSavedA2A ? "MCP Configuration" : "Add MCP Configuration"}
           </DialogTitle>
           <DialogClose onClick={cancelAddingA2A} className="h-7 w-7 p-0 hover:bg-muted rounded-full" />
         </div>
@@ -75,7 +63,7 @@ export function A2AEditor({
       {isLoadingA2AInfo ? (
         <div className="text-center py-8 space-y-3">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Loading A2A information...</p>
+          <p className="text-sm text-muted-foreground">Loading MCP information...</p>
         </div>
       ) : a2aInfoError ? (
         <div className="space-y-4">
@@ -87,7 +75,7 @@ export function A2AEditor({
           <div className="bg-muted/30 rounded-md p-1">
             <Editor
               value={a2aCode}
-              onValueChange={code => setA2aCode(code)}
+              onValueChange={code => setA2ACode(code)}
               highlight={code => highlight(code, languages.json, 'json')}
               padding={16}
               className={`${styles.editor} ${!isJsonValid ? 'border border-red-400 bg-red-50/10' : ''}`}
@@ -118,7 +106,7 @@ export function A2AEditor({
           
           <ScrollArea className="h-[350px] pr-3 border rounded-md bg-muted/30 p-4">
             <div className="space-y-3">
-              {a2aInfo.map((tool, index) => (
+              {a2aInfo.map((tool: any, index: number) => (
                 <div key={index} className="border rounded-md p-4 bg-card hover:shadow-sm transition-shadow">
                   <h4 className="font-medium text-primary flex items-center justify-between">
                     {tool.name}
@@ -158,7 +146,7 @@ export function A2AEditor({
                 </p>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-xs max-w-xs">A2A configuration allows for agent-to-agent communication.</p>
+                <p className="text-xs max-w-xs">MCP configuration enables tools like shell commands, web scraping, and search functionalities.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -166,7 +154,7 @@ export function A2AEditor({
           <div className="bg-muted/30 rounded-md p-1">
             <Editor
               value={a2aCode}
-              onValueChange={code => setA2aCode(code)}
+              onValueChange={code => setA2ACode(code)}
               highlight={code => highlight(code, languages.json, 'json')}
               padding={16}
               className={`${styles.editor} ${!isJsonValid ? 'border border-red-400 bg-red-50/10' : ''}`}
@@ -218,7 +206,7 @@ export function A2AEditor({
         <Button 
           type="button" 
           variant={hasSavedA2A ? "destructive" : "default"} 
-          onClick={hasSavedA2A ? handleRemoveA2AConfig : saveA2AConfig}
+          onClick={hasSavedA2A ? removeA2AConfig : saveA2AConfig}
           disabled={!isJsonValid && !hasSavedA2A}
         >
           {hasSavedA2A ? (
@@ -238,4 +226,4 @@ export function A2AEditor({
   );
 }
 
-export default A2AEditor; 
+export default A2AEditor;
