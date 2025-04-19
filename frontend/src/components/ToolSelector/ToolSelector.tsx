@@ -1,6 +1,6 @@
 import { useChatContext } from "@/context/ChatContext";
 import { useToolContext } from "@/context/ToolContext";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import DefaultToolContent from "./DefaultToolContent";
 import ModalButton from "./ModalButton";
