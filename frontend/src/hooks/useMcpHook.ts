@@ -28,10 +28,10 @@ export default function useMcpHook() {
 	const [mcpInfo, setMcpInfo] = useState(INIT_MCP_STATE.mcpInfo);
 	const [mcpCode, setMcpCode] = useState(INIT_MCP_STATE.mcpCode);
 	const [mcpError, setMcpError] = useState(INIT_MCP_STATE.mcpError);
-	const [isLoadingMCPInfo, setIsLoadingMCPInfo] = useState(INIT_MCP_STATE.isLoadingMCPInfo);
-  const [mcpInfoError, setMcpInfoError] = useState<string | null>(INIT_MCP_STATE.mcpInfoError);
 	const [isAddingMCP, setIsAddingMCP] = useState(INIT_MCP_STATE.isAddingMCP);
 	const [hasSavedMCP, setHasSavedMCP] = useState(INIT_MCP_STATE.hasSavedMCP);
+	const [isLoadingMCPInfo, setIsLoadingMCPInfo] = useState(INIT_MCP_STATE.isLoadingMCPInfo);
+  const [mcpInfoError, setMcpInfoError] = useState<string | null>(INIT_MCP_STATE.mcpInfoError);
 
 	const fetchMCPInfo = useCallback(async () => {
     if (!mcpCode) return;

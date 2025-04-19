@@ -5,8 +5,8 @@ import useMcpHook from "@/hooks/useMcpHook";
 export const ToolContext = createContext({});
 
 export default function ToolProvider({ children }: { children: React.ReactNode }) {
-    const toolHooks = useToolHook();
     const mcpHooks = useMcpHook();
+    const toolHooks = useToolHook();
     
     return (    
         <ToolContext.Provider value={{ ...toolHooks, ...mcpHooks }}>
