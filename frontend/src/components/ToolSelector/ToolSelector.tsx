@@ -1,10 +1,7 @@
 import { useChatContext } from "@/context/ChatContext";
 import { useToolContext } from "@/context/ToolContext";
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import DefaultToolContent from "./DefaultToolContent";
 import ModalButton from "./ModalButton";
 import TestToolContent from "./ToolContentTest";
@@ -22,31 +19,28 @@ export function ToolSelector() {
     filteredTools,
     clearTools,
     cancelTesting,
-    startAddingMCP,
     testingTool,
     handleTestFormSubmit,
-    isAddingMCP,
-    fetchMCPInfo,
-    hasSavedMCP,
     toolFilter,
     setToolFilter,
     groupByCategory,
     setGroupByCategory,
     useLoadMCPFromPayloadEffect,
     startAddingA2A,
-    hasSavedA2A
+    hasSavedA2A,
+    // MCP
+    isAddingMCP,
+    hasSavedMCP,
+    startAddingMCP,
+    useMCPInfoEffect,
   } = useToolContext();
+  
 
   // Add state for modal visibility
   const [isOpen, setIsOpen] = useState(false);
 
-
   // Fetch MCP info when entering MCP editor mode
-  useEffect(() => {
-    if (isAddingMCP && hasSavedMCP) {
-      fetchMCPInfo();
-    }
-  }, [isAddingMCP, hasSavedMCP, fetchMCPInfo]);
+  useMCPInfoEffect();
 
   // Load MCP from payload
   useLoadMCPFromPayloadEffect();

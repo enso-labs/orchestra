@@ -17,34 +17,22 @@ import styles from "./ToolSelector.module.css";
 import 'prismjs/components/prism-json';
 import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useState, useEffect } from "react";
+import { useToolContext } from "@/context/ToolContext";
 
-interface MCPEditorProps {
-  isLoadingMCPInfo: boolean;
-  mcpInfoError: string | null;
-  mcpInfo: any[] | null;
-  mcpCode: string;
-  setMcpCode: (code: string) => void;
-  mcpError: string | null;
-  hasSavedMCP: boolean;
-  fetchMCPInfo: () => void;
-  cancelAddingMCP: () => void;
-  saveMCPConfig: () => void;
-  handleRemoveMCPConfig: () => void;
-}
-
-export function MCPEditor({
-  isLoadingMCPInfo,
-  mcpInfoError,
-  mcpInfo,
-  mcpCode,
-  setMcpCode,
-  mcpError,
-  hasSavedMCP,
-  fetchMCPInfo,
-  cancelAddingMCP,
-  saveMCPConfig,
-  handleRemoveMCPConfig
-}: MCPEditorProps) {
+export function MCPEditor() {
+  const {
+    mcpInfo,
+    isLoadingMCPInfo,
+    mcpInfoError,
+    fetchMCPInfo,
+    cancelAddingMCP,
+    saveMCPConfig,
+    handleRemoveMCPConfig,
+    mcpCode,
+    setMcpCode,
+    mcpError,
+    hasSavedMCP,
+  } = useToolContext();
   const [isJsonValid, setIsJsonValid] = useState(true);
   
   useEffect(() => {

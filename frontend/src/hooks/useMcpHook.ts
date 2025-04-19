@@ -14,7 +14,7 @@ const defaultMCP = {
 }
 
 const INIT_MCP_STATE = {
-	mcpInfo: [],
+	mcpInfo: null,
 	mcpCode: JSON.stringify(defaultMCP, null, 2),
 	mcpError: '',
 	isLoadingMCPInfo: false,
@@ -25,42 +25,45 @@ const INIT_MCP_STATE = {
 
 export default function useMcpHook() {
 	const { payload, setPayload } = useChatContext();
-	const [mcpInfo, setMcpInfo] = useState(INIT_MCP_STATE.mcpInfo);
 	const [mcpCode, setMcpCode] = useState(INIT_MCP_STATE.mcpCode);
 	const [mcpError, setMcpError] = useState(INIT_MCP_STATE.mcpError);
 	const [isAddingMCP, setIsAddingMCP] = useState(INIT_MCP_STATE.isAddingMCP);
 	const [hasSavedMCP, setHasSavedMCP] = useState(INIT_MCP_STATE.hasSavedMCP);
-	const [isLoadingMCPInfo, setIsLoadingMCPInfo] = useState(INIT_MCP_STATE.isLoadingMCPInfo);
+	const [mcpInfo, setMcpInfo] = useState<any[] | null>(INIT_MCP_STATE.mcpInfo);
+  const [isLoadingMCPInfo, setIsLoadingMCPInfo] = useState(INIT_MCP_STATE.isLoadingMCPInfo);
   const [mcpInfoError, setMcpInfoError] = useState<string | null>(INIT_MCP_STATE.mcpInfoError);
 
+	// Function to fetch MCP info
 	const fetchMCPInfo = useCallback(async () => {
-    if (!mcpCode) return;
-
-    try {
-      setIsLoadingMCPInfo(true);
-      setMcpInfoError(null);
-      
-      let mcpConfig;
-      try {
-        mcpConfig = JSON.parse(mcpCode);
-      } catch (e) {
-        setMcpInfoError("Invalid JSON configuration");
-        return;
-      }
-      
-      try {
-        const response = await apiClient.post('/tools/mcp/info', { mcp: mcpConfig });
-        
-        setMcpInfo(response.data.mcp);
-      } catch (apiError: any) {
-        throw new Error(`Error fetching MCP info: ${apiError.message}`);
-      }
-    } catch (error: unknown) {
-      setMcpInfoError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
-      setIsLoadingMCPInfo(false);
-    }
-  }, [mcpCode]);
+		if (!mcpCode) return;
+		
+		try {
+			setIsLoadingMCPInfo(true);
+			setMcpInfoError(null);
+			
+			let mcpConfig;
+			try {
+				mcpConfig = JSON.parse(mcpCode);
+			} catch (e) {
+				setMcpInfoError("Invalid JSON configuration");
+				return;
+			}
+			
+			try {
+				const response = await apiClient.post('/tools/mcp/info', { 
+					mcp: mcpConfig 
+				});
+				
+				setMcpInfo(response.data.mcp);
+			} catch (apiError: any) {
+				throw new Error(`Error fetching MCP info: ${apiError.message}`);
+			}
+		} catch (error: unknown) {
+			setMcpInfoError(error instanceof Error ? error.message : 'An unknown error occurred');
+		} finally {
+			setIsLoadingMCPInfo(false);
+		}
+	}, [mcpCode])
 
 	const startAddingMCP = () => {
     setIsAddingMCP(true);
@@ -135,9 +138,18 @@ export default function useMcpHook() {
 
 	// Reset mcpInfo when MCP configuration is removed
   const handleRemoveMCPConfig = () => {
-    setMcpInfo([]);
+    setMcpInfo(null);
     removeMCPConfig();
   };
+
+	const useMCPInfoEffect = () => {
+		// Fetch MCP info when entering MCP editor mode
+		useEffect(() => {
+			if (isAddingMCP && hasSavedMCP) {
+				fetchMCPInfo();
+			}
+		}, [isAddingMCP, hasSavedMCP, fetchMCPInfo]);
+	}
     
 	return {
 		mcpInfo,
@@ -162,6 +174,7 @@ export default function useMcpHook() {
 		removeMCPConfig,
 		// Effects
 		useLoadMCPFromPayloadEffect,
+		useMCPInfoEffect,
 		handleRemoveMCPConfig
 	}
 }
