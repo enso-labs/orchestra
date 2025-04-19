@@ -54,7 +54,7 @@ export function A2AEditor() {
             {hasSavedA2A ? (
               <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
             ) : null}
-            {hasSavedA2A ? "MCP Configuration" : "Add MCP Configuration"}
+            {hasSavedA2A ? "A2A Configuration" : "Add A2A Configuration"}
           </DialogTitle>
           <DialogClose onClick={cancelAddingA2A} className="h-7 w-7 p-0 hover:bg-muted rounded-full" />
         </div>
@@ -63,7 +63,7 @@ export function A2AEditor() {
       {isLoadingA2AInfo ? (
         <div className="text-center py-8 space-y-3">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground">Loading MCP information...</p>
+          <p className="text-sm text-muted-foreground">Loading A2A information...</p>
         </div>
       ) : a2aInfoError ? (
         <div className="space-y-4">

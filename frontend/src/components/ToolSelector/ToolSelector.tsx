@@ -7,6 +7,7 @@ import ModalButton from "./ModalButton";
 import TestToolContent from "./ToolContentTest";
 import MCPEditor from "./MCPEditor";
 import styles from "./ToolSelector.module.css";
+import A2AEditor from "./A2AEditor";
 
 export function ToolSelector() {
   const { 
@@ -26,13 +27,15 @@ export function ToolSelector() {
     groupByCategory,
     setGroupByCategory,
     useLoadMCPFromPayloadEffect,
-    startAddingA2A,
-    hasSavedA2A,
     // MCP
     isAddingMCP,
     hasSavedMCP,
     startAddingMCP,
     useMCPInfoEffect,
+    // A2A
+    isAddingA2A,
+    hasSavedA2A,
+    startAddingA2A,
   } = useToolContext();
   
 
@@ -58,7 +61,12 @@ export function ToolSelector() {
       {/* Main dialog that replaces the popover */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className={`${styles.toolModalContent} sm:max-w-[600px] md:max-w-[800px] h-auto max-h-[90vh] overflow-hidden p-0`}>
-          {isAddingMCP ? <MCPEditor /> : testingTool ? (
+          {isAddingMCP 
+          ? <MCPEditor /> 
+          : isAddingA2A 
+          ? <A2AEditor /> 
+          : testingTool 
+          ? (
             <TestToolContent 
               testingTool={testingTool} 
               cancelTesting={cancelTesting} 
