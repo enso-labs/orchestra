@@ -1,15 +1,9 @@
-site_name: Thread Agent
+site_name: Enso Labs - Cloud ☁️
 site_dir: src/public/docs
 docs_dir: ../docs
 use_directory_urls: false
 nav:
   - Home: /docs/
-  - Deploy:
-    - DigitalOcean: deploy/digitalocean.md
-    # - Docker: deploy/docker.md
-    # - Kubernetes: deploy/kubernetes.md
-    # - AWS: deploy/aws.md
-    - AWS RDS: deploy/aws-rds.md
   - Tools:
     - Shell Local: tools/shell_local.md
     - Shell Docker: tools/shell_docker.md
@@ -25,14 +19,14 @@ theme:
     - mkdocstrings
   palette:
     - scheme: default
-      primary: indigo
-      accent: indigo
+      primary: black
+      accent: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: white
+      accent: white
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
