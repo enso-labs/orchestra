@@ -4,8 +4,7 @@ Details support Enso Cloud tools. The below information should provide the user 
 
 ## Table of Contents
 
-- [Enso](./tools.md)
-- [MCP](./mcp)
-- [A2A](./a2a)
-<!-- - [Shell Local Commands](shell_local.md) - Run shell commands locally
-- [Shell Docker Commands](shell_docker.md) - Run shell commands in Docker containers -->
+- [Search](./search.md)
+- [Shell](./shell_exec.md)
+- [MCP](./mcp.md)
+- [A2A](./a2a.md)

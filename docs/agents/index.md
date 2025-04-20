@@ -1,3 +1,3 @@
-# Agent-to-Agent (A2A)
+# Agents
 
 Description coming soon...

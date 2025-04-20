@@ -1,3 +1,3 @@
-# Agent-to-Agent (A2A)
+# Settings
 
 Description coming soon...

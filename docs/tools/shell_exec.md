@@ -1,10 +1,15 @@
 # shell_exec
+
+> *Note:* Recommended to deploy your own `shell_exec` and configure its environment variable in Settings. 
+
 The `shell_exec` is a function that allows running shell commands. It accepts a list of strings, where each string represents a command to be executed.
 
 ### Parameters
+
 - `commands`: A list of strings, each representing a shell command to be executed.
 
 ### Usage
+
 ```python
 from langchain_core.tools import tool
 from langchain_core.tools import ToolException
@@ -40,6 +45,7 @@ async def shell_exec(commands: list[str]):
 ```
 
 # Docker Compose Configuration
+
 The project uses Docker Compose to manage the containerized environment. Below is the configuration:
 
 ```yaml
