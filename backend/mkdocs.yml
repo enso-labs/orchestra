@@ -5,8 +5,11 @@ use_directory_urls: false
 nav:
   - Home: /docs/
   - Tools:
-    - Shell Local: tools/shell_local.md
-    - Shell Docker: tools/shell_docker.md
+    - Overview: tools/tools.md
+    - MCP: tools/mcp.md
+    - A2A: tools/a2a.md
+    - Shell Execution: tools/shell_exec.md
+    - Retrieval: tools/retrieval.md
   - API: /api
 theme:
   name: material
