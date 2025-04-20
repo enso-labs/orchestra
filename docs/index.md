@@ -10,7 +10,7 @@ The goal of Enso is the enrich the lives of the curious. Those who seek to buy b
 
 ## Quick Start
 
-![Landing Page](./assets/landing-page-light.gif)
+![Landing Page](https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true)
 
 ## Core Features
 

@@ -8,7 +8,7 @@ Composable AI Agents built on LangGraph and powered by the [MCP](https://github.
 <a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
 <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
 
-<img src="./docs/assets//landing-page-light.gif">
+<img src="https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true">
 
 </div>
 
