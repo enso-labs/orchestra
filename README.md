@@ -4,11 +4,11 @@
 
 Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A)
 
-<p align="center">
-	<a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
-  <a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
-	<a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
-</p>
+<a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
+<a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
+<a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
+
+<img src="./docs/assets//landing-page-light.gif">
 
 </div>
 
