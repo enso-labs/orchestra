@@ -8,23 +8,26 @@ Base API infrastructure for Composable AI Agents built on LangGraph and powered 
 
 The goal of Enso is the enrich the lives of the curious. Those who seek to buy back their time and compound their personal growth. Those who build and don't wait for IT to be built for them.
 
-## Quick Start
-
-Coming Soon...
+![Landing Page](https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true)
 
 ## Core Features
 
-### RAG Document Management
-The application provides comprehensive document management capabilities through the following endpoints:
+### Agents
 
-### AI Agent Tooling
-The system includes various tools for:  
-
-- Shell command execution
-- Docker container management
-- File processing and document handling
+Enso Cloud provides basic tooling, as well as support for MCP and A2A protocols.
 
 For detailed information about available tools, see the [Tools Documentation](tools/tools.md).
+
+### RAG
+
+Documentation coming soon...
+
+*See API Docs in meantime [https://demo.enso.sh/api](https://demo.enso.sh/api)*
+
+- Document Creation
+- Index Creation
+- Index Options & Filtering
+- Example Queries & Responses 
 
 ## Contact
 
