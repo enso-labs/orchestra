@@ -16,9 +16,12 @@ The goal of Enso is the enrich the lives of the curious. Those who seek to buy b
 
 Enso Cloud provides basic tooling, as well as support for MCP and A2A protocols.
 
+- [Agent-2-Agent (A2A)](./tools/a2a.md)
+- [Model Context Protocol (MCP)](./tools/mcp.md)
+
 For detailed information about available tools, see the [Tools Documentation](tools/tools.md).
 
-### RAG
+### Retrieval Document Management (RDM... jk, I just made that up.)
 
 Documentation coming soon...
 

@@ -40,6 +40,26 @@ See this [permalink](https://github.com/enso-labs/mcp-sse/blob/caa79bee4af4914d7
 
 ## Example [API Usage](https://demo.enso.sh/api#/Thread/Create_New_Thread_api_threads_post):
 
+#### GET MCP server information
+
+```bash
+curl -X 'POST' \
+  'https://demo.enso.sh/api/tools/mcp/info' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "mcp": {
+    "enso_mcp": {
+      "headers": {
+        "x-mcp-key": "your_api_key"
+      },
+      "transport": "sse",
+      "url": "https://mcp.enso.sh/sse"
+    }
+  }
+}'
+```
+
 #### Request: `Create New Thread`
 
 ```bash
