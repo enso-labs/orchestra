@@ -21,7 +21,7 @@ Enso Cloud provides basic tooling, as well as support for MCP and A2A protocols.
 
 For detailed information about available tools, see the [Tools Documentation](tools/tools.md).
 
-### Retrieval Document Management (RDM... jk, I just made that up.)
+### Retrieval Document Management
 
 Documentation coming soon...
 
