@@ -21,7 +21,7 @@ nav:
     - Search: tools/search.md
     - Shell: tools/shell_exec.md
     - MCP: tools/mcp.md
-    # - A2A: tools/a2a.md
+    - A2A: tools/a2a.md
     
   - API: /api
 theme:
