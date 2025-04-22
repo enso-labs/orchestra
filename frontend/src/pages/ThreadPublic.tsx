@@ -44,7 +44,9 @@ export default function ThreadPublic() {
     currentToolCall,
     setCurrentToolCall,
     currentModel,
-    setSelectedToolMessage
+    setSelectedToolMessage,
+    setMessages,
+    setPayload
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -104,7 +106,11 @@ export default function ThreadPublic() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <ChatNav
             onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            onNewChat={() => navigate('/')}
+            onNewChat={() => {
+              setMessages([]);
+              setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
+              navigate('/');
+            }}
           />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
