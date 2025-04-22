@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/258-user-can-create-server-config (2025-04-22)
   - feat/256-servers-table (2025-04-21)
   - feat/250-update-docs (2025-04-20)
   - feat/248-update-readme-dev-steps (2025-04-19)
