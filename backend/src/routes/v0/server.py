@@ -81,8 +81,12 @@ async def get_servers(
     if type:
         query = query.filter(Server.type == type)
     
-    result = await db.execute(query)
-    total = len(result.all())
+    # Count total servers first
+    from sqlalchemy import func
+    count_query = select(func.count()).select_from(Server).filter(Server.user_id == user.id)
+    if type:
+        count_query = count_query.filter(Server.type == type)
+    total = await db.scalar(count_query)
     
     query = query.offset(offset).limit(limit)
     result = await db.execute(query)
@@ -104,23 +108,29 @@ async def get_public_servers(
     offset: int = Query(0, ge=0),
 ):
     """Get a list of publicly shared servers."""
-    query = select(Server).filter(Server.public == True)
-    
+    # Use direct boolean check rather than `== True`
+    query = select(Server).filter(Server.public)
     if type:
         query = query.filter(Server.type == type)
-    
-    result = await db.execute(query)
-    total = len(result.all())
-    
+    # Count total servers first without fetching all rows
+    from sqlalchemy import func
+    count_query = (
+        select(func.count())
+        .select_from(Server)
+        .filter(Server.public)
+    )
+    if type:
+        count_query = count_query.filter(Server.type == type)
+    total = await db.scalar(count_query)
+    # Now apply paging and fetch the actual rows
     query = query.offset(offset).limit(limit)
     result = await db.execute(query)
     servers = result.scalars().all()
-    
     return {
         "servers": [ServerResponse(**server.to_dict()) for server in servers],
         "total": total,
         "limit": limit,
-        "offset": offset
+        "offset": offset,
     }
 
 

@@ -47,8 +47,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Drop servers table
-    op.drop_index('servers_type_idx', table_name='servers')
-    op.drop_index('servers_public_idx', table_name='servers')
-    op.drop_index('servers_slug_idx', table_name='servers')
-    op.drop_index('servers_user_id_idx', table_name='servers')
     op.drop_table('servers') 
