@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs';
-import { AlertCircle, RefreshCw, ServerIcon, CheckCircleIcon } from "lucide-react";
+import { AlertCircle, RefreshCw, ServerIcon, CheckCircleIcon, PlusIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import styles from "@/components/ToolSelector/ToolSelector.module.css";
@@ -21,20 +21,35 @@ const mcpServers = config.filter(server => server.type === "mcp");
 const ConfigCard = ({ item, onClick, isSelected }: { item: any, onClick?: () => void, isSelected: boolean }) => {
   return (
     <div 
-      className={`border rounded-lg shadow-sm p-3 cursor-pointer transition-all ${
-        isSelected ? 'border-blue-500 bg-blue-50/20 ring-1 ring-blue-300' : 'hover:border-blue-300 hover:shadow'
+      className={`border rounded-lg shadow-sm p-3 transition-all ${
+        isSelected ? 'border-blue-500 ring-1 ring-blue-300' : 'hover:border-blue-300 hover:shadow'
       }`}
-      onClick={onClick}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center">
           <ServerIcon className="mr-2 text-blue-600" size={16} />
-          <h3 className="font-medium">{item.name}</h3>
+          <a 
+            href={item.documentation_url} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="font-medium hover:text-blue-600"
+          >
+            {item.name}
+          </a>
         </div>
-        {isSelected && <CheckCircleIcon className="text-blue-600" size={16} />}
+        <div 
+          onClick={onClick}
+          className="cursor-pointer transition-all"
+        >
+          {isSelected ? (
+            <CheckCircleIcon className="text-blue-600 transition-opacity duration-200" size={16} />
+          ) : (
+            <PlusIcon className="text-gray-400 hover:text-blue-600 transition-colors duration-200" size={16} />
+          )}
+        </div>
       </div>
-      <p className="text-xs text-gray-600 mb-2">{item.description}</p>
-      <div className="flex justify-between text-xs text-gray-500 mt-2">
+      <p className="text-xs text-gray-400 mb-2">{item.description}</p>
+      <div className="flex justify-between text-xs text-gray-300 mt-2">
         <span>Type: {item.type}</span>
         {item.public && <span>Public</span>}
       </div>
@@ -80,7 +95,7 @@ function MCPInput({ isJsonValid }: { isJsonValid: boolean }) {
         // If already exists, remove it
         const { [selectedConfig.slug as string]: removed, ...rest } = currentConfig as Record<string, any>;
         setMcpCode(Object.keys(rest).length > 0 ? JSON.stringify(rest, null, 2) : '{}');
-      } else if (typeof selectedConfig.slug === 'string') {
+      } else if (typeof selectedConfig.slug === 'string') { 
         // Add or update the selected config using the slug as the key
         const updatedConfig = {
           ...currentConfig,
