@@ -7,6 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import styles from "@/components/ToolSelector/ToolSelector.module.css";
 import { useToolContext } from "@/context/ToolContext";
 
+// import 'prismjs/components/prism-json';
+// import 'highlight.js/styles/github-dark-dimmed.min.css';
+
 /**
  * Displays a tooltip and an editor for MCP configuration.
  */
