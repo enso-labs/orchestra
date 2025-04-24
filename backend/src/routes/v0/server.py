@@ -326,52 +326,50 @@ async def validate_server_config(
     # Validate configuration based on server type
     if server_data.type == "mcp":
         # MCP server validation
-        for key, config in server_data.config.items():
-            if not isinstance(config, dict):
-                errors.append({
-                    "field": f"config.{key}",
-                    "message": "Configuration must be an object"
-                })
-                continue
-            
-            if "transport" not in config:
-                errors.append({
-                    "field": f"config.{key}.transport",
-                    "message": "Transport is required"
-                })
-            elif config["transport"] not in ["sse", "websocket", "http"]:
-                errors.append({
-                    "field": f"config.{key}.transport",
-                    "message": "Transport must be one of: sse, websocket, http"
-                })
-            
-            if "url" not in config:
-                errors.append({
-                    "field": f"config.{key}.url",
-                    "message": "URL is required"
-                })
+        config = server_data.config
+        if not isinstance(config, dict):
+            errors.append({
+                "field": "config",
+                "message": "Configuration must be an object"
+            })
+        
+        if "transport" not in config:
+            errors.append({
+                "field": "config.transport",
+                "message": "Transport is required"
+            })
+        elif config["transport"] not in ["sse"]:
+            errors.append({
+                "field": "config.transport",
+                "message": "Transport must be one of: sse"
+            })
+        
+        if "url" not in config:
+            errors.append({
+                "field": "config.url",
+                "message": "URL is required"
+            })
     
     elif server_data.type == "a2a":
         # A2A server validation
-        for key, config in server_data.config.items():
-            if not isinstance(config, dict):
-                errors.append({
-                    "field": f"config.{key}",
-                    "message": "Configuration must be an object"
-                })
-                continue
+        config = server_data.config
+        if not isinstance(config, dict):
+            errors.append({
+                "field": "config",
+                "message": "Configuration must be an object"
+            })
             
-            if "base_url" not in config:
-                errors.append({
-                    "field": f"config.{key}.base_url",
-                    "message": "Base URL is required"
-                })
+        if "base_url" not in config:
+            errors.append({
+                "field": "config.base_url",
+                "message": "Base URL is required"
+            })
             
-            if "agent_card_path" not in config:
-                errors.append({
-                    "field": f"config.{key}.agent_card_path",
-                    "message": "Agent card path is required"
-                })
+        if "agent_card_path" not in config:
+            errors.append({
+                "field": "config.agent_card_path",
+                "message": "Agent card path is required"
+            })
     
     # Documentation validation - no specific requirements yet
     
