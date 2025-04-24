@@ -37,7 +37,7 @@ export const ServerForm = ({ onSubmit, onChange, initialData }: { onSubmit: (for
     setFormData(newFormData)
     onChange?.(newFormData)
   }
-  const handleHeaderChange = (index: number, key: string, value: string) => {
+  const handleHeaderChange = (key: string, value: string) => {
     const newFormData = {
       ...formData,
       config: {
