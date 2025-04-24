@@ -350,8 +350,8 @@ class Agent:
                         f"Agent Card: {card.model_dump_json()}"
                     )
                     tool = StructuredTool.from_function(coroutine=send_task)
-                    # tool.name = card.name.lower().replace(" ", "_")
-                    tool.name = key
+                    tool.name = card.name.lower().replace(" ", "_")
+                    # tool.name = key + "_" + card.name.lower().replace(" ", "_")
                     # tool.description = card.description
                     self.tools.append(tool)
         

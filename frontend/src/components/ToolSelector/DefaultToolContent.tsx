@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import MCPIcon from "../icons/MCPIcon";
 
 /**
  * Default Tool Content
@@ -146,7 +147,7 @@ const DefaultToolContent = ({
                     {hasSavedMCP ? (
                       <Settings className="h-4 w-4" />
                     ) : (
-                      <PlusCircle className="h-4 w-4" />
+                      <MCPIcon />
                     )}
                     {hasSavedMCP && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full" />

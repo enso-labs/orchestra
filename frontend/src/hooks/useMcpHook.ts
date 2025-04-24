@@ -85,26 +85,26 @@ export default function useMcpHook() {
   };
 
 	const saveMCPConfig = () => {
-    try {
-      // Validate JSON
-      const parsedConfig = JSON.parse(mcpCode);
-      
-      // Update payload
-      setPayload((prev: { mcp: any; }) => ({
-        ...prev,
-        mcp: parsedConfig
-      }));
-      
-      // Update state to show config is saved
-      setHasSavedMCP(true);
-      
-      // Clear any previous errors
-      setMcpError('');
-      
-    } catch (e) {
-      setMcpError('Invalid JSON format. Please check your configuration.');
-    }
-  };
+		try {
+			// Validate JSON
+			const parsedConfig = JSON.parse(mcpCode);
+			
+			// Update payload
+			setPayload((prev: { mcp: any; }) => ({
+				...prev,
+				mcp: parsedConfig
+			}));
+			
+			// Update state to show config is saved
+			setHasSavedMCP(true);
+			
+			// Clear any previous errors
+			setMcpError('');
+		
+		} catch (e) {
+			setMcpError('Invalid JSON format. Please check your configuration.');
+		}
+	};
 
 	const removeMCPConfig = () => {
     // Remove from payload
@@ -112,6 +112,9 @@ export default function useMcpHook() {
       const { mcp, ...rest } = prev;
       return rest;
     });
+
+    // Remove from localStorage
+    localStorage.removeItem("config:mcp");
     
     // Update state
     setHasSavedMCP(false);
