@@ -6,14 +6,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import styles from "@/components/ToolSelector/ToolSelector.module.css";
 import { useToolContext } from "@/context/ToolContext";
-import { config } from "../../../../mock/config";
 import { useMemo } from "react";
 
 // import 'prismjs/components/prism-json';
 // import 'highlight.js/styles/github-dark-dimmed.min.css';
 
 // Filter only MCP type servers
-const mcpServers = config.filter(server => server.type === "mcp");
+// const mcpServers = config.filter(server => server.type === "mcp");
 
 /**
  * Template card component for the left column
@@ -67,7 +66,11 @@ function MCPInput({ isJsonValid }: { isJsonValid: boolean }) {
     setMcpCode,
     mcpError,
     fetchMCPInfo,
+    mcpServers,
+    useMCPServersEffect,
   } = useToolContext();
+
+  useMCPServersEffect();
 
   // Extract currently selected server slugs from mcpCode
   const selectedSlugs = useMemo(() => {
@@ -132,7 +135,7 @@ function MCPInput({ isJsonValid }: { isJsonValid: boolean }) {
         <div className="bg-muted/30 rounded-md p-3 h-[250px] md:h-[400px] overflow-auto">
           <h3 className="text-sm font-medium mb-3">MCP Templates</h3>
           <div className="space-y-3">
-            {mcpServers.map((item) => (
+            {mcpServers.map((item: any) => (
               <ConfigCard 
                 key={item.id} 
                 item={item} 

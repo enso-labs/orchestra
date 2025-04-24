@@ -2,6 +2,7 @@ import debug from 'debug';
 import apiClient from '@/lib/utils/apiClient';
 import { useCallback, useEffect, useState } from 'react';
 import { useChatContext } from '@/context/ChatContext';
+import { listPublicServers } from '@/services/serverService';
 
 debug.enable('hooks:*');
 // const logger = debug('hooks:useMcpHook');
@@ -21,10 +22,12 @@ const INIT_MCP_STATE = {
 	mcpInfoError: null,
 	isAddingMCP: false,
 	hasSavedMCP: false,
+	mcpServers: [],
 }
 
 export default function useMcpHook() {
 	const { payload, setPayload } = useChatContext();
+	const [mcpServers, setMcpServers] = useState<any[] | null>(INIT_MCP_STATE.mcpServers);
 	const [mcpCode, setMcpCode] = useState(INIT_MCP_STATE.mcpCode);
 	const [mcpError, setMcpError] = useState(INIT_MCP_STATE.mcpError);
 	const [isAddingMCP, setIsAddingMCP] = useState(INIT_MCP_STATE.isAddingMCP);
@@ -122,6 +125,11 @@ export default function useMcpHook() {
     }
   };
 
+	const fetchMCPServers = async () => {
+		const response = await listPublicServers();
+		setMcpServers(response.data.servers);
+	}
+
 	const useLoadMCPFromPayloadEffect = () => {
 		useEffect(() => {
 			if (payload.mcp) {
@@ -150,6 +158,12 @@ export default function useMcpHook() {
 			}
 		}, [isAddingMCP, hasSavedMCP, fetchMCPInfo]);
 	}
+
+	const useMCPServersEffect = () => {
+		useEffect(() => {
+			fetchMCPServers();
+		}, []);
+	}
     
 	return {
 		mcpInfo,
@@ -166,6 +180,8 @@ export default function useMcpHook() {
 		setHasSavedMCP,
 		mcpError,
 		setMcpError,
+		mcpServers,
+		setMcpServers,
 		// Actions
 		fetchMCPInfo,
 		startAddingMCP,
@@ -175,6 +191,7 @@ export default function useMcpHook() {
 		// Effects
 		useLoadMCPFromPayloadEffect,
 		useMCPInfoEffect,
-		handleRemoveMCPConfig
+		handleRemoveMCPConfig,
+		useMCPServersEffect,
 	}
 }
