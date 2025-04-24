@@ -6,13 +6,13 @@ import { useChatContext } from '@/context/ChatContext';
 debug.enable('hooks:*');
 // const logger = debug('hooks:useMcpHook');
 
-const defaultMCP = {
-  "enso_basic": {
-    "transport": "sse",
-    "url": "https://mcp.enso.sh/sse"
-  }
-}
-
+// const defaultMCP = {
+//   "enso_basic": {
+//     "transport": "sse",
+//     "url": "https://mcp.enso.sh/sse"
+//   }
+// }
+const defaultMCP = {}
 const INIT_MCP_STATE = {
 	mcpInfo: null,
 	mcpCode: JSON.stringify(defaultMCP, null, 2),
