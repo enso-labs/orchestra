@@ -11,6 +11,8 @@ import { PresetPopover } from "../popovers/PresetPopover"
 import useAppHook from "@/hooks/useAppHook"
 import { useLocation } from "react-router-dom"
 import { useNavigate } from "react-router-dom"
+import SearchButton from "../buttons/SearchButton"
+import { TOKEN_NAME } from "@/config"
 
 export default function ChatInput() {
   
@@ -145,10 +147,11 @@ export default function ChatInput() {
               )}
             </>
           )}
+          <SearchButton />
           {currentModel?.metadata?.tool_calling && (
             <ToolSelector />
           )}
-          {settings.length > 0 && (
+          {localStorage.getItem(TOKEN_NAME) && (
             <PresetPopover />
           )}
         </div>

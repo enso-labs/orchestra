@@ -60,3 +60,7 @@ def attach_tool_details(tool):
     # elif tool['id'] == "get_stock_price" or tool['id'] == "get_stock_info" or tool['id'] == "get_stock_news" or tool['id'] == "get_stock_history" or tool['id'] == "get_stock_dividends" or tool['id'] == "get_stock_actions" or tool['id'] == "get_stock_financials" or tool['id'] == "get_stock_recommendations" or tool['id'] == "get_stock_holders":
     #     tool['tags'] = ["finance"]  
     return tool
+
+def get_a2a_tools(config: dict):
+    
+    return config.get('a2a', {}).values()
