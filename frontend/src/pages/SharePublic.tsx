@@ -59,7 +59,7 @@ export default function ThreadPublic() {
       }
     }
 
-    fetchThread()
+    fetchThread();
   }, [threadId])
 
   return (

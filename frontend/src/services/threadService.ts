@@ -26,7 +26,7 @@ const getSystemPrompt = (previousSystemPrompt?: string) => {
 
 export const findThread = async (threadId: string) => {
   try {
-    const response = await apiClient.get(`/thread/${threadId}`);
+    const response = await apiClient.get(`/threads/${threadId}`);
     return response;
   } catch (error: any) {
     console.error('Error finding thread:', error);

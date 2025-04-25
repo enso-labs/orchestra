@@ -7,8 +7,9 @@ import ChatInput from "@/components/inputs/ChatInput"
 import DefaultTool from "@/components/tools/Default"
 import SearchEngineTool from "@/components/tools/SearchEngine"
 import { findToolCall } from "@/lib/utils/format"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import ChatMessages from "@/components/lists/ChatMessages"
+import { findThread } from "@/services/threadService"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
   if (selectedToolMessage) return (
@@ -26,6 +27,7 @@ function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
 
 export default function ThreadPublic() {
   const navigate = useNavigate();
+  const { threadId } = useParams();
   const {
     messages,
     payload,
@@ -35,11 +37,12 @@ export default function ThreadPublic() {
     setCurrentToolCall,
     setSelectedToolMessage,
     setMessages,
-    setPayload
+    setPayload,
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
+  const [, setLoading] = useState(false)
 
   const [, setCurrentThreadId] = useState<string | null>(null)
 
@@ -80,6 +83,29 @@ export default function ThreadPublic() {
     prevThreadIdRef.current = payload.threadId
     setCurrentThreadId(payload.threadId || null)
   }, [payload.threadId])
+
+  // Fetch thread data from API when component mounts
+  useEffect(() => {
+    const fetchThread = async () => {
+      if (threadId) {
+        setLoading(true)
+        try {
+          const response = await findThread(threadId)
+          if (response?.data) {
+            // Set thread data in context
+            setMessages(response.data.messages || [])
+            setPayload((prev: any) => ({ ...prev, threadId: threadId }))
+          }
+        } catch (error) {
+          console.error("Error fetching thread:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchThread();
+  }, [threadId])
 
   return (
     <ChatLayout>
