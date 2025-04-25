@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { ArrowUp, Plus } from "lucide-react"
+import { ArrowUp, Globe, Plus, Wrench } from "lucide-react"
 import ToolSelector from "@/components/ToolSelector"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
@@ -11,6 +11,7 @@ import { PresetPopover } from "../popovers/PresetPopover"
 import useAppHook from "@/hooks/useAppHook"
 import { useLocation } from "react-router-dom"
 import { useNavigate } from "react-router-dom"
+import SearchButton from "../buttons/SearchButton"
 
 export default function ChatInput() {
   
@@ -145,6 +146,7 @@ export default function ChatInput() {
               )}
             </>
           )}
+          <SearchButton />
           {currentModel?.metadata?.tool_calling && (
             <ToolSelector />
           )}
