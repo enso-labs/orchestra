@@ -2,37 +2,18 @@ import ChatLayout from "../layouts/ChatLayout"
 import { useChatContext } from "../context/ChatContext"
 import { useEffect, useRef, useState } from "react"
 import { ChatNav } from "@/components/nav/ChatNav"
-import { ChatDrawer } from "@/components/drawers/ChatDrawer"
-import ChatInput from "@/components/inputs/ChatInput"
-import DefaultTool from "@/components/tools/Default"
-import SearchEngineTool from "@/components/tools/SearchEngine"
 import { findToolCall } from "@/lib/utils/format"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import ChatMessages from "@/components/lists/ChatMessages"
-
-function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
-  if (selectedToolMessage) return (
-    <>
-      {selectedToolMessage.name === 'search_engine' ? (
-        <SearchEngineTool selectedToolMessage={selectedToolMessage} />
-      ) : selectedToolMessage.name === 'available_tools' ? (
-        <DefaultTool selectedToolMessage={selectedToolMessage} />
-      ) : (
-        <DefaultTool selectedToolMessage={selectedToolMessage} />
-      )}
-    </>
-  )
-}
+import { findThread } from "@/services/threadService"
 
 export default function ThreadPublic() {
   const navigate = useNavigate();
+  const { threadId } = useParams();
   const {
     messages,
-    payload,
     isToolCallInProgress,
-    setIsToolCallInProgress,
     currentToolCall,
-    setCurrentToolCall,
     setSelectedToolMessage,
     setMessages,
     setPayload
@@ -40,8 +21,7 @@ export default function ThreadPublic() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
-
-  const [, setCurrentThreadId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -59,27 +39,28 @@ export default function ThreadPublic() {
     }
   }, [isToolCallInProgress, currentToolCall])
 
-  const handleDrawerClose = () => {
-    setIsAssistantOpen(false)
-    setSelectedToolMessage(null)
-    setIsToolCallInProgress(false)
-    setCurrentToolCall(null)
-  }
-
-  const prevThreadIdRef = useRef()
-
+  // Fetch thread data from API when component mounts
   useEffect(() => {
-    // Only perform the check if we have a previous value
-    if (prevThreadIdRef.current !== undefined) {
-      if (payload.threadId && payload.threadId !== prevThreadIdRef.current) {
-        handleDrawerClose()
+    const fetchThread = async () => {
+      if (threadId) {
+        setLoading(true)
+        try {
+          const response = await findThread(threadId)
+          if (response?.data) {
+            // Set thread data in context
+            setMessages(response.data.messages || [])
+            setPayload((prev: any) => ({ ...prev, threadId: threadId }))
+          }
+        } catch (error) {
+          console.error("Error fetching thread:", error)
+        } finally {
+          setLoading(false)
+        }
       }
     }
 
-    // Update the ref and state
-    prevThreadIdRef.current = payload.threadId
-    setCurrentThreadId(payload.threadId || null)
-  }, [payload.threadId])
+    fetchThread()
+  }, [threadId])
 
   return (
     <ChatLayout>
@@ -102,23 +83,17 @@ export default function ThreadPublic() {
           />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
-              <ChatMessages messages={messages} />
+              {loading ? (
+                <div className="flex justify-center p-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <ChatMessages messages={messages} />
+              )}
               <div ref={messagesEndRef} /> {/* Invisible element to scroll to */}
             </div>
           </div>
-
-          <div className="sticky bottom-0 bg-background border-border">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex flex-col gap-2 p-4 pb-25">
-                <ChatInput />
-              </div>
-            </div>
-          </div>
         </div>
-
-        <ChatDrawer isOpen={isAssistantOpen} onClose={handleDrawerClose}>
-          {currentToolCall && <ToolAction selectedToolMessage={currentToolCall} />}
-        </ChatDrawer>
       </div>
     </ChatLayout>
   )

@@ -5,11 +5,13 @@ from fastapi.responses import JSONResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.repos.thread_repo import ThreadRepo
+from src.constants import DB_URI
 from src.repos.user_repo import UserRepo
 from src.services.db import get_async_db
 from src.entities import Thread, Threads
 from src.utils.agent import Agent
-from src.utils.auth import verify_credentials
+from src.utils.auth import get_optional_user, verify_credentials
 from src.models import ProtectedUser, User
 from src.utils.logger import logger
 from src.services.db import get_async_connection_pool, get_connection_pool
@@ -75,22 +77,40 @@ async def list_threads(
         }
     }
 )
-def find_thread(
+async def find_thread(
     thread_id: str,
-    username: str = Depends(verify_credentials)
+    user: ProtectedUser = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_async_db)
 ):
-    with get_connection_pool() as pool:
-        agent = Agent(config={"thread_id": thread_id})
-        checkpoint = agent.checkpoint()
-        response = Thread(
-            thread_id=thread_id, 
-            messages=checkpoint.get('channel_values').get('messages')
-        )
-        return JSONResponse(
-            content=response.model_dump(),
-            status_code=status.HTTP_200_OK
-        )
-        
+    try:
+        thread_repo = ThreadRepo(db)
+        thread: Thread = await thread_repo.find_by_id(thread_id)
+        async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer: 
+            config = {"configurable": {"thread_id": thread_id, "user_id": "", "checkpoint_ns": ""}}
+            # Allow anonymous users to access threads without a user association
+            # Reject if an anonymous user tries to access a thread owned by a user
+            if thread and thread.user and not user:
+                raise HTTPException(status_code=403, detail="You are not authorized to access this thread.")
+            # Reject if an authenticated user tries to access a thread they don't own
+            if user and thread and thread.user and str(thread.user) != user.id:
+                raise HTTPException(status_code=403, detail="You are not authorized to access this thread.")
+            checkpoint = await checkpointer.aget(config)
+            response = Thread(
+                thread_id=thread_id, 
+                messages=checkpoint.get('channel_values').get('messages'),
+                ts=checkpoint.get('ts'),
+                v=checkpoint.get('v')
+            )
+            return JSONResponse(
+                content=response.model_dump(),
+                status_code=status.HTTP_200_OK
+            )
+    except Exception as e:
+        logger.exception(f"Error finding thread: {e}")
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+    
 ################################################################################
 ### Query Thread History
 ################################################################################

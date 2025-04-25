@@ -20,6 +20,7 @@ import CreateAgent from '@/pages/CreateAgent';
 import AgentUpdate from '@/pages/AgentUpdate';
 import ThreadPublic from '@/pages/ThreadPublic';
 import { CreateServer } from '@/pages/CreateServer';
+import SharePublic from '@/pages/SharePublic';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -56,6 +57,14 @@ const AppRoutes: React.FC = () => {
             element={
               <PublicRoute>
                 <ThreadPublic />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="share/:threadId" 
+            element={
+              <PublicRoute>
+                <SharePublic />
               </PublicRoute>
             } 
           />
