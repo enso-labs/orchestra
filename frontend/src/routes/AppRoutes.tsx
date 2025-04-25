@@ -21,6 +21,7 @@ import AgentUpdate from '@/pages/AgentUpdate';
 import ThreadPublic from '@/pages/ThreadPublic';
 import { CreateServer } from '@/pages/CreateServer';
 import SharePublic from '@/pages/SharePublic';
+import DocMCPServer from '@/pages/DocMCPServer';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -65,6 +66,14 @@ const AppRoutes: React.FC = () => {
             element={
               <PublicRoute>
                 <SharePublic />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="server/:serverSlug" 
+            element={
+              <PublicRoute>
+                <DocMCPServer />
               </PublicRoute>
             } 
           />
