@@ -22,7 +22,6 @@ export default function DocMCPServer() {
 
 	useEffect(() => {
 		if (server) {
-			console.log(server);
 			fetchServerInfo();
 		}
 	}, [server]);
@@ -50,7 +49,11 @@ export default function DocMCPServer() {
 					</div>
 				)}
 
-				{mcpInfo && <MCPInfo />}
+				{mcpInfo && (
+					<div className="max-w-3xl mx-auto px-4 py-6">
+						<MCPInfo />
+					</div>
+				)}
 			</main>
 		</NoAuthLayout>
 	);
