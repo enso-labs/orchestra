@@ -54,7 +54,7 @@ export function AgentThreadHistoryDrawer({ isOpen, onClose }: AgentThreadHistory
                   alt="Logo" 
                   className="w-6 h-6 rounded-full" 
                 />
-                <h1 className="text-2xl font-bold text-foreground">Enso</h1>
+                <h1 className="text-2xl font-bold text-foreground">Ensō</h1>
               </Link>
           </div>
 

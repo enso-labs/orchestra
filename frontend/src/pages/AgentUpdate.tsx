@@ -195,7 +195,7 @@ export default function AgentUpdate() {
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-lg font-medium">New Enso</h1>
+              <h1 className="text-lg font-medium">New Ensō</h1>
               <p className="text-xs text-muted-foreground">• Draft</p>
             </div>
             <div className="ml-auto">

@@ -114,9 +114,9 @@ export default function ThreadPublic() {
           />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
-              {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
+              {/* {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
                 <SystemMessageCard content={payload.system} />
-              )}
+              )} */}
               <ChatMessages messages={messages} />
               <div ref={messagesEndRef} /> {/* Invisible element to scroll to */}
             </div>

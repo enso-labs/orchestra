@@ -8,6 +8,8 @@ import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 import { constructSystemPrompt } from '@/lib/utils/format';
 import { useChatReducer } from '@/reducers/chatReducer';
+import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
+
 const KEY_NAME = 'config:mcp';
 
 debug.enable('hooks:*');
@@ -25,7 +27,7 @@ const initChatState = {
         threadId: '',
         images: [] as string[],
         query: '',
-        system: 'You are a helpful assistant.',
+        system: DEFAULT_SYSTEM_PROMPT,
         tools: [] as any[],
         visualize: false,
         model: '',
