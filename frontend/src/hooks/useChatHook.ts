@@ -8,7 +8,7 @@ import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 import { constructSystemPrompt } from '@/lib/utils/format';
 import { useChatReducer } from '@/reducers/chatReducer';
-const KEY_NAME = 'mcp-config';
+const KEY_NAME = 'config:mcp';
 
 debug.enable('hooks:*');
 const logger = debug('hooks:useChatHook');
@@ -252,11 +252,16 @@ export default function useChatHook() {
 
     const useMCPEffect = () => {
         useEffect(() => {
+            // Check if mcp payload is not set and set it from localStorage if it exists
+            if (!payload.mcp) {
+                const storedMCP = localStorage.getItem(KEY_NAME);
+                if (storedMCP) {
+                    setPayload((prev: any) => ({ ...prev, mcp: JSON.parse(storedMCP) }));
+                }
+            } 
             // When payload.mcp changes, update localStorage
-            if (payload.mcp) {
+            else {
                 localStorage.setItem(KEY_NAME, JSON.stringify(payload.mcp));
-            } else {
-                localStorage.removeItem(KEY_NAME);
             }
         }, [payload.mcp]);
     };

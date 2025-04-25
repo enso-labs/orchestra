@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import SearchEngineTool from "../tools/SearchEngine";
 import DefaultTool from "../tools/Default";
 import { useToolContext } from "@/context/ToolContext";
+import { truncateFrom } from "@/lib/utils/format";
 
 
 
@@ -47,7 +48,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 									"border rounded-lg overflow-hidden",
 									renderTool(index) 
 										? "w-full bg-muted/50 shadow-sm" 
-										: "w-[200px] bg-transparent"
+										: "min-w-[100px] max-w-[250px] bg-transparent"
 								)}
 							>
 								<Button
@@ -62,7 +63,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 								>
 									<div className="flex items-center gap-2">
 										<Wrench className="h-4 w-4" />
-										<span className="truncate">{message.name}</span>
+										<span className="truncate">{truncateFrom(message.name, "end", "...", 20)}</span>
 									</div>
 									<span
 										className={cn(

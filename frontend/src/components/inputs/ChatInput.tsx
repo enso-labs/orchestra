@@ -16,7 +16,7 @@ import { TOKEN_NAME } from "@/config"
 
 export default function ChatInput() {
   
-  const { payload, handleQuery, setPayload, currentModel, settings } = useChatContext();
+  const { payload, handleQuery, setPayload, currentModel } = useChatContext();
   const { isMobile } = useAppHook();
   const navigate = useNavigate();
   const location = useLocation();

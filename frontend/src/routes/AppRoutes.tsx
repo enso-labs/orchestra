@@ -19,6 +19,7 @@ import AgentChat from '@/pages/AgentChat';
 import CreateAgent from '@/pages/CreateAgent';
 import AgentUpdate from '@/pages/AgentUpdate';
 import ThreadPublic from '@/pages/ThreadPublic';
+import { CreateServer } from '@/pages/CreateServer';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -92,6 +93,14 @@ const AppRoutes: React.FC = () => {
           element={
             <PrivateRoute>
               <CreateAgent />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/create-server"
+          element={
+            <PrivateRoute>
+              <CreateServer />
             </PrivateRoute>
           }
         />

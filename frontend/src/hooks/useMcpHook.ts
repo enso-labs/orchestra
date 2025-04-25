@@ -2,17 +2,18 @@ import debug from 'debug';
 import apiClient from '@/lib/utils/apiClient';
 import { useCallback, useEffect, useState } from 'react';
 import { useChatContext } from '@/context/ChatContext';
+import { listPublicServers } from '@/services/serverService';
 
 debug.enable('hooks:*');
 // const logger = debug('hooks:useMcpHook');
 
-const defaultMCP = {
-  "enso_basic": {
-    "transport": "sse",
-    "url": "https://mcp.enso.sh/sse"
-  }
-}
-
+// const defaultMCP = {
+//   "enso_basic": {
+//     "transport": "sse",
+//     "url": "https://mcp.enso.sh/sse"
+//   }
+// }
+const defaultMCP = {}
 const INIT_MCP_STATE = {
 	mcpInfo: null,
 	mcpCode: JSON.stringify(defaultMCP, null, 2),
@@ -21,10 +22,12 @@ const INIT_MCP_STATE = {
 	mcpInfoError: null,
 	isAddingMCP: false,
 	hasSavedMCP: false,
+	mcpServers: [],
 }
 
 export default function useMcpHook() {
 	const { payload, setPayload } = useChatContext();
+	const [mcpServers, setMcpServers] = useState<any[] | null>(INIT_MCP_STATE.mcpServers);
 	const [mcpCode, setMcpCode] = useState(INIT_MCP_STATE.mcpCode);
 	const [mcpError, setMcpError] = useState(INIT_MCP_STATE.mcpError);
 	const [isAddingMCP, setIsAddingMCP] = useState(INIT_MCP_STATE.isAddingMCP);
@@ -82,26 +85,26 @@ export default function useMcpHook() {
   };
 
 	const saveMCPConfig = () => {
-    try {
-      // Validate JSON
-      const parsedConfig = JSON.parse(mcpCode);
-      
-      // Update payload
-      setPayload((prev: { mcp: any; }) => ({
-        ...prev,
-        mcp: parsedConfig
-      }));
-      
-      // Update state to show config is saved
-      setHasSavedMCP(true);
-      
-      // Clear any previous errors
-      setMcpError('');
-      
-    } catch (e) {
-      setMcpError('Invalid JSON format. Please check your configuration.');
-    }
-  };
+		try {
+			// Validate JSON
+			const parsedConfig = JSON.parse(mcpCode);
+			
+			// Update payload
+			setPayload((prev: { mcp: any; }) => ({
+				...prev,
+				mcp: parsedConfig
+			}));
+			
+			// Update state to show config is saved
+			setHasSavedMCP(true);
+			
+			// Clear any previous errors
+			setMcpError('');
+		
+		} catch (e) {
+			setMcpError('Invalid JSON format. Please check your configuration.');
+		}
+	};
 
 	const removeMCPConfig = () => {
     // Remove from payload
@@ -109,6 +112,9 @@ export default function useMcpHook() {
       const { mcp, ...rest } = prev;
       return rest;
     });
+
+    // Remove from localStorage
+    localStorage.removeItem("config:mcp");
     
     // Update state
     setHasSavedMCP(false);
@@ -121,6 +127,11 @@ export default function useMcpHook() {
       setIsAddingMCP(false);
     }
   };
+
+	const fetchMCPServers = async () => {
+		const response = await listPublicServers();
+		setMcpServers(response.data.servers);
+	}
 
 	const useLoadMCPFromPayloadEffect = () => {
 		useEffect(() => {
@@ -150,6 +161,12 @@ export default function useMcpHook() {
 			}
 		}, [isAddingMCP, hasSavedMCP, fetchMCPInfo]);
 	}
+
+	const useMCPServersEffect = () => {
+		useEffect(() => {
+			fetchMCPServers();
+		}, []);
+	}
     
 	return {
 		mcpInfo,
@@ -166,6 +183,8 @@ export default function useMcpHook() {
 		setHasSavedMCP,
 		mcpError,
 		setMcpError,
+		mcpServers,
+		setMcpServers,
 		// Actions
 		fetchMCPInfo,
 		startAddingMCP,
@@ -175,6 +194,7 @@ export default function useMcpHook() {
 		// Effects
 		useLoadMCPFromPayloadEffect,
 		useMCPInfoEffect,
-		handleRemoveMCPConfig
+		handleRemoveMCPConfig,
+		useMCPServersEffect,
 	}
 }

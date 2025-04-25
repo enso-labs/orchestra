@@ -36,13 +36,13 @@ async def lifespan(app: FastAPI):
     pass
 
 app = FastAPI(
-    title="Enso by Prompt Engineers AI 🤖",
+    title="Enso 🤖",
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. " 
         "It allows you to create new threads, query existing threads, "
         "and get the history of a thread.\n Check out the repo on "
-        f"<a href='https://github.com/ryaneggz/langgraph-template'>Github</a>"
+        f"<a href='https://github.com/enso-labs/cloud'>Github</a>"
     ),
     contact={
         "name": "Ryan Eggleston",
