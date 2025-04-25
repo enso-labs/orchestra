@@ -1,15 +1,13 @@
 import ChatLayout from "../layouts/ChatLayout"
 import { useChatContext } from "../context/ChatContext"
 import { useEffect, useRef, useState } from "react"
-import { ChatNav } from "@/components/nav/ChatNav"
 import { findToolCall } from "@/lib/utils/format"
-import { useNavigate, useParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import ChatMessages from "@/components/lists/ChatMessages"
 import { findThread } from "@/services/threadService"
 import { ShareNav } from "@/components/nav/ShareNav"
 
 export default function ThreadPublic() {
-  const navigate = useNavigate();
   const { threadId } = useParams();
   const {
     messages,
@@ -20,7 +18,6 @@ export default function ThreadPublic() {
     setPayload
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 

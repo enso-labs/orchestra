@@ -2,11 +2,8 @@ import { Button } from "@/components/ui/button";
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import { Link } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
-import { Share, MessageCircleReply } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
+import { Share } from "lucide-react";
 export function ShareNav() {
-	const navigate = useNavigate();
     const { payload } = useChatContext();
 
     return (
@@ -25,17 +22,7 @@ export function ShareNav() {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                        {/* <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                                navigate(`/thread/${payload.threadId}`);
-                            }}
-                            className="h-9 w-9"
-                            title="Share Thread"
-                        >
-                            <MessageCircleReply className="h-4 w-4" />
-                        </Button> */}
+                        
                          <Button
                             variant="outline"
                             size="icon"
