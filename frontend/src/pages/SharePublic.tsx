@@ -6,6 +6,7 @@ import { findToolCall } from "@/lib/utils/format"
 import { useNavigate, useParams } from "react-router-dom"
 import ChatMessages from "@/components/lists/ChatMessages"
 import { findThread } from "@/services/threadService"
+import { ShareNav } from "@/components/nav/ShareNav"
 
 export default function ThreadPublic() {
   const navigate = useNavigate();
@@ -73,14 +74,7 @@ export default function ThreadPublic() {
       >
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <ChatNav
-            onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            onNewChat={() => {
-              setMessages([]);
-              setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
-              navigate('/');
-            }}
-          />
+          <ShareNav />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
               {loading ? (

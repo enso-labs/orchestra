@@ -7,7 +7,7 @@ import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import { useSearchParams } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import { Model } from "@/services/modelService";
-import { Menu } from "lucide-react";
+import { Menu, Share } from "lucide-react";
 import GroqIcon from "../icons/GroqIcon";
 import { useEffect } from "react";
 
@@ -51,6 +51,7 @@ export function ChatNav({
                     </div>
                     
                     <div className="flex items-center gap-2">
+                        
                         <Select value={currentModel} onValueChange={handleModelChange}>
                             <SelectTrigger className="w-[200px]">
                                 <SelectValue placeholder="Select Model" />
@@ -83,6 +84,27 @@ export function ChatNav({
                                 ))}
                             </SelectContent>
                         </Select>
+                         <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                                const { threadId } = payload;
+                                if (threadId) {
+                                  const shareUrl = `${window.location.origin}/share/${threadId}`;
+                                  navigator.clipboard.writeText(shareUrl)
+                                    .then(() => {
+                                      alert(`Copied ${shareUrl}`);
+                                    })
+                                    .catch(err => {
+                                      console.error('Failed to copy URL: ', err);
+                                    });
+                                }
+                            }}
+                            className="h-9 w-9"
+                            title="Share Thread"
+                        >
+                            <Share className="h-4 w-4" />
+                        </Button>
                         <Button
                             variant="outline"
                             size="icon"
