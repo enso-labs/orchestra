@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-foreground">Enso</h1>
+            <h1 className="text-2xl font-bold text-foreground">Ensō</h1>
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-4">
@@ -52,7 +52,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <footer className="mt-auto bg-card border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-muted-foreground text-xs">
-            &copy; 2025 Enso. All rights reserved. v{appVersion}
+            &copy; 2025 Ensō. All rights reserved. v{appVersion}
           </p>
         </div>
       </footer>

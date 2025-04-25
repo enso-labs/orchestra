@@ -2,23 +2,14 @@ import ChatLayout from "../layouts/ChatLayout"
 import { useChatContext } from "../context/ChatContext"
 import { useEffect, useRef, useState } from "react"
 import { ChatNav } from "@/components/nav/ChatNav"
-import SystemMessageCard from "@/components/cards/SystemMessageCard"
 import { ChatDrawer } from "@/components/drawers/ChatDrawer"
 import ChatInput from "@/components/inputs/ChatInput"
 import DefaultTool from "@/components/tools/Default"
 import SearchEngineTool from "@/components/tools/SearchEngine"
 import { findToolCall } from "@/lib/utils/format"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import ChatMessages from "@/components/lists/ChatMessages"
-
-interface ChatMessage {
-  role: string
-  content: string
-  type: string
-  name?: string
-  status?: string
-  tool_calls?: any[]
-}
+import { findThread } from "@/services/threadService"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
   if (selectedToolMessage) return (
@@ -36,6 +27,7 @@ function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
 
 export default function ThreadPublic() {
   const navigate = useNavigate();
+  const { threadId } = useParams();
   const {
     messages,
     payload,
@@ -43,14 +35,14 @@ export default function ThreadPublic() {
     setIsToolCallInProgress,
     currentToolCall,
     setCurrentToolCall,
-    currentModel,
     setSelectedToolMessage,
     setMessages,
-    setPayload
+    setPayload,
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
+  const [, setLoading] = useState(false)
 
   const [, setCurrentThreadId] = useState<string | null>(null)
 
@@ -92,6 +84,29 @@ export default function ThreadPublic() {
     setCurrentThreadId(payload.threadId || null)
   }, [payload.threadId])
 
+  // Fetch thread data from API when component mounts
+  useEffect(() => {
+    const fetchThread = async () => {
+      if (threadId) {
+        setLoading(true)
+        try {
+          const response = await findThread(threadId)
+          if (response?.data) {
+            // Set thread data in context
+            setMessages(response.data.messages || [])
+            setPayload((prev: any) => ({ ...prev, threadId: threadId }))
+          }
+        } catch (error) {
+          console.error("Error fetching thread:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchThread();
+  }, [threadId])
+
   return (
     <ChatLayout>
       <div
@@ -101,7 +116,6 @@ export default function ThreadPublic() {
 						${isAssistantOpen ? "pr-[var(--chat-drawer-width,320px)]" : ""}
 				`}
       >
-        {/* <ThreadHistoryDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} /> */}
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <ChatNav
@@ -114,9 +128,6 @@ export default function ThreadPublic() {
           />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
-              {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
-                <SystemMessageCard content={payload.system} />
-              )}
               <ChatMessages messages={messages} />
               <div ref={messagesEndRef} /> {/* Invisible element to scroll to */}
             </div>

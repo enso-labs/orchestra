@@ -54,7 +54,7 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
                   alt="Logo" 
                   className="w-8 h-8 rounded-full" 
                 />
-                <h1 className="text-2xl font-bold text-foreground">Enso</h1>
+                <h1 className="text-2xl font-bold text-foreground">Ensō</h1>
               </Link>
           </div>
 
