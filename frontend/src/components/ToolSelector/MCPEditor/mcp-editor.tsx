@@ -57,7 +57,7 @@ export function MCPEditor() {
           type="button" 
           variant={hasSavedMCP ? "destructive" : "default"} 
           onClick={hasSavedMCP ? handleRemoveMCPConfig : saveMCPConfig}
-          disabled={!isJsonValid && !hasSavedMCP}
+          disabled={((!isJsonValid || !mcpCode || Object.keys(JSON.parse(mcpCode || '{}')).length === 0) && !hasSavedMCP)}
         >
           {hasSavedMCP ? (
             <>
