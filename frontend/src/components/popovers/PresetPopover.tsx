@@ -11,6 +11,29 @@ import { useChatContext } from "@/context/ChatContext";
 import { createSetting, deleteSetting, updateSetting } from "@/services/settingService";
 import { createAgent } from "@/services/agentService";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+function OpenPresetPopover({preset}: {preset: any}) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button 
+            variant="outline" 
+            className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{preset?.name || "Presets"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export function PresetPopover() {
   const [isCreating, setIsCreating] = useState(false);
@@ -127,11 +150,7 @@ export function PresetPopover() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="rounded-full bg-foreground/10 text-foreground-500">
-          <Save className="h-4 w-4" /> {preset?.name || "Presets"}
-        </Button>
-      </PopoverTrigger>
+      <OpenPresetPopover preset={preset} />
       <PopoverContent className="w-80">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
