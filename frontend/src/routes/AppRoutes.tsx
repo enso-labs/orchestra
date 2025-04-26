@@ -22,7 +22,7 @@ import ThreadPublic from '@/pages/ThreadPublic';
 import { CreateServer } from '@/pages/CreateServer';
 import SharePublic from '@/pages/SharePublic';
 import DocMCPServer from '@/pages/DocMCPServer';
-
+import FlowCreate from '@/pages/flow/flow-create';
 const AppRoutes: React.FC = () => {
   return (
     <Router>
@@ -115,10 +115,10 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/create-server"
+          path="/flow/create"
           element={
             <PrivateRoute>
-              <CreateServer />
+              <FlowCreate />
             </PrivateRoute>
           }
         />
