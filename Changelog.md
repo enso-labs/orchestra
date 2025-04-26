@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed 
   - feat/268-react-flow-test-run (2025-04-26)
+  - feat/264-auth-user-home-page (2025-04-26)
   - feat/265-mcp-server-docs-page (2025-04-25)
   - feat/247-public-ensos-shareable (2025-04-25)
   - feat/258-user-can-create-server-config (2025-04-22)
