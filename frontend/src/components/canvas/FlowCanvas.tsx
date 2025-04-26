@@ -7,18 +7,26 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  BackgroundVariant,
 } from '@xyflow/react';
  
 import '@xyflow/react/dist/style.css';
  
 const initialNodes = [
-  { id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
-  { id: '2', position: { x: 0, y: 100 }, data: { label: '2' } },
+  { id: '1', position: { x: 100, y: 50 }, data: { label: 'Webhook Trigger' } },
+  { id: '2', position: { x: 300, y: 50 }, data: { label: 'Appointment Setter' } },
+  { id: '3', position: { x: 500, y: 150 }, data: { label: 'Lead Qualifier' } },
+  { id: '4', position: { x: 500, y: 300 }, data: { label: 'Appointment Confirmation' } },
 ];
-const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
+const initialEdges = [
+  { id: 'e1-1', source: '1', target: '2' },
+  { id: 'e1-2', source: '2', target: '3' },
+  { id: 'e2-3', source: '2', target: '4' },
+  
+];
  
 export default function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
  
   const onConnect = useCallback(
@@ -37,7 +45,7 @@ export default function App() {
       >
         <Controls />
         <MiniMap />
-        <Background gap={12} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     </div>
   );
