@@ -13,6 +13,7 @@ import { ChatNav } from "@/components/nav/ChatNav";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
 import { useAgentContext } from "@/context/AgentContext";
+import ReactFlow from "@/components/canvas/FlowCanvas";
 
 
 export default function FlowCreate() {
@@ -23,22 +24,21 @@ export default function FlowCreate() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const { messages } = useChatContext()
   const [activeTab, setActiveTab] = useState("settings") // Mobile uses "settings" or "preview", desktop uses "create" or "configure"
-  // const [conversationStarters, setConversationStarters] = useState([""])
-  // const [isMaximized, setIsMaximized] = useState(false);
+  const [conversationStarters, setConversationStarters] = useState([""])
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPromptGenerator, setShowPromptGenerator] = useState(false);
   const [promptDescription, setPromptDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // const handleAddConversationStarter = () => {
-  //   setConversationStarters([...conversationStarters, ""])
-  // }
+  const handleAddConversationStarter = () => {
+    setConversationStarters([...conversationStarters, ""])
+  }
 
-  // const handleRemoveConversationStarter = (index: number) => {
-  //   const newStarters = [...conversationStarters]
-  //   newStarters.splice(index, 1)
-  //   setConversationStarters(newStarters)
-  // }
+  const handleRemoveConversationStarter = (index: number) => {
+    const newStarters = [...conversationStarters]
+    newStarters.splice(index, 1)
+    setConversationStarters(newStarters)
+  }
   const handleGeneratePrompt = async (mode: 'replace' | 'alter') => {
     if (!promptDescription.trim()) return;
     
@@ -296,7 +296,7 @@ export default function FlowCreate() {
               )}
             </div>
 
-            {/* <div>
+            <div>
               <label className="block mb-2 text-sm font-medium">Conversation starters</label>
               {conversationStarters.map((starter, index) => (
                 <div key={index} className="flex mb-2 w-full">
@@ -336,7 +336,7 @@ export default function FlowCreate() {
                 If you upload files under Knowledge, conversations with your Enso may include file contents. Files can
                 be downloaded when Code Interpreter is enabled
               </p>
-            </div> */}
+            </div>
           </div>
         </div>
 
@@ -505,7 +505,7 @@ export default function FlowCreate() {
                         )}
                       </div>
 
-                      {/* <div>
+                      <div>
                         <label className="block mb-2 text-sm font-medium">Conversation starters</label>
                         {conversationStarters.map((starter, index) => (
                           <div key={index} className="flex mb-2 w-full">
@@ -545,7 +545,7 @@ export default function FlowCreate() {
                           If you upload files under Knowledge, conversations with your Enso may include file contents. Files can
                           be downloaded when Code Interpreter is enabled
                         </p>
-                      </div> */}
+                      </div>
                     </div>
                   </TabsContent>
 
@@ -563,24 +563,7 @@ export default function FlowCreate() {
           
           {/* Right panel - Preview */}
           <ResizablePanel defaultSize={50} minSize={30}>
-            <div className="flex flex-col h-full">
-              <ChatNav onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)} />
-              
-              <div className="flex-1 overflow-y-auto p-3 min-h-0">
-                <div className="space-y-4 max-w-4xl mx-auto pb-4">
-                  <ChatMessages messages={messages} />
-                  <div ref={messagesEndRef} />
-                </div>
-              </div>
-              
-              <div className="sticky bottom-0 bg-background border-border">
-                <div className="max-w-4xl mx-auto">
-                  <div className="flex flex-col gap-2 p-4 pb-25">
-                    <ChatInput />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ReactFlow />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
