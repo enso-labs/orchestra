@@ -7,6 +7,8 @@ import ChatProvider from './context/ChatContext'
 import ThemeProvider from './context/ThemeContext'
 import ToolProvider from './context/ToolContext';
 import AgentProvider from './context/AgentContext';
+import FlowProvider from './context/FlowContext';
+
 const Contexts = () => {
   if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
     navigator.serviceWorker.register(
@@ -25,6 +27,9 @@ const Contexts = () => {
       <ChatProvider>
         <ToolProvider>
           <AgentProvider>
+            <FlowProvider>
+              <AppRoutes />
+            </FlowProvider>
             <AppRoutes />
           </AgentProvider>
         </ToolProvider>

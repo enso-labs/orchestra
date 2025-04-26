@@ -8,7 +8,9 @@ import {
   useEdgesState,
   addEdge,
   BackgroundVariant,
+  Node,
 } from '@xyflow/react';
+import { useFlowContext } from '@/context/FlowContext';
  
 import '@xyflow/react/dist/style.css';
 
@@ -74,11 +76,17 @@ const initialEdges = [
 export default function App() {
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const { setNode } = useFlowContext();
  
   const onConnect = useCallback(
     (params: any) => setEdges((eds) => addEdge({ ...params, data: { label: 'New Connection' } }, eds)),
     [setEdges],
   );
+
+  // Handle node clicks to update the FlowContext
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    setNode(node);
+  }, [setNode]);
 
   // Simplified function to simulate data flow
   const simulateFlow = useCallback(() => {
@@ -149,6 +157,7 @@ export default function App() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeClick={onNodeClick}
       >
         <Controls />
         <MiniMap />
