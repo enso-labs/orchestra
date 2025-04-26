@@ -13,10 +13,10 @@ import {
 import '@xyflow/react/dist/style.css';
  
 const initialNodes = [
-  { id: '1', position: { x: 100, y: 50 }, data: { label: 'Webhook Trigger' } },
-  { id: '2', position: { x: 300, y: 50 }, data: { label: 'Appointment Setter' } },
-  { id: '3', position: { x: 500, y: 150 }, data: { label: 'Lead Qualifier' } },
-  { id: '4', position: { x: 500, y: 300 }, data: { label: 'Appointment Confirmation' } },
+  { id: '1', position: { x: 150, y: 100 }, data: { label: 'Webhook Trigger' } },
+  { id: '2', position: { x: 150, y: 200 }, data: { label: 'Appointment Setter' } },
+  { id: '3', position: { x: 50, y: 300 }, data: { label: 'Lead Qualifier' } },
+  { id: '4', position: { x: 250, y: 300 }, data: { label: 'Appointment Confirmation' } },
 ];
 const initialEdges = [
   { id: 'e1-1', source: '1', target: '2' },
