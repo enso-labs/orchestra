@@ -8,3 +8,20 @@ export interface ThreadPayload {
   model: string;
   mcp: object|null;
 }
+
+export type Agent = {
+  id: string
+  name: string
+  description: string
+  setting?: {
+    value: {
+      model?: string
+    }
+  }
+  public: boolean
+  categories?: string[]
+  users?: number
+  rating?: number
+  owner?: string
+  created_at: string
+}

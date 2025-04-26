@@ -19,7 +19,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+            <Link to="/" className="flex items-center gap-2">
+              <img 
+                src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" 
+                alt="Logo" 
+                className="w-8 h-8 rounded-full" 
+              />
+              <h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+            </Link>
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-4">
