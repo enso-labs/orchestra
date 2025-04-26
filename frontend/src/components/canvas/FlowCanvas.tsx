@@ -13,6 +13,7 @@ import {
 import { useFlowContext } from '@/context/FlowContext';
  
 import '@xyflow/react/dist/style.css';
+import { createJsonThread } from '@/services/threadService';
 
 // Define the data structure being passed between nodes
 interface AppointmentData {
@@ -30,13 +31,50 @@ interface NodeData {
 
 // Node-specific data types
 interface WebhookNodeData extends NodeData {
-  function: () => AppointmentData;
+  function: () => any;
 }
 
 interface AppointmentSetterNodeData extends NodeData {
   function: (data: AppointmentData) => void;
 }
  
+// const initialNodes = [
+//   { 
+//     id: '1', 
+//     position: { x: 150, y: 100 }, 
+//     data: { 
+//       label: 'Webhook Trigger',
+//       function: () => {
+//         // Create sample appointment data
+//         const appointmentData = {
+//           query: "What is the weather in Tokyo?",
+//           system: "You are a helpful assistant that can answer questions about the weather.",
+//           tools: [],
+//           mcp: {
+//             "enso-mcp": {
+//               "url": "https://mcp.enso.sh/sse",
+//               "transport": "sse"
+//             }
+//           }
+//         };
+//         console.log('Webhook Trigger activated, sending data:', appointmentData);
+//         return appointmentData;
+//       }
+//     }
+//   },
+//   { 
+//     id: '2', 
+//     position: { x: 150, y: 200 }, 
+//     data: { 
+//       label: 'Appointment Setter',
+//       function: (data: AppointmentData) => {
+//         console.log('Appointment Setter received data:', data);
+//         console.log(`Setting appointment for ${data.customerName} on ${data.requestedDate}`);
+//       }
+//     }
+//   },
+// ];
+
 const initialNodes = [
   { 
     id: '1', 
@@ -45,11 +83,16 @@ const initialNodes = [
       label: 'Webhook Trigger',
       function: () => {
         // Create sample appointment data
-        const appointmentData: AppointmentData = {
-          customerName: "John Doe",
-          email: "john@example.com",
-          phone: "555-123-4567",
-          requestedDate: "2023-10-15T10:00:00"
+        const appointmentData = {
+          query: "What is the weather in Tokyo?",
+          system: "You are a helpful assistant that can answer questions about the weather.",
+          tools: [],
+          mcp: {
+            "enso-mcp": {
+              "url": "https://mcp.enso.sh/sse",
+              "transport": "sse"
+            }
+          }
         };
         console.log('Webhook Trigger activated, sending data:', appointmentData);
         return appointmentData;
@@ -61,9 +104,9 @@ const initialNodes = [
     position: { x: 150, y: 200 }, 
     data: { 
       label: 'Appointment Setter',
-      function: (data: AppointmentData) => {
-        console.log('Appointment Setter received data:', data);
-        console.log(`Setting appointment for ${data.customerName} on ${data.requestedDate}`);
+      function: async (data: any) => {
+        const response = await createJsonThread(data);
+        console.log('Appointment Setter received data:', response);
       }
     }
   },
