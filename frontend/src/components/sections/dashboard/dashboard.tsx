@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { getAgents, deleteAgent } from "@/services/agentService"
 import { toast } from "sonner"
-import { Agent } from "@/entities"
+import { Agent, DashboardTabOption } from "@/entities"
 import DashboardHeader from "./dashboard-header"
 import DashboardSearch from "./dashboard-search"
 import DashboardTabs from "./dashboard-tabs"
@@ -16,7 +16,7 @@ export default function DashboardSection() {
   const [filteredMyAgents, setFilteredMyAgents] = useState<Agent[]>([])
   const [filteredPublicAgents, setFilteredPublicAgents] = useState<Agent[]>([])
   const [filteredPrivateAgents, setFilteredPrivateAgents] = useState<Agent[]>([])
-  const [activeTab, setActiveTab] = useState("mine") // Changed default to "mine"
+  const [activeTab, setActiveTab] = useState<DashboardTabOption>("agents")
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch agents from API
@@ -95,7 +95,7 @@ export default function DashboardSection() {
   return (
     <main className="max-w-8xl mx-auto px-4 py-4 sm:px-6">
 			<div className="flex flex-col space-y-4">
-				<DashboardHeader />
+				<DashboardHeader activeTab={activeTab} />
 
 				{/* Search and filters */}
 				<DashboardSearch

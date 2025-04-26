@@ -25,3 +25,5 @@ export type Agent = {
   owner?: string
   created_at: string
 }
+
+export type DashboardTabOption = "agents" | "workflows" | "servers"

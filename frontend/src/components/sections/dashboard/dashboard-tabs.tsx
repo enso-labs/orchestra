@@ -1,14 +1,14 @@
-import { Agent } from "@/entities"
+import { Agent, DashboardTabOption } from "@/entities"
 
 function DashboardTabs({
 	activeTab,
 	setActiveTab,
 	filteredMyAgents,
-	filteredPublicAgents,
-	filteredPrivateAgents,
+	// filteredPublicAgents,
+	// filteredPrivateAgents,
 }: {
 	activeTab: string
-	setActiveTab: (tab: string) => void
+	setActiveTab: (tab: DashboardTabOption) => void
 	filteredMyAgents: Agent[]
 	filteredPublicAgents: Agent[]
 	filteredPrivateAgents: Agent[]
@@ -21,7 +21,7 @@ function DashboardTabs({
 						? "border-b-2 border-primary text-foreground"
 						: "text-muted-foreground hover:text-foreground"
 				}`}
-				onClick={() => setActiveTab("mine")}
+				onClick={() => setActiveTab("agents")}
 			>
 				Agents
 				{filteredMyAgents.length > 0 && (
@@ -32,33 +32,23 @@ function DashboardTabs({
 			</button>
 			<button
 				className={`px-4 py-2 text-sm font-medium ${
-					activeTab === "public"
+					activeTab === "mine"
 						? "border-b-2 border-primary text-foreground"
 						: "text-muted-foreground hover:text-foreground"
 				}`}
-				onClick={() => setActiveTab("public")}
+				onClick={() => setActiveTab("workflows")}
 			>
-				Public
-				{filteredPublicAgents.length > 0 && (
-					<span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-						{filteredPublicAgents.length}
-					</span>
-				)}
+				Workflows
 			</button>
 			<button
 				className={`px-4 py-2 text-sm font-medium ${
-					activeTab === "private"
+					activeTab === "servers"
 						? "border-b-2 border-primary text-foreground"
 						: "text-muted-foreground hover:text-foreground"
 				}`}
-				onClick={() => setActiveTab("private")}
+				onClick={() => setActiveTab("servers")}
 			>
-				Private
-				{filteredPrivateAgents.length > 0 && (
-					<span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-						{filteredPrivateAgents.length}
-					</span>
-				)}
+				Servers
 			</button>
 		</div>
 	)

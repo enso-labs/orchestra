@@ -18,7 +18,7 @@ function DashboardTabsContent({
 }) {
 	return (
 		<div className="mt-4">
-			{activeTab === "mine" && (
+			{activeTab === "agents" && (
 				<div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
 					<div className="flex justify-between items-center mb-4">
 						<h2 className="text-lg font-medium">My Agents</h2>
@@ -45,7 +45,7 @@ function DashboardTabsContent({
 				</div>
 			)}
 
-			{activeTab === "public" && (
+			{activeTab === "workflows" && (
 				<div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
 					{isLoading ? (
 						<div className="flex justify-center items-center h-40">
@@ -63,7 +63,7 @@ function DashboardTabsContent({
 				</div>
 			)}
 
-			{activeTab === "private" && (
+			{activeTab === "servers" && (
 				<div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
 					{isLoading ? (
 						<div className="flex justify-center items-center h-40">
