@@ -28,9 +28,7 @@ const ConfigCard = ({ item, onClick, isSelected }: { item: any, onClick?: () => 
         <div className="flex items-center">
           <ServerIcon className="mr-2 text-blue-600" size={16} />
           <a 
-            href={item.documentation_url} 
-            target="_blank" 
-            rel="noopener noreferrer" 
+            href={item.documentation_url || `/server/${item.slug}`} 
             className="font-medium hover:text-blue-600"
           >
             {item.name}
