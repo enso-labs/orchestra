@@ -22,7 +22,7 @@ function FlowCreateDesktop({
 						processCreateAgent={processCreateAgent}
 						isCreating={isCreating}
 					>
-						<FlowEditForm data="test" />
+						<FlowEditForm />
 					</LeftPanelLayout>
 				</ResizablePanel>
 				

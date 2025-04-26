@@ -30,7 +30,6 @@ const Contexts = () => {
             <FlowProvider>
               <AppRoutes />
             </FlowProvider>
-            <AppRoutes />
           </AgentProvider>
         </ToolProvider>
       </ChatProvider>
