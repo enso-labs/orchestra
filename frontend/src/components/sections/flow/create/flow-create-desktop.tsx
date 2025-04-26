@@ -1,6 +1,9 @@
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
 import FlowCanvas from "@/components/canvas/FlowCanvas"
-import AgentCreateForm from "@/components/forms/AgentCreateForm"
+import FlowEditForm from "@/components/forms/FlowEditForm";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import LeftPanelLayout from "@/layouts/LeftPanelLayout";
 
 function FlowCreateDesktop({
 	navigate,
@@ -59,26 +62,28 @@ function FlowCreateDesktop({
 			>
 				{/* Left panel - Settings */}
 				<ResizablePanel defaultSize={30} minSize={30}>
-					<AgentCreateForm
-						navigate={navigate}
+					<LeftPanelLayout
 						processCreateAgent={processCreateAgent}
 						isCreating={isCreating}
-						agentDetails={agentDetails}
-						setAgentDetails={setAgentDetails}
-						payload={payload}
-						setPayload={setPayload}
-						showPromptGenerator={showPromptGenerator}
-						setShowPromptGenerator={setShowPromptGenerator}
-						setIsFullscreen={setIsFullscreen}
-						promptDescription={promptDescription}
-						setPromptDescription={setPromptDescription}
-						conversationStarters={conversationStarters}
-						setConversationStarters={setConversationStarters}
-						handleAddConversationStarter={handleAddConversationStarter}
-						handleRemoveConversationStarter={handleRemoveConversationStarter}
-						handleGeneratePrompt={handleGeneratePrompt}
-						isGenerating={isGenerating}
-					/>
+					>
+						<FlowEditForm
+							agentDetails={agentDetails}
+							setAgentDetails={setAgentDetails}
+							payload={payload}
+							setPayload={setPayload}
+							showPromptGenerator={showPromptGenerator}
+							setShowPromptGenerator={setShowPromptGenerator}
+							setIsFullscreen={setIsFullscreen}
+							promptDescription={promptDescription}
+							setPromptDescription={setPromptDescription}
+							conversationStarters={conversationStarters}
+							setConversationStarters={setConversationStarters}
+							handleAddConversationStarter={handleAddConversationStarter}
+							handleRemoveConversationStarter={handleRemoveConversationStarter}
+							handleGeneratePrompt={handleGeneratePrompt}
+							isGenerating={isGenerating}
+						/>
+					</LeftPanelLayout>
 				</ResizablePanel>
 				
 				<ResizableHandle withHandle />
