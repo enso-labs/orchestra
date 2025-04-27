@@ -116,7 +116,7 @@ const initialEdges = [
   { id: 'e1-1', source: '1', target: '2', data: { label: 'appointment data' } },
 ];
  
-export default function App() {
+export default function FlowCanvas() {
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const { setNode } = useFlowContext();
