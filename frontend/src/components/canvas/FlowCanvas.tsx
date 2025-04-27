@@ -128,6 +128,7 @@ export default function App() {
 
   // Handle node clicks to update the FlowContext
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    console.log(event, node);
     setNode(node);
   }, [setNode]);
 

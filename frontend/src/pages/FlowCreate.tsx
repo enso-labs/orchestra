@@ -181,26 +181,8 @@ export default function FlowCreate() {
 
       {/* Desktop view with resizable panels */}
       <FlowCreateDesktop 
-				activeTab={activeTab}
-				setActiveTab={setActiveTab}
-				navigate={navigate}
 				processCreateAgent={processCreateAgent}
 				isCreating={isCreating}
-				agentDetails={agentDetails}
-				setAgentDetails={setAgentDetails}
-				payload={payload}
-				setPayload={setPayload}
-				showPromptGenerator={showPromptGenerator}
-				setShowPromptGenerator={setShowPromptGenerator}
-				setIsFullscreen={setIsFullscreen}
-				promptDescription={promptDescription}
-				setPromptDescription={setPromptDescription}
-				conversationStarters={conversationStarters}
-				setConversationStarters={setConversationStarters}
-				handleAddConversationStarter={handleAddConversationStarter}
-				handleRemoveConversationStarter={handleRemoveConversationStarter}
-				handleGeneratePrompt={handleGeneratePrompt}
-				isGenerating={isGenerating}
 			/>
     </ChatLayout>
   );

@@ -95,7 +95,7 @@ export default function useChatHook() {
             query: payload.query,
         } : {
             ...payload,
-            system: constructSystemPrompt(payload.system)
+            system: payload.system ? constructSystemPrompt(payload.system) : DEFAULT_SYSTEM_PROMPT
         }
     }
 
