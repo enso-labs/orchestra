@@ -23,6 +23,8 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      'indent': ['error', 'tab', { SwitchCase: 1 }],
+      'no-tabs': 'off',
     },
   },
 )

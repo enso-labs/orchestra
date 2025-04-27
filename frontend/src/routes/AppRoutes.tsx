@@ -19,9 +19,9 @@ import AgentChat from '@/pages/AgentChat';
 import CreateAgent from '@/pages/CreateAgent';
 import AgentUpdate from '@/pages/AgentUpdate';
 import ThreadPublic from '@/pages/ThreadPublic';
-import { CreateServer } from '@/pages/CreateServer';
 import SharePublic from '@/pages/SharePublic';
 import DocMCPServer from '@/pages/DocMCPServer';
+import FlowCreate from '@/pages/FlowCreate';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -115,10 +115,10 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/create-server"
+          path="/flow/create"
           element={
             <PrivateRoute>
-              <CreateServer />
+              <FlowCreate />
             </PrivateRoute>
           }
         />
