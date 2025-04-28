@@ -1,6 +1,6 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 
-from fastapi import Response, status, Depends, APIRouter, Query, HTTPException
+from fastapi import Path, Response, status, Depends, APIRouter, Query, HTTPException
 from fastapi.responses import JSONResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import Optional
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.repos.thread_repo import ThreadRepo
 from src.constants import DB_URI
 from src.repos.user_repo import UserRepo
-from src.services.db import get_async_db
+from src.services.db import get_async_db, get_checkpoint_db
 from src.entities import Thread, Threads
 from src.utils.agent import Agent
 from src.utils.auth import get_optional_user, verify_credentials
@@ -18,10 +18,8 @@ from src.services.db import get_async_connection_pool, get_connection_pool
 
 TAG = "Thread"
 router = APIRouter(tags=[TAG])
+    
 
-################################################################################
-### List Checkpoints
-################################################################################
 @router.get(
     "/threads", 
     tags=[TAG],
@@ -85,7 +83,7 @@ async def find_thread(
     try:
         thread_repo = ThreadRepo(db)
         thread: Thread = await thread_repo.find_by_id(thread_id)
-        async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer: 
+        async with get_checkpoint_db() as checkpointer: 
             config = {"configurable": {"thread_id": thread_id, "user_id": "", "checkpoint_ns": ""}}
             # Allow anonymous users to access threads without a user association
             # Reject if an anonymous user tries to access a thread owned by a user
@@ -123,19 +121,25 @@ async def find_thread(
         }
     }
 )
-def delete_thread(
+async def delete_thread(
     thread_id: str,
-    username: str = Depends(verify_credentials)
+    user: ProtectedUser = Depends(verify_credentials),
+    db: AsyncSession = Depends(get_async_db)
 ):
-    agent = Agent(config={"thread_id": thread_id})
-    agent.delete()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    try:
+        user_repo = UserRepo(db, user.id)
+        agent = Agent(config={"thread_id": thread_id}, user_repo=user_repo)
+        await agent.delete_thread()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        logger.exception(f"Error deleting thread: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
         
 ################################################################################
 ### List Checkpoints
 ################################################################################
 @router.get(
-    "/checkpoints", 
+    "/threads/{thread_id}/checkpoints", 
     tags=[TAG],
     responses={
         status.HTTP_200_OK: {
@@ -150,7 +154,7 @@ def delete_thread(
 )
 async def list_checkpoints(
     user: ProtectedUser = Depends(verify_credentials),
-    thread_id: Optional[str] = Query(None, description="Filter by thread ID"),
+    thread_id: Optional[str] = Path(description="Filter by thread ID"),
     checkpoint_id: Optional[str] = Query(None, description="Filter by checkpoint ID"),
     before: Optional[str] = Query(None, description="List checkpoints created before this configuration."),
     limit: Optional[int] = Query(None, description="Maximum number of threads to return")
