@@ -1,17 +1,19 @@
 from typing import Optional
-from fastapi import status, Depends, HTTPException
+from fastapi import Request, status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.repos.user_repo import UserRepo
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM
 from src.models import User
 from src.services.db import get_async_db
-
+from src.utils.logger import logger
 security = HTTPBearer(auto_error=False)  # Make auto_error=False to not require the Authorization header
 
 async def get_optional_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_async_db)
 ) -> Optional[User]:
@@ -19,15 +21,18 @@ async def get_optional_user(
         return None
         
     try:
-        return await verify_credentials(credentials, db)
+        return await verify_credentials(request, credentials, db)
     except HTTPException:
         return None
 
 async def verify_credentials(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_async_db) # type: ignore
 ) -> User:
     try:
+        logger.info(f"Request: {request.__dict__}")
+        
         # Verify JWT token
         payload = jwt.decode(
             credentials.credentials, 
@@ -69,7 +74,9 @@ async def verify_credentials(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        
+        logger.info(f"Authenticated user: {user.id}")
+        request.state.user = user.protected()
+        request.state.user_repo = UserRepo(db, request.state.user.id)
         return user.protected()
 
     except JWTError:

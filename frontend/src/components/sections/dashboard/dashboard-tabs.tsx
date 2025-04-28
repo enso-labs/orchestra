@@ -1,5 +1,5 @@
 import { Agent, DashboardTabOption } from "@/entities"
-
+import { useNavigate } from "react-router-dom";
 function DashboardTabs({
 	activeTab,
 	setActiveTab,
@@ -13,11 +13,13 @@ function DashboardTabs({
 	filteredPublicAgents: Agent[]
 	filteredPrivateAgents: Agent[]
 }) {
+	const navigate = useNavigate();
+
 	return (
 		<div className="flex space-x-1 border-b border-border">
 			<button
 				className={`px-4 py-2 text-sm font-medium ${
-					activeTab === "mine"
+					activeTab === "agents"
 						? "border-b-2 border-primary text-foreground"
 						: "text-muted-foreground hover:text-foreground"
 				}`}
@@ -32,7 +34,7 @@ function DashboardTabs({
 			</button>
 			<button
 				className={`px-4 py-2 text-sm font-medium ${
-					activeTab === "mine"
+					activeTab === "workflows"
 						? "border-b-2 border-primary text-foreground"
 						: "text-muted-foreground hover:text-foreground"
 				}`}
@@ -49,6 +51,16 @@ function DashboardTabs({
 				onClick={() => setActiveTab("servers")}
 			>
 				Servers
+			</button>
+			<button
+				className={`px-4 py-2 text-sm font-medium ${
+					activeTab === "chat"
+						? "border-b-2 border-primary text-foreground"
+						: "text-muted-foreground hover:text-foreground"
+				}`}
+				onClick={() => navigate("/chat")}
+			>
+				Chat
 			</button>
 		</div>
 	)

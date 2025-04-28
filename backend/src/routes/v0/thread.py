@@ -1,6 +1,6 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 
-from fastapi import Path, Response, status, Depends, APIRouter, Query, HTTPException
+from fastapi import Path, Request, Response, status, Depends, APIRouter, Query, HTTPException
 from fastapi.responses import JSONResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import Optional
@@ -23,6 +23,7 @@ router = APIRouter(tags=[TAG])
 @router.get(
     "/threads", 
     tags=[TAG],
+    dependencies=[Depends(verify_credentials)],
     responses={
         status.HTTP_200_OK: {
             "description": "All existing threads.",
@@ -35,14 +36,12 @@ router = APIRouter(tags=[TAG])
     }
 )
 async def list_threads(
-    user: User = Depends(verify_credentials),
+    request: Request,
     page: Optional[int] = Query(1, description="Page number", ge=1),
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
-    db: AsyncSession = Depends(get_async_db)
 ):
     try:
-        user_repo = UserRepo(db, user.id)
-        agent = Agent(config={"user_id": user.id}, user_repo=user_repo)
+        agent = Agent(config={"user_id": request.state.user.id}, user_repo=request.state.user_repo)
         threads = await agent.list_async_threads(page=page, per_page=per_page)
         return JSONResponse(
                 content={
@@ -115,6 +114,7 @@ async def find_thread(
 @router.delete(
     "/threads/{thread_id}", 
     tags=[TAG],
+    dependencies=[Depends(verify_credentials)],
     responses={
         status.HTTP_204_NO_CONTENT: {
             "description": "Delete existing thread.",
@@ -122,13 +122,11 @@ async def find_thread(
     }
 )
 async def delete_thread(
-    thread_id: str,
-    user: ProtectedUser = Depends(verify_credentials),
-    db: AsyncSession = Depends(get_async_db)
+    request: Request,
+    thread_id: str
 ):
     try:
-        user_repo = UserRepo(db, user.id)
-        agent = Agent(config={"thread_id": thread_id}, user_repo=user_repo)
+        agent = Agent(config={"thread_id": thread_id}, user_repo=request.state.user_repo)
         await agent.delete_thread()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as e:
