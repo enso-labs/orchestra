@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { ServerForm } from '../components/ServerConstruct/ServerForm'
 import { ConfigJsonEditor } from '../components/ServerConstruct/ConfigJsonEditor'
 import { FormInputIcon, CodeIcon } from 'lucide-react'
-export const CreateServer = () => {
+
+export default function ServerCreateV1() {
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('form')
