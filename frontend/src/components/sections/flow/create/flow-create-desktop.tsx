@@ -19,7 +19,7 @@ function FlowCreateDesktop({
 				{/* Left panel - Settings */}
 				<ResizablePanel defaultSize={30} minSize={30}>
 					<LeftPanelLayout
-						processCreateAgent={processCreateAgent}
+						onCreate={processCreateAgent}
 						isCreating={isCreating}
 					>
 						<FlowEditForm />

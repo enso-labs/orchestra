@@ -22,6 +22,7 @@ import ThreadPublic from '@/pages/ThreadPublic';
 import SharePublic from '@/pages/SharePublic';
 import DocMCPServer from '@/pages/DocMCPServer';
 import FlowCreate from '@/pages/FlowCreate';
+import ServerCreate from '@/pages/ServerCreate';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -107,10 +108,18 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/create-agent"
+          path="/agent/create"
           element={
             <PrivateRoute>
               <CreateAgent />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/server/create"
+          element={
+            <PrivateRoute>
+              <ServerCreate />
             </PrivateRoute>
           }
         />

@@ -10,7 +10,7 @@ function AgentHeader() {
 				<p className="text-muted-foreground mt-1">Select an AI agent to help with your specific needs</p>
 			</div>
 			<Link 
-				to="/create-agent" 
+				to="/agent/create" 
 				className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-primary/90 text-primary-foreground hover:bg-primary transition-colors text-xs sm:text-sm font-medium whitespace-nowrap"
 			>
 				<PlusIcon className="mr-1.5 h-3.5 w-3.5" />
@@ -46,7 +46,7 @@ function ServerHeader() {
 				<p className="text-muted-foreground mt-1">Select an AI server to help with your specific needs</p>
 			</div>
 			<Link 
-				to="#" 
+				to="/server/create" 
 				className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-primary/90 text-primary-foreground hover:bg-primary transition-colors text-xs sm:text-sm font-medium whitespace-nowrap"
 			>
 				<PlusIcon className="mr-1.5 h-3.5 w-3.5" />
