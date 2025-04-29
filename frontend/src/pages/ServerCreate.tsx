@@ -68,6 +68,13 @@ function LeftPanel({
 	)
 }
 
+function formatServerName(name: string): string {
+	return name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-') // Replace special chars and spaces with dashes
+		.replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+}
+
 function ServerCreate() {
 	const [code, setCode] = useState("");
 	const [isJsonValid, setIsJsonValid] = useState(true);
@@ -120,6 +127,33 @@ function ServerCreate() {
 		}
 	}, [code]);
 
+	useEffect(() => {
+		if (formData.type === 'mcp') {
+			setCode((prevCode: any) => {
+				try {
+					const formattedName = formatServerName(formData.name);
+					const key = formattedName || 'new-mcp-server';
+					
+					// Create a fresh object with just one key
+					const newObj = {
+						[key]: {
+							url: "https://mcp.enso.sh/sse",
+							headers: {
+								"x-mcp-key": "your_api_key"
+							},
+							transport: "sse"
+						}
+					};
+					
+					return JSON.stringify(newObj, null, 2);
+				} catch (error) {
+					console.error('Error updating JSON:', error);
+					return prevCode;
+				}
+			});
+		}
+	}, [formData.name, formData.type]);
+
   return (
     <TwoColumnLayout
 			left={{
@@ -156,7 +190,7 @@ function ServerCreate() {
 							onValueChange={code => setCode(code)}
 							highlight={code => highlight(code, languages.json, 'json')}
 							padding={16}
-							placeholder="Enter your JSON configuration here..."
+							placeholder={code}
 							// className={`${styles.editor} ${!isJsonValid ? 'bg-red-50/10' : ''}`}
 							style={{
 								fontFamily: '"JetBrains Mono", monospace',
