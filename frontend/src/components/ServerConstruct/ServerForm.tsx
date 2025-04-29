@@ -1,7 +1,25 @@
 import React, { useEffect, useState } from 'react'
 import { PlusIcon, MinusIcon } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-export const ServerForm = ({ onSubmit, onChange, initialData }: { onSubmit: (formData: any) => void, onChange: (formData: any) => void, initialData: any }) => {
+export const ServerForm = ({ 
+  onSubmit, 
+  onChange, 
+  initialData 
+}: { 
+  onSubmit: (formData: any) => void, 
+  onChange: (formData: any) => void, 
+  initialData: any 
+}) => {
   const [formData, setFormData] = useState(initialData)
   const [headerKeys, setHeaderKeys] = useState([''])
   useEffect(() => {
@@ -80,82 +98,89 @@ export const ServerForm = ({ onSubmit, onChange, initialData }: { onSubmit: (for
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Server Name
-          </label>
-          <input
+          <label className="block mb-2 text-sm font-medium">Server Name</label>
+          <Input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-secondary/50 border-border"
+            placeholder="Enter server name"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
+          <label className="block mb-2 text-sm font-medium">Description</label>
+          <Textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
+            className="bg-secondary/50 border-border resize-none"
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Add a short description about what this server does"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Server Type
-          </label>
-          <select
+          <label className="block mb-2 text-sm font-medium">Server Type</label>
+          <Select
             name="type"
             value={formData.type}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onValueChange={(value) => {
+              handleChange({
+                target: { name: 'type', value }
+              } as any)
+            }}
           >
-            <option value="mcp">MCP</option>
-            <option value="a2a">A2A</option>
-          </select>
+            <SelectTrigger className="bg-secondary/50 border-border">
+              <SelectValue placeholder="Select server type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mcp">MCP</SelectItem>
+              <SelectItem value="a2a">A2A</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {formData.type === 'mcp' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Transport
-              </label>
-              <select
+              <label className="block mb-2 text-sm font-medium">Transport</label>
+              <Select
                 name="transport"
                 value={formData.config.default_server.transport}
-                onChange={handleConfigChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onValueChange={(value) => {
+                  handleConfigChange({
+                    target: { name: 'transport', value }
+                  } as any)
+                }}
               >
-                <option value="sse">SSE</option>
-                <option value="websocket">WebSocket</option>
-                <option value="http">HTTP</option>
-              </select>
+                <SelectTrigger className="bg-secondary/50 border-border">
+                  <SelectValue placeholder="Select transport type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sse">SSE</SelectItem>
+                  {/* <SelectItem value="websocket">WebSocket</SelectItem> */}
+                  {/* <SelectItem value="http">HTTP</SelectItem> */}
+                </SelectContent>
+              </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL
-              </label>
-              <input
+              <label className="block mb-2 text-sm font-medium">URL</label>
+              <Input
                 type="url"
                 name="url"
                 value={formData.config.default_server.url}
                 onChange={handleConfigChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-secondary/50 border-border"
+                placeholder="Enter server URL"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Headers
-              </label>
+              <label className="block mb-2 text-sm font-medium">Headers</label>
               <div className="space-y-2">
                 {headerKeys.map((headerKey, index) => (
                   <div key={index} className="flex gap-2">
-                    <input
+                    <Input
                       type="text"
                       placeholder="Header Key"
                       value={headerKey}
@@ -164,92 +189,82 @@ export const ServerForm = ({ onSubmit, onChange, initialData }: { onSubmit: (for
                         newHeaderKeys[index] = e.target.value
                         setHeaderKeys(newHeaderKeys)
                       }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 bg-secondary/50 border-border"
                     />
-                    <input
+                    <Input
                       type="text"
                       placeholder="Header Value"
-                      value={
-                        formData.config.default_server.headers[headerKey] || ''
-                      }
-                      onChange={(e) =>
-                        handleHeaderChange(headerKey, e.target.value)
-                      }
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={formData.config.default_server.headers[headerKey] || ''}
+                      onChange={(e) => handleHeaderChange(headerKey, e.target.value)}
+                      className="flex-1 bg-secondary/50 border-border"
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => removeHeader(index)}
-                      className="p-2 text-gray-400 hover:text-gray-600"
+                      className="h-10 w-10"
                     >
-                      <MinusIcon size={20} />
-                    </button>
+                      <MinusIcon className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={addHeader}
-                className="mt-2 flex items-center text-sm text-blue-600 hover:text-blue-700"
-              >
-                <PlusIcon size={16} className="mr-1" />
-                Add Header
-              </button>
+              {headerKeys.length < 4 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addHeader}
+                  className="mt-2 w-full border-dashed"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Header
+                </Button>
+              )}
             </div>
           </>
         )}
         {formData.type === 'a2a' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base URL
-              </label>
-              <input
+              <label className="block mb-2 text-sm font-medium">Base URL</label>
+              <Input
                 type="url"
                 name="url"
                 value={formData.config.default_server.url}
                 onChange={handleConfigChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-secondary/50 border-border"
+                placeholder="Enter base URL"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Agent Card Path
-              </label>
-              <input
+              <label className="block mb-2 text-sm font-medium">Agent Card Path</label>
+              <Input
                 type="text"
                 name="agent_card_path"
                 value={formData.config.default_server.agent_card_path}
                 onChange={handleConfigChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-secondary/50 border-border"
                 placeholder="/.well-known/agent.json"
                 required
               />
             </div>
           </>
         )}
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           <input
             type="checkbox"
             name="public"
             id="public"
             checked={formData.public}
             onChange={handleChange}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            className="h-4 w-4 rounded border-border"
           />
-          <label htmlFor="public" className="ml-2 block text-sm text-gray-700">
+          <label htmlFor="public" className="text-sm">
             Make this configuration public
           </label>
         </div>
-      </div>
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Create Server
-        </button>
       </div>
     </form>
   )
