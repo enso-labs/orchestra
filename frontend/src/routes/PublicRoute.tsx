@@ -1,4 +1,4 @@
-import { TOKEN_NAME } from '@/config';
+import { getAuthToken } from '@/lib/utils/auth';
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 
@@ -7,9 +7,20 @@ interface PublicRouteProps {
 }
 
 const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
-  const isAuthenticated = Boolean(localStorage.getItem(TOKEN_NAME)); // Replace with your token logic
+  const isAuthenticated = Boolean(getAuthToken());
 
-  return isAuthenticated ? <Navigate to="/dashboard" /> : <>{children}</>;
+  // Define routes that should be accessible even when authenticated
+  const publicRoutes = ['/thread', '/share', '/server'];
+  
+  // Check if current path starts with any of the public routes
+  const isPublicRoute = publicRoutes.some(route => 
+    window.location.pathname.startsWith(route)
+  );
+  
+  // Allow access to public routes even when authenticated
+  return isAuthenticated && !isPublicRoute ? 
+    <Navigate to="/dashboard" /> : 
+    <>{children}</>;
 };
 
 export default PublicRoute;

@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import { useToolContext } from '@/context/ToolContext';
 import MCPInfo from '@/components/ToolSelector/MCPEditor/mcp-info';
 import { getServerInfo } from '@/services/toolService';
+import { getAuthToken } from '@/lib/utils/auth';
+import HomeIcon from '@/components/icons/HomeIcon';
 
 export default function DocMCPServer() {
 	const { serverSlug } = useParams();
@@ -13,16 +15,19 @@ export default function DocMCPServer() {
 	useMCPServersEffect();
 
 	const server = mcpServers.find((server: any) => server.slug === serverSlug);
+	const token = getAuthToken();
 
 	const fetchServerInfo = async () => {
 		const res = await getServerInfo('mcp', {mcp: {[server.slug]: server.config}});
-		console.log(res.data.mcp);
 		setMcpInfo(res.data.mcp);
 	}
 
 	useEffect(() => {
 		if (server) {
 			fetchServerInfo();
+		}
+		return () => {
+			setMcpInfo(null);
 		}
 	}, [server]);
 
@@ -31,12 +36,7 @@ export default function DocMCPServer() {
 		<NoAuthLayout>
 			<main className="flex-1 flex flex-col items-center justify-center bg-background">
 				<div className="absolute top-4 left-4">
-					<Link 
-						to="/login" 
-						className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm font-medium"
-					>
-							Login
-					</Link>
+					{token ? <HomeIcon /> : <Link to="/login">Login</Link>}
 				</div>
 				<div className="absolute top-4 right-4">
 					<ColorModeButton />

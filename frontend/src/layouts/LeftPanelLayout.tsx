@@ -46,16 +46,14 @@ export function LeftPanelLayout({
 						</Button>
 					)}
 					<Button 
-						variant="default"
-						size="icon"
-						className="h-9 w-9"
+						className="bg-primary text-primary-foreground hover:bg-primary/90" 
 						onClick={onCreate}
 						disabled={loading || disabled}
 					>
-						{loading ? 
-							<span className="h-5 w-5 animate-spin">⟳</span> : 
-							<span className="h-5 w-5">💾</span>
-						}
+						{loading ? (
+							<span className="h-5 w-5 animate-spin">⟳</span>+"Saving..."
+						) : "Save"
+					}
 					</Button>
 				</div>
 			</div>

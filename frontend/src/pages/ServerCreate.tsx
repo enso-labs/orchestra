@@ -75,7 +75,7 @@ function ServerCreate() {
       console.log('Server created:', response);
 			// resetFormData();
 			alert(`Server created: ${response.data.slug}`);
-			navigate(`/server/${response.data.id}/edit`);
+			navigate(`/server/${response.data.slug}`);
     } catch (err: any) {
       setError(err.message || 'Failed to create server');
     } finally {

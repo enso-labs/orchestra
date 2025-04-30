@@ -23,7 +23,6 @@ import SharePublic from '@/pages/SharePublic';
 import DocMCPServer from '@/pages/DocMCPServer';
 import FlowCreate from '@/pages/FlowCreate';
 import ServerCreate from '@/pages/ServerCreate';
-import ServerEdit from '@/pages/ServerEdit';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -121,14 +120,6 @@ const AppRoutes: React.FC = () => {
           element={
             <PrivateRoute>
               <ServerCreate />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/server/:serverId/edit"
-          element={
-            <PrivateRoute>
-              <ServerEdit />
             </PrivateRoute>
           }
         />
