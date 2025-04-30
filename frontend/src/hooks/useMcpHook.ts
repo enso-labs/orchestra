@@ -2,7 +2,7 @@ import debug from 'debug';
 import apiClient from '@/lib/utils/apiClient';
 import { useCallback, useEffect, useState } from 'react';
 import { useChatContext } from '@/context/ChatContext';
-import { listPublicServers } from '@/services/serverService';
+import { listPublicServers, listServers } from '@/services/serverService';
 
 debug.enable('hooks:*');
 // const logger = debug('hooks:useMcpHook');
@@ -127,6 +127,11 @@ export default function useMcpHook() {
 		setMcpServers(response.data.servers);
 	}
 
+	const fetchMyServers = async () => {
+		const response = await listServers();
+		setMcpServers(response.data.servers);
+	}
+
 	const useLoadMCPFromPayloadEffect = () => {
 		useEffect(() => {
 			if (payload.mcp) {
@@ -185,6 +190,7 @@ export default function useMcpHook() {
 		cancelAddingMCP,
 		saveMCPConfig,
 		removeMCPConfig,
+		fetchMyServers,
 		// Effects
 		useLoadMCPFromPayloadEffect,
 		useMCPInfoEffect,

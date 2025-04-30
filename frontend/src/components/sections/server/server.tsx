@@ -1,47 +1,46 @@
 import { useState, useEffect } from "react"
-import { getAgents, deleteAgent } from "@/services/agentService"
+import {  deleteAgent } from "@/services/agentService"
 import { toast } from "sonner"
-import { Agent, DashboardTabOption } from "@/entities"
-import DashboardHeader from "./dashboard-header"
-import DashboardSearch from "./dashboard-search"
-import DashboardTabs from "./dashboard-tabs"
-import DashboardTabsContent from "./dashboard-tabs-content"
+import { Agent, Server, DashboardTabOption } from "@/entities"
+import DashboardHeader from "./server-header"
+import DashboardSearch from "./server-search"
+import DashboardTabs from "./server-tabs"
+import DashboardTabsContent from "./server-tabs-content"
+import {listPublicServers, listServers } from "@/services/serverService"
 
 export default function DashboardSection() {
 	const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [myAgents, setMyAgents] = useState<Agent[]>([])
-  const [publicAgents, setPublicAgents] = useState<Agent[]>([])
-  const [privateAgents, setPrivateAgents] = useState<Agent[]>([])
-  const [filteredMyAgents, setFilteredMyAgents] = useState<Agent[]>([])
-  const [filteredPublicAgents, setFilteredPublicAgents] = useState<Agent[]>([])
-  const [filteredPrivateAgents, setFilteredPrivateAgents] = useState<Agent[]>([])
-  const [activeTab, setActiveTab] = useState<DashboardTabOption>("agents")
+  const [myAgents, setMyAgents] = useState<Server[]>([])
+  const [publicAgents, setPublicAgents] = useState<Server[]>([])
+  const [privateAgents, setPrivateAgents] = useState<Server[]>([])
+  const [filteredMyAgents, setFilteredMyAgents] = useState<Server[]>([])
+  const [filteredPublicAgents, setFilteredPublicAgents] = useState<Server[]>([])
+  const [filteredPrivateAgents, setFilteredPrivateAgents] = useState<Server[]>([])
+  const [activeTab, setActiveTab] = useState<DashboardTabOption>("servers")
   const [isLoading, setIsLoading] = useState(true)
-
   // Fetch agents from API
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        const result = await getAgents()
-        const agents = result.agents || []
+        const res = await listServers();
+        // const resPublic = await listPublicServers();
+        const servers = res.data.servers || []
+        // const publicServers = resPublic.data.servers || []
+
+        // servers.push(...publicServers)
         
         // Filter agents into respective categories
-        const myAgentsList = agents.filter((agent: Agent) => !agent.public)
-        const publicAgentsList = agents.filter((agent: Agent) => agent.public)
+        const privateServersList = servers
+        // const publicServersList = servers
+
+        setPrivateAgents(privateServersList)
+        // setPublicAgents(publicServersList)
+
+        // setFilteredPublicAgents(publicServersList)
+        setFilteredPrivateAgents(privateServersList)
         
-        // For now, we'll keep privateAgents separate, but in a real app
-        // this might be agents shared with you but not owned by you
-        const privateAgentsList: Agent[] = []
-        
-        setMyAgents(myAgentsList)
-        setPublicAgents(publicAgentsList)
-        setPrivateAgents(privateAgentsList)
-        
-        setFilteredMyAgents(myAgentsList)
-        setFilteredPublicAgents(publicAgentsList)
-        setFilteredPrivateAgents(privateAgentsList)
       } catch (error) {
         console.error("Failed to fetch agents:", error)
         toast.error("Failed to load agents")
@@ -73,7 +72,7 @@ export default function DashboardSection() {
 
   // Filter agents based on search term and selected categories
   useEffect(() => {
-    const filterAgents = (agents: Agent[]) => {
+    const filterAgents = (agents: Server[]) => {
       return agents.filter((agent) => {
         const matchesSearch =
           agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

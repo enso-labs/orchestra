@@ -9,13 +9,12 @@ import { getAuthToken } from '@/lib/utils/auth';
 import HomeIcon from '@/components/icons/HomeIcon';
 
 export default function DocMCPServer() {
+	const token = getAuthToken();
 	const { serverSlug } = useParams();
 	const { mcpServers, useMCPServersEffect, mcpInfo, setMcpInfo } = useToolContext();
 
 	useMCPServersEffect();
-
 	const server = mcpServers.find((server: any) => server.slug === serverSlug);
-	const token = getAuthToken();
 
 	const fetchServerInfo = async () => {
 		const res = await getServerInfo('mcp', {mcp: {[server.slug]: server.config}});

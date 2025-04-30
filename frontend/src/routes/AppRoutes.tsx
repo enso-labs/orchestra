@@ -23,7 +23,9 @@ import SharePublic from '@/pages/SharePublic';
 import DocMCPServer from '@/pages/DocMCPServer';
 import FlowCreate from '@/pages/FlowCreate';
 import ServerCreate from '@/pages/ServerCreate';
-
+import ServerEdit from '@/pages/ServerEdit';
+import Server from '@/pages/server';
+import Flow from '@/pages/flow';
 const AppRoutes: React.FC = () => {
   return (
     <Router>
@@ -92,6 +94,22 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/servers"
+          element={
+            <PrivateRoute>
+              <Server />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/workflows"
+          element={
+            <PrivateRoute>
+              <Flow />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/settings"
           element={
             <PrivateRoute>
@@ -120,6 +138,14 @@ const AppRoutes: React.FC = () => {
           element={
             <PrivateRoute>
               <ServerCreate />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/server/:serverId/edit"
+          element={
+            <PrivateRoute>
+              <ServerEdit />
             </PrivateRoute>
           }
         />

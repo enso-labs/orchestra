@@ -128,8 +128,7 @@ function ServerEdit() {
 							const confirmed = window.confirm('Are you sure you want to delete this server? This action cannot be undone.');
 							if (confirmed) {
 								await deleteServer(serverId || formData.id);
-								alert(`Server deleted: ${formData.slug}`);
-								navigate('/dashboard');
+								navigate('/servers');
 							}
 						}}
 					/>

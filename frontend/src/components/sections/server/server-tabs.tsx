@@ -1,6 +1,6 @@
-import { Agent, DashboardTabOption } from "@/entities"
+import { Server, DashboardTabOption } from "@/entities"
 import { useNavigate } from "react-router-dom";
-function DashboardTabs({
+function ServerTabs({
 	activeTab,
 	setActiveTab,
 	filteredMyAgents,
@@ -9,9 +9,9 @@ function DashboardTabs({
 }: {
 	activeTab: string
 	setActiveTab: (tab: DashboardTabOption) => void
-	filteredMyAgents: Agent[]
-	filteredPublicAgents: Agent[]
-	filteredPrivateAgents: Agent[]
+	filteredMyAgents: Server[]
+	filteredPublicAgents: Server[]
+	filteredPrivateAgents: Server[]
 }) {
 	const navigate = useNavigate();
 
@@ -66,4 +66,4 @@ function DashboardTabs({
 	)
 }
 
-export default DashboardTabs;
+export default ServerTabs;
