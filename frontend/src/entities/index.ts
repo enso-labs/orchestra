@@ -26,4 +26,20 @@ export type Agent = {
   created_at: string
 }
 
+export type Server = {
+  name: string;
+  description: string;
+  type: "mcp" | "a2a";
+  config: {
+    transport?: string;
+    base_url?: string;
+    url?: string;
+    headers?: Record<string, string>;
+    agent_card_path?: string;
+  };
+  documentation?: string;
+  documentation_url?: string;
+  public: boolean;
+}
+
 export type DashboardTabOption = "agents" | "workflows" | "servers"

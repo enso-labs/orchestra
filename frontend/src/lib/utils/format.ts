@@ -172,10 +172,24 @@ export function handleStreamChunk(data: any) {
 
 
 export function constructSystemPrompt(systemPrompt: string) {
-        return `${systemPrompt}
+  return `${systemPrompt}
 ---
 Current Date and Time: ${new Date().toLocaleString()}
 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
 Language: ${navigator.language}
 `;
-    }
+}
+
+export function base64Encode(str: string) {
+  // Encode string as UTF-8, then to base64
+  return btoa(encodeURIComponent(str));
+}
+
+export function base64Decode(str: string) {
+  // Decode base64 string to UTF-8
+  return decodeURIComponent(atob(str));
+}
+
+export function base64Compare(str1: string, str2: string) {
+  return str1 === str2;
+}

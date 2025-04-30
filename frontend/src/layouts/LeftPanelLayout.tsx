@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Trash } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface LeftPanelLayoutProps {
@@ -7,7 +7,9 @@ interface LeftPanelLayoutProps {
 	status?: string;
 	children: React.ReactNode;
 	onCreate: () => void;
-	isCreating: boolean;
+	loading: boolean;
+	disabled?: boolean;
+	onDelete?: () => void;
 }	
 
 export function LeftPanelLayout({ 
@@ -15,7 +17,10 @@ export function LeftPanelLayout({
 	status = "Draft",
 	children, 
 	onCreate, 
-	isCreating 
+	loading,
+	disabled = false,
+	onDelete,
+
 }: LeftPanelLayoutProps) {
 	const navigate = useNavigate();
 	
@@ -27,15 +32,30 @@ export function LeftPanelLayout({
 				</Button>
 				<div>
 					<h1 className="text-lg font-medium">{title}</h1>
-					<p className="text-xs text-muted-foreground">• {status}</p>
+					<p className="text-xs text-muted-foreground">{status}</p>
 				</div>
-				<div className="ml-auto">
+				<div className="ml-auto flex">
+					{onDelete && (
+						<Button 
+							variant="destructive"
+							size="icon"
+							className="mr-2 h-9 w-9"
+							onClick={onDelete}
+						>
+							<Trash className="h-5 w-5" />
+						</Button>
+					)}
 					<Button 
-						className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" 
+						variant="default"
+						size="icon"
+						className="h-9 w-9"
 						onClick={onCreate}
-						disabled={isCreating}
+						disabled={loading || disabled}
 					>
-						{isCreating ? "Creating..." : "Create"}
+						{loading ? 
+							<span className="h-5 w-5 animate-spin">⟳</span> : 
+							<span className="h-5 w-5">💾</span>
+						}
 					</Button>
 				</div>
 			</div>

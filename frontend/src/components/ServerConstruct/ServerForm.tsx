@@ -10,24 +10,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
+import { useToolContext } from "@/context/ToolContext";
 export const ServerForm = ({ 
   onSubmit, 
   onChange, 
-  initialData 
 }: { 
   onSubmit: (formData: any) => void, 
   onChange: (formData: any) => void, 
-  initialData: any 
 }) => {
-  const [formData, setFormData] = useState(initialData)
+  const { formData, setFormData } = useToolContext();
   const [headerKeys, setHeaderKeys] = useState([''])
   useEffect(() => {
     // Initialize header keys from initial data if present
-    if (initialData?.config?.default_server?.headers) {
-      setHeaderKeys(Object.keys(initialData.config.default_server.headers))
+    if (formData?.config?.headers) {
+      setHeaderKeys(Object.keys(formData.config.headers))
     }
-  }, [initialData])
+  }, [formData])
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     // Need to handle checkbox separately as it doesn't have a value property in the same way
@@ -46,11 +44,9 @@ export const ServerForm = ({
     const newFormData = {
       ...formData,
       config: {
-        default_server: {
-          ...formData.config.default_server,
+          ...formData.config,
           [name]: value,
         },
-      },
     }
     setFormData(newFormData)
     onChange?.(newFormData)
@@ -59,12 +55,10 @@ export const ServerForm = ({
     const newFormData = {
       ...formData,
       config: {
-        default_server: {
-          ...formData.config.default_server,
-          headers: {
-            ...formData.config.default_server.headers,
-            [key]: value,
-          },
+        ...formData.config,
+        headers: {
+          ...formData.config.headers,
+          [key]: value,
         },
       },
     }
@@ -76,17 +70,15 @@ export const ServerForm = ({
   }
   const removeHeader = (index: number) => {
     const newHeaders = {
-      ...formData.config.default_server.headers,
+      ...formData.config.headers,
     }
     delete newHeaders[headerKeys[index]]
     setHeaderKeys((prev) => prev.filter((_, i) => i !== index))
     setFormData((prev: any) => ({
       ...prev,
       config: {
-        default_server: {
-          ...prev.config.default_server,
-          headers: newHeaders,
-        },
+        ...prev.config,
+        headers: newHeaders,
       },
     }))
   }
@@ -146,7 +138,7 @@ export const ServerForm = ({
               <label className="block mb-2 text-sm font-medium">Transport</label>
               <Select
                 name="transport"
-                value={formData.config.default_server.transport}
+                value={formData.config.transport}
                 onValueChange={(value) => {
                   handleConfigChange({
                     target: { name: 'transport', value }
@@ -168,7 +160,7 @@ export const ServerForm = ({
               <Input
                 type="url"
                 name="url"
-                value={formData.config.default_server.url}
+                value={formData.config.url}
                 onChange={handleConfigChange}
                 className="bg-secondary/50 border-border"
                 placeholder="Enter server URL"
@@ -194,7 +186,7 @@ export const ServerForm = ({
                     <Input
                       type="text"
                       placeholder="Header Value"
-                      value={formData.config.default_server.headers[headerKey] || ''}
+                      value={formData.config.headers[headerKey] || ''}
                       onChange={(e) => handleHeaderChange(headerKey, e.target.value)}
                       className="flex-1 bg-secondary/50 border-border"
                     />
@@ -231,7 +223,7 @@ export const ServerForm = ({
               <Input
                 type="url"
                 name="url"
-                value={formData.config.default_server.url}
+                value={formData.config.url}
                 onChange={handleConfigChange}
                 className="bg-secondary/50 border-border"
                 placeholder="Enter base URL"
@@ -243,7 +235,7 @@ export const ServerForm = ({
               <Input
                 type="text"
                 name="agent_card_path"
-                value={formData.config.default_server.agent_card_path}
+                value={formData.config.agent_card_path}
                 onChange={handleConfigChange}
                 className="bg-secondary/50 border-border"
                 placeholder="/.well-known/agent.json"
