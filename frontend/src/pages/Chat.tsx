@@ -33,7 +33,7 @@ export default function Chat() {
     setIsToolCallInProgress,
     currentToolCall,
     setCurrentToolCall,
-    currentModel,
+    // currentModel,
     setSelectedToolMessage
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)

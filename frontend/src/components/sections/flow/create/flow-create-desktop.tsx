@@ -5,10 +5,10 @@ import LeftPanelLayout from "@/layouts/LeftPanelLayout";
 
 function FlowCreateDesktop({
 	processCreateAgent,
-	isCreating,
+	loading,
 }: {
 	processCreateAgent: () => void;
-	isCreating: boolean;
+	loading: boolean;
 }) {
 	return (
 		<div className="hidden md:block h-screen w-full">
@@ -20,7 +20,7 @@ function FlowCreateDesktop({
 				<ResizablePanel defaultSize={30} minSize={30}>
 					<LeftPanelLayout
 						onCreate={processCreateAgent}
-						isCreating={isCreating}
+						loading={loading}
 					>
 						<FlowEditForm />
 					</LeftPanelLayout>
