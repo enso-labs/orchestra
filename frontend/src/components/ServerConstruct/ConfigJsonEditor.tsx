@@ -35,7 +35,7 @@ export const ConfigJsonEditor = ({ data, onChange }: { data: any, onChange: (dat
         </div>
       </div>
       <textarea
-        className={`flex-1 w-full font-mono text-sm p-4 border rounded-lg ${error ? 'border-red-500' : 'border-gray-200'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+        className={`flex-1 w-full font-mono text-sm p-4 border rounded-lg ${error ? 'border-red-500' : 'border-gray-200'} bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y`}
         value={jsonValue}
         onChange={handleChange}
         placeholder="Edit JSON configuration..."

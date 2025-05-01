@@ -182,7 +182,7 @@ export default function FlowCreate() {
       {/* Desktop view with resizable panels */}
       <FlowCreateDesktop 
 				processCreateAgent={processCreateAgent}
-				isCreating={isCreating}
+				loading={isCreating}
 			/>
     </ChatLayout>
   );

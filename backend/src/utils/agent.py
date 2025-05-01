@@ -9,6 +9,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import StructuredTool, tool
 from psycopg.connection_async import AsyncConnection
 
+from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
@@ -19,7 +20,7 @@ from src.constants.llm import ModelName
 from src.entities import Answer, Thread
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
-from src.services.db import create_async_pool
+from src.services.db import create_async_pool, get_checkpoint_db
 from pydantic import BaseModel
 from src.utils.format import get_base64_image
 import sys
@@ -147,7 +148,7 @@ class Agent:
             raise e
         
     async def _acheckpointer(self):
-        async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
+        async with get_checkpoint_db() as checkpointer:
             await checkpointer.setup()
             self.checkpointer = checkpointer
             return checkpointer
@@ -184,7 +185,7 @@ class Agent:
             user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order='desc', agent=self.agent_id)
             threads = []
             if user_threads:
-                async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
+                async with get_checkpoint_db() as checkpointer:
                     for thread in user_threads:
                         latest_checkpoint = await checkpointer.aget_tuple({"configurable": {"thread_id": str(thread.thread)}})
                         if latest_checkpoint:
@@ -293,22 +294,36 @@ class Agent:
             logger.exception(f"Failed to create thread: {str(e)}")
             return 0
         
-    def delete(self):
+    async def _wipe(self):
         try:
             query_blobs = "DELETE FROM checkpoint_blobs WHERE thread_id = %s"
             query_checkpoints = "DELETE FROM checkpoints WHERE thread_id = %s"
             query_checkpoints_writes = "DELETE FROM checkpoint_writes WHERE thread_id = %s"
-            with self.pool.connection() as conn:  # Acquire a connection from the pool
-                with conn.cursor() as cur:
-                    cur.execute(query_blobs, (self.thread_id,))
-                    cur.execute(query_checkpoints, (self.thread_id,))
-                    cur.execute(query_checkpoints_writes, (self.thread_id,))
+            async with self.pool.connection() as conn:  # Acquire a connection from the pool
+                async with conn.cursor() as cur:
+                    await cur.execute(query_blobs, (self.thread_id,))
+                    await cur.execute(query_checkpoints, (self.thread_id,))
+                    await cur.execute(query_checkpoints_writes, (self.thread_id,))
                     logger.info(f"Deleted {cur.rowcount} rows with thread_id = {self.thread_id}")
 
                     return cur.rowcount
         except Exception as e:
             logger.error(f"Failed to delete checkpoint: {str(e)}")
             return 0
+    
+    async def delete_thread(self, wipe: bool = True):
+        try:
+            await self.create_pool()
+            thread_repo = ThreadRepo(self.user_repo.db, self.user_repo.user_id)
+            await thread_repo.delete(self.thread_id)
+            if wipe:
+                await self._wipe()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete thread: {str(e)}")
+            return False
+        finally:
+            await self.cleanup()
     
     async def abuilder(
         self,

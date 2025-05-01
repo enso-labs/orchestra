@@ -1,8 +1,7 @@
 import contextlib
 import functools
-import asyncio
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import AsyncGenerator, Generator, Callable
-
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -19,6 +18,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
 async_engine = create_async_engine(ASYNC_DB_URI)
 AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=async_engine, class_=AsyncSession)
+
+def get_checkpoint_db():
+    return AsyncPostgresSaver.from_conn_string(DB_URI)
 
 # Session context managers
 def get_db() -> Generator[SessionLocal, None, None]: # type: ignore
