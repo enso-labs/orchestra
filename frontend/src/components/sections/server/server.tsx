@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react"
 import {  deleteAgent } from "@/services/agentService"
 import { toast } from "sonner"
-import { Agent, Server, DashboardTabOption } from "@/entities"
+import { Server, DashboardTabOption } from "@/entities"
 import DashboardHeader from "./server-header"
 import DashboardSearch from "./server-search"
 import DashboardTabs from "./server-tabs"
 import DashboardTabsContent from "./server-tabs-content"
-import {listPublicServers, listServers } from "@/services/serverService"
+import {listServers } from "@/services/serverService"
 
 export default function DashboardSection() {
 	const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [myAgents, setMyAgents] = useState<Server[]>([])
-  const [publicAgents, setPublicAgents] = useState<Server[]>([])
+  const [publicAgents, ] = useState<Server[]>([])
   const [privateAgents, setPrivateAgents] = useState<Server[]>([])
   const [filteredMyAgents, setFilteredMyAgents] = useState<Server[]>([])
   const [filteredPublicAgents, setFilteredPublicAgents] = useState<Server[]>([])

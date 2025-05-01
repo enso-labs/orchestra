@@ -19,6 +19,7 @@ function LeftPanel({
 	handleFormChange,
 	disabled,
 	onDelete,
+	onView,
 	title = "New Enso",
 	status = "Draft",
 }: {
@@ -32,6 +33,7 @@ function LeftPanel({
 	status?: string;
 	disabled?: boolean;
 	onDelete?: () => void;
+	onView?: () => void;
 }) {
 
 	
@@ -43,6 +45,7 @@ function LeftPanel({
 			loading={loading}
 			disabled={disabled}
 			onDelete={onDelete}
+			onView={onView}
 		>
 			
 			{error && (
@@ -131,6 +134,7 @@ function ServerEdit() {
 								navigate('/servers');
 							}
 						}}
+						onView={() => navigate(`/server/${formData.slug}`)}
 					/>
 				),
 				defaultSize: 50,

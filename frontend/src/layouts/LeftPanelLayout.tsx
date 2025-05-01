@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Trash } from "lucide-react";
+import { ChevronLeft, Eye, Trash } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface LeftPanelLayoutProps {
@@ -10,6 +10,7 @@ interface LeftPanelLayoutProps {
 	loading: boolean;
 	disabled?: boolean;
 	onDelete?: () => void;
+	onView?: () => void;
 }	
 
 export function LeftPanelLayout({ 
@@ -20,7 +21,7 @@ export function LeftPanelLayout({
 	loading,
 	disabled = false,
 	onDelete,
-
+	onView,
 }: LeftPanelLayoutProps) {
 	const navigate = useNavigate();
 	
@@ -35,6 +36,16 @@ export function LeftPanelLayout({
 					<p className="text-xs text-muted-foreground">{status}</p>
 				</div>
 				<div className="ml-auto flex">
+					{onView && (
+						<Button 
+							variant="outline"
+							size="icon"
+							className="mr-2 h-9 w-9"
+							onClick={onView}
+						>
+							<Eye className="h-5 w-5" />
+						</Button>
+					)}
 					{onDelete && (
 						<Button 
 							variant="destructive"

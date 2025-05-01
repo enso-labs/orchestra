@@ -8,7 +8,8 @@ import { useToolContext } from "@/context/ToolContext";
 import { useNavigate } from "react-router-dom";
 import { Server } from "@/entities";
 import { createServer } from "@/services/serverService";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { INIT_SERVER_STATE } from "@/hooks/useServerHook";
 
 function LeftPanel({
 	onCreate,
@@ -59,6 +60,7 @@ function ServerCreate() {
 		isJsonValid,
 		error,
 		formData,
+		setFormData,
 		setError,
 		handleFormChange,
 		useDefaultServerConfigEffect,
@@ -82,6 +84,10 @@ function ServerCreate() {
 			setLoading(false);
 		}
   }
+
+	useEffect(() => {
+		setFormData(INIT_SERVER_STATE.formData);
+	}, []);
 
 	useDefaultServerConfigEffect();
 	useJsonValidationEffect();

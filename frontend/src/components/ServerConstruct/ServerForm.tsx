@@ -186,7 +186,7 @@ export const ServerForm = ({
                     <Input
                       type="text"
                       placeholder="Header Value"
-                      value={formData.config.headers[headerKey] || ''}
+                      value={formData.config.headers ? formData.config.headers[headerKey] || '' : ''}
                       onChange={(e) => handleHeaderChange(headerKey, e.target.value)}
                       className="flex-1 bg-secondary/50 border-border"
                     />
