@@ -8,7 +8,7 @@ import DashboardTabs from "./server-tabs"
 import DashboardTabsContent from "./server-tabs-content"
 import {listServers } from "@/services/serverService"
 
-export default function DashboardSection() {
+export default function ServerSection() {
 	const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [myAgents, setMyAgents] = useState<Server[]>([])
@@ -92,7 +92,7 @@ export default function DashboardSection() {
   }, [searchTerm, selectedCategories, myAgents, publicAgents, privateAgents])
 
   return (
-    <main className="max-w-8xl mx-auto px-4 py-4 sm:px-6">
+    <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6">
 			<div className="flex flex-col space-y-4">
 				<DashboardHeader activeTab={activeTab} />
 

@@ -34,16 +34,6 @@ function DashboardTabs({
 			</button>
 			<button
 				className={`px-4 py-2 text-sm font-medium ${
-					activeTab === "workflows"
-						? "border-b-2 border-primary text-foreground"
-						: "text-muted-foreground hover:text-foreground"
-				}`}
-				onClick={() => setActiveTab("workflows")}
-			>
-				Workflows
-			</button>
-			<button
-				className={`px-4 py-2 text-sm font-medium ${
 					window.location.pathname === "/servers"
 						? "border-b-2 border-primary text-foreground"
 						: "text-muted-foreground hover:text-foreground"
@@ -51,6 +41,16 @@ function DashboardTabs({
 				onClick={() => navigate("/servers")}
 			>
 				Servers
+			</button>
+			<button
+				className={`px-4 py-2 text-sm font-medium ${
+					activeTab === "workflows"
+						? "border-b-2 border-primary text-foreground"
+						: "text-muted-foreground hover:text-foreground"
+				}`}
+				onClick={() => setActiveTab("workflows")}
+			>
+				Workflows
 			</button>
 			<button
 				className={`px-4 py-2 text-sm font-medium ${
