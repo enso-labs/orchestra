@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.1
 
 ### Fixed
+  - bug/276-resolve-json-parsing-on-tools-message (2025-05-01)
   - bug/254-subsequent-messages-work (2025-04-21)
   - bug/227-streaming-output-for-anthropic-fix (2025-04-02)
   - bug/215-async-db-timeout (2025-03-25)
