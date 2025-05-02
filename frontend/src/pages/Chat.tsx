@@ -9,6 +9,7 @@ import DefaultTool from "@/components/tools/Default"
 import SearchEngineTool from "@/components/tools/SearchEngine"
 import { findToolCall } from "@/lib/utils/format"
 import ChatMessages from "@/components/lists/ChatMessages"
+import SystemMessageCard from "@/components/cards/SystemMessageCard"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
   if (selectedToolMessage) return (
@@ -33,7 +34,7 @@ export default function Chat() {
     setIsToolCallInProgress,
     currentToolCall,
     setCurrentToolCall,
-    // currentModel,
+    currentModel,
     setSelectedToolMessage
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -100,6 +101,9 @@ export default function Chat() {
           />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
+              {!messages.find((message: any) => message.type === "system") && currentModel?.metadata?.system_message && (
+                <SystemMessageCard content={payload.system} />
+              )}
               <ChatMessages messages={messages} />
 
               {/* {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
