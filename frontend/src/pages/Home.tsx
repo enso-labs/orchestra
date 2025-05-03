@@ -4,6 +4,7 @@ import ChatInput from '@/components/inputs/ChatInput';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
+import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
 
 export default function Home() {
     const { setPayload } = useChatContext();
@@ -16,8 +17,9 @@ export default function Home() {
     
     // Set default model in query params on component load if not already set
     useEffect(() => {
-        if (!searchParams.get('model')) {
-            setSearchParams({ model: 'openai-gpt-4o-mini' });
+        const model = searchParams.get('model');
+        if (!isValidModelName(model)) {
+            setSearchParams({ model: DEFAULT_CHAT_MODEL });
         }
     }, [searchParams, setSearchParams]);
 
