@@ -1,30 +1,16 @@
 import NoAuthLayout from '../layouts/NoAuthLayout';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import ChatInput from '@/components/inputs/ChatInput';
-import { useSearchParams, Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
-import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
+import { DEFAULT_CHAT_MODEL } from '@/config/llm';
 
 export default function Home() {
-    const { setPayload } = useChatContext();
+    const { setPayload, useSelectModelEffect, useFetchModelsEffect } = useChatContext();
     const [searchParams, setSearchParams] = useSearchParams();
-    const currentModel = searchParams.get('model') || '';
-    const { 
-        useFetchModelsEffect, 
-        useSelectModelEffect,
-    } = useChatContext();
-    
-    // Set default model in query params on component load if not already set
-    useEffect(() => {
-        const model = searchParams.get('model');
-        if (!isValidModelName(model)) {
-            setSearchParams({ model: DEFAULT_CHAT_MODEL });
-        }
-    }, [searchParams, setSearchParams]);
 
-    useFetchModelsEffect(setSearchParams, currentModel);
-    useSelectModelEffect(currentModel);
+    const currentModel = searchParams.get('model') || DEFAULT_CHAT_MODEL;
 
     useEffect(() => {
         const a2a = localStorage.getItem('a2a');
@@ -32,6 +18,10 @@ export default function Home() {
             setPayload((prev: any) => ({ ...prev, a2a: JSON.parse(a2a) }));
         }
     }, []);
+
+    
+    useSelectModelEffect(currentModel);
+    useFetchModelsEffect(setSearchParams, currentModel);
 
     return (
         <NoAuthLayout>

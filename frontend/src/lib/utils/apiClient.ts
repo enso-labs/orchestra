@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import { TOKEN_NAME, VITE_API_URL } from '../../config';
+import { getAuthToken } from './auth';
 
 // Create an Axios instance
 const apiClient = axios.create({
@@ -17,7 +18,7 @@ const RETRY_DELAY = 1000;
 // Add a request interceptor
 apiClient.interceptors.request.use(
   (config: any) => {
-    const token = localStorage.getItem(TOKEN_NAME); // Replace with your token logic
+    const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
