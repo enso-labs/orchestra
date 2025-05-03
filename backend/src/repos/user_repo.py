@@ -96,6 +96,41 @@ class UserRepo:
             await self.db.commit()
             return True
         return False
+    
+    @staticmethod
+    def _get_key_name(key: str = None) -> Optional[str]:
+        if key == "openai":
+            return "OPENAI_API_KEY"
+        elif key == "anthropic":
+            return "ANTHROPIC_API_KEY"
+        elif key == "ollama":
+            return "OLLAMA_BASE_URL"
+        elif key == "groq":
+            return "GROQ_API_KEY"
+        elif key == "gemini":
+            return "GEMINI_API_KEY"
+        
+    @staticmethod
+    def get_provider(model_name: str = None) -> Optional[str]:
+        if model_name:
+            return model_name.split(':', 1)[0]
+        return None
+
+    def get_token_by_provider(self, model_name: str = None) -> Optional[str]:
+        """
+        Get decrypted token value for a user by key.
+        Returns None if token doesn't exist.
+        
+        The key is expected to be in format 'provider:model', 
+        and we'll match on the provider part only.
+        """
+        if model_name:
+            provider = self.get_provider(model_name)
+            key_name = self._get_key_name(provider)
+            token = self.get_token(key_name)
+            if token:
+                return Token.decrypt_value(token.value, APP_SECRET_KEY)
+        return None
 
     async def threads(self, page=1, per_page=20, sort_order='desc', agent=None):
         """Get all threads for a user."""
