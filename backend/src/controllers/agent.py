@@ -42,7 +42,10 @@ class AgentController:
             #         return await process_a2a(new_thread, thread_id)
                 
             agent = Agent(config=config, user_repo=self.user_repo)
-            await agent.abuilder(tools=new_thread.tools, model_name=new_thread.model, mcp=new_thread.mcp, a2a=new_thread.a2a)
+            await agent.abuilder(tools=new_thread.tools, 
+                                 model_name=new_thread.model, 
+                                 mcp=new_thread.mcp, 
+                                 a2a=new_thread.a2a)
             messages = agent.messages(new_thread.query, new_thread.images)
             if "text/event-stream" in request.headers.get("accept", ""):
                 return await agent.aprocess(messages, "text/event-stream")

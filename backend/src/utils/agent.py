@@ -336,11 +336,7 @@ class Agent:
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ):
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
-        provider = self.user_repo.get_provider(model_name)
-        key = self.user_repo.get_token_by_provider(model_name)
-        self.llm = init_chat_model(model=model_name, model_provider=provider, temperature=0, api_key=key)
-        # self.checkpointer = self._checkpointer()
-        # self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
+        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         self.checkpointer = checkpointer
         system = self.config.get('configurable').get("system", None)
         # Get MCP tools if provided

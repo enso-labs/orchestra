@@ -19,8 +19,8 @@ class ModelName(str, Enum):
     GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
     GROQ_LLAMA_3_3_70B_SPECDEC = "groq:llama-3.3-70b-specdec"
     GROQ_LLAMA_3_2_90B_VISION = "groq:llama-3.2-90b-vision-preview"
-    GEMINI_PRO_1_5 = "google:gemini-1.5-pro"
-    GEMINI_PRO_2 = "google:gemini-2-pro"
+    GEMINI_PRO_1_5 = "google_genai:gemini-1.5-pro"
+    GEMINI_PRO_2 = "google_genai:gemini-2-pro"
     
 MODEL_CONFIG = [
     {
