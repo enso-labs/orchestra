@@ -6,7 +6,7 @@ export default function HelpfulIcons() {
 				<img src="https://img.shields.io/badge/View%20Documentation-Docs-blue" alt="Documentation" />
 			</a>
 			<a
-				href="https://github.com/ryaneggz/langgraph-template"
+				href="https://github.com/enso-labs/cloud"
 				target="_blank"
 				className="hover:opacity-80 transition-opacity"
 				rel="noreferrer"

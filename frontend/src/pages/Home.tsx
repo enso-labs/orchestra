@@ -1,21 +1,67 @@
-
-
+import NoAuthLayout from '../layouts/NoAuthLayout';
+import { ColorModeButton } from '@/components/buttons/ColorModeButton';
+import ChatInput from '@/components/inputs/ChatInput';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useChatContext } from '@/context/ChatContext';
 
 export default function Home() {
-    const navigate = useNavigate();
+    const { setPayload } = useChatContext();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const currentModel = searchParams.get('model') || '';
+    const { 
+        useFetchModelsEffect, 
+        useSelectModelEffect,
+    } = useChatContext();
+    
+    // Set default model in query params on component load if not already set
+    useEffect(() => {
+        if (!searchParams.get('model')) {
+            setSearchParams({ model: 'openai-gpt-4o-mini' });
+        }
+    }, [searchParams, setSearchParams]);
+
+    useFetchModelsEffect(setSearchParams, currentModel);
+    useSelectModelEffect(currentModel);
 
     useEffect(() => {
-        navigate('/login');
-    }, [navigate]);
+        const a2a = localStorage.getItem('a2a');
+        if (a2a) {
+            setPayload((prev: any) => ({ ...prev, a2a: JSON.parse(a2a) }));
+        }
+    }, []);
 
     return (
-        <main
-            className="flex min-h-screen flex-col"
-            style={{ position: "relative" }}
-        >
-            <h3>Home</h3>
-        </main>
+        <NoAuthLayout>
+            <main className="flex-1 flex flex-col items-center justify-center bg-background">
+                <div className="absolute top-4 left-4">
+                    <Link 
+                        to="/login" 
+                        className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm font-medium"
+                    >
+                        Login
+                    </Link>
+                </div>
+                <div className="absolute top-4 right-4">
+                    <ColorModeButton />
+                </div>
+                <img 
+                    src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" 
+                    alt="Logo" 
+                    className="w-32 h-32 mx-auto rounded-full" 
+                />
+                <h1 className="text-4xl font-bold mt-2">Ensō Cloud</h1>
+                <p className="text-lg mb-2">Powered by <a href="https://github.com/enso-labs/mcp-sse" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MCP</a> & <a href="https://github.com/enso-labs/a2a-langgraph" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">A2A</a></p>
+                <div className="flex flex-row gap-2 mb-2">
+                    <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple" /></a>
+                    <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black" /></a>
+                    <a href="https://demo.enso.sh/docs/"><img src="https://img.shields.io/badge/View-Docs-blue" /></a>
+                </div>
+                <div className="flex flex-col w-full lg:w-[600px]">
+                    <ChatInput />
+                </div>
+                
+            </main>
+        </NoAuthLayout>
     );
-} 
+}

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MobileNav } from '@/components/nav/MobileNav';
 import { TOKEN_NAME } from '@/config';
 import useAppHook from '@/hooks/useAppHook';
-
+import HomeIcon from '@/components/icons/HomeIcon';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { appVersion, useFetchAppVersionEffect } = useAppHook();
@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   const handleLogout = () => {
     localStorage.removeItem(TOKEN_NAME);
-    navigate('/login');
+    navigate('/');
   };
 
   return (
@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-foreground">Enso</h1>
+            <HomeIcon />
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-4">
@@ -27,7 +27,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 Dashboard
               </Link>
               <Link to="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
-                Playground
+                Chat
               </Link>
               <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
                 Settings
@@ -52,7 +52,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <footer className="mt-auto bg-card border-t border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-muted-foreground text-xs">
-            &copy; 2025 Enso. All rights reserved. v{appVersion}
+            &copy; 2025 Ensō. All rights reserved. v{appVersion}
           </p>
         </div>
       </footer>

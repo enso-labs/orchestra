@@ -1,18 +1,25 @@
 import { Button } from "@/components/ui/button"
 import { ArrowUp, Plus } from "lucide-react"
-import { ToolSelector} from "../selectors/ToolSelector"
+import ToolSelector from "@/components/ToolSelector"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
 import useImageHook from "@/hooks/useImageHook"
 import { useChatContext } from "@/context/ChatContext"
-import { useCallback, useRef } from "react"
+import { useCallback, useRef, useEffect } from "react"
 import { PresetPopover } from "../popovers/PresetPopover"
 import useAppHook from "@/hooks/useAppHook"
+import { useLocation } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import SearchButton from "../buttons/SearchButton"
+import { TOKEN_NAME } from "@/config"
 
 export default function ChatInput() {
+  
   const { payload, handleQuery, setPayload, currentModel } = useChatContext();
   const { isMobile } = useAppHook();
+  const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -30,14 +37,14 @@ export default function ChatInput() {
   } = useImageHook();
 
   const handleSubmit = useCallback(() => {
-		handleQuery()
+		handleQuery();
 		// Clear images after sending
-		setImages([])
+		setImages([]);
 		setPayload((prev: any) => ({
 			...prev,
       query: "",
 			images: []
-		}))
+		}));
 	}, [handleQuery, setPayload])
 
   const triggerFileInput = (e: React.MouseEvent) => {
@@ -52,8 +59,14 @@ export default function ChatInput() {
     }
   };
 
+  useEffect(() => {
+    if (location.pathname === "/" && payload.threadId) {
+      navigate(`/thread/${payload.threadId}`);
+    }
+  }, [payload.threadId]);
+
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col w-full">
       {images.length > 0 && (
         <div className="px-4 py-2">
           <ImagePreview 
@@ -65,7 +78,7 @@ export default function ChatInput() {
       )}
       <textarea
         className="w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input rounded-t-2xl focus:outline-none border-b-0"
-        placeholder="Message EnsoChat..."
+        placeholder="How can I help you be present?"
         rows={1}
         value={payload.query}
         onChange={handleTextareaResize}
@@ -134,10 +147,13 @@ export default function ChatInput() {
               )}
             </>
           )}
+          <SearchButton />
           {currentModel?.metadata?.tool_calling && (
             <ToolSelector />
           )}
-          <PresetPopover />
+          {localStorage.getItem(TOKEN_NAME) && (
+            <PresetPopover />
+          )}
         </div>
         <MainToolTip content="Send Message" delayDuration={500}>
           <Button

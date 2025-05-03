@@ -23,7 +23,7 @@ export function MobileNav({ onLogout }: MobileNavProps) {
             Dashboard
           </Link>
           <Link to="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
-            Playground
+            Chat
           </Link>
           <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
             Settings

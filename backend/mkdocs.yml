@@ -1,18 +1,28 @@
-site_name: Thread Agent
+site_name: Enso Cloud ☁️
 site_dir: src/public/docs
 docs_dir: ../docs
 use_directory_urls: false
 nav:
   - Home: /docs/
-  - Deploy:
-    - DigitalOcean: deploy/digitalocean.md
-    # - Docker: deploy/docker.md
-    # - Kubernetes: deploy/kubernetes.md
-    # - AWS: deploy/aws.md
-    - AWS RDS: deploy/aws-rds.md
+  # - Agents:
+  #   - Overview: agents/index.md
+  #   - API: /api#/Agent
+  # - Settings:
+  #   - Overview: settings/index.md
+  #   - API: /api#/Settings
+  # - Storage:
+  #   - Overview: storage/index.md
+  #   - API: /api#/Storage
+  # - Threads:
+  #   - Overview: threads/index.md
+  #   - API: /api#/Thread
   - Tools:
-    - Shell Local: tools/shell_local.md
-    - Shell Docker: tools/shell_docker.md
+    - Overview: tools/tools.md
+    - Search: tools/search.md
+    - Shell: tools/shell_exec.md
+    - MCP: tools/mcp.md
+    - A2A: tools/a2a.md
+    
   - API: /api
 theme:
   name: material
@@ -25,14 +35,14 @@ theme:
     - mkdocstrings
   palette:
     - scheme: default
-      primary: indigo
-      accent: indigo
+      primary: black
+      accent: black
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: white
+      accent: white
       toggle:
         icon: material/brightness-4
         name: Switch to light mode

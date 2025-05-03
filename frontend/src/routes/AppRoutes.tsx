@@ -16,28 +16,70 @@ import Login from '../pages/Login';
 import Register from '@/pages/Register';
 import OAuthCallback from '@/pages/OAuthCallback';
 import AgentChat from '@/pages/AgentChat';
-
+import CreateAgent from '@/pages/CreateAgent';
+import AgentUpdate from '@/pages/AgentUpdate';
+import ThreadPublic from '@/pages/ThreadPublic';
+import SharePublic from '@/pages/SharePublic';
+import DocMCPServer from '@/pages/DocMCPServer';
+import FlowCreate from '@/pages/FlowCreate';
+import ServerCreate from '@/pages/ServerCreate';
+import ServerEdit from '@/pages/ServerEdit';
+import Server from '@/pages/server';
+import Flow from '@/pages/flow';
 const AppRoutes: React.FC = () => {
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<App />}>
-          <Route index element={
-            <PublicRoute>
-              <Home />
-            </PublicRoute>
-          } />
-          <Route path="login" element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } />
-          <Route path="register" element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          } />
+          <Route 
+            index 
+            element={
+              <PublicRoute>
+                <Home />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="login" 
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="register" 
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="thread/:threadId" 
+            element={
+              <PublicRoute>
+                <ThreadPublic />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="share/:threadId" 
+            element={
+              <PublicRoute>
+                <SharePublic />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="server/:serverSlug" 
+            element={
+              <PublicRoute>
+                <DocMCPServer />
+              </PublicRoute>
+            } 
+          />
           <Route path="auth/:provider/callback" element={<OAuthCallback />} />
           <Route path="*" element={<NotFound />} />
         </Route>
@@ -48,6 +90,22 @@ const AppRoutes: React.FC = () => {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/servers"
+          element={
+            <PrivateRoute>
+              <Server />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/workflows"
+          element={
+            <PrivateRoute>
+              <Flow />
             </PrivateRoute>
           }
         />
@@ -68,10 +126,50 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/agent/create"
+          element={
+            <PrivateRoute>
+              <CreateAgent />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/server/create"
+          element={
+            <PrivateRoute>
+              <ServerCreate />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/server/:serverId/edit"
+          element={
+            <PrivateRoute>
+              <ServerEdit />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/flow/create"
+          element={
+            <PrivateRoute>
+              <FlowCreate />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/agents/:agentId"
           element={
             <PrivateRoute>
               <AgentChat />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agents/:agentId/edit"
+          element={
+            <PrivateRoute>
+              <AgentUpdate />
             </PrivateRoute>
           }
         />

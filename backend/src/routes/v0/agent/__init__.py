@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 from src.repos.agent_repo import AgentRepo
-from src.utils.auth import verify_credentials, get_db
+from src.utils.auth import verify_credentials
+from src.services.db import get_db
 from src.models import ProtectedUser
 
 

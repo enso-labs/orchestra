@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -18,9 +16,9 @@ export default function Register() {
   const navigate = useNavigate()
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       const response = await fetch(`${VITE_API_URL}/auth/register`, {
@@ -34,13 +32,13 @@ export default function Register() {
           name,
           password,
         }),
-      })
+      });
 
       if (response.ok) {
         const data = await response.json()
         // Store JWT token in localStorage
         localStorage.setItem(TOKEN_NAME, data.access_token)
-        navigate("/dashboard")
+        navigate("/dashboard");
       } else {
         const errorData = await response.json()
         setError(errorData.detail || "Registration failed")
@@ -61,7 +59,7 @@ export default function Register() {
 
         <div className="w-full max-w-md space-y-8 p-8 bg-card rounded-lg shadow-md border border-border">
           <div className="text-center">
-            <img src="https://promptengineersai-dev.netlify.app/icons/512.png" alt="Logo" className="w-10 h-10 mx-auto" />
+            <img src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" alt="Logo" className="w-20 h-20 mx-auto rounded-full" />
             <h1 className="text-3xl font-bold text-foreground">Register</h1>
             <p className="mt-2 text-sm text-muted-foreground">Create your account</p>
           </div>

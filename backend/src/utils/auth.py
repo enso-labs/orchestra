@@ -1,41 +1,38 @@
-from fastapi import status, Depends, HTTPException
+from typing import Optional
+from fastapi import Request, status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from datetime import datetime
-from sqlalchemy import create_engine
-# from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from src.constants import DB_URI, JWT_SECRET_KEY, JWT_ALGORITHM
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.repos.user_repo import UserRepo
+from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM
 from src.models import User
+from src.services.db import get_async_db
+from src.utils.logger import logger
+security = HTTPBearer(auto_error=False)  # Make auto_error=False to not require the Authorization header
 
-
-engine = create_engine(DB_URI)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# async_engine = create_async_engine(DB_URI)
-# AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=async_engine)
-
-security = HTTPBearer()
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_optional_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_async_db)
+) -> Optional[User]:
+    if credentials is None:
+        return None
         
-# async def get_async_db():
-#     async with AsyncSessionLocal() as db:
-#         try:
-#             yield db
-#         finally:
-#             await db.close()
+    try:
+        return await verify_credentials(request, credentials, db)
+    except HTTPException:
+        return None
 
-def verify_credentials(
+async def verify_credentials(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: SessionLocal = Depends(get_db) # type: ignore
+    db: AsyncSession = Depends(get_async_db) # type: ignore
 ) -> User:
     try:
+        logger.info(f"Request: {request.__dict__}")
+        
         # Verify JWT token
         payload = jwt.decode(
             credentials.credentials, 
@@ -69,7 +66,7 @@ def verify_credentials(
             )
 
         # Verify user exists in database
-        user = db.query(User).filter(User.email == user_data["email"]).first()
+        user = (await db.execute(select(User).filter(User.email == user_data["email"]))).scalar_one_or_none()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +74,9 @@ def verify_credentials(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        
+        logger.info(f"Authenticated user: {user.id}")
+        request.state.user = user.protected()
+        request.state.user_repo = UserRepo(db, request.state.user.id)
         return user.protected()
 
     except JWTError:

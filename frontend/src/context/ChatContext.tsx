@@ -5,7 +5,7 @@ export const ChatContext = createContext({});
 
 export default function ChatProvider({ children }: { children: React.ReactNode }) {
     const chatHooks = useChatHook();
-
+    
     return (    
         <ChatContext.Provider value={chatHooks}>
             {children}

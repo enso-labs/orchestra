@@ -48,7 +48,14 @@ export function AgentThreadHistoryDrawer({ isOpen, onClose }: AgentThreadHistory
         bg-background z-40
       `}>
           <div className="p-4 border-b border-border">
-              <Link to="/"><h1 className="text-2xl font-bold text-foreground">Enso</h1></Link>
+              <Link to="/" className="flex items-center gap-2">
+                <img 
+                  src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" 
+                  alt="Logo" 
+                  className="w-6 h-6 rounded-full" 
+                />
+                <h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+              </Link>
           </div>
 
           <ScrollArea className="flex-1">

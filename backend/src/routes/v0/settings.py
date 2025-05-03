@@ -4,7 +4,8 @@ from typing import List, Optional
 from pydantic import BaseModel, UUID4, Field
 from src.utils.logger import logger
 
-from src.utils.auth import verify_credentials, get_db
+from src.utils.auth import verify_credentials
+from src.services.db import get_db
 
 from src.repos.settings_repo import SettingsRepo
 from src.models import User

@@ -10,5 +10,6 @@ from .storage import router as storage
 from .settings import router as settings
 from .agent import router as agent
 from .model import router as model
+from .server import router as server
 
-__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth", "token", "storage", "settings", "agent", "model"]
+__all__ = ["llm", "thread", "tool", "retrieve", "source", "info", "auth", "token", "storage", "settings", "agent", "model", "server"]

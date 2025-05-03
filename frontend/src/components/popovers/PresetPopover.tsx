@@ -8,10 +8,32 @@ import { Plus, Save, Trash2, Box } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatContext } from "@/context/ChatContext";
-import apiClient from "@/lib/utils/apiClient";
-import { deleteSetting } from "@/services/settingService";
+import { createSetting, deleteSetting, updateSetting } from "@/services/settingService";
 import { createAgent } from "@/services/agentService";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+function OpenPresetPopover({preset}: {preset: any}) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button 
+            variant="outline" 
+            className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{preset?.name || "Presets"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export function PresetPopover() {
   const [isCreating, setIsCreating] = useState(false);
@@ -27,12 +49,13 @@ export function PresetPopover() {
     if (!presetName.trim()) return;
     
     try {
-      const response = await apiClient.post('/settings', {
+      const response = await createSetting({
         name: presetName,
         value: {
           system: payload.system,
           model: payload.model,
           tools: payload.tools,
+          mcp: payload.mcp
         }
       });
 
@@ -97,12 +120,13 @@ export function PresetPopover() {
   const handleUpdatePreset = async (preset: any) => {
     if (confirm(`Are you sure you want to update (${preset.name}) preset?`)) {
       try {
-        const response = await apiClient.put(`/settings/${preset.id}`, {
+        const response = await updateSetting(preset.id, {
           name: preset.name,
           value: {
           system: payload.system,
           model: payload.model,
           tools: payload.tools,
+          mcp: payload.mcp
         }
       });
 
@@ -126,11 +150,7 @@ export function PresetPopover() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="rounded-full bg-foreground/10 text-foreground-500">
-          <Save className="h-4 w-4" /> {preset?.name || "Presets"}
-        </Button>
-      </PopoverTrigger>
+      <OpenPresetPopover preset={preset} />
       <PopoverContent className="w-80">
         <div className="space-y-4">
           <div className="flex justify-between items-center">

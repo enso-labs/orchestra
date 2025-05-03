@@ -5,9 +5,12 @@ import { createRoot } from 'react-dom/client'
 import { AppRoutes } from './routes'
 import ChatProvider from './context/ChatContext'
 import ThemeProvider from './context/ThemeContext'
+import ToolProvider from './context/ToolContext';
+import AgentProvider from './context/AgentContext';
+import FlowProvider from './context/FlowContext';
 
 const Contexts = () => {
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
     navigator.serviceWorker.register(
       import.meta.env.MODE === 'production' ? '/sw.js' : '/dev-sw.js?dev-sw',
       { type: import.meta.env.MODE === 'production' ? 'classic' : 'module' }
@@ -22,7 +25,13 @@ const Contexts = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <ChatProvider>
-        <AppRoutes />
+        <ToolProvider>
+          <AgentProvider>
+            <FlowProvider>
+              <AppRoutes />
+            </FlowProvider>
+          </AgentProvider>
+        </ToolProvider>
       </ChatProvider>
     </ThemeProvider>
   )

@@ -6,6 +6,11 @@ import { TOKEN_NAME, VITE_API_URL } from '../config';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
+import { constructSystemPrompt } from '@/lib/utils/format';
+import { useChatReducer } from '@/reducers/chatReducer';
+import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
+
+const KEY_NAME = 'config:mcp';
 
 debug.enable('hooks:*');
 const logger = debug('hooks:useChatHook');
@@ -13,6 +18,7 @@ const logger = debug('hooks:useChatHook');
 const initChatState = {
     response: null,
     responseRef: "",
+    toolCallRef: "",
     messages: [],
     settings: [],
     preset: null,
@@ -21,10 +27,12 @@ const initChatState = {
         threadId: '',
         images: [] as string[],
         query: '',
-        system: 'You are a helpful assistant.',
+        system: DEFAULT_SYSTEM_PROMPT,
         tools: [] as any[],
         visualize: false,
-        model: ''
+        model: '',
+        mcp: null,
+        a2a: null
     },
     history: {
         threads: [],
@@ -36,53 +44,75 @@ const initChatState = {
     models: [],
     isToolCallInProgress: false,
     currentToolCall: null,
+    selectedToolMessage: null,
 }
 
 export default function useChatHook() {
+    const {state, actions} = useChatReducer();
+    const {
+        response,
+        settings,
+        models,
+        availableTools,
+        toolCallMessage,
+        isToolCallInProgress,
+        currentToolCall,
+        selectedToolMessage,
+        messages,
+        history,
+        preset,
+        toolCall,
+    } = state;
+    const {
+        setResponse,
+        setSettings, 
+        setModels,
+        setAvailableTools,
+        setToolCallMessage,
+        setIsToolCallInProgress,
+        setCurrentToolCall,
+        setSelectedToolMessage,
+        setHistory,
+        setPreset,
+        setToolCall,
+        setMessages,
+    } = actions;
+    
     const token = localStorage.getItem(TOKEN_NAME);
     const responseRef = useRef(initChatState.responseRef);
-    const [response, setResponse] = useState<any>(initChatState.response);  
-    const [messages, setMessages] = useState<any[]>(initChatState.messages);
+    const toolCallRef = useRef(initChatState.toolCallRef);
     const [payload, setPayload] = useState(initChatState.payload);
-    const [history, setHistory] = useState<any>(initChatState.history);
-    const [settings, setSettings] = useState<any>(initChatState.settings);
-    const [models, setModels] = useState<Model[]>(initChatState.models);
-    const [availableTools, setAvailableTools] = useState([]);
-    const [toolCallMessage, setToolCallMessage] = useState<any>(initChatState.toolCallMessage);
-    const [isToolCallInProgress, setIsToolCallInProgress] = useState(false);
-    const [currentToolCall, setCurrentToolCall] = useState<any>(null);
-    const [preset, setPreset] = useState<any>(initChatState.preset);
-
     const currentModel = models.find((model: Model) => model.id === payload.model);
     const enabledTools = availableTools
-        .filter((tool: any) => payload.tools.includes(tool.id));
-
-
-    const constructSystemPrompt = (systemPrompt: string) => {
-        return `${systemPrompt}
----
-Current Date and Time: ${new Date().toLocaleString()}
-Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
-Language: ${navigator.language}
-`;
-    }
+        .filter((tool: any) => payload.tools.includes(tool.id))
     
     const handleQuery = (agentId: string = '') => {
-        queryThread(payload, agentId);
+        queryThread(payload, agentId, messages);
     }
 
-    const queryThread = (payload: ThreadPayload, agentId: string = '') => {
-        logger("Querying thread:", payload);
-        const updatedMessages = [...messages, { role: 'user', content: payload.query }];
-        setMessages(updatedMessages);
-        setResponse("");
-        responseRef.current = "";
-        const responseData = agentId ? {
+    const constructPayload = (payload: ThreadPayload, agentId?: string) => {
+        return agentId ? {
             query: payload.query,
         } : {
             ...payload,
-            system: constructSystemPrompt(payload.system)
+            system: payload.system ? constructSystemPrompt(payload.system) : DEFAULT_SYSTEM_PROMPT
         }
+    }
+
+    const handleToolCallChunk = (chunk: string) => {
+        toolCallRef.current += chunk;
+        setToolCall({
+            input: toolCallRef.current,
+        });
+    }
+
+    const queryThread = (payload: ThreadPayload, agentId: string = '', previousMessages: any[] = []) => {
+        logger("Querying thread:", payload);
+        let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
+        setMessages(messagesWithAssistant);
+        setResponse("");
+        responseRef.current = "";
+        const responseData = constructPayload(payload, agentId);
         const url = agentId ? `/agents/${agentId}/threads` : '/threads';
         const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
             {
@@ -105,77 +135,57 @@ Language: ${navigator.language}
         });
 
         source.addEventListener("open", () => {
-            const messagesWithAssistant = [...updatedMessages, { role: "assistant", content: "" }];
-            setMessages(messagesWithAssistant);
+            // setMessages(messagesWithAssistant);
+            console.log("connection opened");
         });
 
         source.addEventListener("message", (e: any) => {
             const data = JSON.parse(e.data);
-            const message = data.content;
-            logger("Message received:", message);
+            const lastMessage = messagesWithAssistant[messagesWithAssistant.length - 1];
+            logger("Message received:", data);
 
-            if (data.event === 'ai_chunk') {
-                responseRef.current += message;
-                const finalMessages = [...messages, 
-                    { role: 'user', content: payload.query },
-                    { role: "assistant", content: responseRef.current }
-                ];
-                setMessages(finalMessages);
-            } else if (data.event === 'tool_call') {
-                const toolCallData = {
-                    content: message.content || message,
-                    type: 'tool',
-                    name: message.name,
-                    status: 'pending',
-                    tool_call_id: message.id,
-                    id: crypto.randomUUID()
-                };
-                
-                setCurrentToolCall(toolCallData);
-                setIsToolCallInProgress(true);
-                
-                const updatedMessages = [...messages, toolCallData];
-                setMessages(updatedMessages);
-            } else if (data.event === 'tool_chunk') {
-                const toolChunkData = {
-                    content: message.content || message,
-                    type: 'tool',
-                    name: message.name,
-                    status: 'success',
-                    tool_call_id: message.id,
-                    isOutput: true
-                };
-                
-                setCurrentToolCall((prev: any) => ({
-                    ...prev,
-                    output: toolChunkData.content,
-                    status: 'success'
-                }));
-                
-                const updatedMessages = [...messages, toolChunkData];
-                setMessages(updatedMessages);
-            } else if (data.event === 'end') {
-                if (toolCallMessage) {
-                    const updatedMessages = [...messages, toolCallMessage];
-                    setMessages(updatedMessages);
-                    setToolCallMessage(null);
+            if (data.msg.type === 'AIMessageChunk' && data.msg.tool_call_chunks.length > 0) {
+                console.log("Tool call received:", data.msg);
+                const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
+                handleToolCallChunk(toolCallChunk);
+                if (lastMessage.role !== 'tool') {
+                    messagesWithAssistant = [...messagesWithAssistant, { role: "tool", args: toolCallRef.current }];
                 }
+            } else if (data.msg.type === 'tool') {
+                console.log("Tool chunk received:", data.msg);
+                const index = messagesWithAssistant.map(item => item.role).lastIndexOf('tool');
+                if (index !== -1) {
+                    // Create a new object with the updated property
+                    messagesWithAssistant[index] = { ...messagesWithAssistant[index], args: toolCallRef.current, ...data.msg };
+                }
+                setMessages(messagesWithAssistant);
+            } else if (data.event === 'end') {
                 getHistory(1, history.per_page, agentId);
                 source.close();
                 logger("Thread ended");
                 return;
+            } else {
+                responseRef.current += typeof data.msg.content === 'string' 
+                    ? data.msg.content 
+                    : (data.msg.content[0]?.text || '');
+                // Find the assistant message and update it with the latest content
+                const updatesMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
+                
+                // Update the messages state with the latest assistant message
+                setMessages(updatesMessages);
             }
-
-            setPayload({ ...payload, query: '', threadId: data.thread_id, images: [] });
+            setPayload((prev) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
         });
         source.stream();
+        responseRef.current = "";
+        toolCallRef.current = "";
         return true;
     };
 
     const getHistory = async (page: number = 1, perPage: number = 20, agentId: string = '') => {
         try {
             const url = agentId ? `/agents/${agentId}/threads` : '/threads';
-            const params = { page, perPage };
+            const params = { page, per_page: perPage };
             const res = await apiClient.get(url, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -195,8 +205,8 @@ Language: ${navigator.language}
     // Add this function after fetchTools
     const fetchSettings = async () => {
         try {
-            const response = await apiClient.get('/settings');
-            setSettings(response.data.settings || []);
+            const response = token ? await apiClient.get('/settings') : null;
+            setSettings(response?.data?.settings || []);
         } catch (error) {
             console.error('Failed to fetch settings:', error);
         }
@@ -240,6 +250,33 @@ Language: ${navigator.language}
         return () => {
             // Cleanup logic if needed
         };
+    };
+
+    const useMCPEffect = () => {
+        useEffect(() => {
+            // Check if mcp payload is not set and set it from localStorage if it exists
+            if (!payload.mcp) {
+                const storedMCP = localStorage.getItem(KEY_NAME);
+                if (storedMCP) {
+                    setPayload((prev: any) => ({ ...prev, mcp: JSON.parse(storedMCP) }));
+                }
+            } 
+            // When payload.mcp changes, update localStorage
+            else {
+                localStorage.setItem(KEY_NAME, JSON.stringify(payload.mcp));
+            }
+        }, [payload.mcp]);
+    };
+
+    const useA2AEffect = () => {
+        useEffect(() => {
+            // When payload.mcp changes, update localStorage
+            if (payload.a2a) {
+                localStorage.setItem("a2a-config", JSON.stringify(payload.a2a));
+            } else {
+                localStorage.removeItem("a2a-config");
+            }
+        }, [payload.a2a]);
     };
 
     const useFetchModelsEffect = (setSearchParams: (params: any) => void, currentModel: string) => {
@@ -333,8 +370,12 @@ Language: ${navigator.language}
         preset,
         setPreset,
         currentModel,
-        enabledTools
+        enabledTools,
+        useMCPEffect,
+        selectedToolMessage,
+        setSelectedToolMessage,
+        toolCall,
+        setToolCall,
+        useA2AEffect,
     };
 }
-
-

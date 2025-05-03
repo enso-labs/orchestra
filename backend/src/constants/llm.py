@@ -186,7 +186,7 @@ MODEL_CONFIG = [
         "metadata": {
             "system_message": True,
             "reasoning": False,
-            "tool_calling": True,
+            "tool_calling": False,
             "multimodal": True,
             "embedding": False,
         }
@@ -198,7 +198,8 @@ MODEL_CONFIG = [
         "metadata": {
             "system_message": True,
             "reasoning": False,
-            "tool_calling": True,
+            "tool_calling": False, # TODO: Add tool calling, bug in google lib
+            # "tool_calling": True,
             "multimodal": True,
             "embedding": False,
         },
@@ -233,3 +234,18 @@ def get_available_models():
             available_models.append(model)
     
     return available_models
+
+def get_public_models():
+    public_models = []
+    
+    # Only allow specific models for public use
+    allowed_public_models = [ModelName.GEMINI_PRO_1_5, ModelName.OPENAI_GPT_4O_MINI]
+    
+    for model in MODEL_CONFIG:
+        # Skip models not in our allowed list
+        if model["id"] not in allowed_public_models:
+            continue
+        
+        public_models.append(model)
+    
+    return public_models

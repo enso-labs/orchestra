@@ -1,8 +1,16 @@
-import MarkdownCard from "@/components/cards/MarkdownCard"
+// import MarkdownCard from "@/components/cards/MarkdownCard"
 import { Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
+import JsonView from "@uiw/react-json-view"
+import { githubDarkTheme } from "@uiw/react-json-view/githubDark"
+import MarkdownCard from "../cards/MarkdownCard"
 
-export default function DefaultTool({ selectedToolMessage }: { selectedToolMessage: any }) {
+interface Props {
+	selectedToolMessage: any
+}
+
+export default function DefaultTool({ selectedToolMessage }: Props) {
+	if (!selectedToolMessage) return null;
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center space-x-2">
@@ -32,14 +40,38 @@ export default function DefaultTool({ selectedToolMessage }: { selectedToolMessa
 					</div>
 					<div>
 						<span className="font-semibold">Input:</span>
-						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							<MarkdownCard content={selectedToolMessage.content} />
+						<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+							{(() => {
+								try {
+									const input = selectedToolMessage.args || selectedToolMessage.input;
+									const parsedJSON = typeof input === 'object' ? input : JSON.parse(input);
+									return <JsonView value={parsedJSON} style={githubDarkTheme} />;
+								} catch (error) {
+									return (
+										<div className="text-red-500">
+											<p className="font-bold">Error parsing JSON:</p>
+											<p>{(error as Error).message}</p>
+											<p className="mt-2 font-bold">Raw content:</p>
+											<pre className="whitespace-pre-wrap text-xs mt-1 p-2 bg-slate-800 rounded overflow-x-auto">
+												{JSON.stringify(selectedToolMessage.args)}
+											</pre>
+										</div>
+									);
+								}
+							})()}
 						</div>
 					</div>
 					<div>
 						<span className="font-semibold">Output:</span>
-						<div className="max-w-[290px] max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							<MarkdownCard content={selectedToolMessage.output} />
+						<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
+							{(() => {
+								try {
+									const parsedJSON = JSON.parse(selectedToolMessage.content || selectedToolMessage.output);
+									return <JsonView value={parsedJSON} style={githubDarkTheme} />;
+								} catch (error) {
+									return <MarkdownCard content={selectedToolMessage.content || selectedToolMessage.output} />
+								}
+							})()}
 						</div>
 					</div>
 				</div>

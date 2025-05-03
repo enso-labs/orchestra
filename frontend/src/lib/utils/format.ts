@@ -47,7 +47,9 @@ interface Message {
   id: string;
   type: string;
   name?: string | null;
-  content?: string;
+  args?: any;
+  content?: any;
+  output?: any;
   additional_kwargs?: any;
   response_metadata?: any;
   tool_call_id?: string;
@@ -55,6 +57,32 @@ interface Message {
   tool_calls?: any[];
   [key: string]: any;
 }
+
+export function findToolCall(message: any, messages: any[]) {
+  for (const msg of messages) {
+    if (msg.tool_calls && msg.tool_calls.length > 0) {
+      const toolCalls = msg.tool_calls;
+
+      if (Array.isArray(toolCalls)) {
+        // tool_calls is an array: iterate through each call
+        for (const call of toolCalls) {
+          if (call && typeof call === 'object' && call.id === message.id) {
+            delete message.tool_call_id;
+            message.args = JSON.stringify(call.args)
+            return message;
+          }
+        }
+      } else if (typeof toolCalls === 'object') {
+        // tool_calls is a single object
+        if (toolCalls.tool_call_id === message.id) {
+          return toolCalls;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 
 /**
  * Combines a tool call (the “input”) with its corresponding tool message (the “output”)
@@ -82,44 +110,17 @@ export function combineToolMessages(messages: Message[]): Message[] {
       // then for each such tool call create a combined message.
       if (msg.type === "ai" && Array.isArray(msg.tool_calls)) {
         for (const toolCall of msg.tool_calls) {
-          // Determine the “input” string.
-          // (Often the call contains the command in one of two places.)
-          let input = "";
-          if (toolCall.args && toolCall.args.commands) {
-            if (Array.isArray(toolCall.args.commands)) {
-              input = toolCall.args.commands.join(" ");
-            } else {
-              input = toolCall.args.commands;
-            }
-          } else if (toolCall.function && toolCall.function.arguments) {
-            // Sometimes the arguments are stored as a JSON string.
-            try {
-              const parsed = JSON.parse(toolCall.function.arguments);
-              if (parsed.commands) {
-                input = Array.isArray(parsed.commands)
-                  ? parsed.commands.join(" ")
-                  : parsed.commands;
-              }
-            } catch (err) {
-              // Fallback if parsing fails:
-              input = toolCall.function.arguments;
-            }
-          }
           
           // Look up the corresponding tool output (“tool–chunk”) using the tool call id.
           const toolChunk = toolChunksById[toolCall.id];
-          const output = toolChunk ? toolChunk.content : "";
           // If there is no output (or it’s falsy), mark status as error.
-          const status = output ? (toolChunk.status || "success") : "error";
+          // const status = output ? (toolChunk.status || "success") : "error";
 
           // Build a combined message.
           const combinedMessage = {
+            ...toolChunk,
+            ...toolCall,
             id: toolCall.id,
-            name: toolCall.name,
-            status,
-            content: input,
-            output,
-            tool_call_id: toolCall.id,
             type: "tool" // Add required type property
           };
           result.push(combinedMessage);
@@ -137,4 +138,58 @@ export function combineToolMessages(messages: Message[]): Message[] {
   }
 
   return result;
+}
+
+export function handleStreamChunk(data: any) {
+  // Tool Calls
+  if (data.msg.type === 'AIMessageChunk' && data.msg.tool_calls.length > 0) {
+    const toolCallData = {
+      content: data.msg.content || data.msg,
+      type: 'tool',
+      name: data.msg.name || data.msg[0].name,
+      status: 'pending',
+      tool_call_id: data.msg.id,
+      id: data.msg.id
+    };
+    return toolCallData;
+  }
+  // Tool Chunk
+  if (data.msg.type === 'tool') {
+    const toolChunkData = {
+        content: data.msg.content || data.msg,
+        type: 'tool',
+        name: data.msg.name,
+        status: 'success',
+        tool_call_id: data.msg.id,
+        isOutput: true
+    };
+    return toolChunkData;
+  }
+  if (data.event === 'end') {
+    return data.msg;
+  }
+}
+
+
+export function constructSystemPrompt(systemPrompt: string) {
+  return `${systemPrompt}
+---
+Current Date and Time: ${new Date().toLocaleString()}
+Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+Language: ${navigator.language}
+`;
+}
+
+export function base64Encode(str: string) {
+  // Encode string as UTF-8, then to base64
+  return btoa(encodeURIComponent(str));
+}
+
+export function base64Decode(str: string) {
+  // Decode base64 string to UTF-8
+  return decodeURIComponent(atob(str));
+}
+
+export function base64Compare(str1: string, str2: string) {
+  return str1 === str2;
 }

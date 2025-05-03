@@ -1,82 +1,37 @@
-# Thread Agent Documentation
+# Enso Labs - Cloud ☁️
 
-Welcome to the Thread Agent documentation. This is a FastAPI-based application that integrates LangGraph for building sophisticated chatbot interactions.
+<a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
+<a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
+<a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
 
-## Overview
+Base API infrastructure for Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A) protocols by [Enso Labs](https://enso.sh). 
 
-The Thread Agent is a powerful chatbot application that:
-- Processes and responds to user inputs using LangGraph and LangChain
-- Supports multiple language models (Claude 3.5 Sonnet and GPT-4)
-- Provides document management and vector storage capabilities
-- Includes tools for shell commands and Docker operations
+The goal of Enso is the enrich the lives of the curious. Those who seek to buy back their time and compound their personal growth. Those who build and don't wait for IT to be built for them.
 
-## Quick Start
-
-### Prerequisites
-- Python 3.10 or higher
-- Access to OpenAI API or Anthropic API
-- Docker and Docker Compose (for full functionality)
-
-## API Reference
-
-The [API documentation](/api) is available at `/api` when running the application. This includes:
-- Complete endpoint documentation
-- Request/response examples
-- Authentication requirements
-
-### Installation
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/ryaneggz/langgraph-template.git
-cd langgraph-template
-```
-
-2. Set up your virtual environment:
-
-```bash
-## Install uv if do not have
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-## Start venv
-uv venv
-
-## Activate
-source .venv/bin/activate
-
-## Install
-uv pip install -r requirements.txt
-```
-
+![Landing Page](https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true)
 
 ## Core Features
 
-### Document Management
-The application provides comprehensive document management capabilities through the following endpoints:
+### Agents
 
-### Available Tools
-The system includes various tools for:
-- Shell command execution
-- Docker container management
-- File processing and document handling
+Enso Cloud provides basic tooling, as well as support for MCP and A2A protocols.
+
+- [Agent-2-Agent (A2A)](./tools/a2a.md)
+- [Model Context Protocol (MCP)](./tools/mcp.md)
 
 For detailed information about available tools, see the [Tools Documentation](tools/tools.md).
 
-## Deployment
+### Retrieval Document Management
 
-The application can be deployed using:
-- Docker Compose for local development
-- DigitalOcean for production deployment
+Documentation coming soon...
 
-For detailed deployment instructions, see the [Deployment Guide](deploy/digitalocean.md).
+*See API Docs in meantime [https://demo.enso.sh/api](https://demo.enso.sh/api)*
 
-## Configuration
+- Document Creation
+- Index Creation
+- Index Options & Filtering
+- Example Queries & Responses 
 
-Environment variables can be configured through `.env` files:
-- `.env` for local development
-- `.env.production` for production settings
+## Contact
 
-## Contributing
-
-For contribution guidelines and development setup, please refer to our [GitHub repository](https://github.com/ryaneggz/langgraph-template).
+For questions, support, or to get involved with the project, please contact me at [ryan.adaptivebiz@gmail.com](mailto:ryan.adaptivebiz@gmail.com)

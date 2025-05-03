@@ -5,7 +5,7 @@ from src.constants import UserTokenKey
 from src.utils.logger import logger
 
 @tool
-def shell_exec(commands: list[str]):
+async def shell_exec(commands: list[str]):
     """Run shell commands in a remote server. Accepts multiple commands as a list of strings. 
     Each command is executed sequentially inside the specified container. Avoid interactive commands."""
     import requests
@@ -14,7 +14,7 @@ def shell_exec(commands: list[str]):
     outputs = []
     
     user_repo = shell_exec.metadata['user_repo']
-    url = user_repo.get_token(key=UserTokenKey.SHELL_EXEC_SERVER_URL.name)
+    url = await user_repo.get_token(key=UserTokenKey.SHELL_EXEC_SERVER_URL.name)
     if not url:
         raise ToolException("SHELL_EXEC_SERVER_URL is not set, see user settings.")
     
