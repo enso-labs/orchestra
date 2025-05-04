@@ -52,7 +52,6 @@ export default function useChatHook() {
     const {state, actions} = useChatReducer();
     const {
         response,
-        settings,
         models,
         availableTools,
         toolCallMessage,
@@ -66,7 +65,6 @@ export default function useChatHook() {
     } = state;
     const {
         setResponse,
-        setSettings, 
         setModels,
         setAvailableTools,
         setToolCallMessage,
