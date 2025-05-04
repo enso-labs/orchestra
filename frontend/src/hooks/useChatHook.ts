@@ -151,26 +151,24 @@ export default function useChatHook() {
 				}
 			} else if (data.msg.type === 'tool') {
 				logger("Tool chunk received:", data.msg);
-				const index = messagesWithAssistant.map(item => item.role).lastIndexOf('tool');
-				if (index !== -1) {
-					messagesWithAssistant[index] = { ...messagesWithAssistant[index], args: toolCallRef.current, ...data.msg };
-				}
+				// Instead of modifying the last tool message, add a new one
+				messagesWithAssistant = [...messagesWithAssistant, { 
+					role: "tool", 
+					args: toolCallRef.current, 
+					...data.msg 
+				}];
 				setMessages(messagesWithAssistant);
-			} else if (data.msg.type === 'stop' || data.msg.response_metadata.finish_reason === 'stop') {
+			} else if (data.msg.type === 'stop' || data.msg.response_metadata?.finish_reason === 'stop') {
 				source.close();
 				logger("Thread ended");
-                if (getAuthToken()) getHistory(1, history.per_page, agentId);
-                setController(null);
+				if (getAuthToken()) getHistory(1, history.per_page, agentId);
+				setController(null);
 				return;
 			} else {
-					responseRef.current += typeof data.msg.content === 'string' 
-							? data.msg.content 
-							: (data.msg.content[0]?.text || '');
-					// Find the assistant message and update it with the latest content
-					const updatesMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
-					
-					// Update the messages state with the latest assistant message
-					setMessages(updatesMessages);
+				responseRef.current += typeof data.msg.content === 'string' 
+					? data.msg.content 
+					: (data.msg.content[0]?.text || '');
+				setMessages([...messagesWithAssistant, { role: "assistant", content: responseRef.current }]);
 			}
 			setPayload((prev: any) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
 		});
