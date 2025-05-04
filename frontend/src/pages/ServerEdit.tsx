@@ -10,6 +10,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Server } from "@/entities";
 import { deleteServer, getServer, updateServer } from "@/services/serverService";
 import { base64Compare } from "@/lib/utils/format";
+import { validateServer } from "@/validations/validate-server";
 
 function LeftPanel({
 	onCreate,
@@ -84,10 +85,15 @@ function ServerEdit() {
 	const handleSubmit = async (data: Server) => {
     try {
 			setLoading(true);
-      // TODO: Add zod validation
+      const validationResult = validateServer(data);
+      if (validationResult) {
+        setError(validationResult);
+        return;
+      }
       const response = await updateServer(serverId || formData.id, data);
 			alert(`Server updated: ${response.data.slug}`);
-			navigate(`/server/${response.data.slug}`);
+			// Refresh the current page to show updated data
+			window.location.reload();
     } catch (err: any) {
       setError(err.message || 'Failed to update server');
     } finally {

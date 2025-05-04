@@ -10,6 +10,7 @@ import { Server } from "@/entities";
 import { createServer } from "@/services/serverService";
 import { useEffect, useState } from "react";
 import { INIT_SERVER_STATE } from "@/hooks/useServerHook";
+import { ServerSchema, validateServer } from "@/validations/validate-server";
 
 function LeftPanel({
 	onCreate,
@@ -70,14 +71,31 @@ function ServerCreate() {
 	} = useToolContext();
 
 	const [loading, setLoading] = useState(false);
+
+	useEffect(() => {
+		if (error) {
+			const timer = setTimeout(() => {
+				setError('');
+			}, 3000);
+			
+			// Clean up the timer when component unmounts or error changes
+			return () => clearTimeout(timer);
+		}
+	}, [error, setError]);
+
 	const handleSubmit = async (data: Server) => {
     try {
-      // TODO: Add zod validation
+      const validationResult = validateServer(data);
+      if (validationResult) {
+        setError(validationResult);
+        return;
+      }
+      
       const response = await createServer(data);
       console.log('Server created:', response);
 			// resetFormData();
 			alert(`Server created: ${response.data.slug}`);
-			navigate(`/server/${response.data.slug}`);
+			navigate(`/servers`);
     } catch (err: any) {
       setError(err.message || 'Failed to create server');
     } finally {
