@@ -1,11 +1,10 @@
 import NoAuthLayout from '../layouts/NoAuthLayout';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useToolContext } from '@/context/ToolContext';
 import MCPInfo from '@/components/ToolSelector/MCPEditor/mcp-info';
 import { getServerInfo } from '@/services/toolService';
-import { getAuthToken } from '@/lib/utils/auth';
 import HomeIcon from '@/components/icons/HomeIcon';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,7 +35,7 @@ export default function DocMCPServer() {
 		<NoAuthLayout>
 			<main className="flex-1 flex flex-col items-center justify-center bg-background">
 				<div className="absolute top-4 left-4">
-					{getAuthToken() ? <HomeIcon onClick={() => navigate(-1)} /> : <Link to="/login">Login</Link>}
+					<HomeIcon onClick={() => navigate(-1)} />
 				</div>
 				<div className="absolute top-4 right-4">
 					<ColorModeButton />

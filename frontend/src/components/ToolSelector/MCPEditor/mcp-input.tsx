@@ -30,6 +30,7 @@ const ConfigCard = ({ item, onClick, isSelected }: { item: any, onClick?: () => 
           <a 
             href={item.documentation_url || `/server/${item.slug}`} 
             className="font-medium hover:text-blue-600"
+            target="_blank"
           >
             {item.name}
           </a>
