@@ -18,7 +18,7 @@ import { FaStop } from 'react-icons/fa'
 
 export default function ChatInput() {
   
-  const { payload, handleQuery, setPayload, currentModel, controller, abortQuery, conn } = useChatContext();
+  const { payload, handleQuery, setPayload, currentModel, controller, abortQuery } = useChatContext();
   const { isMobile } = useAppHook();
   const navigate = useNavigate();
   const location = useLocation();
