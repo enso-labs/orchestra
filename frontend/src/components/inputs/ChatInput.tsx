@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button"
 import { ArrowUp, Plus } from "lucide-react"
-import ToolSelector from "@/components/ToolSelector"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
@@ -15,6 +14,8 @@ import SearchButton from "../buttons/SearchButton"
 import { getAuthToken } from "@/lib/utils/auth"
 import ModalMcp from "../modals/ModalMcp"
 import { FaStop } from 'react-icons/fa'
+import MenuTool from "../menu/MenuTool"
+import ToolSelector from "../ToolSelector/ToolSelector"
 
 export default function ChatInput() {
   
@@ -151,10 +152,10 @@ export default function ChatInput() {
           )}
           <SearchButton />
           {currentModel?.metadata?.tool_calling && (
-            <ToolSelector />
+            <ModalMcp />
           )}
           {currentModel?.metadata?.tool_calling && (
-            <ModalMcp />
+            <MenuTool />
           )}
           {getAuthToken() && (
             <PresetPopover />
@@ -188,6 +189,7 @@ export default function ChatInput() {
         onClose={() => setPreviewImage(null)} 
         index={previewImageIndex} 
       />
+      <ToolSelector />
     </div>
   )
 }

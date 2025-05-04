@@ -13,6 +13,7 @@ const INIT_APP_STATE = {
 export default function useAppHook() {
     const [appVersion, setAppVersion] = useState(INIT_APP_STATE.appVersion);
     const [loading, setLoading] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
 
     const isMobile = () => {
@@ -41,6 +42,10 @@ export default function useAppHook() {
         }, []);
     }
 
+    const handleMenuOpen = () => {
+        setIsMenuOpen(!isMenuOpen);
+    }
+
     return {
         appVersion,
         isMobile,
@@ -49,5 +54,7 @@ export default function useAppHook() {
         setLoading,
         loadingMessage,
         setLoadingMessage,
+        isMenuOpen,
+        handleMenuOpen
     }
 }

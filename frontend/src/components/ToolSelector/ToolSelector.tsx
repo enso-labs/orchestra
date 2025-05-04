@@ -1,13 +1,12 @@
 import { useChatContext } from "@/context/ChatContext";
 import { useToolContext } from "@/context/ToolContext";
-import { useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import DefaultToolContent from "./DefaultToolContent";
-import ModalButton from "./ModalButton";
 import TestToolContent from "./ToolContentTest";
 import styles from "./ToolSelector.module.css";
 import A2AEditor from "./A2AEditor";
-
+import { useAppContext } from "@/context/AppContext";
+  
 export function ToolSelector() {
   const { 
     payload, 
@@ -39,8 +38,7 @@ export function ToolSelector() {
   } = useToolContext();
   
 
-  // Add state for modal visibility
-  const [isOpen, setIsOpen] = useState(false);
+  const { isMenuOpen, handleMenuOpen } = useAppContext();
 
   // Fetch MCP info when entering MCP editor mode
   useMCPInfoEffect();
@@ -58,10 +56,10 @@ export function ToolSelector() {
   return (
     <>
       {/* Button to open the dialog */}
-      <ModalButton enabledCount={enabledCount} setIsOpen={setIsOpen} />
+      {/* <ModalButton enabledCount={enabledCount} setIsOpen={setIsOpen} /> */}
       
       {/* Main dialog that replaces the popover */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isMenuOpen} onOpenChange={handleMenuOpen}>
         <DialogContent className={`${styles.toolModalContent} sm:max-w-[600px] md:max-w-[800px] h-auto max-h-[90vh] overflow-hidden p-0`}>
           {isAddingA2A 
           ? <A2AEditor /> 
