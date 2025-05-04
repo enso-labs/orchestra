@@ -5,6 +5,10 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
 import { DEFAULT_CHAT_MODEL } from '@/config/llm';
+import TabsBase from '@/components/tabs/TabsBase';
+import AccordionBase from '@/components/accordion/AccordionBase';
+import ListMcpServers from '@/components/lists/ListMcpServers.tsx';
+import AccordionZero from '@/components/accordion/AccordionZero';
 
 export default function Home() {
     const { setPayload, useSelectModelEffect, useFetchModelsEffect } = useChatContext();
@@ -25,7 +29,7 @@ export default function Home() {
 
     return (
         <NoAuthLayout>
-            <main className="flex-1 flex flex-col items-center justify-center bg-background">
+            <main className="flex-1 flex flex-col items-center justify-center bg-background p-6">
                 <div className="absolute top-4 left-4">
                     <Link 
                         to="/login" 
@@ -51,6 +55,32 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col w-full lg:w-[600px]">
                     <ChatInput />
+                </div>
+                <div className="flex flex-col w-full lg:w-[600px] mt-2">
+                    {/* <TabsBase 
+                        tabs={[
+                            {
+                                label: "MCP",
+                                content: <ListMcpServers />
+                            }, 
+                            {
+                                label: "A2A",
+                                content: <div className="w-full h-full bg-secondary rounded-lg h-[100px] p-2">A2A</div>
+                            }
+                        ]} 
+                    /> */}
+                    <AccordionZero 
+                        items={[
+                            {
+                                title: "Model Context Protocol (MCP)",
+                                content: <ListMcpServers />
+                            },
+                            {
+                                title: "Agent to Agent (A2A)",
+                                content: <div className="w-full h-full bg-secondary rounded-lg h-[100px] p-2">A2A</div>
+                            }
+                        ]} 
+                    />
                 </div>
                 
             </main>

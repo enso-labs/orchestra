@@ -14,7 +14,7 @@ const ModalBaseButton = ({
   label: string,
 }) => {
   return (
-    <MainToolTip content={label}>
+    <MainToolTip content={label} delayDuration={500}>
       <Button
         variant="outline"
         className="rounded-full bg-foreground/10 text-foreground-500 px-3 hover:bg-foreground/15 transition-colors"
