@@ -153,9 +153,7 @@ export default function ChatInput() {
             <ToolSelector />
           )}
           {currentModel?.metadata?.tool_calling && (
-            <MainToolTip content="Add MCP Configuration">
-              <ModalMcp />
-            </MainToolTip>
+            <ModalMcp />
           )}
           {getAuthToken() && (
             <PresetPopover />

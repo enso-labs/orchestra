@@ -4,7 +4,7 @@ import MCPEditor from "@/components/ToolSelector/MCPEditor/mcp-editor";
 import { useToolContext } from "@/context/ToolContext";
 
 function ModalMcp() {
-	const { isAddingMCP, setIsAddingMCP, mcpCode } = useToolContext();
+	const { isAddingMCP, setIsAddingMCP, mcpCode, hasSavedMCP } = useToolContext();
 
 	return (
 		<ModalBase 
@@ -13,6 +13,7 @@ function ModalMcp() {
 			enabledCount={Object.keys(JSON.parse(mcpCode) || {}).length} 
 			isOpen={isAddingMCP}
 			setIsOpen={setIsAddingMCP}
+			label={hasSavedMCP ? "Edit MCP Configuration" : "Add MCP Configuration"}
 		/>
 	)
 }
