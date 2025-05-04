@@ -10,7 +10,7 @@ import { Server } from "@/entities";
 import { createServer } from "@/services/serverService";
 import { useEffect, useState } from "react";
 import { INIT_SERVER_STATE } from "@/hooks/useServerHook";
-import { ServerSchema, validateServer } from "@/validations/validate-server";
+import { validateServer } from "@/validations/validate-server";
 
 function LeftPanel({
 	onCreate,
