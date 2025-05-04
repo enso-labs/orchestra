@@ -8,6 +8,7 @@ import ThemeProvider from './context/ThemeContext'
 import ToolProvider from './context/ToolContext';
 import AgentProvider from './context/AgentContext';
 import FlowProvider from './context/FlowContext';
+import AppProvider from './context/AppContext';
 
 const Contexts = () => {
   if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
@@ -24,15 +25,17 @@ const Contexts = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <ChatProvider>
-        <ToolProvider>
-          <AgentProvider>
-            <FlowProvider>
-              <AppRoutes />
-            </FlowProvider>
-          </AgentProvider>
-        </ToolProvider>
-      </ChatProvider>
+      <AppProvider>
+        <ChatProvider>
+          <ToolProvider>
+            <AgentProvider>
+              <FlowProvider>
+                <AppRoutes />
+              </FlowProvider>
+            </AgentProvider>
+          </ToolProvider>
+        </ChatProvider>
+      </AppProvider>
     </ThemeProvider>
   )
 }

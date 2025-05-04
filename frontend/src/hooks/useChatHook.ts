@@ -9,7 +9,7 @@ import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
 import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
 import { streamThread } from '@/services/threadService';
-
+import { useAppContext } from '@/context/AppContext';
 
 const KEY_NAME = 'config:mcp';
 
@@ -76,7 +76,7 @@ export default function useChatHook() {
         setToolCall,
         setMessages,
     } = actions;
-    
+    const { setLoading, setLoadingMessage } = useAppContext();
     const token = getAuthToken();
     const responseRef = useRef(initChatState.responseRef);
     const toolCallRef = useRef(initChatState.toolCallRef);
@@ -114,6 +114,8 @@ export default function useChatHook() {
 		abortController?: AbortController
 	) => {
 		logger("Querying thread:", payload);
+		setLoading(true);
+		setLoadingMessage('Querying...');
 		let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
 		setMessages(messagesWithAssistant);
 		setResponse("");
@@ -146,6 +148,7 @@ export default function useChatHook() {
 				logger("Tool call received:", data.msg);
 				const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
 				handleToolCallChunk(toolCallChunk);
+                setLoadingMessage('Constructing tool input...');
 				if (lastMessage.role !== 'tool') {
 					messagesWithAssistant = [...messagesWithAssistant, { role: "tool", args: toolCallRef.current }];
 				}
@@ -157,6 +160,10 @@ export default function useChatHook() {
 					args: toolCallRef.current, 
 					...data.msg 
 				}];
+                if (toolCallRef.current.length > 0) {
+                    setLoadingMessage('Fetching tool response...');
+                    setLoading(false);
+                }
 				setMessages(messagesWithAssistant);
 			} else if (data.msg.type === 'stop' || data.msg.response_metadata?.finish_reason === 'stop') {
 				source.close();
@@ -168,6 +175,7 @@ export default function useChatHook() {
 				responseRef.current += typeof data.msg.content === 'string' 
 					? data.msg.content 
 					: (data.msg.content[0]?.text || '');
+				if (responseRef.current.length > 0) setLoading(false);
 				setMessages([...messagesWithAssistant, { role: "assistant", content: responseRef.current }]);
 			}
 			setPayload((prev: any) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
@@ -177,6 +185,7 @@ export default function useChatHook() {
 		source.addEventListener("close", () => {
 			logger("Connection closed");
             setController(null);
+            setLoading(false);
 		});
 
 		// Retry handling
@@ -203,6 +212,7 @@ export default function useChatHook() {
 		controller.signal.addEventListener('abort', () => {
 			logger("Aborting stream connection");
 			source.close();
+			setLoading(false);
 		});
 		
 		// Return the controller so the caller can abort if needed

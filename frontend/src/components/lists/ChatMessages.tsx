@@ -1,19 +1,20 @@
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import MarkdownCard from "../cards/MarkdownCard";
-import { Wrench } from "lucide-react";
+import { Wrench, Loader2 } from "lucide-react";
 import SystemMessageCard from "../cards/SystemMessageCard";
 import { useEffect, useState } from "react";
 import SearchEngineTool from "../tools/SearchEngine";
 import DefaultTool from "../tools/Default";
 import { useToolContext } from "@/context/ToolContext";
 import { truncateFrom } from "@/lib/utils/format";
-
+import { useAppContext } from "@/context/AppContext";
 
 
 const ChatMessages = ({ messages }: { messages: any[] }) => {
 	const [selectedToolId, setSelectedToolId] = useState<number | null>(null);
 	const { selectedToolMessage } = useToolContext();
+	const { loading, loadingMessage } = useAppContext();
 
 	useEffect(() => {
 		if (selectedToolMessage) {
@@ -118,6 +119,12 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 					) 
 				}
 			})}
+			{loading && (
+				<div className="flex justify-start h-full mt-2">
+					<Loader2 className="h-5 w-5 animate-spin mx-2" />
+					<span className="text-muted-foreground">{loadingMessage}</span>
+				</div>
+			)}
 		</div>
 	)
 }

@@ -12,8 +12,10 @@ const INIT_APP_STATE = {
 
 export default function useAppHook() {
     const [appVersion, setAppVersion] = useState(INIT_APP_STATE.appVersion);
+    const [loading, setLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('');
 
-     const isMobile = () => {
+    const isMobile = () => {
         const isClient = typeof window === "object";
 
         // Function to check window size and return isOpen state
@@ -43,5 +45,9 @@ export default function useAppHook() {
         appVersion,
         isMobile,
         useFetchAppVersionEffect,
+        loading,
+        setLoading,
+        loadingMessage,
+        setLoadingMessage,
     }
 }
