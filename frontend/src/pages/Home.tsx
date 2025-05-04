@@ -56,19 +56,7 @@ export default function Home() {
                 <div className="flex flex-col w-full lg:w-[600px]">
                     <ChatInput />
                 </div>
-                <div className="flex flex-col w-full lg:w-[600px] mt-2">
-                    {/* <TabsBase 
-                        tabs={[
-                            {
-                                label: "MCP",
-                                content: <ListMcpServers />
-                            }, 
-                            {
-                                label: "A2A",
-                                content: <div className="w-full h-full bg-secondary rounded-lg h-[100px] p-2">A2A</div>
-                            }
-                        ]} 
-                    /> */}
+                {/* <div className="flex flex-col w-full lg:w-[600px] mt-2">
                     <AccordionZero 
                         items={[
                             {
@@ -77,11 +65,11 @@ export default function Home() {
                             },
                             {
                                 title: "Agent to Agent (A2A)",
-                                content: <div className="w-full h-full bg-secondary rounded-lg h-[100px] p-2">A2A</div>
+                                content: <ListMcpServers />
                             }
                         ]} 
                     />
-                </div>
+                </div> */}
                 
             </main>
         </NoAuthLayout>
