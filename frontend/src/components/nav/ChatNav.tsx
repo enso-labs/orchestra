@@ -15,7 +15,7 @@ export function ChatNav({
     onNewChat 
 }: ChatNavProps) {
     
-    const { handleNewChat, payload } = useChatContext();
+    const { handleNewChat, payload, messages } = useChatContext();
 
     return (
         <header className="bg-card border-b border-border">
@@ -53,15 +53,17 @@ export function ChatNav({
                         >
                             <Share className="h-4 w-4" />
                         </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={onNewChat || handleNewChat}
-                            className="h-9 w-9"
-                            title="New Chat"
-                        >
-                            <FaPlus className="h-4 w-4" />
-                        </Button>
+                        {messages.length > 0 && (
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={onNewChat || handleNewChat}
+                                className="h-9 w-9"
+                                title="New Chat"
+                            >
+                                <FaPlus className="h-4 w-4" />
+                            </Button>
+                        )}
                         <ColorModeButton />
                     </div>
                 </div>

@@ -160,8 +160,8 @@ export default function useChatHook() {
                     messagesWithAssistant[index] = { ...messagesWithAssistant[index], args: toolCallRef.current, ...data.msg };
                 }
                 setMessages(messagesWithAssistant);
-            } else if (data.event === 'end') {
-                getHistory(1, history.per_page, agentId);
+            } else if (data.msg.type === 'stop' || data.msg.response_metadata.finish_reason === 'stop') {
+                if (getAuthToken()) getHistory(1, history.per_page, agentId);
                 source.close();
                 logger("Thread ended");
                 return;
@@ -273,9 +273,9 @@ export default function useChatHook() {
         useEffect(() => {
             // When payload.mcp changes, update localStorage
             if (payload.a2a) {
-                localStorage.setItem("a2a-config", JSON.stringify(payload.a2a));
+                localStorage.setItem("config:a2a", JSON.stringify(payload.a2a));
             } else {
-                localStorage.removeItem("a2a-config");
+                localStorage.removeItem("config:a2a");
             }
         }, [payload.a2a]);
     };
