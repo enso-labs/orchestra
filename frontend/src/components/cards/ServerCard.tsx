@@ -1,9 +1,14 @@
 import { Server } from "@/entities"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PencilIcon, TrashIcon, Eye } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
 
 interface ServerCardProps {
-  server: Server
+  server: Server,
+  editable?: boolean,
+  onEdit?: (id: string) => void,
+  onDelete?: (id: string) => void,
 }
 
 // Format date helper function
@@ -19,19 +24,23 @@ function formatDate(dateString: string): string {
   }).format(date)
 }
 
-export function ServerCard({ server }: ServerCardProps) {
+export function ServerCard({ server, editable = false }: ServerCardProps) {
+  const navigate = useNavigate();
+
   return (
-    <Card className="hover:bg-accent/50 transition-colors">
-      <CardHeader className="space-y-1">
+    <Card className="hover:bg-accent/50 transition-colors flex flex-col h-full">
+      <CardHeader className="space-y-1 p-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{server.name}</CardTitle>
-          <Badge variant={server.public ? "default" : "secondary"}>
-            {server.public ? "Public" : "Private"}
-          </Badge>
+          <div className="flex items-center space-x-1">
+            <Badge variant={server.public ? "default" : "secondary"}>
+              {server.public ? "Public" : "Private"}
+            </Badge>
+          </div>
         </div>
         <CardDescription>{server.description || "No description provided"}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow px-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Type:</span>
@@ -46,11 +55,31 @@ export function ServerCard({ server }: ServerCardProps) {
               </div>
             </div>
           )}
-          <div className="text-xs text-muted-foreground mt-4">
-            Created: {formatDate(server.created_at || new Date().toISOString())}
-          </div>
         </div>
       </CardContent>
+      <CardFooter className="mt-auto px-4">
+        <div className="flex items-center justify-between w-full">
+          <div className="text-xs text-muted-foreground">
+            Created: {formatDate(server.created_at || new Date().toISOString())}
+          </div>
+          <div className="flex items-center">
+            <button
+              className="p-1.5 rounded-md hover:bg-secondary/80 text-muted-foreground"
+              aria-label="Edit server"
+              onClick={() => navigate(`/server/${server.id}/edit`)}
+            >
+              <PencilIcon className="h-5 w-5" />
+            </button>
+            <Link
+              to={`/server/${server.slug}`}
+              className="p-1.5 rounded-md hover:bg-primary/10 text-primary"
+              aria-label="View server"
+            >
+              <Eye className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+      </CardFooter>
     </Card>
   )
 } 

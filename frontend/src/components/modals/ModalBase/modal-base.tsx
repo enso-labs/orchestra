@@ -21,7 +21,7 @@ function ModalBase({
 		<>
 			<ModalBaseButton icon={icon} enabledCount={enabledCount} setIsOpen={setIsOpen} label={label} />
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
-				<DialogContent className="max-w-screen-lg p-0">
+				<DialogContent className="max-w-[95vw] lg:max-w-[1000px] p-0">
 					{content}
 				</DialogContent>
 			</Dialog>

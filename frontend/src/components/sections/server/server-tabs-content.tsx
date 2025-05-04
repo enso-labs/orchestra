@@ -54,7 +54,7 @@ function ServerTabsContent({
 							))}
 						</div>
 					) : (
-						<EmptyState message="No public agents found" />
+						<EmptyState message="No public flows found" />
 					)}
 				</div>
 			)}
@@ -68,13 +68,11 @@ function ServerTabsContent({
 					) : filteredPrivateAgents.length > 0 ? (
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
 							{filteredPrivateAgents.map((agent) => (
-								<Link to={`/server/${agent.id}/edit`} key={agent.id}>
-									<ServerCard server={agent} />
-								</Link>
+								<ServerCard key={agent.id} server={agent} />
 							))}
 						</div>
 					) : (
-						<EmptyState message="No private agents found" />
+						<EmptyState message="No private servers found" />
 					)}
 				</div>
 			)}
