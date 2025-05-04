@@ -13,6 +13,7 @@ import { useLocation } from "react-router-dom"
 import { useNavigate } from "react-router-dom"
 import SearchButton from "../buttons/SearchButton"
 import { getAuthToken } from "@/lib/utils/auth"
+import ModalMcp from "../modals/ModalMcp"
 
 export default function ChatInput() {
   
@@ -150,6 +151,11 @@ export default function ChatInput() {
           <SearchButton />
           {currentModel?.metadata?.tool_calling && (
             <ToolSelector />
+          )}
+          {currentModel?.metadata?.tool_calling && (
+            <MainToolTip content="Add MCP Configuration">
+              <ModalMcp />
+            </MainToolTip>
           )}
           {getAuthToken() && (
             <PresetPopover />

@@ -136,7 +136,7 @@ const DefaultToolContent = ({
               </Tooltip>
               
               {/* MCP */}
-              <Tooltip>
+              {/* <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
@@ -159,7 +159,7 @@ const DefaultToolContent = ({
                     {hasSavedMCP ? "Edit MCP configuration" : "Add MCP configuration"}
                   </p>
                 </TooltipContent>
-              </Tooltip>
+              </Tooltip> */}
               
               <Tooltip>
                 <TooltipTrigger asChild>
