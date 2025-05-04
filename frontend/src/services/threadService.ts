@@ -1,7 +1,10 @@
 import apiClient from '@/lib/utils/apiClient';
 import { ThreadPayload } from '@/entities';
 import { DEFAULT_OPTIMIZE_MODEL } from '@/config/llm';
-
+import { VITE_API_URL } from '@/config';
+import { constructPayload } from '@/lib/utils/llm';
+import { getAuthToken } from '@/lib/utils/auth';
+import { SSE } from 'sse.js';
 
 
 const SYSTEM_PROMPT = `GOAL:
@@ -78,4 +81,18 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
   }
 };
 
-
+export const streamThread = (payload: ThreadPayload, agentId: string): SSE => {
+  const responseData = constructPayload(payload, agentId);
+  const url = agentId ? `/agents/${agentId}/threads` : '/threads';
+  const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
+  {
+    headers: {
+      'Content-Type': 'application/json', 
+      'Accept': 'text/event-stream',
+      'Authorization': `Bearer ${getAuthToken()}`
+    },
+    payload: JSON.stringify(responseData),
+    method: 'POST'
+  });
+  return source;
+}

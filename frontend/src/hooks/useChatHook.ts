@@ -2,15 +2,14 @@ import debug from 'debug';
 import { SSE } from "sse.js";
 import { useEffect, useRef, useState } from "react";
 import { ThreadPayload } from '../entities';
-import { VITE_API_URL } from '../config';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
-import { constructSystemPrompt } from '@/lib/utils/format';
 import { useChatReducer } from '@/reducers/chatReducer';
 import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
 import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
+import { streamThread } from '@/services/threadService';
 const KEY_NAME = 'config:mcp';
 
 debug.enable('hooks:*');
@@ -83,20 +82,22 @@ export default function useChatHook() {
     const responseRef = useRef(initChatState.responseRef);
     const toolCallRef = useRef(initChatState.toolCallRef);
     const [payload, setPayload] = useState(initChatState.payload);
+
     const currentModel = models.find((model: Model) => model.id === payload.model);
     const enabledTools = availableTools
         .filter((tool: any) => payload.tools.includes(tool.id))
+
+    const [controller, setController] = useState<AbortController | null>(null);
     
     const handleQuery = (agentId: string = '') => {
-        queryThread(payload, agentId, messages);
+        const { controller } = queryThread(payload, agentId, messages);
+        setController(controller);
     }
 
-    const constructPayload = (payload: ThreadPayload, agentId?: string) => {
-        return agentId ? {
-            query: payload.query,
-        } : {
-            ...payload,
-            system: payload.system ? constructSystemPrompt(payload.system) : DEFAULT_SYSTEM_PROMPT
+    const abortQuery = () => {
+        if (controller) {
+            controller.abort();
+            setController(null);
         }
     }
 
@@ -107,81 +108,112 @@ export default function useChatHook() {
         });
     }
 
-    const queryThread = (payload: ThreadPayload, agentId: string = '', previousMessages: any[] = []) => {
-        logger("Querying thread:", payload);
-        let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
-        setMessages(messagesWithAssistant);
-        setResponse("");
-        responseRef.current = "";
-        const responseData = constructPayload(payload, agentId);
-        const url = agentId ? `/agents/${agentId}/threads` : '/threads';
-        const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
-            {
-                headers: {
-                    'Content-Type': 'application/json', 
-                    'Accept': 'text/event-stream',
-                    'Authorization': `Bearer ${token}`
-                },
-                payload: JSON.stringify(responseData),
-                method: 'POST'
-            }
-        );
+    const queryThread = (
+		payload: ThreadPayload, 
+		agentId: string = '', 
+		previousMessages: any[] = [],
+		abortController?: AbortController
+	) => {
+		logger("Querying thread:", payload);
+		let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
+		setMessages(messagesWithAssistant);
+		setResponse("");
+		responseRef.current = "";
+		
+		// Create a new AbortController if one wasn't provided
+		const controller = abortController || new AbortController();
+		const source = streamThread(payload, agentId);
+		
+		// Error handling
+		source.addEventListener("error", (e: any) => {
+			logger("Error received from server:", e);
+			const errData = JSON.parse(e?.data);
+			alert(errData?.detail);
+			source.close();
+		});
 
-        source.addEventListener("error", (e: any) => {
-            logger("Error received from server:", e);
-            const errData = JSON.parse(e?.data);
-            alert(errData?.detail);
-            source.close();
-            throw new Error(errData?.detail);
-        });
+		// Open handling
+		source.addEventListener("open", () => {
+			logger("Connection opened");
+		});
 
-        source.addEventListener("open", () => {
-            // setMessages(messagesWithAssistant);
-            console.log("connection opened");
-        });
+		// Message handling
+		source.addEventListener("message", (e: any) => {
+			logger("Message received:", e);
+			const data = JSON.parse(e.data);
+			const lastMessage = messagesWithAssistant[messagesWithAssistant.length - 1];
 
-        source.addEventListener("message", (e: any) => {
-            const data = JSON.parse(e.data);
-            const lastMessage = messagesWithAssistant[messagesWithAssistant.length - 1];
-            logger("Message received:", data);
-
-            if (data.msg.type === 'AIMessageChunk' && data.msg.tool_call_chunks.length > 0) {
-                console.log("Tool call received:", data.msg);
-                const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
-                handleToolCallChunk(toolCallChunk);
-                if (lastMessage.role !== 'tool') {
-                    messagesWithAssistant = [...messagesWithAssistant, { role: "tool", args: toolCallRef.current }];
-                }
-            } else if (data.msg.type === 'tool') {
-                console.log("Tool chunk received:", data.msg);
-                const index = messagesWithAssistant.map(item => item.role).lastIndexOf('tool');
-                if (index !== -1) {
-                    // Create a new object with the updated property
-                    messagesWithAssistant[index] = { ...messagesWithAssistant[index], args: toolCallRef.current, ...data.msg };
-                }
-                setMessages(messagesWithAssistant);
-            } else if (data.msg.type === 'stop' || data.msg.response_metadata.finish_reason === 'stop') {
+			if (data.msg.type === 'AIMessageChunk' && data.msg.tool_call_chunks.length > 0) {
+				logger("Tool call received:", data.msg);
+				const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
+				handleToolCallChunk(toolCallChunk);
+				if (lastMessage.role !== 'tool') {
+					messagesWithAssistant = [...messagesWithAssistant, { role: "tool", args: toolCallRef.current }];
+				}
+			} else if (data.msg.type === 'tool') {
+				logger("Tool chunk received:", data.msg);
+				const index = messagesWithAssistant.map(item => item.role).lastIndexOf('tool');
+				if (index !== -1) {
+					messagesWithAssistant[index] = { ...messagesWithAssistant[index], args: toolCallRef.current, ...data.msg };
+				}
+				setMessages(messagesWithAssistant);
+			} else if (data.msg.type === 'stop' || data.msg.response_metadata.finish_reason === 'stop') {
+				source.close();
+				logger("Thread ended");
                 if (getAuthToken()) getHistory(1, history.per_page, agentId);
-                source.close();
-                logger("Thread ended");
-                return;
-            } else {
-                responseRef.current += typeof data.msg.content === 'string' 
-                    ? data.msg.content 
-                    : (data.msg.content[0]?.text || '');
-                // Find the assistant message and update it with the latest content
-                const updatesMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
-                
-                // Update the messages state with the latest assistant message
-                setMessages(updatesMessages);
-            }
-            setPayload((prev) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
-        });
-        source.stream();
-        responseRef.current = "";
-        toolCallRef.current = "";
-        return true;
-    };
+                setController(null);
+				return;
+			} else {
+					responseRef.current += typeof data.msg.content === 'string' 
+							? data.msg.content 
+							: (data.msg.content[0]?.text || '');
+					// Find the assistant message and update it with the latest content
+					const updatesMessages = [...messagesWithAssistant, { role: "assistant", content: responseRef.current }];
+					
+					// Update the messages state with the latest assistant message
+					setMessages(updatesMessages);
+			}
+			setPayload((prev: any) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
+		});
+
+		// Close handling
+		source.addEventListener("close", () => {
+			logger("Connection closed");
+            setController(null);
+		});
+
+		// Retry handling
+		source.addEventListener("retry", () => {
+			logger("Connection retrying");
+		});
+
+		// Reconnect handling
+		source.addEventListener("reconnect", () => {
+			logger("Connection reconnected");
+		});
+
+		// Reconnect attempt handling
+		source.addEventListener("reconnectAttempt", () => {
+			logger("Connection reconnect attempt");
+		});
+
+		// Stream handling
+		source.stream();
+		responseRef.current = "";
+		toolCallRef.current = "";
+		
+		// Setup abort capability
+		controller.signal.addEventListener('abort', () => {
+			logger("Aborting stream connection");
+			source.close();
+		});
+		
+		// Return the controller so the caller can abort if needed
+		return {
+            controller,
+            source,
+        };
+	}
 
     const getHistory = async (page: number = 1, perPage: number = 20, agentId: string = '') => {
         try {
@@ -380,5 +412,8 @@ export default function useChatHook() {
         toolCall,
         setToolCall,
         useA2AEffect,
+        abortQuery,
+        controller,
+        setController,
     };
 }
