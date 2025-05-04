@@ -127,6 +127,23 @@ This project uses Alembic for database migrations. Here's how to work with migra
 	alembic history
 	```
 
+### Run Playwright MCP Locally
+
+1. Start Ngrok on port 8931
+
+	```bash
+	ngrok http 8931
+	```
+
+2. Run MCP server
+
+	```bash
+	npx @playwright/mcp@latest \
+	--port 8931 \
+	--executable-path $HOME/.cache/ms-playwright/chromium-<version>/chrome-linux/chrome \
+	--vision
+	```
+
 ## 🤝 Integrations
 
 - [Configuring gcalcli](https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md)

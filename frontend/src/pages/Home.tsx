@@ -1,28 +1,16 @@
 import NoAuthLayout from '../layouts/NoAuthLayout';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import ChatInput from '@/components/inputs/ChatInput';
-import { useSearchParams, Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
+import { DEFAULT_CHAT_MODEL } from '@/config/llm';
 
 export default function Home() {
-    const { setPayload } = useChatContext();
+    const { setPayload, useSelectModelEffect, useFetchModelsEffect } = useChatContext();
     const [searchParams, setSearchParams] = useSearchParams();
-    const currentModel = searchParams.get('model') || '';
-    const { 
-        useFetchModelsEffect, 
-        useSelectModelEffect,
-    } = useChatContext();
-    
-    // Set default model in query params on component load if not already set
-    useEffect(() => {
-        if (!searchParams.get('model')) {
-            setSearchParams({ model: 'openai-gpt-4o-mini' });
-        }
-    }, [searchParams, setSearchParams]);
 
-    useFetchModelsEffect(setSearchParams, currentModel);
-    useSelectModelEffect(currentModel);
+    const currentModel = searchParams.get('model') || DEFAULT_CHAT_MODEL;
 
     useEffect(() => {
         const a2a = localStorage.getItem('a2a');
@@ -31,9 +19,13 @@ export default function Home() {
         }
     }, []);
 
+    
+    useSelectModelEffect(currentModel);
+    useFetchModelsEffect(setSearchParams, currentModel);
+
     return (
         <NoAuthLayout>
-            <main className="flex-1 flex flex-col items-center justify-center bg-background">
+            <main className="flex-1 flex flex-col items-center justify-center bg-background p-6">
                 <div className="absolute top-4 left-4">
                     <Link 
                         to="/login" 
@@ -60,6 +52,20 @@ export default function Home() {
                 <div className="flex flex-col w-full lg:w-[600px]">
                     <ChatInput />
                 </div>
+                {/* <div className="flex flex-col w-full lg:w-[600px] mt-2">
+                    <AccordionZero 
+                        items={[
+                            {
+                                title: "Model Context Protocol (MCP)",
+                                content: <ListMcpServers />
+                            },
+                            {
+                                title: "Agent to Agent (A2A)",
+                                content: <ListMcpServers />
+                            }
+                        ]} 
+                    />
+                </div> */}
                 
             </main>
         </NoAuthLayout>

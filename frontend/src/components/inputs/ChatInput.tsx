@@ -12,7 +12,8 @@ import useAppHook from "@/hooks/useAppHook"
 import { useLocation } from "react-router-dom"
 import { useNavigate } from "react-router-dom"
 import SearchButton from "../buttons/SearchButton"
-import { TOKEN_NAME } from "@/config"
+import { getAuthToken } from "@/lib/utils/auth"
+import ModalMcp from "../modals/ModalMcp"
 
 export default function ChatInput() {
   
@@ -151,7 +152,10 @@ export default function ChatInput() {
           {currentModel?.metadata?.tool_calling && (
             <ToolSelector />
           )}
-          {localStorage.getItem(TOKEN_NAME) && (
+          {currentModel?.metadata?.tool_calling && (
+            <ModalMcp />
+          )}
+          {getAuthToken() && (
             <PresetPopover />
           )}
         </div>

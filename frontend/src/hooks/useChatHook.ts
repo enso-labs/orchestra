@@ -2,14 +2,15 @@ import debug from 'debug';
 import { SSE } from "sse.js";
 import { useEffect, useRef, useState } from "react";
 import { ThreadPayload } from '../entities';
-import { TOKEN_NAME, VITE_API_URL } from '../config';
+import { VITE_API_URL } from '../config';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
 import { listTools } from '../services/toolService';
 import { constructSystemPrompt } from '@/lib/utils/format';
 import { useChatReducer } from '@/reducers/chatReducer';
 import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
-
+import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
+import { getAuthToken } from '@/lib/utils/auth';
 const KEY_NAME = 'config:mcp';
 
 debug.enable('hooks:*');
@@ -78,7 +79,7 @@ export default function useChatHook() {
         setMessages,
     } = actions;
     
-    const token = localStorage.getItem(TOKEN_NAME);
+    const token = getAuthToken();
     const responseRef = useRef(initChatState.responseRef);
     const toolCallRef = useRef(initChatState.toolCallRef);
     const [payload, setPayload] = useState(initChatState.payload);
@@ -212,14 +213,14 @@ export default function useChatHook() {
         }
     };
 
-    const fetchModels = async (setSearchParams: (params: any) => void, currentModel: string) => {
+    const fetchModels = async (setSearchParams: (params: any) => void, currentModel: string = DEFAULT_CHAT_MODEL) => {
         try {
             const response = await listModels();
             setModels(response.models);
             
             // Set default model if none selected
             if (!currentModel && response.models.length > 0) {
-                setSearchParams({ model: response.models.find((model: Model) => model.id === "openai-gpt-4o-mini")?.id });
+                setSearchParams({ model: response.models.find((model: Model) => model.id === DEFAULT_CHAT_MODEL)?.id });
             }
         } catch (error) {
             console.error('Failed to fetch models:', error);
@@ -279,7 +280,7 @@ export default function useChatHook() {
         }, [payload.a2a]);
     };
 
-    const useFetchModelsEffect = (setSearchParams: (params: any) => void, currentModel: string) => {
+    const useFetchModelsEffect = (setSearchParams: (params: any) => void, currentModel: string = DEFAULT_CHAT_MODEL) => {
         useEffect(() => {
             fetchModels(setSearchParams, currentModel);
 
@@ -289,12 +290,14 @@ export default function useChatHook() {
         }, []);
     };
 
-    const useSelectModelEffect = (currentModel: string) => {
+    const useSelectModelEffect = (currentModel: string = DEFAULT_CHAT_MODEL) => {
         useEffect(() => {
-            if (currentModel) {
+            if (!isValidModelName(currentModel)) {
+                setPayload({ ...payload, model: DEFAULT_CHAT_MODEL });
+            } else {
                 setPayload({ ...payload, model: currentModel });
             }
-        }, [currentModel, setPayload]);
+        }, [currentModel]);
 
         return () => {
             // Cleanup logic if needed

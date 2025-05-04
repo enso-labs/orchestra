@@ -1,5 +1,6 @@
 import apiClient from '@/lib/utils/apiClient';
 import { ThreadPayload } from '@/entities';
+import { DEFAULT_OPTIMIZE_MODEL } from '@/config/llm';
 
 
 
@@ -55,8 +56,7 @@ export const createJsonThread = async (payload: ThreadPayload) => {
 
 export const optimizeSystemPrompt = async (payload: ThreadPayload) => {
   payload.system = SYSTEM_PROMPT;
-  payload.model = 'openai:gpt-4o';
-  // payload.model = 'openai:gpt-4o-mini';
+  payload.model = DEFAULT_OPTIMIZE_MODEL;
   try {
     const response = await apiClient.post('/llm/chat', payload);
     return response.data.answer.content;
@@ -68,8 +68,7 @@ export const optimizeSystemPrompt = async (payload: ThreadPayload) => {
 
 export const alterSystemPrompt = async (payload: ThreadPayload) => {
   payload.system = getSystemPrompt(payload.system);
-  payload.model = 'openai:gpt-4o';
-  // payload.model = 'openai:gpt-4o-mini';
+  payload.model = DEFAULT_OPTIMIZE_MODEL;
   try {
     const response = await apiClient.post('/llm/chat', payload);
     return response.data.answer.content;

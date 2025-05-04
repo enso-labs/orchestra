@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import MCPIcon from "../icons/MCPIcon";
 
 /**
  * Default Tool Content
@@ -49,9 +48,7 @@ interface DefaultToolContentProps {
 
 const DefaultToolContent = ({ 
   enabledCount,
-  clearTools, 
-  startAddingMCP, 
-  hasSavedMCP, 
+  clearTools,
   groupByCategory, 
   setGroupByCategory, 
   toolFilter, 
@@ -136,7 +133,7 @@ const DefaultToolContent = ({
               </Tooltip>
               
               {/* MCP */}
-              <Tooltip>
+              {/* <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
@@ -159,7 +156,7 @@ const DefaultToolContent = ({
                     {hasSavedMCP ? "Edit MCP configuration" : "Add MCP configuration"}
                   </p>
                 </TooltipContent>
-              </Tooltip>
+              </Tooltip> */}
               
               <Tooltip>
                 <TooltipTrigger asChild>
