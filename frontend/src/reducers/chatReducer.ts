@@ -1,6 +1,7 @@
 import { useReducer, useRef } from 'react';
 import { ThreadPayload } from '../entities';
 import { Model } from '@/services/modelService';
+import { SSE } from 'sse.js';
 
 // Action Types Enum
 export enum ChatActionType {
@@ -43,6 +44,8 @@ type ChatState = {
         input: string;
     };
     availableTools: any[];
+    controller: AbortController | null;
+    conn: SSE | null;
 }
 
 type ChatAction = {
@@ -81,7 +84,9 @@ export const INIT_CHAT_STATE: ChatState = {
     toolCall: {
         input: ""
     },
-    availableTools: []
+    availableTools: [],
+    controller: null,
+    conn: null,
 }
 
 // Reducer

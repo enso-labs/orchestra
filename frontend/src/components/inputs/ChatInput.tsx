@@ -14,10 +14,11 @@ import { useNavigate } from "react-router-dom"
 import SearchButton from "../buttons/SearchButton"
 import { getAuthToken } from "@/lib/utils/auth"
 import ModalMcp from "../modals/ModalMcp"
+import { FaStop } from 'react-icons/fa'
 
 export default function ChatInput() {
   
-  const { payload, handleQuery, setPayload, currentModel } = useChatContext();
+  const { payload, handleQuery, setPayload, currentModel, controller, abortQuery } = useChatContext();
   const { isMobile } = useAppHook();
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,16 +160,28 @@ export default function ChatInput() {
             <PresetPopover />
           )}
         </div>
-        <MainToolTip content="Send Message" delayDuration={500}>
-          <Button
-            onClick={handleSubmit}
-            disabled={payload.query.trim() === "" && images.length === 0}
-            size="icon"
-            className="w-8 h-8 rounded-full m-1"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
-        </MainToolTip>
+        {controller ? (
+          <MainToolTip content="Abort" delayDuration={500}>
+            <Button
+              onClick={abortQuery}
+              size="icon"
+              className="w-8 h-8 rounded-full m-1 bg-red-500"
+            >
+              <FaStop />
+            </Button>
+          </MainToolTip>
+        ) : (
+          <MainToolTip content="Send Message" delayDuration={500}>
+            <Button
+              onClick={handleSubmit}
+              disabled={payload.query.trim() === "" && images.length === 0}
+              size="icon"
+              className="w-8 h-8 rounded-full m-1"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+          </MainToolTip>
+        )}
       </div>
       <ImagePreviewModal 
         image={previewImage} 
