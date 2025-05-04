@@ -80,7 +80,7 @@ const DEFAULT_SERVERS: MCPServer[] = [
 
 function ListMcpServers() {
 	
-	const [servers, setServers] = useState<MCPServer[]>(DEFAULT_SERVERS);
+	const [servers,] = useState<MCPServer[]>(DEFAULT_SERVERS);
 
 	return (
 		<div>

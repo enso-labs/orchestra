@@ -1,7 +1,7 @@
 import { Server } from "@/entities"
 import { EmptyState } from "@/components/cards/AgentCard"
 import { ServerCard } from "@/components/cards/ServerCard"
-import { Link } from "react-router-dom"
+
 
 function ServerTabsContent({
 	activeTab,

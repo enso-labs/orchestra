@@ -5,10 +5,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
 import { DEFAULT_CHAT_MODEL } from '@/config/llm';
-import TabsBase from '@/components/tabs/TabsBase';
-import AccordionBase from '@/components/accordion/AccordionBase';
-import ListMcpServers from '@/components/lists/ListMcpServers.tsx';
-import AccordionZero from '@/components/accordion/AccordionZero';
 
 export default function Home() {
     const { setPayload, useSelectModelEffect, useFetchModelsEffect } = useChatContext();

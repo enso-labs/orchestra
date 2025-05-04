@@ -5,7 +5,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import DefaultToolContent from "./DefaultToolContent";
 import ModalButton from "./ModalButton";
 import TestToolContent from "./ToolContentTest";
-import MCPEditor from "./MCPEditor";
 import styles from "./ToolSelector.module.css";
 import A2AEditor from "./A2AEditor";
 
@@ -29,7 +28,6 @@ export function ToolSelector() {
     setGroupByCategory,
     useLoadMCPFromPayloadEffect,
     // MCP
-    isAddingMCP,
     hasSavedMCP,
     startAddingMCP,
     useMCPInfoEffect,
