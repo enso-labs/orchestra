@@ -1,5 +1,4 @@
 import debug from 'debug';
-import { SSE } from "sse.js";
 import { useEffect, useRef, useState } from "react";
 import { ThreadPayload } from '../entities';
 import apiClient from '@/lib/utils/apiClient';
@@ -10,6 +9,8 @@ import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
 import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
 import { streamThread } from '@/services/threadService';
+
+
 const KEY_NAME = 'config:mcp';
 
 debug.enable('hooks:*');
@@ -235,16 +236,6 @@ export default function useChatHook() {
         }
     }
 
-    // Add this function after fetchTools
-    const fetchSettings = async () => {
-        try {
-            const response = token ? await apiClient.get('/settings') : null;
-            setSettings(response?.data?.settings || []);
-        } catch (error) {
-            console.error('Failed to fetch settings:', error);
-        }
-    };
-
     const fetchModels = async (setSearchParams: (params: any) => void, currentModel: string = DEFAULT_CHAT_MODEL) => {
         try {
             const response = await listModels();
@@ -274,16 +265,6 @@ export default function useChatHook() {
         }, []);
     };
 
-    // Add this effect hook after useToolsEffect
-    const useSettingsEffect = () => {
-        useEffect(() => {
-            fetchSettings();
-        }, []);
-
-        return () => {
-            // Cleanup logic if needed
-        };
-    };
 
     const useMCPEffect = () => {
         useEffect(() => {
@@ -398,10 +379,6 @@ export default function useChatHook() {
         setIsToolCallInProgress,
         currentToolCall,
         setCurrentToolCall,
-        settings,
-        setSettings,
-        useSettingsEffect,
-        fetchSettings,
         preset,
         setPreset,
         currentModel,
