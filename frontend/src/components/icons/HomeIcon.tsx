@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 
-function HomeIcon() {
+function HomeIcon({ onClick }: { onClick?: () => void }) {
   return (
-    <Link to="/" className="flex items-center gap-2">
+    <Link to={onClick ? '/' : ''} className="flex items-center gap-2" onClick={onClick}>
 			<img 
 				src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" 
 				alt="Logo" 

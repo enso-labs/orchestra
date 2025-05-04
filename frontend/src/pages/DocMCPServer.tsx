@@ -7,9 +7,10 @@ import MCPInfo from '@/components/ToolSelector/MCPEditor/mcp-info';
 import { getServerInfo } from '@/services/toolService';
 import { getAuthToken } from '@/lib/utils/auth';
 import HomeIcon from '@/components/icons/HomeIcon';
+import { useNavigate } from 'react-router-dom';
 
 export default function DocMCPServer() {
-	const token = getAuthToken();
+	const navigate = useNavigate();
 	const { serverSlug } = useParams();
 	const { mcpServers, useMCPServersEffect, mcpInfo, setMcpInfo } = useToolContext();
 
@@ -35,7 +36,7 @@ export default function DocMCPServer() {
 		<NoAuthLayout>
 			<main className="flex-1 flex flex-col items-center justify-center bg-background">
 				<div className="absolute top-4 left-4">
-					{token ? <HomeIcon /> : <Link to="/login">Login</Link>}
+					{getAuthToken() ? <HomeIcon onClick={() => navigate(-1)} /> : <Link to="/login">Login</Link>}
 				</div>
 				<div className="absolute top-4 right-4">
 					<ColorModeButton />
