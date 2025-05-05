@@ -6,6 +6,7 @@ import TestToolContent from "./ToolContentTest";
 import styles from "./ToolSelector.module.css";
 import A2AEditor from "./A2AEditor";
 import { useAppContext } from "@/context/AppContext";
+import ModalButton from "./ModalButton";
   
 export function ToolSelector() {
   const { 
@@ -56,7 +57,7 @@ export function ToolSelector() {
   return (
     <>
       {/* Button to open the dialog */}
-      {/* <ModalButton enabledCount={enabledCount} setIsOpen={setIsOpen} /> */}
+      <ModalButton enabledCount={enabledCount} setIsOpen={handleMenuOpen} />
       
       {/* Main dialog that replaces the popover */}
       <Dialog open={isMenuOpen} onOpenChange={handleMenuOpen}>
