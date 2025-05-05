@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/287-limit-input-buttons (2025-05-04)
   - feat/281-public-server-display-on-landing (2025-05-03)
   - feat/270-create-server-from-dash (2025-04-26)
   - feat/268-react-flow-test-run (2025-04-26)

@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button"
 import { ArrowUp, Plus } from "lucide-react"
-import ToolSelector from "@/components/ToolSelector"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
@@ -15,9 +14,10 @@ import SearchButton from "../buttons/SearchButton"
 import { getAuthToken } from "@/lib/utils/auth"
 import ModalMcp from "../modals/ModalMcp"
 import { FaStop } from 'react-icons/fa'
+import ToolSelector from "../ToolSelector/ToolSelector"
 
 export default function ChatInput() {
-  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { payload, handleQuery, setPayload, currentModel, controller, abortQuery } = useChatContext();
   const { isMobile } = useAppHook();
   const navigate = useNavigate();
@@ -67,6 +67,12 @@ export default function ChatInput() {
     }
   }, [payload.threadId]);
 
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
+
   return (
     <div className="flex flex-col w-full">
       {images.length > 0 && (
@@ -79,6 +85,7 @@ export default function ChatInput() {
         </div>
       )}
       <textarea
+        ref={textareaRef}
         className="w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input rounded-t-2xl focus:outline-none border-b-0"
         placeholder="How can I help you be present?"
         rows={1}
@@ -149,6 +156,9 @@ export default function ChatInput() {
               )}
             </>
           )}
+          {getAuthToken() && (
+            <PresetPopover />
+          )}
           <SearchButton />
           {currentModel?.metadata?.tool_calling && (
             <ToolSelector />
@@ -156,9 +166,7 @@ export default function ChatInput() {
           {currentModel?.metadata?.tool_calling && (
             <ModalMcp />
           )}
-          {getAuthToken() && (
-            <PresetPopover />
-          )}
+          
         </div>
         {controller ? (
           <MainToolTip content="Abort" delayDuration={500}>

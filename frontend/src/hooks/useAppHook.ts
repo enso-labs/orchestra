@@ -7,13 +7,17 @@ debug.enable('hooks:*');
 // const logger = debug('hooks:useAppHook');
 
 const INIT_APP_STATE = {
+    loading: false,
+    loadingMessage: '',
     appVersion: APP_VERSION,
+    isMenuOpen: false,
 }
 
 export default function useAppHook() {
+    const [loading, setLoading] = useState(INIT_APP_STATE.loading);
+    const [loadingMessage, setLoadingMessage] = useState(INIT_APP_STATE.loadingMessage);
     const [appVersion, setAppVersion] = useState(INIT_APP_STATE.appVersion);
-    const [loading, setLoading] = useState(false);
-    const [loadingMessage, setLoadingMessage] = useState('');
+    const [isMenuOpen, setIsMenuOpen] = useState(INIT_APP_STATE.isMenuOpen);
 
     const isMobile = () => {
         const isClient = typeof window === "object";
@@ -41,6 +45,10 @@ export default function useAppHook() {
         }, []);
     }
 
+    const handleMenuOpen = () => {
+        setIsMenuOpen(!isMenuOpen);
+    }
+
     return {
         appVersion,
         isMobile,
@@ -49,5 +57,7 @@ export default function useAppHook() {
         setLoading,
         loadingMessage,
         setLoadingMessage,
+        isMenuOpen,
+        handleMenuOpen
     }
 }
