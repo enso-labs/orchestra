@@ -44,6 +44,25 @@ def make_api_call_func(
     return api_call
 
 
+def resolve_ref(spec: dict, ref: str) -> dict:
+    """
+    Resolves a $ref string (e.g., '#/components/schemas/JobCreate') to the actual object in the OpenAPI spec.
+
+    Args:
+        spec: The full OpenAPI spec as a dictionary.
+        ref: The $ref string to resolve.
+
+    Returns:
+        The resolved object (e.g., the schema dict).
+    """
+    if not ref.startswith("#/"):
+        raise ValueError("Only local refs are supported")
+    parts = ref.lstrip("#/").split("/")
+    obj = spec
+    for part in parts:
+        obj = obj[part]
+    return obj
+
 def generate_tools_from_openapi_spec(
     openapi_url: str,
     headers: Optional[Dict[str, Any]] = None,
@@ -73,6 +92,11 @@ def generate_tools_from_openapi_spec(
         for http_method, operation in operations.items():
             method = http_method.upper()
             operation_id = operation.get("operationId", f"{method}_{path}")
+            if operation.get('requestBody'):
+                ref = operation.get('requestBody').get('content').get('application/json').get('schema').get('$ref')
+                if ref:
+                    job_create_schema = resolve_ref(spec, ref)
+                    print(job_create_schema)
             # Sanitize tool name
             name = re.sub(r'[^a-zA-Z0-9_]', '_', operation_id.lower())
 
