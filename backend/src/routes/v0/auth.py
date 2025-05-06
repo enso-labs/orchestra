@@ -14,10 +14,11 @@ from src.services.oauth import OAuthService
 from src.services.db import get_db
 from src.utils.auth import verify_credentials
 from src.utils.logger import logger
-from src.models import ProtectedUser, User
+from src.models import User
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
 from src.entities.auth import UserCreate, UserLogin, UserResponse, TokenResponse
 
+airtable_service = AirtableService()
 router = APIRouter(tags=["Auth"])
 
 def create_access_token(user: User, expires_delta: timedelta | None = None):
@@ -105,7 +106,6 @@ async def register(
         email=user.email,
         name=user.name
     )
-    airtable_service = AirtableService()
     await airtable_service.create_contact(user_response)
 
     # Create access token with full user object
@@ -238,7 +238,6 @@ async def auth_callback(provider: str, code: str, db: Session = Depends(get_db))
 			email=new_user.email,
 			name=user_info.get('name')
 		)
-		airtable_service = AirtableService()
 		await airtable_service.create_contact(user_response)
 		
 		access_token = create_access_token({
