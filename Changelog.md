@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/290-api-as-a-tool (2025-05-06)
   - feat/288-add-contact-create-to-oauth (2025-05-05)
   - feat/287-limit-input-buttons (2025-05-04)
   - feat/281-public-server-display-on-landing (2025-05-03)
