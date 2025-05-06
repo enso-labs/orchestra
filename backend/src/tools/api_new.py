@@ -63,6 +63,32 @@ def resolve_ref(spec: dict, ref: str) -> dict:
         obj = obj[part]
     return obj
 
+def resolve_ref_recursive(spec: dict, obj: dict) -> dict:
+    """
+    Recursively resolves all $ref values in a schema object using the OpenAPI spec.
+
+    Args:
+        spec: The full OpenAPI spec as a dictionary.
+        obj: The schema object (may contain $ref).
+
+    Returns:
+        The schema object with all $ref values resolved.
+    """
+    if isinstance(obj, dict):
+        if "$ref" in obj:
+            # Resolve the reference and recurse
+            resolved = resolve_ref(spec, obj["$ref"])
+            return resolve_ref_recursive(spec, resolved)
+        else:
+            # Recurse into all dict values
+            return {k: resolve_ref_recursive(spec, v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        # Recurse into all list items
+        return [resolve_ref_recursive(spec, item) for item in obj]
+    else:
+        # Base case: return as is
+        return obj
+
 def generate_tools_from_openapi_spec(
     openapi_url: str,
     headers: Optional[Dict[str, Any]] = None,
@@ -95,8 +121,9 @@ def generate_tools_from_openapi_spec(
             if operation.get('requestBody'):
                 ref = operation.get('requestBody').get('content').get('application/json').get('schema').get('$ref')
                 if ref:
-                    job_create_schema = resolve_ref(spec, ref)
-                    print(job_create_schema)
+                    schema = resolve_ref(spec, ref)
+                    fully_resolved_schema = resolve_ref_recursive(spec, schema)
+                    print(fully_resolved_schema)
             # Sanitize tool name
             name = re.sub(r'[^a-zA-Z0-9_]', '_', operation_id.lower())
 
