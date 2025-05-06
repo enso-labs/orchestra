@@ -6,9 +6,10 @@ from langchain_core.messages import AnyMessage,  HumanMessage
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
-from langchain_core.tools import StructuredTool, tool
 from psycopg.connection_async import AsyncConnection
+from pydantic import BaseModel
 
+from src.tools.a2a import create_a2a_tools
 from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
 from src.services.mcp import McpService
@@ -20,13 +21,8 @@ from src.constants.llm import ModelName
 from src.entities import Answer, Thread
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
-from langchain.chat_models import init_chat_model
 from src.services.db import create_async_pool, get_checkpoint_db
-from pydantic import BaseModel
 from src.utils.format import get_base64_image
-import sys
-
-from src.utils.a2a import A2ACardResolver, A2AClient, a2a_builder
 
 
 class StreamContext(BaseModel):
@@ -333,7 +329,8 @@ class Agent:
         a2a: dict[str, A2AServer] = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         checkpointer: AsyncPostgresSaver = None,
-        debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
+        debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False,
+        name: str = "EnsoAgent"
     ):
         self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
@@ -343,33 +340,11 @@ class Agent:
         if mcp and len(mcp.keys()) > 0:
             await self.agent_session.setup(mcp)
             self.tools.extend(self.agent_session.tools())
-            
+        
+        # Get A2A tools if provided
         if a2a and len(a2a.keys()) > 0:
-            # Check if a2a is a dictionary with multiple entries
-            if isinstance(a2a, dict):
-                # Loop through each entry in the a2a dictionary
-                for key, config in a2a.items():
-                    
-                    card = A2ACardResolver(
-                        base_url=config.base_url, 
-                        agent_card_path=config.agent_card_path
-                    ).get_agent_card()
-                    
-                    async def send_task(query: str):    
-                        return await a2a_builder(
-                            base_url=config.base_url, 
-                            query=query, 
-                            thread_id=self.thread_id
-                        )
-                    send_task.__doc__ = (
-                        f"Send query to remote agent: {card.name}. "
-                        f"Agent Card: {card.model_dump_json()}"
-                    )
-                    tool = StructuredTool.from_function(coroutine=send_task)
-                    tool.name = card.name.lower().replace(" ", "_")
-                    # tool.name = key + "_" + card.name.lower().replace(" ", "_")
-                    # tool.description = card.description
-                    self.tools.append(tool)
+            a2a_tools = create_a2a_tools(thread_id=self.thread_id, a2a=a2a)
+            self.tools.extend(a2a_tools)
         
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
@@ -378,9 +353,9 @@ class Agent:
             graph = builder.compile(checkpointer=self.checkpointer)
             
         if debug:
-            graph.debug = True
+            graph.debug = debug
         self.graph = graph
-        self.graph.name = "EnsoAgent"
+        self.graph.name = name
         return graph
 
     async def aprocess(
