@@ -22,168 +22,172 @@ airtable_service = AirtableService()
 router = APIRouter(tags=["Auth"])
 
 def create_access_token(user: User, expires_delta: timedelta | None = None):
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
-    
-    # Create JWT payload with user data
-    to_encode = {
-        "user": {
-            "sub": user.email,
-            "user_id": str(user.id),
-            "username": user.username,
-            "email": user.email,
-            "name": user.name
-        },
-        "exp": expire
-    }
-    
-    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+	if expires_delta:
+		expire = datetime.utcnow() + expires_delta
+	else:
+		expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
+	
+	# Create JWT payload with user data
+	to_encode = {
+		"user": {
+			"sub": user.email,
+			"user_id": str(user.id),
+			"username": user.username,
+			"email": user.email,
+			"name": user.name
+		},
+		"exp": expire
+	}
+	
+	return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 @router.post(
-    "/auth/register",
-    include_in_schema=False,
-    response_model=TokenResponse,
-    status_code=status.HTTP_201_CREATED,
-    responses={
-        status.HTTP_201_CREATED: {
-            "description": "User successfully registered",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "token_type": "bearer",
-                        "user": {
-                            "id": "123e4567-e89b-12d3-a456-426614174000",
-                            "username": "johndoe",
-                            "email": "john@example.com",
-                            "name": "John Doe"
-                        }
-                    }
-                }
-            }
-        },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Username or email already exists"
-        }
-    }
+	"/auth/register",
+	include_in_schema=False,
+	response_model=TokenResponse,
+	status_code=status.HTTP_201_CREATED,
+	responses={
+		status.HTTP_201_CREATED: {
+			"description": "User successfully registered",
+			"content": {
+				"application/json": {
+					"example": {
+						"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+						"token_type": "bearer",
+						"user": {
+							"id": "123e4567-e89b-12d3-a456-426614174000",
+							"username": "johndoe",
+							"email": "john@example.com",
+							"name": "John Doe"
+						}
+					}
+				}
+			}
+		},
+		status.HTTP_400_BAD_REQUEST: {
+			"description": "Username or email already exists"
+		}
+	}
 )
 async def register(
-    user_data: Annotated[UserCreate, Body()],
-    db: Session = Depends(get_db)
+	user_data: Annotated[UserCreate, Body()],
+	db: Session = Depends(get_db)
 ):
-    # Check if username exists
-    if db.query(User).filter(User.username == user_data.username).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
-        )
-    
-    # Check if email exists
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
+	# Check if username exists
+	if db.query(User).filter(User.username == user_data.username).first():
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Username already registered"
+		)
+	
+	# Check if email exists
+	if db.query(User).filter(User.email == user_data.email).first():
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Email already registered"
+		)
 
-    # Create new user
-    user = User(
-        username=user_data.username,
-        email=user_data.email,
-        name=user_data.name,
-        hashed_password=User.get_password_hash(user_data.password)
-    )
-    
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    # Create user response
-    user_response = UserResponse(
-        id=str(user.id),
-        username=user.username,
-        email=user.email,
-        name=user.name
-    )
-    await airtable_service.create_contact(user_response)
+	# Create new user
+	user = User(
+		username=user_data.username,
+		email=user_data.email,
+		name=user_data.name,
+		hashed_password=User.get_password_hash(user_data.password)
+	)
+	
+	db.add(user)
+	db.commit()
+	db.refresh(user)
+	
+	# Create user response
+	user_response = UserResponse(
+		id=str(user.id),
+		username=user.username,
+		email=user.email,
+		name=user.name
+	)
+	await airtable_service.create_contact(user_response)
 
-    # Create access token with full user object
-    access_token = create_access_token(user)
+	# Create access token with full user object
+	access_token = create_access_token(user)
 
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user_response
-    )
+	return TokenResponse(
+		access_token=access_token,
+		token_type="bearer",
+		user=user_response
+	)
 
 @router.post(
-    "/auth/login",
-    response_model=TokenResponse,
-    responses={
-        status.HTTP_200_OK: {
-            "description": "Successfully logged in",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "token_type": "bearer",
-                        "user": {
-                            "id": "123e4567-e89b-12d3-a456-426614174000",
-                            "username": "johndoe",
-                            "email": "john@example.com",
-                            "name": "John Doe"
-                        }
-                    }
-                }
-            }
-        },
-        status.HTTP_401_UNAUTHORIZED: {
-            "description": "Incorrect email or password"
-        }
-    }
+	"/auth/login",
+	response_model=TokenResponse,
+	responses={
+		status.HTTP_200_OK: {
+			"description": "Successfully logged in",
+			"content": {
+				"application/json": {
+					"example": {
+						"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+						"token_type": "bearer",
+						"user": {
+							"id": "123e4567-e89b-12d3-a456-426614174000",
+							"username": "johndoe",
+							"email": "john@example.com",
+							"name": "John Doe"
+						}
+					}
+				}
+			}
+		},
+		status.HTTP_401_UNAUTHORIZED: {
+			"description": "Incorrect email or password"
+		}
+	}
 )
-def login(
-    credentials: Annotated[UserLogin, Body()],
-    db: Session = Depends(get_db)
+async def login(
+	credentials: Annotated[UserLogin, Body()],
+	db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.email == credentials.email).first()
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    
-    if not User.verify_password(credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
+	user = db.query(User).filter(User.email == credentials.email).first()
+	
+	if not user:
+		raise HTTPException(
+			status_code=status.HTTP_401_UNAUTHORIZED,
+			detail="Incorrect email or password",
+			headers={"WWW-Authenticate": "Basic"},
+		)
+	
+	if not User.verify_password(credentials.password, user.hashed_password):
+		raise HTTPException(
+			status_code=status.HTTP_401_UNAUTHORIZED,
+			detail="Incorrect email or password",
+			headers={"WWW-Authenticate": "Basic"},
+		)
 
-    # Create user response
-    user_response = UserResponse(
-        id=str(user.id),
-        username=user.username,
-        email=user.email,
-        name=user.name
-    )
+	# Create user response
+	user_response = UserResponse(
+		id=str(user.id),
+		username=user.username,
+		email=user.email,
+		name=user.name
+	)
 
-    # Create access token with full user object
-    access_token = create_access_token(user)
-
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user_response
-    )
-    
+	# Create access token with full user object
+	access_token = create_access_token(user)
+	# Update airtable with latest login
+	try:
+		await airtable_service.latest_login(user.email)
+	except Exception as e:
+		await airtable_service.create_contact(user_response)
+	return TokenResponse(
+		access_token=access_token,
+		token_type="bearer",
+		user=user_response
+	)
+	
 @router.get("/auth/user", tags=['Auth'])
 async def read_user_details(user: User = Depends(verify_credentials)):
-    return {"user": user.model_dump()}
-    
+	return {"user": user.model_dump()}
+	
 ##################################################################################################################
 ## OAuth2
 ##################################################################################################################
@@ -212,10 +216,21 @@ async def auth_callback(provider: str, code: str, db: Session = Depends(get_db))
 		existing_user = existing_user.scalars().first()
 		if existing_user:
 			access_token = create_access_token(existing_user)
+			# Update airtable with latest login
+			try:
+				await airtable_service.latest_login(existing_user.email)
+			except Exception as e:
+				await airtable_service.create_contact(UserResponse(
+					id=str(existing_user.id),
+					username=existing_user.username,
+					email=existing_user.email,
+					name=existing_user.name
+				))
+    
 			return UJSONResponse(
 				content={"access_token": access_token, "token_type": "bearer"}, 
-    			status_code=status.HTTP_200_OK
-       		)
+				status_code=status.HTTP_200_OK
+	   		)
 			
 
 		# Create a new user instance
