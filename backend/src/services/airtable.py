@@ -1,5 +1,6 @@
 import os
 import httpx
+from datetime import datetime
 from typing import Any, Dict
 from pydantic import BaseModel
 from src.constants import APP_ENV
@@ -17,8 +18,6 @@ class AirtableUser(BaseModel):
     Name: str | None = None
     Email: str
     Phone: str | None = None
-    # Message: str | None = None
-
 class AirtableService:
     def __init__(self):
         self.api_key = AIRTABLE_API_KEY
@@ -39,7 +38,7 @@ class AirtableService:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     self.url,
-                    json={"fields": at_user.model_dump()},
+                    json={"fields": {**at_user.model_dump(), "Last Login": datetime.now().strftime('%Y-%m-%d %H:%M:%S')}},
                     headers=self.headers
                 )
                 response.raise_for_status()  # Raise an error for bad responses
@@ -47,6 +46,40 @@ class AirtableService:
         except Exception as e:
             logger.error(f"Error creating contact: {e}")
             return None
+        
+    async def find_contact(self, email: str) -> Any:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.url}",
+                    headers=self.headers,
+                    params={"filterByFormula": f"Email = '{email}'"}
+                )
+                response.raise_for_status()  # Raise an error for bad responses
+                return response.json()
+        except Exception as e:
+            logger.error(f"Error finding contact: {e}")
+            return None
+
+    async def latest_login(self, email: str) -> Any:
+        try:
+            contact = await self.find_contact(email)
+            if not contact or not contact.get('records'):
+                raise Exception(f"Contact not found for email: {email}")
+            record_id = contact['records'][0]['id']
+            # Forward the request to Airtable
+            async with httpx.AsyncClient() as client:
+                response = await client.patch(
+                    f"{self.url}/{record_id}",
+                    json={"fields": {"Last Login": datetime.now().strftime('%Y-%m-%d %H:%M:%S')}},
+                    headers=self.headers
+                )
+                response.raise_for_status()  # Raise an error for bad responses
+                return response.json()
+        except Exception as e:
+            logger.error(f"Error updating contact: {e}")
+            raise e
+    
 
 # Example usage
 # Note: Make sure to call this in an async context
