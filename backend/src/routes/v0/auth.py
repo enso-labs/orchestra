@@ -230,6 +230,16 @@ async def auth_callback(provider: str, code: str, db: Session = Depends(get_db))
 		db.add(new_user)
 		await db.commit()
 		await db.refresh(new_user)
+  
+		# Create user response
+		user_response = UserResponse(
+			id=str(new_user.id),
+			username=new_user.username,
+			email=new_user.email,
+			name=user_info.get('name')
+		)
+		airtable_service = AirtableService()
+		await airtable_service.create_contact(user_response)
 		
 		access_token = create_access_token({
 			"sub": str(new_user.id), 
