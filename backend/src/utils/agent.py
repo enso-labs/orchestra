@@ -23,6 +23,7 @@ from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
 from src.services.db import create_async_pool, get_checkpoint_db
 from src.utils.format import get_base64_image
+from src.tools.api import generate_tools_from_openapi_spec
 
 
 class StreamContext(BaseModel):
@@ -345,6 +346,11 @@ class Agent:
         if a2a and len(a2a.keys()) > 0:
             a2a_tools = create_a2a_tools(thread_id=self.thread_id, a2a=a2a)
             self.tools.extend(a2a_tools)
+            
+        tools_from_spec = generate_tools_from_openapi_spec(
+            "http://localhost:8050/openapi.json"
+        )
+        self.tools.extend(tools_from_spec)
         
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
