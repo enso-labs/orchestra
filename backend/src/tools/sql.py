@@ -10,6 +10,7 @@ from src.constants import *
 from src.utils.logger import logger
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
+
 @tool
 def sql_query_read(question: str):
     """Execute a read-only query against a PostgreSQL database based on a natural language question.

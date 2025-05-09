@@ -96,12 +96,6 @@ Here is documentation on the API:
 
 from langchain_community.utilities.requests import GenericRequestsWrapper
 from langchain_core.tools import BaseTool
-from langchain_community.tools.requests.tool import (
-    RequestsGetTool,
-    RequestsPostTool,
-    RequestsPutTool,
-    RequestsDeleteTool,
-)
 
 def get_base_tool(
     headers: Dict[str, Any]
@@ -151,7 +145,6 @@ def construct_api_tool(
 ################################################################################
 ### API from OpenAPI spec
 ################################################################################
-
 async def fetch_openapi_spec(
     url: str,
     headers: Optional[Dict[str, Any]] = None,
