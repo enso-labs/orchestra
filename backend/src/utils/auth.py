@@ -79,7 +79,8 @@ async def verify_credentials(
         request.state.user_repo = UserRepo(db, request.state.user.id)
         return user.protected()
 
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWTError: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

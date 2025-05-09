@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, UUID, text
+from sqlalchemy import JSON, Column, String, Boolean, DateTime, ForeignKey, UUID, text
 from sqlalchemy.orm import relationship
 import json
 
@@ -113,3 +113,48 @@ class Revision(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
+        
+        
+class Tool(Base):
+    __tablename__ = "tools"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    name = Column(String, nullable=False)
+    url = Column(String, nullable=True)
+    spec = Column(sa.JSON, nullable=True)  # Fallback if no URL is provided, could be YAML or JSON format
+    headers = Column(sa.JSON, nullable=True, info={'encrypted': True})  # Encrypted at rest
+    tags = Column(sa.JSON, nullable=True)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=text("now()"), onupdate=text("now()"), nullable=False)
+    
+    # Relationships
+    # user = relationship("User", back_populates="tools")
+    
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            # "user_id": str(self.user_id),
+            "name": self.name,
+            "slug": self.generate_slug(self.name),
+            "description": self.description,
+            "url": self.url,
+            "spec": self.spec,
+            "headers": self.headers if self.headers else {},
+            "tags": self.tags if self.tags else [],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+        
+    @staticmethod
+    def generate_slug(name: str) -> str:
+        """Generate a URL-friendly slug from the name."""
+        import re
+        # Convert to lowercase and replace spaces with underscores
+        slug = name.lower().strip().replace(' ', '_')
+        # Remove special characters
+        slug = re.sub(r'[^a-z0-9_]', '', slug)
+        # Replace multiple underscores with single underscore
+        slug = re.sub(r'_+', '_', slug)
+        return slug
