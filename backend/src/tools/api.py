@@ -131,6 +131,9 @@ def construct_api_tool(
     elif method == "PUT":
         async def api_request(url: str, data: Dict[str, Any]):    
             return await requests_wrapper.aput(url, data=data)
+    elif method == "PATCH":
+        async def api_request(url: str, data: Dict[str, Any]):    
+            return await requests_wrapper.apatch(url, data=data)
     elif method == "DELETE":
         async def api_request(url: str):    
             return await requests_wrapper.adelete(url)
@@ -165,20 +168,34 @@ def make_api_call_func(
     headers: Dict[str, Any],
     description: str,
     data: Optional[Dict[str, Any]] = None,
+    path_params: Optional[Dict[str, Any]] = None,
 ) -> Any:
     """
     Factory that creates an async function for the given HTTP method and URL.
+    
+    Args:
+        method: HTTP method (GET, POST, PUT, DELETE)
+        url: Base URL for the API endpoint
+        headers: HTTP headers to include in the request
+        description: Description of what the API call does
+        data: Optional request body data for POST/PUT requests
+        path_params: Optional dictionary of path parameters to format into the URL
     """
     async def api_call():
         wrapper = GenericRequestsWrapper(headers=headers)
+        # Format URL with path parameters if provided
+        formatted_url = url.format(**(path_params or {}))
+        
         if method == "GET":
-            return await wrapper.aget(url)
+            return await wrapper.aget(formatted_url)
         elif method == "POST":
-            return await wrapper.apost(url, data=data or {})
+            return await wrapper.apost(formatted_url, data=data or {})
         elif method == "PUT":
-            return await wrapper.aput(url, data=data or {})
+            return await wrapper.aput(formatted_url, data=data or {})
+        elif method == "PATCH":
+            return await wrapper.apatch(formatted_url, data=data or {})
         elif method == "DELETE":
-            return await wrapper.adelete(url)
+            return await wrapper.adelete(formatted_url)
         else:
             raise ValueError(f"Unsupported HTTP method: {method}")
 
@@ -331,7 +348,12 @@ def generate_tools_from_openapi_spec(
             full_url = server_url.rstrip("/") + path
 
             # Create the coroutine function for this endpoint
-            api_func = make_api_call_func(method, full_url, headers or {}, description)
+            api_func = make_api_call_func(
+                method, 
+                full_url, 
+                headers or {}, 
+                description,
+            )
 
             # Build the tool
             tool = StructuredTool.from_function(coroutine=api_func, args_schema=args_schema)
