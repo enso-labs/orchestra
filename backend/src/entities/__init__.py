@@ -139,3 +139,23 @@ class SearchKwargs(dict):
     fetch_k: int = 2
     lambda_mult: float = 0.5
     filter: str = None
+    
+class AgentTool(BaseModel):
+    name: str
+    description: str
+    url: str
+    spec: dict | str = None
+    headers: dict = None
+    tags: list[str] = None
+    
+    model_config = {
+        "json_schema_extra": {"example": {"name": "tool1", "description": "tool1 description", "url": "http://localhost:8050/openapi.json", "spec": None, "headers": {}, "tags": ["tag1", "tag2"]}}
+    }
+    
+class AgentToolList(BaseModel):
+    tools: list[AgentTool] = Field(...)
+    
+    model_config = {
+        "json_schema_extra": {"example": {"tools": [{"name": "tool1", "description": "tool1 description", "url": "https://tool1.com", "spec": None, "headers": {}, "tags": ["tag1", "tag2"]}]}}
+    }
+    

@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-from src.models import Base
+from src.services.db import Base
 from src.constants import DB_URI
 
 config = context.config

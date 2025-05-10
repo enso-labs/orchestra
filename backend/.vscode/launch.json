@@ -61,6 +61,15 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.env.test"
+        },
+        {
+            "name": "Python: Run src.tools.api-new",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.tools.api_new",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

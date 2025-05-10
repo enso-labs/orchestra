@@ -2,6 +2,7 @@ import contextlib
 import functools
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import AsyncGenerator, Generator, Callable
+import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -12,6 +13,7 @@ from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 MAX_CONNECTION_POOL_SIZE = None
 
 # SQLAlchemy engines
+Base = sa.orm.declarative_base()
 engine = create_engine(DB_URI)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
