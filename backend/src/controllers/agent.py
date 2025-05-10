@@ -11,12 +11,13 @@ from src.utils.agent import Agent
 from src.repos.user_repo import UserRepo
 from src.utils.logger import logger
 from src.utils.a2a import process_a2a_streaming, process_a2a
-
+from src.repos.tool_repo import ToolRepo
 
 class AgentController:
     def __init__(self, db: AsyncSession, user_id: str = None, agent_id: str = None): # type: ignore
         self.user_repo = UserRepo(db=db, user_id=user_id)
         self.agent_repo = AgentRepo(db=db, user_id=user_id)
+        self.tool_repo = ToolRepo(db=db, user_id=user_id)
         self.agent_id = agent_id
         
     async def anew_thread(
@@ -41,7 +42,7 @@ class AgentController:
             #     else:
             #         return await process_a2a(new_thread, thread_id)
                 
-            agent = Agent(config=config, user_repo=self.user_repo)
+            agent = Agent(config=config, user_repo=self.user_repo, tool_repo=self.tool_repo)
             await agent.abuilder(tools=new_thread.tools, 
                                  model_name=new_thread.model, 
                                  mcp=new_thread.mcp, 
@@ -89,7 +90,7 @@ class AgentController:
             #     else:
             #         return await process_a2a(existing_thread, thread_id)
             
-            agent = Agent(config=config, user_repo=self.user_repo)
+            agent = Agent(config=config, user_repo=self.user_repo, tool_repo=self.tool_repo)
             await agent.abuilder(tools=existing_thread.tools, 
                                  model_name=existing_thread.model, 
                                  mcp=existing_thread.mcp, 
@@ -129,7 +130,7 @@ class AgentController:
                 "system": settings.get("system") or None
             }
             
-            agent = Agent(config=config, user_repo=self.user_repo)
+            agent = Agent(config=config, user_repo=self.user_repo, tool_repo=self.tool_repo)
             await agent.abuilder(tools=settings.get("tools", []), model_name=settings.get("model"), mcp=settings.get("mcp", None))
             if thread_id:
                 messages = agent.existing_thread(query, settings.get("images"))

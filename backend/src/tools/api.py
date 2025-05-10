@@ -6,11 +6,13 @@ import yaml
 import asyncio
 
 from pydantic import BaseModel, create_model
-from pydantic.fields import Field
+from pydantic.fields import Field, FieldInfo
 from langchain_community.agent_toolkits.openapi.toolkit import RequestsToolkit
 from langchain_community.utilities.requests import TextRequestsWrapper, GenericRequestsWrapper
 from langchain_core.tools import StructuredTool
 from langchain_community.tools.requests.tool import BaseRequestsTool
+
+from src.utils.logger import logger
 
 def _get_schema(response_json: Union[dict, list]) -> dict:
     if isinstance(response_json, list):
@@ -252,12 +254,30 @@ def create_schema(model_name: str, fields_json: Dict[str, Any]) -> Type[BaseMode
     :param fields_json: A dictionary representing the fields from a JSON object.
     :return: A dynamically created Pydantic model.
     """
+    
+    if fields_json.get("type") == "string":
+        fields = {model_name: (str, Field(description=fields_json.get("description", "")))}
+        return create_model(model_name, **fields)
+    elif fields_json.get("type") == "integer":
+        fields = {model_name: (int, Field(description=fields_json.get("description", "")))}
+        return create_model(model_name, **fields)
+    elif fields_json.get("type") == "number":
+        fields = {model_name: (float, Field(description=fields_json.get("description", "")))}
+        return create_model(model_name, **fields)
+    elif fields_json.get("type") == "boolean":
+        fields = {model_name: (bool, Field(description=fields_json.get("description", "")))}
+        return create_model(model_name, **fields)
+    elif fields_json.get("type") == "array":
+        fields = {model_name: (list, Field(description=fields_json.get("description", "")))}
+        return create_model(model_name, **fields)
+    elif fields_json.get("type") == "object":
+        fields = {model_name: (dict, Field(description=fields_json.get("description", "")))}
+        return create_model(model_name, **fields)
+    
     fields = {}
     for field_name, field_info in fields_json.items():
         if field_info.get("type") == "object" and "properties" in field_info:
-            # Recursively create nested models for object types
-            nested_model = create_schema(field_info.get('title'), field_info["properties"])
-            field_type = nested_model
+            field_type = create_schema(field_info.get('title'), field_info.get("properties"))
         else:
             field_type = get_field_type(field_info.get("type", ""))
         
@@ -298,14 +318,7 @@ def generate_tools_from_openapi_spec(
     for path, operations in spec.get("paths", {}).items():
         for http_method, operation in operations.items():
             method = http_method.upper()
-            args_schema = None
-            if operation.get('requestBody'):
-                ref = operation.get('requestBody').get('content').get('application/json').get('schema').get('$ref')
-                if ref:
-                    schema = resolve_ref(spec, ref)
-                    fully_resolved_schema = resolve_ref_recursive(spec, schema)
-                    args_schema = create_schema(fully_resolved_schema.get('title'), fully_resolved_schema.get('properties'))
-            # Sanitize tool name
+            args_schema = get_args_schema(spec, operation)
             name = re.sub(r'[^a-zA-Z0-9_]', '_', operation.get("summary").lower())
 
             # Use summary or description from spec
@@ -332,7 +345,74 @@ def generate_tools_from_openapi_spec(
 
     return tools
 
+# helper to turn a FieldInfo into a (type, default-or-Field) tuple
+def _to_field_def(fi: FieldInfo):
+    default = fi.get_default()
+    return fi.annotation, Field(default=default, description=fi.description)
 
+def merge_models(summary: str, reqBody=None, pathParams=None, queryParams=None):
+    all_defs = {}
+    if pathParams:
+        for name, fi in pathParams.model_fields.items():
+            # Create a new Field with metadata instead of modifying the FieldInfo
+            field_annotation, field_obj = _to_field_def(fi)
+            # Add metadata to the new Field object
+            field_with_metadata = Field(
+                default=field_obj.default,
+                description=field_obj.description,
+                metadata={'in': 'path'}
+            )
+            all_defs[name] = (field_annotation, field_with_metadata)
+    if queryParams:
+        for name, fi in queryParams.model_fields.items():
+            field_annotation, field_obj = _to_field_def(fi)
+            field_with_metadata = Field(
+                default=field_obj.default,
+                description=field_obj.description,
+                metadata={'in': 'query'}
+            )
+            all_defs[name] = (field_annotation, field_with_metadata)
+    if reqBody:
+        for name, fi in reqBody.model_fields.items():
+            field_annotation, field_obj = _to_field_def(fi)
+            field_with_metadata = Field(
+                default=field_obj.default,
+                description=field_obj.description,
+                metadata={'in': 'body'}
+            )
+            all_defs[name] = (field_annotation, field_with_metadata)
+    if all_defs:
+        model_name = summary.replace(" ", "")
+        # unpack all_defs into create_model
+        return create_model(model_name, **all_defs)
+    else:
+        return None
+
+def get_args_schema(spec: Dict[str, Any], operation: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        reqBody = None
+        pathParams = None
+        queryParams = None
+        if operation.get('requestBody'):
+            ref = operation.get('requestBody').get('content').get('application/json').get('schema').get('$ref')
+            if ref:
+                schema = resolve_ref(spec, ref)
+                fully_resolved_schema = resolve_ref_recursive(spec, schema)
+                reqBody = create_schema(fully_resolved_schema.get('title'), fully_resolved_schema.get('properties'))
+                
+        if operation.get('parameters'):
+            for param in operation.get('parameters'):
+                if param.get('in') == 'query':
+                    queryParams = create_schema(param.get('name'), param.get('schema'))
+                elif param.get('in') == 'path':
+                    pathParams = create_schema(param.get('name'), param.get('schema'))
+        
+        merged = merge_models(operation.get('summary'), reqBody, pathParams, queryParams)
+        return merged
+    except Exception as e:
+        logger.exception(f"Failed to get args schema for {operation.get('summary')}: {e}")
+        raise Exception(f"Failed to get args schema for {operation.get('summary')}: {e}")
+    
 if __name__ == "__main__":
     tool = construct_api_tool(
         name="Get a post",

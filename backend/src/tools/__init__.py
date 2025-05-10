@@ -1,4 +1,5 @@
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_core.tools import BaseTool
 from langgraph.prebuilt import ToolNode
 
 from src.tools.retrieval import retrieval_query, retrieval_add, retrieval_load
@@ -28,8 +29,9 @@ def collect_tools(selected_tools: list[str]):
     return filtered_tools
 
 
-def dynamic_tools(selected_tools: list[str], metadata: dict = None):
+def dynamic_tools(selected_tools: list[str], metadata: dict = None, tool_selection: list[BaseTool] = None):
     # Filter tools by name
+    tools = tool_selection if tool_selection else tools
     filtered_tools = [tool for tool in tools if tool.name in selected_tools]
     if len(filtered_tools) == 0:
         raise ValueError(f"No tools found by the names: {selected_tools.join(', ')}")

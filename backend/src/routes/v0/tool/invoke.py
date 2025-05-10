@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from src.repos.tool_repo import ToolRepo
 from src.constants import APP_LOG_LEVEL
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
@@ -63,10 +64,11 @@ async def invoke_tool(
     """
     Invoke a tool by executing it with the provided arguments.
     """
+    from src.tools import dynamic_tools
     try:
-        # Find the tool by id
-        from src.tools import tools, dynamic_tools
-        selected_tool = next((tool for tool in tools if tool.name == tool_id), None)
+        tool_repo = ToolRepo(db, user.id)
+        tools = await tool_repo.list_tools()
+        selected_tool = [tool for tool in tools if tool.name == tool_id]
         
         if not selected_tool:
             return JSONResponse(

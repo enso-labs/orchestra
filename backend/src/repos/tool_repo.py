@@ -2,10 +2,10 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from src.tools import tools, attach_tool_details
+from src.tools import tools as STATIC_TOOLS, attach_tool_details
 from src.models.agent import Tool as AgentTool
 from src.tools.api import generate_tools_from_openapi_spec
-
+from langchain_core.tools import StructuredTool
 class ToolRepo:
 	_instance = None
 	
@@ -21,19 +21,32 @@ class ToolRepo:
 		self.db = db
 		self.user_id = user_id
 
-	def list_static_tools(self) -> list[AgentTool]:
-		tool_names = [attach_tool_details({'id':tool.name, 'description':tool.description, 'args':tool.args, 'tags':tool.tags}) for tool in tools]
-		return tool_names
+	async def list_tool_with_details(self) -> list[AgentTool]:
+		tools: list[StructuredTool] = []
+		if self.user_id:
+			user_tools = await self._list_user_tools()
+			tools.extend(user_tools)
+   
+		tools.extend(STATIC_TOOLS)
+		tool_details = [attach_tool_details({'id':tool.name, 'description':tool.description, 'args':tool.args, 'tags':tool.tags}) for tool in tools]
+		return tool_details
 
-	async def list_user_tools(self) -> list[AgentTool]:
+	async def _list_user_tools(self) -> list[AgentTool]:
 		res = await self.db.execute(select(AgentTool).where(AgentTool.user_id == self.user_id))
 		user_tools = res.scalars().all()
 		tool_dicts = []
 		for tool in user_tools:
 			api_tools = generate_tools_from_openapi_spec(openapi_url=tool.url, headers=tool.headers)
-			api_tools_with_details = [attach_tool_details({'id':tool.name, 'description':tool.description, 'args':tool.args, 'tags':tool.tags}) for tool in api_tools]
-			tool_dicts.extend(api_tools_with_details)
+			tool_dicts.extend(api_tools)
 		return tool_dicts
+
+	async def list_tools(self) -> list[StructuredTool]:
+		tools = []
+		if self.user_id:
+			user_tools = await self._list_user_tools()
+			tools.extend(user_tools)
+		tools.extend(STATIC_TOOLS)
+		return tools
 	
 	async def create(
 		self, 

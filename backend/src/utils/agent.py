@@ -9,6 +9,7 @@ from langgraph.prebuilt import create_react_agent
 from psycopg.connection_async import AsyncConnection
 from pydantic import BaseModel
 
+from src.repos.tool_repo import ToolRepo
 from src.tools.a2a import create_a2a_tools
 from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
@@ -32,7 +33,7 @@ class StreamContext(BaseModel):
     event: str = ''
 
 class Agent:
-    def __init__(self, config: dict, user_repo: UserRepo = None):
+    def __init__(self, config: dict, user_repo: UserRepo = None, tool_repo: ToolRepo = None):
         self.connection_kwargs = {
             "autocommit": True,
             "prepare_threshold": 0,
@@ -44,6 +45,7 @@ class Agent:
         self.graph = None
         self.pool: AsyncConnection = None  # Don't create pool in constructor
         self.user_repo = user_repo
+        self.tool_repo = tool_repo
         self.model_name = config.get("model_name", None)
         self.llm: LLMWrapper = None
         self.tools = config.get("tools", [])
@@ -333,7 +335,8 @@ class Agent:
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False,
         name: str = "EnsoAgent"
     ):
-        self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
+        tool_selection = await self.tool_repo.list_tools()
+        self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo}, tool_selection=tool_selection)
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         self.checkpointer = checkpointer
         system = self.config.get('configurable').get("system", None)
@@ -347,10 +350,10 @@ class Agent:
             a2a_tools = create_a2a_tools(thread_id=self.thread_id, a2a=a2a)
             self.tools.extend(a2a_tools)
             
-        tools_from_spec = generate_tools_from_openapi_spec(
-            "http://localhost:8050/openapi.json"
-        )
-        self.tools.extend(tools_from_spec)
+        # tools_from_spec = generate_tools_from_openapi_spec(
+        #     "http://localhost:8050/openapi.json"
+        # )
+        # self.tools.extend(tools_from_spec)
         
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)

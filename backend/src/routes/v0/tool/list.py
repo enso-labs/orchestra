@@ -27,11 +27,7 @@ async def list_tools(
 ):
 	try:
 		tool_repo = ToolRepo(db, user.id if user else None)
-		tools = tool_repo.list_static_tools()
-		if user:
-			user_tools = await tool_repo.list_user_tools()
-			tools.extend(user_tools)
-			
+		tools = await tool_repo.list_tool_with_details()
 		return JSONResponse(
 			content={"tools": tools},
 			status_code=status.HTTP_200_OK
