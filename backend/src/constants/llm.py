@@ -6,9 +6,10 @@ from src.repos.user_repo import UserRepo
 class ModelName(str, Enum):
     OPENAI_GPT_4O = "openai:gpt-4o"
     OPENAI_GPT_4O_MINI = "openai:gpt-4o-mini"
-    OPENAI_REASONING_O1 = "openai:o1"
-    OPENAI_REASONING_O1_MINI = "openai:o1-mini"
-    OPENAI_REASONING_O3_MINI = "openai:o3-mini"
+    OPENAI_GPT_4_1 = "openai:gpt-4.1"
+    OPENAI_GPT_4_5 = "openai:gpt-4.5-preview"
+    OPENAI_REASONING_O3 = "openai:o3"
+    OPENAI_REASONING_O4_MINI = "openai:o4-mini"
     OPENAI_EMBEDDING_LARGE = "openai:text-embedding-3-large"
     ANTHROPIC_CLAUDE_3_5_SONNET = "anthropic:claude-3-5-sonnet-20240620"
     ANTHROPIC_CLAUDE_3_7_SONNET_LATEST = "anthropic:claude-3-7-sonnet-latest"
@@ -48,32 +49,44 @@ MODEL_CONFIG = [
         }
     },
     {
-        "id": ModelName.OPENAI_REASONING_O1,
-        "label": "o1",
+        "id": ModelName.OPENAI_GPT_4_1,
+        "label": "GPT-4.1",
         "provider": "openai",
         "metadata": {
-            "system_message": False,
-            "reasoning": True,
-            "tool_calling": False,
-            "multimodal": False,
+            "system_message": True,
+            "reasoning": False,
+            "tool_calling": True,
+            "multimodal": True,
             "embedding": False,
         }
     },
     {
-        "id": ModelName.OPENAI_REASONING_O1_MINI,
-        "label": "o1 Mini",
+        "id": ModelName.OPENAI_GPT_4_5,
+        "label": "GPT-4.5",
         "provider": "openai",
         "metadata": {
-            "system_message": False,
-            "reasoning": True,
-            "tool_calling": False,
-            "multimodal": False,
+            "system_message": True,
+            "reasoning": False,
+            "tool_calling": True,
+            "multimodal": True,
             "embedding": False,
         }
     },
     {
-        "id": ModelName.OPENAI_REASONING_O3_MINI,
-        "label": "o3 Mini",
+        "id": ModelName.OPENAI_REASONING_O4_MINI,
+        "label": "o4 Mini",
+        "provider": "openai",
+        "metadata": {
+            "system_message": True,
+            "reasoning": True,
+            "tool_calling": True,
+            "multimodal": True,
+            "embedding": False,
+        }
+    },
+    {
+        "id": ModelName.OPENAI_REASONING_O3,
+        "label": "o3",
         "provider": "openai",
         "metadata": {
             "system_message": True,
