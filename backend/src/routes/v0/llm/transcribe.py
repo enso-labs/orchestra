@@ -4,8 +4,6 @@ from src.utils.logger import logger
 from src.constants import GROQ_API_KEY
 from groq import Groq
 
-client = Groq(api_key=GROQ_API_KEY)
-
 def audio_to_text(
     filename: str, 
     file_bytes: bytes, 
@@ -24,7 +22,7 @@ def audio_to_text(
         kwargs["temperature"] = temperature
     if timeout is not None:
         kwargs["timeout"] = timeout
-
+    client = Groq(api_key=GROQ_API_KEY)
     translation = client.audio.translations.create(
         file=(filename, file_bytes),
         model=model,
