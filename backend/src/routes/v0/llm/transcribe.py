@@ -1,35 +1,7 @@
 from fastapi.responses import JSONResponse
-from fastapi import HTTPException, status, APIRouter, File, UploadFile, Form
+from fastapi import HTTPException, APIRouter, File, UploadFile, Form
 from src.utils.logger import logger
-from src.constants import GROQ_API_KEY
-
-
-def audio_to_text(
-    filename: str, 
-    file_bytes: bytes, 
-    model: str, 
-    prompt: str, 
-    response_format: str, 
-    temperature: float, 
-    timeout: float
-):
-    from groq import Groq
-    kwargs = {}
-    if prompt is not None:
-        kwargs["prompt"] = prompt
-    if response_format is not None:
-        kwargs["response_format"] = response_format
-    if temperature is not None:
-        kwargs["temperature"] = temperature
-    if timeout is not None:
-        kwargs["timeout"] = timeout
-    client = Groq(api_key=GROQ_API_KEY)
-    translation = client.audio.translations.create(
-        file=(filename, file_bytes),
-        model=model,
-        **kwargs
-    )
-    return translation.text
+from src.utils.llm import audio_to_text
 
 router = APIRouter()
 

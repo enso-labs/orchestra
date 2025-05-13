@@ -113,3 +113,30 @@ class LLMWrapper:
             raise ValueError(f"Embedding model {model_name} not supported")
         return chosen_model
         
+
+def audio_to_text(
+    filename: str, 
+    file_bytes: bytes, 
+    model: str, 
+    prompt: str, 
+    response_format: str, 
+    temperature: float, 
+    timeout: float
+):
+    from groq import Groq
+    kwargs = {}
+    if prompt is not None:
+        kwargs["prompt"] = prompt
+    if response_format is not None:
+        kwargs["response_format"] = response_format
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    if timeout is not None:
+        kwargs["timeout"] = timeout
+    client = Groq(api_key=GROQ_API_KEY)
+    translation = client.audio.translations.create(
+        file=(filename, file_bytes),
+        model=model,
+        **kwargs
+    )
+    return translation.text
