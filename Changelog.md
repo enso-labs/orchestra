@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.1
 
 ### Fixed
+  - bug/294-mem-lead-from-mcp (2025-05-13)
   - bug/280-session-tool-card-decouple (2025-05-04)
   - bug/276-resolve-json-parsing-on-tools-message (2025-05-01)
   - bug/254-subsequent-messages-work (2025-04-21)
