@@ -11,6 +11,7 @@ from src.services.db import get_async_db
 from src.utils.auth import get_optional_user
 from src.utils.logger import logger
 from src.controllers.agent import AgentController
+from src.routes.v0.llm.transcribe import router as transcribe_router
 
 TAG = "Thread"
 router = APIRouter()
@@ -157,3 +158,5 @@ async def existing_thread(
     except Exception as e:
         logger.exception(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+router.include_router(transcribe_router, prefix="/llm", tags=["LLM"])

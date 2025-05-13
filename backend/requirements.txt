@@ -35,3 +35,4 @@ python-jose[cryptography]
 langchain-mcp-adapters
 asyncpg
 sqlalchemy[asyncio]
+bs4
