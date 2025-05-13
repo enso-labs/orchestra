@@ -20,7 +20,6 @@ from src.constants.llm import ModelName
 from src.entities import Answer, Thread
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
-from langchain.chat_models import init_chat_model
 from src.services.db import create_async_pool, get_checkpoint_db
 from pydantic import BaseModel
 from src.utils.format import get_base64_image

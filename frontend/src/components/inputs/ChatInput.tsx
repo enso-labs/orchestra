@@ -15,6 +15,7 @@ import { getAuthToken } from "@/lib/utils/auth"
 import ModalMcp from "../modals/ModalMcp"
 import { FaStop } from 'react-icons/fa'
 import ToolSelector from "../ToolSelector/ToolSelector"
+import { AudioRecorder } from "./AudioRecorder"
 
 export default function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -168,28 +169,31 @@ export default function ChatInput() {
           )}
           
         </div>
-        {controller ? (
-          <MainToolTip content="Abort" delayDuration={500}>
-            <Button
-              onClick={abortQuery}
-              size="icon"
-              className="w-8 h-8 rounded-full m-1 bg-red-500"
-            >
-              <FaStop />
-            </Button>
-          </MainToolTip>
-        ) : (
-          <MainToolTip content="Send Message" delayDuration={500}>
-            <Button
-              onClick={handleSubmit}
-              disabled={payload.query.trim() === "" && images.length === 0}
-              size="icon"
-              className="w-8 h-8 rounded-full m-1"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-          </MainToolTip>
-        )}
+        <div className="flex items-center gap-2 mr-2">
+          <AudioRecorder />
+          {controller ? (
+            <MainToolTip content="Abort" delayDuration={500}>
+              <Button
+                onClick={abortQuery}
+                size="icon"
+                className="w-8 h-8 rounded-full m-1 bg-red-500"
+              >
+                <FaStop />
+              </Button>
+            </MainToolTip>
+          ) : (
+            <MainToolTip content="Send Message" delayDuration={500}>
+              <Button
+                onClick={handleSubmit}
+                disabled={payload.query.trim() === "" && images.length === 0}
+                size="icon"
+                className="w-8 h-8 rounded-full m-1"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+            </MainToolTip>
+          )}
+        </div>
       </div>
       <ImagePreviewModal 
         image={previewImage} 
