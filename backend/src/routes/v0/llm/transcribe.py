@@ -2,7 +2,7 @@ from fastapi.responses import JSONResponse
 from fastapi import HTTPException, status, APIRouter, File, UploadFile, Form
 from src.utils.logger import logger
 from src.constants import GROQ_API_KEY
-from groq import Groq
+
 
 def audio_to_text(
     filename: str, 
@@ -13,6 +13,7 @@ def audio_to_text(
     temperature: float, 
     timeout: float
 ):
+    from groq import Groq
     kwargs = {}
     if prompt is not None:
         kwargs["prompt"] = prompt
