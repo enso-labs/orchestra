@@ -1,3 +1,4 @@
+import asyncio
 import json
 from fastapi import HTTPException, status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
@@ -152,33 +153,7 @@ class Agent:
             await checkpointer.setup()
             self.checkpointer = checkpointer
             return checkpointer
-        
-    async def list_threads(self, page=1, per_page=20, sort_order='desc'):
-        try:
-            user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order=sort_order)
-            threads = []
-            if user_threads:
-                await self._acheckpointer()
-                for thread in user_threads:
-                    latest_checkpoint = await self.checkpointer.aget_tuple({"configurable": {"thread_id": str(thread.thread)}})
-                    if latest_checkpoint:
-                        messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
-                        if isinstance(messages, list):
-                            thread = Thread(
-                                thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
-                                checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
-                                checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
-                                messages=messages,
-                                ts=latest_checkpoint.checkpoint.get('ts'),
-                                v=latest_checkpoint.checkpoint.get('v')
-                            )
-                            threads.append(thread.model_dump())
-            return threads
-        except Exception as e:
-            logger.exception(f"Failed to list threads: {str(e)}")
-            return []
-        finally:
-            await self.cleanup()
+    
         
     async def list_async_threads(self, page=1, per_page=20):
         try:
@@ -443,12 +418,12 @@ class Agent:
                     logger.debug(f'ctx: {str(ctx.model_dump())}')
                     data = ctx.model_dump()
                     yield f"data: {json.dumps(data)}\n\n"
-            
-        except GeneratorExit:
+                    await asyncio.sleep(0)
+        except asyncio.CancelledError:
             # Handle client disconnection gracefully
             logger.info("Client disconnected, cleaning up stream")
             # Don't re-raise, just exit cleanly
-            return
+            raise GeneratorExit
         except Exception as e:
             logger.exception("Error in astream_chunks", e)
             raise HTTPException(status_code=500, detail=str(e))

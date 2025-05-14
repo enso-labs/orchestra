@@ -37,6 +37,12 @@ def load_chat_model(fully_specified_name: str, delimiter: str = ":") -> BaseChat
     api_key = get_api_key(provider)
     return init_chat_model(model, model_provider=provider, api_key=api_key)
 
+
+def get_provider(model_name: str):
+    provider, model = model_name.split(":", maxsplit=1)
+    return provider, model
+
+
 class LLMWrapper:
     def __init__(self, model_name: str, tools: list = None, user_repo: UserRepo = None, **kwargs):
         self.model = None
@@ -54,47 +60,43 @@ class LLMWrapper:
         chosen_model = None
 
         if model_name not in [e.value for e in ModelName]:
-            raise ValueError(f"Model {model_name} not supported")
+            raise ValueError(f"Model {model_name} not supported")   
         
         # Langchain 
         chosen_model = load_chat_model(model_name, **self.kwargs)
         
-        ## PRevious implementation
-        # if 'openai' in model_name:
+        # provider, model = model_name.split(":", maxsplit=1)
+        # ## PRevious implementation
+        # if 'openai' in provider:
         #     openai_token = OPENAI_API_KEY
         #     if not openai_token:
         #         raise ValueError("OpenAI API key not found")
         #     self.kwargs['api_key'] = openai_token
-        #     model_name = model_name.replace('openai-', '')
-        #     chosen_model = ChatOpenAI(model=model_name, **self.kwargs)
-        # elif 'anthropic' in model_name:
+        #     chosen_model = ChatOpenAI(model=model, **self.kwargs)
+        # elif 'anthropic' in provider:
         #     anthropic_token = ANTHROPIC_API_KEY
         #     if not anthropic_token:
         #         raise ValueError("Anthropic API key not found") 
         #     self.kwargs['api_key'] = anthropic_token
-        #     model_name = model_name.replace('anthropic-', '')
-        #     chosen_model = ChatAnthropic(model=model_name, **self.kwargs)
-        # elif 'ollama' in model_name:
+        #     chosen_model = ChatAnthropic(model=model, **self.kwargs)
+        # elif 'ollama' in provider:
         #     ollama_base_url = self.user_repo.get_token(key=UserTokenKey.OLLAMA_BASE_URL.name)
         #     if not ollama_base_url:
         #         raise ValueError("Ollama base URL not found")
         #     self.kwargs['base_url'] = ollama_base_url
-        #     model_name = model_name.replace('ollama-', '')
-        #     chosen_model = ChatOllama(model=model_name, **self.kwargs)
-        # elif 'groq' in model_name:
+        #     chosen_model = ChatOllama(model=model, **self.kwargs)
+        # elif 'groq' in provider:
         #     groq_token = GROQ_API_KEY
         #     if not groq_token:
         #         raise ValueError("Groq API key not found")
         #     self.kwargs['api_key'] = groq_token
-        #     model_name = model_name.replace('groq-', '')
-        #     chosen_model = ChatGroq(model=model_name, **self.kwargs)
-        # elif 'google' in model_name:
+        #     chosen_model = ChatGroq(model=model, **self.kwargs)
+        # elif 'google' in provider:
         #     gemini_token = GEMINI_API_KEY
         #     if not gemini_token:
         #         raise ValueError("Gemini API key not found")
         #     self.kwargs['api_key'] = gemini_token
-        #     model_name = model_name.replace('google-', '')
-        #     chosen_model = ChatGoogleGenerativeAI(model=model_name, **self.kwargs)
+        #     chosen_model = ChatGoogleGenerativeAI(model=model, **self.kwargs)
         # else:
         #     raise ValueError(f"Provider {model_name} not supported")
             
@@ -105,15 +107,15 @@ class LLMWrapper:
             
     def embedding_model(self):
         chosen_model = None
-        if 'openai' in self.model_name:
+        provider, model = get_provider(self.model_name)
+        if 'openai' in provider:
             openai_token = OPENAI_API_KEY
             if not openai_token:
                 raise ValueError("OpenAI API key not found")
             self.kwargs['api_key'] = openai_token
-            model_name = model_name.replace('openai-', '')
-            chosen_model = OpenAIEmbeddings(model=model_name, **self.kwargs)
+            chosen_model = OpenAIEmbeddings(model=model, **self.kwargs)
         else:
-            raise ValueError(f"Embedding model {model_name} not supported")
+            raise ValueError(f"Embedding model {model} not supported")
         return chosen_model
         
 
