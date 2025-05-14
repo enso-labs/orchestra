@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button"
-import { ArrowUp, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
-import useImageHook from "@/hooks/useImageHook"
 import { useChatContext } from "@/context/ChatContext"
 import { useCallback, useRef, useEffect } from "react"
 import { PresetPopover } from "../popovers/PresetPopover"
@@ -13,19 +12,18 @@ import { useNavigate } from "react-router-dom"
 import SearchButton from "../buttons/SearchButton"
 import { getAuthToken } from "@/lib/utils/auth"
 import ModalMcp from "../modals/ModalMcp"
-import { FaStop } from 'react-icons/fa'
 import ToolSelector from "../ToolSelector/ToolSelector"
 import { AudioRecorder } from "./AudioRecorder"
+import ChatSubmitButton from "../buttons/ChatSubmitButton"
 
 export default function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { payload, handleQuery, setPayload, currentModel, controller, abortQuery } = useChatContext();
-  const { isMobile } = useAppHook();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const {
+  const { 
+    payload, 
+    handleQuery, 
+    setPayload, 
+    currentModel, 
+    abortQuery,
     images,
     previewImage,
     previewImageIndex,
@@ -37,7 +35,12 @@ export default function ChatInput() {
     addImages,
     setImages,
     setPreviewImage,
-  } = useImageHook();
+  } = useChatContext();
+  const { isMobile } = useAppHook();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = useCallback(() => {
 		handleQuery();
@@ -167,32 +170,13 @@ export default function ChatInput() {
           {currentModel?.metadata?.tool_calling && (
             <ModalMcp />
           )}
-          
         </div>
         <div className="flex items-center gap-2 mr-2">
           <AudioRecorder />
-          {controller ? (
-            <MainToolTip content="Abort" delayDuration={500}>
-              <Button
-                onClick={abortQuery}
-                size="icon"
-                className="w-8 h-8 rounded-full m-1 bg-red-500"
-              >
-                <FaStop />
-              </Button>
-            </MainToolTip>
-          ) : (
-            <MainToolTip content="Send Message" delayDuration={500}>
-              <Button
-                onClick={handleSubmit}
-                disabled={payload.query.trim() === "" && images.length === 0}
-                size="icon"
-                className="w-8 h-8 rounded-full m-1"
-              >
-                <ArrowUp className="h-4 w-4" />
-              </Button>
-            </MainToolTip>
-          )}
+          <ChatSubmitButton 
+            abortQuery={abortQuery}
+            handleSubmit={handleSubmit}
+          />
         </div>
       </div>
       <ImagePreviewModal 
