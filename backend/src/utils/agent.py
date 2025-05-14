@@ -24,7 +24,6 @@ from src.flows.chatbot import chatbot_builder
 from src.services.db import create_async_pool, get_checkpoint_db
 from pydantic import BaseModel
 from src.utils.format import get_base64_image
-import sys
 
 from src.utils.a2a import A2ACardResolver, A2AClient, a2a_builder
 
@@ -386,6 +385,9 @@ class Agent:
                     if chunk:
                         logger.info(f'chunk: {str(chunk)}')
                         yield chunk
+            except asyncio.CancelledError as e:
+                logger.info("Stream cancelled")
+                raise GeneratorExit
             except Exception as e:
                 logger.exception(f"Error in astream_generator: {str(e)}")
             finally:
@@ -406,7 +408,7 @@ class Agent:
     ):
         try:
             ctx = StreamContext(msg=None, metadata={}, event=stream_mode)
-            async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer: 
+            async with get_checkpoint_db() as checkpointer: 
                 graph.checkpointer = checkpointer
                 async for msg, metadata in graph.astream(
                     state, 
@@ -419,24 +421,18 @@ class Agent:
                     data = ctx.model_dump()
                     yield f"data: {json.dumps(data)}\n\n"
                     await asyncio.sleep(0)
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as e:
             # Handle client disconnection gracefully
             logger.info("Client disconnected, cleaning up stream")
             # Don't re-raise, just exit cleanly
-            raise GeneratorExit
+            raise e
         except Exception as e:
             logger.exception("Error in astream_chunks", e)
             raise HTTPException(status_code=500, detail=str(e))
-        # finally:
-        #     logger.info("Closing stream")
-        #     try:
-        #         # Only send end message if we haven't encountered GeneratorExit
-        #         if sys.exc_info()[0] is not GeneratorExit:
-        #             ctx.event = "end"
-        #             end_data = ctx.model_dump()
-        #             yield f"data: {json.dumps(end_data)}\n\n"
-        #     except Exception as e:
-        #         logger.exception("Error sending final stream message", e)
+        finally:
+            logger.info("Closing stream")
+            raise GeneratorExit
+            
 
 
     # Add cleanup method
