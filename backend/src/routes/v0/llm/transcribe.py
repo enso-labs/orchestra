@@ -20,7 +20,7 @@ async def transcribe(
             file.filename, audio_bytes, model, prompt, response_format, temperature, timeout
         )
         return JSONResponse(
-            content={"transcript": transcript},
+            content={"transcript": transcript.model_dump()},
             media_type="application/json",
             status_code=200
         )

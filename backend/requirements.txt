@@ -2,7 +2,7 @@ authlib
 python-dotenv
 anthropic
 cryptography
-langgraph==0.2.76
+langgraph
 langgraph-checkpoint-postgres
 langchain_anthropic
 langchain_openai

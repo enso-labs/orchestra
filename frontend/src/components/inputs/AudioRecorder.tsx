@@ -40,7 +40,7 @@ export const AudioRecorder: React.FC = () => {
           });
           setPayload((prev: any) => ({
             ...prev,
-            query: prev.query ? `${prev.query} ${response.data.transcript}` : response.data.transcript,
+            query: prev.query ? `${prev.query} ${response.data.transcript.text}` : response.data.transcript.text,
           }))
           // handle transcription response...
         } catch (error) {
