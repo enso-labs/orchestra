@@ -30,9 +30,24 @@ class ChatInput(BaseModel):
     images: Optional[List[str]] = Field(default=[])
     model: Optional[str] = Field(default="openai:gpt-4o-mini")
     
+    
+class ArcadeConfig(BaseModel):
+    tools: Optional[List[str]] = Field(default_factory=list)
+    toolkits: Optional[List[str]] = Field(default_factory=list)
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "tools": ["Web.ScrapeUrl"],
+                "toolkits": ["Google"]
+            }
+        }
+    }
+    
 class ExistingThread(ChatInput):
     tools: Optional[List[Any]] = Field(default_factory=list)
     mcp: Optional[dict] = Field(default_factory=dict)
+    arcade: Optional[ArcadeConfig] = Field(default_factory=ArcadeConfig)
     a2a: Optional[dict[str, A2AServer]] = Field(default_factory=dict[str, A2AServer])
     images: Optional[List[str]] = Field(default_factory=list)
     model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
@@ -44,7 +59,8 @@ class ExistingThread(ChatInput):
     
 class AgentThread(BaseModel):
     query: str
-    # model: Optional[str] = None
+    images: Optional[List[str]] = Field(default_factory=list)
+    model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
     
     model_config = {
         "json_schema_extra": {"example": {"query": "What is the capital of France?"}}

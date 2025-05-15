@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/308-arcade-dev-tools (2025-05-14)
   - feat/295-speech-to-text (2025-05-12)
   - feat/296-update-available-models (2025-05-11)
   - feat/288-add-contact-create-to-oauth (2025-05-05)

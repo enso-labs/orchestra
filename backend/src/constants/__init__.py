@@ -40,7 +40,7 @@ CONNECTION_POOL_KWARGS = {
 }
 
 class UserTokenKey(Enum):
-    
+    ARCADE_API_KEY = "ARCADE_API_KEY"
     ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"
     OPENAI_API_KEY = "OPENAI_API_KEY"
     GROQ_API_KEY = "GROQ_API_KEY"
@@ -59,7 +59,7 @@ OPENAI_API_KEY = os.getenv(UserTokenKey.OPENAI_API_KEY.value)
 OLLAMA_BASE_URL = os.getenv(UserTokenKey.OLLAMA_BASE_URL.value)
 GROQ_API_KEY = os.getenv(UserTokenKey.GROQ_API_KEY.value)
 GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
-
+ARCADE_API_KEY = os.getenv(UserTokenKey.ARCADE_API_KEY.value)
 # Tools
 SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://exec_server:3005/exec")
 SEARX_SEARCH_HOST_URL = os.getenv(UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://search_engine:8080")
