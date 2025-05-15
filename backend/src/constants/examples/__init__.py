@@ -1,3 +1,6 @@
+import httpx
+
+
 MCP_REQ_BODY_EXAMPLE = {
     "mcp": {
         "enso_mcp": {
@@ -25,6 +28,8 @@ ARCADE_REQ_BODY_EXAMPLE = {
         "toolkits": ["Google"]
     }
 }
+
+ARCADE_RESPONSE_EXAMPLE = httpx.get('https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json').json()
 
 NEW_THREAD_QUERY_EXAMPLE = {
     "system": "You are a helpful assistant.",
