@@ -45,6 +45,7 @@ class AgentController:
             await agent.abuilder(tools=new_thread.tools, 
                                  model_name=new_thread.model, 
                                  mcp=new_thread.mcp, 
+                                 arcade=new_thread.arcade,
                                  a2a=new_thread.a2a)
             messages = agent.messages(new_thread.query, new_thread.images)
             if "text/event-stream" in request.headers.get("accept", ""):
@@ -93,7 +94,8 @@ class AgentController:
             await agent.abuilder(tools=existing_thread.tools, 
                                  model_name=existing_thread.model, 
                                  mcp=existing_thread.mcp, 
-                                 a2a=existing_thread.a2a)
+                                 a2a=existing_thread.a2a,
+                                 arcade=existing_thread.arcade)
             messages = agent.messages(query=existing_thread.query, images=existing_thread.images)
                 
             if "text/event-stream" in request.headers.get("accept", ""):

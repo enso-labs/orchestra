@@ -4,6 +4,7 @@ anthropic
 cryptography
 langgraph
 langgraph-checkpoint-postgres
+langchain-arcade
 langchain_anthropic
 langchain_openai
 langchain-google-genai

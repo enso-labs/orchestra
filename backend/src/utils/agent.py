@@ -7,18 +7,19 @@ from langchain_core.messages import AnyMessage,  HumanMessage
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
-from langchain_core.tools import StructuredTool, tool
+from langchain_core.tools import StructuredTool
+from langchain_arcade import ArcadeToolManager
 from psycopg.connection_async import AsyncConnection
 
 from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
-from src.constants import APP_LOG_LEVEL, DB_URI
+from src.constants import APP_LOG_LEVEL, DB_URI, UserTokenKey
 from src.tools import dynamic_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
-from src.entities import Answer, Thread
+from src.entities import Answer, Thread, ArcadeConfig
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
 from src.services.db import create_async_pool, get_checkpoint_db
@@ -304,6 +305,7 @@ class Agent:
         tools: list[str] = None,
         mcp: dict = None,
         a2a: dict[str, A2AServer] = None,
+        arcade: ArcadeConfig = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         checkpointer: AsyncPostgresSaver = None,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
@@ -343,7 +345,15 @@ class Agent:
                     # tool.name = key + "_" + card.name.lower().replace(" ", "_")
                     # tool.description = card.description
                     self.tools.append(tool)
-        
+                    
+        if len(arcade.tools) > 0 or len(arcade.toolkits) > 0:
+            token = await self.user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
+            if not token:
+                raise HTTPException(status_code=400, detail="No ARCADE_API_KEY found")
+            manager = ArcadeToolManager(api_key=token)
+            tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
+            self.tools.extend(tools)
+            
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
         else:
