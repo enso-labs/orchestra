@@ -1,6 +1,6 @@
 <div align="center">
 
-# Enso Labs - Cloud ☁️ 
+# Enso Labs - Orchestra 🪶 
 
 Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A)
 
