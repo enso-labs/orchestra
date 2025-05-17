@@ -36,10 +36,6 @@ class AgentRepo:
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    def get_all(self) -> List[Agent]:
-        """Get all agents without settings included."""
-        return self.db.query(Agent).all()
-
     async def create(self, name: str, description: str, settings_id: str, public: bool = False) -> Agent:
         """Create a new agent."""
         try:
@@ -69,14 +65,16 @@ class AgentRepo:
                 description="Initial agent configuration"
             )
             
-            self.db.commit()
-            self.db.refresh(agent)
+            await self.db.commit()
+            await self.db.refresh(agent)
             return agent
         except IntegrityError:
-            self.db.rollback()
+            logger.error(f"Agent with name '{name}' already exists")
+            await self.db.rollback()
             raise ValueError(f"Agent with name '{name}' already exists")
         except Exception as e:
-            self.db.rollback()
+            logger.exception(f"Failed to create agent: {str(e)}")
+            await self.db.rollback()
             raise e
 
     async def update(self, agent_id: str, data: dict) -> Optional[Agent]:

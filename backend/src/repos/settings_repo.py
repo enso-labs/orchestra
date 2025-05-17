@@ -1,18 +1,29 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.models import Settings
 
 class SettingsRepo:
-    def __init__(self, db: Session, user_id: str):
-        self.db = db
-        self.user_id = user_id
+    _instance = None
+    _db = None
+    _user_id = None
 
-    def get_by_id(self, settings_id: str) -> Optional[Settings]:
+    def __new__(cls, db: AsyncSession, user_id: str):
+        if cls._instance is None:
+            cls._instance = super(SettingsRepo, cls).__new__(cls)
+            cls._db = db
+            cls._user_id = user_id
+        return cls._instance
+
+    @classmethod
+    async def get_by_id(cls, settings_id: str) -> Optional[Settings]:
         """Get setting by ID."""
-        return self.db.query(Settings).filter(
+        query = select(Settings).filter(
             Settings.id == settings_id,
-            Settings.user_id == self.user_id
+            Settings.user_id == cls._user_id
         ).first()
+        result = await cls._db.execute(query)
+        return result.scalar_one_or_none()
 
     def get_by_slug(self, slug: str) -> Optional[Settings]:
         """Get setting by slug."""
@@ -21,11 +32,14 @@ class SettingsRepo:
             Settings.user_id == self.user_id
         ).first()
 
-    def get_all(self) -> List[Settings]:
+    @classmethod
+    async def get_all(cls) -> List[Settings]:
         """Get all settings."""
-        return self.db.query(Settings).filter(
-            Settings.user_id == self.user_id
-        ).all()
+        query = select(Settings).filter(
+            Settings.user_id == cls._user_id
+        )
+        result = await cls._db.execute(query)
+        return result.scalars().all()
 
     def create(self, name: str, value: dict) -> Settings:
         try:

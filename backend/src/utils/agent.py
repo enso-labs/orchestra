@@ -129,16 +129,16 @@ class Agent:
         messages = [HumanMessage(content=content)]
         return messages
     
-    async def create_pool(self):
-        try:
-            if not self.pool:
-                # Use create_async_pool instead of the context manager
-                # This way the pool stays alive outside this function
-                self.pool = create_async_pool()
-                await self.pool.open()
-        except Exception as e:
-            logger.exception(f"Failed to create pool: {str(e)}")
-            raise e
+    # async def create_pool(self):
+    #     try:
+    #         if not self.pool:
+    #             # Use create_async_pool instead of the context manager
+    #             # This way the pool stays alive outside this function
+    #             self.pool = create_async_pool()
+    #             await self.pool.open()
+    #     except Exception as e:
+    #         logger.exception(f"Failed to create pool: {str(e)}")
+    #         raise e
         
     async def _acheckpointer(self):
         async with get_checkpoint_db() as checkpointer:
