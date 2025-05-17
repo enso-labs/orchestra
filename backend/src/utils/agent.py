@@ -357,13 +357,10 @@ class Agent:
             # Handle client disconnection gracefully
             logger.info("Client disconnected, cleaning up stream")
             # Don't re-raise, just exit cleanly
-            raise e
+            raise GeneratorExit
         except Exception as e:
             logger.exception("Error in astream_chunks", e)
             raise HTTPException(status_code=500, detail=str(e))
-        # finally:
-        #     logger.info("Closing stream")
-        #     raise GeneratorExit
             
 
 
