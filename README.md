@@ -2,7 +2,7 @@
 
 # Enso Labs - Orchestra 🪶 
 
-Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A)
+AI Agent Orchestrator built on LangGraph powered by [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A)
 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
 <a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
