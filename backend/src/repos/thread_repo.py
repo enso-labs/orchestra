@@ -40,8 +40,10 @@ class ThreadRepo:
             await self.db.refresh(thread)
             return thread
         except Exception as e:
-            logger.error(f"Failed to create thread: {str(e)}")
-    
+            # ensure the failed transaction is rolled back
+            await self.db.rollback()
+            logger.error(f"Failed to create thread: {e}")
+            return None      # make the control flow explicit
     async def delete(self, thread_id: str) -> bool:
         try:
             query = delete(Thread).filter(
