@@ -28,10 +28,14 @@ class AgentRepo:
         return self.db.query(Agent).filter(Agent.slug == slug and Agent.user_id == self.user_id).first()
         
     async def get_all_user_agents(self, public: Optional[bool] = None) -> List[Agent]:
-        if public is not None:
-            query = select(Agent).filter(Agent.public == public)
-        else:
-            query = select(Agent).filter(Agent.user_id == self.user_id)
+        query = select(Agent)
+        
+        if public is True:
+            query = query.filter(Agent.public == True)
+        elif public is False:
+            query = query.filter(Agent.public == False)
+        else:  # public is None
+            query = query.filter(Agent.user_id == self.user_id)
         
         result = await self.db.execute(query)
         return result.scalars().all()
@@ -52,7 +56,7 @@ class AgentRepo:
                 revision_number=1  # Start with revision 1
             )
             
-            self.db.add(agent)
+            self.db.add(agent)  # Removed await since add() is synchronous
             await self.db.flush()  # This assigns an ID to the agent
             
             # Now create the first revision for this agent

@@ -1,6 +1,5 @@
 from fastapi import Query, Response, status, Depends, APIRouter, Path
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Optional
