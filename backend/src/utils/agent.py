@@ -10,6 +10,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import StructuredTool
 from langchain_arcade import ArcadeToolManager
 from psycopg.connection_async import AsyncConnection
+from sqlalchemy import text
 
 from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
@@ -193,24 +194,21 @@ class Agent:
         
     async def _wipe(self):
         try:
-            query_blobs = "DELETE FROM checkpoint_blobs WHERE thread_id = %s"
-            query_checkpoints = "DELETE FROM checkpoints WHERE thread_id = %s"
-            query_checkpoints_writes = "DELETE FROM checkpoint_writes WHERE thread_id = %s"
-            async with self.pool.connection() as conn:  # Acquire a connection from the pool
-                async with conn.cursor() as cur:
-                    await cur.execute(query_blobs, (self.thread_id,))
-                    await cur.execute(query_checkpoints, (self.thread_id,))
-                    await cur.execute(query_checkpoints_writes, (self.thread_id,))
-                    logger.info(f"Deleted {cur.rowcount} rows with thread_id = {self.thread_id}")
-
-                    return cur.rowcount
+            query_blobs = text("DELETE FROM checkpoint_blobs WHERE thread_id = :thread_id")
+            query_checkpoints = text("DELETE FROM checkpoints WHERE thread_id = :thread_id")
+            query_checkpoints_writes = text("DELETE FROM checkpoint_writes WHERE thread_id = :thread_id")
+            await self.user_repo.db.execute(query_blobs, {"thread_id": self.thread_id})
+            await self.user_repo.db.execute(query_checkpoints, {"thread_id": self.thread_id})
+            await self.user_repo.db.execute(query_checkpoints_writes, {"thread_id": self.thread_id})
+            await self.user_repo.db.commit()
+            logger.info(f"Deleted rows with thread_id = {self.thread_id}")
+            return True
         except Exception as e:
             logger.error(f"Failed to delete checkpoint: {str(e)}")
             return 0
     
     async def delete_thread(self, wipe: bool = True):
         try:
-            await self.create_pool()
             thread_repo = ThreadRepo(self.user_repo.db, self.user_repo.user_id)
             await thread_repo.delete(self.thread_id)
             if wipe:
