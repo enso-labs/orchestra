@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from src.models import Agent, Revision
+from src.utils.logger import logger
 
 class AgentRepo:
     def __init__(self, db: AsyncSession, user_id: str):
@@ -26,17 +27,20 @@ class AgentRepo:
         """Get agent by slug with settings included."""
         return self.db.query(Agent).filter(Agent.slug == slug and Agent.user_id == self.user_id).first()
         
-    def get_all_user_agents(self, public: Optional[bool] = None) -> List[Agent]:
-        if public is not None:
-            return self.db.query(Agent).filter(Agent.public == public).all()
-        else:
-            return self.db.query(Agent).filter(Agent.user_id == self.user_id).all()
+    async def get_all_user_agents(self, public: Optional[bool] = None) -> List[Agent]:
+        query = select(Agent)
+        
+        if public is True:
+            query = query.filter(Agent.public == True)
+        elif public is False:
+            query = query.filter(Agent.public == False)
+        else:  # public is None
+            query = query.filter(Agent.user_id == self.user_id)
+        
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
-    def get_all(self) -> List[Agent]:
-        """Get all agents without settings included."""
-        return self.db.query(Agent).all()
-
-    def create(self, name: str, description: str, settings_id: str, public: bool = False) -> Agent:
+    async def create(self, name: str, description: str, settings_id: str, public: bool = False) -> Agent:
         """Create a new agent."""
         try:
             # Generate a slug for the agent name
@@ -52,8 +56,8 @@ class AgentRepo:
                 revision_number=1  # Start with revision 1
             )
             
-            self.db.add(agent)
-            self.db.flush()  # This assigns an ID to the agent
+            self.db.add(agent)  # Removed await since add() is synchronous
+            await self.db.flush()  # This assigns an ID to the agent
             
             # Now create the first revision for this agent
             from src.repos.revision_repo import RevisionRepo
@@ -65,19 +69,21 @@ class AgentRepo:
                 description="Initial agent configuration"
             )
             
-            self.db.commit()
-            self.db.refresh(agent)
+            await self.db.commit()
+            await self.db.refresh(agent)
             return agent
         except IntegrityError:
-            self.db.rollback()
+            logger.error(f"Agent with name '{name}' already exists")
+            await self.db.rollback()
             raise ValueError(f"Agent with name '{name}' already exists")
         except Exception as e:
-            self.db.rollback()
+            logger.exception(f"Failed to create agent: {str(e)}")
+            await self.db.rollback()
             raise e
 
-    def update(self, agent_id: str, data: dict) -> Optional[Agent]:
+    async def update(self, agent_id: str, data: dict) -> Optional[Agent]:
         """Update agent data."""
-        agent = self.get_by_id(agent_id)
+        agent = await self.get_by_id(agent_id)
         if agent:
             for key, value in data.items():
                 if hasattr(agent, key):
@@ -89,14 +95,18 @@ class AgentRepo:
             self.db.refresh(agent)
         return agent
 
-    def delete(self, agent_id: str) -> bool:
+    async def delete(self, agent_id: str) -> bool:
         """Delete an agent."""
-        agent = self.get_by_id(agent_id)
-        if agent:
-            self.db.delete(agent)
-            self.db.commit()
-            return True
-        return False
+        try:
+            agent = await self.get_by_id(agent_id)
+            if agent:
+                await self.db.delete(agent)
+                await self.db.commit()
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Failed to delete agent: {str(e)}")
+            return False
 
     def get_by_setting_id(self, settings_id: str) -> List[Agent]:
         """Get all agents for a specifics setting."""

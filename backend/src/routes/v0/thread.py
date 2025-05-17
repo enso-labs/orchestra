@@ -2,19 +2,15 @@
 
 from fastapi import Path, Request, Response, status, Depends, APIRouter, Query, HTTPException
 from fastapi.responses import JSONResponse
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repos.thread_repo import ThreadRepo
-from src.constants import DB_URI
-from src.repos.user_repo import UserRepo
 from src.services.db import get_async_db, get_checkpoint_db
 from src.entities import Thread, Threads
 from src.utils.agent import Agent
 from src.utils.auth import get_optional_user, verify_credentials
-from src.models import ProtectedUser, User
+from src.models import ProtectedUser
 from src.utils.logger import logger
-from src.services.db import get_async_connection_pool, get_connection_pool
 
 TAG = "Thread"
 router = APIRouter(tags=[TAG])
@@ -22,7 +18,6 @@ router = APIRouter(tags=[TAG])
 
 @router.get(
     "/threads", 
-    tags=[TAG],
     dependencies=[Depends(verify_credentials)],
     responses={
         status.HTTP_200_OK: {
@@ -62,7 +57,6 @@ async def list_threads(
 ################################################################################
 @router.get(
     "/threads/{thread_id}", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All messages from existing thread.",
@@ -113,7 +107,6 @@ async def find_thread(
 ################################################################################
 @router.delete(
     "/threads/{thread_id}", 
-    tags=[TAG],
     dependencies=[Depends(verify_credentials)],
     responses={
         status.HTTP_204_NO_CONTENT: {
@@ -137,8 +130,7 @@ async def delete_thread(
 ### List Checkpoints
 ################################################################################
 @router.get(
-    "/threads/{thread_id}/checkpoints", 
-    tags=[TAG],
+    "/threads/{thread_id}/checkpoints",
     responses={
         status.HTTP_200_OK: {
             "description": "All existing checkpoints.",
@@ -157,9 +149,7 @@ async def list_checkpoints(
     before: Optional[str] = Query(None, description="List checkpoints created before this configuration."),
     limit: Optional[int] = Query(None, description="Maximum number of threads to return")
 ):
-    async with get_async_connection_pool() as pool:
-        checkpointer = AsyncPostgresSaver(pool)
-        
+    async with get_checkpoint_db() as checkpointer:
         # Build the base config and filter
         config = {}
         if thread_id:

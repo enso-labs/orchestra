@@ -23,7 +23,6 @@ class RevisionCreate(BaseModel):
 ################################################################################
 @router.get(
     "/agents/{agent_id}/v", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All revisions for an agent.",

@@ -10,12 +10,13 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import StructuredTool
 from langchain_arcade import ArcadeToolManager
 from psycopg.connection_async import AsyncConnection
+from sqlalchemy import text
 
 from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
-from src.constants import APP_LOG_LEVEL, DB_URI, UserTokenKey
+from src.constants import APP_LOG_LEVEL, UserTokenKey
 from src.tools import dynamic_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
@@ -25,8 +26,9 @@ from src.flows.chatbot import chatbot_builder
 from src.services.db import create_async_pool, get_checkpoint_db
 from pydantic import BaseModel
 from src.utils.format import get_base64_image
+from src.models import Thread as ThreadModel
 
-from src.utils.a2a import A2ACardResolver, A2AClient, a2a_builder
+from src.utils.a2a import A2ACardResolver, a2a_builder
 
 
 class StreamContext(BaseModel):
@@ -53,16 +55,6 @@ class Agent:
         self.checkpointer = None
         self.agent_session = McpService()
         
-    def _checkpointer(self):
-        checkpointer = PostgresSaver(self.pool)
-        checkpointer.setup()
-        return checkpointer
-
-    def checkpoint(self):
-        checkpointer = self._checkpointer()
-        checkpoint = checkpointer.get(self.config)
-        return checkpoint
-    
     def existing_thread(
         self,
         query: str, 
@@ -137,16 +129,16 @@ class Agent:
         messages = [HumanMessage(content=content)]
         return messages
     
-    async def create_pool(self):
-        try:
-            if not self.pool:
-                # Use create_async_pool instead of the context manager
-                # This way the pool stays alive outside this function
-                self.pool = create_async_pool()
-                await self.pool.open()
-        except Exception as e:
-            logger.exception(f"Failed to create pool: {str(e)}")
-            raise e
+    # async def create_pool(self):
+    #     try:
+    #         if not self.pool:
+    #             # Use create_async_pool instead of the context manager
+    #             # This way the pool stays alive outside this function
+    #             self.pool = create_async_pool()
+    #             await self.pool.open()
+    #     except Exception as e:
+    #         logger.exception(f"Failed to create pool: {str(e)}")
+    #         raise e
         
     async def _acheckpointer(self):
         async with get_checkpoint_db() as checkpointer:
@@ -184,86 +176,17 @@ class Agent:
         checkpoint = await checkpointer.aget(self.config)
         return checkpoint
     
-    async def user_threads(self, page=1, per_page=20, sort_order='desc'):
-        """
-        Retrieve a paginated list of threads records for the configured user, ordered by created_at.
-        
-        :param page: The page number (1-indexed).
-        :param page_size: Number of records per page.
-        :param sort_order: 'asc' for ascending or 'desc' for descending order based on created_at.
-        :return: A list of thread IDs.
-        """
-        try:
-            user_id = self.config["configurable"]["user_id"]
-            agent_id = self.config["configurable"].get("agent_id")
-            # Calculate the offset for pagination.
-            offset = (page - 1) * per_page
-
-            # Validate sort_order.
-            order = sort_order.upper()
-            if order not in ('ASC', 'DESC'):
-                order = 'DESC'
-
-            # Build the query. "user" is quoted because it's a reserved keyword.
-            query = f"""
-                SELECT thread
-                FROM threads
-                WHERE "user" = %s
-            """
-            
-            params = [user_id]
-            
-            # Add agent condition if agent_id is specified
-            if agent_id:
-                query += " AND agent = %s"
-                params.append(agent_id)
-                
-            query += f"""
-                ORDER BY created_at {order}
-                LIMIT %s OFFSET %s
-            """
-            
-            params.extend([per_page, offset])
-
-            async with self.pool.connection() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(query, params)
-                    rows = await cur.fetchall()
-                    logger.info(f"Retrieved {len(rows)} threads for user {user_id} (page {page})")
-                    # Convert the list of rows (tuples) into a set of thread UUIDs.
-                thread_ids = {str(row[0]) for row in rows}
-                return thread_ids
-
-        except Exception as e:
-            logger.error(f"Failed to retrieve paginated threads for user {user_id}: {str(e)}")
-            return []
-    
     async def create_user_thread(self):
         try:
             # Quote "user" since it is a reserved keyword in PostgreSQL.
             agent_id = self.config["configurable"].get("agent_id")
-            
-            if agent_id:
-                query = (
-                    'INSERT INTO threads ("user", thread, agent) '
-                    'VALUES (%s, %s, %s) '
-                    'ON CONFLICT ("user", thread) DO NOTHING'
-                )
-                params = (self.config["configurable"]["user_id"], self.thread_id, agent_id)
-            else:
-                query = (
-                    'INSERT INTO threads ("user", thread) '
-                    'VALUES (%s, %s) '
-                    'ON CONFLICT ("user", thread) DO NOTHING'
-                )
-                params = (self.config["configurable"]["user_id"], self.thread_id)
-            
-            await self.create_pool()
-            async with self.pool.connection() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute(query, params)
-                    logger.info(f"Created {cur.rowcount} rows with thread_id = {self.thread_id}")
-                    return cur.rowcount
+            thread_repo = ThreadRepo(self.user_repo.db, self.user_repo.user_id)
+            thread = ThreadModel(
+                user=self.user_id,
+                thread=self.thread_id,
+                agent=agent_id
+            )
+            await thread_repo.create(thread)
                 
         except Exception as e:
             logger.exception(f"Failed to create thread: {str(e)}")
@@ -271,24 +194,21 @@ class Agent:
         
     async def _wipe(self):
         try:
-            query_blobs = "DELETE FROM checkpoint_blobs WHERE thread_id = %s"
-            query_checkpoints = "DELETE FROM checkpoints WHERE thread_id = %s"
-            query_checkpoints_writes = "DELETE FROM checkpoint_writes WHERE thread_id = %s"
-            async with self.pool.connection() as conn:  # Acquire a connection from the pool
-                async with conn.cursor() as cur:
-                    await cur.execute(query_blobs, (self.thread_id,))
-                    await cur.execute(query_checkpoints, (self.thread_id,))
-                    await cur.execute(query_checkpoints_writes, (self.thread_id,))
-                    logger.info(f"Deleted {cur.rowcount} rows with thread_id = {self.thread_id}")
-
-                    return cur.rowcount
+            query_blobs = text("DELETE FROM checkpoint_blobs WHERE thread_id = :thread_id")
+            query_checkpoints = text("DELETE FROM checkpoints WHERE thread_id = :thread_id")
+            query_checkpoints_writes = text("DELETE FROM checkpoint_writes WHERE thread_id = :thread_id")
+            await self.user_repo.db.execute(query_blobs, {"thread_id": self.thread_id})
+            await self.user_repo.db.execute(query_checkpoints, {"thread_id": self.thread_id})
+            await self.user_repo.db.execute(query_checkpoints_writes, {"thread_id": self.thread_id})
+            await self.user_repo.db.commit()
+            logger.info(f"Deleted rows with thread_id = {self.thread_id}")
+            return True
         except Exception as e:
             logger.error(f"Failed to delete checkpoint: {str(e)}")
             return 0
     
     async def delete_thread(self, wipe: bool = True):
         try:
-            await self.create_pool()
             thread_repo = ThreadRepo(self.user_repo.db, self.user_repo.user_id)
             await thread_repo.delete(self.thread_id)
             if wipe:
@@ -435,13 +355,10 @@ class Agent:
             # Handle client disconnection gracefully
             logger.info("Client disconnected, cleaning up stream")
             # Don't re-raise, just exit cleanly
-            raise e
+            raise GeneratorExit
         except Exception as e:
             logger.exception("Error in astream_chunks", e)
             raise HTTPException(status_code=500, detail=str(e))
-        finally:
-            logger.info("Closing stream")
-            raise GeneratorExit
             
 
 
