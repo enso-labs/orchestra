@@ -44,8 +44,11 @@ class ThreadRepo:
     
     async def delete(self, thread_id: str) -> bool:
         try:
-            query = delete(Thread).filter(Thread.thread == thread_id and Thread.user == self.user_id)
+            query = delete(Thread).filter(
+                (Thread.thread == thread_id) & (Thread.user == self.user_id)
+            )
             await self.db.execute(query)
+            await self.db.commit()
             return True
         except Exception as e:
             logger.error(f"Failed to delete thread: {str(e)}")
