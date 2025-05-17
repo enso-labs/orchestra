@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from pydantic import BaseModel, UUID4, Field
 from src.utils.logger import logger
@@ -47,7 +47,7 @@ class SingleSettingResponse(BaseModel):
 @router.get("/settings", response_model=SettingsListResponse)
 async def list_settings(
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """List all settings."""
     repo = SettingsRepo(db, user.id)
@@ -57,7 +57,7 @@ async def list_settings(
 async def get_setting(
     setting_id: str,
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific setting by ID."""
     repo = SettingsRepo(db, user.id)
@@ -73,7 +73,7 @@ async def get_setting(
 async def get_setting_by_slug(
     slug: str,
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific setting by slug."""
     repo = SettingsRepo(db, user.id)
@@ -89,7 +89,7 @@ async def get_setting_by_slug(
 async def create_setting(
     setting: SettingCreate,
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create a new setting."""
     try:
@@ -112,7 +112,7 @@ async def update_setting(
     setting_id: str,
     setting: SettingUpdate,
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Update an existing setting."""
     repo = SettingsRepo(db, user.id)
@@ -128,7 +128,7 @@ async def update_setting(
 async def delete_setting(
     setting_id: str,
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Delete a setting."""
     repo = SettingsRepo(db, user.id)
@@ -144,7 +144,7 @@ async def upsert_setting_by_slug(
     slug: str,
     setting: SettingCreate,
     user: User = Depends(verify_credentials),
-    db: Session = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create or update a setting by slug."""
     repo = SettingsRepo(db, user.id)

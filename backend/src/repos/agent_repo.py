@@ -52,7 +52,7 @@ class AgentRepo:
                 revision_number=1  # Start with revision 1
             )
             
-            await self.db.add(agent)
+            self.db.add(agent)
             await self.db.flush()  # This assigns an ID to the agent
             
             # Now create the first revision for this agent
@@ -98,7 +98,6 @@ class AgentRepo:
             if agent:
                 await self.db.delete(agent)
                 await self.db.commit()
-                await self.db.refresh(agent)    
                 return True
             return False
         except Exception as e:

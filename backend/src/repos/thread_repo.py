@@ -6,17 +6,8 @@ from sqlalchemy import delete
 from src.utils.logger import logger
 
 class ThreadRepo:
-    _instance = None
-    
-    def __new__(cls, db: AsyncSession, user_id: str = None):
-        if cls._instance is None:
-            cls._instance = super(ThreadRepo, cls).__new__(cls)
-            cls._instance.db = None
-            cls._instance.user_id = None
-        return cls._instance
     
     def __init__(self, db: AsyncSession, user_id: str = None):
-        # Update attributes if they've changed
         self.db = db
         self.user_id = user_id
         
@@ -46,6 +37,7 @@ class ThreadRepo:
         try:
             query = delete(Thread).filter(Thread.thread == thread_id and Thread.user == self.user_id)
             await self.db.execute(query)
+            
             return True
         except Exception as e:
             logger.error(f"Failed to delete thread: {str(e)}")
