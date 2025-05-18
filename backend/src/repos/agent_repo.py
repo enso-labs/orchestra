@@ -27,8 +27,14 @@ class AgentRepo:
         """Get agent by slug with settings included."""
         return self.db.query(Agent).filter(Agent.slug == slug and Agent.user_id == self.user_id).first()
         
-    async def get_all_user_agents(self, public: Optional[bool] = None) -> List[Agent]:
+    async def get_all_user_agents(self, public: Optional[bool] = None, include_relations: bool = True) -> List[Agent]:
+        """Get all user agents with optional relation loading."""
         query = select(Agent)
+        
+        if include_relations:
+            query = query.options(
+                selectinload(Agent.revisions).selectinload(Revision.setting)
+            )
         
         if public is True:
             query = query.filter(Agent.public == True)
@@ -43,16 +49,6 @@ class AgentRepo:
     async def create(self, name: str, description: str, settings_id: str, public: bool = False) -> Agent:
         """Create a new agent."""
         try:
-            # Check if agent with same name already exists for this user
-            existing_agent = await self.db.execute(
-                select(Agent).where(
-                    Agent.name == name,
-                    Agent.user_id == self.user_id
-                )
-            )
-            if existing_agent.scalars().first():
-                raise ValueError(f"Agent with name '{name}' already exists")
-
             # Generate a slug for the agent name
             slug = Agent.generate_slug(name)
             
@@ -81,7 +77,7 @@ class AgentRepo:
             
             await self.db.commit()
             await self.db.refresh(agent)
-            return agent
+            return await self.get_by_id(str(agent.id))
         except IntegrityError as e:
             logger.error(f"IntegrityError: {str(e)}")
             await self.db.rollback()

@@ -45,7 +45,7 @@ async def list_agents(
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
     agents = await agent_repo.get_all_user_agents(public=public)
-    agents = [agent.to_dict(include_setting=False) for agent in agents]
+    agents = [agent.to_dict(include_setting=True) for agent in agents]
     return JSONResponse(
         content={"agents": agents},
         status_code=status.HTTP_200_OK

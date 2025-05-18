@@ -159,7 +159,7 @@ class Agent:
                     # tool.description = card.description
                     self.tools.append(tool)
                     
-        if len(arcade.tools) > 0 or len(arcade.toolkits) > 0:
+        if arcade and (len(arcade.tools) > 0 or len(arcade.toolkits) > 0):
             token = await self.user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
             if not token:
                 raise HTTPException(status_code=400, detail="No ARCADE_API_KEY found")
@@ -176,7 +176,7 @@ class Agent:
         if debug:
             graph.debug = True
         self.graph = graph
-        self.graph.name = "EnsoAgent"
+        self.graph.name = "Orchestra"
         return graph
 
     async def aprocess(
