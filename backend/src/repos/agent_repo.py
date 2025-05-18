@@ -27,8 +27,14 @@ class AgentRepo:
         """Get agent by slug with settings included."""
         return self.db.query(Agent).filter(Agent.slug == slug and Agent.user_id == self.user_id).first()
         
-    async def get_all_user_agents(self, public: Optional[bool] = None) -> List[Agent]:
+    async def get_all_user_agents(self, public: Optional[bool] = None, include_relations: bool = True) -> List[Agent]:
+        """Get all user agents with optional relation loading."""
         query = select(Agent)
+        
+        if include_relations:
+            query = query.options(
+                selectinload(Agent.revisions).selectinload(Revision.setting)
+            )
         
         if public is True:
             query = query.filter(Agent.public == True)
@@ -56,13 +62,13 @@ class AgentRepo:
                 revision_number=1  # Start with revision 1
             )
             
-            self.db.add(agent)  # Removed await since add() is synchronous
-            await self.db.flush()  # This assigns an ID to the agent
+            self.db.add(agent)
+            await self.db.flush()
             
             # Now create the first revision for this agent
             from src.repos.revision_repo import RevisionRepo
             revision_repo = RevisionRepo(db=self.db, user_id=self.user_id)
-            revision = revision_repo.create(
+            revision = await revision_repo.create(
                 agent_id=str(agent.id),
                 settings_id=settings_id,
                 name="Initial version",
@@ -71,9 +77,9 @@ class AgentRepo:
             
             await self.db.commit()
             await self.db.refresh(agent)
-            return agent
-        except IntegrityError:
-            logger.error(f"Agent with name '{name}' already exists")
+            return await self.get_by_id(str(agent.id))
+        except IntegrityError as e:
+            logger.error(f"IntegrityError: {str(e)}")
             await self.db.rollback()
             raise ValueError(f"Agent with name '{name}' already exists")
         except Exception as e:

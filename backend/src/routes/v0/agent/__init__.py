@@ -45,7 +45,7 @@ async def list_agents(
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
     agents = await agent_repo.get_all_user_agents(public=public)
-    agents = [agent.to_async_dict() for agent in agents]
+    agents = [agent.to_dict(include_setting=True) for agent in agents]
     return JSONResponse(
         content={"agents": agents},
         status_code=status.HTTP_200_OK
@@ -72,16 +72,17 @@ async def create_agent(
     user: ProtectedUser = Depends(verify_credentials), 
     db: AsyncSession = Depends(get_async_db)
 ):
-    agent_repo = AgentRepo(db=db, user_id=user.id)
     try:
+        agent_repo = AgentRepo(db=db, user_id=user.id)
         agent = await agent_repo.create(
             name=agent_data.name,
             description=agent_data.description,
             settings_id=agent_data.settings_id,
             public=agent_data.public
         )
+        agent_data = agent.to_dict()
         return JSONResponse(
-            content={"agent": agent.to_dict()},
+            content={"agent": agent_data},
             status_code=status.HTTP_201_CREATED
         )
         

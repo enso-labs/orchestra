@@ -5,14 +5,14 @@ import { getAuthToken } from './auth';
 // Create an Axios instance
 const apiClient = axios.create({
   baseURL: VITE_API_URL, // Replace with your API base URL
-  timeout: 10000, // Set request timeout
+  timeout: VITE_API_URL.includes('localhost') ? 100000 : 10000, // Set request timeout with longer timeout for localhost
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 // Add retry configuration
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 1;
 const RETRY_DELAY = 1000;
 
 // Add a request interceptor

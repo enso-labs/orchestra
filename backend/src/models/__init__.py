@@ -187,21 +187,6 @@ class Agent(Base):
             
         return result
     
-    def to_async_dict(self) -> dict:
-        result = {
-            "id": str(self.id),
-            "user_id": str(self.user_id),
-            "name": self.name,
-            "slug": self.slug,
-            "description": self.description,
-            "public": self.public,
-            "revision_number": self.revision_number,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
-        }
-            
-        return result
-    
     def to_json(self) -> str:
         return json.dumps(self.to_dict())
 

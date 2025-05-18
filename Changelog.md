@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.1
 
 ### Fixed
+  - bug/314-async-session-no-attr (2025-05-17)
   - bug/311-multiserver-mcp-client-context (2025-05-17)
   - bug/307-db-call-cause-cpu-leak (2025-05-16)
   - bug/294-mem-lead-from-mcp (2025-05-13)
