@@ -102,7 +102,7 @@ class Settings(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Only relationship to Revisions, not directly to Agents
-    revisions = relationship("Revision", back_populates="setting")
+    revisions = relationship("Revision", back_populates="setting", passive_deletes=True)
     
     def to_dict(self) -> dict:
         return {

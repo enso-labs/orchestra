@@ -1,16 +1,21 @@
-from typing import Dict, Any, List, Optional
-from fastapi import status, Depends, APIRouter
+from typing import Dict, Any, List, Literal, Optional
+from fastapi import status, Depends, APIRouter, Query
 from fastapi.responses import JSONResponse
+import httpx
+from langchain_arcade import ArcadeToolManager
 from sqlalchemy.orm import Session
-
-from src.entities.a2a import A2AServer
-from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE, MCP_REQ_BODY_EXAMPLE
-from src.constants import APP_LOG_LEVEL
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.constants.description import Description
+from src.entities import ArcadeConfig
+from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE, MCP_REQ_BODY_EXAMPLE, ARCADE_RESPONSE_EXAMPLE
+from src.constants import APP_LOG_LEVEL, UserTokenKey
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import verify_credentials
-from src.services.db import get_db
+from src.services.db import get_db, get_async_db
 from src.services.mcp import McpService
+from src.utils.logger import logger
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
 TAG = "Tool"
 router = APIRouter(tags=[TAG])
@@ -23,7 +28,6 @@ tool_names = [attach_tool_details({'id':tool.name, 'description':tool.descriptio
 tools_response = {"tools": tool_names}
 @router.get(
     "/tools", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All tools.",
@@ -45,6 +49,76 @@ def list_tools(
     
     
 ################################################################################
+### List Arcade Info
+################################################################################
+@router.get(
+    "/tools/arcade", 
+    description=Description.ARCADE_TOOLS.value,
+    responses={
+        status.HTTP_200_OK: {
+            "description": "All capabilities.",
+            "content": {
+                "application/json": {
+                    "example": ARCADE_RESPONSE_EXAMPLE
+                }
+            }
+        }
+    }
+)
+async def get_arcade_tools(
+    toolkit: str = Query(default="", description="Toolkit to get"),
+    limit: int = Query(default=25, description="Limit the number of tools to get"),
+    offset: int = Query(default=0, description="Offset the number of tools to get"),
+    type: Literal[
+        "static", 
+        # "formatted", 
+        "scheduled"
+    ] = Query(default="static", description="Type of tools to get"),
+    user: ProtectedUser = Depends(verify_credentials),
+    db: AsyncSession = Depends(get_async_db)
+):
+    BASE_URL = "https://api.arcade.dev/v1"
+    try:
+        user_repo = UserRepo(db, user.id)
+        token = await user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
+        if not token:
+            return JSONResponse(
+                content={'error': 'No ARCADE_API_KEY found'},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+            
+        if type == "static":
+            url = f"{BASE_URL}/tools"
+        elif type == "scheduled":
+            url = f"{BASE_URL}/scheduled_tools"
+        elif type == "formatted":
+            url = f"{BASE_URL}/formatted_tools"
+                
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                url,
+                headers={"Authorization": token},
+                params={
+                    "toolkit": toolkit,
+                    "limit": limit,
+                    "offset": offset
+                }
+            )
+        res.raise_for_status()
+        arcade_tools = res.json() 
+        return JSONResponse(
+            content=arcade_tools,
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        logger.exception(f"Error getting arcade tools: {e}")
+        return JSONResponse(
+            content={'error': str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )    
+    
+    
+################################################################################
 ### List MCP Info
 ################################################################################
 from pydantic import BaseModel, Field
@@ -60,7 +134,6 @@ class MCPInfo(BaseModel):
 
 @router.post(
     "/tools/mcp/info", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All tools.",
@@ -76,15 +149,15 @@ async def list_mcp_info(
     config: MCPInfo
 ):
     try:
-        agent_session = McpService()
+        
         mcp_config = config.mcpServers or config.mcp
         if not mcp_config:
             return JSONResponse(
                 content={'error': 'No MCP servers or MCP config found'},
                 status_code=status.HTTP_400_BAD_REQUEST
             )
-        await agent_session.setup(mcp_config)
-        tools = agent_session.tools()
+        mcp_service = McpService(mcp_config)
+        tools = await mcp_service.get_tools()
         return JSONResponse(
             content={'mcp': [
                 {k: v for k, v in tool.model_dump().items() if k not in ['func', 'coroutine']}
@@ -97,8 +170,6 @@ async def list_mcp_info(
             content={'error': str(e)},
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    finally:
-        await agent_session.cleanup()
 
 ################################################################################
 ### List A2A Info
@@ -108,7 +179,6 @@ from src.entities.a2a import A2AServers
 
 @router.post(
     "/tools/a2a/info", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All capabilities.",
@@ -211,7 +281,6 @@ class ToolRequest(BaseModel):
 
 @router.post(
     "/tools/{tool_id}/invoke",
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Tool execution result.",
@@ -252,7 +321,7 @@ async def invoke_tool(
     tool_id: str,
     request: ToolRequest, 
     user: ProtectedUser = Depends(verify_credentials),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Invoke a tool by executing it with the provided arguments.

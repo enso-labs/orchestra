@@ -2,18 +2,15 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import ToolNode
 
 from src.tools.retrieval import retrieval_query, retrieval_add, retrieval_load
-from src.tools.agent import agent_builder, available_tools
 from src.tools.sql import sql_query_read, sql_query_write
 from src.tools.shell import shell_exec
 from src.tools.search import search_engine
 
 tools = [       
-    # available_tools,
     shell_exec,
     retrieval_query,
     retrieval_add,
     retrieval_load,
-    # agent_builder,
     sql_query_read,
     sql_query_write,
     search_engine,
@@ -60,7 +57,3 @@ def attach_tool_details(tool):
     # elif tool['id'] == "get_stock_price" or tool['id'] == "get_stock_info" or tool['id'] == "get_stock_news" or tool['id'] == "get_stock_history" or tool['id'] == "get_stock_dividends" or tool['id'] == "get_stock_actions" or tool['id'] == "get_stock_financials" or tool['id'] == "get_stock_recommendations" or tool['id'] == "get_stock_holders":
     #     tool['tags'] = ["finance"]  
     return tool
-
-def get_a2a_tools(config: dict):
-    
-    return config.get('a2a', {}).values()

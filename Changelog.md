@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.1
 
 ### Fixed
+  - bug/314-async-session-no-attr (2025-05-17)
+  - bug/311-multiserver-mcp-client-context (2025-05-17)
+  - bug/307-db-call-cause-cpu-leak (2025-05-16)
   - bug/294-mem-lead-from-mcp (2025-05-13)
   - bug/280-session-tool-card-decouple (2025-05-04)
   - bug/276-resolve-json-parsing-on-tools-message (2025-05-01)
@@ -32,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed 
   - feat/303-audio-recorder-on-chat-page (2025-05-14)
+  - feat/308-arcade-dev-tools (2025-05-14)
   - feat/295-speech-to-text (2025-05-12)
   - feat/296-update-available-models (2025-05-11)
   - feat/288-add-contact-create-to-oauth (2025-05-05)

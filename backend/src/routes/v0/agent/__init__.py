@@ -1,12 +1,12 @@
 from fastapi import Query, Response, status, Depends, APIRouter, Path
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Optional
 
 from src.repos.agent_repo import AgentRepo
 from src.utils.auth import verify_credentials
-from src.services.db import get_db
+from src.services.db import get_async_db
 from src.models import ProtectedUser
 
 
@@ -27,7 +27,6 @@ class AgentUpdate(BaseModel):
 
 @router.get(
     "/agents", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All agents.",
@@ -39,21 +38,21 @@ class AgentUpdate(BaseModel):
         }
     }
 )
-def list_agents(
+async def list_agents(
     user: ProtectedUser = Depends(verify_credentials), 
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     public: Optional[bool] = Query(default=None, description="Filter by public agents")
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
-    agents = agent_repo.get_all_user_agents(public=public)
+    agents = await agent_repo.get_all_user_agents(public=public)
+    agents = [agent.to_dict(include_setting=True) for agent in agents]
     return JSONResponse(
-        content={"agents": [agent.to_dict() for agent in agents]},
+        content={"agents": agents},
         status_code=status.HTTP_200_OK
     )
 
 @router.post(
     "/agents", 
-    tags=[TAG],
     responses={
         status.HTTP_201_CREATED: {
             "description": "Agent created successfully.",
@@ -68,21 +67,22 @@ def list_agents(
         }
     }
 )
-def create_agent(
+async def create_agent(
     agent_data: AgentCreate,
     user: ProtectedUser = Depends(verify_credentials), 
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
-    agent_repo = AgentRepo(db=db, user_id=user.id)
     try:
-        agent = agent_repo.create(
+        agent_repo = AgentRepo(db=db, user_id=user.id)
+        agent = await agent_repo.create(
             name=agent_data.name,
             description=agent_data.description,
             settings_id=agent_data.settings_id,
             public=agent_data.public
         )
+        agent_data = agent.to_dict()
         return JSONResponse(
-            content={"agent": agent.to_dict()},
+            content={"agent": agent_data},
             status_code=status.HTTP_201_CREATED
         )
         
@@ -114,14 +114,14 @@ def create_agent(
         }
     }
 )
-def get_agent(
+async def get_agent(
     agent_id: str = Path(..., description="The ID of the agent to retrieve"),
     user: ProtectedUser = Depends(verify_credentials), 
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
     
-    agent = agent_repo.get_by_id(agent_id=agent_id)
+    agent = await agent_repo.get_by_id(agent_id=agent_id)
     
     if not agent:
         return JSONResponse(
@@ -136,7 +136,6 @@ def get_agent(
 
 @router.put(
     "/agents/{agent_id}", 
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Agent updated successfully.",
@@ -158,7 +157,7 @@ def update_agent(
     agent_id: str = Path(..., description="The ID of the agent to update"),
     agent_data: AgentUpdate = None,
     user: ProtectedUser = Depends(verify_credentials), 
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
     
@@ -200,15 +199,15 @@ def update_agent(
         }
     }
 )
-def delete_agent(
+async def delete_agent(
     agent_id: str = Path(..., description="The ID of the agent to delete"),
     user: ProtectedUser = Depends(verify_credentials), 
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
     
     try:
-        success = agent_repo.delete(agent_id=agent_id)
+        success = await agent_repo.delete(agent_id=agent_id)
         if not success:
             return JSONResponse(
                 content={"error": "Agent not found"},

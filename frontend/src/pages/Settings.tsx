@@ -11,7 +11,9 @@ const TOKEN_KEYS = [
   'GEMINI_API_KEY',
   'OLLAMA_BASE_URL',
   'SHELL_EXEC_SERVER_URL',
-  'SEARX_SEARCH_HOST_URL'
+  'SEARX_SEARCH_HOST_URL',
+  'ARCADE_API_KEY',
+  'TAVILY_API_KEY'
 ] as const;
 
 // For displaying existing tokens

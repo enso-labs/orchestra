@@ -1,3 +1,6 @@
+import httpx
+
+
 MCP_REQ_BODY_EXAMPLE = {
     "mcp": {
         "enso_mcp": {
@@ -18,14 +21,25 @@ A2A_REQ_BODY_EXAMPLE = {
         }
     }
 }
+
+ARCADE_REQ_BODY_EXAMPLE = {
+    "arcade": {
+        "tools": ["Web.ScrapeUrl"],
+        "toolkits": ["Google"]
+    }
+}
+
+ARCADE_RESPONSE_EXAMPLE = httpx.get('https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json').json()
+
 NEW_THREAD_QUERY_EXAMPLE = {
     "system": "You are a helpful assistant.",
     "query": "What is the capital of France?",
-    "model": "openai-gpt-4o",
+    "model": "openai:gpt-4o",
     "tools": [],
     "images": [],
     **A2A_REQ_BODY_EXAMPLE,
-    **MCP_REQ_BODY_EXAMPLE
+    **MCP_REQ_BODY_EXAMPLE,
+    **ARCADE_REQ_BODY_EXAMPLE
 }
 
 NEW_THREAD_ANSWER_EXAMPLE = {
@@ -62,11 +76,12 @@ NEW_THREAD_ANSWER_EXAMPLE = {
 
 EXISTING_THREAD_QUERY_EXAMPLE = {
     "query": "What about Germany?",
-    "model": "openai-gpt-4o",
+    "model": "openai:gpt-4o",
     "tools": [],
     "images": [],
     **A2A_REQ_BODY_EXAMPLE,
-    **MCP_REQ_BODY_EXAMPLE
+    **MCP_REQ_BODY_EXAMPLE,
+    **ARCADE_REQ_BODY_EXAMPLE
 }
 
 
