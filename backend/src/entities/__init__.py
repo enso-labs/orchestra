@@ -155,3 +155,8 @@ class SearchKwargs(dict):
     fetch_k: int = 2
     lambda_mult: float = 0.5
     filter: str = None
+    
+class StreamContext(BaseModel):
+    msg: AnyMessage | None = None
+    metadata: dict = {}
+    event: str = ''
