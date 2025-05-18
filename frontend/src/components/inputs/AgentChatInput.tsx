@@ -1,19 +1,21 @@
 import { Button } from "@/components/ui/button"
-import { ArrowUp, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
-import useImageHook from "@/hooks/useImageHook"
 import { useChatContext } from "@/context/ChatContext"
 import { useCallback, useRef } from "react"
 import useAppHook from "@/hooks/useAppHook"
+import ChatSubmitButton from "../buttons/ChatSubmitButton"
+import { AudioRecorder } from "./AudioRecorder"
 
 export default function AgentChatInput({ agentId }: { agentId: string }) {
-  const { payload, handleQuery, setPayload, currentModel } = useChatContext();
-  const { isMobile } = useAppHook();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const {
+  const { 
+    payload, 
+    handleQuery, 
+    setPayload, 
+    currentModel, 
+    abortQuery,
     images,
     previewImage,
     previewImageIndex,
@@ -25,7 +27,10 @@ export default function AgentChatInput({ agentId }: { agentId: string }) {
     addImages,
     setImages,
     setPreviewImage,
-  } = useImageHook();
+  } = useChatContext();
+  const { isMobile } = useAppHook();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = useCallback(() => {
 		handleQuery(agentId)
@@ -137,16 +142,13 @@ export default function AgentChatInput({ agentId }: { agentId: string }) {
           )}
           <PresetPopover /> */}
         </div>
-        <MainToolTip content="Send Message" delayDuration={500}>
-          <Button
-            onClick={handleSubmit}
-            disabled={payload.query.trim() === "" && images.length === 0}
-            size="icon"
-            className="w-8 h-8 rounded-full m-1"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
-        </MainToolTip>
+        <div className="flex items-center gap-2 mr-2">
+          <AudioRecorder />
+          <ChatSubmitButton 
+            abortQuery={abortQuery}
+            handleSubmit={handleSubmit}
+          />
+        </div>
       </div>
       <ImagePreviewModal 
         image={previewImage} 
