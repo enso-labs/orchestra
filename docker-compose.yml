@@ -59,13 +59,13 @@ services:
   ## Graphchat
   ##############################################
   graphchat:
-    image: ryaneggz/graphchat:0.0.1-rc104
-    # build:
-    #   context: ./backend
-    #   dockerfile: Dockerfile
+    # image: ryaneggz/graphchat:0.0.1-rc104
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: graphchat
     env_file:
-      - ./backend/.env
+      - ./backend/.env.docker
     ports:
       - "8000:8000"
     depends_on:

@@ -30,14 +30,6 @@ router = APIRouter()
                 "application/json": {
                     "example": Answer.model_json_schema()['examples']['new_thread']
                 },
-                # "text/event-stream": {
-                #     "description": "Server-sent events stream",
-                #     "schema": {
-                #         "type": "string",
-                #         "format": "binary",
-                #         "example": 'data: {"event": "ai_chunk", "content": [{"text": "Hello", "type": "text", "index": 0}]}\n\n'
-                #     }
-                # }
             }
         }
     }
@@ -79,7 +71,7 @@ async def chat_completion(
 @router.post(
     "/threads",
     name="Create New Thread",
-    tags=["Thread"],
+    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from new thread.",
@@ -123,7 +115,7 @@ async def new_thread(
 @router.post(
     "/threads/{thread_id}", 
     name="Query Existing Thread",
-    tags=["Thread"],
+    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from existing thread.",
