@@ -22,7 +22,6 @@ router = APIRouter(tags=[TAG])
 @router.get(
     "/agents/{agent_id}/threads", 
     name="List Agent Threads",
-    tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All existing threads.",
@@ -95,7 +94,7 @@ async def agent_new_thread(
 ):
     try:
         controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)
-        return await controller.async_agent_thread(request=request, query=body.query)
+        return await controller.query_thread_agent(request=request, query=body.query)
     except Exception as e:
         return JSONResponse(
             content={"error": str(e)},
@@ -137,7 +136,7 @@ async def agent_existing_thread(
 ):
     try:
         controller = AgentController(db=db, user_id=user.id, agent_id=agent_id)
-        return await controller.async_agent_thread(request=request, query=body.query, thread_id=thread_id)
+        return await controller.query_thread_agent(request=request, query=body.query, thread_id=thread_id)
     except Exception as e:
         return JSONResponse(
             content={"error": str(e)},

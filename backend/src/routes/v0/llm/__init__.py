@@ -108,7 +108,8 @@ async def new_thread(
     
     try:
         controller = AgentController(db=db, user_id=user.id if user else None)
-        return await controller.anew_thread(request=request, new_thread=body)
+        output_type = request.headers.get("accept", "application/json")
+        return await controller.query_thread(output_type=output_type, thread=body)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=e.response.status_code , detail=str(e))
@@ -151,7 +152,8 @@ async def existing_thread(
 ):
     try:
         controller = AgentController(db=db, user_id=user.id if user else None)
-        return await controller.aexisting_thread(request=request, thread_id=thread_id, existing_thread=body)
+        output_type = request.headers.get("accept", "application/json")
+        return await controller.query_thread(output_type=output_type, thread=body, thread_id=thread_id)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=e.response.status_code , detail=str(e))

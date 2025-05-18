@@ -15,6 +15,8 @@ from src.utils.auth import verify_credentials
 from src.services.db import get_db, get_async_db
 from src.services.mcp import McpService
 from src.utils.logger import logger
+from langchain_mcp_adapters.client import MultiServerMCPClient
+
 TAG = "Tool"
 router = APIRouter(tags=[TAG])
 
@@ -147,15 +149,15 @@ async def list_mcp_info(
     config: MCPInfo
 ):
     try:
-        agent_session = McpService()
+        
         mcp_config = config.mcpServers or config.mcp
         if not mcp_config:
             return JSONResponse(
                 content={'error': 'No MCP servers or MCP config found'},
                 status_code=status.HTTP_400_BAD_REQUEST
             )
-        await agent_session.setup(mcp_config)
-        tools = agent_session.tools()
+        mcp_service = McpService(mcp_config)
+        tools = await mcp_service.get_tools()
         return JSONResponse(
             content={'mcp': [
                 {k: v for k, v in tool.model_dump().items() if k not in ['func', 'coroutine']}
@@ -168,8 +170,6 @@ async def list_mcp_info(
             content={'error': str(e)},
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    finally:
-        await agent_session.cleanup()
 
 ################################################################################
 ### List A2A Info
@@ -321,7 +321,7 @@ async def invoke_tool(
     tool_id: str,
     request: ToolRequest, 
     user: ProtectedUser = Depends(verify_credentials),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Invoke a tool by executing it with the provided arguments.

@@ -1,10 +1,7 @@
 import asyncio
-import json
 from fastapi import HTTPException, status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
-from langgraph.graph import StateGraph
-from langchain_core.messages import AnyMessage,  HumanMessage
-from langgraph.checkpoint.postgres import PostgresSaver
+from langchain_core.messages import AnyMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import StructuredTool
@@ -23,18 +20,10 @@ from src.constants.llm import ModelName
 from src.entities import Answer, Thread, ArcadeConfig
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
-from src.services.db import create_async_pool, get_checkpoint_db
-from pydantic import BaseModel
-from src.utils.format import get_base64_image
+from src.services.db import get_checkpoint_db
 from src.models import Thread as ThreadModel
-
 from src.utils.a2a import A2ACardResolver, a2a_builder
-
-
-class StreamContext(BaseModel):
-    msg: AnyMessage | None = None
-    metadata: dict = {}
-    event: str = ''
+from src.utils.stream import astream_chunks
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None):
@@ -53,100 +42,7 @@ class Agent:
         self.llm: LLMWrapper = None
         self.tools = config.get("tools", [])
         self.checkpointer = None
-        self.agent_session = McpService()
-        
-    def existing_thread(
-        self,
-        query: str, 
-        images: list[str] = None,
-        base64_encode: bool = False
-    ) -> list[AnyMessage]:
-        # Create message content based on whether images are present
-        if images:
-            content = [
-                {"type": "text", "text": query}
-            ]
-            
-            for image in images:
-                if base64_encode:
-                    encoded_image = get_base64_image(image)
-                    if encoded_image:  # Only add if encoding was successful
-                        content.append({
-                            "type": "image_url",
-                            "image_url": {
-                                "url": encoded_image,
-                                "detail": "auto"
-                            }
-                        })
-                else:
-                    content.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image,
-                            "detail": "auto"
-                        }
-                    })
-        else:
-            content = query
-
-        messages = [HumanMessage(content=content)]
-        return messages
-
-    def messages(
-        self,
-        query: str, 
-        images: list[str] = None,
-        base64_encode: bool = False
-    ) -> list[AnyMessage]:
-        # Create message content based on whether images are present
-        if images:
-            content = [
-                {"type": "text", "text": query}
-            ]
-            
-            for image in images:
-                if base64_encode:
-                    encoded_image = get_base64_image(image)
-                    if encoded_image:  # Only add if encoding was successful
-                        content.append({
-                            "type": "image_url",
-                            "image_url": {
-                                "url": encoded_image,
-                                "detail": "auto"
-                            }
-                        })
-                else:
-                    content.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image,
-                            "detail": "auto"
-                        }
-                    })
-        else:
-            content = query
-
-        messages = [HumanMessage(content=content)]
-        return messages
     
-    # async def create_pool(self):
-    #     try:
-    #         if not self.pool:
-    #             # Use create_async_pool instead of the context manager
-    #             # This way the pool stays alive outside this function
-    #             self.pool = create_async_pool()
-    #             await self.pool.open()
-    #     except Exception as e:
-    #         logger.exception(f"Failed to create pool: {str(e)}")
-    #         raise e
-        
-    async def _acheckpointer(self):
-        async with get_checkpoint_db() as checkpointer:
-            await checkpointer.setup()
-            self.checkpointer = checkpointer
-            return checkpointer
-    
-        
     async def list_async_threads(self, page=1, per_page=20):
         try:
             user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order='desc', agent=self.agent_id)
@@ -171,11 +67,7 @@ class Agent:
         except Exception as e:
             logger.exception(f"Failed to list threads: {str(e)}")
             return []
-    
-    async def acheckpoint(self, checkpointer):
-        checkpoint = await checkpointer.aget(self.config)
-        return checkpoint
-    
+
     async def create_user_thread(self):
         try:
             # Quote "user" since it is a reserved keyword in PostgreSQL.
@@ -218,7 +110,8 @@ class Agent:
             logger.error(f"Failed to delete thread: {str(e)}")
             return False
         finally:
-            await self.cleanup()
+            logger.info("Thread deleted")
+            pass
     
     async def abuilder(
         self,
@@ -236,8 +129,8 @@ class Agent:
         system = self.config.get('configurable').get("system", None)
         # Get MCP tools if provided
         if mcp and len(mcp.keys()) > 0:
-            await self.agent_session.setup(mcp)
-            self.tools.extend(self.agent_session.tools())
+            mcp_service = McpService(mcp)
+            self.tools.extend(await mcp_service.get_tools())
             
         if a2a and len(a2a.keys()) > 0:
             # Check if a2a is a dictionary with multiple entries
@@ -304,14 +197,15 @@ class Agent:
                     content=content,
                     status_code=status.HTTP_200_OK
                 )
-            finally:
-                await self.agent_session.cleanup()
+            except Exception as e:
+                logger.exception(f"Error in aprocess: {str(e)}")
+                raise HTTPException(status_code=500, detail=str(e))
             
         # Assume text/event-stream for streaming
         async def astream_generator():
             try:
                 state = {"messages": messages}
-                async for chunk in self.astream_chunks(self.graph, state, self.config):
+                async for chunk in astream_chunks(self.graph, state, self.config):
                     if chunk:
                         logger.info(f'chunk: {str(chunk)}')
                         yield chunk
@@ -327,44 +221,3 @@ class Agent:
             astream_generator(),
             media_type="text/event-stream"
         )
-    
-    # https://langchain-ai.github.io/langgraph/how-tos/streaming/#messages
-    async def astream_chunks(
-        self,
-        graph: StateGraph, 
-        state: dict,
-        config: dict = None,
-        stream_mode: str = "messages"
-    ):
-        try:
-            ctx = StreamContext(msg=None, metadata={}, event=stream_mode)
-            async with get_checkpoint_db() as checkpointer: 
-                graph.checkpointer = checkpointer
-                async for msg, metadata in graph.astream(
-                    state, 
-                    config,
-                    stream_mode=stream_mode
-                ):  
-                    ctx.msg = msg
-                    ctx.metadata = metadata
-                    logger.debug(f'ctx: {str(ctx.model_dump())}')
-                    data = ctx.model_dump()
-                    yield f"data: {json.dumps(data)}\n\n"
-                    await asyncio.sleep(0)
-        except asyncio.CancelledError as e:
-            # Handle client disconnection gracefully
-            logger.info("Client disconnected, cleaning up stream")
-            # Don't re-raise, just exit cleanly
-            raise GeneratorExit
-        except Exception as e:
-            logger.exception("Error in astream_chunks", e)
-            raise HTTPException(status_code=500, detail=str(e))
-            
-
-
-    # Add cleanup method
-    async def cleanup(self):
-        """Cleanup resources when done."""
-        if self.pool and not self.pool.closed:
-            await self.pool.close(timeout=5.0)
-            self.pool = None
