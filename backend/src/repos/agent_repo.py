@@ -43,6 +43,16 @@ class AgentRepo:
     async def create(self, name: str, description: str, settings_id: str, public: bool = False) -> Agent:
         """Create a new agent."""
         try:
+            # Check if agent with same name already exists for this user
+            existing_agent = await self.db.execute(
+                select(Agent).where(
+                    Agent.name == name,
+                    Agent.user_id == self.user_id
+                )
+            )
+            if existing_agent.scalars().first():
+                raise ValueError(f"Agent with name '{name}' already exists")
+
             # Generate a slug for the agent name
             slug = Agent.generate_slug(name)
             
@@ -56,13 +66,13 @@ class AgentRepo:
                 revision_number=1  # Start with revision 1
             )
             
-            self.db.add(agent)  # Removed await since add() is synchronous
-            await self.db.flush()  # This assigns an ID to the agent
+            self.db.add(agent)
+            await self.db.flush()
             
             # Now create the first revision for this agent
             from src.repos.revision_repo import RevisionRepo
             revision_repo = RevisionRepo(db=self.db, user_id=self.user_id)
-            revision = revision_repo.create(
+            revision = await revision_repo.create(
                 agent_id=str(agent.id),
                 settings_id=settings_id,
                 name="Initial version",
@@ -72,8 +82,8 @@ class AgentRepo:
             await self.db.commit()
             await self.db.refresh(agent)
             return agent
-        except IntegrityError:
-            logger.error(f"Agent with name '{name}' already exists")
+        except IntegrityError as e:
+            logger.error(f"IntegrityError: {str(e)}")
             await self.db.rollback()
             raise ValueError(f"Agent with name '{name}' already exists")
         except Exception as e:
