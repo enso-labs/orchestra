@@ -100,6 +100,13 @@ export default function useChatHook() {
         }
     }
 
+    const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		const textarea = e.target
+		textarea.style.height = "auto"
+		textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
+		setPayload({ ...payload, query: e.target.value })
+	}
+
     const handleToolCallChunk = (chunk: string) => {
         toolCallRef.current += chunk;
         setToolCall({
@@ -398,5 +405,6 @@ export default function useChatHook() {
         abortQuery,
         controller,
         setController,
+        handleTextareaResize,
     };
 }

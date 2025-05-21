@@ -16,7 +16,7 @@ const INIT_IMAGE_STATE = {
 }
 
 export default function useImageHook() {
-	const { payload, setPayload } = useChatContext();
+	const { setPayload } = useChatContext();
 	const [images, setImages] = useState<File[]>(INIT_IMAGE_STATE.images)
 	const [previewImage, setPreviewImage] = useState<File | null>(INIT_IMAGE_STATE.previewImage)
 	const [previewImageIndex, setPreviewImageIndex] = useState<number>(INIT_IMAGE_STATE.previewImageIndex)
@@ -89,13 +89,6 @@ export default function useImageHook() {
 		}))
 	}, [setPayload])
 
-	const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		const textarea = e.target
-		textarea.style.height = "auto"
-		textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
-		setPayload({ ...payload, query: e.target.value })
-	}
-
 	const handlePaste = useCallback(
 		(e: React.ClipboardEvent) => {
 			const items = e.clipboardData?.items
@@ -147,7 +140,6 @@ export default function useImageHook() {
 		uploadImages,
 		addImages,
 		setImages,
-		handleTextareaResize,
 		handlePaste,
 		handleDrop,
 		removeImage,
