@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { ToolsTab } from "./tools-tab"
 import TabContentInfo from "./tabs/tab-content-info"
-
+import TabContentTools from "./tabs/tab-content-tools"
 export default function ConfigDrawer() {
   const [open, setOpen] = useState(false)
 
@@ -66,7 +66,7 @@ export default function ConfigDrawer() {
               </TabsContent>
 
               <TabsContent value="tools" className="mt-4">
-                <ToolsTab />
+                <TabContentTools />
               </TabsContent>
 
               <TabsContent value="mcp" className="mt-4">
