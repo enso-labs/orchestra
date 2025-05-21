@@ -167,18 +167,18 @@ export function ToolsTab({ category }: ToolsTabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="sticky top-0 bg-black pt-2 pb-4 z-10">
+      <div className="sticky top-0 bg-background pt-2 pb-4 z-10">
         <div className="flex items-center space-x-2 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-neutral-500" />
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search tools..."
-              className="pl-8 bg-neutral-800 border-neutral-700"
+              className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon" className="bg-neutral-800 border-neutral-700">
+          <Button variant="outline" size="icon">
             <Filter className="h-4 w-4" />
           </Button>
         </div>
@@ -189,11 +189,7 @@ export function ToolsTab({ category }: ToolsTabProps) {
               <Badge
                 key={cat}
                 variant={selectedCategory === cat ? "default" : "outline"}
-                className={`cursor-pointer ${
-                  selectedCategory === cat
-                    ? "bg-neutral-300 text-black hover:bg-neutral-200"
-                    : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700"
-                }`}
+                className="cursor-pointer"
                 onClick={() => setSelectedCategory(cat)}
               >
                 {cat}
@@ -205,15 +201,15 @@ export function ToolsTab({ category }: ToolsTabProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {visibleTools.map((tool) => (
-          <Card key={tool.id} className="bg-neutral-800 border-neutral-700">
+          <Card key={tool.id}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-neutral-200">{tool.name}</CardTitle>
-              <CardDescription className="text-neutral-400">{tool.description}</CardDescription>
+              <CardTitle>{tool.name}</CardTitle>
+              <CardDescription>{tool.description}</CardDescription>
             </CardHeader>
             <CardContent className="pb-2">
               <div className="flex flex-wrap gap-2">
                 {tool.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="bg-neutral-900 border-neutral-700">
+                  <Badge key={tag} variant="outline">
                     {tag}
                   </Badge>
                 ))}
@@ -223,7 +219,7 @@ export function ToolsTab({ category }: ToolsTabProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full bg-neutral-700 hover:bg-neutral-600 border-neutral-600"
+                className="w-full"
               >
                 Open Tool
               </Button>

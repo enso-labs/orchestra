@@ -23,7 +23,7 @@ function SelectModel() {
 
 	return (
 		<Select value={currentModel} onValueChange={handleModelChange}>
-			<SelectTrigger className="w-[200px]">
+			<SelectTrigger>
 					<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
 			<SelectContent>
