@@ -6,6 +6,7 @@ import { ToolsTab } from "./tools-tab"
 import TabContentInfo from "./tabs/tab-content-info"
 import TabContentTools from "./tabs/tab-content-tools"
 import TabContentA2A from "./tabs/tab-content-a2a"
+import TabContentMCP from "./tabs/tab-content-mcp"
 
 export default function ConfigDrawer() {
   const [open, setOpen] = useState(false)
@@ -72,7 +73,7 @@ export default function ConfigDrawer() {
               </TabsContent>
 
               <TabsContent value="mcp" className="mt-4">
-                <ToolsTab category="MCP" />
+                <TabContentMCP />
               </TabsContent>
 
               <TabsContent value="a2a" className="mt-4">
