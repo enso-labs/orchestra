@@ -15,6 +15,7 @@ import ModalMcp from "../modals/ModalMcp"
 import ToolSelector from "../ToolSelector/ToolSelector"
 import { AudioRecorder } from "./AudioRecorder"
 import ChatSubmitButton from "../buttons/ChatSubmitButton"
+import ConfigDrawer from "../drawers/ConfigDrawer"
 
 export default function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -160,7 +161,7 @@ export default function ChatInput() {
               )}
             </>
           )}
-          {getAuthToken() && (
+          {/* {getAuthToken() && (
             <PresetPopover />
           )}
           <SearchButton />
@@ -169,7 +170,8 @@ export default function ChatInput() {
           )}
           {currentModel?.metadata?.tool_calling && (
             <ModalMcp />
-          )}
+          )} */}
+          <ConfigDrawer />
         </div>
         <div className="flex items-center gap-2 mr-2">
           <AudioRecorder />
