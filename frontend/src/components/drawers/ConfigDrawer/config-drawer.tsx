@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { ToolsTab } from "./tools-tab"
 import TabContentInfo from "./tabs/tab-content-info"
 import TabContentTools from "./tabs/tab-content-tools"
+import TabContentA2A from "./tabs/tab-content-a2a"
+
 export default function ConfigDrawer() {
   const [open, setOpen] = useState(false)
 
@@ -74,7 +76,7 @@ export default function ConfigDrawer() {
               </TabsContent>
 
               <TabsContent value="a2a" className="mt-4">
-                <ToolsTab category="A2A" />
+                <TabContentA2A />
               </TabsContent>
 
               <TabsContent value="arcade" className="mt-4">
