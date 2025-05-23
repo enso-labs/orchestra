@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react"
-import { Search, Filter } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { listToolsArcade } from "@/services/toolService"
 import { useChatContext } from "@/context/ChatContext"
@@ -45,7 +43,7 @@ const CATEGORIES = [
 const STORAGE_KEY = 'enso:chat:payload:arcade'
 
 export function TabContentArcade({ category }: ToolsTabProps) {
-	const { payload, setPayload } = useChatContext();
+	const { setPayload } = useChatContext();
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>(category || "All")
   const [visibleTools, setVisibleTools] = useState<Tool[]>([])
@@ -227,7 +225,7 @@ export function TabContentArcade({ category }: ToolsTabProps) {
   return (
     <div className="space-y-4">
       <div className="sticky top-0 bg-background pt-2 pb-1 z-10">
-        <div className="flex items-center space-x-2 mb-4">
+        {/* <div className="flex items-center space-x-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -244,7 +242,7 @@ export function TabContentArcade({ category }: ToolsTabProps) {
           >
             <Search className="h-4 w-4" />
           </Button>
-        </div>
+        </div> */}
 
         {!category && (
           <div className="flex items-center justify-between">

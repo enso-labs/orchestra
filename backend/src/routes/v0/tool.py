@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.constants.description import Description
 from src.entities import ArcadeConfig
 from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE, MCP_REQ_BODY_EXAMPLE, ARCADE_RESPONSE_EXAMPLE
-from src.constants import APP_LOG_LEVEL, UserTokenKey
+from src.constants import APP_LOG_LEVEL, ARCADE_API_KEY, UserTokenKey
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import verify_credentials
@@ -67,6 +67,7 @@ def list_tools(
 )
 async def get_arcade_tools(
     toolkit: str = Query(default="", description="Toolkit to get"),
+    name: str = Query(default="", description="Name of the tool to get"),
     limit: int = Query(default=25, description="Limit the number of tools to get"),
     offset: int = Query(default=0, description="Offset the number of tools to get"),
     type: Literal[
@@ -74,18 +75,18 @@ async def get_arcade_tools(
         # "formatted", 
         "scheduled"
     ] = Query(default="static", description="Type of tools to get"),
-    user: ProtectedUser = Depends(verify_credentials),
+    # user: ProtectedUser = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     BASE_URL = "https://api.arcade.dev/v1"
     try:
-        user_repo = UserRepo(db, user.id)
-        token = await user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
-        if not token:
-            return JSONResponse(
-                content={'error': 'No ARCADE_API_KEY found'},
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
+        # user_repo = UserRepo(db, user.id)
+        # token = await user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
+        # if not token:
+        #     return JSONResponse(
+        #         content={'error': 'No ARCADE_API_KEY found'},
+        #         status_code=status.HTTP_400_BAD_REQUEST
+        #     )
             
         if type == "static":
             url = f"{BASE_URL}/tools"
@@ -97,15 +98,15 @@ async def get_arcade_tools(
         async with httpx.AsyncClient() as client:
             res = await client.get(
                 url,
-                headers={"Authorization": token},
+                headers={"Authorization": ARCADE_API_KEY},
                 params={
                     "toolkit": toolkit,
                     "limit": limit,
                     "offset": offset
                 }
             )
-        res.raise_for_status()
-        arcade_tools = res.json() 
+            res.raise_for_status()
+            arcade_tools = res.json() 
         return JSONResponse(
             content=arcade_tools,
             status_code=status.HTTP_200_OK
@@ -116,6 +117,53 @@ async def get_arcade_tools(
             content={'error': str(e)},
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )    
+        
+@router.get(
+    "/tools/arcade/{name}", 
+    description=Description.ARCADE_TOOL.value,
+    responses={
+        status.HTTP_200_OK: {
+            "description": "All capabilities.",
+            "content": {
+                "application/json": {
+                    "example": ARCADE_RESPONSE_EXAMPLE['items'][0]
+                }
+            }
+        }
+    }
+)
+async def get_arcade_tool_spec(
+    name: str,
+    # user: ProtectedUser = Depends(verify_credentials),
+    # db: AsyncSession = Depends(get_async_db)
+):
+    BASE_URL = "https://api.arcade.dev/v1"
+    try:
+        # user_repo = UserRepo(db, user.id)
+        # token = await user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
+        # if not token:
+        #     return JSONResponse(
+        #         content={'error': 'No ARCADE_API_KEY found'},
+        #         status_code=status.HTTP_400_BAD_REQUEST
+        #     )
+
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"{BASE_URL}/tools/{name}",
+                headers={"Authorization": ARCADE_API_KEY},
+            )
+            res.raise_for_status()
+            arcade_tools = res.json() 
+        return JSONResponse(
+            content=arcade_tools,
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        logger.exception(f"Error getting arcade tools: {e}")
+        return JSONResponse(
+            content={'error': str(e)},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )  
     
     
 ################################################################################

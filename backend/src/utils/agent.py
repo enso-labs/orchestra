@@ -13,7 +13,7 @@ from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
-from src.constants import APP_LOG_LEVEL, UserTokenKey
+from src.constants import APP_LOG_LEVEL, ARCADE_API_KEY, UserTokenKey
 from src.tools import dynamic_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
@@ -160,10 +160,10 @@ class Agent:
                     self.tools.append(tool)
                     
         if arcade and (len(arcade.tools) > 0 or len(arcade.toolkits) > 0):
-            token = await self.user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
-            if not token:
-                raise HTTPException(status_code=400, detail="No ARCADE_API_KEY found")
-            manager = ArcadeToolManager(api_key=token)
+            # token = await self.user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
+            # if not token:
+            #     raise HTTPException(status_code=400, detail="No ARCADE_API_KEY found")
+            manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
             tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
             self.tools.extend(tools)
             
