@@ -3,21 +3,21 @@ import { useChatContext } from "../context/ChatContext"
 import { ThreadHistoryDrawer } from "@/components/drawers/ThreadHistoryDrawer"
 import { useEffect, useRef, useState } from "react"
 import { ChatNav } from "@/components/nav/ChatNav"
-import SystemMessageCard from "@/components/cards/SystemMessageCard"
+// import SystemMessageCard from "@/components/cards/SystemMessageCard"
 import { useParams } from "react-router-dom"
 import AgentChatInput from "@/components/inputs/AgentChatInput"
 import ChatMessages from "@/components/lists/ChatMessages"
 import { useToolContext } from "@/context/ToolContext"
 
 
-interface ChatMessage {
-  role: string
-  content: string
-  type: string
-  name?: string
-  status?: string
-  tool_calls?: any[]
-}
+// interface ChatMessage {
+//   role: string
+//   content: string
+//   type: string
+//   name?: string
+//   status?: string
+//   tool_calls?: any[]
+// }
 
 export default function Chat() {
 	const { agentId } = useParams();
@@ -26,9 +26,9 @@ export default function Chat() {
   } = useToolContext();
   const {
     messages,
-    payload,
+    // payload,
     useGetHistoryEffect,
-    currentModel
+    // currentModel
   } = useChatContext()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
