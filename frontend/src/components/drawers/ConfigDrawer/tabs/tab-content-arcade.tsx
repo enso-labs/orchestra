@@ -21,7 +21,26 @@ type ToolsTabProps = {
   onToolToggle?: (toolId: string, isEnabled: boolean) => void
 }
 
-const CATEGORIES = ["All", "Text", "Image", "Code", "Data", "Audio", "MCP", "A2A", "Arcade"]
+const CATEGORIES = [
+	"All", 
+	"Asana", 
+	"CodeSandbox", 
+	"Dropbox", 
+	"Github", 
+	"Google", 
+	"Hubspot", 
+	"Linkedin", 
+	"Math",
+	"Microsoft",
+	"Notion",
+	"Reddit",
+	"Search",
+	"Slack",
+	"Spotify",
+	"Web",
+	"X",
+	"Zoom"
+]
 
 const STORAGE_KEY = 'enso:chat:payload:arcade'
 
@@ -30,7 +49,7 @@ export function TabContentArcade({ category }: ToolsTabProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>(category || "All")
   const [visibleTools, setVisibleTools] = useState<Tool[]>([])
-  const [page, setPage] = useState(1)
+  const [, setPage] = useState(1)
   const [allTools, setAllTools] = useState<Tool[]>([])
   const [hasMore, setHasMore] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
@@ -136,11 +155,16 @@ export function TabContentArcade({ category }: ToolsTabProps) {
     const storedArcade = localStorage.getItem(STORAGE_KEY)
     if (storedArcade) {
       try {
-        const arcadeTools = JSON.parse(storedArcade)
-        setEnabledTools(new Set(arcadeTools))
+        const arcadeData = JSON.parse(storedArcade)
+        // Handle both old and new storage formats
+        const tools = Array.isArray(arcadeData) ? arcadeData : arcadeData.tools || []
+        setEnabledTools(new Set(tools))
         setPayload((prev: any) => ({
           ...prev,
-          arcade: arcadeTools
+          arcade: {
+            tools: tools,
+            toolkit: arcadeData.toolkit || []
+          }
         }))
       } catch (error) {
         console.error('Error loading arcade tools from localStorage:', error)
@@ -161,19 +185,17 @@ export function TabContentArcade({ category }: ToolsTabProps) {
 
     // Update payload.arcade list and localStorage
     setPayload((prev: any) => {
-      const currentArcade = prev.arcade || []
-      let newArcade: string[]
+      const currentArcade = prev.arcade || { tools: [], toolkit: [] }
+      let newArcade = { ...currentArcade }
       
       if (isEnabled) {
         // Add tool if not already in the list
-        if (!currentArcade.includes(toolId)) {
-          newArcade = [...currentArcade, toolId]
-        } else {
-          newArcade = currentArcade
+        if (!currentArcade.tools.includes(toolId)) {
+          newArcade.tools = [...currentArcade.tools, toolId]
         }
       } else {
         // Remove tool from the list
-        newArcade = currentArcade.filter((id: string) => id !== toolId)
+        newArcade.tools = currentArcade.tools.filter((id: string) => id !== toolId)
       }
 
       // Update localStorage
@@ -190,9 +212,9 @@ export function TabContentArcade({ category }: ToolsTabProps) {
     setEnabledTools(new Set())
     setPayload((prev: any) => ({
       ...prev,
-      arcade: []
+      arcade: { tools: [], toolkit: [] }
     }))
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tools: [], toolkit: [] }))
   }
 
   return (
@@ -220,7 +242,7 @@ export function TabContentArcade({ category }: ToolsTabProps) {
 
         {!category && (
           <div className="flex items-center justify-between">
-            {/* <div className="flex overflow-x-auto pb-2 space-x-2 no-scrollbar">
+            <div className="flex overflow-x-auto pb-2 space-x-2 no-scrollbar">
               {CATEGORIES.map((cat) => (
                 <Badge
                   key={cat}
@@ -231,7 +253,7 @@ export function TabContentArcade({ category }: ToolsTabProps) {
                   {cat}
                 </Badge>
               ))}
-            </div> */}
+            </div>
             {enabledTools.size > 0 && (
               <Button
                 variant="ghost"

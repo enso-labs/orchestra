@@ -34,7 +34,10 @@ const initChatState = {
         model: '',
         mcp: null,
         a2a: null,
-        arcade: [] as string[]
+        arcade: {
+            tools: [] as string[],
+            toolkit: [] as string[],
+        }
     },
     history: {
         threads: [],
