@@ -163,7 +163,7 @@ function TabContentMCP() {
               className={`${!isJsonValid ? 'border border-red-400 bg-red-50/10' : ''}`}
               style={{
                 fontFamily: '"JetBrains Mono", monospace',
-                fontSize: 14,
+                fontSize: 12,
                 borderRadius: '0.375rem',
                 minHeight: '200px',
               }}
@@ -259,7 +259,7 @@ function TabContentMCP() {
                 className={`${!isJsonValid ? 'border border-red-400 bg-red-50/10' : ''}`}
                 style={{
                   fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: 14,
+                  fontSize: 12,
                   borderRadius: '0.375rem',
                   minHeight: '100%',
                 }}

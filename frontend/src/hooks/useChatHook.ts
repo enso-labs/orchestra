@@ -33,7 +33,8 @@ const initChatState = {
         visualize: false,
         model: '',
         mcp: null,
-        a2a: null
+        a2a: null,
+        arcade: [] as string[]
     },
     history: {
         threads: [],

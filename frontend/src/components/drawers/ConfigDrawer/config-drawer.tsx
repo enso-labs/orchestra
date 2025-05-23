@@ -2,11 +2,11 @@ import { useState } from "react"
 import { Settings, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { ToolsTab } from "./tools-tab"
 import TabContentInfo from "./tabs/tab-content-info"
 import TabContentTools from "./tabs/tab-content-tools"
 import TabContentA2A from "./tabs/tab-content-a2a"
 import TabContentMCP from "./tabs/tab-content-mcp"
+import { TabContentArcade } from "./tabs/tab-content-arcade"
 
 export default function ConfigDrawer() {
   const [open, setOpen] = useState(false)
@@ -29,7 +29,7 @@ export default function ConfigDrawer() {
       />
 
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-md transform transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed top-0 right-0 z-50 h-full w-full max-w-3xl transform transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="h-full overflow-y-auto bg-background border-l border-border">
           <div className="flex items-center justify-between p-4 border-b border-border">
@@ -81,7 +81,7 @@ export default function ConfigDrawer() {
               </TabsContent>
 
               <TabsContent value="arcade" className="mt-4">
-                <ToolsTab category="Arcade" />
+                <TabContentArcade />
               </TabsContent>
             </Tabs>
           </div>
