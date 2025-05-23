@@ -20,24 +20,24 @@ type ToolsTabProps = {
 }
 
 const CATEGORIES = [
-	"All", 
-	"Asana", 
+	// "All", 
+	// "Asana", 
 	"CodeSandbox", 
-	"Dropbox", 
-	"Github", 
-	"Google", 
-	"Hubspot", 
-	"Linkedin", 
+	// "Dropbox", 
+	// "Github", 
+	// "Google", 
+	// "Hubspot", 
+	// "Linkedin", 
 	"Math",
-	"Microsoft",
-	"Notion",
-	"Reddit",
+	// "Microsoft",
+	// "Notion",
+	// "Reddit",
 	"Search",
-	"Slack",
-	"Spotify",
+	// "Slack",
+	// "Spotify",
 	"Web",
-	"X",
-	"Zoom"
+	// "X",
+	// "Zoom"
 ]
 
 const STORAGE_KEY = 'enso:chat:payload:arcade'

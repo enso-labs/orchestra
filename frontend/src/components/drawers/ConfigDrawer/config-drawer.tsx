@@ -46,11 +46,11 @@ export default function ConfigDrawer() {
 
           <div className="p-4">
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid grid-cols-4">
+              <TabsList className="grid grid-cols-5">
                 <TabsTrigger value="info">
                   <span className="md:inline">Info</span>
                 </TabsTrigger>
-                <TabsTrigger value="arcade">
+                <TabsTrigger value="tools">
                   <span className="md:inline">Tools</span>
                 </TabsTrigger>
                 <TabsTrigger value="mcp">
@@ -59,9 +59,9 @@ export default function ConfigDrawer() {
                 <TabsTrigger value="a2a">
                   <span className="md:inline">A2A</span>
                 </TabsTrigger>
-                {/* <TabsTrigger value="arcade">
+                <TabsTrigger value="arcade">
                   <span className="md:inline">Arcade</span>
-                </TabsTrigger> */}
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="mt-4">

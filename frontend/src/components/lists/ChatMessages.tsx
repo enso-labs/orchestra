@@ -102,8 +102,8 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 							</div>
 						</div>
 					)
-				} else if (message.role === "system" || message.type === "system") {
-					return <SystemMessageCard key={index} content={message.content} />
+				// } else if (message.role === "system" || message.type === "system") {
+				// 	return <SystemMessageCard key={index} content={message.content} />
 				} else if (
 					message.role === "assistant" ||
 					message.type === "assistant" ||
