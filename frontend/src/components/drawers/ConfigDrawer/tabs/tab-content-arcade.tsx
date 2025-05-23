@@ -217,6 +217,13 @@ export function TabContentArcade({ category }: ToolsTabProps) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ tools: [], toolkit: [] }))
   }
 
+  // Update the category click handler
+  const handleCategoryClick = (cat: string) => {
+    setSelectedCategory(cat)
+    setSearchQuery(cat) // Set the search query to the category name
+    fetchTools(1) // Trigger the search immediately
+  }
+
   return (
     <div className="space-y-4">
       <div className="sticky top-0 bg-background pt-2 pb-1 z-10">
@@ -234,7 +241,6 @@ export function TabContentArcade({ category }: ToolsTabProps) {
             variant="outline" 
             size="icon"
             onClick={() => fetchTools(1)}
-            // disabled={enabledTools.size === 0}
           >
             <Search className="h-4 w-4" />
           </Button>
@@ -248,7 +254,7 @@ export function TabContentArcade({ category }: ToolsTabProps) {
                   key={cat}
                   variant={selectedCategory === cat ? "default" : "outline"}
                   className="cursor-pointer"
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => handleCategoryClick(cat)}
                 >
                   {cat}
                 </Badge>
