@@ -25,7 +25,7 @@ const CATEGORIES = [
 	"CodeSandbox", 
 	// "Dropbox", 
 	"Github", 
-	// "Google", 
+	"Google", 
 	// "Hubspot", 
 	// "Linkedin", 
 	"Math",
