@@ -25,7 +25,6 @@ from src.services.db import get_checkpoint_db
 from src.models import Thread as ThreadModel
 from src.utils.a2a import A2ACardResolver, a2a_builder
 from src.utils.stream import astream_chunks
-from src.flows.authorize import authorize_builder
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None):
@@ -44,7 +43,6 @@ class Agent:
         self.llm: LLMWrapper = None
         self.tools = config.get("tools", [])
         self.checkpointer = None
-        self.tool_manager = None
     
     async def list_async_threads(self, page=1, per_page=20):
         try:
@@ -166,14 +164,12 @@ class Agent:
             # token = await self.user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
             # if not token:
             #     raise HTTPException(status_code=400, detail="No ARCADE_API_KEY found")
-            self.tool_manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
-            # self.tool_manager.to_langchain(use_interrupts=True)
-            tools = self.tool_manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
+            manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
+            tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
             self.tools.extend(tools)
             
         if self.tools:
-            graph = authorize_builder(tools=self.tools).compile(checkpointer=self.checkpointer)
-            # graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
+            graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
         else:
             builder = chatbot_builder(config={"model": self.llm.model, "system": system})
             graph = builder.compile(checkpointer=self.checkpointer)
@@ -191,10 +187,6 @@ class Agent:
     ) -> Response:
         if self.user_id:
             await self.create_user_thread()
-            
-        self.config["configurable"]["tools"] = self.tools
-        self.config["configurable"]["model"] = self.llm.model
-        self.config["configurable"]["tool_manager"] = self.tool_manager
         if content_type == "application/json":
             try:
                 invoke = await self.graph.ainvoke({"messages": messages}, self.config)
@@ -222,7 +214,6 @@ class Agent:
                 logger.info("Stream cancelled")
                 raise GeneratorExit
             except NodeInterrupt as exc:
-                logger.info(f"Authorization required: {str(exc)}")
                 raise Exception("Authorization required: " + str(exc))
             except Exception as e:
                 logger.exception(f"Error in astream_generator: {str(e)}")
