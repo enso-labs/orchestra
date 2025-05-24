@@ -24,7 +24,7 @@ const CATEGORIES = [
 	// "Asana", 
 	"CodeSandbox", 
 	// "Dropbox", 
-	"Github", 
+	// "Github", 
 	// "Google", 
 	// "Hubspot", 
 	// "Linkedin", 
