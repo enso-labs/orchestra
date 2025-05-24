@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/319-integrate-langconnect (2025-05-24)
   - feat/316-select-arcade-tools-from-ui (2025-05-20)
   - feat/303-audio-recorder-on-chat-page (2025-05-14)
   - feat/308-arcade-dev-tools (2025-05-14)
