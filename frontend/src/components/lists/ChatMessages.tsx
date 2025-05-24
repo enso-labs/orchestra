@@ -2,7 +2,7 @@ import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import MarkdownCard from "../cards/MarkdownCard";
 import { Wrench, Loader2 } from "lucide-react";
-import SystemMessageCard from "../cards/SystemMessageCard";
+// import SystemMessageCard from "../cards/SystemMessageCard";
 import { useEffect, useState } from "react";
 import SearchEngineTool from "../tools/SearchEngine";
 import DefaultTool from "../tools/Default";
@@ -102,8 +102,8 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 							</div>
 						</div>
 					)
-				} else if (message.role === "system" || message.type === "system") {
-					return <SystemMessageCard key={index} content={message.content} />
+				// } else if (message.role === "system" || message.type === "system") {
+				// 	return <SystemMessageCard key={index} content={message.content} />
 				} else if (
 					message.role === "assistant" ||
 					message.type === "assistant" ||

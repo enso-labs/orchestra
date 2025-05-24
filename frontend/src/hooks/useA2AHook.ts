@@ -130,7 +130,7 @@ export default function useA2AHook() {
 	const useA2AInfoEffect = () => {
 		// Fetch MCP info when entering MCP editor mode
 		useEffect(() => {
-			if (isAddingA2A && hasSavedA2A) {
+			if (hasSavedA2A) {
 				fetchA2AInfo();
 			}
 		}, [isAddingA2A, hasSavedA2A, fetchA2AInfo]);

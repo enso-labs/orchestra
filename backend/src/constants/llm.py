@@ -11,8 +11,10 @@ class ModelName(str, Enum):
     OPENAI_REASONING_O3 = "openai:o3"
     OPENAI_REASONING_O4_MINI = "openai:o4-mini"
     OPENAI_EMBEDDING_LARGE = "openai:text-embedding-3-large"
-    ANTHROPIC_CLAUDE_3_5_SONNET = "anthropic:claude-3-5-sonnet-20240620"
+    ANTHROPIC_CLAUDE_3_5_SONNET = "anthropic:claude-3-5-sonnet-latest"
     ANTHROPIC_CLAUDE_3_7_SONNET_LATEST = "anthropic:claude-3-7-sonnet-latest"
+    ANTHROPIC_CLAUDE_4_SONNET = "anthropic:claude-sonnet-4-20250514"
+    ANTHROPIC_CLAUDE_4_OPUS = "anthropic:claude-opus-4-20250514"
     OLLAMA_LLAMA_3_2_VISION = "ollama:llama3.2-vision"
     OLLAMA_DEEPSEEK_R1_8B = "ollama:deepseek-r1:8b"
     OLLAMA_DEEPSEEK_R1_14B = "ollama:deepseek-r1:14b"
@@ -123,6 +125,30 @@ MODEL_CONFIG = [
     {
         "id": ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         "label": "Claude 3.7 Sonnet",
+        "provider": "anthropic",
+        "metadata": {
+            "system_message": True,
+            "reasoning": True,
+            "tool_calling": True,
+            "multimodal": True,
+            "embedding": False,
+        }
+    },
+    {
+        "id": ModelName.ANTHROPIC_CLAUDE_4_SONNET,
+        "label": "Claude 4 Sonnet",
+        "provider": "anthropic",
+        "metadata": {
+            "system_message": True,
+            "reasoning": True,
+            "tool_calling": True,
+            "multimodal": True,
+            "embedding": False,
+        }
+    },
+    {
+        "id": ModelName.ANTHROPIC_CLAUDE_4_OPUS,
+        "label": "Claude 4 Opus",
         "provider": "anthropic",
         "metadata": {
             "system_message": True,

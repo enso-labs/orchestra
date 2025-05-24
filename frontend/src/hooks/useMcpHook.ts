@@ -155,7 +155,7 @@ export default function useMcpHook() {
 	const useMCPInfoEffect = () => {
 		// Fetch MCP info when entering MCP editor mode
 		useEffect(() => {
-			if (isAddingMCP && hasSavedMCP) {
+			if (hasSavedMCP) {
 				fetchMCPInfo();
 			}
 		}, [isAddingMCP, hasSavedMCP, fetchMCPInfo]);

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useChatContext } from "@/context/ChatContext"
 import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
 
-export default function SystemMessage({ content }: { content: string }) {
+export default function SystemMessage({ content, rowCount = 6 }: { content: string, rowCount?: number }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [localContent, setLocalContent] = useState(content)
   const { payload, setPayload } = useChatContext()
@@ -119,7 +119,7 @@ export default function SystemMessage({ content }: { content: string }) {
       <div className={`text-sm ${!isExpanded ? "line-clamp-2" : ""}`}>
         <textarea
           className="w-full resize-none bg-transparent focus:outline-none"
-          rows={isExpanded ? 12 : 1}
+          rows={isExpanded ? rowCount*2 : rowCount}
           value={localContent}
           onChange={(e) => handleContentChange(e.target.value)}
         />

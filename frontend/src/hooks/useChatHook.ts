@@ -33,7 +33,11 @@ const initChatState = {
         visualize: false,
         model: '',
         mcp: null,
-        a2a: null
+        a2a: null,
+        arcade: {
+            tools: [] as string[],
+            toolkit: [] as string[],
+        }
     },
     history: {
         threads: [],
@@ -99,6 +103,13 @@ export default function useChatHook() {
             setController(null);
         }
     }
+
+    const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		const textarea = e.target
+		textarea.style.height = "auto"
+		textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
+		setPayload({ ...payload, query: e.target.value })
+	}
 
     const handleToolCallChunk = (chunk: string) => {
         toolCallRef.current += chunk;
@@ -398,5 +409,6 @@ export default function useChatHook() {
         abortQuery,
         controller,
         setController,
+        handleTextareaResize,
     };
 }

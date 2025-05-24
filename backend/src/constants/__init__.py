@@ -40,7 +40,7 @@ CONNECTION_POOL_KWARGS = {
 }
 
 class UserTokenKey(Enum):
-    ARCADE_API_KEY = "ARCADE_API_KEY"
+    
     ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"
     OPENAI_API_KEY = "OPENAI_API_KEY"
     GROQ_API_KEY = "GROQ_API_KEY"
@@ -49,6 +49,7 @@ class UserTokenKey(Enum):
     ## TOOLS
     SHELL_EXEC_SERVER_URL = "SHELL_EXEC_SERVER_URL"
     SEARX_SEARCH_HOST_URL = "SEARX_SEARCH_HOST_URL"
+    ARCADE_API_KEY = "ARCADE_API_KEY"
     @classmethod
     def values(cls) -> list[str]:
         return [key.value for key in cls]
