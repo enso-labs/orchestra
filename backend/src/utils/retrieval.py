@@ -3,6 +3,26 @@ from enum import Enum
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_core.documents import Document
 from src.constants import DEFAULT_VECTOR_STORE_PATH
+from fastapi import Request
+from src.utils.logger import logger
+import httpx
+
+async def forward(request: Request, service_url: str = "http://localhost:8080", strip_prefix: str = "/api/rag/"):
+    try:
+        stripped_path = request.url.path.replace(strip_prefix, "")
+        async with httpx.AsyncClient() as client:
+            proxy_req = client.build_request(
+                request.method,
+                f"{service_url}/{stripped_path}",
+                content=await request.body(),
+                headers={k: v for k, v in request.headers.items()
+                        if k.lower() != "host"}
+            )
+            proxy_resp = await client.send(proxy_req)
+            return proxy_resp
+    except Exception as e:
+        logger.error(f"Error forwarding request: {e}")
+        return None
 
 class VectorStore:
     def __init__(self, vector_store: InMemoryVectorStore = None):

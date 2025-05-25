@@ -50,6 +50,7 @@ class UserTokenKey(Enum):
     SHELL_EXEC_SERVER_URL = "SHELL_EXEC_SERVER_URL"
     SEARX_SEARCH_HOST_URL = "SEARX_SEARCH_HOST_URL"
     ARCADE_API_KEY = "ARCADE_API_KEY"
+    LANGCONNECT_SERVER_URL = "LANGCONNECT_SERVER_URL"
     @classmethod
     def values(cls) -> list[str]:
         return [key.value for key in cls]
@@ -62,8 +63,9 @@ GROQ_API_KEY = os.getenv(UserTokenKey.GROQ_API_KEY.value)
 GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
 ARCADE_API_KEY = os.getenv(UserTokenKey.ARCADE_API_KEY.value)
 # Tools
-SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://exec_server:3005/exec")
-SEARX_SEARCH_HOST_URL = os.getenv(UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://search_engine:8080")
+SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://localhost:3005/exec")
+SEARX_SEARCH_HOST_URL = os.getenv(UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://localhost:8080")
+LANGCONNECT_SERVER_URL = os.getenv(UserTokenKey.LANGCONNECT_SERVER_URL.value)
 
 # Storage
 MINIO_HOST = os.getenv("MINIO_HOST")
