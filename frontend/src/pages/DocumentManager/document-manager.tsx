@@ -9,12 +9,12 @@ import { Upload, MessageSquare, MoreHorizontal, Plus, Edit, Trash2, X, FolderPlu
 
 export default function DocumentManager() {
   const [activeTab, setActiveTab] = useState("upload")
-  const [showCollectionMenu, setShowCollectionMenu] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState("")
   const [newCollectionDescription, setNewCollectionDescription] = useState("")
   const [textContent, setTextContent] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [selectedCollection, setSelectedCollection] = useState("Test")
 
   const documents = [
     {
@@ -22,7 +22,31 @@ export default function DocumentManager() {
       collection: "Test",
       dateUploaded: "05/20/2025 12:27 PM",
     },
+    {
+      name: "Product Roadmap 2025.pdf",
+      collection: "Product",
+      dateUploaded: "05/19/2025 10:15 AM",
+    },
+    {
+      name: "User Research Findings.docx",
+      collection: "Research",
+      dateUploaded: "05/18/2025 03:45 PM",
+    },
+    {
+      name: "Marketing Strategy Q2 2025.pptx",
+      collection: "Marketing",
+      dateUploaded: "05/17/2025 09:30 AM",
+    }
   ]
+
+  const collections = [
+    { name: "Test", description: "Default test collection" },
+    { name: "Product", description: "Product-related documents" },
+    { name: "Research", description: "User research and analysis" },
+    { name: "Marketing", description: "Marketing materials and strategies" }
+  ]
+
+  const filteredDocuments = documents.filter(doc => doc.collection === selectedCollection)
 
   const handleCreateCollection = () => {
     setShowCreateModal(false)
@@ -40,26 +64,17 @@ export default function DocumentManager() {
       </div>
 
       <div className="space-y-2">
-        <div className="relative">
-          <DropdownMenu open={showCollectionMenu} onOpenChange={setShowCollectionMenu}>
-            <DropdownMenuTrigger asChild>
-              <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted cursor-pointer group">
-                <span>Test</span>
-                <MoreHorizontal className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-32">
-              <DropdownMenuItem className="flex items-center gap-2">
-                <Edit className="h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2 text-destructive">
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {collections.map((collection, index) => (
+          <div 
+            key={index} 
+            className={`p-3 rounded-lg cursor-pointer hover:bg-muted ${
+              selectedCollection === collection.name ? 'bg-muted' : ''
+            }`}
+            onClick={() => setSelectedCollection(collection.name)}
+          >
+            {collection.name}
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -159,8 +174,8 @@ export default function DocumentManager() {
                 <div>Actions</div>
               </div>
 
-              {documents.length > 0 ? (
-                documents.map((doc, index) => (
+              {filteredDocuments.length > 0 ? (
+                filteredDocuments.map((doc, index) => (
                   <div
                     key={index}
                     className="grid grid-cols-4 gap-4 p-4 border-b last:border-b-0 hover:bg-muted/50"
@@ -184,8 +199,8 @@ export default function DocumentManager() {
 
             {/* Documents Cards - Mobile */}
             <div className="md:hidden space-y-4">
-              {documents.length > 0 ? (
-                documents.map((doc, index) => (
+              {filteredDocuments.length > 0 ? (
+                filteredDocuments.map((doc, index) => (
                   <div key={index} className="rounded-lg border p-4">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-sm font-medium line-clamp-2 flex-1 mr-2">{doc.name}</h3>
