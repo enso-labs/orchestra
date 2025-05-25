@@ -66,7 +66,7 @@ export default function DocumentManager() {
 
   return (
     <div className="min-h-screen">
-      <div className="flex h-[calc(100vh-22rem)]">
+      <div className="flex h-screen">
         {/* Desktop Sidebar */}
         <div className="hidden md:block w-80 border-r">
           <Sidebar
