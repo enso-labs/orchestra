@@ -3,7 +3,7 @@ from enum import Enum
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_core.documents import Document
 from src.constants import DEFAULT_VECTOR_STORE_PATH
-from fastapi import Request
+from fastapi import Request, UploadFile
 from src.utils.logger import logger
 import httpx
 
@@ -11,18 +11,45 @@ async def forward(request: Request, service_url: str = "http://localhost:8080", 
     try:
         stripped_path = request.url.path.replace(strip_prefix, "")
         async with httpx.AsyncClient() as client:
-            proxy_req = client.build_request(
-                request.method,
-                f"{service_url}/{stripped_path}",
-                content=await request.body(),
-                headers={k: v for k, v in request.headers.items()
-                        if k.lower() != "host"}
-            )
+            # Handle form data and files
+            form_data = None
+            if request.headers.get("content-type", "").startswith("multipart/form-data"):
+                form = await request.form()
+                form_data = {}
+                for key, value in form.items():
+                    if isinstance(value, UploadFile):
+                        # Read file content and reset file pointer
+                        content = await value.read()
+                        await value.seek(0)  # Reset file pointer after reading
+                        form_data[key] = (value.filename, content, value.content_type)
+                    else:
+                        form_data[key] = value
+
+            # Build request with appropriate content
+            if form_data:
+                proxy_req = client.build_request(
+                    request.method,
+                    f"{service_url}/{stripped_path}",
+                    files=form_data,
+                    headers={k: v for k, v in request.headers.items() if k.lower() != "host"}
+                )
+            else:
+                proxy_req = client.build_request(
+                    request.method,
+                    f"{service_url}/{stripped_path}",
+                    content=await request.body(),
+                    headers={k: v for k, v in request.headers.items() if k.lower() != "host"}
+                )
+
             proxy_resp = await client.send(proxy_req)
             return proxy_resp
     except Exception as e:
         logger.error(f"Error forwarding request: {e}")
-        return None
+        return httpx.Response(
+            status_code=500,
+            content=b'{"detail": "Internal server error"}',
+            headers={"content-type": "application/json"}
+        )
 
 class VectorStore:
     def __init__(self, vector_store: InMemoryVectorStore = None):

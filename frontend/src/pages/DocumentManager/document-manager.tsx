@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { CreateCollectionModal } from "./components/CreateCollectionModal"
@@ -8,6 +8,7 @@ import { DocumentCards } from "./components/DocumentCards"
 import { UploadSection } from "./components/UploadSection"
 import { TextInputSection } from "./components/TextInputSection"
 import { Header } from "./components/Header"
+import { getCollections } from "@/services/ragService"
 
 export default function DocumentManager() {
   const [activeTab, setActiveTab] = useState("upload")
@@ -63,6 +64,14 @@ export default function DocumentManager() {
   const handleTextSubmit = () => {
     // TODO: Implement text submission logic
   }
+
+  useEffect(() => {
+    const fetchCollections = async () => {
+      const collections = await getCollections();
+      console.log(collections);
+    }
+    fetchCollections();
+  }, []);
 
   return (
     <div className="min-h-screen">
