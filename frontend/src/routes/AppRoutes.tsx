@@ -26,6 +26,7 @@ import ServerCreate from '@/pages/ServerCreate';
 import ServerEdit from '@/pages/ServerEdit';
 import Server from '@/pages/server';
 import Flow from '@/pages/flow';
+import DocumentManager from '@/pages/DocumentManager';
 const AppRoutes: React.FC = () => {
   return (
     <Router>
@@ -90,6 +91,14 @@ const AppRoutes: React.FC = () => {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/rag"
+          element={
+            <PrivateRoute>
+              <DocumentManager />
             </PrivateRoute>
           }
         />
