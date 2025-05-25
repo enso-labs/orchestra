@@ -1,3 +1,12 @@
+import AuthLayout from "@/layouts/AuthLayout";
 import DocumentManager from "./document-manager";
 
-export default DocumentManager;
+function DocumentManagerPage() {
+	return (
+		<AuthLayout>
+			<DocumentManager />
+		</AuthLayout>
+	);
+}
+
+export default DocumentManagerPage;
