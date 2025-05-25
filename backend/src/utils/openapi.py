@@ -34,3 +34,33 @@ def fetch_openapi_spec_sync(url: str = "http://localhost:8080/openapi.json") -> 
 		return response.json()
 	except httpx.HTTPError as e:
 		raise Exception(f"Failed to fetch OpenAPI spec: {str(e)}")
+
+def get_response_model(name: str, spec: dict) -> type:
+    """
+    Get the response model for a given schema name from the OpenAPI spec.
+    Maps OpenAPI types to Python types and respects required fields.
+    """
+    from pydantic import create_model
+    from typing import Any, Optional
+
+    type_mapping = {
+        "string": str,
+        "integer": int,
+        "number": float,
+        "boolean": bool,
+        "object": dict,
+        "array": list,
+    }
+
+    schema = spec["components"]["schemas"][name]
+    properties = schema.get("properties", {})
+    required = set(schema.get("required", []))
+    fields = {}
+    for prop, prop_schema in properties.items():
+        openapi_type = prop_schema.get("type", "string")
+        py_type = type_mapping.get(openapi_type, Any)
+        if prop in required:
+            fields[prop] = (py_type, ...)
+        else:
+            fields[prop] = (Optional[py_type], None)
+    return create_model(name, **fields)
