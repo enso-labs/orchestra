@@ -11,10 +11,11 @@ from src.constants import LANGCONNECT_SERVER_URL
 
 CLIENT_SPEC = fetch_openapi_spec_sync(f"{LANGCONNECT_SERVER_URL}/openapi.json") if LANGCONNECT_SERVER_URL else None
 TAG = "RAG"
+PREFIX = "langconnect"
 if CLIENT_SPEC:
-	gateway = APIRouter()
+	gateway = APIRouter(prefix=f"/langconnect")
 	@gateway.get(
-		"/rag/collections",
+		"/collections",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		responses={
@@ -29,7 +30,7 @@ if CLIENT_SPEC:
 		return JSONResponse(status_code=response.status_code, content=response.json())
 
 	@gateway.post(
-		"/rag/collections",
+		"/collections",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		responses={
@@ -49,7 +50,7 @@ if CLIENT_SPEC:
 		return JSONResponse(status_code=response.status_code, content=response.json())
 
 	@gateway.get(
-		"/rag/collections/{collection_id}",
+		"/collections/{collection_id}",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		responses={
@@ -67,7 +68,7 @@ if CLIENT_SPEC:
 		return JSONResponse(status_code=response.status_code, content=response.json())
 
 	@gateway.patch(
-		"/rag/collections/{collection_id}",
+		"/collections/{collection_id}",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		summary=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"]["summary"],
@@ -87,7 +88,7 @@ if CLIENT_SPEC:
 		return JSONResponse(status_code=response.status_code, content=response.json())
 
 	@gateway.delete(
-		"/rag/collections/{collection_id}",
+		"/collections/{collection_id}",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		status_code=status.HTTP_204_NO_CONTENT,
@@ -107,7 +108,7 @@ if CLIENT_SPEC:
 	## Documents
 	#####################################################################################################
 	@gateway.get(
-		"/rag/collections/{collection_id}/documents",
+		"/collections/{collection_id}/documents",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		responses={
@@ -128,7 +129,7 @@ if CLIENT_SPEC:
 		return JSONResponse(status_code=response.status_code, content=response.json())
 
 	@gateway.post(
-		"/rag/collections/{collection_id}/documents",
+		"/collections/{collection_id}/documents",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		responses={
@@ -149,7 +150,7 @@ if CLIENT_SPEC:
 		return JSONResponse(status_code=response.status_code, content=response.json())
 
 	@gateway.post(
-		"/rag/collections/{collection_id}/documents/search",
+		"/collections/{collection_id}/documents/search",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		responses={
@@ -185,7 +186,7 @@ if CLIENT_SPEC:
 		return JSONResponse(status_code=response.status_code, content=response.json())
 
 	@gateway.delete(
-		"/rag/collections/{collection_id}/documents/{document_id}",
+		"/collections/{collection_id}/documents/{document_id}",
 		dependencies=[Depends(HTTPBearer())],
 		tags=[TAG],
 		responses={

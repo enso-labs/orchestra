@@ -1,11 +1,16 @@
 import os
-from enum import Enum
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_core.documents import Document
-from src.constants import DEFAULT_VECTOR_STORE_PATH
+from langchain.embeddings.base import init_embeddings
+from langchain.embeddings.base import Embeddings
 from fastapi import Request, UploadFile
+
+from src.services.db import ASYNC_DB_URI
+from src.constants import DEFAULT_VECTOR_STORE_PATH
 from src.utils.logger import logger
 import httpx
+
+from src.utils.llm import get_api_key
 
 async def forward(request: Request, service_url: str = "http://localhost:8080", strip_prefix: str = "/api/rag/"):
     try:
@@ -57,6 +62,8 @@ class VectorStore:
         
     def load_vector_store(self, path: str = DEFAULT_VECTOR_STORE_PATH):
         try:
+            if not os.path.exists(path):
+                os.makedirs(path)
             store = self.vector_store.load(path, embedding=get_embedding_model())
             self.vector_store = store
         except Exception as e:
@@ -145,10 +152,9 @@ class VectorStore:
     
     
 ## Retrieval Utils
-def get_embedding_model():
-    from src.utils.llm import LLMWrapper
-    llm = LLMWrapper(model_name="openai-text-embedding-3-large", api_key=os.getenv('OPENAI_API_KEY')),
-    return llm.embedding_model()
+def get_embedding_model(model_name: str = "openai:text-embedding-3-large"):
+    provider, _ = model_name.split(":", maxsplit=1)
+    return init_embeddings(model_name, api_key=get_api_key(provider))
 
 def get_vector_store():
     embedding_model = get_embedding_model()

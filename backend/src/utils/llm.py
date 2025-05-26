@@ -7,6 +7,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_ollama import ChatOllama
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.embeddings.base import init_embeddings
 
 from src.constants import UserTokenKey, OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
 from src.constants.llm import ModelName
@@ -106,17 +107,24 @@ class LLMWrapper:
             self.model = chosen_model
             
     def embedding_model(self):
-        chosen_model = None
-        provider, model = get_provider(self.model_name)
-        if 'openai' in provider:
-            openai_token = OPENAI_API_KEY
-            if not openai_token:
-                raise ValueError("OpenAI API key not found")
-            self.kwargs['api_key'] = openai_token
-            chosen_model = OpenAIEmbeddings(model=model, **self.kwargs)
-        else:
-            raise ValueError(f"Embedding model {model} not supported")
-        return chosen_model
+        try:
+            model = init_embeddings(self.model_name)
+            return model
+        except Exception as e:
+            raise e
+            
+    # def embedding_model(self):
+    #     chosen_model = None
+    #     provider, model = get_provider(self.model_name)
+    #     if 'openai' in provider:
+    #         openai_token = OPENAI_API_KEY
+    #         if not openai_token:
+    #             raise ValueError("OpenAI API key not found")
+    #         self.kwargs['api_key'] = openai_token
+    #         chosen_model = OpenAIEmbeddings(model=model, **self.kwargs)
+    #     else:
+    #         raise ValueError(f"Embedding model {model} not supported")
+    #     return chosen_model
         
 
 def audio_to_text(
