@@ -8,7 +8,7 @@ from langchain.chat_models import init_chat_model
 from src.models import ProtectedUser, User
 from src.entities import Answer, ChatInput, NewThread, ExistingThread
 from src.services.db import get_async_db
-from src.utils.auth import get_optional_user
+from src.utils.auth import AuthenticatedUser, get_optional_user
 from src.utils.logger import logger
 from src.controllers.agent import AgentController
 from src.routes.v0.llm.transcribe import router as transcribe_router
@@ -37,7 +37,7 @@ router = APIRouter()
 async def chat_completion(
     request: Request,
     body: Annotated[ChatInput, Body()],
-    user: ProtectedUser = Depends(get_optional_user),
+    user: AuthenticatedUser = Depends(get_optional_user),
     # db: AsyncSession = Depends(get_async_db)
 ):
     try:
@@ -94,7 +94,7 @@ async def chat_completion(
 async def new_thread(
     request: Request,
     body: Annotated[NewThread, Body()],
-    user: ProtectedUser = Depends(get_optional_user),
+    user: AuthenticatedUser = Depends(get_optional_user),
     db: AsyncSession = Depends(get_async_db)
 ):
     
@@ -139,7 +139,7 @@ async def existing_thread(
     request: Request,
     thread_id: str, 
     body: Annotated[ExistingThread, Body()],
-    user: ProtectedUser = Depends(get_optional_user),
+    user: AuthenticatedUser = Depends(get_optional_user),
     db: AsyncSession = Depends(get_async_db)
 ):
     try:

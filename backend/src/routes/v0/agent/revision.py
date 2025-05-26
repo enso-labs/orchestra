@@ -6,7 +6,7 @@ from typing import Optional
 
 from src.repos.agent_repo import AgentRepo
 from src.repos.revision_repo import RevisionRepo
-from src.utils.auth import verify_credentials
+from src.utils.auth import resolve_user
 from src.services.db import get_db
 from src.models import ProtectedUser
 
@@ -39,7 +39,7 @@ class RevisionCreate(BaseModel):
 )
 def list_agent_revisions(
     agent_id: str = Path(..., description="The ID of the agent"),
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: Session = Depends(get_db)
 ):
     # First verify agent exists
@@ -83,7 +83,7 @@ def list_agent_revisions(
 def create_agent_revision(
     revision_data: RevisionCreate,
     agent_id: str = Path(..., description="The ID of the agent"),
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: Session = Depends(get_db)
 ):
     revision_repo = RevisionRepo(db=db, user_id=user.id)
@@ -131,7 +131,7 @@ def create_agent_revision(
 def get_agent_revision(
     agent_id: str = Path(..., description="The ID of the agent"),
     revision_number: int = Path(..., description="The revision number to retrieve"),
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: Session = Depends(get_db)
 ):
     revision_repo = RevisionRepo(db=db, user_id=user.id)
@@ -172,7 +172,7 @@ def get_agent_revision(
 def set_active_revision(
     agent_id: str = Path(..., description="The ID of the agent"),
     revision_number: int = Path(..., description="The revision number to set as active"),
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: Session = Depends(get_db)
 ):
     revision_repo = RevisionRepo(db=db, user_id=user.id)
@@ -213,7 +213,7 @@ def set_active_revision(
 def delete_agent_revision(
     agent_id: str = Path(..., description="The ID of the agent"),
     revision_number: int = Path(..., description="The revision number to delete"),
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: Session = Depends(get_db)
 ):
     revision_repo = RevisionRepo(db=db, user_id=user.id)

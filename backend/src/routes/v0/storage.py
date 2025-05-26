@@ -13,7 +13,7 @@ from fastapi import (APIRouter, Depends, File, HTTPException, Response,
 from src.models import User
 from src.constants import ACCESS_KEY_ID, ACCESS_SECRET_KEY, BUCKET, TEST_USER_ID
 from src.services.storage import StorageService
-from src.utils.auth import verify_credentials
+from src.utils.auth import AuthenticatedUser, resolve_user
 
 TAG = "Storage"
 router = APIRouter()
@@ -30,7 +30,7 @@ storage_service = StorageService(ACCESS_KEY_ID, ACCESS_SECRET_KEY)
 )
 async def list_files(
     path: str = None,
-    user: User = Depends(verify_credentials),
+    user: AuthenticatedUser = Depends(resolve_user),
 ):
 	try:
 		files = storage_service.retrieve_all_files(
@@ -63,7 +63,7 @@ async def list_files(
 async def list_presigned_urls(
 	path: str = None, 
 	download: bool = Query(False, description="Set to true to generate download links"),
-	user: User = Depends(verify_credentials),
+	user: AuthenticatedUser = Depends(resolve_user),
 ):
 	try:
 		extension = os.path.splitext(path)[1].lower().strip('.') if path else None
@@ -120,7 +120,7 @@ async def list_presigned_urls(
 )
 async def save_files(
 	files: List[UploadFile] = File(...),
-	user: User = Depends(verify_credentials),
+	user: AuthenticatedUser = Depends(resolve_user),
 ):
 	try:
 		result = storage_service.upload_files(files, BUCKET, f'users/{user.id}')
@@ -154,7 +154,7 @@ async def save_files(
 )
 async def delete_file(
 	prefix: str,
-    user: User = Depends(verify_credentials),
+    user: AuthenticatedUser = Depends(resolve_user),
 ):
 	try:
 		## Delete File
@@ -185,7 +185,7 @@ def get_storage_service():
 @router.post("/storage/presigned", tags=[TAG])
 async def upload_files_with_urls(
     files: List[UploadFile] = File(...),
-    user: User = Depends(verify_credentials),
+    user: AuthenticatedUser = Depends(resolve_user),
     storage_service: StorageService = Depends(get_storage_service)
 ):
     """

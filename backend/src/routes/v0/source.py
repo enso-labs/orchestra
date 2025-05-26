@@ -7,7 +7,7 @@ from loguru import logger
 
 from src.entities import AddDocuments
 from src.loaders import Loader
-from src.utils.auth import verify_credentials
+from src.utils.auth import AuthenticatedUser, resolve_user
 
 TAG = "Retrieval"
 router = APIRouter(tags=[TAG])
@@ -30,7 +30,7 @@ router = APIRouter(tags=[TAG])
 )
 async def upload_sources_to_documents(
     files: list[UploadFile] = File(...),
-    username: str = Depends(verify_credentials)
+    user: AuthenticatedUser = Depends(resolve_user)
 ):
     logger.info(f"Processing {len(files)} uploaded files")
     

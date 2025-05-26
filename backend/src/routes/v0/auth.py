@@ -8,11 +8,12 @@ from sqlalchemy.future import select
 from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from gotrue.errors import AuthApiError
 
 from src.services.airtable import AirtableService
 from src.services.oauth import OAuthService
-from src.services.db import get_db
-from src.utils.auth import verify_credentials
+from src.services.db import get_db, get_supabase_client
+from src.utils.auth import AuthenticatedUser, resolve_user
 from src.utils.logger import logger
 from src.models import User
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
@@ -20,6 +21,7 @@ from src.entities.auth import UserCreate, UserLogin, UserResponse, TokenResponse
 
 airtable_service = AirtableService()
 router = APIRouter(tags=["Auth"])
+supabase = get_supabase_client()
 
 def create_access_token(user: User, expires_delta: timedelta | None = None):
 	if expires_delta:
@@ -50,18 +52,7 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
 		status.HTTP_201_CREATED: {
 			"description": "User successfully registered",
 			"content": {
-				"application/json": {
-					"example": {
-						"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-						"token_type": "bearer",
-						"user": {
-							"id": "123e4567-e89b-12d3-a456-426614174000",
-							"username": "johndoe",
-							"email": "john@example.com",
-							"name": "John Doe"
-						}
-					}
-				}
+				"application/json": {"message": f"Registration successful. Please check your [email] to confirm your account."}
 			}
 		},
 		status.HTTP_400_BAD_REQUEST: {
@@ -71,51 +62,47 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
 )
 async def register(
 	user_data: Annotated[UserCreate, Body()],
-	db: Session = Depends(get_db)
 ):
-	# Check if username exists
-	if db.query(User).filter(User.username == user_data.username).first():
-		raise HTTPException(
-			status_code=status.HTTP_400_BAD_REQUEST,
-			detail="Username already registered"
+	try:
+		supabase.auth.sign_up({
+			"email": user_data.email,
+			"password": user_data.password,
+			"options": {
+				"data": {
+					"username": user_data.username,
+					"name": user_data.name
+				}
+			}
+		})
+  
+		return JSONResponse(
+			content={"message": f"Registration successful. Please check {user_data.email} to confirm your account."},
+			status_code=status.HTTP_201_CREATED
 		)
+	except AuthApiError as e:
+		logger.error(f"Error registering user: {e}")
+		raise HTTPException(status_code=400, detail=e.message)
+	except Exception as e:
+		logger.error(f"Error registering user: {e}")
+		raise HTTPException(status_code=500, detail=str(e))
 	
-	# Check if email exists
-	if db.query(User).filter(User.email == user_data.email).first():
-		raise HTTPException(
-			status_code=status.HTTP_400_BAD_REQUEST,
-			detail="Email already registered"
-		)
+	# # Create user response
+	# user_response = UserResponse(
+	# 	id=str(user.id),
+	# 	username=user.username,
+	# 	email=user.email,
+	# 	name=user.name
+	# )
+	# await airtable_service.create_contact(user_response)
 
-	# Create new user
-	user = User(
-		username=user_data.username,
-		email=user_data.email,
-		name=user_data.name,
-		hashed_password=User.get_password_hash(user_data.password)
-	)
-	
-	db.add(user)
-	db.commit()
-	db.refresh(user)
-	
-	# Create user response
-	user_response = UserResponse(
-		id=str(user.id),
-		username=user.username,
-		email=user.email,
-		name=user.name
-	)
-	await airtable_service.create_contact(user_response)
+	# # Create access token with full user object
+	# access_token = create_access_token(user)
 
-	# Create access token with full user object
-	access_token = create_access_token(user)
-
-	return TokenResponse(
-		access_token=access_token,
-		token_type="bearer",
-		user=user_response
-	)
+	# return TokenResponse(
+	# 	access_token=access_token,
+	# 	token_type="bearer",
+	# 	user=user_response
+	# )
 
 @router.post(
 	"/auth/login",
@@ -147,46 +134,31 @@ async def login(
 	credentials: Annotated[UserLogin, Body()],
 	db: Session = Depends(get_db)
 ):
-	user = db.query(User).filter(User.email == credentials.email).first()
-	
-	if not user:
-		raise HTTPException(
-			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="Incorrect email or password",
-			headers={"WWW-Authenticate": "Basic"},
-		)
-	
-	if not User.verify_password(credentials.password, user.hashed_password):
-		raise HTTPException(
-			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="Incorrect email or password",
-			headers={"WWW-Authenticate": "Basic"},
-		)
-
-	# Create user response
-	user_response = UserResponse(
-		id=str(user.id),
-		username=user.username,
-		email=user.email,
-		name=user.name
-	)
-
-	# Create access token with full user object
-	access_token = create_access_token(user)
-	# Update airtable with latest login
 	try:
-		await airtable_service.latest_login(user.email)
+		res = supabase.auth.sign_in_with_password({
+			"email": credentials.email,
+			"password": credentials.password
+		})
+		logger.info(f"Login success: {res.model_dump_json()}")
+		return TokenResponse(
+			access_token=res.session.access_token,
+			refresh_token=res.session.refresh_token,
+			expires_in=res.session.expires_in,
+			expires_at=res.session.expires_at,
+			token_type=res.session.token_type,
+			user=res.user.user_metadata
+		)
+	except AuthApiError as e:
+		logger.warning(f"Error logging in user: {e}")
+		raise HTTPException(status_code=e.status, detail=e.message)
 	except Exception as e:
-		await airtable_service.create_contact(user_response)
-	return TokenResponse(
-		access_token=access_token,
-		token_type="bearer",
-		user=user_response
-	)
+		logger.error(f"Error logging in user: {e}")
+		raise HTTPException(status_code=500, detail=str(e))
+	
 	
 @router.get("/auth/user", tags=['Auth'])
-async def read_user_details(user: User = Depends(verify_credentials)):
-	return {"user": user.model_dump()}
+async def read_user_details(user: AuthenticatedUser = Depends(resolve_user)):
+	return {"user": user}
 	
 ##################################################################################################################
 ## OAuth2
@@ -226,7 +198,7 @@ async def auth_callback(provider: str, code: str, db: Session = Depends(get_db))
 					email=existing_user.email,
 					name=existing_user.name
 				))
-    
+	
 			return UJSONResponse(
 				content={"access_token": access_token, "token_type": "bearer"}, 
 				status_code=status.HTTP_200_OK

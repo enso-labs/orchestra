@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.repos.user_repo import UserRepo
 from src.controllers.agent import AgentController
 from src.entities import Answer, AgentThread, Threads
-from src.utils.auth import verify_credentials
+from src.utils.auth import resolve_user
 from src.services.db import get_async_db, get_db
 from src.utils.agent import Agent
 from src.models import ProtectedUser
@@ -35,7 +35,7 @@ router = APIRouter(tags=[TAG])
 )
 async def list_agent_threads(
     agent_id: str,
-    user: ProtectedUser = Depends(verify_credentials),
+    user: ProtectedUser = Depends(resolve_user),
     page: Optional[int] = Query(1, description="Page number", ge=1),
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
     db: AsyncSession = Depends(get_async_db)
@@ -89,7 +89,7 @@ async def agent_new_thread(
     request: Request,
     agent_id: str,
     body: Annotated[AgentThread, Body()],
-    user: ProtectedUser = Depends(verify_credentials),
+    user: ProtectedUser = Depends(resolve_user),
     db: AsyncSession = Depends(get_async_db)
 ):
     try:
@@ -131,7 +131,7 @@ async def agent_existing_thread(
     agent_id: str,
     thread_id: str, 
     body: Annotated[AgentThread, Body()],
-    user: ProtectedUser = Depends(verify_credentials),
+    user: ProtectedUser = Depends(resolve_user),
     db: AsyncSession = Depends(get_async_db)
 ):
     try:

@@ -8,7 +8,7 @@ from src.repos.thread_repo import ThreadRepo
 from src.services.db import get_async_db, get_checkpoint_db
 from src.entities import Thread, Threads
 from src.utils.agent import Agent
-from src.utils.auth import get_optional_user, verify_credentials
+from src.utils.auth import AuthenticatedUser, get_optional_user, resolve_user
 from src.models import ProtectedUser
 from src.utils.logger import logger
 
@@ -18,7 +18,7 @@ router = APIRouter(tags=[TAG])
 
 @router.get(
     "/threads", 
-    dependencies=[Depends(verify_credentials)],
+    dependencies=[Depends(resolve_user)],
     responses={
         status.HTTP_200_OK: {
             "description": "All existing threads.",
@@ -31,12 +31,13 @@ router = APIRouter(tags=[TAG])
     }
 )
 async def list_threads(
-    request: Request,
+    user: AuthenticatedUser = Depends(resolve_user),
     page: Optional[int] = Query(1, description="Page number", ge=1),
     per_page: Optional[int] = Query(10, description="Items per page", ge=1, le=100),
+    db: AsyncSession = Depends(get_async_db)
 ):
     try:
-        agent = Agent(config={"user_id": request.state.user.id}, user_repo=request.state.user_repo)
+        agent = Agent(config={"user_id": user.id}, db=db)
         threads = await agent.list_async_threads(page=page, per_page=per_page)
         return JSONResponse(
                 content={
@@ -70,7 +71,7 @@ async def list_threads(
 )
 async def find_thread(
     thread_id: str,
-    user: ProtectedUser = Depends(get_optional_user),
+    user: AuthenticatedUser = Depends(get_optional_user),
     db: AsyncSession = Depends(get_async_db)
 ):
     try:
@@ -107,7 +108,7 @@ async def find_thread(
 ################################################################################
 @router.delete(
     "/threads/{thread_id}", 
-    dependencies=[Depends(verify_credentials)],
+    dependencies=[Depends(resolve_user)],
     responses={
         status.HTTP_204_NO_CONTENT: {
             "description": "Delete existing thread.",
@@ -143,7 +144,7 @@ async def delete_thread(
     }
 )
 async def list_checkpoints(
-    user: ProtectedUser = Depends(verify_credentials),
+    user: AuthenticatedUser = Depends(resolve_user),
     thread_id: Optional[str] = Path(description="Filter by thread ID"),
     checkpoint_id: Optional[str] = Query(None, description="Filter by checkpoint ID"),
     before: Optional[str] = Query(None, description="List checkpoints created before this configuration."),

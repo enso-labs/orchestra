@@ -2,7 +2,7 @@ import type React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import NoAuthLayout from "../layouts/NoAuthLayout"
-import { TOKEN_NAME, VITE_API_URL } from "../config"
+import { VITE_API_URL } from "../config"
 import { ColorModeButton } from "@/components/buttons/ColorModeButton"
 import HelpfulIcons from "@/components/icons/HelpfulIcons"
 
@@ -45,11 +45,12 @@ export default function Register() {
       if (response.ok) {
         const data = await response.json()
         // Store JWT token in localStorage
-        localStorage.setItem(TOKEN_NAME, data.access_token)
-        navigate("/dashboard");
+        alert(data.message)
+        // localStorage.setItem(TOKEN_NAME, data.access_token)
+        navigate("/login");
       } else {
         const errorData = await response.json()
-        setError(errorData.detail || "Registration failed")
+        setError(errorData.message || "Registration failed")
       }
     } catch (err) {
       setError("Failed to connect to server")

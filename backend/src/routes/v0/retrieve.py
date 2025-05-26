@@ -7,7 +7,7 @@ from loguru import logger
 
 from src.constants.examples import LIST_DOCUMENTS_EXAMPLE
 from src.entities import AddDocuments, DocIds, Document
-from src.utils.auth import verify_credentials
+from src.utils.auth import AuthenticatedUser, resolve_user
 from src.utils.retrieval import VectorStore
 
 TAG = "Retrieval"
@@ -31,7 +31,7 @@ router = APIRouter(tags=[TAG])
 )
 def add_documents(
     body: Annotated[AddDocuments, Body()],
-    username: str = Depends(verify_credentials)
+    username: str = Depends(resolve_user)
 ):
     logger.info(f"Adding documents to the vector store: {body.documents}")
     created = VectorStore().add_docs(body.documents)
@@ -65,7 +65,7 @@ def add_documents(
     }
 )
 def list_documents(
-    username: str = Depends(verify_credentials)
+    username: str = Depends(resolve_user)
 ):
     vectorstore = VectorStore()
     return JSONResponse(status_code=status.HTTP_200_OK, content={"documents": vectorstore.list_docs()}) 
@@ -90,7 +90,7 @@ def list_documents(
 def update_document(
     id: str,
     body: Annotated[Document, Body()],
-    username: str = Depends(verify_credentials)
+    user: AuthenticatedUser = Depends(resolve_user)
 ):
     logger.info(f"Updating document in the vector store: {body}")
     updated = VectorStore().edit_doc(id, body)
@@ -122,7 +122,7 @@ def update_document(
 )
 def find_document(
     id: str,
-    username: str = Depends(verify_credentials)
+    user: AuthenticatedUser = Depends(resolve_user)
 ):
     vectorstore = VectorStore()
     doc = vectorstore.find_docs_by_ids([id])[0]
@@ -144,7 +144,7 @@ def find_document(
 )
 def delete_documents(
     body: Annotated[DocIds, Body()],
-    username: str = Depends(verify_credentials)
+    user: AuthenticatedUser = Depends(resolve_user)
 ):
     logger.info(f"Deleting documents from the vector store: {body.documents}")
     deleted = VectorStore().delete_docs(body.documents)

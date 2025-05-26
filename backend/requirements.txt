@@ -37,3 +37,4 @@ langchain-mcp-adapters
 asyncpg
 sqlalchemy[asyncio]
 bs4
+supabase

@@ -5,7 +5,7 @@ from src.models import Thread, User, Token
 from src.constants import APP_SECRET_KEY
 
 class UserRepo:
-    def __init__(self, db: AsyncSession, user_id: str = None):
+    def __init__(self, db: AsyncSession = None, user_id: str = None):
         self.db = db
         self.user_id = user_id
 
@@ -14,20 +14,6 @@ class UserRepo:
         user_id = self.user_id
         result = await self.db.execute(
             select(User).filter(User.id == user_id)
-        )
-        return result.scalar_one_or_none()
-
-    async def get_by_email(self, email: str) -> Optional[User]:
-        """Get user by email."""
-        result = await self.db.execute(
-            select(User).filter(User.email == email)
-        )
-        return result.scalar_one_or_none()
-
-    async def get_by_username(self, username: str) -> Optional[User]:
-        """Get user by username."""
-        result = await self.db.execute(
-            select(User).filter(User.username == username)
         )
         return result.scalar_one_or_none()
 

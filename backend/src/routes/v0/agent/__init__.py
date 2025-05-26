@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from src.repos.agent_repo import AgentRepo
-from src.utils.auth import verify_credentials
+from src.utils.auth import AuthenticatedUser, resolve_user, resolve_user
 from src.services.db import get_async_db
 from src.models import ProtectedUser
 
@@ -39,7 +39,7 @@ class AgentUpdate(BaseModel):
     }
 )
 async def list_agents(
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: AuthenticatedUser = Depends(resolve_user), 
     db: AsyncSession = Depends(get_async_db),
     public: Optional[bool] = Query(default=None, description="Filter by public agents")
 ):
@@ -69,7 +69,7 @@ async def list_agents(
 )
 async def create_agent(
     agent_data: AgentCreate,
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: AsyncSession = Depends(get_async_db)
 ):
     try:
@@ -116,7 +116,7 @@ async def create_agent(
 )
 async def get_agent(
     agent_id: str = Path(..., description="The ID of the agent to retrieve"),
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: AsyncSession = Depends(get_async_db)
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
@@ -156,7 +156,7 @@ async def get_agent(
 def update_agent(
     agent_id: str = Path(..., description="The ID of the agent to update"),
     agent_data: AgentUpdate = None,
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: AsyncSession = Depends(get_async_db)
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
@@ -201,7 +201,7 @@ def update_agent(
 )
 async def delete_agent(
     agent_id: str = Path(..., description="The ID of the agent to delete"),
-    user: ProtectedUser = Depends(verify_credentials), 
+    user: ProtectedUser = Depends(resolve_user), 
     db: AsyncSession = Depends(get_async_db)
 ):
     agent_repo = AgentRepo(db=db, user_id=user.id)
