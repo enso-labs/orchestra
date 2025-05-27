@@ -9,7 +9,6 @@ from langchain_arcade import ArcadeToolManager
 from psycopg.connection_async import AsyncConnection
 from sqlalchemy import text
 from langgraph.errors import NodeInterrupt
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repos.thread_repo import ThreadRepo
 from src.entities.a2a import A2AServer
@@ -28,7 +27,7 @@ from src.utils.a2a import A2ACardResolver, a2a_builder
 from src.utils.stream import astream_chunks
 
 class Agent:
-    def __init__(self, config: dict, db: AsyncSession = None):
+    def __init__(self, config: dict, user_repo: UserRepo = None):
         self.connection_kwargs = {
             "autocommit": True,
             "prepare_threshold": 0,
@@ -39,7 +38,7 @@ class Agent:
         self.config = {"configurable": config}
         self.graph = None
         self.pool: AsyncConnection = None  # Don't create pool in constructor
-        self.user_repo = UserRepo(db=db, user_id=self.user_id)
+        self.user_repo = user_repo
         self.model_name = config.get("model_name", None)
         self.llm: LLMWrapper = None
         self.tools = config.get("tools", [])

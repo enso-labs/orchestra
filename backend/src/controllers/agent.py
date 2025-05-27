@@ -12,7 +12,6 @@ from src.utils.messages import construct_messages
 
 class AgentController:
     def __init__(self, db: AsyncSession, user_id: str = None, agent_id: str = None): # type: ignore
-        self.db = db
         self.user_repo = UserRepo(db=db, user_id=user_id)
         self.agent_repo = AgentRepo(db=db, user_id=user_id)
         self.agent_id = agent_id
@@ -34,7 +33,7 @@ class AgentController:
                 "system": thread.system or None
             }
                 
-            agent = Agent(config=config, db=self.db)
+            agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=thread.tools, 
                                  model_name=thread.model, 
                                  mcp=thread.mcp, 
@@ -74,7 +73,7 @@ class AgentController:
                 "system": settings.get("system") or None
             }
             
-            agent = Agent(config=config, db=self.db)
+            agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=settings.get("tools", []), model_name=settings.get("model"), mcp=settings.get("mcp", None))
             messages = construct_messages(query, settings.get("images"))
             if "text/event-stream" in request.headers.get("accept", ""):

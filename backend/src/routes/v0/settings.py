@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, UUID4, Field
 from src.utils.logger import logger
 
-from src.utils.auth import AuthenticatedUser, resolve_user
+from src.utils.auth import verify_credentials
 from src.services.db import get_async_db
 
 from src.repos.settings_repo import SettingsRepo
@@ -46,7 +46,7 @@ class SingleSettingResponse(BaseModel):
 
 @router.get("/settings", response_model=SettingsListResponse)
 async def list_settings(
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """List all settings."""
@@ -56,7 +56,7 @@ async def list_settings(
 @router.get("/settings/{setting_id}", response_model=SingleSettingResponse)
 async def get_setting(
     setting_id: str,
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific setting by ID."""
@@ -72,7 +72,7 @@ async def get_setting(
 @router.get("/settings/slug/{slug}", response_model=SingleSettingResponse)
 async def get_setting_by_slug(
     slug: str,
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific setting by slug."""
@@ -88,7 +88,7 @@ async def get_setting_by_slug(
 @router.post("/settings", response_model=SingleSettingResponse, status_code=status.HTTP_201_CREATED)
 async def create_setting(
     setting: SettingCreate,
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Create a new setting."""
@@ -111,7 +111,7 @@ async def create_setting(
 async def update_setting(
     setting_id: str,
     setting: SettingUpdate,
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Update an existing setting."""
@@ -127,7 +127,7 @@ async def update_setting(
 @router.delete("/settings/{setting_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_setting(
     setting_id: str,
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Delete a setting."""
@@ -143,7 +143,7 @@ async def delete_setting(
 async def upsert_setting_by_slug(
     slug: str,
     setting: SettingCreate,
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Create or update a setting by slug."""

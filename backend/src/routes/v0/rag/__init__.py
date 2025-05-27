@@ -11,8 +11,9 @@ from src.constants import LANGCONNECT_SERVER_URL
 
 CLIENT_SPEC = fetch_openapi_spec_sync(f"{LANGCONNECT_SERVER_URL}/openapi.json") if LANGCONNECT_SERVER_URL else None
 TAG = "RAG"
+PREFIX = "langconnect"
 if CLIENT_SPEC:
-	gateway = APIRouter(prefix=f"/rag")
+	gateway = APIRouter(prefix=f"/langconnect")
 	@gateway.get(
 		"/collections",
 		dependencies=[Depends(HTTPBearer())],

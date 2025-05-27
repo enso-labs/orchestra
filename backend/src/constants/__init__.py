@@ -74,8 +74,3 @@ ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
 ACCESS_SECRET_KEY = os.getenv("ACCESS_SECRET_KEY")
 BUCKET = os.getenv("BUCKET", "lg_template_dev")
 TEST_USER_ID = os.getenv("TEST_USER_ID", "1")
-
-class Config:
-    SUPABASE_URL = os.getenv("SUPABASE_URL")
-    SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-    IS_TESTING = os.getenv("IS_TESTING", "false").lower() == "true"
