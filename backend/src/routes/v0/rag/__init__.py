@@ -1,6 +1,6 @@
 from typing import Any
 from uuid import UUID
-from fastapi import Depends, File, Form, Query, Request, APIRouter, UploadFile, status
+from fastapi import Depends, File, Form, Query, Request, APIRouter, Response, UploadFile, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 
@@ -100,7 +100,7 @@ if CLIENT_SPEC:
 		collection_id: UUID
 	):
 		response = await forward(request)
-		return JSONResponse(status_code=response.status_code, content=response.json())
+		return Response(status_code=response.status_code)
 
 
 	#####################################################################################################
