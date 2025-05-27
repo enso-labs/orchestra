@@ -11,7 +11,7 @@ from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE, MCP_REQ_BODY_EXAM
 from src.constants import APP_LOG_LEVEL, ARCADE_API_KEY, UserTokenKey
 from src.models import ProtectedUser
 from src.repos.user_repo import UserRepo
-from src.utils.auth import resolve_user
+from src.utils.auth import verify_credentials
 from src.services.db import get_db, get_async_db
 from src.services.mcp import McpService
 from src.utils.logger import logger
@@ -40,7 +40,7 @@ tools_response = {"tools": tool_names}
     }
 )
 def list_tools(
-    # user: ProtectedUser = Depends(resolve_user)
+    # user: ProtectedUser = Depends(verify_credentials)
 ):
     return JSONResponse(
         content=tools_response,
@@ -75,7 +75,7 @@ async def get_arcade_tools(
         # "formatted", 
         "scheduled"
     ] = Query(default="static", description="Type of tools to get"),
-    # user: ProtectedUser = Depends(resolve_user),
+    # user: ProtectedUser = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     BASE_URL = "https://api.arcade.dev/v1"
@@ -134,7 +134,7 @@ async def get_arcade_tools(
 )
 async def get_arcade_tool_spec(
     name: str,
-    # user: ProtectedUser = Depends(resolve_user),
+    # user: ProtectedUser = Depends(verify_credentials),
     # db: AsyncSession = Depends(get_async_db)
 ):
     BASE_URL = "https://api.arcade.dev/v1"
@@ -368,7 +368,7 @@ class ToolRequest(BaseModel):
 async def invoke_tool(
     tool_id: str,
     request: ToolRequest, 
-    user: ProtectedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
     db: AsyncSession = Depends(get_async_db)
 ):
     """

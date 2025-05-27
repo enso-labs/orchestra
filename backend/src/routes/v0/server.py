@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field
 import json
 import uuid
 
-from src.utils.auth import AuthenticatedUser, resolve_user
+from src.models import ProtectedUser, Server
+from src.utils.auth import verify_credentials
 from src.services.db import get_async_db
-from src.models import Server, User
 
 router = APIRouter(
     prefix="/servers",
@@ -70,7 +70,7 @@ class ConnectionTestResponse(BaseModel):
 @router.get("", response_model=ServerListResponse)
 async def get_servers(
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
     type: Optional[str] = Query(None, description="Filter by server type ('mcp' or 'a2a')"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -138,7 +138,7 @@ async def get_public_servers(
 async def get_server(
     server_id: uuid.UUID,
     db: AsyncSession = Depends(get_async_db),
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
 ):
     """Get details for a specific server by ID."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
@@ -157,7 +157,7 @@ async def get_server(
 async def get_server_by_slug(
     slug: str,
     db: AsyncSession = Depends(get_async_db),
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
 ):
     """Get details for a specific server by slug."""
     result = await db.execute(select(Server).filter(Server.slug == slug))
@@ -176,7 +176,7 @@ async def get_server_by_slug(
 async def create_server(
     server_data: ServerCreate,
     db: AsyncSession = Depends(get_async_db),
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
 ):
     """Create a new server configuration."""
     # Validate server configuration
@@ -208,7 +208,7 @@ async def update_server(
     server_id: uuid.UUID,
     server_data: ServerCreate,
     db: AsyncSession = Depends(get_async_db),
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
 ):
     """Update an existing server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
@@ -246,7 +246,7 @@ async def partial_update_server(
     server_id: uuid.UUID,
     server_data: ServerUpdate,
     db: AsyncSession = Depends(get_async_db),
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
 ):
     """Partially update an existing server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
@@ -291,7 +291,7 @@ async def partial_update_server(
 async def delete_server(
     server_id: uuid.UUID,
     db: AsyncSession = Depends(get_async_db),
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
 ):
     """Delete a server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
@@ -384,7 +384,7 @@ async def validate_server_config(
 async def test_connection(
     server_id: uuid.UUID,
     db: AsyncSession = Depends(get_async_db),
-    user: AuthenticatedUser = Depends(resolve_user),
+    user: ProtectedUser = Depends(verify_credentials),
 ):
     """Test the connection to a saved server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))

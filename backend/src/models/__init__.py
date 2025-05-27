@@ -3,13 +3,12 @@ from typing import Optional
 from datetime import datetime
 import sqlalchemy as sa
 from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Boolean
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from passlib.context import CryptContext
-from pydantic import BaseModel
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
+from pydantic import BaseModel
 
 Base = sa.orm.declarative_base()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

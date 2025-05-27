@@ -1,4 +1,5 @@
 import httpx
+from src.utils.logger import logger
 
 async def fetch_openapi_spec(url: str = "http://localhost:8080/openapi.json") -> dict:
     """
@@ -33,7 +34,9 @@ def fetch_openapi_spec_sync(url: str = "http://localhost:8080/openapi.json") -> 
 		response.raise_for_status()
 		return response.json()
 	except httpx.HTTPError as e:
-		raise Exception(f"Failed to fetch OpenAPI spec: {str(e)}")
+		logger.error(f"Failed to fetch OpenAPI spec: {str(e)}")
+		return None
+
 
 def get_response_model(name: str, spec: dict) -> type:
     """

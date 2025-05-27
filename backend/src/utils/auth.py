@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 from fastapi import Request, status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -14,16 +15,16 @@ from src.constants import Config
 
 security = HTTPBearer(auto_error=False)  # Make auto_error=False to not require the Authorization header
 
-def get_optional_user(
-    # request: Request,
+async def get_optional_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    # db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db)
 ) -> Optional[User]:
     if credentials is None:
         return None
         
     try:
-        return resolve_user(credentials)
+        return await verify_credentials(request, credentials, db)
     except HTTPException as e:
         logger.warning(f"Error resolving user: {e}")
         return None
@@ -34,7 +35,7 @@ async def verify_credentials(
     db: AsyncSession = Depends(get_async_db) # type: ignore
 ) -> User:
     try:
-        logger.info(f"Request: {request.__dict__}")
+        logger.info(f"Request: {json.dumps(request.__dict__, default=str)}")
         
         # Verify JWT token
         payload = jwt.decode(
@@ -184,3 +185,18 @@ def resolve_user(
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     return AuthenticatedUser(user.id, user.user_metadata.get("name", "User"))
+
+
+# def get_optional_user(
+#     # request: Request,
+#     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+#     # db: AsyncSession = Depends(get_async_db)
+# ) -> Optional[User]:
+#     if credentials is None:
+#         return None
+        
+#     try:
+#         return resolve_user(credentials)
+#     except HTTPException as e:
+#         logger.warning(f"Error resolving user: {e}")
+#         return None

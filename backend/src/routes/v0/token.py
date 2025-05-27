@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from src.models import Token, User
-from src.utils.auth import resolve_user
+from src.utils.auth import verify_credentials
 from src.services.db import get_db
 from src.constants import APP_SECRET_KEY, UserTokenKey
 from src.utils.logger import logger
@@ -41,7 +41,7 @@ class TokenStatus(BaseModel):
 )
 def create_token(
     token_data: TokenCreate,
-    user: User = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: Session = Depends(get_db)
 ):
     try:
@@ -103,7 +103,7 @@ def create_token(
 )
 def delete_token(
     key: str,
-    user: User = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: Session = Depends(get_db)
 ):
     try:
@@ -152,7 +152,7 @@ def delete_token(
     }
 )
 async def get_tokens(
-    user: User = Depends(resolve_user),
+    user: User = Depends(verify_credentials),
     db: Session = Depends(get_db)
 ):
     try:

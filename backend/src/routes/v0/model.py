@@ -1,10 +1,8 @@
 from fastapi import status, Depends, APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.services.db import get_async_db
 from src.models import ProtectedUser
-from src.utils.auth import AuthenticatedUser, get_optional_user
+from src.utils.auth import get_optional_user
 from src.utils.logger import logger
 TAG = "Model"
 router = APIRouter(tags=[TAG])
@@ -30,7 +28,7 @@ from src.constants.llm import get_available_models, get_public_models
     }
 )
 async def list_models(
-    user: AuthenticatedUser = Depends(get_optional_user),
+    user: ProtectedUser = Depends(get_optional_user),
 ):
     try:
         models = get_available_models() if user else get_public_models()

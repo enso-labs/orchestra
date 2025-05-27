@@ -1,6 +1,8 @@
 from typing import Any
 from pydantic import BaseModel, EmailStr
 
+from src.models import ProtectedUser
+
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
@@ -19,8 +21,9 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
-    expires_in: int
-    expires_at: int
     token_type: str
-    user: Any
+    user: ProtectedUser
+    # refresh_token: str
+    # expires_in: int
+    # expires_at: int
+    

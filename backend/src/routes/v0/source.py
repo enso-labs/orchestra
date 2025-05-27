@@ -7,7 +7,8 @@ from loguru import logger
 
 from src.entities import AddDocuments
 from src.loaders import Loader
-from src.utils.auth import AuthenticatedUser, resolve_user
+from src.models import ProtectedUser
+from src.utils.auth import verify_credentials
 
 TAG = "Retrieval"
 router = APIRouter(tags=[TAG])
@@ -30,7 +31,7 @@ router = APIRouter(tags=[TAG])
 )
 async def upload_sources_to_documents(
     files: list[UploadFile] = File(...),
-    user: AuthenticatedUser = Depends(resolve_user)
+    user: ProtectedUser = Depends(verify_credentials)
 ):
     logger.info(f"Processing {len(files)} uploaded files")
     
@@ -49,7 +50,7 @@ async def upload_sources_to_documents(
                 'file_path': temp_file_path,
                 'extract_images': True
             }
-            
+            logger.info(f"Processing file {file.filename} with loader config {loader_config}")
             try:
                 loader = Loader.create(file_type, loader_config)
                 docs = loader.load()
