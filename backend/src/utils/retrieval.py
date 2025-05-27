@@ -13,6 +13,7 @@ import httpx
 from src.utils.llm import get_api_key
 
 async def forward(request: Request, service_url: str = "http://localhost:8080", strip_prefix: str = "/api/rag/"):
+    logger.info(f"Request: {request.__dict__}")
     try:
         stripped_path = request.url.path.replace(strip_prefix, "")
         async with httpx.AsyncClient() as client:
