@@ -19,7 +19,7 @@ export function DocumentTable({ documents }: DocumentTableProps) {
     <div className="rounded-lg border overflow-hidden">
       <div className="grid grid-cols-4 gap-4 p-4 bg-muted border-b text-sm font-medium">
         <div>Document Name</div>
-        <div>Collection</div>
+        <div>No. of Pages</div>
         <div>Date Uploaded</div>
         <div>Actions</div>
       </div>
@@ -29,9 +29,9 @@ export function DocumentTable({ documents }: DocumentTableProps) {
           key={index}
           className="grid grid-cols-4 gap-4 p-4 border-b last:border-b-0 hover:bg-muted/50"
         >
-          <div className="text-sm truncate">{doc.name}</div>
-          <div className="text-sm text-muted-foreground">{doc.collection}</div>
-          <div className="text-sm text-muted-foreground">{doc.dateUploaded}</div>
+          <div className="text-sm truncate">{doc.metadata.source}</div>
+          <div className="text-sm text-muted-foreground">{doc.metadata.total_pages}</div>
+          <div className="text-sm text-muted-foreground">{doc.metadata.creationdate}</div>
           <div>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <MoreHorizontal className="h-4 w-4" />
