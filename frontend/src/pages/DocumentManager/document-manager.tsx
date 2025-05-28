@@ -8,8 +8,8 @@ import { DocumentCards } from "./components/DocumentCards"
 import { UploadSection } from "./components/UploadSection"
 import { TextInputSection } from "./components/TextInputSection"
 import { Header } from "./components/Header"
-import { getCollections, deleteCollection, createCollection, getDocuments } from "@/services/ragService"
-import { Collection } from "./types"
+import { getCollections, deleteCollection, createCollection, getDocuments, deleteDocument } from "@/services/ragService"
+import { Collection, Document } from "./types"
 import { EmptyState } from "./components/EmptyState"
 import { Menu, Loader2 } from "lucide-react"
 import { useParams, useNavigate } from "react-router-dom"
@@ -131,6 +131,21 @@ export default function DocumentManager() {
       }
     }
   }
+
+  const handleDeleteDocument = async (collectionId: string, documentId: string) => {
+    if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteDocument(collectionId, documentId);
+      // Refresh documents after deletion
+      await fetchDocuments(selectedCollection);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document. Please try again.');
+    }
+  };
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -321,7 +336,11 @@ export default function DocumentManager() {
                   <p className="text-sm text-muted-foreground">Loading documents...</p>
                 </div>
               ) : (
-                <DocumentTable documents={documents} />
+                <DocumentTable 
+                  collectionId={selectedCollection}
+                  documents={documents} 
+                  onDeleteDocument={handleDeleteDocument}
+                />
               )}
             </div>
 
@@ -333,7 +352,10 @@ export default function DocumentManager() {
                   <p className="text-sm text-muted-foreground">Loading documents...</p>
                 </div>
               ) : (
-                <DocumentCards documents={documents} />
+                <DocumentCards 
+                  documents={documents} 
+                  onDeleteDocument={handleDeleteDocument}
+                />
               )}
             </div>
           </div>
