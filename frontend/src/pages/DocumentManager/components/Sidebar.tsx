@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { FolderPlus } from "lucide-react"
+import { FolderPlus, FileText } from "lucide-react"
 
 interface Collection {
   uuid: string
@@ -32,19 +32,28 @@ export function Sidebar({
         </Button>
       </div>
 
-      <div className="space-y-2">
-        {collections.map((collection) => (
-          <div 
-            key={collection.uuid} 
-            className={`p-3 rounded-lg cursor-pointer hover:bg-muted ${
-              selectedCollection === collection.name ? 'bg-muted' : ''
-            }`}
-            onClick={() => onCollectionSelect(collection.uuid)}
-          >
-            {collection.name}
+      {collections.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center py-8">
+          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
+            <FileText className="h-6 w-6 text-muted-foreground" />
           </div>
-        ))}
-      </div>
+          <p className="text-sm text-muted-foreground mb-4">No collections yet</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {collections.map((collection) => (
+            <div 
+              key={collection.uuid} 
+              className={`p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors ${
+                selectedCollection === collection.uuid ? 'bg-muted' : ''
+              }`}
+              onClick={() => onCollectionSelect(collection.uuid)}
+            >
+              {collection.name}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 } 

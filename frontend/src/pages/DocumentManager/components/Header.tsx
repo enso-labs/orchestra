@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetTrigger } from "@/components/ui/sheet"
-import { MessageSquare, Menu } from "lucide-react"
+import { MessageSquare, Menu, Edit, Trash2 } from "lucide-react"
 
 interface HeaderProps {
   title: string
   description: string
   onMenuClick?: () => void
   onChatClick?: () => void
+  onEditClick?: () => void
+  onDeleteClick?: () => void
   showMobileMenu?: boolean
 }
 
@@ -15,6 +17,8 @@ export function Header({
   description,
   onMenuClick,
   onChatClick,
+  onEditClick,
+  onDeleteClick,
   showMobileMenu = false,
 }: HeaderProps) {
   return (
@@ -36,11 +40,31 @@ export function Header({
         </div>
       </div>
 
-      <Button className="w-full sm:w-auto" onClick={onChatClick}>
-        <MessageSquare className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Chat with your documents</span>
-        <span className="sm:hidden">Chat</span>
-      </Button>
+      <div className="flex items-center gap-2">
+        {/* Collection Actions */}
+        {(onEditClick || onDeleteClick) && (
+          <div className="flex items-center gap-1">
+            {onEditClick && (
+              <Button variant="ghost" size="sm" onClick={onEditClick} className="h-8 w-8 p-0">
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {onDeleteClick && (
+              <Button variant="ghost" size="sm" onClick={onDeleteClick} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
+
+        {onChatClick && (
+          <Button className="w-full sm:w-auto" onClick={onChatClick}>
+            <MessageSquare className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Chat with your documents</span>
+            <span className="sm:hidden">Chat</span>
+          </Button>
+        )}
+      </div>
     </div>
   )
 } 

@@ -95,7 +95,15 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/rag"
+          path="/collections"
+          element={
+            <PrivateRoute>
+              <DocumentManager />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/collections/:collectionId"
           element={
             <PrivateRoute>
               <DocumentManager />

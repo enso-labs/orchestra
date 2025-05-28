@@ -7,8 +7,5 @@ export interface Document {
 export interface Collection {
   uuid: string
   name: string
-  metadata: {
-    additionalProps: Record<string, any>
-    owner_id: string
-  }
+  metadata: any
 } 
