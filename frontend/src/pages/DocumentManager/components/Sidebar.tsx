@@ -2,8 +2,12 @@ import { Button } from "@/components/ui/button"
 import { FolderPlus } from "lucide-react"
 
 interface Collection {
+  uuid: string
   name: string
-  description: string
+  metadata: {
+    additionalProps: Record<string, any>
+    owner_id: string
+  }
 }
 
 interface SidebarProps {
@@ -29,13 +33,13 @@ export function Sidebar({
       </div>
 
       <div className="space-y-2">
-        {collections.map((collection, index) => (
+        {collections.map((collection) => (
           <div 
-            key={index} 
+            key={collection.uuid} 
             className={`p-3 rounded-lg cursor-pointer hover:bg-muted ${
               selectedCollection === collection.name ? 'bg-muted' : ''
             }`}
-            onClick={() => onCollectionSelect(collection.name)}
+            onClick={() => onCollectionSelect(collection.uuid)}
           >
             {collection.name}
           </div>

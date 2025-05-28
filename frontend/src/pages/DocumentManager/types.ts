@@ -5,6 +5,10 @@ export interface Document {
 }
 
 export interface Collection {
+  uuid: string
   name: string
-  description: string
+  metadata: {
+    additionalProps: Record<string, any>
+    owner_id: string
+  }
 } 

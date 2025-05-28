@@ -9,15 +9,17 @@ import { UploadSection } from "./components/UploadSection"
 import { TextInputSection } from "./components/TextInputSection"
 import { Header } from "./components/Header"
 import { getCollections } from "@/services/ragService"
+import { Collection } from "./types"
 
 export default function DocumentManager() {
   const [activeTab, setActiveTab] = useState("upload")
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newCollectionName, setNewCollectionName] = useState("")
   const [newCollectionDescription, setNewCollectionDescription] = useState("")
   const [textContent, setTextContent] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [selectedCollection, setSelectedCollection] = useState("Test")
+  const [selectedCollection, setSelectedCollection] = useState<string>("")
 
   const documents = [
     {
@@ -42,12 +44,12 @@ export default function DocumentManager() {
     }
   ]
 
-  const collections = [
-    { name: "Test", description: "Default test collection" },
-    { name: "Product", description: "Product-related documents" },
-    { name: "Research", description: "User research and analysis" },
-    { name: "Marketing", description: "Marketing materials and strategies" }
-  ]
+  // const collections = [
+  //   { name: "Test", description: "Default test collection" },
+  //   { name: "Product", description: "Product-related documents" },
+  //   { name: "Research", description: "User research and analysis" },
+  //   { name: "Marketing", description: "Marketing materials and strategies" }
+  // ]
 
   const filteredDocuments = documents.filter(doc => doc.collection === selectedCollection)
 
@@ -69,6 +71,8 @@ export default function DocumentManager() {
     const fetchCollections = async () => {
       const collections = await getCollections();
       console.log(collections);
+      setSelectedCollection(collections[0].uuid);
+      setCollections(collections);
     }
     fetchCollections();
   }, []);
@@ -102,7 +106,7 @@ export default function DocumentManager() {
         <div className="flex-1 p-4 md:p-6 overflow-auto">
           <div className="max-w-6xl mx-auto">
             <Header
-              title="Test Documents"
+              title={collections.find((collection: Collection) => collection.uuid === selectedCollection)?.name ?? ''}
               description="Manage documents in this collection"
               onMenuClick={() => setSidebarOpen(true)}
               showMobileMenu={true}
