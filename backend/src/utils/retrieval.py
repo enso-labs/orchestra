@@ -4,6 +4,7 @@ from langchain_core.documents import Document
 from langchain.embeddings.base import init_embeddings
 from langchain.embeddings.base import Embeddings
 from fastapi import Request, UploadFile
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from src.services.db import ASYNC_DB_URI
 from src.constants import DEFAULT_VECTOR_STORE_PATH
@@ -16,6 +17,13 @@ async def forward(request: Request, service_url: str = "http://localhost:8080", 
     logger.info(f"Request: {request.__dict__}")
     try:
         stripped_path = request.url.path.replace(strip_prefix, "")
+        
+        # Get query parameters
+        query_params = str(request.url.query) if request.url.query else ""
+        full_url = f"{service_url}/{stripped_path}"
+        if query_params:
+            full_url += f"?{query_params}"
+        
         async with httpx.AsyncClient() as client:
             # Handle form data and files
             form_data = None
@@ -23,34 +31,39 @@ async def forward(request: Request, service_url: str = "http://localhost:8080", 
                 form = await request.form()
                 form_data = {}
                 for key, value in form.items():
-                    if isinstance(value, UploadFile):
-                        # Read file content and reset file pointer
-                        content = await value.read()
-                        await value.seek(0)  # Reset file pointer after reading
-                        form_data[key] = (value.filename, content, value.content_type)
+                    if isinstance(value, UploadFile) or isinstance(value, StarletteUploadFile):
+                        # Read file content
+                        try:
+                            content = await value.read()
+                            # Debug: check the type of content
+                            logger.debug(f"File content type: {type(content)}")
+                            form_data[key] = (value.filename, content, value.content_type)
+                        except Exception as file_error:
+                            logger.error(f"Error reading file {value.filename}: {file_error}")
+                            raise file_error
                     else:
                         form_data[key] = value
 
             # Build request with appropriate content
             if form_data:
-                proxy_req = client.build_request(
+                proxy_resp = await client.request(
                     request.method,
-                    f"{service_url}/{stripped_path}",
+                    full_url,
                     files=form_data,
-                    headers={k: v for k, v in request.headers.items() if k.lower() != "host"}
+                    headers={k: v for k, v in request.headers.items() if k.lower() not in ["host", "content-length"]}
                 )
             else:
-                proxy_req = client.build_request(
+                body = await request.body()
+                proxy_resp = await client.request(
                     request.method,
-                    f"{service_url}/{stripped_path}",
-                    content=await request.body(),
-                    headers={k: v for k, v in request.headers.items() if k.lower() != "host"}
+                    full_url,
+                    content=body,
+                    headers={k: v for k, v in request.headers.items() if k.lower() not in ["host", "content-length"]}
                 )
 
-            proxy_resp = await client.send(proxy_req)
             return proxy_resp
     except Exception as e:
-        logger.error(f"Error forwarding request: {e}")
+        logger.exception(f"Error forwarding request: {e}")
         return httpx.Response(
             status_code=500,
             content=b'{"detail": "Internal server error"}',

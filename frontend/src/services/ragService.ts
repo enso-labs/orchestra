@@ -21,7 +21,7 @@ export const deleteCollection = async (collectionId: string) => {
 
 export const updateCollection = async (collectionId: string, collection: Collection) => {
   try {
-    const response = await apiClient.put(`/rag/collections/${collectionId}`, collection);
+    const response = await apiClient.patch(`/rag/collections/${collectionId}`, collection);
     return response.data;
   } catch (error) {
     throw error;
@@ -46,9 +46,13 @@ export const getDocuments = async (collectionId: string) => {
   }
 };
 
-export const addDocument = async (collectionId: string, document: Document) => {
+export const addDocuments = async (collectionId: string, files: FormData) => {
   try {
-    const response = await apiClient.post(`/rag/collections/${collectionId}/documents`, document);
+    const response = await apiClient.post(`/rag/collections/${collectionId}/documents`, files, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
     throw error;

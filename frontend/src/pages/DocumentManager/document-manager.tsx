@@ -8,10 +8,10 @@ import { DocumentCards } from "./components/DocumentCards"
 import { UploadSection } from "./components/UploadSection"
 import { TextInputSection } from "./components/TextInputSection"
 import { Header } from "./components/Header"
-import { getCollections, deleteCollection, createCollection } from "@/services/ragService"
+import { getCollections, deleteCollection, createCollection, getDocuments } from "@/services/ragService"
 import { Collection } from "./types"
 import { EmptyState } from "./components/EmptyState"
-import { Menu } from "lucide-react"
+import { Menu, Loader2 } from "lucide-react"
 import { useParams, useNavigate } from "react-router-dom"
 
 export default function DocumentManager() {
@@ -25,38 +25,8 @@ export default function DocumentManager() {
   const [textContent, setTextContent] = useState("")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedCollection, setSelectedCollection] = useState<string>("")
-
-  const documents = [
-    {
-      name: "Enso Labs Q3 2025 Growth Strategy_ Developers, Monetization & Community.pdf",
-      collection: "Test",
-      dateUploaded: "05/20/2025 12:27 PM",
-    },
-    {
-      name: "Product Roadmap 2025.pdf",
-      collection: "Product",
-      dateUploaded: "05/19/2025 10:15 AM",
-    },
-    {
-      name: "User Research Findings.docx",
-      collection: "Research",
-      dateUploaded: "05/18/2025 03:45 PM",
-    },
-    {
-      name: "Marketing Strategy Q2 2025.pptx",
-      collection: "Marketing",
-      dateUploaded: "05/17/2025 09:30 AM",
-    }
-  ]
-
-  // const collections = [
-  //   { name: "Test", description: "Default test collection" },
-  //   { name: "Product", description: "Product-related documents" },
-  //   { name: "Research", description: "User research and analysis" },
-  //   { name: "Marketing", description: "Marketing materials and strategies" }
-  // ]
-
-  const filteredDocuments = documents.filter(doc => doc.collection === selectedCollection)
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
 
   const handleCollectionSelect = (collectionUuid: string) => {
     setSelectedCollection(collectionUuid);
@@ -102,6 +72,25 @@ export default function DocumentManager() {
     } catch (error) {
       console.error('Error creating collection:', error);
       alert('Failed to create collection. Please try again.');
+    }
+  };
+
+  const handleUploadComplete = async () => {
+    if (selectedCollection) {
+      await fetchDocuments(selectedCollection);
+    }
+  };
+
+  const fetchDocuments = async (collectionId: string) => {
+    try {
+      setLoadingDocuments(true);
+      const docs = await getDocuments(collectionId);
+      setDocuments(docs);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      setDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
     }
   };
 
@@ -185,6 +174,13 @@ export default function DocumentManager() {
       }
     }
   }, [collectionId, collections]);
+
+  // Update useEffect to also fetch documents when collection changes
+  useEffect(() => {
+    if (selectedCollection) {
+      fetchDocuments(selectedCollection);
+    }
+  }, [selectedCollection]);
 
   // If no collections, show empty state
   if (collections.length === 0) {
@@ -304,7 +300,10 @@ export default function DocumentManager() {
             {/* Content Area */}
             <div className="rounded-lg border p-4 md:p-6 mb-6">
               {activeTab === "upload" ? (
-                <UploadSection onFileSelect={handleFileSelect} />
+                <UploadSection 
+                  collectionId={selectedCollection}
+                  onUploadComplete={handleUploadComplete}
+                />
               ) : (
                 <TextInputSection
                   textContent={textContent}
@@ -316,12 +315,26 @@ export default function DocumentManager() {
 
             {/* Documents Table - Desktop */}
             <div className="hidden md:block">
-              <DocumentTable documents={filteredDocuments} />
+              {loadingDocuments ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading documents...</p>
+                </div>
+              ) : (
+                <DocumentTable documents={documents} />
+              )}
             </div>
 
             {/* Documents Cards - Mobile */}
             <div className="md:hidden">
-              <DocumentCards documents={filteredDocuments} />
+              {loadingDocuments ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading documents...</p>
+                </div>
+              ) : (
+                <DocumentCards documents={documents} />
+              )}
             </div>
           </div>
         </div>
