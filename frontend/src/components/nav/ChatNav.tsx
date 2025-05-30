@@ -31,7 +31,6 @@ export function ChatNav({
                     </div>
                     
                     <div className="flex items-center gap-2">
-                        <SelectModel />
                          <Button
                             variant="outline"
                             size="icon"

@@ -9,6 +9,10 @@ import DefaultTool from "@/components/tools/Default"
 import SearchEngineTool from "@/components/tools/SearchEngine"
 import { findToolCall } from "@/lib/utils/format"
 import ChatMessages from "@/components/lists/ChatMessages"
+import HomeSection from "@/components/sections/home"
+import { ColorModeButton } from "@/components/buttons/ColorModeButton"
+import { Menu } from "lucide-react"
+import { Button } from "@/components/ui/button"
 // import SystemMessageCard from "@/components/cards/SystemMessageCard"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
@@ -83,6 +87,38 @@ export default function Chat() {
     setCurrentThreadId(payload.threadId || null)
   }, [payload.threadId])
 
+  if (messages.length === 0) {
+    return (
+      <ChatLayout>
+        <div
+          className={`
+            flex min-h-[calc(100vh-0px)] max-h-[calc(100vh-0px)] relative
+            transition-all duration-200 ease-in-out
+            ${isAssistantOpen ? "pr-[var(--chat-drawer-width,320px)]" : ""}
+        `}
+        >
+          <ThreadHistoryDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+
+          <div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
+            <div className="absolute top-4 left-4">
+              <Button 
+                onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                variant="outline"
+                size="icon"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            </div>
+            <div className="absolute top-4 right-4">
+              <ColorModeButton />
+            </div>
+            <HomeSection />
+          </div>
+        </div>
+      </ChatLayout>
+    )
+  }
+
   return (
     <ChatLayout>
       <div
@@ -95,76 +131,10 @@ export default function Chat() {
         <ThreadHistoryDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <ChatNav
-            onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            // onAssistantClick={() => setIsAssistantOpen(!isAssistantOpen)}
-          />
+          <ChatNav onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)} />
           <div className="flex-1 overflow-y-auto p-3 min-h-0">
             <div className="space-y-4 max-w-4xl mx-auto pb-4">
-              {/* {!messages.find((message: any) => message.type === "system") && currentModel?.metadata?.system_message && (
-                <SystemMessageCard content={payload.system} />
-              )} */}
               <ChatMessages messages={messages} />
-
-              {/* {!messages.find((message: ChatMessage) => message.type === "system") && currentModel?.metadata?.system_message && (
-                <SystemMessageCard content={payload.system} />
-              )}
-              {messages?.map((message: any, index: number) => {
-                if (message.type === "tool" || message.role === "tool") {
-
-                  const lastToolCall = !message.tool_calls ? message : message.tool_calls[message.tool_calls.length - 1];
-                  return (
-                    <div key={index} className="flex justify-start">
-                      <div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 p-3 rounded-lg rounded-bl-sm">
-                        <div className="flex items-center">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentToolCall(lastToolCall)}
-                            className="flex items-center gap-2"
-                          >
-                            <Wrench className="h-4 w-4" />
-                            {message.name || lastToolCall.name}
-                            <span
-                              className={cn(
-                                "text-xs px-2 py-0.5 rounded-full",
-                                message.status === "success" || lastToolCall.status === "success"
-                                  ? "bg-green-500/20 text-green-500"
-                                  : "bg-red-500/20 text-red-500",
-                              )}
-                            >
-                              {message.status || lastToolCall.status}
-                            </span>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                } else if (message.role === "user" || message.role === "human" || message.type === "human") {
-                  return (
-                    <div key={index} className="flex justify-end">
-                      <div className="max-w-[80%] md:max-w-[70%] bg-primary/90 text-primary-foreground p-3 rounded-lg rounded-br-sm">
-                        <MarkdownCard content={message.content} />
-                      </div>
-                    </div>
-                  )
-                } else if (message.role === "system" || message.type === "system") {
-                  return <SystemMessageCard key={index} content={message.content} />
-                } else if (
-                  message.role === "assistant" ||
-                  message.type === "assistant" ||
-                  message.role === "ai" ||
-                  (message.type === "ai" && message.tool_calls && !(message.tool_calls.length > 0))
-                ) {
-                  return (
-                    <div key={index} className="flex justify-start">
-                      <div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 p-3 rounded-lg rounded-bl-sm">
-                        <MarkdownCard content={message.content} />
-                      </div>
-                    </div>
-                  )
-                }
-              })} */}
               <div ref={messagesEndRef} /> {/* Invisible element to scroll to */}
             </div>
           </div>

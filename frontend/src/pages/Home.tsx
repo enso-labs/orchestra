@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
 import { DEFAULT_CHAT_MODEL } from '@/config/llm';
+import HomeSection from '@/components/sections/home';
 
 export default function Home() {
     const { setPayload, useSelectModelEffect, useFetchModelsEffect } = useChatContext();
@@ -37,36 +38,7 @@ export default function Home() {
                 <div className="absolute top-4 right-4">
                     <ColorModeButton />
                 </div>
-                <img 
-                    src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" 
-                    alt="Logo" 
-                    className="w-32 h-32 mx-auto rounded-full" 
-                />
-                <h1 className="text-4xl font-bold mt-2">Orchestra</h1>
-                <p className="text-lg mb-2">Powered by <a href="https://github.com/enso-labs/mcp-sse" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MCP</a> & <a href="https://github.com/enso-labs/a2a-langgraph" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">A2A</a></p>
-                <div className="flex flex-row gap-2 mb-2">
-                    <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple" /></a>
-                    <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black" /></a>
-                    <a href="https://demo.enso.sh/docs/"><img src="https://img.shields.io/badge/View-Docs-blue" /></a>
-                </div>
-                <div className="flex flex-col w-full lg:w-[600px]">
-                    <ChatInput />
-                </div>
-                {/* <div className="flex flex-col w-full lg:w-[600px] mt-2">
-                    <AccordionZero 
-                        items={[
-                            {
-                                title: "Model Context Protocol (MCP)",
-                                content: <ListMcpServers />
-                            },
-                            {
-                                title: "Agent to Agent (A2A)",
-                                content: <ListMcpServers />
-                            }
-                        ]} 
-                    />
-                </div> */}
-                
+                <HomeSection />
             </main>
         </NoAuthLayout>
     );
