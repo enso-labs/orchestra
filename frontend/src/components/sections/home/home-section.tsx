@@ -1,4 +1,3 @@
-import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import ChatInput from "@/components/inputs/ChatInput";
 
 export function HomeSection() {
