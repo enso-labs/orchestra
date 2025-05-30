@@ -220,6 +220,7 @@ class VectorStore:
         return self.vector_store.get_by_ids(ids)
     
     
+    
 ## Retrieval Utils
 def get_embedding_model(model_name: str = "openai:text-embedding-3-large"):
     provider, _ = model_name.split(":", maxsplit=1)

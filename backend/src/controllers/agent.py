@@ -37,6 +37,7 @@ class AgentController:
             await agent.abuilder(tools=thread.tools, 
                                  model_name=thread.model, 
                                  mcp=thread.mcp, 
+                                 collection=thread.collection,
                                  arcade=thread.arcade,
                                  a2a=thread.a2a)
             messages = construct_messages(thread.query, thread.images)

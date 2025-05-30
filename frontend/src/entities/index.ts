@@ -7,6 +7,7 @@ export interface ThreadPayload {
   visualize?: boolean;
   model?: string;
   mcp?: object|null;
+  collection?: object|null;
 }
 
 export type Agent = {

@@ -37,6 +37,11 @@ NEW_THREAD_QUERY_EXAMPLE = {
     "model": "openai:gpt-4o",
     "tools": [],
     "images": [],
+    "collection": {
+        "id": "e208fbc9-92cd-4f50-9286-6eab533693c4",
+        "limit": 10,
+        "filter": {}
+    },
     **A2A_REQ_BODY_EXAMPLE,
     **MCP_REQ_BODY_EXAMPLE,
     **ARCADE_REQ_BODY_EXAMPLE
@@ -79,6 +84,11 @@ EXISTING_THREAD_QUERY_EXAMPLE = {
     "model": "openai:gpt-4o",
     "tools": [],
     "images": [],
+    "collection": {
+        "id": "e208fbc9-92cd-4f50-9286-6eab533693c4",
+        "limit": 10,
+        "filter": None
+    },
     **A2A_REQ_BODY_EXAMPLE,
     **MCP_REQ_BODY_EXAMPLE,
     **ARCADE_REQ_BODY_EXAMPLE
