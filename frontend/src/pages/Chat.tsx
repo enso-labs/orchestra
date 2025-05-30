@@ -13,6 +13,7 @@ import HomeSection from "@/components/sections/home"
 import { ColorModeButton } from "@/components/buttons/ColorModeButton"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import SelectModel from "@/components/selects/SelectModel"
 // import SystemMessageCard from "@/components/cards/SystemMessageCard"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
@@ -102,15 +103,20 @@ export default function Chat() {
           <div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
             <div className="absolute top-4 left-4">
               <Button 
-                onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-                variant="outline"
-                size="icon"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+                  onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                  variant="outline"
+                  size="icon"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
             </div>
             <div className="absolute top-4 right-4">
-              <ColorModeButton />
+              <div className="flex flex-row gap-2 items-center">
+                <SelectModel />
+                <div className="flex-shrink-0">
+                  <ColorModeButton />
+                </div>
+              </div>
             </div>
             <HomeSection />
           </div>
