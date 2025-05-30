@@ -4,16 +4,19 @@ import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
 import { useChatContext } from "@/context/ChatContext"
-import { useCallback, useRef, useEffect } from "react"
+import { useCallback, useRef, useEffect, useState } from "react"
 import useAppHook from "@/hooks/useAppHook"
 import { useLocation } from "react-router-dom"
 import { useNavigate } from "react-router-dom"
 import { AudioRecorder } from "./AudioRecorder"
 import ChatSubmitButton from "../buttons/ChatSubmitButton"
 import ConfigDrawer from "../drawers/ConfigDrawer"
+import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer"
 
 export default function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  
   const { 
     payload, 
     handleQuery, 
@@ -32,11 +35,15 @@ export default function ChatInput() {
     setImages,
     setPreviewImage,
   } = useChatContext();
+  
   const { isMobile } = useAppHook();
   const navigate = useNavigate();
   const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize the recorder controls using the hook
+  const recorderControls = useVoiceVisualizer();
 
   const handleSubmit = useCallback(() => {
 		handleQuery();
@@ -84,9 +91,26 @@ export default function ChatInput() {
           />
         </div>
       )}
+      
+      {/* Voice Visualizer - only show when recording */}
+      {isRecording && (
+        <div className="px-4 py-2 bg-background border border-input rounded-t-2xl border-b-0">
+          <VoiceVisualizer 
+            controls={recorderControls} 
+            height={35}
+            width="100%"
+            isControlPanelShown={false}
+            isDefaultUIShown={false}
+            onlyRecording={true}
+            speed={1}
+            barWidth={2}
+          />
+        </div>
+      )}
+      
       <textarea
         ref={textareaRef}
-        className="w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input rounded-t-2xl focus:outline-none border-b-0"
+        className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? 'rounded-none' : 'rounded-t-2xl'} focus:outline-none border-b-0`}
         placeholder="How can I help you be present?"
         rows={1}
         value={payload.query}
@@ -114,7 +138,6 @@ export default function ChatInput() {
                       className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
                       onClick={triggerCameraInput}
                     >
-                      {/* <FaCamera className="h-4 w-4" /> */}
                       <Plus className="h-4 w-4" />
                     </Button>
                     <input
@@ -156,20 +179,13 @@ export default function ChatInput() {
               )}
             </>
           )}
-          {/* {getAuthToken() && (
-            <PresetPopover />
-          )}
-          <SearchButton />
-          {currentModel?.metadata?.tool_calling && (
-            <ToolSelector />
-          )}
-          {currentModel?.metadata?.tool_calling && (
-            <ModalMcp />
-          )} */}
           <ConfigDrawer />
         </div>
         <div className="flex items-center gap-2 mr-2">
-          <AudioRecorder />
+          <AudioRecorder 
+            onRecordingChange={setIsRecording} 
+            recorderControls={recorderControls}
+          />
           <ChatSubmitButton 
             abortQuery={abortQuery}
             handleSubmit={handleSubmit}

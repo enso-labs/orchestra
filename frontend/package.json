@@ -48,6 +48,7 @@
     "react-resizable-panels": "^2.1.7",
     "react-router-dom": "^7.0.2",
     "react-simple-code-editor": "^0.14.1",
+    "react-voice-visualizer": "^2.0.8",
     "rehype-highlight": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",

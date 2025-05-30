@@ -1,16 +1,33 @@
 import { Square } from "lucide-react";
 import { Mic } from "lucide-react";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect } from "react";
 import apiClient from "../../lib/utils/apiClient";
 import { useChatContext } from "../../context/ChatContext";
 import { MainToolTip } from "../tooltips/MainToolTip";
 
-export const AudioRecorder: React.FC = () => {
+interface AudioRecorderProps {
+  onRecordingChange?: (isRecording: boolean) => void;
+  recorderControls?: any; // VoiceVisualizer controls
+}
+
+export const AudioRecorder: React.FC<AudioRecorderProps> = ({ 
+  onRecordingChange, 
+  recorderControls 
+}) => {
   const { setPayload } = useChatContext();
-  const [recording, setRecording] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+
+  const {
+    startRecording,
+    stopRecording,
+    isRecordingInProgress,
+    recordedBlob,
+    error,
+  } = recorderControls || {};
+
+  // Notify parent component when recording state changes
+  useEffect(() => {
+    onRecordingChange?.(isRecordingInProgress);
+  }, [isRecordingInProgress, onRecordingChange]);
 
   // Add keyboard event handler
   useEffect(() => {
@@ -19,10 +36,10 @@ export const AudioRecorder: React.FC = () => {
       if (event.altKey && event.key.toLowerCase() === 'h') {
         event.preventDefault(); // Prevent default browser behavior
         
-        if (recording) {
-          stopRecording();
+        if (isRecordingInProgress) {
+          handleStopRecording();
         } else {
-          startRecording();
+          handleStartRecording();
         }
       }
     };
@@ -34,74 +51,60 @@ export const AudioRecorder: React.FC = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [recording]); // Include recording in dependency array so it has current state
+  }, [isRecordingInProgress]); // Include recording state in dependency array
 
-  const startRecording = async () => {
-    try {
-      setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-      chunksRef.current = [];
+  // Handle recorded blob when it's available
+  useEffect(() => {
+    if (!recordedBlob) return;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      recorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("file", blob, "recording.webm");
-        formData.append("model", "whisper-large-v3");
-        // formData.append("prompt", "Please transcribe the following audio: ");
-        formData.append("response_format", "verbose_json");
-        formData.append("temperature", "0.0");
-        formData.append("timeout", "30");
-        
-        try {
-          const response = await apiClient.post("/llm/transcribe", formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-          setPayload((prev: any) => ({
-            ...prev,
-            query: prev.query ? `${prev.query} ${response.data.transcript.text}` : response.data.transcript.text,
-          }))
-          // handle transcription response...
-        } catch (error) {
-          console.error('Error uploading audio:', error);
-          alert("Error uploading audio");
-        }
-      };
+    // Create FormData and send to transcription endpoint
+    const formData = new FormData();
+    formData.append("file", recordedBlob, "recording.webm");
+    formData.append("model", "whisper-large-v3");
+    formData.append("response_format", "verbose_json");
+    formData.append("temperature", "0.0");
+    formData.append("timeout", "30");
+    
+    apiClient.post("/llm/transcribe", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    .then((response) => {
+      setPayload((prev: any) => ({
+        ...prev,
+        query: prev.query ? `${prev.query} ${response.data.transcript.text}` : response.data.transcript.text,
+      }));
+    })
+    .catch((error) => {
+      console.error('Error uploading audio:', error);
+      alert("Error uploading audio");
+    });
+  }, [recordedBlob, setPayload]);
 
-      recorder.start(1000);
-      setRecording(true);
-    } catch (err) {
-      console.error('Microphone access error:', err);
-      setError('Microphone access denied. Please check your device settings and permissions.');
+  const handleStartRecording = async () => {
+    if (startRecording) {
+      startRecording();
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      // Stop all audio tracks
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+  const handleStopRecording = () => {
+    if (stopRecording) {
+      stopRecording();
     }
-    setRecording(false);
   };
 
   return (
     <div>
       {error && (
         <div className="text-red-500 text-sm mb-2">
-          {error}
+          {error.message}
         </div>
       )}
-      {!recording ? (
+      {!isRecordingInProgress ? (
         <MainToolTip content="Start recording (Alt + H)">
           <button 
-            onClick={startRecording}
+            onClick={handleStartRecording}
             className="flex items-center"
           >
             <Mic className="mr-1 h-6 w-6" />
@@ -110,7 +113,7 @@ export const AudioRecorder: React.FC = () => {
       ) : (
         <MainToolTip content="Stop recording (Alt + H)">
           <button 
-            onClick={stopRecording}
+            onClick={handleStopRecording}
             className="flex items-center"
           >
             <Square className="mr-1 h-6 w-6" />
