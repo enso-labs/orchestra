@@ -9,8 +9,8 @@ from src.tools.search import search_engine
 tools = [       
     shell_exec,
     retrieval_query,
-    retrieval_add,
-    retrieval_load,
+    # retrieval_add,
+    # retrieval_load,
     sql_query_read,
     sql_query_write,
     search_engine,
@@ -26,8 +26,12 @@ def collect_tools(selected_tools: list[str]):
 
 
 def dynamic_tools(selected_tools: list[str], metadata: dict = None):
+    if metadata and metadata.get('collection'):
+        selected_tools.append("retrieval_query")
+    
     # Filter tools by name
     filtered_tools = [tool for tool in tools if tool.name in selected_tools]
+    
     if len(filtered_tools) == 0:
         raise ValueError(f"No tools found by the names: {selected_tools.join(', ')}")
     

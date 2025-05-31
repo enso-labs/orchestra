@@ -78,7 +78,7 @@ app.include_router(agent, prefix=PREFIX)
 if LANGCONNECT_SERVER_URL:
     app.include_router(rag, prefix=PREFIX)
 # app.include_router(retrieve, prefix=PREFIX)
-# app.include_router(source, prefix=PREFIX)
+app.include_router(source, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
 app.include_router(server, prefix=PREFIX)
 # Mount specific directories only if they exist

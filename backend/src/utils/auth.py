@@ -76,6 +76,7 @@ async def verify_credentials(
 
         logger.info(f"Authenticated user: {user.id}")
         request.state.user = user.protected()
+        request.state.token = credentials.credentials
         request.state.user_repo = UserRepo(db, request.state.user.id)
         return user.protected()
 

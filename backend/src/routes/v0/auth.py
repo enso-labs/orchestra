@@ -31,7 +31,7 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
 	to_encode = {
 		"user": {
 			"sub": user.email,
-			"user_id": str(user.id),
+			"id": str(user.id),
 			"username": user.username,
 			"email": user.email,
 			"name": user.name

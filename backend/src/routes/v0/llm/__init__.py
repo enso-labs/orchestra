@@ -97,7 +97,6 @@ async def new_thread(
     user: ProtectedUser = Depends(get_optional_user),
     db: AsyncSession = Depends(get_async_db)
 ):
-    
     try:
         controller = AgentController(db=db, user_id=user.id if user else None)
         output_type = request.headers.get("accept", "application/json")

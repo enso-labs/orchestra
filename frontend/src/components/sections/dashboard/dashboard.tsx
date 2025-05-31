@@ -93,7 +93,7 @@ export default function DashboardSection() {
   }, [searchTerm, selectedCategories, myAgents, publicAgents, privateAgents])
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-4 sm:px-6">
+    <main className="px-4 py-4 sm:px-6">
 			<div className="flex flex-col space-y-4">
 				<DashboardHeader activeTab={activeTab} />
 

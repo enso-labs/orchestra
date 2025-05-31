@@ -51,6 +51,15 @@ class ExistingThread(ChatInput):
     a2a: Optional[dict[str, A2AServer]] = Field(default_factory=dict[str, A2AServer])
     images: Optional[List[str]] = Field(default_factory=list)
     model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
+    collection: Optional[dict] = Field(
+        default={
+            'id': 'default', 
+            'metadata': None,
+            'search_type': 'mmr', 
+            'search_kwargs': {'k': 10, 'fetch_k': 2, 'lambda_mult': 0.5, 'filter': None},
+            'tags': []
+        }
+    )
     
     model_config = {
         "json_schema_extra": {"example": EXISTING_THREAD_QUERY_EXAMPLE}

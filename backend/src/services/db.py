@@ -1,11 +1,10 @@
 import contextlib
-import functools
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from typing import AsyncGenerator, Generator, Callable
+from typing import AsyncGenerator, Generator
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from psycopg_pool import ConnectionPool, AsyncConnectionPool
+from psycopg_pool import ConnectionPool
 
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 
@@ -53,29 +52,3 @@ def get_connection_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) -> Generator[C
     finally:
         if not pool.closed:
             pool.close()
-
-@contextlib.asynccontextmanager
-async def get_async_connection_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) -> AsyncGenerator[AsyncConnectionPool, None]:
-    """Get an async psycopg connection pool with proper cleanup."""
-    pool = AsyncConnectionPool(
-        conninfo=DB_URI,
-        max_size=max_size,
-        kwargs=CONNECTION_POOL_KWARGS,
-        # open=False  # Ensure pool is not opened in constructor
-    )
-    try:
-        # await pool.open()  # Explicitly open the pool
-        yield pool
-    finally:
-        if not pool.closed:
-            await pool.close()
-
-# Direct pool creation for existing code that needs to be updated later
-def create_async_pool(max_size: int = MAX_CONNECTION_POOL_SIZE) -> AsyncConnectionPool:
-    """Create an async connection pool (use within a try-finally block)."""
-    return AsyncConnectionPool(
-        conninfo=DB_URI,
-        max_size=max_size,
-        kwargs=CONNECTION_POOL_KWARGS,
-        open=False  # Ensure pool is not opened in constructor
-    )

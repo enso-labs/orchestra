@@ -121,10 +121,11 @@ class Agent:
         a2a: dict[str, A2AServer] = None,
         arcade: ArcadeConfig = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
+        collection: dict = None,
         checkpointer: AsyncPostgresSaver = None,
         debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
     ):
-        self.tools = [] if len(tools) == 0 else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo})
+        self.tools = [] if len(tools) == 0 and not collection else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo, 'collection': collection})
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         self.checkpointer = checkpointer
         system = self.config.get('configurable').get("system", None)
