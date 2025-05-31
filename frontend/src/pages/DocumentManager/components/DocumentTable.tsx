@@ -14,7 +14,7 @@ interface DocumentTableProps {
   collectionId: string
 }
 
-export function DocumentTable({ documents, onDeleteDocument, collectionId }: DocumentTableProps) {
+export function DocumentTable({ documents, onDeleteDocument }: DocumentTableProps) {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
