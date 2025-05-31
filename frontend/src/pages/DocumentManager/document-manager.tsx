@@ -9,7 +9,7 @@ import { UploadSection } from "./components/UploadSection"
 import { TextInputSection } from "./components/TextInputSection"
 import { Header } from "./components/Header"
 import { getCollections, deleteCollection, createCollection, getDocuments, deleteDocument } from "@/services/ragService"
-import { Collection, Document } from "./types"
+import { Collection } from "./types"
 import { EmptyState } from "./components/EmptyState"
 import { Menu, Loader2 } from "lucide-react"
 import { useParams, useNavigate } from "react-router-dom"
@@ -94,9 +94,9 @@ export default function DocumentManager() {
     }
   };
 
-  const handleFileSelect = () => {
-    // TODO: Implement file selection logic
-  }
+  // const handleFileSelect = () => {
+  //   // TODO: Implement file selection logic
+  // }
 
   const handleTextSubmit = () => {
     // TODO: Implement text submission logic
