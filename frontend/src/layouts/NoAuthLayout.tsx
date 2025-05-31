@@ -9,7 +9,7 @@ export default function NoAuthLayout({ children }: { children: React.ReactNode }
     <div className="min-h-screen flex flex-col bg-background">
       {children}
       <footer className="mt-auto bg-card border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-muted-foreground text-xs">
             &copy; 2025 Ensō Labs. All rights reserved. v{appVersion}
           </p>

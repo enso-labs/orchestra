@@ -17,7 +17,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <HomeIcon />
             
@@ -29,6 +29,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <Link to="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
                 Chat
               </Link>
+              {/* <Link to="/collections" className="text-muted-foreground hover:text-foreground transition-colors">
+                Collections
+              </Link> */}
               <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
                 Settings
               </Link>
@@ -50,7 +53,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {children}
 
       <footer className="mt-auto bg-card border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-muted-foreground text-xs">
             &copy; 2025 Ensō. All rights reserved. v{appVersion}
           </p>

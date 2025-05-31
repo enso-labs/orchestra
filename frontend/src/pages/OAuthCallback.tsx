@@ -72,7 +72,7 @@ const OAuthCallback = () => {
         }
 
         // Navigate to dashboard
-        navigate('/dashboard');
+        navigate('/chat');
       } catch (error) {
         console.error('OAuth authentication failed:', error);
         navigate('/login?error=authentication_failed');

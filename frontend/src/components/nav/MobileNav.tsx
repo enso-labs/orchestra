@@ -25,6 +25,9 @@ export function MobileNav({ onLogout }: MobileNavProps) {
           <Link to="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
             Chat
           </Link>
+          {/* <Link to="/collections" className="text-muted-foreground hover:text-foreground transition-colors">
+            Collections
+          </Link> */}
           <Link to="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
             Settings
           </Link>

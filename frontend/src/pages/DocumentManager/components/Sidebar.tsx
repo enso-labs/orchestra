@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { FolderPlus, FileText } from "lucide-react"
+import { Link } from "react-router-dom"
 
 interface Collection {
   uuid: string
@@ -26,7 +27,14 @@ export function Sidebar({
   return (
     <div className="p-4 md:p-6 h-full">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-medium">Collections</h2>
+        <Link to="/" className="flex items-center gap-2">
+                <img 
+                  src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4" 
+                  alt="Logo" 
+                  className="w-8 h-8 rounded-full" 
+                />
+                <h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+              </Link>
         <Button variant="ghost" size="sm" onClick={onCreateCollection} className="h-8 w-8 p-0">
           <FolderPlus className="h-4 w-4" />
         </Button>
