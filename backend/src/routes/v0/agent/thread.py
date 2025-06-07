@@ -1,14 +1,13 @@
 from typing import Annotated
 from fastapi import Request, status, Depends, APIRouter,  Body, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repos.user_repo import UserRepo
 from src.controllers.agent import AgentController
 from src.entities import Answer, AgentThread, Threads
 from src.utils.auth import verify_credentials
-from src.services.db import get_async_db, get_db
+from src.services.db import get_async_db
 from src.utils.agent import Agent
 from src.models import ProtectedUser
 from src.utils.logger import logger

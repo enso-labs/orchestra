@@ -1,96 +1,28 @@
-import { useState, useEffect } from "react"
-import { getAgents, deleteAgent } from "@/services/agentService"
-import { toast } from "sonner"
-import { Agent, DashboardTabOption } from "@/entities"
+import { useState } from "react"
+import { DashboardTabOption } from "@/entities"
 import DashboardHeader from "./dashboard-header"
 import DashboardSearch from "./dashboard-search"
 import DashboardTabs from "./dashboard-tabs"
 import DashboardTabsContent from "./dashboard-tabs-content"
+import { useAgentContext } from "@/context/AgentContext"
+import { useAppContext } from "@/context/AppContext"
 
 export default function DashboardSection() {
-	const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [myAgents, setMyAgents] = useState<Agent[]>([])
-  const [publicAgents, setPublicAgents] = useState<Agent[]>([])
-  const [privateAgents, setPrivateAgents] = useState<Agent[]>([])
-  const [filteredMyAgents, setFilteredMyAgents] = useState<Agent[]>([])
-  const [filteredPublicAgents, setFilteredPublicAgents] = useState<Agent[]>([])
-  const [filteredPrivateAgents, setFilteredPrivateAgents] = useState<Agent[]>([])
-  const [activeTab, setActiveTab] = useState<DashboardTabOption>("agents")
-  const [isLoading, setIsLoading] = useState(true)
+  const { loading } = useAppContext();
+  const { 
+    filteredAgents,
+    publicAgents,
+    privateAgents,
+    useEffectGetAgents, 
+    handleDeleteAgent, 
+    useEffectGetFilteredAgents 
+  } = useAgentContext();
+	const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<DashboardTabOption>("agents");
 
-  // Fetch agents from API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        const result = await getAgents()
-        const agents = result.agents || []
-        
-        // Filter agents into respective categories
-        const myAgentsList = agents.filter((agent: Agent) => !agent.public)
-        const publicAgentsList = agents.filter((agent: Agent) => agent.public)
-        
-        // For now, we'll keep privateAgents separate, but in a real app
-        // this might be agents shared with you but not owned by you
-        const privateAgentsList: Agent[] = []
-        
-        setMyAgents(myAgentsList)
-        setPublicAgents(publicAgentsList)
-        setPrivateAgents(privateAgentsList)
-        
-        setFilteredMyAgents(myAgentsList)
-        setFilteredPublicAgents(publicAgentsList)
-        setFilteredPrivateAgents(privateAgentsList)
-      } catch (error) {
-        console.error("Failed to fetch agents:", error)
-        toast.error("Failed to load agents")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    
-    fetchData()
-  }, [])
-
-  // Handle agent deletion
-  const handleDeleteAgent = async (agentId: string) => {
-    if (confirm("Are you sure you want to delete this agent?")) {
-      try {
-        await deleteAgent(agentId)
-        
-        // Update the agents list after deletion
-        setMyAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId))
-        setFilteredMyAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId))
-        
-        toast.success("Agent deleted successfully")
-      } catch (error) {
-        console.error("Failed to delete agent:", error)
-        toast.error("Failed to delete agent")
-      }
-    }
-  }
-
-  // Filter agents based on search term and selected categories
-  useEffect(() => {
-    const filterAgents = (agents: Agent[]) => {
-      return agents.filter((agent) => {
-        const matchesSearch =
-          agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          agent.description.toLowerCase().includes(searchTerm.toLowerCase())
-
-        const matchesCategories =
-          selectedCategories.length === 0 || 
-          (agent.categories && selectedCategories.some(cat => agent.categories?.includes(cat)))
-
-        return matchesSearch && matchesCategories
-      })
-    }
-
-    setFilteredMyAgents(filterAgents(myAgents))
-    setFilteredPublicAgents(filterAgents(publicAgents))
-    setFilteredPrivateAgents(filterAgents(privateAgents))
-  }, [searchTerm, selectedCategories, myAgents, publicAgents, privateAgents])
+  useEffectGetAgents();
+  useEffectGetFilteredAgents(searchTerm, selectedCategories);
 
   return (
     <main className="px-4 py-4 sm:px-6">
@@ -110,18 +42,18 @@ export default function DashboardSection() {
 					<DashboardTabs
 						activeTab={activeTab}
 						setActiveTab={setActiveTab}
-						filteredMyAgents={filteredMyAgents}
-						filteredPublicAgents={filteredPublicAgents}
-						filteredPrivateAgents={filteredPrivateAgents}
+						filteredMyAgents={filteredAgents}
+						filteredPublicAgents={publicAgents}
+						filteredPrivateAgents={privateAgents}
 					/>
 
 					{/* Tab content */}
 					<DashboardTabsContent
 						activeTab={activeTab}
-						filteredMyAgents={filteredMyAgents}
-						filteredPublicAgents={filteredPublicAgents}
-						filteredPrivateAgents={filteredPrivateAgents}
-						isLoading={isLoading}
+						filteredMyAgents={filteredAgents}
+						filteredPublicAgents={publicAgents}
+						filteredPrivateAgents={privateAgents}
+						isLoading={loading}
 						handleDeleteAgent={handleDeleteAgent}
 					/>
 				</div>

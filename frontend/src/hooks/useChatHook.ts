@@ -236,7 +236,7 @@ export default function useChatHook() {
 
     const getHistory = async (page: number = 1, perPage: number = 20, agentId: string = '') => {
         try {
-            const url = agentId ? `/agents/${agentId}/thread` : '/llm/thread';
+            const url = agentId ? `/agents/${agentId}/threads` : '/threads';
             const params = { page, per_page: perPage };
             const res = await apiClient.get(url, {
                 headers: {

@@ -3,7 +3,7 @@ import apiClient from "../lib/utils/apiClient";
 export const getAgents = async () => {
   try {
     const response = await apiClient.get('/agents');
-    return response.data;
+    return response;
   } catch (error) {
     throw error;
   }

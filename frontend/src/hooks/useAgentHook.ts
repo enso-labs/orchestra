@@ -1,13 +1,18 @@
+import { useAppContext } from '@/context/AppContext';
+import { toast } from 'sonner';
 import { useChatContext } from '@/context/ChatContext';
-import { createAgent, createAgentRevision } from '@/services/agentService';
+import { Agent } from '@/entities';
+import { createAgent, createAgentRevision, deleteAgent, getAgents } from '@/services/agentService';
 import { createSetting } from '@/services/settingService';
 import debug from 'debug';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 debug.enable('hooks:*');
 // const logger = debug('hooks:useAppHook');
 
 const INIT_AGENT_STATE = {
+	agents: [],
+	fitlered:[],
 	agentDetails: {
 		name: "",
 		description: "",
@@ -17,9 +22,21 @@ const INIT_AGENT_STATE = {
 }
 
 export default function useAgentHook() {
+	const { setLoading } = useAppContext();
 	const { payload, setPayload } = useChatContext();
 	const [agentDetails, setAgentDetails] = useState(INIT_AGENT_STATE.agentDetails);
 	const [isCreating, setIsCreating] = useState(false);
+	const [agents, setAgents] = useState<Agent[]>(INIT_AGENT_STATE.agents);
+	const [filteredAgents, setFilteredAgents] = useState<Agent[]>(INIT_AGENT_STATE.agents);
+	const publicAgents = useMemo(() => 
+		filteredAgents.filter((agent: Agent) => agent.public),
+		[agents]
+	);
+	const privateAgents = useMemo(() => 
+		filteredAgents.filter((agent: Agent) => !agent.public),
+		[agents]
+	);
+
 
 	const handleCreateAgent = async () => {
     try {
@@ -109,12 +126,76 @@ export default function useAgentHook() {
 		setAgentDetails(agent);
 	}
 
+	const handleGetAgents = async () => {
+		const response = await getAgents();
+		setAgents(response.data.agents);
+	}
+
+	// Handle agent deletion
+  const handleDeleteAgent = async (agentId: string) => {
+    if (confirm("Are you sure you want to delete this agent?")) {
+      try {
+        await deleteAgent(agentId);
+        setAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId));
+        toast.success("Agent deleted successfully")
+      } catch (error) {
+        console.error("Failed to delete agent:", error)
+        toast.error("Failed to delete agent")
+      }
+    }
+  }
+
+	const useEffectGetAgents = async() => {
+		useEffect(() => {
+			const fetchAgents = async () => {
+				try {
+					setLoading(true)
+					await handleGetAgents();
+				} catch (error) {
+					console.error("Failed to fetch agents:", error)
+					toast.error("Failed to load agents")
+				} finally {
+					setLoading(false)
+				}
+			}
+			fetchAgents();
+		}, []);	
+	}
+
+	const useEffectGetFilteredAgents = (searchTerm: string, selectedCategories: string[]) => {
+		useEffect(() => {
+			const filterAgents = (agents: Agent[]) => {
+				return agents.filter((agent) => {
+					const matchesSearch =
+						agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+						agent.description.toLowerCase().includes(searchTerm.toLowerCase())
+
+					const matchesCategories =
+						selectedCategories.length === 0 || 
+						(agent.categories && selectedCategories.some(cat => agent.categories?.includes(cat)))
+
+					return matchesSearch && matchesCategories
+				})
+			}
+
+			setFilteredAgents(filterAgents(agents))
+		}, [searchTerm, selectedCategories, agents, publicAgents, privateAgents])
+	}
+
 	return {
 		agentDetails,
 		setAgentDetails,
 		isCreating,
 		handleCreateAgent,
 		handleSelectAgent,
-		handleUpdateAgent
+		handleUpdateAgent,
+		agents,
+		handleGetAgents,
+		useEffectGetAgents,
+		publicAgents,
+		privateAgents,
+		handleDeleteAgent,
+		filteredAgents,
+		useEffectGetFilteredAgents,
 	}
 }
