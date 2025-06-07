@@ -9,15 +9,8 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
-import CopyButton from "../buttons/CopyButton";
 import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
 import useImageHook from "@/hooks/useImageHook";
-
-interface MarkdownViewerProps {
-  content: string
-  className?: string
-  theme?: "light" | "dark"
-}
 
 interface CodeBlockProps {
   inline?: boolean
