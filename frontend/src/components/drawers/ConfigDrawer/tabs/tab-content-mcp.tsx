@@ -7,7 +7,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs';
 import 'prismjs/components/prism-json';
-import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useState, useEffect, useMemo } from "react";
 import { useToolContext } from "@/context/ToolContext";
 import { useChatContext } from "@/context/ChatContext";

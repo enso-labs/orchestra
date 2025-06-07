@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import 'prismjs/components/prism-json';
-import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { useState, useEffect } from "react";
 import { useToolContext } from "@/context/ToolContext";
 import { useChatContext } from "@/context/ChatContext";

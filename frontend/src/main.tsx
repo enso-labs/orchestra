@@ -1,5 +1,4 @@
 import './styles/globals.css'
-import 'highlight.js/styles/github-dark-dimmed.min.css';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AppRoutes } from './routes'
