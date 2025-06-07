@@ -165,8 +165,3 @@ export default function Chat() {
     </ChatLayout>
   )
 }
-
-function useEffectGetAgents() {
-  throw new Error("Function not implemented.")
-}
-
