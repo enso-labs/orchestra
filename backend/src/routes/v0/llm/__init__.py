@@ -69,9 +69,9 @@ async def chat_completion(
 ### Create New Thread
 ################################################################################
 @router.post(
-    "/threads",
+    "/llm/thread",
     name="Create New Thread",
-    tags=[TAG],
+    tags=["LLM"],
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from new thread.",
@@ -112,9 +112,9 @@ async def new_thread(
 ### Query Existing Thread
 ################################################################################
 @router.post(
-    "/threads/{thread_id}", 
+    "/llm/thread/{thread_id}", 
     name="Query Existing Thread",
-    tags=[TAG],
+    tags=["LLM"],
     responses={
         status.HTTP_200_OK: {
             "description": "Latest message from existing thread.",

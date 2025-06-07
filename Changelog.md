@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/327-agent-select-from-chatinput (2025-06-06)
   - feat/322-add-react-voice-viz (2025-05-29)
   - feat/321-knowledge-source-page (2025-05-25)
   - feat/319-integrate-langconnect (2025-05-24)

@@ -25,6 +25,7 @@ const initChatState = {
     preset: null,
     toolCallMessage: null,
     payload: {
+        agent: null,
         threadId: '',
         images: [] as string[],
         query: '',

@@ -1,6 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
-// import remarkGfm from "remark-gfm";
+import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import CopyButton from "../buttons/CopyButton";
@@ -42,14 +42,11 @@ const BaseCard = ({ content }: { content: string }) => {
                         </div>
                     ) : (
                         <code
-                            className="rounded text-green-400 bg-green-400/10 py-0.5 px-1 font-bold"
+                            className="rounded text-green-400 bg-green-400/10 px-1 py-0.5 font-bold whitespace-pre-wrap"
                             {...props}
                         />
                     );
                 },
-                // pre: ({ node, ...props }) => (
-                //     <pre className="bg-gray-950 text-white p-2 rounded-md" {...props} />
-                // ),
                 ul: ({ node, ...props }) => (
                     <ul className="list-disc pl-5 my-2" {...props} />
                 ),
@@ -97,7 +94,7 @@ const BaseCard = ({ content }: { content: string }) => {
                     <hr className="my-5" />
                 ),
             }}
-            // remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeSanitize, rehypeRaw, rehypeHighlight]}
         >
             {content}

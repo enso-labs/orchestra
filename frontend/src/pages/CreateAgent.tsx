@@ -18,6 +18,7 @@ import {
 // import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
 import { useAgentContext } from "@/context/AgentContext";
+import SelectModel from "@/components/selects/SelectModel";
 
 
 export default function CreateAgent() {
@@ -224,11 +225,6 @@ export default function CreateAgent() {
             </div>
 
             <div>
-              <label className="block mb-2 text-sm font-medium">Model</label>
-              <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" disabled value={payload.model} />
-            </div>
-
-            <div>
               <label className="block mb-2 text-sm font-medium">System Message</label>
               <div className="relative">
                 <Textarea
@@ -299,6 +295,11 @@ export default function CreateAgent() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium">Model</label>
+              <SelectModel />
             </div>
 
             {/* <div>
@@ -433,11 +434,6 @@ export default function CreateAgent() {
                       </div>
 
                       <div>
-                        <label className="block mb-2 text-sm font-medium">Model</label>
-                        <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" disabled value={payload.model} />
-                      </div>
-
-                      <div>
                         <label className="block mb-2 text-sm font-medium">System Message</label>
                         <div className="relative">
                           <Textarea
@@ -508,6 +504,11 @@ export default function CreateAgent() {
                             </div>
                           </div>
                         )}
+                      </div>
+
+                      <div>
+                        <label className="block mb-2 text-sm font-medium">Model</label>
+                        <SelectModel />
                       </div>
 
                       {/* <div>

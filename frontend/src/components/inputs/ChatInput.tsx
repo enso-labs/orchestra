@@ -12,8 +12,11 @@ import { AudioRecorder } from "./AudioRecorder"
 import ChatSubmitButton from "../buttons/ChatSubmitButton"
 import ConfigDrawer from "../drawers/ConfigDrawer"
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer"
+import MenuAgents from "../menu/MenuAgents/menu-agents"
+import { useAgentContext } from "@/context/AgentContext"
 
 export default function ChatInput() {
+  const { agents, selectedAgent } = useAgentContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   
@@ -46,7 +49,11 @@ export default function ChatInput() {
   const recorderControls = useVoiceVisualizer();
 
   const handleSubmit = useCallback(() => {
-		handleQuery();
+    if (selectedAgent) {
+      handleQuery(selectedAgent.id);
+    } else {
+      handleQuery();
+    }
 		// Clear images after sending
 		setImages([]);
 		setPayload((prev: any) => ({
@@ -126,24 +133,54 @@ export default function ChatInput() {
         }}
       />
       <div className="flex justify-between items-center bg-background border border-input rounded-b-2xl border-t-0">
-        <div className="flex gap-1 mb-1 px-1">
-          {currentModel?.metadata?.multimodal && (
-            <>
-              {isMobile() ? (
-                <MainToolTip content="Take Photo">
-                  <>
+        <div className="flex items-center gap-2 mb-1 px-1 flex-1">
+          {/* Agent Selector - positioned at bottom left */}
+         {agents.length > 0 && (
+          <div className="w-48">
+            <MenuAgents />
+          </div>
+         )}
+          
+          <div className="flex gap-1">
+            {currentModel?.metadata?.multimodal && (
+              <>
+                {isMobile() ? (
+                  <MainToolTip content="Take Photo">
+                    <>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+                        onClick={triggerCameraInput}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <input
+                          type="file"
+                          className="hidden"
+                          ref={cameraInputRef}
+                          accept="image/*"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || [])
+                            addImages(files)
+                            e.target.value = "" // Reset input
+                          }}
+                        />
+                    </>
+                  </MainToolTip>
+                ) : (
+                  <MainToolTip content="Upload Files">
                     <Button
                       size="icon"
                       variant="outline"
                       className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
-                      onClick={triggerCameraInput}
+                      onClick={triggerFileInput}
                     >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <input
+                      <input
                         type="file"
                         className="hidden"
-                        ref={cameraInputRef}
+                        ref={fileInputRef}
+                        multiple
                         accept="image/*"
                         onChange={(e) => {
                           const files = Array.from(e.target.files || [])
@@ -151,35 +188,14 @@ export default function ChatInput() {
                           e.target.value = "" // Reset input
                         }}
                       />
-                  </>
-                </MainToolTip>
-              ) : (
-                <MainToolTip content="Upload Files">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
-                    onClick={triggerFileInput}
-                  >
-                    <input
-                      type="file"
-                      className="hidden"
-                      ref={fileInputRef}
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || [])
-                        addImages(files)
-                        e.target.value = "" // Reset input
-                      }}
-                    />
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </MainToolTip>
-              )}
-            </>
-          )}
-          <ConfigDrawer />
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </MainToolTip>
+                )}
+              </>
+            )}
+            <ConfigDrawer />
+          </div>
         </div>
         <div className="flex items-center gap-2 mr-2">
           <AudioRecorder 

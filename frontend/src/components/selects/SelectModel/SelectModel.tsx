@@ -4,54 +4,59 @@ import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/compone
 import { Model } from "@/services/modelService";
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from 'react-icons/si';
 import GroqIcon from "@/components/icons/GroqIcon";
-import { useSearchParams } from "react-router-dom";
+import { useQueryParam, StringParam, withDefault } from 'use-query-params';
 import { useChatContext } from "@/context/ChatContext";
+import { DEFAULT_CHAT_MODEL } from "@/config/llm";
+
+// Create a parameter with default value
+const ModelParam = withDefault(StringParam, DEFAULT_CHAT_MODEL);
 
 function SelectModel() {
-	const { payload, useSelectModelEffect, models } = useChatContext();
-	const [searchParams, setSearchParams] = useSearchParams();
-	const currentModel = searchParams.get('model') || '';
+	const { setPayload, models } = useChatContext();
+	const [model, setModel] = useQueryParam('model', ModelParam);
+
 	const handleModelChange = (modelId: string) => {
-			setSearchParams({ model: modelId });
+		setModel(modelId);
 	}
 
-	useSelectModelEffect(currentModel);
-
+	// Update payload.model when URL param changes
 	useEffect(() => {
-			setSearchParams({ model: payload.model });
-	}, [payload.model]);
+		if (model) {
+			setPayload((prev: any) => ({ ...prev, model }));
+		}
+	}, [model, setPayload]);
 
 	return (
-		<Select value={currentModel} onValueChange={handleModelChange}>
+		<Select value={model} onValueChange={handleModelChange}>
 			<SelectTrigger>
-					<SelectValue placeholder="Select Model" />
+				<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
 			<SelectContent>
-					{models
-							.sort((a: Model, b: Model) => a.id.localeCompare(b.id))
-							.filter((model: Model) => !model.metadata.embedding)
-							.map((model: Model) => (
-							<SelectItem key={model.id} value={model.id}>
-									<div className="flex items-center gap-2">
-									{model.provider === 'openai' && (
-											<SiOpenai className="h-4 w-4" />
-									)}
-									{model.provider === 'anthropic' && (
-											<SiAnthropic className="h-4 w-4" />
-									)}
-									{model.provider === 'ollama' && (
-											<SiOllama className="h-4 w-4" />
-									)}
-									{model.provider === 'groq' && (
-											<GroqIcon />
-									)}
-									{model.provider === 'google' && (
-											<SiGoogle className="h-4 w-4" />
-									)}
-									{model.label}
-									</div>
-							</SelectItem>
-					))}
+				{models
+					.sort((a: Model, b: Model) => a.id.localeCompare(b.id))
+					.filter((model: Model) => !model.metadata.embedding)
+					.map((model: Model) => (
+					<SelectItem key={model.id} value={model.id}>
+						<div className="flex items-center gap-2">
+						{model.provider === 'openai' && (
+							<SiOpenai className="h-4 w-4" />
+						)}
+						{model.provider === 'anthropic' && (
+							<SiAnthropic className="h-4 w-4" />
+						)}
+						{model.provider === 'ollama' && (
+							<SiOllama className="h-4 w-4" />
+						)}
+						{model.provider === 'groq' && (
+							<GroqIcon />
+						)}
+						{model.provider === 'google' && (
+							<SiGoogle className="h-4 w-4" />
+						)}
+						{model.label}
+						</div>
+					</SelectItem>
+				))}
 			</SelectContent>
 		</Select>
 	);

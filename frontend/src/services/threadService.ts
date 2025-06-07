@@ -30,7 +30,7 @@ const getSystemPrompt = (previousSystemPrompt?: string) => {
 
 export const findThread = async (threadId: string) => {
   try {
-    const response = await apiClient.get(`/threads/${threadId}`);
+    const response = await apiClient.get(`/llm/thread/${threadId}`);
     return response;
   } catch (error: any) {
     console.error('Error finding thread:', error);
@@ -45,7 +45,7 @@ export const findThread = async (threadId: string) => {
  */
 export const createJsonThread = async (payload: ThreadPayload) => {
   try {
-    const response = await apiClient.post('/threads', payload, {
+    const response = await apiClient.post('/llm/thread', payload, {
       headers: {
         'Accept': 'application/json',
       }
@@ -83,7 +83,7 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
 
 export const streamThread = (payload: ThreadPayload, agentId: string): SSE => {
   const responseData = constructPayload(payload, agentId);
-  const url = agentId ? `/agents/${agentId}/threads` : '/threads';
+  const url = agentId ? `/agents/${agentId}/thread` : '/llm/thread';
   const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
   {
     headers: {
