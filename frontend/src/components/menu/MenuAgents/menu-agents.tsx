@@ -75,7 +75,7 @@ function MenuAgents() {
 					onChange={handleSearchChange}
 					onClick={handleSearchClick}
 					onKeyDown={handleSearchKeyDown}
-					onFocus={handleSearchClick}
+					onFocus={(e: React.FocusEvent<HTMLInputElement>) => handleSearchClick(e as unknown as React.MouseEvent)}
 					className="border-0 px-0 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
 				/>
 			</div>
