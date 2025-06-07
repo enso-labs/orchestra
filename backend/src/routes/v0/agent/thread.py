@@ -64,7 +64,7 @@ async def list_agent_threads(
 ### Create New Thread
 ################################################################################
 @router.post(
-    "/agents/{agent_id}/threads", 
+    "/agents/{agent_id}/thread", 
     name="Query New Agent Thread",
     responses={
         status.HTTP_200_OK: {
@@ -105,7 +105,7 @@ async def agent_new_thread(
 ### Query Existing Thread
 ################################################################################
 @router.post(
-    "/agents/{agent_id}/threads/{thread_id}", 
+    "/agents/{agent_id}/thread/{thread_id}", 
     name="Query Existing Agent Thread",
     responses={
         status.HTTP_200_OK: {

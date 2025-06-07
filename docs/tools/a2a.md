@@ -57,7 +57,7 @@ curl -X 'POST' \
 
 ```bash
 curl -X 'POST' \
-  'https://demo.enso.sh/api/threads' \
+  'https://demo.enso.sh/api/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
