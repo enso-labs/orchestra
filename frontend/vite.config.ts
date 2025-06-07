@@ -8,6 +8,9 @@ const MANIFEST: Partial<VitePWAOptions> = {
   strategies: 'generateSW',
   includeAssets: ['favicon.ico', 'icons/*.png'],
   injectRegister: null, // Handle registration manually
+  workbox: {
+    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+  },
   manifest: {
     name: 'Threadable Chat',
     short_name: 'Threadable Chat',
@@ -49,6 +52,14 @@ export default defineConfig({
     outDir: '../backend/src/public',
     emptyOutDir: true,
     sourcemap: process.env.NODE_ENV === 'development',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+        }
+      }
+    }
   },
   resolve: {
     alias: {
@@ -56,6 +67,7 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: ['6382-99-36-3-176.ngrok-free.app'],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
