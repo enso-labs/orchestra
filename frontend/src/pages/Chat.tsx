@@ -14,6 +14,7 @@ import { ColorModeButton } from "@/components/buttons/ColorModeButton"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import SelectModel from "@/components/selects/SelectModel"
+import { useAgentContext } from "@/context/AgentContext"
 // import SystemMessageCard from "@/components/cards/SystemMessageCard"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
@@ -42,6 +43,7 @@ export default function Chat() {
     // currentModel,
     setSelectedToolMessage
   } = useChatContext()
+  const { useEffectGetAgents } = useAgentContext();
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
@@ -87,6 +89,8 @@ export default function Chat() {
     prevThreadIdRef.current = payload.threadId
     setCurrentThreadId(payload.threadId || null)
   }, [payload.threadId])
+
+  useEffectGetAgents();
 
   if (messages.length === 0) {
     return (
@@ -160,5 +164,9 @@ export default function Chat() {
       </div>
     </ChatLayout>
   )
+}
+
+function useEffectGetAgents() {
+  throw new Error("Function not implemented.")
 }
 

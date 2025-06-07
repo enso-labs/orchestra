@@ -22,7 +22,6 @@ const Contexts = () => {
     });
   }
 
-
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <AppProvider>

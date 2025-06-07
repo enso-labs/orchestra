@@ -1,17 +1,13 @@
 import NoAuthLayout from '../layouts/NoAuthLayout';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useChatContext } from '@/context/ChatContext';
-import { DEFAULT_CHAT_MODEL } from '@/config/llm';
 import HomeSection from '@/components/sections/home';
 import SelectModel from '@/components/selects/SelectModel';
 
 export default function Home() {
-	const { setPayload, useSelectModelEffect, useFetchModelsEffect } = useChatContext();
-	const [searchParams, setSearchParams] = useSearchParams();
-
-	const currentModel = searchParams.get('model') || DEFAULT_CHAT_MODEL;
+	const { setPayload, useFetchModelsEffect } = useChatContext();
 
 	useEffect(() => {
 		const a2a = localStorage.getItem('a2a');
@@ -20,8 +16,8 @@ export default function Home() {
 		}
 	}, []);
 
-	useSelectModelEffect(currentModel);
-	useFetchModelsEffect(setSearchParams, currentModel);
+	// Just fetch models - SelectModel handles its own state
+	useFetchModelsEffect();
 
 	return (
 		<NoAuthLayout>

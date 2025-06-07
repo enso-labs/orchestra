@@ -13,10 +13,18 @@ debug.enable('hooks:*');
 const INIT_AGENT_STATE = {
 	agents: [],
 	fitlered:[],
+	selectedAgent: null,
 	agentDetails: {
+		id: "",
 		name: "",
 		description: "",
-		settings_id: "",
+		settings: {
+			id: "",
+			name: "",
+			value: {
+				system: "",
+			}
+		},
 		public: false
 	}
 }
@@ -27,6 +35,7 @@ export default function useAgentHook() {
 	const [agentDetails, setAgentDetails] = useState(INIT_AGENT_STATE.agentDetails);
 	const [isCreating, setIsCreating] = useState(false);
 	const [agents, setAgents] = useState<Agent[]>(INIT_AGENT_STATE.agents);
+	const [selectedAgent, setSelectedAgent] = useState<Agent | null>(INIT_AGENT_STATE.selectedAgent);
 	const [filteredAgents, setFilteredAgents] = useState<Agent[]>(INIT_AGENT_STATE.agents);
 	const publicAgents = useMemo(() => 
 		filteredAgents.filter((agent: Agent) => agent.public),
@@ -71,8 +80,10 @@ export default function useAgentHook() {
     } catch (error) {
       console.error("Failed to create agent:", error);
       alert(JSON.stringify(error))
+			return false;
     } finally {
       setIsCreating(false);
+			return true;
     }
   }
 
@@ -197,5 +208,7 @@ export default function useAgentHook() {
 		handleDeleteAgent,
 		filteredAgents,
 		useEffectGetFilteredAgents,
+		selectedAgent,
+		setSelectedAgent,
 	}
 }
