@@ -15,8 +15,8 @@ import { Menu, Loader2 } from "lucide-react"
 import { useParams, useNavigate } from "react-router-dom"
 
 export default function DocumentManager() {
-  const { collectionId } = useParams();
   const navigate = useNavigate();
+  const { collectionId } = useParams();
   const [activeTab, setActiveTab] = useState("upload")
   const [collections, setCollections] = useState<Collection[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -110,7 +110,9 @@ export default function DocumentManager() {
   const handleDeleteCollection = async () => {
     if (!selectedCollection) return
     
-    const selectedCollectionName = collections.find((collection: Collection) => collection.uuid === selectedCollection)?.name || 'this collection'
+    const selectedCollectionName = Array.isArray(collections) ? 
+      collections.find((collection: Collection) => collection.uuid === selectedCollection)?.name || 'this collection' :
+      'this collection'
     
     if (window.confirm(`Are you sure you want to delete "${selectedCollectionName}"? This action cannot be undone and will permanently remove all documents in this collection.`)) {
       try {
@@ -150,27 +152,29 @@ export default function DocumentManager() {
   useEffect(() => {
     const fetchCollections = async () => {
       try {
-        const collections = await getCollections();
-        console.log(collections);
-        setCollections(collections);
+        const response = await getCollections();
+        console.log(response);
+        const collectionsArray = Array.isArray(response) ? response : [];
+        setCollections(collectionsArray);
         
-        if (collections.length > 0) {
+        if (collectionsArray.length > 0) {
           if (collectionId) {
             // Check if the collection ID from URL exists
-            const foundCollection = collections.find((c: Collection) => c.uuid === collectionId);
+            const foundCollection = collectionsArray.find((c: Collection) => c.uuid === collectionId);
             if (foundCollection) {
               setSelectedCollection(collectionId);
             } else {
               // Collection not found, redirect to first collection
-              navigate(`/collections/${collections[0].uuid}`, { replace: true });
+              navigate(`/collections/${collectionsArray[0].uuid}`, { replace: true });
             }
           } else {
             // No collection ID in URL, redirect to first collection
-            navigate(`/collections/${collections[0].uuid}`, { replace: true });
+            navigate(`/collections/${collectionsArray[0].uuid}`, { replace: true });
           }
         } else {
-          // No collections, stay on /collections
+          // No collections, navigate to /collections
           setSelectedCollection("");
+          navigate('/collections', { replace: true });
         }
       } catch (error) {
         console.error('Error fetching collections:', error);
@@ -286,7 +290,7 @@ export default function DocumentManager() {
         <div className="flex-1 p-4 md:p-6 overflow-auto">
           <div className="max-w-6xl mx-auto">
             <Header
-              title={collections.find((collection: Collection) => collection.uuid === selectedCollection)?.name ?? ''}
+              title={Array.isArray(collections) ? collections.find((collection: Collection) => collection.uuid === selectedCollection)?.name ?? '' : ''}
               description="Manage documents in this collection"
               onMenuClick={() => setSidebarOpen(true)}
               onEditClick={handleEditCollection}
