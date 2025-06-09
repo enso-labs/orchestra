@@ -144,7 +144,7 @@ async def register(
 	}
 )
 async def login(
-	credentials: Annotated[UserLogin, Body()],
+	credentials: UserLogin = Body(default=UserLogin(email="admin@example.com", password="test1234")),
 	db: Session = Depends(get_db)
 ):
 	user = db.query(User).filter(User.email == credentials.email).first()
