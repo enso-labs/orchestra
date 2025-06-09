@@ -24,8 +24,7 @@ class AgentController:
     ):
         try:
             thread_id = thread_id or str(uuid.uuid4())
-            tools_str = f"and Tools: {', '.join(thread.tools)}" if thread.tools else ""
-            logger.info(f"Creating new thread with ID: {thread_id} {tools_str} and Query: {thread.query}")
+            logger.info(f"Creating new thread with ID: {thread_id} and Query: {thread.query}")
             config = {
                 "thread_id": thread_id, 
                 "user_id": self.user_repo.user_id or None, 

@@ -12,6 +12,7 @@ from src.tools.shell import shell_exec
 from src.tools.search import search_engine
 from src.tools.a2a import init_a2a_tools
 from src.tools.arcade import init_arcade_tools
+from src.tools.api import generate_tools_from_openapi_json
 
 TOOL_LIBRARY = [       
     shell_exec,
@@ -79,9 +80,12 @@ async def init_tools(
             tools_to_add = init_a2a_tools(thread_id=metadata.get('thread_id'), a2a=tool)
         elif isinstance(tool, ArcadeConfig) and (tool.tools or tool.toolkits):
             tools_to_add = init_arcade_tools(arcade=tool)
-        elif isinstance(tool, dict):
+        elif isinstance(tool, dict) and not tool.get('spec', None):
             mcp_service = McpService(tool)
             tools_to_add = await mcp_service.get_tools()
+        elif isinstance(tool, dict) and tool.get('spec'):
+            api_tools = generate_tools_from_openapi_json(tool.get('spec'), headers=tool.get('headers', {}))
+            tools_to_add = [api_tools]
         elif isinstance(tool, str):
             tools_to_add = dynamic_tools(selected_tools=tool)
             

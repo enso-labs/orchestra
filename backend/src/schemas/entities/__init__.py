@@ -8,6 +8,7 @@ from src.schemas.entities.a2a import A2AServer
 from src.constants.llm import ModelName
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
+    NEW_THREAD_API_TOOLS,
     # LIST_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,
     NEW_THREAD_ANSWER_EXAMPLE,
@@ -80,7 +81,7 @@ class NewThread(ExistingThread):
     visualize: Optional[bool] = Field(default=False)
     
     model_config = {
-        "json_schema_extra": {"example": NEW_THREAD_QUERY_EXAMPLE}
+        "json_schema_extra": {"example": NEW_THREAD_API_TOOLS}
     }
         
 class Thread(BaseModel):
