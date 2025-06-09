@@ -34,12 +34,9 @@ class AgentController:
             }
                 
             agent = Agent(config=config, user_repo=self.user_repo)
-            await agent.abuilder(tools=thread.tools, 
-                                 model_name=thread.model, 
-                                 mcp=thread.mcp, 
-                                 collection=thread.collection,
-                                 arcade=thread.arcade,
-                                 a2a=thread.a2a)
+            await agent.abuilder(tools=[*thread.tools, thread.mcp, thread.a2a, thread.arcade], 
+                                 model_name=thread.model,
+                                 collection=thread.collection)
             messages = construct_messages(thread.query, thread.images)
             if output_type == 'text/event-stream':
                 return await agent.aprocess(messages, "text/event-stream")
@@ -75,7 +72,11 @@ class AgentController:
             }
             
             agent = Agent(config=config, user_repo=self.user_repo)
-            await agent.abuilder(tools=settings.get("tools", []), model_name=settings.get("model"), mcp=settings.get("mcp", None))
+            await agent.abuilder(
+                tools=[*settings.get("tools", []), settings.get("mcp", None), settings.get("a2a", None), settings.get("arcade", None)], 
+                model_name=settings.get("model"), 
+                collection=settings.get("collection")
+            )
             messages = construct_messages(query, settings.get("images"))
             if "text/event-stream" in request.headers.get("accept", ""):
                 return await agent.aprocess(messages, "text/event-stream")

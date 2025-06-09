@@ -106,10 +106,7 @@ class Agent:
     
     async def abuilder(
         self,
-        tools: list[str] = None,
-        mcp: dict = None,
-        a2a: dict[str, A2AServer] = None,
-        arcade: ArcadeConfig = None,
+        tools: list[str | dict | ArcadeConfig | dict[str, A2AServer]] = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         collection: dict = None,
         checkpointer: AsyncPostgresSaver = None,
@@ -120,7 +117,7 @@ class Agent:
         self.checkpointer = checkpointer
         system = self.config.get('configurable').get("system", None)
         self.tools = await init_tools(
-            tools=[*tools, mcp, a2a, arcade], 
+            tools=tools, 
             metadata={'user_repo': self.user_repo, 'collection': collection, 'thread_id': self.thread_id}
         )
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
