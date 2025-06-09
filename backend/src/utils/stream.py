@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from langgraph.graph import StateGraph
 from src.utils.logger import logger
 from src.services.db import get_checkpoint_db
-from src.entities import StreamContext
+from src.schemas.entities import StreamContext
 
 # https://langchain-ai.github.io/langgraph/how-tos/streaming/#messages
 async def astream_chunks(

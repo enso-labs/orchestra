@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.constants import DB_URI
-from src.models import User
+from src.schemas.models import User
 
 engine = create_engine(DB_URI)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

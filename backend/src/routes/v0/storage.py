@@ -10,7 +10,7 @@ from fastapi.responses import UJSONResponse
 from fastapi import (APIRouter, Depends, File, HTTPException, Response,
 					UploadFile, status, Query)
 
-from src.models import User
+from src.schemas.models import User
 from src.constants import ACCESS_KEY_ID, ACCESS_SECRET_KEY, BUCKET, TEST_USER_ID
 from src.services.storage import StorageService
 from src.utils.auth import verify_credentials

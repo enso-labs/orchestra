@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from src.models import Thread
+from src.schemas.models import Thread
 from sqlalchemy import delete
 from src.utils.logger import logger
 

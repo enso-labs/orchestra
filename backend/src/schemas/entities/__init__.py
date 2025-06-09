@@ -4,7 +4,7 @@ from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 from langchain_core.messages import AnyMessage
 
-from src.entities.a2a import A2AServer
+from src.schemas.entities.a2a import A2AServer
 from src.constants.llm import ModelName
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,

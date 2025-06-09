@@ -4,40 +4,30 @@ from fastapi.responses import Response, JSONResponse, StreamingResponse
 from langchain_core.messages import AnyMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
-from langchain_core.tools import StructuredTool
-from langchain_arcade import ArcadeToolManager
-from psycopg.connection_async import AsyncConnection
 from sqlalchemy import text
 from langgraph.errors import NodeInterrupt
 
 from src.repos.thread_repo import ThreadRepo
-from src.entities.a2a import A2AServer
-from src.services.mcp import McpService
+from src.schemas.entities.a2a import A2AServer
 from src.repos.user_repo import UserRepo
-from src.constants import APP_LOG_LEVEL, ARCADE_API_KEY, UserTokenKey
-from src.tools import dynamic_tools
+from src.constants import APP_LOG_LEVEL
+from src.tools import dynamic_tools, init_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
-from src.entities import Answer, Thread, ArcadeConfig
+from src.schemas.entities import Answer, Thread, ArcadeConfig
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
 from src.services.db import get_checkpoint_db
-from src.models import Thread as ThreadModel
-from src.utils.a2a import A2ACardResolver, a2a_builder
+from src.schemas.models import Thread as ThreadModel
 from src.utils.stream import astream_chunks
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None):
-        self.connection_kwargs = {
-            "autocommit": True,
-            "prepare_threshold": 0,
-        }
         self.user_id = config.get("user_id", None)
         self.thread_id = config.get("thread_id", None)
         self.agent_id = config.get("agent_id", None)
         self.config = {"configurable": config}
         self.graph = None
-        self.pool: AsyncConnection = None  # Don't create pool in constructor
         self.user_repo = user_repo
         self.model_name = config.get("model_name", None)
         self.llm: LLMWrapper = None
@@ -123,63 +113,27 @@ class Agent:
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
         collection: dict = None,
         checkpointer: AsyncPostgresSaver = None,
-        debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False
+        debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False,
+        name: str = "Orchestra"
     ):
-        self.tools = [] if len(tools) == 0 and not collection else dynamic_tools(selected_tools=tools, metadata={'user_repo': self.user_repo, 'collection': collection})
-        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
+        # Initialize Graph
         self.checkpointer = checkpointer
         system = self.config.get('configurable').get("system", None)
-        # Get MCP tools if provided
-        if mcp and len(mcp.keys()) > 0:
-            mcp_service = McpService(mcp)
-            self.tools.extend(await mcp_service.get_tools())
-            
-        if a2a and len(a2a.keys()) > 0:
-            # Check if a2a is a dictionary with multiple entries
-            if isinstance(a2a, dict):
-                # Loop through each entry in the a2a dictionary
-                for key, config in a2a.items():
-                    
-                    card = A2ACardResolver(
-                        base_url=config.base_url, 
-                        agent_card_path=config.agent_card_path
-                    ).get_agent_card()
-                    
-                    async def send_task(query: str):    
-                        return await a2a_builder(
-                            base_url=config.base_url, 
-                            query=query, 
-                            thread_id=self.thread_id
-                        )
-                    send_task.__doc__ = (
-                        f"Send query to remote agent: {card.name}. "
-                        f"Agent Card: {card.model_dump_json()}"
-                    )
-                    tool = StructuredTool.from_function(coroutine=send_task)
-                    tool.name = card.name.lower().replace(" ", "_")
-                    # tool.name = key + "_" + card.name.lower().replace(" ", "_")
-                    # tool.description = card.description
-                    self.tools.append(tool)
-                    
-        if arcade and (len(arcade.tools) > 0 or len(arcade.toolkits) > 0):
-            # token = await self.user_repo.get_token(key=UserTokenKey.ARCADE_API_KEY.name)
-            # if not token:
-            #     raise HTTPException(status_code=400, detail="No ARCADE_API_KEY found")
-            manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
-            tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
-            self.tools.extend(tools)
-            
+        self.tools = await init_tools(
+            tools=[*tools, mcp, a2a, arcade], 
+            metadata={'user_repo': self.user_repo, 'collection': collection, 'thread_id': self.thread_id}
+        )
+        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
+        # Create graph
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
         else:
             builder = chatbot_builder(config={"model": self.llm.model, "system": system})
             graph = builder.compile(checkpointer=self.checkpointer)
-            
-        if debug:
-            graph.debug = True
         self.graph = graph
-        self.graph.name = "Orchestra"
-        return graph
+        self.graph.debug = debug
+        self.graph.name = name
+        return self.graph
 
     async def aprocess(
         self,

@@ -1,45 +1,20 @@
 from typing import Annotated, Literal
-from fastapi import Body, HTTPException, Request, status, Depends, APIRouter
-from fastapi.responses import JSONResponse, UJSONResponse
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from fastapi import Body, HTTPException, status, Depends, APIRouter
+from fastapi.responses import UJSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from pydantic import BaseModel, EmailStr
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
 
+from src.repos.user_repo import UserRepo
 from src.services.airtable import AirtableService
 from src.services.oauth import OAuthService
-from src.services.db import get_db
-from src.utils.auth import verify_credentials
+from src.services.db import get_async_db
+from src.utils.auth import verify_credentials, create_access_token
 from src.utils.logger import logger
-from src.models import User
-from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
-from src.entities.auth import UserCreate, UserLogin, UserResponse, TokenResponse
+from src.schemas.models import User
+from src.schemas.entities.auth import UserCreate, UserLogin, UserResponse, TokenResponse
 
 airtable_service = AirtableService()
 router = APIRouter(tags=["Auth"])
-
-def create_access_token(user: User, expires_delta: timedelta | None = None):
-	if expires_delta:
-		expire = datetime.utcnow() + expires_delta
-	else:
-		expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
-	
-	# Create JWT payload with user data
-	to_encode = {
-		"user": {
-			"sub": user.email,
-			"id": str(user.id),
-			"username": user.username,
-			"email": user.email,
-			"name": user.name
-		},
-		"exp": expire
-	}
-	
-	return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 @router.post(
 	"/auth/register",
@@ -71,34 +46,25 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
 )
 async def register(
 	user_data: Annotated[UserCreate, Body()],
-	db: Session = Depends(get_db)
+	db: AsyncSession = Depends(get_async_db)
 ):
+	user_repo = UserRepo(db)
 	# Check if username exists
-	if db.query(User).filter(User.username == user_data.username).first():
+	if await user_repo.get_by_username(user_data.username):
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail="Username already registered"
 		)
 	
 	# Check if email exists
-	if db.query(User).filter(User.email == user_data.email).first():
+	if await user_repo.get_by_email(user_data.email):
 		raise HTTPException(
 			status_code=status.HTTP_400_BAD_REQUEST,
 			detail="Email already registered"
 		)
 
 	# Create new user
-	user = User(
-		username=user_data.username,
-		email=user_data.email,
-		name=user_data.name,
-		hashed_password=User.get_password_hash(user_data.password)
-	)
-	
-	db.add(user)
-	db.commit()
-	db.refresh(user)
-	
+	user = await user_repo.create(user_data.model_dump())
 	# Create user response
 	user_response = UserResponse(
 		id=str(user.id),
@@ -145,39 +111,44 @@ async def register(
 )
 async def login(
 	credentials: UserLogin = Body(default=UserLogin(email="admin@example.com", password="test1234")),
-	db: Session = Depends(get_db)
+	db: AsyncSession = Depends(get_async_db)
 ):
-	user = db.query(User).filter(User.email == credentials.email).first()
-	
-	if not user:
-		raise HTTPException(
-			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="Incorrect email or password",
-			headers={"WWW-Authenticate": "Basic"},
-		)
-	
-	if not User.verify_password(credentials.password, user.hashed_password):
-		raise HTTPException(
-			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="Incorrect email or password",
-			headers={"WWW-Authenticate": "Basic"},
-		)
-
-	# Create user response
-	user_response = UserResponse(
-		id=str(user.id),
-		username=user.username,
-		email=user.email,
-		name=user.name
-	)
-
-	# Create access token with full user object
-	access_token = create_access_token(user)
-	# Update airtable with latest login
 	try:
+		user_repo = UserRepo(db)
+		user = await user_repo.get_by_email(credentials.email)
+		if not user:
+			logger.warning(f"User not found: {credentials.email}")
+			raise HTTPException(
+				status_code=status.HTTP_401_UNAUTHORIZED,
+				detail="Incorrect email or password",
+				headers={"WWW-Authenticate": "Basic"},
+			)
+		
+		if not User.verify_password(credentials.password, user.hashed_password):
+			logger.warning(f"Incorrect password for user: {credentials.email}")
+			raise HTTPException(
+				status_code=status.HTTP_401_UNAUTHORIZED,
+				detail="Incorrect email or password",
+				headers={"WWW-Authenticate": "Basic"},
+			)
+
+		# Create user response
+		user_response = UserResponse(
+			id=str(user.id),
+			username=user.username,
+			email=user.email,
+			name=user.name
+		)
+
+		# Create access token with full user object
+		access_token = create_access_token(user)
+		# Update airtable with latest login
+	
 		await airtable_service.latest_login(user.email)
 	except Exception as e:
-		await airtable_service.create_contact(user_response)
+		logger.exception(f"Error logging in: {e}")
+		raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+	
 	return TokenResponse(
 		access_token=access_token,
 		token_type="bearer",
@@ -200,7 +171,7 @@ async def auth(provider: str = Literal["github", "google", "azure"]):
 		return UJSONResponse(detail=str(e), status_code=status.HTTP_400_BAD_REQUEST)
 
 @router.get("/auth/{provider}/callback", tags=['Auth'], include_in_schema=False)
-async def auth_callback(provider: str, code: str, db: Session = Depends(get_db)):
+async def auth_callback(provider: str, code: str, db: AsyncSession = Depends(get_async_db)):
 	try:
 		# Get the user info from the OAuth provider
 		oauth_service = OAuthService(provider)
@@ -211,9 +182,12 @@ async def auth_callback(provider: str, code: str, db: Session = Depends(get_db))
 		if status_code and int(status_code) != 200:
 			raise HTTPException(status_code=int(status_code), detail=user_info.get('message'))
   
+		user_repo = UserRepo(db)
 		# Check if the user already exists
-		existing_user = db.execute(select(User).where((User.email == user_info.get('email')) | (User.username == user_info.get('username'))))
-		existing_user = existing_user.scalars().first()
+		existing_user = await user_repo.get_by_email(user_info.get('email'))
+		if not existing_user:
+			existing_user = await user_repo.get_by_username(user_info.get('username'))
+			
 		if existing_user:
 			access_token = create_access_token(existing_user)
 			# Update airtable with latest login
@@ -226,7 +200,7 @@ async def auth_callback(provider: str, code: str, db: Session = Depends(get_db))
 					email=existing_user.email,
 					name=existing_user.name
 				))
-    
+	
 			return UJSONResponse(
 				content={"access_token": access_token, "token_type": "bearer"}, 
 				status_code=status.HTTP_200_OK
@@ -242,9 +216,7 @@ async def auth_callback(provider: str, code: str, db: Session = Depends(get_db))
 			access=1
 		)
 		# Add the new user to the database
-		db.add(new_user)
-		await db.commit()
-		await db.refresh(new_user)
+		await user_repo.create(new_user)
   
 		# Create user response
 		user_response = UserResponse(

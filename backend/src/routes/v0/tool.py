@@ -1,21 +1,18 @@
-from typing import Dict, Any, List, Literal, Optional
+import httpx
+from typing import Dict, Any, Literal, Optional
 from fastapi import status, Depends, APIRouter, Query
 from fastapi.responses import JSONResponse
-import httpx
-from langchain_arcade import ArcadeToolManager
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.constants.description import Description
-from src.entities import ArcadeConfig
 from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE, MCP_REQ_BODY_EXAMPLE, ARCADE_RESPONSE_EXAMPLE
-from src.constants import APP_LOG_LEVEL, ARCADE_API_KEY, UserTokenKey
-from src.models import ProtectedUser
+from src.constants import APP_LOG_LEVEL, ARCADE_API_KEY
+from src.schemas.models import ProtectedUser
 from src.repos.user_repo import UserRepo
 from src.utils.auth import verify_credentials
-from src.services.db import get_db, get_async_db
+from src.services.db import get_async_db
 from src.services.mcp import McpService
 from src.utils.logger import logger
-from langchain_mcp_adapters.client import MultiServerMCPClient
 
 TAG = "Tool"
 router = APIRouter(tags=[TAG])
@@ -23,8 +20,8 @@ router = APIRouter(tags=[TAG])
 ################################################################################
 ### List Tools
 ################################################################################
-from src.tools import tools, attach_tool_details
-tool_names = [attach_tool_details({'id':tool.name, 'description':tool.description, 'args':tool.args, 'tags':tool.tags}) for tool in tools]
+from src.tools import TOOL_LIBRARY, attach_tool_details
+tool_names = [attach_tool_details({'id':tool.name, 'description':tool.description, 'args':tool.args, 'tags':tool.tags}) for tool in TOOL_LIBRARY]
 tools_response = {"tools": tool_names}
 @router.get(
     "/tools", 
@@ -223,7 +220,7 @@ async def list_mcp_info(
 ### List A2A Info
 ################################################################################
 from src.utils.a2a import A2ACardResolver, A2AClient
-from src.entities.a2a import A2AServers
+from src.schemas.entities.a2a import A2AServers
 
 @router.post(
     "/tools/a2a/info", 

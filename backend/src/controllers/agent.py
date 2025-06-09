@@ -4,7 +4,7 @@ from fastapi import Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.repos.agent_repo import AgentRepo
-from src.entities import ExistingThread, NewThread
+from src.schemas.entities import ExistingThread, NewThread
 from src.utils.agent import Agent
 from src.repos.user_repo import UserRepo
 from src.utils.logger import logger

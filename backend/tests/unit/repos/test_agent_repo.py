@@ -5,7 +5,7 @@
 # from sqlalchemy.orm import sessionmaker
 
 # from src.constants import DB_URI
-# from src.models import Base
+# from src.schemas.models import Base
 # from src.repos.agent_repo import AgentRepo
 # from src.repos.settings_repo import SettingsRepo
 

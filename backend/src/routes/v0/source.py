@@ -5,7 +5,7 @@ from fastapi import File, UploadFile, status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from src.entities import AddDocuments
+from src.schemas.entities import AddDocuments
 from src.loaders import Loader
 from src.utils.auth import verify_credentials
 

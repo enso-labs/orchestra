@@ -2,7 +2,7 @@ from typing import Optional, List
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.models import Revision, Agent
+from src.schemas.models import Revision, Agent
 from sqlalchemy import select
 
 class RevisionRepo:

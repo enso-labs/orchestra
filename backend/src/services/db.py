@@ -3,9 +3,8 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from typing import AsyncGenerator, Generator
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from psycopg_pool import ConnectionPool
-
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 
 MAX_CONNECTION_POOL_SIZE = None
@@ -17,6 +16,17 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
 async_engine = create_async_engine(ASYNC_DB_URI)
 AsyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=async_engine, class_=AsyncSession)
+
+# Create a single shared base instance
+_Base = declarative_base()
+
+def get_db_base() -> declarative_base:
+    return _Base
+
+def load_models():
+    """Import all models to ensure they are registered with SQLAlchemy"""
+    from src.schemas.models import User, Token, Agent, Revision, Settings, Thread, Server
+    return _Base
 
 def get_checkpoint_db():
     return AsyncPostgresSaver.from_conn_string(DB_URI)

@@ -3,7 +3,7 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from src.models import Token, User
+from src.schemas.models import Token, User
 from src.utils.auth import verify_credentials
 from src.services.db import get_db
 from src.constants import APP_SECRET_KEY, UserTokenKey
