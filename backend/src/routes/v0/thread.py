@@ -6,10 +6,10 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repos.thread_repo import ThreadRepo
 from src.services.db import get_async_db, get_checkpoint_db
-from src.entities import Thread, Threads
+from src.schemas.entities import Thread, Threads
 from src.utils.agent import Agent
 from src.utils.auth import get_optional_user, verify_credentials
-from src.models import ProtectedUser
+from src.schemas.models import ProtectedUser
 from src.utils.logger import logger
 
 TAG = "Thread"

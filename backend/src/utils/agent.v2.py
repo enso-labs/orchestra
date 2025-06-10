@@ -11,28 +11,24 @@ from sqlalchemy import text
 from langgraph.errors import NodeInterrupt
 
 from src.repos.thread_repo import ThreadRepo
-from src.entities.a2a import A2AServer
+from src.schemas.entities.a2a import A2AServer
 from src.services.mcp import McpService
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL, ARCADE_API_KEY, UserTokenKey
 from src.tools import dynamic_tools
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
-from src.entities import Answer, Thread, ArcadeConfig
+from src.schemas.entities import Answer, Thread, ArcadeConfig
 from src.utils.logger import logger
 from src.flows.chatbot import chatbot_builder
 from src.services.db import get_checkpoint_db
-from src.models import Thread as ThreadModel
+from src.schemas.models import Thread as ThreadModel
 from src.utils.a2a import A2ACardResolver, a2a_builder
 from src.utils.stream import astream_chunks
 from src.flows.authorize import authorize_builder
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None):
-        self.connection_kwargs = {
-            "autocommit": True,
-            "prepare_threshold": 0,
-        }
         self.user_id = config.get("user_id", None)
         self.thread_id = config.get("thread_id", None)
         self.agent_id = config.get("agent_id", None)

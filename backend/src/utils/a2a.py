@@ -3,8 +3,8 @@ import httpx
 import json
 from httpx_sse import connect_sse
 from typing import Any, AsyncIterable
-from src.entities import ExistingThread, NewThread
-from src.entities.a2a import A2AServer
+from src.schemas.entities import ExistingThread, NewThread
+from src.schemas.entities.a2a import A2AServer
 from src.utils.logger import logger
 from fastapi.responses import StreamingResponse, JSONResponse
 from src.common.types import (

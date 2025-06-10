@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from src.models import Agent, Revision
+from src.schemas.models import Agent, Revision
 from src.utils.logger import logger
 
 class AgentRepo:

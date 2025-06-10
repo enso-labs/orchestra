@@ -5,11 +5,11 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repos.user_repo import UserRepo
 from src.controllers.agent import AgentController
-from src.entities import Answer, AgentThread, Threads
+from src.schemas.entities import Answer, AgentThread, Threads
 from src.utils.auth import verify_credentials
 from src.services.db import get_async_db
 from src.utils.agent import Agent
-from src.models import ProtectedUser
+from src.schemas.models import ProtectedUser
 from src.utils.logger import logger
 
 TAG = "Agent"

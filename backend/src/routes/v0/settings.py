@@ -8,7 +8,7 @@ from src.utils.auth import verify_credentials
 from src.services.db import get_async_db
 
 from src.repos.settings_repo import SettingsRepo
-from src.models import User
+from src.schemas.models import User
 
 TAG = "Settings"
 router = APIRouter(tags=[TAG])

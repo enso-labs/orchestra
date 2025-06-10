@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from src.constants.examples import LIST_DOCUMENTS_EXAMPLE
-from src.entities import AddDocuments, DocIds, Document
+from src.schemas.entities import AddDocuments, DocIds, Document
 from src.utils.auth import verify_credentials
 from src.utils.retrieval import VectorStore
 

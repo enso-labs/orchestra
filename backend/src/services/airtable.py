@@ -4,10 +4,10 @@ from datetime import datetime
 from typing import Any, Dict
 from pydantic import BaseModel
 from src.constants import APP_ENV
-from src.entities.auth import UserResponse
+from src.schemas.entities.auth import UserResponse
 
 
-# from src.models import ProtectedUser
+# from src.schemas.models import ProtectedUser
 from src.utils.logger import logger
 
 AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY")

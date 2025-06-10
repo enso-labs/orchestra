@@ -7,7 +7,7 @@ from typing import Optional
 from src.repos.agent_repo import AgentRepo
 from src.utils.auth import verify_credentials
 from src.services.db import get_async_db
-from src.models import ProtectedUser
+from src.schemas.models import ProtectedUser
 
 
 TAG = "Agent"

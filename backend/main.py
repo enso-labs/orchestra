@@ -1,8 +1,12 @@
-from fastapi import FastAPI, Request
+import os
+import json
+from typing import Callable
+from time import perf_counter
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles 
 from fastapi.middleware.cors import CORSMiddleware
-import os
+from src.utils.logger import logger
 
 from src.routes.v0 import (
     tool, llm, thread, retrieve, source, info, 
@@ -53,7 +57,26 @@ app = FastAPI(
     docs_url="/api",
     lifespan=lifespan
 )
-
+@app.middleware("http")
+async def log_requests(request: Request, call_next: Callable[[Request], Response]):
+    start = perf_counter()
+    response = await call_next(request)
+    duration = perf_counter() - start
+    
+    # Log detailed request information
+    logger.info(
+        json.dumps({
+            "request": {
+                "method": request.method,
+                "path": request.url.path,
+                "query_params": dict(request.query_params),
+                "client_host": request.client.host if request.client else "Unknown",
+                "duration": f"{duration:.2f}s",
+                "status_code": response.status_code
+            }
+        })
+    )
+    return response
 
 # Add CORS middleware
 app.add_middleware(

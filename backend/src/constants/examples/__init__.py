@@ -47,6 +47,21 @@ NEW_THREAD_QUERY_EXAMPLE = {
     **ARCADE_REQ_BODY_EXAMPLE
 }
 
+NEW_THREAD_API_TOOLS = {
+    "system": "You are",
+    "query": "List all the bases in Airtable",
+    "model": "openai:o3-mini",
+    "images": [],
+    "tools": [{
+        "name": "Airtable Tools",
+        "description": "Airtable Tools",
+        "headers": {
+            "x-api-key": "1234567890"
+        },
+        "spec": httpx.get('https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/airtable-spec.json').json()
+    }]
+}
+
 NEW_THREAD_ANSWER_EXAMPLE = {
     "thread_id": "443250c4-b9ec-4dfc-96fd-0eb3ec6ccb44",
     "answer": {
@@ -305,3 +320,13 @@ A2A_GET_AGENT_CARD_EXAMPLE = {
     }
   ]
 }
+
+class Examples:
+    NEW_THREAD_QUERY_EXAMPLE = NEW_THREAD_QUERY_EXAMPLE
+    NEW_THREAD_ANSWER_EXAMPLE = NEW_THREAD_ANSWER_EXAMPLE
+    EXISTING_THREAD_QUERY_EXAMPLE = EXISTING_THREAD_QUERY_EXAMPLE
+    EXISTING_THREAD_ANSWER_EXAMPLE = EXISTING_THREAD_ANSWER_EXAMPLE
+    THREAD_HISTORY_EXAMPLE = THREAD_HISTORY_EXAMPLE
+    ADD_DOCUMENTS_EXAMPLE = ADD_DOCUMENTS_EXAMPLE
+    LIST_DOCUMENTS_EXAMPLE = LIST_DOCUMENTS_EXAMPLE
+    A2A_GET_AGENT_CARD_EXAMPLE = A2A_GET_AGENT_CARD_EXAMPLE

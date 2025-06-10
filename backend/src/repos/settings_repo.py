@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.models import Settings
+from src.schemas.models import Settings
 
 class SettingsRepo:
     def __init__(self, db: AsyncSession, user_id: str):

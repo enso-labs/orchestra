@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services.db import get_async_db
-from src.models import ProtectedUser
+from src.schemas.models import ProtectedUser
 from src.utils.auth import get_optional_user
 from src.utils.logger import logger
 TAG = "Model"
