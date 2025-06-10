@@ -4,7 +4,7 @@ import json
 import httpx
 import yaml
 import asyncio
-
+from enum import Enum
 from pydantic import BaseModel, create_model
 from pydantic.fields import Field, FieldInfo
 from langchain_community.agent_toolkits.openapi.toolkit import RequestsToolkit
@@ -167,7 +167,6 @@ def make_api_call_func(
     url: str,
     headers: Dict[str, Any],
     description: str,
-    data: Optional[Dict[str, Any]] = None,
     path_params: Optional[Dict[str, Any]] = None,
 ) -> Any:
     """
@@ -181,7 +180,7 @@ def make_api_call_func(
         data: Optional request body data for POST/PUT requests
         path_params: Optional dictionary of path parameters to format into the URL
     """
-    async def api_call():
+    async def api_call(event: str, data: Dict[str, Any]):
         wrapper = GenericRequestsWrapper(headers=headers)
         # Format URL with path parameters if provided
         formatted_url = url.format(**(path_params or {}))
@@ -189,11 +188,11 @@ def make_api_call_func(
         if method == "GET":
             return await wrapper.aget(formatted_url)
         elif method == "POST":
-            return await wrapper.apost(formatted_url, data=data or {})
+            return await wrapper.apost(formatted_url, data={'data': data, "event": event})
         elif method == "PUT":
-            return await wrapper.aput(formatted_url, data=data or {})
+            return await wrapper.aput(formatted_url, data={'data': data, "event": event})
         elif method == "PATCH":
-            return await wrapper.apatch(formatted_url, data=data or {})
+            return await wrapper.apatch(formatted_url, data={'data': data, "event": event})
         elif method == "DELETE":
             return await wrapper.adelete(formatted_url)
         else:
@@ -287,14 +286,14 @@ def create_schema(model_name: str, fields_json: Dict[str, Any]) -> Type[BaseMode
     elif fields_json.get("type") == "array":
         fields = {model_name: (list, Field(description=fields_json.get("description", "")))}
         return create_model(model_name, **fields)
-    elif fields_json.get("type") == "object":
-        fields = {model_name: (dict, Field(description=fields_json.get("description", "")))}
-        return create_model(model_name, **fields)
+    # elif fields_json.get("type") == "object":
+    #     fields = {model_name: (dict, Field(description=fields_json.get("description", "")))}
+    #     return create_model(model_name, **fields)
     
     fields = {}
-    for field_name, field_info in fields_json.items():
+    for field_name, field_info in fields_json.get("properties", fields_json.items()):
         if field_info.get("type") == "object" and "properties" in field_info:
-            field_type = create_schema(field_info.get('title'), field_info.get("properties"))
+            field_type = create_schema(field_name, field_info)
         else:
             field_type = get_field_type(field_info.get("type", ""))
         
@@ -306,6 +305,105 @@ def create_schema(model_name: str, fields_json: Dict[str, Any]) -> Type[BaseMode
         fields[field_name] = (field_type, Field(**field_params))
     
     return create_model(model_name, **fields)
+
+def json_schema_to_base_model(schema: dict[str, Any]) -> Type[BaseModel]:
+    type_mapping = {
+        "string": str,
+        "integer": int,
+        "number": float,
+        "boolean": bool,
+        "array": list,
+        "object": dict,
+    }
+
+    properties = schema.get("properties", {})
+    required_fields = schema.get("required", [])
+    model_fields = {}
+
+    for field_name, field_props in properties.items():
+        json_type = field_props.get("type", "string")
+        enum_values = field_props.get("enum")
+
+        if enum_values:
+            enum_name = f"{field_name.capitalize()}Enum"
+            field_type = Enum(enum_name, {v: v for v in enum_values})
+        else:
+            field_type = type_mapping.get(json_type, Any)
+
+        default_value = field_props.get("default", ...)
+        nullable = field_props.get("nullable", False)
+        description = field_props.get("title", "")
+
+        if nullable:
+            field_type = Optional[field_type]
+
+        if field_name not in required_fields:
+            default_value = field_props.get("default", None)
+
+        model_fields[field_name] = (field_type, Field(default_value, description=description))
+
+    return create_model(schema.get("title", "DynamicModel"), **model_fields)
+
+# def generate_tools_from_openapi_json(
+#     openapi_spec: Dict[str, Any],
+#     base_url: Optional[str] = None,
+#     headers: Optional[Dict[str, Any]] = None,
+#     verbose: bool = False,
+# ) -> List[StructuredTool]:
+#     """
+#     Generates a list of StructuredTool instances for each endpoint defined in an OpenAPI spec provided as JSON.
+
+#     Args:
+#         openapi_spec: The OpenAPI specification as a dictionary.
+#         base_url: Optional base URL to override the server URL from the spec.
+#         headers: Optional default headers for all requests.
+#         verbose: Whether to set verbose=True on each tool.
+
+#     Returns:
+#         A list of StructuredTool objects, one per (path, method) in the spec.
+#     """
+#     spec = openapi_spec
+
+#     # Determine base server URL
+#     server_url = base_url or spec.get("servers", [{}])[0].get("url", "")
+#     if not server_url:
+#         raise ValueError("No server URL found in spec and no base_url provided")
+
+#     tools: List[StructuredTool] = []
+#     for path, operations in spec.get("paths", {}).items():
+#         for http_method, operation in operations.items():
+#             method = http_method.upper()
+#             args_schema = get_args_schema(spec, operation)
+#             name = re.sub(r'[^a-zA-Z0-9_]', '_', operation.get("operationId").lower())
+
+#             # Use summary or description from spec
+#             description = (
+#                 operation.get("summary")
+#                 or operation.get("description", f"{method} {path}")
+#             )
+
+#             # Construct full URL for this endpoint
+#             full_url = server_url.rstrip("/") + path
+
+#             # Create the coroutine function for this endpoint
+#             api_func = make_api_call_func(
+#                 method, 
+#                 full_url, 
+#                 headers or {}, 
+#                 description,
+#             )
+
+#             # Build the tool
+#             tool = StructuredTool.from_function(coroutine=api_func, args_schema=args_schema)
+#             tool.name = name
+#             tool.description = description
+#             tool.tags = operation.get("tags", [])
+#             tool.metadata = operation.get("x-metadata", {})
+#             tool.verbose = verbose
+
+#             tools.append(tool)
+
+#     return tools
 
 def generate_tools_from_openapi_json(
     openapi_spec: Dict[str, Any],
@@ -336,13 +434,17 @@ def generate_tools_from_openapi_json(
     for path, operations in spec.get("paths", {}).items():
         for http_method, operation in operations.items():
             method = http_method.upper()
-            args_schema = get_args_schema(spec, operation)
+            # args_schema = get_args_schema(spec, operation)
+            yaml_str = yaml.dump(operation, sort_keys=False, indent=2, default_flow_style=False)
             name = re.sub(r'[^a-zA-Z0-9_]', '_', operation.get("operationId").lower())
 
             # Use summary or description from spec
             description = (
-                operation.get("summary")
-                or operation.get("description", f"{method} {path}")
+                "You have access to an API to help answer user queries. \n\n"
+                "Here is documentation on the API: \n\n"
+                "~~~yaml\n"
+                "{yaml_str}"
+                "~~~".format(yaml_str=yaml_str)
             )
 
             # Construct full URL for this endpoint
@@ -357,11 +459,15 @@ def generate_tools_from_openapi_json(
             )
 
             # Build the tool
-            tool = StructuredTool.from_function(coroutine=api_func, args_schema=args_schema)
+            tool = StructuredTool.from_function(
+                coroutine=api_func,
+                # args_schema=args_schema,
+                # return_direct=True
+            )
             tool.name = name
             tool.description = description
             tool.tags = operation.get("tags", [])
-            tool.metadata = operation.get("x-metadata", {})
+            # tool.metadata = operation.get("x-metadata", {})
             tool.verbose = verbose
 
             tools.append(tool)
@@ -483,18 +589,14 @@ def get_args_schema(spec: Dict[str, Any], operation: Dict[str, Any]) -> Dict[str
                 fully_resolved_schema = resolve_ref_recursive(spec, schema)
                 reqBody = create_schema(fully_resolved_schema.get('title'), fully_resolved_schema.get('properties'))
                 
-        if operation.get('parameters'):
-            for param in operation.get('parameters'):
-                if param.get('in') == 'query':
-                    queryParams = create_schema(param.get('name'), param.get('schema'))
-                elif param.get('in') == 'path':
-                    pathParams = create_schema(param.get('name'), param.get('schema'))
-        
-        merged = merge_models(operation.get('summary'), reqBody, pathParams, queryParams)
-        return merged
+            else:
+                model_title = operation.get('operationId').replace("_", " ").replace("-", " ").title().replace(" ", "") + "Args"
+                schema = operation.get('requestBody').get('content').get('application/json').get('schema')
+        model = create_schema(model_title or "DynamicArgs", schema)
+        return model
     except Exception as e:
-        logger.exception(f"Failed to get args schema for {operation.get('summary')}: {e}")
-        raise Exception(f"Failed to get args schema for {operation.get('summary')}: {e}")
+        logger.exception(f"Failed to get args schema for {operation.get('operationId')}: {e}")
+        raise Exception(f"Failed to get args schema for {operation.get('operationId')}: {e}")
     
 if __name__ == "__main__":
     tool = construct_api_tool(

@@ -35,7 +35,7 @@ class AgentController:
             agent = Agent(config=config, user_repo=self.user_repo)
             await agent.abuilder(tools=[*thread.tools, thread.mcp, thread.a2a, thread.arcade], 
                                  model_name=thread.model,
-                                 collection=thread.collection)
+                                 collection=thread.collection)  
             messages = construct_messages(thread.query, thread.images)
             if output_type == 'text/event-stream':
                 return await agent.aprocess(messages, "text/event-stream")

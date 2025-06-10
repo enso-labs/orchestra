@@ -84,8 +84,7 @@ async def init_tools(
             mcp_service = McpService(tool)
             tools_to_add = await mcp_service.get_tools()
         elif isinstance(tool, dict) and tool.get('spec'):
-            api_tools = generate_tools_from_openapi_json(tool.get('spec'), headers=tool.get('headers', {}))
-            tools_to_add = [api_tools]
+            tools_to_add = generate_tools_from_openapi_json(tool.get('spec'), headers=tool.get('headers', {}))
         elif isinstance(tool, str):
             tools_to_add = dynamic_tools(selected_tools=tool)
             

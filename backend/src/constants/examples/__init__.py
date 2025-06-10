@@ -48,13 +48,13 @@ NEW_THREAD_QUERY_EXAMPLE = {
 }
 
 NEW_THREAD_API_TOOLS = {
-    "system": "You are a helpful assistant.",
-    "query": "What is the capital of France?",
-    "model": "openai:gpt-4o",
+    "system": "You are",
+    "query": "List all the bases in Airtable",
+    "model": "openai:o3-mini",
     "images": [],
     "tools": [{
-        "name": "Web.ScrapeUrl",
-        "description": "Scrape a URL",
+        "name": "Airtable Tools",
+        "description": "Airtable Tools",
         "headers": {
             "x-api-key": "1234567890"
         },
