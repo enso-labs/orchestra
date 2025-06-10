@@ -185,7 +185,7 @@ Language: ${navigator.language}
 
 export const constructPayload = (payload: ThreadPayload, agentId?: string) => {
 
-	payload.tools?.push(API_TOOL);
+	// payload.tools?.push(API_TOOL);
 
 	return agentId ? {
 		query: payload.query,
