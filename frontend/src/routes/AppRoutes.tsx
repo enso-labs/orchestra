@@ -29,6 +29,7 @@ import ServerEdit from '@/pages/ServerEdit';
 import Server from '@/pages/server';
 import Flow from '@/pages/flow';
 import DocumentManager from '@/pages/DocumentManager';
+import ToolCreate from '@/pages/tools/create';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -147,14 +148,6 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
-            path="/agent/create"
-            element={
-              <PrivateRoute>
-                <CreateAgent />
-              </PrivateRoute>
-            }
-          />
-          <Route
             path="/server/create"
             element={
               <PrivateRoute>
@@ -179,6 +172,14 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
+            path="/agent/create"
+            element={
+              <PrivateRoute>
+                <CreateAgent />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/agents/:agentId"
             element={
               <PrivateRoute>
@@ -199,6 +200,14 @@ const AppRoutes: React.FC = () => {
             element={
               <PrivateRoute>
                 <AgentChat />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tools/create"
+            element={
+              <PrivateRoute>
+                <ToolCreate />
               </PrivateRoute>
             }
           />
