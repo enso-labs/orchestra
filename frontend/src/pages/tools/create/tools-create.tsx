@@ -11,29 +11,28 @@ import {
 import {
   ToolCreateHeader,
   FullscreenEditor,
-  SettingsForm,
   PreviewPanel
 } from "./components";
 
 // Custom hook
 import { useToolCreation } from "./hooks/useToolCreation";
+import MonacoEditor from "@/components/inputs/MonacoEditor";
+import { useToolContext } from "@/context/ToolContext";
 
 export default function ToolCreate() {
   const { messages } = useChatContext();
+  const { swagger, useSpecEffect } = useToolContext();
   const {
     // State
     payload,
-    agentDetails,
     activeTab,
     isFullscreen,
     showPromptGenerator,
     isGenerating,
-    isDrawerOpen,
     isCreating,
     
     // Actions
     setActiveTab,
-    setAgentDetails,
     processCreateAgent,
     handleGeneratePrompt,
     toggleFullscreen,
@@ -41,6 +40,8 @@ export default function ToolCreate() {
     toggleDrawer,
     updateSystemMessage,
   } = useToolCreation();
+
+  useSpecEffect();
 
   return (
     <ChatLayout>
@@ -88,17 +89,7 @@ export default function ToolCreate() {
 
           {/* Mobile content (no tabs, just the form) */}
           <div className="space-y-6">
-            <SettingsForm
-              agentDetails={agentDetails}
-              onUpdateAgentDetails={setAgentDetails}
-              systemMessage={payload.system}
-              onUpdateSystemMessage={updateSystemMessage}
-              showPromptGenerator={showPromptGenerator}
-              onTogglePromptGenerator={togglePromptGenerator}
-              onToggleFullscreen={toggleFullscreen}
-              onGeneratePrompt={handleGeneratePrompt}
-              isGenerating={isGenerating}
-            />
+            <MonacoEditor jsonData={swagger} />
           </div>
         </div>
 
@@ -131,17 +122,7 @@ export default function ToolCreate() {
               <div className="hidden md:block">
                 <Tabs defaultValue="create" className="w-full">
                   <TabsContent value="create" className="space-y-6">
-                    <SettingsForm
-                      agentDetails={agentDetails}
-                      onUpdateAgentDetails={setAgentDetails}
-                      systemMessage={payload.system}
-                      onUpdateSystemMessage={updateSystemMessage}
-                      showPromptGenerator={showPromptGenerator}
-                      onTogglePromptGenerator={togglePromptGenerator}
-                      onToggleFullscreen={toggleFullscreen}
-                      onGeneratePrompt={handleGeneratePrompt}
-                      isGenerating={isGenerating}
-                    />
+                    <MonacoEditor jsonData={swagger} />
                   </TabsContent>
 
                   <TabsContent value="configure">

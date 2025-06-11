@@ -1,12 +1,13 @@
 import { useChatContext } from '@/context/ChatContext';
 import debug from 'debug';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Wrench, Compass, Brain, Feather, Cloud, Database, 
   Search, BookOpen, Globe, Infinity, Leaf
 } from "lucide-react";
 import apiClient from '@/lib/utils/apiClient';
 import { INIT_TOOL_STATE, useToolReducer } from '@/reducers/toolReducer';
+import { convertSpecToTool, getDefaultSpec } from '@/services/toolService';
 
 debug.enable('hooks:*');
 
@@ -34,7 +35,7 @@ export default function useToolHook() {
 	} = useChatContext();
   const {state, actions} = useToolReducer();
   const {testingTool, testFormValues, toolFilter} = state;
-  const {setTestFormValues, setTestingTool, setHasSavedA2A} = actions;
+  const {setTestFormValues, setTestingTool, setHasSavedA2A, setSwaggerSpec} = actions;
   const [isAssistantOpen,] = useState(INIT_TOOL_STATE.isAssistantOpen);
 
 	const clearTools = () => {
@@ -167,6 +168,28 @@ export default function useToolHook() {
     setHasSavedA2A(true);
   };
 
+  const useSpecEffect = () => {
+    useEffect(() => {
+      let isMounted = true;
+
+      async function fetchSpec() {
+        const spec = await getDefaultSpec();
+        const tool = await convertSpecToTool("Airtable", "Airtable", spec, {'x-api-key': 'floating-tree-frog-turtle'});
+        
+        if (isMounted) {
+          setSwaggerSpec(spec);
+          setPayload((prev: any) => ({ ...prev, tools: [...prev.tools, tool] }));
+        }
+      }
+      
+      fetchSpec();
+
+      return () => {
+        isMounted = false;
+      };
+    }, []);
+  };
+
 	return {
     ...state,
     ...actions,
@@ -179,6 +202,7 @@ export default function useToolHook() {
 		toggleTool,
 		handleTestFormSubmit,
     startAddingA2A,
+    useSpecEffect,
 		// computed
 		filteredTools,
 		toolsByCategory,

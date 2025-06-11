@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ThreadPayload } from '../entities';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/services/modelService';
-import { listTools } from '../services/toolService';
+import { convertSpecToTool, getDefaultSpec, listTools } from '../services/toolService';
 import { useChatReducer } from '@/reducers/chatReducer';
 import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
 import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
