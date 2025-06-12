@@ -1,4 +1,3 @@
-import ChatLayout from "@/layouts/ChatLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useChatContext } from "@/context/ChatContext";
 import {
@@ -15,14 +14,14 @@ import {
 } from "./components";
 
 // Custom hook
-import { useToolCreation } from "./hooks/useToolCreation";
-import MonacoEditor from "@/components/inputs/MonacoEditor";
+  import { useToolCreation } from "./hooks/useToolCreation";
 import { useToolContext } from "@/context/ToolContext";
 import FileEditor from "@/components/FileEditor";
+import FullScreenLayout from "@/layouts/FullScreenLayout";
 
 export default function ToolCreate() {
   const { messages } = useChatContext();
-  const { swagger, useSpecEffect } = useToolContext();
+  const { useSpecEffect } = useToolContext();
   const {
     // State
     payload,
@@ -45,7 +44,7 @@ export default function ToolCreate() {
   useSpecEffect();
 
   return (
-    <ChatLayout>
+    <FullScreenLayout>
       {/* Fullscreen textarea overlay */}
       <FullscreenEditor
         isVisible={isFullscreen}
@@ -147,6 +146,6 @@ export default function ToolCreate() {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-    </ChatLayout>
+    </FullScreenLayout>
   );
 } 

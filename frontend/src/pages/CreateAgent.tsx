@@ -19,11 +19,14 @@ import {
 import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
 import { useAgentContext } from "@/context/AgentContext";
 import SelectModel from "@/components/selects/SelectModel";
+import FileEditor from "@/components/FileEditor/file-editor";
+import { useToolContext } from "@/context/ToolContext";
 
 
 export default function CreateAgent() {
   const navigate = useNavigate();
   const { payload, setPayload } = useChatContext();
+  const { useSpecEffect } = useToolContext();
   const { agentDetails, setAgentDetails, isCreating, handleCreateAgent } = useAgentContext();
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -83,6 +86,8 @@ export default function CreateAgent() {
       console.error("Failed to create agent:", error);
     }
   }
+
+  useSpecEffect();
 
   return (
     <ChatLayout>
@@ -208,6 +213,7 @@ export default function CreateAgent() {
 
           {/* Mobile content (no tabs, just the form) */}
           <div className="space-y-6">
+
             <div>
               <label className="block mb-2 text-sm font-medium">Name</label>
               <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" value={agentDetails.name} onChange={(e) => setAgentDetails({ ...agentDetails, name: e.target.value })} />
@@ -222,6 +228,11 @@ export default function CreateAgent() {
                 value={agentDetails.description}
                 onChange={(e) => setAgentDetails({ ...agentDetails, description: e.target.value })}
               />
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium">Model</label>
+              <SelectModel />
             </div>
 
             <div>
@@ -297,10 +308,7 @@ export default function CreateAgent() {
               )}
             </div>
 
-            <div>
-              <label className="block mb-2 text-sm font-medium">Model</label>
-              <SelectModel />
-            </div>
+            <FileEditor />
 
             {/* <div>
               <label className="block mb-2 text-sm font-medium">Conversation starters</label>
@@ -418,6 +426,11 @@ export default function CreateAgent() {
 
                     <div className="space-y-4 max-w-full">
                       <div>
+                        <label className="block mb-2 text-sm font-medium">Model</label>
+                        <SelectModel />
+                      </div>
+
+                      <div>
                         <label className="block mb-2 text-sm font-medium">Name</label>
                         <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" value={agentDetails.name} onChange={(e) => setAgentDetails({ ...agentDetails, name: e.target.value })} />
                       </div>
@@ -506,10 +519,7 @@ export default function CreateAgent() {
                         )}
                       </div>
 
-                      <div>
-                        <label className="block mb-2 text-sm font-medium">Model</label>
-                        <SelectModel />
-                      </div>
+                      <FileEditor />
 
                       {/* <div>
                         <label className="block mb-2 text-sm font-medium">Conversation starters</label>

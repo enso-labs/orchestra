@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button"
-import { X, Wand2 } from "lucide-react"
+
 import Editor from '@monaco-editor/react';
 import { useToolContext } from "@/context/ToolContext"
 import YAML from 'yaml';
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import { debounce } from "lodash";
 
 function FileEditor() {
 	const { swagger, setSwaggerSpec } = useToolContext();
@@ -32,31 +32,13 @@ function FileEditor() {
 	const tools = getToolsFromPaths();
 
 	return (
-		<div className="fixed inset-0 z-50 bg-background p-4 flex flex-col">
-			<div className="flex justify-between items-center mb-4">
-				<h2 className="text-lg font-medium">API Specification Editor</h2>
-				<div className="flex items-center gap-2">
-					<Button 
-						variant="ghost" 
-						size="icon" 
-						// onClick={() => setShowPromptGenerator(!showPromptGenerator)}
-						title="Generate system prompt"
-					>
-						<Wand2 className="h-5 w-5" />
-					</Button>
-					<Button 
-						variant="ghost" 
-						size="icon" 
-						// onClick={() => setIsFullscreen(false)}
-					>
-						<X className="h-5 w-5" />
-					</Button>
-				</div>
-			</div>
 
+		<>
+			<label className="block mb-2 text-sm font-medium">OpenAPI Specification</label>
 			<Editor 
 				value={swagger ? YAML.stringify(swagger, null, 2) : ''}
-				onChange={(value) => {
+				height="25vh"
+				onChange={debounce((value: any) => {
 					if (value) {
 						try {
 							const parsed = YAML.parse(value);
@@ -66,7 +48,7 @@ function FileEditor() {
 							setSwaggerSpec(value);
 						}
 					}
-				}}
+				}, 300)}
 				defaultLanguage="yaml"
 				theme="vs-dark"
 				options={{
@@ -81,7 +63,7 @@ function FileEditor() {
 				<div className="p-3 border-b bg-muted/50">
 					<h3 className="text-sm font-medium">Generated Tools ({tools.length})</h3>
 				</div>
-				<ScrollArea className="h-[200px]">
+				<ScrollArea className="h-[150px]">
 					<div className="overflow-x-auto">
 						<table className="w-full text-sm">
 							<thead className="sticky top-0 bg-muted/30 border-b">
@@ -133,7 +115,7 @@ function FileEditor() {
 					</div>
 				</ScrollArea>
 			</div>
-		</div>
+		</>
 	)
 }
 
