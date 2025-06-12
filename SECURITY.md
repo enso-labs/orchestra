@@ -9,7 +9,7 @@
 
 ## Reporting a Vulnerability
 
-Please **e-mail security@enso-labs.com** with:
+Please **e-mail reggleston.ensolabs@gmail.com** with:
 
 * A detailed description of the vulnerability
 * Steps to reproduce
