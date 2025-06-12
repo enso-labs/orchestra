@@ -12,11 +12,11 @@ export default function ToolCreateHeader({ onCreateAgent, isCreating }: ToolCrea
 
   return (
     <div className="flex items-center mb-6">
-      <Button variant="ghost" size="icon" className="mr-2" onClick={() => navigate("/")}>
+      <Button variant="ghost" size="icon" className="mr-2" onClick={() => navigate("/chat")}>
         <ChevronLeft className="h-5 w-5" />
       </Button>
       <div>
-        <h1 className="text-lg font-medium">New Enso</h1>
+        <h1 className="text-lg font-medium">New Tool</h1>
         <p className="text-xs text-muted-foreground">• Draft</p>
       </div>
       <div className="ml-auto">

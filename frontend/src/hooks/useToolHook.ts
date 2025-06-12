@@ -174,7 +174,7 @@ export default function useToolHook() {
 
       async function fetchSpec() {
         const spec = await getDefaultSpec();
-        const tool = await convertSpecToTool("Airtable", "Airtable", spec, {'x-api-key': 'floating-tree-frog-turtle'});
+        const tool = await convertSpecToTool("Airtable", "Airtable", spec, {'x-api-key': import.meta.env.VITE_N8N_API_KEY});
         
         if (isMounted) {
           setSwaggerSpec(spec);

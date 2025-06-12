@@ -13,7 +13,7 @@ export function SettingsPopover() {
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-full" onClick={() => {}}>
             <Settings className="mr-2 h-4 w-4" />
-            Settings
+            Menu
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64" align="center" side="top">
@@ -23,6 +23,11 @@ export function SettingsPopover() {
             <Link to="/dashboard">
               <Button variant="outline" className="w-full justify-start">
                 Dashboard
+              </Button>
+            </Link>
+            <Link to="/tools/create">
+              <Button variant="outline" className="w-full justify-start">
+                Tools
               </Button>
             </Link>
             <Link to="/settings">

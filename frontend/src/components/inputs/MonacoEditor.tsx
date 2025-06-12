@@ -1,10 +1,18 @@
-import * as React from 'react';
 import { useState, useEffect } from 'react';
 import YAML from 'yaml';
 import Editor from '@monaco-editor/react';
 
 interface Props {
   jsonData: object;
+  options?: any;
+  theme?: string;
+  defaultLanguage?: string;
+}
+
+const defaultOptions = {
+  tabSize: 2,
+  insertSpaces: true,
+  fontSize: 14
 }
 
 function MonacoEditor(props: Props) {
@@ -26,20 +34,16 @@ function MonacoEditor(props: Props) {
   };
 
   return (
-    <div>
+    <>
+    {error && <pre className="text-red-500">{error}</pre>}
       <Editor
         value={YAML.stringify(data)}
         onChange={handleChange}
-        defaultLanguage="yaml"
-        height="100vh"
-        theme="vs-dark"
-        options={{
-          tabSize: 2,
-          insertSpaces: true
-        }}
+        defaultLanguage={props.defaultLanguage ?? 'yaml'}
+        theme={props.theme ?? 'vs-dark'}
+        options={props.options ?? defaultOptions}
       />
-      <pre>{error}</pre>
-    </div>
+    </>
   );
 }
 

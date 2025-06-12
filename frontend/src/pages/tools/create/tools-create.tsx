@@ -18,6 +18,7 @@ import {
 import { useToolCreation } from "./hooks/useToolCreation";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { useToolContext } from "@/context/ToolContext";
+import FileEditor from "@/components/FileEditor";
 
 export default function ToolCreate() {
   const { messages } = useChatContext();
@@ -89,7 +90,7 @@ export default function ToolCreate() {
 
           {/* Mobile content (no tabs, just the form) */}
           <div className="space-y-6">
-            <MonacoEditor jsonData={swagger} />
+            <FileEditor />
           </div>
         </div>
 
@@ -122,7 +123,7 @@ export default function ToolCreate() {
               <div className="hidden md:block">
                 <Tabs defaultValue="create" className="w-full">
                   <TabsContent value="create" className="space-y-6">
-                    <MonacoEditor jsonData={swagger} />
+                    <FileEditor />
                   </TabsContent>
 
                   <TabsContent value="configure">
