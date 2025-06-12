@@ -7,6 +7,8 @@ AI Agent Orchestrator built on LangGraph powered by [MCP](https://github.com/mod
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
 <a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
 <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![DCO](https://img.shields.io/badge/DCO-1.1-yellow)](DCO)
 
 <img src="https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true">
 
