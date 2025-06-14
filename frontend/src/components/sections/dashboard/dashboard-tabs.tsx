@@ -43,7 +43,7 @@ function DashboardTabs({
 				Servers
 			</button>
 
-			<button
+			{/* <button
 				className={`px-4 py-2 text-sm font-medium ${
 					activeTab === "chat"
 						? "border-b-2 border-primary text-foreground"
@@ -72,7 +72,7 @@ function DashboardTabs({
 				onClick={() => setActiveTab("workflows")}
 			>
 				Workflows
-			</button>
+			</button> */}
 		</div>
 	)
 }

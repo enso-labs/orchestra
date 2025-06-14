@@ -46,7 +46,7 @@ export default function Register() {
         const data = await response.json()
         // Store JWT token in localStorage
         localStorage.setItem(TOKEN_NAME, data.access_token)
-        navigate("/dashboard");
+        navigate("/chat");
       } else {
         const errorData = await response.json()
         setError(errorData.detail || "Registration failed")

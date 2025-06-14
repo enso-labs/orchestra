@@ -4,7 +4,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Settings, LayoutDashboard, PlusCircle, Cog } from "lucide-react";
+import { Settings, LayoutDashboard, Cog } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function SettingsPopover() {
@@ -28,7 +28,7 @@ export function SettingsPopover() {
           <span className="sr-only">Open settings menu</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="end">
+      <PopoverContent className="p-2" align="end">
         <div className="flex flex-col gap-1">
           <Link to="/dashboard" className="w-full">
             <Button 
@@ -37,15 +37,6 @@ export function SettingsPopover() {
             >
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
-            </Button>
-          </Link>
-          <Link to="/agents" className="w-full">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start gap-2 text-sm font-normal"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Agents
             </Button>
           </Link>
           <Link to="/settings" className="w-full">
