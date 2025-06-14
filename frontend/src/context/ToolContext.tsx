@@ -1,8 +1,8 @@
 import { useContext, createContext } from "react";
-import useToolHook from "@/hooks/useToolHook";
-import useMcpHook from "@/hooks/useMcpHook";
-import useA2AHook from "@/hooks/useA2AHook";
-import useServerHook from "@/hooks/useServerHook";
+import useToolHook from "@/lib/hooks/useToolHook";
+import useMcpHook from "@/lib/hooks/useMcpHook";
+import useA2AHook from "@/lib/hooks/useA2AHook";
+import useServerHook from "@/lib/hooks/useServerHook";
 export const ToolContext = createContext({});
 
 export default function ToolProvider({ children }: { children: React.ReactNode }) {

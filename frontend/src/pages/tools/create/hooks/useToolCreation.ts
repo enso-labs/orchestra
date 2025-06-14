@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import { useAgentContext } from "@/context/AgentContext";
-import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService";
+import { optimizeSystemPrompt, alterSystemPrompt } from "@/lib/services/threadService";
 
 export function useToolCreation() {
   const navigate = useNavigate();

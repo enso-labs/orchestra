@@ -1,7 +1,7 @@
 import apiClient from '@/lib/utils/apiClient';
-import { ThreadPayload } from '@/entities';
-import { DEFAULT_OPTIMIZE_MODEL } from '@/config/llm';
-import { VITE_API_URL } from '@/config';
+import { ThreadPayload } from '@/lib/entities';
+import { DEFAULT_OPTIMIZE_MODEL } from '@/lib/config/llm';
+import { VITE_API_URL } from '@/lib/config';
 import { constructPayload } from '@/lib/utils/llm';
 import { getAuthToken } from '@/lib/utils/auth';
 import { SSE } from 'sse.js';

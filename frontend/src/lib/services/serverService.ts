@@ -1,5 +1,5 @@
-import { Server } from '@/entities';
-import apiClient from '../lib/utils/apiClient';
+import { Server } from '@/lib/entities';
+import apiClient from '@/lib/utils/apiClient';
 
 export const listServers = async (limit: number = 100, offset: number = 0, type: string = 'mcp') => {
   const response = await apiClient.get('/servers', { params: { limit, offset, type } });

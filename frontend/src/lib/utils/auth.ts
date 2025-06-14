@@ -1,4 +1,4 @@
-import { TOKEN_NAME } from '@/config';
+import { TOKEN_NAME } from '@/lib/config';
 
 export function getAuthToken(token: string = TOKEN_NAME): string | null {
   try {

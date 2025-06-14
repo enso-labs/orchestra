@@ -1,4 +1,4 @@
-import { Agent, DashboardTabOption } from "@/entities"
+import { Agent, DashboardTabOption } from "@/lib/entities"
 import { useNavigate } from "react-router-dom";
 function DashboardTabs({
 	activeTab,

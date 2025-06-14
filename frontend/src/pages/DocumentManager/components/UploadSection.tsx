@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Upload, X, FileText, Loader2 } from "lucide-react"
 import { useState, useRef, useCallback } from "react"
-import { addDocuments } from "@/services/ragService"
+import { addDocuments } from "@/lib/services/ragService"
 
 interface UploadSectionProps {
   collectionId: string

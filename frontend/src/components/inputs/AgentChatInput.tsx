@@ -5,7 +5,7 @@ import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
 import { useChatContext } from "@/context/ChatContext"
 import { useCallback, useRef } from "react"
-import useAppHook from "@/hooks/useAppHook"
+import useAppHook from "@/lib/hooks/useAppHook"
 import ChatSubmitButton from "../buttons/ChatSubmitButton"
 import { AudioRecorder } from "./AudioRecorder"
 

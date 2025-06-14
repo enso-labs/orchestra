@@ -1,5 +1,5 @@
 import { useReducer, useRef } from 'react';
-import { ThreadPayload } from '@/lib/entities';
+import { ThreadPayload } from '../entities';
 import { Model } from '@/lib/services/modelService';
 import { SSE } from 'sse.js';
 

@@ -1,5 +1,5 @@
-import { DEFAULT_SYSTEM_PROMPT } from "@/config/instruction";
-import { ThreadPayload } from "@/entities";
+import { DEFAULT_SYSTEM_PROMPT } from "@/lib/config/instruction";
+import { ThreadPayload } from "@/lib/entities";
 
 
 

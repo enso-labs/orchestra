@@ -1,8 +1,8 @@
-import apiClient from '../lib/utils/apiClient';
+import apiClient from '@/lib/utils/apiClient';
 
 export const listTools = async () => {
   const response = await apiClient.get('/tools');
-  return response.data;
+  return response.data; 
 };
 
 export const listToolsArcade = async (toolkit?: string, offset?: number, limit?: number) => {

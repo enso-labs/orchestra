@@ -18,7 +18,6 @@ import Login from '../pages/Login';
 import Register from '@/pages/Register';
 import OAuthCallback from '@/pages/OAuthCallback';
 import AgentChat from '@/pages/AgentChat';
-import CreateAgent from '@/pages/CreateAgent';
 import AgentUpdate from '@/pages/AgentUpdate';
 import ThreadPublic from '@/pages/ThreadPublic';
 import SharePublic from '@/pages/SharePublic';
@@ -30,6 +29,8 @@ import Server from '@/pages/server';
 import Flow from '@/pages/flow';
 import DocumentManager from '@/pages/DocumentManager';
 import ToolCreate from '@/pages/tools/create';
+import AgentCreate from '@/pages/agent/AgentCreate';
+import AgentIndex from '@/pages/agent/AgentIndex';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -172,10 +173,18 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
-            path="/agent/create"
+            path="/agents"
             element={
               <PrivateRoute>
-                <CreateAgent />
+                <AgentIndex />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/agents/create"
+            element={
+              <PrivateRoute>
+                <AgentCreate />
               </PrivateRoute>
             }
           />

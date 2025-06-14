@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { PlusIcon } from "lucide-react";
-import { DashboardTabOption } from "@/entities";
+import { DashboardTabOption } from "@/lib/entities";
 
 function AgentHeader() {
 	return (

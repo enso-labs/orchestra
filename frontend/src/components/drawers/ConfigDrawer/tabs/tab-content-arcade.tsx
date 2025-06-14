@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { listToolsArcade } from "@/services/toolService"
+import { listToolsArcade } from "@/lib/services/toolService"
 import { useChatContext } from "@/context/ChatContext"
 
 type Tool = {

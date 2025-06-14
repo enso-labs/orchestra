@@ -39,13 +39,13 @@ export function SettingsPopover() {
               Dashboard
             </Button>
           </Link>
-          <Link to="/agent/create" className="w-full">
+          <Link to="/agents" className="w-full">
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-2 text-sm font-normal"
             >
               <PlusCircle className="h-4 w-4" />
-              Create Agent
+              Agents
             </Button>
           </Link>
           <Link to="/settings" className="w-full">

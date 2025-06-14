@@ -1,4 +1,4 @@
-import { Server, DashboardTabOption } from "@/entities"
+import { Server, DashboardTabOption } from "@/lib/entities"
 import { useNavigate } from "react-router-dom";
 function ServerTabs({
 	activeTab,

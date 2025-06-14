@@ -1,5 +1,5 @@
 import apiClient from "@/lib/utils/apiClient";
-import { useChatReducer } from "@/reducers/chatReducer";
+import { useChatReducer } from "@/lib/reducers/chatReducer";
 import { getAuthToken } from "@/lib/utils/auth";
 import { useEffect } from "react";
 

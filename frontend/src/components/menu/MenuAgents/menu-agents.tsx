@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown, Search, Bot, X } from "lucide-react";
-import { Agent } from "@/entities";
+import { Agent } from "@/lib/entities";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/context/ChatContext";
-import useAppHook from "@/hooks/useAppHook";
+import useAppHook from "@/lib/hooks/useAppHook";
 
 function MenuAgents() {
 	const { setPayload } = useChatContext();

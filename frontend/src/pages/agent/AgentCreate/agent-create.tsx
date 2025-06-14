@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import ChatLayout from "../layouts/ChatLayout";
+import ChatLayout from "@/layouts/ChatLayout";
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -18,12 +18,16 @@ import {
 // import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { optimizeSystemPrompt, alterSystemPrompt } from "@/lib/services/threadService"
 import { useAgentContext } from "@/context/AgentContext";
+import SelectModel from "@/components/selects/SelectModel";
+import FileEditor from "@/components/FileEditor/file-editor";
+import { useToolContext } from "@/context/ToolContext";
 
 
-export default function AgentUpdate() {
+export default function AgentCreate() {
   const navigate = useNavigate();
   const { payload, setPayload } = useChatContext();
-  const { agentDetails, setAgentDetails, isCreating, handleUpdateAgent } = useAgentContext();
+  const { useSpecEffect } = useToolContext();
+  const { agentDetails, setAgentDetails, isCreating, handleCreateAgent } = useAgentContext();
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const { messages } = useChatContext()
@@ -76,16 +80,14 @@ export default function AgentUpdate() {
 
   const processCreateAgent = async () => {
     try {
-      await handleUpdateAgent(agentDetails.id, {
-        name: agentDetails.name,
-        description: agentDetails.description,
-        public: agentDetails.public
-      });
+      await handleCreateAgent();
       navigate("/dashboard");
     } catch (error) {
-      console.error("Failed to update agent:", error);
+      console.error("Failed to create agent:", error);
     }
   }
+
+  useSpecEffect();
 
   return (
     <ChatLayout>
@@ -195,7 +197,7 @@ export default function AgentUpdate() {
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-lg font-medium">New Ensō</h1>
+              <h1 className="text-lg font-medium">New Enso</h1>
               <p className="text-xs text-muted-foreground">• Draft</p>
             </div>
             <div className="ml-auto">
@@ -204,13 +206,14 @@ export default function AgentUpdate() {
                 onClick={processCreateAgent}
                 disabled={isCreating}
               >
-                {isCreating ? "Updating..." : "Update"}
+                {isCreating ? "Creating..." : "Create"}
               </Button>
             </div>
           </div>
 
           {/* Mobile content (no tabs, just the form) */}
           <div className="space-y-6">
+
             <div>
               <label className="block mb-2 text-sm font-medium">Name</label>
               <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" value={agentDetails.name} onChange={(e) => setAgentDetails({ ...agentDetails, name: e.target.value })} />
@@ -229,7 +232,7 @@ export default function AgentUpdate() {
 
             <div>
               <label className="block mb-2 text-sm font-medium">Model</label>
-              <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" disabled value={payload.model} />
+              <SelectModel />
             </div>
 
             <div>
@@ -304,6 +307,8 @@ export default function AgentUpdate() {
                 </div>
               )}
             </div>
+
+            <FileEditor />
 
             {/* <div>
               <label className="block mb-2 text-sm font-medium">Conversation starters</label>
@@ -397,7 +402,7 @@ export default function AgentUpdate() {
                     onClick={processCreateAgent}
                     disabled={isCreating}
                   >
-                    {isCreating ? "Updating..." : "Update"}
+                    {isCreating ? "Creating..." : "Create"}
                   </Button>
                 </div>
               </div>
@@ -421,6 +426,11 @@ export default function AgentUpdate() {
 
                     <div className="space-y-4 max-w-full">
                       <div>
+                        <label className="block mb-2 text-sm font-medium">Model</label>
+                        <SelectModel />
+                      </div>
+
+                      <div>
                         <label className="block mb-2 text-sm font-medium">Name</label>
                         <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" value={agentDetails.name} onChange={(e) => setAgentDetails({ ...agentDetails, name: e.target.value })} />
                       </div>
@@ -434,11 +444,6 @@ export default function AgentUpdate() {
                           value={agentDetails.description}
                           onChange={(e) => setAgentDetails({ ...agentDetails, description: e.target.value })}
                         />
-                      </div>
-
-                      <div>
-                        <label className="block mb-2 text-sm font-medium">Model</label>
-                        <Input placeholder="Name your Enso" className="bg-secondary/50 border-border" disabled value={payload.model} />
                       </div>
 
                       <div>
@@ -513,6 +518,8 @@ export default function AgentUpdate() {
                           </div>
                         )}
                       </div>
+
+                      <FileEditor />
 
                       {/* <div>
                         <label className="block mb-2 text-sm font-medium">Conversation starters</label>

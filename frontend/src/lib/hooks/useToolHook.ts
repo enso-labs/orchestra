@@ -6,8 +6,8 @@ import {
   Search, BookOpen, Globe, Infinity, Leaf
 } from "lucide-react";
 import apiClient from '@/lib/utils/apiClient';
-import { INIT_TOOL_STATE, useToolReducer } from '@/reducers/toolReducer';
-import { convertSpecToTool, getDefaultSpec } from '@/services/toolService';
+import { INIT_TOOL_STATE, useToolReducer } from '@/lib/reducers/toolReducer';
+import { convertSpecToTool, getDefaultSpec } from '@/lib/services/toolService';
 
 debug.enable('hooks:*');
 

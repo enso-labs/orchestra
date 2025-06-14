@@ -1,8 +1,8 @@
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { MobileNav } from '@/components/nav/MobileNav';
-import { TOKEN_NAME } from '@/config';
-import useAppHook from '@/hooks/useAppHook';
+import { TOKEN_NAME } from '@/lib/config';
+import useAppHook from '@/lib/hooks/useAppHook';
 import HomeIcon from '@/components/icons/HomeIcon';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
