@@ -1,4 +1,4 @@
-import { Server } from "@/entities"
+import { Server } from "@/lib/entities"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PencilIcon, Eye } from "lucide-react"

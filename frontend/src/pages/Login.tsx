@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NoAuthLayout from '../layouts/NoAuthLayout';
-import { TOKEN_NAME, VITE_API_URL } from '../config';
+import { TOKEN_NAME, VITE_API_URL } from '../lib/config';
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import HelpfulIcons from '@/components/icons/HelpfulIcons';
 import { SiGoogle, SiGithub, } from 'react-icons/si';

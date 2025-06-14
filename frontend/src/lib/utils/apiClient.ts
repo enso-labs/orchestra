@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { TOKEN_NAME, VITE_API_URL } from '../../config';
+import { TOKEN_NAME, VITE_API_URL } from '../config';
 import { getAuthToken } from './auth';
 
 // Create an Axios instance

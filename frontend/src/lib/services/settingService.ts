@@ -1,4 +1,4 @@
-import apiClient from '../lib/utils/apiClient';
+import apiClient from '@/lib/utils/apiClient';
 
 export const listSettings = async () => {
   const response = await apiClient.get('/settings');

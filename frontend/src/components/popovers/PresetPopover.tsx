@@ -8,8 +8,8 @@ import { Plus, Save, Trash2, Box } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatContext } from "@/context/ChatContext";
-import { createSetting, deleteSetting, updateSetting } from "@/services/settingService";
-import { createAgent } from "@/services/agentService";
+import { createSetting, deleteSetting, updateSetting } from "@/lib/services/settingService";
+import { createAgent } from "@/lib/services/agentService";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 

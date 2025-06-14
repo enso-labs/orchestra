@@ -1,4 +1,4 @@
-import { Agent } from "@/entities"
+import { Agent } from "@/lib/entities"
 import { AgentCard, EmptyState } from "@/components/cards/AgentCard"
 
 function DashboardTabsContent({
@@ -20,9 +20,6 @@ function DashboardTabsContent({
 		<div className="mt-4">
 			{activeTab === "agents" && (
 				<div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
-					<div className="flex justify-between items-center mb-4">
-						<h2 className="text-lg font-medium">My Agents</h2>
-					</div>
 					
 					{isLoading ? (
 						<div className="flex justify-center items-center h-40">

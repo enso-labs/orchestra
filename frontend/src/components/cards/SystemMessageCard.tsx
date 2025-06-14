@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { ChevronDown, ChevronUp, Wand2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useChatContext } from "@/context/ChatContext"
-import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
+import { optimizeSystemPrompt, alterSystemPrompt } from "@/lib/services/threadService"
 
 export default function SystemMessage({ content, rowCount = 6 }: { content: string, rowCount?: number }) {
   const [isExpanded, setIsExpanded] = useState(false)

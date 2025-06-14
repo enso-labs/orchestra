@@ -2,8 +2,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { 
 	X, Database, 
-	Search, BookOpen,
-	PlusCircle, Settings,
+	Search, BookOpen, PlusCircle,
 	Filter
 } from "lucide-react";
 import ToolCard from "@/components/cards/ToolCard";
@@ -13,8 +12,10 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useToolContext } from "@/context/ToolContext";
 import { useChatContext } from "@/context/ChatContext";
+import { useNavigate } from "react-router-dom";
 
 function TabContentTools() {
+	const navigate = useNavigate();
 	const [searchFocused, setSearchFocused] = useState(false);
 	const [activeCategory, setActiveCategory] = useState<string | null>(null);
 	const [groupByCategory, setGroupByCategory] = useState(true);
@@ -25,7 +26,6 @@ function TabContentTools() {
 		toolFilter, 
 		toolsByCategory,
 		filteredTools,
-		startAddingA2A,
 		hasSavedA2A
 	} = useToolContext();
 	
@@ -94,13 +94,9 @@ function TabContentTools() {
 										variant="ghost"
 										size="sm"
 										className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 relative"
-										onClick={startAddingA2A}
+										onClick={() => navigate("/tools/create")}
 									>
-										{hasSavedA2A ? (
-											<Settings className="h-4 w-4" />
-										) : (
-											<PlusCircle className="h-4 w-4" />
-										)}
+										<PlusCircle className="h-4 w-4" />
 										{hasSavedA2A && (
 											<span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full" />
 										)}

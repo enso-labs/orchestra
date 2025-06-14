@@ -1,14 +1,14 @@
 import debug from 'debug';
 import { useEffect, useRef, useState } from "react";
-import { ThreadPayload } from '../entities';
+import { ThreadPayload } from '../lib/entities';
 import apiClient from '@/lib/utils/apiClient';
-import { listModels, Model } from '@/services/modelService';
-import { listTools } from '../services/toolService';
-import { useChatReducer } from '@/reducers/chatReducer';
-import { DEFAULT_SYSTEM_PROMPT } from '@/config/instruction';
-import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/config/llm';
+import { listModels, Model } from '@/lib/services/modelService';
+import { listTools } from '@/lib/services/toolService';
+import { useChatReducer } from '@/lib/reducers/chatReducer';
+import { DEFAULT_SYSTEM_PROMPT } from '@/lib/config/instruction';
+import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/lib/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
-import { streamThread } from '@/services/threadService';
+import { streamThread } from '@/lib/services/threadService';
 import { useAppContext } from '@/context/AppContext';
 
 const KEY_NAME = 'config:mcp';
@@ -20,6 +20,7 @@ const initChatState = {
     response: null,
     responseRef: "",
     toolCallRef: "",
+    messagesEndRef: null,
     messages: [],
     settings: [],
     preset: null,
@@ -84,6 +85,7 @@ export default function useChatHook() {
     } = actions;
     const { setLoading, setLoadingMessage } = useAppContext();
     const token = getAuthToken();
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const responseRef = useRef(initChatState.responseRef);
     const toolCallRef = useRef(initChatState.toolCallRef);
     const [payload, setPayload] = useState(initChatState.payload);
@@ -371,6 +373,7 @@ export default function useChatHook() {
 
     return {
         ...initChatState,
+        messagesEndRef,
         messages,
         setMessages,
         responseRef,

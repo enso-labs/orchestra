@@ -1,5 +1,5 @@
 import { useContext, createContext } from "react";
-import useChatHook from "../hooks/useChatHook";
+import useChatHook from "@/hooks/useChatHook";
 import useConfigHook from "@/hooks/useConfigHook";
 import useImageHook from "@/hooks/useImageHook";
 export const ChatContext = createContext({});

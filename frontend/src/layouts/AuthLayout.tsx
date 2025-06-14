@@ -1,7 +1,7 @@
 import { ColorModeButton } from '@/components/buttons/ColorModeButton';
 import { Link, useNavigate } from 'react-router-dom';
 import { MobileNav } from '@/components/nav/MobileNav';
-import { TOKEN_NAME } from '@/config';
+import { TOKEN_NAME } from '@/lib/config';
 import useAppHook from '@/hooks/useAppHook';
 import HomeIcon from '@/components/icons/HomeIcon';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <header className="bg-card border-b border-border">
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <HomeIcon />
+            <HomeIcon onClick={() => navigate('/chat')} />
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-4">

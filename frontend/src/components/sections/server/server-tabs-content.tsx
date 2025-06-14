@@ -1,4 +1,4 @@
-import { Server } from "@/entities"
+import { Server } from "@/lib/entities"
 import { EmptyState } from "@/components/cards/AgentCard"
 import { ServerCard } from "@/components/cards/ServerCard"
 

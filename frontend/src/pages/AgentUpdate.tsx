@@ -16,7 +16,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 // import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
+import { optimizeSystemPrompt, alterSystemPrompt } from "@/lib/services/threadService"
 import { useAgentContext } from "@/context/AgentContext";
 
 

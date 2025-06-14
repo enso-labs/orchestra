@@ -1,8 +1,8 @@
-import { Agent, DashboardTabOption } from "@/entities"
+import { Agent, DashboardTabOption } from "@/lib/entities"
 import { useNavigate } from "react-router-dom";
 function DashboardTabs({
-	activeTab,
-	setActiveTab,
+	// activeTab,
+	// setActiveTab,
 	filteredMyAgents,
 	// filteredPublicAgents,
 	// filteredPrivateAgents,
@@ -43,7 +43,7 @@ function DashboardTabs({
 				Servers
 			</button>
 
-			<button
+			{/* <button
 				className={`px-4 py-2 text-sm font-medium ${
 					activeTab === "chat"
 						? "border-b-2 border-primary text-foreground"
@@ -72,7 +72,7 @@ function DashboardTabs({
 				onClick={() => setActiveTab("workflows")}
 			>
 				Workflows
-			</button>
+			</button> */}
 		</div>
 	)
 }

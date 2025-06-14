@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { X, Wand2 } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
-import { optimizeSystemPrompt, alterSystemPrompt } from "@/services/threadService"
+import { optimizeSystemPrompt, alterSystemPrompt } from "@/lib/services/threadService"
 import { useAgentContext } from "@/context/AgentContext";
 import FlowCreateMobile from "@/components/sections/flow/create/flow-create-mobile";
 import FlowCreateDesktop from "@/components/sections/flow/create/flow-create-desktop";

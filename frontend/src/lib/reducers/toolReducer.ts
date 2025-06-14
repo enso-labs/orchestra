@@ -14,6 +14,7 @@ type ToolState = {
 	hasSavedA2A: boolean;
 	isAssistantOpen: boolean;
 	selectedToolMessage: any | null;
+	swagger: any | null;
 }
 
 type ToolAction = {
@@ -53,6 +54,7 @@ export const INIT_TOOL_STATE: ToolState = {
 	hasSavedA2A: false,
 	isAssistantOpen: false,
 	selectedToolMessage: null,
+	swagger: null,
 }
 
 // Reducer
@@ -82,6 +84,8 @@ export const toolReducer = (state: ToolState, action: ToolAction) => {
 			return { ...state, mcpError: action.payload };
 		case 'SET_HAS_SAVED_MCP':
 			return { ...state, hasSavedMCP: action.payload };
+		case 'SET_SWAGGER_SPEC':
+			return { ...state, swagger: action.payload };
 		case 'RESET_STATE':
 			return INIT_TOOL_STATE;
 		default:
@@ -130,6 +134,9 @@ export function useToolReducer() {
 		
 		setSelectedToolMessage: (message: any) => 
 			dispatch({ type: 'SET_SELECTED_TOOL_MESSAGE', payload: message }),
+		
+		setSwaggerSpec: (spec: any) => 
+			dispatch({ type: 'SET_SWAGGER_SPEC', payload: spec }),
 		
 		resetState: () => 
 			dispatch({ type: 'RESET_STATE' })

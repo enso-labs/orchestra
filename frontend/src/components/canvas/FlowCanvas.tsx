@@ -13,7 +13,7 @@ import {
 import { useFlowContext } from '@/context/FlowContext';
  
 import '@xyflow/react/dist/style.css';
-import { createJsonThread } from '@/services/threadService';
+import { createJsonThread } from '@/lib/services/threadService';
 
 // Define the data structure being passed between nodes
 interface AppointmentData {

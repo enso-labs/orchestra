@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react"
-import {  deleteAgent } from "@/services/agentService"
+import {  deleteAgent } from "@/lib/services/agentService"
 import { toast } from "sonner"
-import { Server, DashboardTabOption } from "@/entities"
+import { Server, DashboardTabOption } from "@/lib/entities"
 import DashboardHeader from "./server-header"
 import DashboardSearch from "./server-search"
 import DashboardTabs from "./server-tabs"
 import DashboardTabsContent from "./server-tabs-content"
-import {listServers } from "@/services/serverService"
+import {listServers } from "@/lib/services/serverService"
 
 export default function ServerSection() {
 	const [searchTerm, setSearchTerm] = useState("")

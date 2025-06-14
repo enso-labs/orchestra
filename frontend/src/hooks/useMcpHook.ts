@@ -2,7 +2,7 @@ import debug from 'debug';
 import apiClient from '@/lib/utils/apiClient';
 import { useCallback, useEffect, useState } from 'react';
 import { useChatContext } from '@/context/ChatContext';
-import { listPublicServers, listServers } from '@/services/serverService';
+import { listPublicServers, listServers } from '@/lib/services/serverService';
 
 debug.enable('hooks:*');
 // const logger = debug('hooks:useMcpHook');

@@ -1,4 +1,4 @@
-import { DEFAULT_CHAT_MODEL, ModelName, isValidModelName } from "@/config/llm";
+import { DEFAULT_CHAT_MODEL, ModelName, isValidModelName } from "@/lib/config/llm";
 
 class ModelStorage {
   private keyName: string;
