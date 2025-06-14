@@ -1,8 +1,8 @@
 import { Agent, DashboardTabOption } from "@/lib/entities"
 import { useNavigate } from "react-router-dom";
 function DashboardTabs({
-	activeTab,
-	setActiveTab,
+	// activeTab,
+	// setActiveTab,
 	filteredMyAgents,
 	// filteredPublicAgents,
 	// filteredPrivateAgents,

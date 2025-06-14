@@ -20,6 +20,7 @@ const initChatState = {
     response: null,
     responseRef: "",
     toolCallRef: "",
+    messagesEndRef: null,
     messages: [],
     settings: [],
     preset: null,
@@ -84,6 +85,7 @@ export default function useChatHook() {
     } = actions;
     const { setLoading, setLoadingMessage } = useAppContext();
     const token = getAuthToken();
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const responseRef = useRef(initChatState.responseRef);
     const toolCallRef = useRef(initChatState.toolCallRef);
     const [payload, setPayload] = useState(initChatState.payload);
@@ -371,6 +373,7 @@ export default function useChatHook() {
 
     return {
         ...initChatState,
+        messagesEndRef,
         messages,
         setMessages,
         responseRef,
