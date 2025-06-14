@@ -3,176 +3,176 @@ import { ThreadPayload } from "@/lib/entities";
 
 
 
-const API_TOOL = {
-	"description": "Airtable Tools",
-	"headers": {
-		"x-api-key": "0123456789"
-	},
-	"name": "Airtable Tools",
-	"spec": {
-		"info": {
-			"description": "Unified webhook endpoint with tool-specific actions based on `event`",
-			"title": "Airtable Tools",
-			"version": "v1.0.0"
-		},
-		"openapi": "3.1.0",
-		"paths": {
-			"/webhook/airtable": {
-				"post": {
-					"deprecated": false,
-					"operationId": "airtable_list_bases",
-					"requestBody": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"properties": {
-										"event": {
-											"enum": ["airtable_list_bases"],
-											"type": "string"
-										},
-										"data": {
-											"type": "object"
-										}
-									},
-									"required": [
-										"event",
-										"data"
-									],
-									"type": "object"
-								}
-							}
-						},
-						"required": true
-					},
-					"responses": {
-						"200": {
-							"description": "List of bases"
-						}
-					}
-				}
-			},
-			"/webhook/airtable#schema": {
-				"post": {
-					"deprecated": false,
-					"operationId": "airtable_get_base_schema",
-					"requestBody": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"properties": {
-										"event": {
-											"enum": ["airtable_get_base_schema"],
-											"type": "string"
-										},
-										"data": {
-											"properties": {
-												"baseId": {
-													"type": "string"
-												}
-											},
-											"required": [
-												"baseId"
-											],
-											"type": "object"
-										}
-									},
-									"required": [
-										"event",
-										"data"
-									],
-									"type": "object"
-								}
-							}
-						},
-						"required": true
-					},
-					"responses": {
-						"200": {
-							"description": "Schema retrieved"
-						}
-					}
-				}
-			},
-			"/webhook/airtable#search": {
-				"post": {
-					"deprecated": false,
-					"operationId": "airtable_search_records",
-					"requestBody": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"properties": {
-										"event": {
-											"enum": ["airtable_search_records"],
-											"type": "string"
-										},
-										"data": {
-											"properties": {
+// const API_TOOL = {
+// 	"description": "Airtable Tools",
+// 	"headers": {
+// 		"x-api-key": "0123456789"
+// 	},
+// 	"name": "Airtable Tools",
+// 	"spec": {
+// 		"info": {
+// 			"description": "Unified webhook endpoint with tool-specific actions based on `event`",
+// 			"title": "Airtable Tools",
+// 			"version": "v1.0.0"
+// 		},
+// 		"openapi": "3.1.0",
+// 		"paths": {
+// 			"/webhook/airtable": {
+// 				"post": {
+// 					"deprecated": false,
+// 					"operationId": "airtable_list_bases",
+// 					"requestBody": {
+// 						"content": {
+// 							"application/json": {
+// 								"schema": {
+// 									"properties": {
+// 										"event": {
+// 											"enum": ["airtable_list_bases"],
+// 											"type": "string"
+// 										},
+// 										"data": {
+// 											"type": "object"
+// 										}
+// 									},
+// 									"required": [
+// 										"event",
+// 										"data"
+// 									],
+// 									"type": "object"
+// 								}
+// 							}
+// 						},
+// 						"required": true
+// 					},
+// 					"responses": {
+// 						"200": {
+// 							"description": "List of bases"
+// 						}
+// 					}
+// 				}
+// 			},
+// 			"/webhook/airtable#schema": {
+// 				"post": {
+// 					"deprecated": false,
+// 					"operationId": "airtable_get_base_schema",
+// 					"requestBody": {
+// 						"content": {
+// 							"application/json": {
+// 								"schema": {
+// 									"properties": {
+// 										"event": {
+// 											"enum": ["airtable_get_base_schema"],
+// 											"type": "string"
+// 										},
+// 										"data": {
+// 											"properties": {
+// 												"baseId": {
+// 													"type": "string"
+// 												}
+// 											},
+// 											"required": [
+// 												"baseId"
+// 											],
+// 											"type": "object"
+// 										}
+// 									},
+// 									"required": [
+// 										"event",
+// 										"data"
+// 									],
+// 									"type": "object"
+// 								}
+// 							}
+// 						},
+// 						"required": true
+// 					},
+// 					"responses": {
+// 						"200": {
+// 							"description": "Schema retrieved"
+// 						}
+// 					}
+// 				}
+// 			},
+// 			"/webhook/airtable#search": {
+// 				"post": {
+// 					"deprecated": false,
+// 					"operationId": "airtable_search_records",
+// 					"requestBody": {
+// 						"content": {
+// 							"application/json": {
+// 								"schema": {
+// 									"properties": {
+// 										"event": {
+// 											"enum": ["airtable_search_records"],
+// 											"type": "string"
+// 										},
+// 										"data": {
+// 											"properties": {
 
-												"baseId": {
-													"type": "string"
-												},
-												"tableId": {
-													"type": "string"
-												},
-												"filterByFormula": {
-													"type": "string"
-												},
-												"outputFields": {
-													"description": "List of field names to include in the response",
-													"items": {
-														"type": "string"
-													},
-													"type": "array"
-												},
-												"sort": {
-													"properties": {
-														"field": {
-															"type": "string"
-														},
-														"direction": {
-															"enum": [
-																"ASC",
-																"DESC"
-															],
-															"type": "string"
-														}
-													},
-													"type": "object"
-												}
-											},
-											"required": [
-												"baseId",
-												"tableId"
-											],
-											"type": "object"
-										}
-									},
-									"required": [
-										"event",
-										"data"
-									],
-									"type": "object"
-								}
-							}
-						},
-						"required": true
-					},
-					"responses": {
-						"200": {
-							"description": "Matching records returned"
-						}
-					}
-				}
-			}
-		},
-		"servers": [
-			{
-				"url": "https://n8n.enso.sh"
-			}
-		]
-	}
-}
+// 												"baseId": {
+// 													"type": "string"
+// 												},
+// 												"tableId": {
+// 													"type": "string"
+// 												},
+// 												"filterByFormula": {
+// 													"type": "string"
+// 												},
+// 												"outputFields": {
+// 													"description": "List of field names to include in the response",
+// 													"items": {
+// 														"type": "string"
+// 													},
+// 													"type": "array"
+// 												},
+// 												"sort": {
+// 													"properties": {
+// 														"field": {
+// 															"type": "string"
+// 														},
+// 														"direction": {
+// 															"enum": [
+// 																"ASC",
+// 																"DESC"
+// 															],
+// 															"type": "string"
+// 														}
+// 													},
+// 													"type": "object"
+// 												}
+// 											},
+// 											"required": [
+// 												"baseId",
+// 												"tableId"
+// 											],
+// 											"type": "object"
+// 										}
+// 									},
+// 									"required": [
+// 										"event",
+// 										"data"
+// 									],
+// 									"type": "object"
+// 								}
+// 							}
+// 						},
+// 						"required": true
+// 					},
+// 					"responses": {
+// 						"200": {
+// 							"description": "Matching records returned"
+// 						}
+// 					}
+// 				}
+// 			}
+// 		},
+// 		"servers": [
+// 			{
+// 				"url": "https://n8n.enso.sh"
+// 			}
+// 		]
+// 	}
+// }
 
 export function constructSystemPrompt(systemPrompt: string) {
   return `${systemPrompt}

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Select } from "@/components/ui/select";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Model } from "@/services/modelService";
+import { Model } from "@/lib/services/modelService";
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from 'react-icons/si';
 import GroqIcon from "@/components/icons/GroqIcon";
 import { useQueryParam, StringParam, withDefault } from 'use-query-params';
