@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { useEffect, useState } from "react";
-import { APP_VERSION } from '../config';
+import { APP_VERSION } from '../lib/config';
 import apiClient from '@/lib/utils/apiClient';
 
 debug.enable('hooks:*');

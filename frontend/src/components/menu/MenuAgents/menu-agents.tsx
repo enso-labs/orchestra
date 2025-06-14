@@ -7,7 +7,7 @@ import { Check, ChevronsUpDown, Search, Bot, X } from "lucide-react";
 import { Agent } from "@/lib/entities";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/context/ChatContext";
-import useAppHook from "@/lib/hooks/useAppHook";
+import useAppHook from "@/hooks/useAppHook";
 
 function MenuAgents() {
 	const { setPayload } = useChatContext();

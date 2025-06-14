@@ -1,7 +1,7 @@
 import { useContext, createContext } from "react";
-import useChatHook from "../lib/hooks/useChatHook";
-import useConfigHook from "@/lib/hooks/useConfigHook";
-import useImageHook from "@/lib/hooks/useImageHook";
+import useChatHook from "@/hooks/useChatHook";
+import useConfigHook from "@/hooks/useConfigHook";
+import useImageHook from "@/hooks/useImageHook";
 export const ChatContext = createContext({});
 
 export default function ChatProvider({ children }: { children: React.ReactNode }) {

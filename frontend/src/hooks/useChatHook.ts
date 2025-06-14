@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { useEffect, useRef, useState } from "react";
-import { ThreadPayload } from '../entities';
+import { ThreadPayload } from '../lib/entities';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/lib/services/modelService';
 import { listTools } from '@/lib/services/toolService';

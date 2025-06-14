@@ -1,5 +1,5 @@
 import { useContext, createContext } from "react";
-import useAppHook from "@/lib/hooks/useAppHook";
+import useAppHook from "@/hooks/useAppHook";
 
 export const AppContext = createContext({});
 

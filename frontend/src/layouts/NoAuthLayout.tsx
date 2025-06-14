@@ -1,4 +1,4 @@
-import useAppHook from "@/lib/hooks/useAppHook";
+import useAppHook from "@/hooks/useAppHook";
 
 export default function NoAuthLayout({ children }: { children: React.ReactNode }) {
   const { appVersion, useFetchAppVersionEffect } = useAppHook();

@@ -10,7 +10,7 @@ import remarkMath from "remark-math";
 import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
-import useImageHook from "@/lib/hooks/useImageHook";
+import useImageHook from "@/hooks/useImageHook";
 
 interface CodeBlockProps {
   inline?: boolean
