@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { findToolCall } from "@/lib/utils/format"
 import { useParams } from "react-router-dom"
 import ChatMessages from "@/components/lists/ChatMessages"
-import { findThread } from "@/services/threadService"
+import { findThread } from "@/lib/services/threadService"
 import { ShareNav } from "@/components/nav/ShareNav"
 
 export default function ThreadPublic() {

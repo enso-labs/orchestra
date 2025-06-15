@@ -1,5 +1,5 @@
 import { Collection } from '@/pages/DocumentManager/types';
-import apiClient from '../lib/utils/apiClient';
+import apiClient from '@/lib/utils/apiClient';
 
 export const getCollections = async () => {
   try {

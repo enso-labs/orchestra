@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { Select } from "@/components/ui/select";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Model } from "@/services/modelService";
+import { Model } from "@/lib/services/modelService";
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from 'react-icons/si';
 import GroqIcon from "@/components/icons/GroqIcon";
 import { useQueryParam, StringParam, withDefault } from 'use-query-params';
 import { useChatContext } from "@/context/ChatContext";
-import { DEFAULT_CHAT_MODEL } from "@/config/llm";
+import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 
 // Create a parameter with default value
 const ModelParam = withDefault(StringParam, DEFAULT_CHAT_MODEL);

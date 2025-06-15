@@ -2,7 +2,7 @@ import { Link } from "react-router-dom"
 import { Bot, Lock, Globe, Star, Users, Zap, PencilIcon, TrashIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAgentContext } from "@/context/AgentContext"
-import { Agent } from "@/entities"
+import { Agent } from "@/lib/entities"
 
 export function EmptyState({ message }: { message: string }) {
   return (

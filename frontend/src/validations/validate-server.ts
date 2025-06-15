@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Server } from "@/entities";
+import { Server } from "@/lib/entities";
 
 export const ServerSchema = z.object({
 	name: z.string().min(1, "Server name is required"),

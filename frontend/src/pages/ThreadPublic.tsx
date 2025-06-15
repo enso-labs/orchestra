@@ -9,7 +9,7 @@ import SearchEngineTool from "@/components/tools/SearchEngine"
 import { findToolCall } from "@/lib/utils/format"
 import { useNavigate, useParams } from "react-router-dom"
 import ChatMessages from "@/components/lists/ChatMessages"
-import { findThread } from "@/services/threadService"
+import { findThread } from "@/lib/services/threadService"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
   if (selectedToolMessage) return (

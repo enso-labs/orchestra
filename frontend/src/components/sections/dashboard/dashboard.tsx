@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { DashboardTabOption } from "@/entities"
+import { DashboardTabOption } from "@/lib/entities"
 import DashboardHeader from "./dashboard-header"
 import DashboardSearch from "./dashboard-search"
 import DashboardTabs from "./dashboard-tabs"

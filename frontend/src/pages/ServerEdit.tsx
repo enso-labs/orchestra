@@ -7,8 +7,8 @@ import Editor from "react-simple-code-editor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToolContext } from "@/context/ToolContext";		
 import { useNavigate, useParams } from "react-router-dom";
-import { Server } from "@/entities";
-import { deleteServer, getServer, updateServer } from "@/services/serverService";
+import { Server } from "@/lib/entities";
+import { deleteServer, getServer, updateServer } from "@/lib/services/serverService";
 import { base64Compare } from "@/lib/utils/format";
 import { validateServer } from "@/validations/validate-server";
 

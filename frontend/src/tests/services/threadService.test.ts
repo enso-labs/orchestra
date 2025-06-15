@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { findThread } from '../../services/threadService';
-import apiClient from '../../lib/utils/apiClient';
-import { mockThread } from '../mocks/thread';
+import { findThread } from '@/lib/services/threadService';
+import apiClient from '@/lib/utils/apiClient';
+import { mockThread } from '@/tests/mocks/thread';
 
 // Mock the apiClient
 vi.mock('../../lib/utils/apiClient', () => ({

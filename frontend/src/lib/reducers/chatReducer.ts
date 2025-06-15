@@ -1,6 +1,6 @@
 import { useReducer, useRef } from 'react';
 import { ThreadPayload } from '../entities';
-import { Model } from '@/services/modelService';
+import { Model } from '@/lib/services/modelService';
 import { SSE } from 'sse.js';
 
 // Action Types Enum

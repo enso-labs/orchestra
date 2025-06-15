@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Settings, X } from "lucide-react"
+import { Settings2, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import TabContentInfo from "./tabs/tab-content-info"
@@ -19,8 +19,8 @@ export default function ConfigDrawer() {
         className="z-10 rounded-full"
         onClick={() => setOpen(true)}
       >
-        <Settings className="h-5 w-5" />
-        <span className="sr-only">Settings</span>
+        <Settings2 className="h-5 w-5" />
+        <span className="sr-only">Tools</span>
       </Button>
 
       <div
@@ -33,7 +33,7 @@ export default function ConfigDrawer() {
       >
         <div className="h-full overflow-y-auto bg-background border-l border-border">
           <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-xl font-semibold">Settings</h2>
+            <h2 className="text-xl font-semibold">Configuration</h2>
             <Button
               variant="ghost"
               size="icon"

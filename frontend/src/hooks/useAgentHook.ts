@@ -1,9 +1,9 @@
 import { useAppContext } from '@/context/AppContext';
 import { toast } from 'sonner';
 import { useChatContext } from '@/context/ChatContext';
-import { Agent } from '@/entities';
-import { createAgent, createAgentRevision, deleteAgent, getAgents } from '@/services/agentService';
-import { createSetting } from '@/services/settingService';
+import { Agent } from '@/lib/entities';
+import { createAgent, createAgentRevision, deleteAgent, getAgents } from '@/lib/services/agentService';
+import { createSetting } from '@/lib/services/settingService';
 import debug from 'debug';
 import { useEffect, useMemo, useState } from 'react';
 
