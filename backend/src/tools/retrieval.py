@@ -4,7 +4,7 @@ from langchain_core.tools import tool, ToolException
 from langchain_core.documents import Document
 
 from src.routes.v0.auth import create_access_token
-from src.models import User
+from src.schemas.models import User
 from src.utils.retrieval import VectorStore
 from src.constants import DEFAULT_VECTOR_STORE_PATH, LANGCONNECT_SERVER_URL
 from src.utils.logger import logger

@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useToolContext } from '@/context/ToolContext';
 import MCPInfo from '@/components/ToolSelector/MCPEditor/mcp-info';
-import { getServerInfo } from '@/services/toolService';
+import { getServerInfo } from '@/lib/services/toolService';
 import HomeIcon from '@/components/icons/HomeIcon';
 import { useNavigate } from 'react-router-dom';
 

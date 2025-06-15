@@ -5,8 +5,9 @@ from fastapi import Body, HTTPException,status, Depends, APIRouter, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain.chat_models import init_chat_model
 
-from src.models import ProtectedUser, User
-from src.entities import Answer, ChatInput, NewThread, ExistingThread
+from src.constants.examples import NEW_THREAD_API_TOOLS, NEW_THREAD_QUERY_EXAMPLE
+from src.schemas.models import ProtectedUser, User
+from src.schemas.entities import Answer, ChatInput, NewThread, ExistingThread
 from src.services.db import get_async_db
 from src.utils.auth import get_optional_user
 from src.utils.logger import logger

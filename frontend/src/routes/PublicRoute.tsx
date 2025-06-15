@@ -19,7 +19,7 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   
   // Allow access to public routes even when authenticated
   return isAuthenticated && !isPublicRoute ? 
-    <Navigate to="/dashboard" /> : 
+    <Navigate to="/chat" /> : 
     <>{children}</>;
 };
 

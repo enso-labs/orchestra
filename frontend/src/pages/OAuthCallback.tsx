@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { FaGithub, FaGoogle } from 'react-icons/fa';
-import { VITE_API_URL, TOKEN_NAME } from '@/config';
+import { VITE_API_URL, TOKEN_NAME } from '@/lib/config';
 import { jwtDecode } from 'jwt-decode';
 
 const OAuthCallback = () => {

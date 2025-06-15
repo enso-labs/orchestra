@@ -8,7 +8,7 @@ import uuid
 
 from src.utils.auth import verify_credentials
 from src.services.db import get_async_db
-from src.models import Server, User
+from src.schemas.models import Server, User
 
 router = APIRouter(
     prefix="/servers",

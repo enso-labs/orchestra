@@ -1,8 +1,10 @@
 from typing import Optional
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.models import Thread, User, Token
+from src.schemas.models import Thread, User, Token
 from src.constants import APP_SECRET_KEY
+from src.utils.logger import logger
 
 class UserRepo:
     def __init__(self, db: AsyncSession, user_id: str = None):
@@ -17,7 +19,7 @@ class UserRepo:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: EmailStr) -> Optional[User]:
         """Get user by email."""
         result = await self.db.execute(
             select(User).filter(User.email == email)
@@ -68,9 +70,12 @@ class UserRepo:
             for token in tokens
         ]
 
-    async def create(self, user_data: dict) -> User:
+    async def create(self, user_data: dict | User) -> User:
         """Create a new user."""
-        user = User(**user_data)
+        if isinstance(user_data, dict):
+            user = User(**user_data, hashed_password=User.get_password_hash(user_data.get('password')))
+        else:
+            user = user_data
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
@@ -134,18 +139,22 @@ class UserRepo:
 
     async def threads(self, page=1, per_page=20, sort_order='desc', agent=None):
         """Get all threads for a user."""
-        query = select(Thread).filter(Thread.user == self.user_id)
+        try:
+            query = select(Thread).filter(Thread.user == self.user_id)
         
-        if agent:
-            query = query.filter(Thread.agent == agent)
-        
-        # Apply sort order
-        if sort_order.lower() == 'asc':
-            query = query.order_by(Thread.created_at.asc())
-        else:
-            query = query.order_by(Thread.created_at.desc())
+            if agent:
+                query = query.filter(Thread.agent == agent)
             
-        query = query.offset((page - 1) * per_page).limit(per_page)
-            
-        result = await self.db.execute(query)
-        return result.scalars().all()
+            # Apply sort order
+            if sort_order.lower() == 'asc':
+                query = query.order_by(Thread.created_at.asc())
+            else:
+                query = query.order_by(Thread.created_at.desc())
+                
+            query = query.offset((page - 1) * per_page).limit(per_page)
+                
+            result = await self.db.execute(query)
+            return result.scalars().all()
+        except Exception as e:
+            logger.exception(f"Failed to list threads: {str(e)}")
+            return []

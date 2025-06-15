@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-from src.models import Base
+from src.services.db import get_db_base, load_models
 from src.constants import DB_URI
 
 config = context.config
@@ -17,7 +17,10 @@ config.set_main_option("sqlalchemy.url", DB_URI)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+# Load all models to ensure they are registered with SQLAlchemy
+load_models()
+
+target_metadata = get_db_base().metadata
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
