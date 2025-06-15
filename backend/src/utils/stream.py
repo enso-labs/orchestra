@@ -3,7 +3,7 @@ import asyncio
 from fastapi import HTTPException
 from langgraph.graph import StateGraph
 from src.utils.logger import logger
-from src.services.db import get_checkpoint_db
+from src.services.db import get_checkpoint_db, get_store_db
 from src.schemas.entities import StreamContext
 
 # https://langchain-ai.github.io/langgraph/how-tos/streaming/#messages
@@ -15,7 +15,9 @@ async def astream_chunks(
 ):
     try:
         ctx = StreamContext(msg=None, metadata={}, event=stream_mode)
-        async with get_checkpoint_db() as checkpointer: 
+        async with (
+            get_checkpoint_db() as checkpointer,
+        ):
             graph.checkpointer = checkpointer
             async for msg, metadata in graph.astream(
                 state, 

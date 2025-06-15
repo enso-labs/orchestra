@@ -8,7 +8,7 @@ from langchain.chat_models import init_chat_model
 from src.constants.examples import NEW_THREAD_API_TOOLS, NEW_THREAD_QUERY_EXAMPLE
 from src.schemas.models import ProtectedUser, User
 from src.schemas.entities import Answer, ChatInput, NewThread, ExistingThread
-from src.services.db import get_async_db
+from src.services.db import get_async_db, get_store_db
 from src.utils.auth import get_optional_user
 from src.utils.logger import logger
 from src.controllers.agent import AgentController
@@ -99,9 +99,14 @@ async def new_thread(
     db: AsyncSession = Depends(get_async_db)
 ):
     try:
+        store = None
+        if hasattr(body, 'memory') and body.memory:
+            store = get_store_db()
+            await store.setup()
+        
         controller = AgentController(db=db, user_id=user.id if user else None)
         output_type = request.headers.get("accept", "application/json")
-        return await controller.query_thread(output_type=output_type, thread=body)
+        return await controller.query_thread(output_type=output_type, thread=body, store=store)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=e.response.status_code , detail=str(e))
@@ -143,9 +148,10 @@ async def existing_thread(
     db: AsyncSession = Depends(get_async_db)
 ):
     try:
-        controller = AgentController(db=db, user_id=user.id if user else None)
-        output_type = request.headers.get("accept", "application/json")
-        return await controller.query_thread(output_type=output_type, thread=body, thread_id=thread_id)
+        async with get_store_db() as store:
+            controller = AgentController(db=db, user_id=user.id if user else None)
+            output_type = request.headers.get("accept", "application/json")
+            return await controller.query_thread(output_type=output_type, thread=body, store=store)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=e.response.status_code , detail=str(e))

@@ -1,4 +1,5 @@
 import asyncio
+import json
 from fastapi import HTTPException, status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from langchain_core.messages import AnyMessage
@@ -6,6 +7,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.prebuilt import create_react_agent
 from sqlalchemy import text
 from langgraph.errors import NodeInterrupt
+from langgraph.store.postgres import AsyncPostgresStore
 
 from src.repos.thread_repo import ThreadRepo
 from src.schemas.entities.a2a import A2AServer
@@ -22,7 +24,7 @@ from src.schemas.models import Thread as ThreadModel
 from src.utils.stream import astream_chunks
 
 class Agent:
-    def __init__(self, config: dict, user_repo: UserRepo = None):
+    def __init__(self, config: dict, user_repo: UserRepo = None, store: AsyncPostgresStore = None):
         self.user_id = config.get("user_id", None)
         self.thread_id = config.get("thread_id", None)
         self.agent_id = config.get("agent_id", None)
@@ -33,6 +35,7 @@ class Agent:
         self.llm: LLMWrapper = None
         self.tools = config.get("tools", [])
         self.checkpointer = None
+        self.store = store
     
     async def list_async_threads(self, page=1, per_page=20):
         try:
@@ -121,12 +124,20 @@ class Agent:
             metadata={'user_repo': self.user_repo, 'collection': collection, 'thread_id': self.thread_id}
         )
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
-        # Create graph
+        if self.store:
+            self.store.embeddings = LLMWrapper(model_name="openai:text-embedding-3-large").embedding_model()
+            memories = await self.store.asearch(("memories", self.user_id))
+            if memories:
+                system += "\n\nMemories:\n"
+                for memory in memories:
+                    memory_dict = str(memory.dict())
+                    system += f"{memory_dict}\n"
+                
         if self.tools:
-            graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer)
+            graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer, store=self.store)
         else:
             builder = chatbot_builder(config={"model": self.llm.model, "system": system})
-            graph = builder.compile(checkpointer=self.checkpointer)
+            graph = builder.compile(checkpointer=self.checkpointer, store=self.store)
         self.graph = graph
         self.graph.debug = debug
         self.graph.name = name

@@ -7,12 +7,16 @@ import asyncio
 from enum import Enum
 from pydantic import BaseModel, create_model
 from pydantic.fields import Field, FieldInfo
+from langgraph.config import get_store
 from langchain_community.agent_toolkits.openapi.toolkit import RequestsToolkit
 from langchain_community.utilities.requests import TextRequestsWrapper, GenericRequestsWrapper
 from langchain_core.tools import StructuredTool
 from langchain_community.tools.requests.tool import BaseRequestsTool
+from langchain_core.runnables import RunnableConfig
 
+from src.services.db import get_store_db
 from src.utils.logger import logger
+from src.utils.tools import get_user_id
 
 def _get_schema(response_json: Union[dict, list]) -> dict:
     if isinstance(response_json, list):
@@ -180,23 +184,37 @@ def make_api_call_func(
         data: Optional request body data for POST/PUT requests
         path_params: Optional dictionary of path parameters to format into the URL
     """
-    async def api_call(event: str, data: Dict[str, Any]):
+    async def api_call(event: str, data: Dict[str, Any], config: RunnableConfig):
         wrapper = GenericRequestsWrapper(headers=headers)
         # Format URL with path parameters if provided
         formatted_url = url.format(**(path_params or {}))
-        
-        if method == "GET":
-            return await wrapper.aget(formatted_url)
-        elif method == "POST":
-            return await wrapper.apost(formatted_url, data={'data': data, "event": event})
-        elif method == "PUT":
-            return await wrapper.aput(formatted_url, data={'data': data, "event": event})
-        elif method == "PATCH":
-            return await wrapper.apatch(formatted_url, data={'data': data, "event": event})
-        elif method == "DELETE":
-            return await wrapper.adelete(formatted_url)
-        else:
-            raise ValueError(f"Unsupported HTTP method: {method}")
+        async with get_store_db() as store:
+            try:
+                if method == "GET":
+                    response = await wrapper.aget(formatted_url)
+                elif method == "POST":
+                    response = await wrapper.apost(formatted_url, data={'data': data, "event": event})
+                elif method == "PUT":
+                    response = await wrapper.aput(formatted_url, data={'data': data, "event": event})
+                elif method == "PATCH":
+                    response = await wrapper.apatch(formatted_url, data={'data': data, "event": event})
+                elif method == "DELETE":
+                    response = await wrapper.adelete(formatted_url)
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
+                
+                logger.debug(f"API Response for {method} {formatted_url}: {response}")
+                if store and config.get("store", None):
+                    await store.aput(("memories", get_user_id(config)), event, {"memory": {
+                    "event": event,
+                    "data": data,
+                    "response": response
+                }})  
+                return response
+                
+            except Exception as e:
+                logger.error(f"API call failed for {method} {formatted_url}: {str(e)}")
+                raise
 
     api_call.__doc__ = description
     return api_call

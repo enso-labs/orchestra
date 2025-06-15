@@ -2,6 +2,7 @@ import base64
 import requests
 from typing import Optional
 from loguru import logger
+from pydantic import TypeAdapter
 
 def get_base64_image(image_url: str) -> Optional[str]:
     """Fetch image from URL and convert to base64, or return existing base64 string."""

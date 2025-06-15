@@ -52,6 +52,7 @@ class ExistingThread(ChatInput):
     a2a: Optional[dict[str, A2AServer]] = Field(default_factory=dict[str, A2AServer])
     images: Optional[List[str]] = Field(default_factory=list)
     model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
+    memory: Optional[bool] = Field(default=False)
     collection: Optional[dict] = Field(
         default={
             'id': 'default', 

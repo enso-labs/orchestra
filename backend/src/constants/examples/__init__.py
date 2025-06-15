@@ -51,6 +51,7 @@ NEW_THREAD_API_TOOLS = {
     "system": "You are",
     "query": "List all the bases in Airtable",
     "model": "openai:o3-mini",
+    "memory": True,
     "images": [],
     "tools": [{
         "name": "Airtable Tools",
@@ -97,6 +98,7 @@ NEW_THREAD_ANSWER_EXAMPLE = {
 EXISTING_THREAD_QUERY_EXAMPLE = {
     "query": "What about Germany?",
     "model": "openai:gpt-4o",
+    "memory": True,
     "tools": [],
     "images": [],
     "collection": {

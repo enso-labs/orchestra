@@ -2,6 +2,7 @@ import uuid
 from typing import Literal
 from fastapi import Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from langgraph.store.postgres import AsyncPostgresStore
 
 from src.repos.agent_repo import AgentRepo
 from src.schemas.entities import ExistingThread, NewThread
@@ -21,6 +22,7 @@ class AgentController:
         thread: NewThread | ExistingThread,
         thread_id: str = None,
         output_type: Literal['text/event-stream', "application/json"] = "application/json", 
+        store: AsyncPostgresStore = None,
     ):
         try:
             thread_id = thread_id or str(uuid.uuid4())
@@ -29,10 +31,11 @@ class AgentController:
                 "thread_id": thread_id, 
                 "user_id": self.user_repo.user_id or None, 
                 "agent_id": self.agent_id or None,
-                "system": thread.system or None
+                "system": thread.system or None,
+                "store": True if thread.memory else None
             }
                 
-            agent = Agent(config=config, user_repo=self.user_repo)
+            agent = Agent(config=config, user_repo=self.user_repo, store=store)
             await agent.abuilder(tools=[*thread.tools, thread.mcp, thread.a2a, thread.arcade], 
                                  model_name=thread.model,
                                  collection=thread.collection)  
@@ -59,6 +62,7 @@ class AgentController:
         request: Request, 
         query: str,
         thread_id: str = None,
+        store: AsyncPostgresStore = None,
     ):
         try:
             config = await self.agent_repo.get_by_id(agent_id=self.agent_id)
@@ -70,7 +74,7 @@ class AgentController:
                 "system": settings.get("system") or None
             }
             
-            agent = Agent(config=config, user_repo=self.user_repo)
+            agent = Agent(config=config, user_repo=self.user_repo, store=store)
             await agent.abuilder(
                 tools=[*settings.get("tools", []), settings.get("mcp", None), settings.get("a2a", None), settings.get("arcade", None)], 
                 model_name=settings.get("model"), 

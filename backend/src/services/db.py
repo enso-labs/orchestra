@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from psycopg_pool import ConnectionPool
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
+from langgraph.store.postgres import AsyncPostgresStore
 
 MAX_CONNECTION_POOL_SIZE = None
 
@@ -28,8 +29,11 @@ def load_models():
     from src.schemas.models import User, Token, Agent, Revision, Settings, Thread, Server
     return _Base
 
-def get_checkpoint_db():
+def get_checkpoint_db() -> AsyncPostgresSaver:
     return AsyncPostgresSaver.from_conn_string(DB_URI)
+
+def get_store_db() -> AsyncPostgresStore:
+    return AsyncPostgresStore.from_conn_string(DB_URI)
 
 # Session context managers
 def get_db() -> Generator[SessionLocal, None, None]: # type: ignore
