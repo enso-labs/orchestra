@@ -184,37 +184,30 @@ def make_api_call_func(
         data: Optional request body data for POST/PUT requests
         path_params: Optional dictionary of path parameters to format into the URL
     """
-    async def api_call(event: str, data: Dict[str, Any], config: RunnableConfig):
+    async def api_call(event: str, data: Dict[str, Any] = {}):
         wrapper = GenericRequestsWrapper(headers=headers)
         # Format URL with path parameters if provided
         formatted_url = url.format(**(path_params or {}))
-        async with get_store_db() as store:
-            try:
-                if method == "GET":
-                    response = await wrapper.aget(formatted_url)
-                elif method == "POST":
-                    response = await wrapper.apost(formatted_url, data={'data': data, "event": event})
-                elif method == "PUT":
-                    response = await wrapper.aput(formatted_url, data={'data': data, "event": event})
-                elif method == "PATCH":
-                    response = await wrapper.apatch(formatted_url, data={'data': data, "event": event})
-                elif method == "DELETE":
-                    response = await wrapper.adelete(formatted_url)
-                else:
-                    raise ValueError(f"Unsupported HTTP method: {method}")
-                
-                logger.debug(f"API Response for {method} {formatted_url}: {response}")
-                if store and config.get("store", None):
-                    await store.aput(("memories", get_user_id(config)), event, {"memory": {
-                    "event": event,
-                    "data": data,
-                    "response": response
-                }})  
-                return response
-                
-            except Exception as e:
-                logger.error(f"API call failed for {method} {formatted_url}: {str(e)}")
-                raise
+        try:
+            if method == "GET":
+                response = await wrapper.aget(formatted_url)
+            elif method == "POST":
+                response = await wrapper.apost(formatted_url, data={'data': data, "event": event})
+            elif method == "PUT":
+                response = await wrapper.aput(formatted_url, data={'data': data, "event": event})
+            elif method == "PATCH":
+                response = await wrapper.apatch(formatted_url, data={'data': data, "event": event})
+            elif method == "DELETE":
+                response = await wrapper.adelete(formatted_url)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            
+            logger.debug(f"API Response for {method} {formatted_url}: {response}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"API call failed for {method} {formatted_url}: {str(e)}")
+            raise
 
     api_call.__doc__ = description
     return api_call

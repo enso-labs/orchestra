@@ -126,7 +126,7 @@ export default function ChatInput() {
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === "Enter" && !e.shiftKey && !isRecording && payload.query.length > 0) {
             e.preventDefault()
             handleSubmit()
           }

@@ -10,6 +10,7 @@ import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/lib/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
 import { streamThread } from '@/lib/services/threadService';
 import { useAppContext } from '@/context/AppContext';
+import { getMemory } from '@/lib/utils/storage';
 
 const KEY_NAME = 'config:mcp';
 
@@ -34,7 +35,7 @@ const initChatState = {
         tools: [] as any[],
         visualize: false,
         model: '',
-        memory: true,
+        memory: getMemory(),
         mcp: null,
         a2a: null,
         collection: null,

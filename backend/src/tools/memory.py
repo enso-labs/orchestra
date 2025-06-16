@@ -1,17 +1,22 @@
 import uuid
-from typing import List
+from typing import List, TypedDict
 from langchain_core.tools import tool
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableConfig
 from src.services.db import get_store_db
-from src.utils.tools import get_user_id, get_thread_id
+from src.utils.tools import get_user_id
+
+
+class Memory(TypedDict):
+	memory: str
+	ttl: int = 10_080 # 1 week
 
 @tool
-async def save_recall_memory(memory: str, config: RunnableConfig) -> str:
+async def save_recall_memory(memory: Memory, config: RunnableConfig) -> str:
 	"""Save memory to vectorstore for later semantic retrieval."""
 	memory_id = str(uuid.uuid4())
 	async with get_store_db() as store:
-		await store.aput(("memories", get_user_id(config)), memory_id, {"memory": memory})
+		await store.aput(("memories", get_user_id(config)), memory_id, {"memory": memory.get("memory")}, ttl=memory.get("ttl", 1440))
 	return f"Memory ID {memory_id} saved."
 
 @tool
