@@ -100,12 +100,16 @@ async def new_thread(
 ):
     try:
         async with get_store_db() as store:
+            args = {
+                "output_type": request.headers.get("accept", "application/json"),
+                "thread": body
+            }
             if hasattr(body, 'memory') and body.memory:
                 await store.setup()
+                args["store"] = store
             
             controller = AgentController(db=db, user_id=user.id if user else None)
-            output_type = request.headers.get("accept", "application/json")
-            return await controller.query_thread(output_type=output_type, thread=body, store=store)
+            return await controller.query_thread(**args)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=e.response.status_code , detail=str(e))
@@ -148,12 +152,17 @@ async def existing_thread(
 ):
     try:
         async with get_store_db() as store:
+            args = {
+                "output_type": request.headers.get("accept", "application/json"),
+                "thread": body,
+                "thread_id": thread_id
+            }
             if hasattr(body, 'memory') and body.memory:
                 await store.setup()
+                args["store"] = store
                 
             controller = AgentController(db=db, user_id=user.id if user else None)
-            output_type = request.headers.get("accept", "application/json")
-            return await controller.query_thread(output_type=output_type, thread=body, store=store)
+            return await controller.query_thread(**args)
     except httpx.HTTPStatusError as e:
         logger.error(f"Error creating new thread: {str(e)}")
         raise HTTPException(status_code=e.response.status_code , detail=str(e))
