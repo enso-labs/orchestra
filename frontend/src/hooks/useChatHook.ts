@@ -10,7 +10,8 @@ import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/lib/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
 import { streamThread } from '@/lib/services/threadService';
 import { useAppContext } from '@/context/AppContext';
-import { getMemory, getModel } from '@/lib/utils/storage';
+import { getMemory, getModel, getSystemPrompt } from '@/lib/utils/storage';
+import { useSystem } from './useSystem';
 
 const KEY_NAME = 'config:mcp';
 
@@ -31,7 +32,7 @@ const initChatState = {
         threadId: '',
         images: [] as string[],
         query: '',
-        system: DEFAULT_SYSTEM_PROMPT,
+        system: getSystemPrompt(),
         tools: [] as any[],
         visualize: false,
         model: getModel(),

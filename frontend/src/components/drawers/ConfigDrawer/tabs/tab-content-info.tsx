@@ -4,12 +4,19 @@ import { useChatContext } from "@/context/ChatContext"
 import SystemMessageCard from "@/components/cards/SystemMessageCard"
 import { Switch } from "@/components/ui/switch"
 import { useMemory } from "@/hooks/useMemory"
+import { useSystem } from "@/hooks/useSystem"
+import { useState } from "react"
 
 function TabContentInfo() {
 	const { payload, setPayload } = useChatContext()
+	const [completed, setCompleted] = useState(false)
 
 	const handleMemoryToggle = () => {
 		setPayload((prev: any) => ({ ...prev, memory: !prev.memory }));
+	}
+
+	const handleSaveSystemPrompt = () => {
+		setPayload((prev: any) => ({ ...prev, system: payload.system }));
 	}
 
   return (
@@ -37,8 +44,16 @@ function TabContentInfo() {
 
 			<div className="space-y-4">
 				<h3 className="text-lg font-medium">System Prompt</h3>
-				<SystemMessageCard content={payload.system} />
-				<Button className="mt-4 w-full">Save</Button>
+				<SystemMessageCard content={useSystem()} />
+				<Button 
+					className="mt-4 w-full" 
+					onClick={() => {
+						handleSaveSystemPrompt();
+						alert("System prompt saved");
+					}}
+				>
+					{completed ? "Saved!" : "Save"}
+				</Button>
 			</div>
 		</div>
   )
