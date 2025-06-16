@@ -1,3 +1,5 @@
+import { DEFAULT_CHAT_MODEL } from "../config/llm";
+
 export const MEMORY_KEY = "enso:chat:payload:memory";
 export function getMemory(): boolean {
   if (typeof window === "undefined") return false;
@@ -12,4 +14,18 @@ export function toggleMemory() {
   if (typeof window === "undefined") return;
   const memory = getMemory();
   window.localStorage.setItem(MEMORY_KEY, JSON.stringify(!memory));
+}
+
+//------------------------------------------------------------------------
+export const MODEL_KEY = "enso:chat:payload:model";
+export function getModel(): string {
+  if (typeof window === "undefined") return DEFAULT_CHAT_MODEL;
+	const model = window.localStorage.getItem(MODEL_KEY) ?? null;
+	if (model) return model;
+	return DEFAULT_CHAT_MODEL;
+}
+
+export function setModel(model: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(MODEL_KEY, model);
 }

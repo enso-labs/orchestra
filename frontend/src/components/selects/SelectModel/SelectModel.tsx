@@ -6,14 +6,14 @@ import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from 'react-icons/si';
 import GroqIcon from "@/components/icons/GroqIcon";
 import { useQueryParam, StringParam, withDefault } from 'use-query-params';
 import { useChatContext } from "@/context/ChatContext";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
+import { useModel } from "@/hooks/useModel";
 
-// Create a parameter with default value
-const ModelParam = withDefault(StringParam, DEFAULT_CHAT_MODEL);
+
 
 function SelectModel() {
+	// Create a parameter with default value
 	const { setPayload, models } = useChatContext();
-	const [model, setModel] = useQueryParam('model', ModelParam);
+	const [model, setModel] = useQueryParam('model', withDefault(StringParam, useModel()));
 
 	const handleModelChange = (modelId: string) => {
 		setModel(modelId);
@@ -24,7 +24,7 @@ function SelectModel() {
 		if (model) {
 			setPayload((prev: any) => ({ ...prev, model }));
 		}
-	}, [model, setPayload]);
+	}, [model]);
 
 	return (
 		<Select value={model} onValueChange={handleModelChange}>
