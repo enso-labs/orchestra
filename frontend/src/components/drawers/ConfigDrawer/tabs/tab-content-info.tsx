@@ -9,7 +9,7 @@ import { useState } from "react"
 
 function TabContentInfo() {
 	const { payload, setPayload } = useChatContext()
-	const [completed, setCompleted] = useState(false)
+	const [completed, ] = useState(false)
 
 	const handleMemoryToggle = () => {
 		setPayload((prev: any) => ({ ...prev, memory: !prev.memory }));

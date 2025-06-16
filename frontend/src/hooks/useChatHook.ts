@@ -5,13 +5,11 @@ import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/lib/services/modelService';
 import { listTools } from '@/lib/services/toolService';
 import { useChatReducer } from '@/lib/reducers/chatReducer';
-import { DEFAULT_SYSTEM_PROMPT } from '@/lib/config/instruction';
 import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/lib/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
 import { streamThread } from '@/lib/services/threadService';
 import { useAppContext } from '@/context/AppContext';
 import { getMemory, getModel, getSystemPrompt } from '@/lib/utils/storage';
-import { useSystem } from './useSystem';
 
 const KEY_NAME = 'config:mcp';
 
