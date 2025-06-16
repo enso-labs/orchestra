@@ -12,11 +12,15 @@ class Memory(TypedDict):
 	ttl: int = 10_080 # 1 week
 
 @tool
-async def save_recall_memory(memory: Memory, config: RunnableConfig) -> str:
+async def save_recall_memory(
+    memory: str, 
+    ttl: int = 1440, 
+    config: RunnableConfig = None
+) -> str:
 	"""Save memory to vectorstore for later semantic retrieval."""
 	memory_id = str(uuid.uuid4())
 	async with get_store_db() as store:
-		await store.aput(("memories", get_user_id(config)), memory_id, {"memory": memory.get("memory")}, ttl=memory.get("ttl", 1440))
+		await store.aput(("memories", get_user_id(config)), memory_id, {"memory": memory}, ttl=ttl)
 	return f"Memory ID {memory_id} saved."
 
 @tool
