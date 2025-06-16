@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from psycopg_pool import ConnectionPool
 from src.constants import DB_URI, CONNECTION_POOL_KWARGS
 from langgraph.store.postgres import AsyncPostgresStore
+from langchain.embeddings.base import init_embeddings
 
 MAX_CONNECTION_POOL_SIZE = None
 
@@ -33,7 +34,14 @@ def get_checkpoint_db() -> AsyncPostgresSaver:
     return AsyncPostgresSaver.from_conn_string(DB_URI)
 
 def get_store_db() -> AsyncPostgresStore:
-    return AsyncPostgresStore.from_conn_string(DB_URI)
+    return AsyncPostgresStore.from_conn_string(
+        conn_string=DB_URI,
+        index={
+            "dims": 1536,
+            "embed": init_embeddings("openai:text-embedding-3-small"),
+            "fields": ["memory"]  # specify which fields to embed. Default is the whole serialized value
+        }
+    )
 
 # Session context managers
 def get_db() -> Generator[SessionLocal, None, None]: # type: ignore

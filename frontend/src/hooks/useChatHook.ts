@@ -34,6 +34,7 @@ const initChatState = {
         tools: [] as any[],
         visualize: false,
         model: '',
+        memory: true,
         mcp: null,
         a2a: null,
         collection: null,
