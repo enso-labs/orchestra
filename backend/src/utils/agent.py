@@ -1,5 +1,4 @@
 import asyncio
-import json
 from fastapi import HTTPException, status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from langchain_core.messages import AnyMessage
@@ -13,7 +12,8 @@ from src.repos.thread_repo import ThreadRepo
 from src.schemas.entities.a2a import A2AServer
 from src.repos.user_repo import UserRepo
 from src.constants import APP_LOG_LEVEL
-from src.tools import dynamic_tools, init_tools
+from src.tools import init_tools
+from src.tools.memory import search_recall_memories, save_recall_memory, delete_recall_memory
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
 from src.schemas.entities import Answer, Thread, ArcadeConfig
@@ -125,13 +125,13 @@ class Agent:
         )
         self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         if self.store:
-            self.store.embeddings = LLMWrapper(model_name="openai:text-embedding-3-large").embedding_model()
+            self.tools.extend([search_recall_memories, save_recall_memory, delete_recall_memory])
             memories = await self.store.asearch(("memories", self.user_id))
             if memories:
-                system += "\n\nMemories:\n"
+                system += "\n\n"
                 for memory in memories:
                     memory_dict = str(memory.dict())
-                    system += f"{memory_dict}\n"
+                    system += f"<recall_memory>{memory_dict}</recall_memory>\n"
                 
         if self.tools:
             graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer, store=self.store)

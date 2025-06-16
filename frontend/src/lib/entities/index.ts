@@ -6,6 +6,7 @@ export interface ThreadPayload {
   tools?: any[];
   visualize?: boolean;
   model?: string;
+  memory?: boolean;
   mcp?: object|null;
   collection?: object|null;
 }

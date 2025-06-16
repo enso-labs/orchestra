@@ -59,3 +59,10 @@ def get_user_id(config: RunnableConfig) -> str:
         raise ValueError("User ID needs to be provided to save a memory.")
 
     return user_id
+
+def get_thread_id(config: RunnableConfig) -> str:
+    thread_id = config["configurable"].get("thread_id")
+    if thread_id is None:
+        raise ValueError("Thread ID needs to be provided to save a memory.")
+
+    return thread_id
