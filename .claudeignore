@@ -1,0 +1,6 @@
+**/.env*
+**/.example.env
+**/.venv
+**/logs/
+**/node_modules/
+**/__pycache__/
