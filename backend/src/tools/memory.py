@@ -1,60 +1,55 @@
-import uuid
-from typing import List, TypedDict
-from langchain_core.tools import tool, ToolException
-from langchain_core.documents import Document
-from langchain_core.runnables import RunnableConfig
-from src.services.db import get_store_db
-from src.utils.tools import get_user_id
-from src.utils.logger import logger
+from uuid import uuid4
+from langchain_core.tools import tool
+from src.services.memory import memory_service
 
-class Memory(TypedDict):
-	memory: str
-	ttl: int = 10_080 # 1 week
 
 @tool
-async def save_recall_memory(
-    memory: str, 
-    ttl: int = 1440, 
-    config: RunnableConfig = None
-) -> str:
-	"""Save memory to vectorstore for later semantic retrieval."""
-	memory_id = str(uuid.uuid4())
-	async with get_store_db() as store:
-		await store.aput(("memories", get_user_id(config)), memory_id, {"memory": memory}, ttl=ttl)
-	return f"Memory ID {memory_id} saved."
+async def upsert_memory(memory: str) -> str:
+    """
+    Toolkit: Memory
+    Description: Upsert memory to vectorstore for later semantic retrieval.
+    Args:
+        memory: The memory to upsert.
+        ttl: The time to live for the memory.
+        config: The config for the memory.
+    Returns:
+        The memory ID.
+    """
+    memory_id = f"memory_{str(uuid4())}"
+    await memory_service.set(memory_id, {"memory": memory}, ttl=None)
+    return f"Memory ID {memory_id} saved."
+
 
 @tool
-async def delete_recall_memory(memory_id: str, config: RunnableConfig) -> str:
-	"""Delete a specific memory for the current thread."""
-	
-	async with get_store_db() as store:
-		await store.adelete(("memories", get_user_id(config)), memory_id)
-	return f"Memory ID {memory_id} deleted."
+async def delete_memory(memory_id: str) -> str:
+    """
+    Toolkit: Memory
+    Description: Delete memory from vectorstore.
+    Args:
+        memory_id: The ID of the memory to delete.
+        config: The config for the memory.
+    Returns:
+        Deleted message.
+    """
+    await memory_service.delete(memory_id)
+    return f"Memory ID {memory_id} deleted."
 
-## TODO: Not sure if this works correctly, does not appear that way.
-@tool()
-async def search_recall_memories(query: str, config: RunnableConfig) -> List[str]:
-	"""
-	Search for relevant memories.
 
-	Args:
-		query: The question to search for.
+# TODO: Implement search memory
+# @tool
+# async def search_memory(
+#     query: str,
+#     config: RunnableConfig | None = None
+# ) -> str:
+# 	"""
+#     Toolkit: Memory
+#     Description: Search for memories based on a query.
+# 	Args:
+# 		query: The query to search for.
+# 		config: The config for the memory.
+# 	Returns:
+# 		The memories (documents).
+# 	"""
+# 	return await memory_service.search()
 
-	Returns:
-		A list of memories that are relevant to the query.
-	"""
-	try:
-		user_id = get_user_id(config)
-
-		async with get_store_db() as store:
-			documents = await store.asearch(
-				("memories", get_user_id(config)), 
-				query=query, 
-				limit=3, 
-				filter={"user_id": user_id}
-			)
-		print(documents)
-		return [doc.dict() for doc in documents]
-	except ToolException as e:
-		logger.exception(f"Error searching for memories: {e}")
-		raise ToolException(f"Error searching for memories: {str(e)}")
+MEMORY_TOOLS = [upsert_memory, delete_memory]

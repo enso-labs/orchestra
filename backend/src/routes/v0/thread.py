@@ -1,16 +1,18 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 
-from fastapi import Path, Request, Response, status, Depends, APIRouter, Query, HTTPException
+from fastapi import Path, Request, Response, status, Depends, APIRouter, Query, HTTPException, Body
 from fastapi.responses import JSONResponse
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repos.thread_repo import ThreadRepo
 from src.services.db import get_async_db, get_checkpoint_db
-from src.schemas.entities import Thread, Threads
+from src.schemas.entities import Thread, Threads, ThreadSearch
 from src.utils.agent import Agent
 from src.utils.auth import get_optional_user, verify_credentials
 from src.schemas.models import ProtectedUser
 from src.utils.logger import logger
+from src.services.checkpoint import checkpoint_service
+from src.constants.examples import Examples
 
 TAG = "Thread"
 router = APIRouter(tags=[TAG])
@@ -187,3 +189,28 @@ async def list_checkpoints(
             content={'checkpoints': items},
             status_code=status.HTTP_200_OK
         )
+        
+@router.post("/search", name="Query Threads in Checkpointer")
+async def search_threads(
+    thread_search: ThreadSearch = Body(
+        openapi_examples=Examples.THREAD_SEARCH_EXAMPLES
+    ),
+):
+    metadata = thread_search.model_dump().get("metadata", {})
+
+    if "thread_id" in metadata and not "checkpoint_id" in metadata:
+        thread_id = metadata["thread_id"]
+        checkpoints = await checkpoint_service.list_checkpoints(thread_id)
+        if checkpoints is None:
+            raise HTTPException(status_code=404, detail="Checkpoints not found")
+        return {"checkpoints": checkpoints}
+    if "thread_id" in metadata and "checkpoint_id" in metadata:
+        thread_id = metadata["thread_id"]
+        checkpoint_id = metadata["checkpoint_id"]
+        checkpoint = await checkpoint_service.get_checkpoint(thread_id, checkpoint_id)
+        if checkpoint is None:
+            raise HTTPException(status_code=404, detail="Checkpoint not found")
+        return {"checkpoint": checkpoint}
+    return {
+        "threads": await checkpoint_service.search_threads(thread_search=thread_search)
+    }

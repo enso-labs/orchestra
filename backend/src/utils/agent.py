@@ -2,18 +2,15 @@ import asyncio
 from fastapi import HTTPException, status
 from fastapi.responses import Response, JSONResponse, StreamingResponse
 from langchain_core.messages import AnyMessage
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from langgraph.prebuilt import create_react_agent
 from sqlalchemy import text
 from langgraph.errors import NodeInterrupt
 from langgraph.store.postgres import AsyncPostgresStore
+from langgraph.checkpoint.base import BaseCheckpointSaver
 
 from src.repos.thread_repo import ThreadRepo
 from src.schemas.entities.a2a import A2AServer
 from src.repos.user_repo import UserRepo
-from src.constants import APP_LOG_LEVEL
 from src.tools import init_tools
-from src.tools.memory import search_recall_memories, save_recall_memory, delete_recall_memory
 from src.utils.llm import LLMWrapper
 from src.constants.llm import ModelName
 from src.schemas.entities import Answer, Thread, ArcadeConfig
@@ -22,7 +19,7 @@ from src.flows.chatbot import chatbot_builder
 from src.services.db import get_checkpoint_db
 from src.schemas.models import Thread as ThreadModel
 from src.utils.stream import astream_chunks
-from src.flows.xml_agent import create_enso_graph
+from src.flows import graph_builder
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None, store: AsyncPostgresStore = None):
@@ -110,38 +107,14 @@ class Agent:
     
     async def abuilder(
         self,
-        tools: list[str | dict | ArcadeConfig | dict[str, A2AServer]] = None,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
-        collection: dict = None,
-        checkpointer: AsyncPostgresSaver = None,
-        debug: bool = True if APP_LOG_LEVEL == "DEBUG" else False,
-        name: str = "Orchestra"
+        checkpointer: BaseCheckpointSaver|None = None,
     ):
         # Initialize Graph
         self.checkpointer = checkpointer
-        system = self.config.get('configurable').get("system", None)
-        self.tools = await init_tools(
-            tools=tools, 
-            metadata={'user_repo': self.user_repo, 'collection': collection, 'thread_id': self.thread_id}
-        )
-        # self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
-        if self.store:
-            self.tools.extend([search_recall_memories, save_recall_memory, delete_recall_memory])
-            memories = await self.store.asearch(("memories", self.user_id))
-            if memories:
-                system += "\n\n"
-                for memory in memories:
-                    memory_dict = str(memory.dict())
-                    system += f"<recall_memory>{memory_dict}</recall_memory>\n"
-                
-        # if self.tools:
-        #     graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer, store=self.store)
-        # else:
-        #     builder = chatbot_builder(config={"model": self.llm.model, "system": system})
-        #     graph = builder.compile(checkpointer=self.checkpointer, store=self.store)
-        self.graph = create_enso_graph(
-            tools=self.tools, 
-            store=self.store, 
+        self.graph = graph_builder(
+            model=model_name,
+            tools=[], 
             checkpointer=self.checkpointer,
         )
         return self.graph
