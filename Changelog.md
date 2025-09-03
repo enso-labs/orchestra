@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
+  - feat/357-graph-selection (2025-09-02)
   - feat/332-add-memories (2025-06-15)
   - feat/290-api-as-a-tool-v2 (2025-06-08)
   - feat/327-agent-select-from-chatinput (2025-06-06)

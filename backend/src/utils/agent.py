@@ -22,6 +22,7 @@ from src.flows.chatbot import chatbot_builder
 from src.services.db import get_checkpoint_db
 from src.schemas.models import Thread as ThreadModel
 from src.utils.stream import astream_chunks
+from src.flows.xml_agent import create_enso_graph
 
 class Agent:
     def __init__(self, config: dict, user_repo: UserRepo = None, store: AsyncPostgresStore = None):
@@ -123,7 +124,7 @@ class Agent:
             tools=tools, 
             metadata={'user_repo': self.user_repo, 'collection': collection, 'thread_id': self.thread_id}
         )
-        self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
+        # self.llm = LLMWrapper(model_name=model_name, tools=self.tools, user_repo=self.user_repo)
         if self.store:
             self.tools.extend([search_recall_memories, save_recall_memory, delete_recall_memory])
             memories = await self.store.asearch(("memories", self.user_id))
@@ -133,14 +134,16 @@ class Agent:
                     memory_dict = str(memory.dict())
                     system += f"<recall_memory>{memory_dict}</recall_memory>\n"
                 
-        if self.tools:
-            graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer, store=self.store)
-        else:
-            builder = chatbot_builder(config={"model": self.llm.model, "system": system})
-            graph = builder.compile(checkpointer=self.checkpointer, store=self.store)
-        self.graph = graph
-        self.graph.debug = debug
-        self.graph.name = name
+        # if self.tools:
+        #     graph = create_react_agent(self.llm, prompt=system, tools=self.tools, checkpointer=self.checkpointer, store=self.store)
+        # else:
+        #     builder = chatbot_builder(config={"model": self.llm.model, "system": system})
+        #     graph = builder.compile(checkpointer=self.checkpointer, store=self.store)
+        self.graph = create_enso_graph(
+            tools=self.tools, 
+            store=self.store, 
+            checkpointer=self.checkpointer,
+        )
         return self.graph
 
     async def aprocess(
