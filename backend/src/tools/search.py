@@ -2,6 +2,7 @@ from langchain_core.tools import tool
 from langchain_core.tools import ToolException
 from langchain_community.utilities import SearxSearchWrapper
 
+
 @tool
 def search_engine(
     query: str,  # The search query.
@@ -27,19 +28,20 @@ def search_engine(
         ToolException: If SEARX_SEARCH_HOST_URL is not provided.
     """
     from src.constants import SEARX_SEARCH_HOST_URL
+
     # Check if SEARX_SEARCH_HOST_URL is provided.
     if not SEARX_SEARCH_HOST_URL:
         raise ToolException("No SEARX_SEARCH_HOST_URL provided")
-    
+
     # Create a SearxSearchWrapper instance.
     searx = SearxSearchWrapper(searx_host=SEARX_SEARCH_HOST_URL)
-    
+
     # Perform the search and return the results.
     results = searx.results(
         query=query,
         num_results=num_results,
         engines=engines,
         categories=categories,
-        language=language
+        language=language,
     )
     return results

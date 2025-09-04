@@ -1,3 +1,4 @@
+.PHONY: dev docs build run tag seeds
 
 dev:
 	make docs
@@ -14,3 +15,9 @@ run:
 
 tag:
 	bash scripts/tag.sh
+
+seeds:
+	python -m seeds.user_seeder
+
+format:
+	uvx ruff format

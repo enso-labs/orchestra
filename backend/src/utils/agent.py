@@ -21,8 +21,11 @@ from src.schemas.models import Thread as ThreadModel
 from src.utils.stream import astream_chunks
 from src.flows import graph_builder
 
+
 class Agent:
-    def __init__(self, config: dict, user_repo: UserRepo = None, store: AsyncPostgresStore = None):
+    def __init__(
+        self, config: dict, user_repo: UserRepo = None, store: AsyncPostgresStore = None
+    ):
         self.user_id = config.get("user_id", None)
         self.thread_id = config.get("thread_id", None)
         self.agent_id = config.get("agent_id", None)
@@ -34,25 +37,37 @@ class Agent:
         self.tools = config.get("tools", [])
         self.checkpointer = None
         self.store = store
-    
+
     async def list_async_threads(self, page=1, per_page=20):
         try:
-            user_threads = await self.user_repo.threads(page=page, per_page=per_page, sort_order='desc', agent=self.agent_id)
+            user_threads = await self.user_repo.threads(
+                page=page, per_page=per_page, sort_order="desc", agent=self.agent_id
+            )
             threads = []
             if user_threads:
                 async with get_checkpoint_db() as checkpointer:
                     for thread in user_threads:
-                        latest_checkpoint = await checkpointer.aget_tuple({"configurable": {"thread_id": str(thread.thread)}})
+                        latest_checkpoint = await checkpointer.aget_tuple(
+                            {"configurable": {"thread_id": str(thread.thread)}}
+                        )
                         if latest_checkpoint:
-                            messages = latest_checkpoint.checkpoint.get('channel_values', {}).get('messages')
+                            messages = latest_checkpoint.checkpoint.get(
+                                "channel_values", {}
+                            ).get("messages")
                             if isinstance(messages, list):
                                 thread = Thread(
-                                    thread_id=latest_checkpoint.config.get('configurable', {}).get('thread_id'),
-                                    checkpoint_ns=latest_checkpoint.config.get('configurable', {}).get('checkpoint_ns'),
-                                    checkpoint_id=latest_checkpoint.config.get('configurable', {}).get('checkpoint_id'),
+                                    thread_id=latest_checkpoint.config.get(
+                                        "configurable", {}
+                                    ).get("thread_id"),
+                                    checkpoint_ns=latest_checkpoint.config.get(
+                                        "configurable", {}
+                                    ).get("checkpoint_ns"),
+                                    checkpoint_id=latest_checkpoint.config.get(
+                                        "configurable", {}
+                                    ).get("checkpoint_id"),
                                     messages=messages,
-                                    ts=latest_checkpoint.checkpoint.get('ts'),
-                                    v=latest_checkpoint.checkpoint.get('v')
+                                    ts=latest_checkpoint.checkpoint.get("ts"),
+                                    v=latest_checkpoint.checkpoint.get("v"),
                                 )
                                 threads.append(thread.model_dump())
             return threads
@@ -66,31 +81,39 @@ class Agent:
             agent_id = self.config["configurable"].get("agent_id")
             thread_repo = ThreadRepo(self.user_repo.db, self.user_repo.user_id)
             thread = ThreadModel(
-                user=self.user_id,
-                thread=self.thread_id,
-                agent=agent_id
+                user=self.user_id, thread=self.thread_id, agent=agent_id
             )
             await thread_repo.create(thread)
-                
+
         except Exception as e:
             logger.exception(f"Failed to create thread: {str(e)}")
             return 0
-        
+
     async def _wipe(self):
         try:
-            query_blobs = text("DELETE FROM checkpoint_blobs WHERE thread_id = :thread_id")
-            query_checkpoints = text("DELETE FROM checkpoints WHERE thread_id = :thread_id")
-            query_checkpoints_writes = text("DELETE FROM checkpoint_writes WHERE thread_id = :thread_id")
+            query_blobs = text(
+                "DELETE FROM checkpoint_blobs WHERE thread_id = :thread_id"
+            )
+            query_checkpoints = text(
+                "DELETE FROM checkpoints WHERE thread_id = :thread_id"
+            )
+            query_checkpoints_writes = text(
+                "DELETE FROM checkpoint_writes WHERE thread_id = :thread_id"
+            )
             await self.user_repo.db.execute(query_blobs, {"thread_id": self.thread_id})
-            await self.user_repo.db.execute(query_checkpoints, {"thread_id": self.thread_id})
-            await self.user_repo.db.execute(query_checkpoints_writes, {"thread_id": self.thread_id})
+            await self.user_repo.db.execute(
+                query_checkpoints, {"thread_id": self.thread_id}
+            )
+            await self.user_repo.db.execute(
+                query_checkpoints_writes, {"thread_id": self.thread_id}
+            )
             await self.user_repo.db.commit()
             logger.info(f"Deleted rows with thread_id = {self.thread_id}")
             return True
         except Exception as e:
             logger.error(f"Failed to delete checkpoint: {str(e)}")
             return 0
-    
+
     async def delete_thread(self, wipe: bool = True):
         try:
             thread_repo = ThreadRepo(self.user_repo.db, self.user_repo.user_id)
@@ -104,24 +127,24 @@ class Agent:
         finally:
             logger.info("Thread deleted")
             pass
-    
+
     async def abuilder(
         self,
         model_name: str = ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
-        checkpointer: BaseCheckpointSaver|None = None,
+        checkpointer: BaseCheckpointSaver | None = None,
     ):
         # Initialize Graph
         self.checkpointer = checkpointer
         self.graph = graph_builder(
             model=model_name,
-            tools=[], 
+            tools=[],
             checkpointer=self.checkpointer,
         )
         return self.graph
 
     async def aprocess(
         self,
-        messages: list[AnyMessage], 
+        messages: list[AnyMessage],
         content_type: str = "application/json",
     ) -> Response:
         if self.user_id:
@@ -130,24 +153,20 @@ class Agent:
             try:
                 invoke = await self.graph.ainvoke({"messages": messages}, self.config)
                 content = Answer(
-                    thread_id=self.thread_id,
-                    answer=invoke.get('messages')[-1]
+                    thread_id=self.thread_id, answer=invoke.get("messages")[-1]
                 ).model_dump()
-                return JSONResponse(
-                    content=content,
-                    status_code=status.HTTP_200_OK
-                )
+                return JSONResponse(content=content, status_code=status.HTTP_200_OK)
             except Exception as e:
                 logger.exception(f"Error in aprocess: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
-            
+
         # Assume text/event-stream for streaming
         async def astream_generator():
             try:
                 state = {"messages": messages}
                 async for chunk in astream_chunks(self.graph, state, self.config):
                     if chunk:
-                        logger.info(f'chunk: {str(chunk)}')
+                        logger.info(f"chunk: {str(chunk)}")
                         yield chunk
             except asyncio.CancelledError as e:
                 logger.info("Stream cancelled")
@@ -159,7 +178,4 @@ class Agent:
             finally:
                 pass
 
-        return StreamingResponse(
-            astream_generator(),
-            media_type="text/event-stream"
-        )
+        return StreamingResponse(astream_generator(), media_type="text/event-stream")

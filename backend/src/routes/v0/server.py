@@ -15,16 +15,25 @@ router = APIRouter(
     tags=["Servers"],
 )
 
+
 class Config(BaseModel):
-    type: str = Field(..., description="Server type: 'mcp' or 'a2a'", pattern="^(mcp|a2a)$")
+    type: str = Field(
+        ..., description="Server type: 'mcp' or 'a2a'", pattern="^(mcp|a2a)$"
+    )
     config: dict
+
 
 class ServerCreate(Config):
     name: str
     description: Optional[str] = None
-    documentation: Optional[str] = Field(None, description="Markdown documentation for the server")
-    documentation_url: Optional[str] = Field(None, description="External URL for server documentation")
+    documentation: Optional[str] = Field(
+        None, description="Markdown documentation for the server"
+    )
+    documentation_url: Optional[str] = Field(
+        None, description="External URL for server documentation"
+    )
     public: bool = False
+
 
 class ServerUpdate(BaseModel):
     name: Optional[str] = None
@@ -34,6 +43,7 @@ class ServerUpdate(BaseModel):
     documentation: Optional[str] = None
     documentation_url: Optional[str] = None
     public: Optional[bool] = None
+
 
 class ServerResponse(BaseModel):
     id: str
@@ -49,15 +59,18 @@ class ServerResponse(BaseModel):
     created_at: str
     updated_at: str
 
+
 class ServerListResponse(BaseModel):
     servers: List[ServerResponse]
     total: int
     limit: int
     offset: int
 
+
 class ValidationResponse(BaseModel):
     valid: bool
     errors: List[dict] = []
+
 
 class ConnectionTestResponse(BaseModel):
     success: bool
@@ -71,39 +84,46 @@ class ConnectionTestResponse(BaseModel):
 async def get_servers(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(verify_credentials),
-    type: Optional[str] = Query(None, description="Filter by server type ('mcp' or 'a2a')"),
+    type: Optional[str] = Query(
+        None, description="Filter by server type ('mcp' or 'a2a')"
+    ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
     """Get a list of servers owned by the authenticated user."""
     query = select(Server).filter(Server.user_id == user.id)
-    
+
     if type:
         query = query.filter(Server.type == type)
-    
+
     # Count total servers first
     from sqlalchemy import func
-    count_query = select(func.count()).select_from(Server).filter(Server.user_id == user.id)
+
+    count_query = (
+        select(func.count()).select_from(Server).filter(Server.user_id == user.id)
+    )
     if type:
         count_query = count_query.filter(Server.type == type)
     total = await db.scalar(count_query)
-    
+
     query = query.offset(offset).limit(limit)
     result = await db.execute(query)
     servers = result.scalars().all()
-    
+
     return {
         "servers": [ServerResponse(**server.to_dict()) for server in servers],
         "total": total,
         "limit": limit,
-        "offset": offset
+        "offset": offset,
     }
 
 
 @router.get("/public", response_model=ServerListResponse)
 async def get_public_servers(
     db: AsyncSession = Depends(get_async_db),
-    type: Optional[str] = Query(None, description="Filter by server type ('mcp' or 'a2a')"),
+    type: Optional[str] = Query(
+        None, description="Filter by server type ('mcp' or 'a2a')"
+    ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -114,11 +134,8 @@ async def get_public_servers(
         query = query.filter(Server.type == type)
     # Count total servers first without fetching all rows
     from sqlalchemy import func
-    count_query = (
-        select(func.count())
-        .select_from(Server)
-        .filter(Server.public)
-    )
+
+    count_query = select(func.count()).select_from(Server).filter(Server.public)
     if type:
         count_query = count_query.filter(Server.type == type)
     total = await db.scalar(count_query)
@@ -143,13 +160,15 @@ async def get_server(
     """Get details for a specific server by ID."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
     server = result.scalar_one_or_none()
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    
+
     if not server.public and str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this server")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this server"
+        )
+
     return ServerResponse(**server.to_dict())
 
 
@@ -162,13 +181,15 @@ async def get_server_by_slug(
     """Get details for a specific server by slug."""
     result = await db.execute(select(Server).filter(Server.slug == slug))
     server = result.scalar_one_or_none()
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    
+
     if not server.public and str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this server")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this server"
+        )
+
     return ServerResponse(**server.to_dict())
 
 
@@ -183,7 +204,7 @@ async def create_server(
     validation = await validate_server_config(server_data)
     if not validation["valid"]:
         raise HTTPException(status_code=400, detail={"errors": validation["errors"]})
-    
+
     # Create new server
     server = Server(
         user_id=user.id,
@@ -193,13 +214,13 @@ async def create_server(
         description=server_data.description,
         documentation=server_data.documentation,
         documentation_url=server_data.documentation_url,
-        public=server_data.public
+        public=server_data.public,
     )
-    
+
     db.add(server)
     await db.commit()
     await db.refresh(server)
-    
+
     return ServerResponse(**server.to_dict())
 
 
@@ -213,18 +234,20 @@ async def update_server(
     """Update an existing server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
     server = result.scalar_one_or_none()
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    
+
     if str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this server")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update this server"
+        )
+
     # Validate server configuration
     validation = await validate_server_config(server_data)
     if not validation["valid"]:
         raise HTTPException(status_code=400, detail={"errors": validation["errors"]})
-    
+
     # Update server
     server.name = server_data.name
     server.type = server_data.type
@@ -234,10 +257,10 @@ async def update_server(
     server.documentation_url = server_data.documentation_url
     server.public = server_data.public
     server.slug = Server.generate_slug(server_data.name)
-    
+
     await db.commit()
     await db.refresh(server)
-    
+
     return ServerResponse(**server.to_dict())
 
 
@@ -251,39 +274,41 @@ async def partial_update_server(
     """Partially update an existing server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
     server = result.scalar_one_or_none()
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    
+
     if str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this server")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update this server"
+        )
+
     # Update fields if provided
     if server_data.name is not None:
         server.name = server_data.name
         server.slug = Server.generate_slug(server_data.name)
-    
+
     if server_data.description is not None:
         server.description = server_data.description
-    
+
     if server_data.type is not None:
         server.type = server_data.type
-    
+
     if server_data.config is not None:
         server.config = server_data.config
-    
+
     if server_data.documentation is not None:
         server.documentation = server_data.documentation
-    
+
     if server_data.documentation_url is not None:
         server.documentation_url = server_data.documentation_url
-    
+
     if server_data.public is not None:
         server.public = server_data.public
-    
+
     await db.commit()
     await db.refresh(server)
-    
+
     return ServerResponse(**server.to_dict())
 
 
@@ -296,16 +321,18 @@ async def delete_server(
     """Delete a server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
     server = result.scalar_one_or_none()
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    
+
     if str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this server")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this server"
+        )
+
     await db.delete(server)
     await db.commit()
-    
+
     return None
 
 
@@ -315,72 +342,69 @@ async def validate_server_config(
 ):
     """Validate a server configuration without saving it."""
     errors = []
-    
+
     # Validate server type
     if server_data.type not in ["mcp", "a2a"]:
-        errors.append({
-            "field": "type",
-            "message": "Server type must be either 'mcp' or 'a2a'"
-        })
-    
+        errors.append(
+            {"field": "type", "message": "Server type must be either 'mcp' or 'a2a'"}
+        )
+
     # Validate configuration based on server type
     if server_data.type == "mcp":
         # MCP server validation
         config = server_data.config
         if not isinstance(config, dict):
-            errors.append({
-                "field": "config",
-                "message": "Configuration must be an object"
-            })
-        
+            errors.append(
+                {"field": "config", "message": "Configuration must be an object"}
+            )
+
         if "transport" not in config:
-            errors.append({
-                "field": "config.transport",
-                "message": "Transport is required"
-            })
+            errors.append(
+                {"field": "config.transport", "message": "Transport is required"}
+            )
         elif config["transport"] not in ["sse"]:
-            errors.append({
-                "field": "config.transport",
-                "message": "Transport must be one of: sse"
-            })
-        
+            errors.append(
+                {
+                    "field": "config.transport",
+                    "message": "Transport must be one of: sse",
+                }
+            )
+
         if "url" not in config:
-            errors.append({
-                "field": "config.url",
-                "message": "URL is required"
-            })
-    
+            errors.append({"field": "config.url", "message": "URL is required"})
+
     elif server_data.type == "a2a":
         # A2A server validation
         config = server_data.config
         if not isinstance(config, dict):
-            errors.append({
-                "field": "config",
-                "message": "Configuration must be an object"
-            })
-            
+            errors.append(
+                {"field": "config", "message": "Configuration must be an object"}
+            )
+
         if "base_url" not in config:
-            errors.append({
-                "field": "config.base_url",
-                "message": "Base URL is required"
-            })
-            
+            errors.append(
+                {"field": "config.base_url", "message": "Base URL is required"}
+            )
+
         if "agent_card_path" not in config:
-            errors.append({
-                "field": "config.agent_card_path",
-                "message": "Agent card path is required"
-            })
-    
+            errors.append(
+                {
+                    "field": "config.agent_card_path",
+                    "message": "Agent card path is required",
+                }
+            )
+
     # Documentation validation - no specific requirements yet
-    
-    return {
-        "valid": len(errors) == 0,
-        "errors": errors
-    }
+
+    return {"valid": len(errors) == 0, "errors": errors}
 
 
 # TODO: Update with actual connection test
-@router.post("/{server_id}/test-connection", response_model=ConnectionTestResponse, include_in_schema=False)
+@router.post(
+    "/{server_id}/test-connection",
+    response_model=ConnectionTestResponse,
+    include_in_schema=False,
+)
 async def test_connection(
     server_id: uuid.UUID,
     db: AsyncSession = Depends(get_async_db),
@@ -389,41 +413,43 @@ async def test_connection(
     """Test the connection to a saved server configuration."""
     result = await db.execute(select(Server).filter(Server.id == server_id))
     server = result.scalar_one_or_none()
-    
+
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
-    
+
     if str(server.user_id) != user.id and not server.public:
-        raise HTTPException(status_code=403, detail="Not authorized to test this server")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to test this server"
+        )
+
     # Implementation will depend on the server type and how you want to test connections
     # This is a placeholder implementation
     try:
         # Mock implementation for now
         import time
         import random
-        
+
         time.sleep(0.5)  # Simulate network latency
         success = random.random() > 0.2  # 80% chance of success
-        
+
         if success:
             return {
                 "success": True,
                 "latency_ms": random.randint(50, 500),
-                "message": "Successfully connected to server"
+                "message": "Successfully connected to server",
             }
         else:
             error_types = ["TIMEOUT", "CONNECTION_REFUSED", "AUTHENTICATION_FAILED"]
             error_type = random.choice(error_types)
-            
+
             if error_type == "TIMEOUT":
                 return {
                     "success": False,
                     "error": "Connection timed out after 30 seconds",
                     "details": {
                         "error_code": error_type,
-                        "url": list(server.config.values())[0].get("url", "")
-                    }
+                        "url": list(server.config.values())[0].get("url", ""),
+                    },
                 }
             elif error_type == "CONNECTION_REFUSED":
                 return {
@@ -431,8 +457,8 @@ async def test_connection(
                     "error": "Connection refused by remote server",
                     "details": {
                         "error_code": error_type,
-                        "url": list(server.config.values())[0].get("url", "")
-                    }
+                        "url": list(server.config.values())[0].get("url", ""),
+                    },
                 }
             else:
                 return {
@@ -440,15 +466,13 @@ async def test_connection(
                     "error": "Authentication failed",
                     "details": {
                         "error_code": error_type,
-                        "url": list(server.config.values())[0].get("url", "")
-                    }
+                        "url": list(server.config.values())[0].get("url", ""),
+                    },
                 }
-    
+
     except Exception as e:
         return {
             "success": False,
             "error": str(e),
-            "details": {
-                "error_code": "UNKNOWN_ERROR"
-            }
-        } 
+            "details": {"error_code": "UNKNOWN_ERROR"},
+        }

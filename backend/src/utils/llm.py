@@ -2,6 +2,7 @@
 # from enum import Enum
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
+
 # from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 # from langchain_anthropic import ChatAnthropic
 # from langchain_ollama import ChatOllama
@@ -9,24 +10,32 @@ from langchain_core.language_models import BaseChatModel
 # from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.embeddings.base import init_embeddings
 
-from src.constants import UserTokenKey, OPENAI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
+from src.constants import (
+    UserTokenKey,
+    OPENAI_API_KEY,
+    ANTHROPIC_API_KEY,
+    GROQ_API_KEY,
+    GEMINI_API_KEY,
+)
 from src.constants.llm import ModelName
 from src.repos.user_repo import UserRepo
 
 from groq import Groq
 from groq.types.audio.translation import Translation
 
+
 def get_api_key(model_name: str):
-    if 'openai' in model_name:
+    if "openai" in model_name:
         return OPENAI_API_KEY
-    elif 'anthropic' in model_name:
+    elif "anthropic" in model_name:
         return ANTHROPIC_API_KEY
-    elif 'groq' in model_name:
+    elif "groq" in model_name:
         return GROQ_API_KEY
-    elif 'google' in model_name:
+    elif "google" in model_name:
         return GEMINI_API_KEY
     else:
         raise ValueError(f"Provider {model_name} not supported")
+
 
 def load_chat_model(fully_specified_name: str, delimiter: str = ":") -> BaseChatModel:
     """Load a chat model from a fully specified name.
@@ -45,27 +54,29 @@ def get_provider(model_name: str):
 
 
 class LLMWrapper:
-    def __init__(self, model_name: str, tools: list = None, user_repo: UserRepo = None, **kwargs):
+    def __init__(
+        self, model_name: str, tools: list = None, user_repo: UserRepo = None, **kwargs
+    ):
         self.model = None
         self.model_name = model_name
         self.kwargs = kwargs
         self.tools = tools
         self.user_repo: UserRepo = user_repo
         self.choose_model(model_name)
-        
+
     def __getattr__(self, item):
         # Redirect attribute access to the wrapped model
         return getattr(self.model, item)
-        
+
     def choose_model(self, model_name: str):
         chosen_model = None
 
         if model_name not in [e.value for e in ModelName]:
-            raise ValueError(f"Model {model_name} not supported")   
-        
-        # Langchain 
+            raise ValueError(f"Model {model_name} not supported")
+
+        # Langchain
         chosen_model = load_chat_model(model_name, **self.kwargs)
-        
+
         # provider, model = model_name.split(":", maxsplit=1)
         # ## PRevious implementation
         # if 'openai' in provider:
@@ -77,7 +88,7 @@ class LLMWrapper:
         # elif 'anthropic' in provider:
         #     anthropic_token = ANTHROPIC_API_KEY
         #     if not anthropic_token:
-        #         raise ValueError("Anthropic API key not found") 
+        #         raise ValueError("Anthropic API key not found")
         #     self.kwargs['api_key'] = anthropic_token
         #     chosen_model = ChatAnthropic(model=model, **self.kwargs)
         # elif 'ollama' in provider:
@@ -100,19 +111,19 @@ class LLMWrapper:
         #     chosen_model = ChatGoogleGenerativeAI(model=model, **self.kwargs)
         # else:
         #     raise ValueError(f"Provider {model_name} not supported")
-            
+
         if self.tools and len(self.tools) > 0:
             self.model = chosen_model.bind_tools(tools=self.tools)
         else:
             self.model = chosen_model
-            
+
     def embedding_model(self):
         try:
             model = init_embeddings(self.model_name)
             return model
         except Exception as e:
             raise e
-            
+
     # def embedding_model(self):
     #     chosen_model = None
     #     provider, model = get_provider(self.model_name)
@@ -125,16 +136,16 @@ class LLMWrapper:
     #     else:
     #         raise ValueError(f"Embedding model {model} not supported")
     #     return chosen_model
-        
+
 
 def audio_to_text(
-    filename: str, 
-    file_bytes: bytes, 
-    model: str, 
-    prompt: str, 
-    response_format: str, 
-    temperature: float, 
-    timeout: float
+    filename: str,
+    file_bytes: bytes,
+    model: str,
+    prompt: str,
+    response_format: str,
+    temperature: float,
+    timeout: float,
 ) -> Translation:
     try:
         kwargs = {}
@@ -148,9 +159,7 @@ def audio_to_text(
             kwargs["timeout"] = timeout
         client = Groq(api_key=GROQ_API_KEY)
         translation = client.audio.translations.create(
-            file=(filename, file_bytes),
-            model=model,
-            **kwargs
+            file=(filename, file_bytes), model=model, **kwargs
         )
         return translation
     except Exception as e:

@@ -9,7 +9,10 @@ from pydantic import BaseModel, create_model
 from pydantic.fields import Field, FieldInfo
 from langgraph.config import get_store
 from langchain_community.agent_toolkits.openapi.toolkit import RequestsToolkit
-from langchain_community.utilities.requests import TextRequestsWrapper, GenericRequestsWrapper
+from langchain_community.utilities.requests import (
+    TextRequestsWrapper,
+    GenericRequestsWrapper,
+)
 from langchain_core.tools import StructuredTool
 from langchain_community.tools.requests.tool import BaseRequestsTool
 from langchain_core.runnables import RunnableConfig
@@ -18,16 +21,18 @@ from src.services.db import get_store_db
 from src.utils.logger import logger
 from src.utils.tools import get_user_id
 
+
 def _get_schema(response_json: Union[dict, list]) -> dict:
     if isinstance(response_json, list):
         response_json = response_json[0] if response_json else {}
     return {key: type(value).__name__ for key, value in response_json.items()}
 
+
 def _add_endpoint_to_spec(
     base_url: str,
     endpoint: str,
     common_query_parameters: List[Dict[str, Any]],
-    openapi_spec: Dict[str, Any]
+    openapi_spec: Dict[str, Any],
 ) -> None:
     response = httpx.get(base_url + endpoint)
     if response.status_code == 200:
@@ -49,6 +54,7 @@ def _add_endpoint_to_spec(
             }
         }
 
+
 def get_api_spec(
     title: str,
     version: str,
@@ -69,6 +75,7 @@ def get_api_spec(
         _add_endpoint_to_spec(base_url, endpoint, common_query_parameters, openapi_spec)
     return yaml.dump(openapi_spec, sort_keys=False)
 
+
 def openapi_from_url(url: str) -> str:
     try:
         response = httpx.get(url)
@@ -78,7 +85,8 @@ def openapi_from_url(url: str) -> str:
             raise Exception(f"Failed to get OpenAPI spec from {url}")
     except Exception as e:
         raise Exception(f"Failed to get OpenAPI spec from {url}: {e}")
-    
+
+
 ################################################################################
 ### Example Usage
 ################################################################################
@@ -103,18 +111,17 @@ Here is documentation on the API:
 from langchain_community.utilities.requests import GenericRequestsWrapper
 from langchain_core.tools import BaseTool
 
-def get_base_tool(
-    headers: Dict[str, Any]
-) -> BaseTool:
+
+def get_base_tool(headers: Dict[str, Any]) -> BaseTool:
     requests_wrapper = GenericRequestsWrapper(headers=headers)
     base_tool = BaseRequestsTool(requests_wrapper=requests_wrapper)
     return base_tool
 
-def get_wrapper(
-    headers: Dict[str, Any]
-) -> GenericRequestsWrapper:
+
+def get_wrapper(headers: Dict[str, Any]) -> GenericRequestsWrapper:
     requests_wrapper = GenericRequestsWrapper(headers=headers)
     return requests_wrapper
+
 
 def construct_api_tool(
     name: str,
@@ -127,29 +134,35 @@ def construct_api_tool(
 ) -> StructuredTool:
     requests_wrapper = GenericRequestsWrapper(headers=headers)
     if method == "GET":
-        async def api_request(url: str):    
+
+        async def api_request(url: str):
             return await requests_wrapper.aget(url)
     elif method == "POST":
-        async def api_request(url: str, data: Dict[str, Any]):    
+
+        async def api_request(url: str, data: Dict[str, Any]):
             return await requests_wrapper.apost(url, data=data)
     elif method == "PUT":
-        async def api_request(url: str, data: Dict[str, Any]):    
+
+        async def api_request(url: str, data: Dict[str, Any]):
             return await requests_wrapper.aput(url, data=data)
     elif method == "PATCH":
-        async def api_request(url: str, data: Dict[str, Any]):    
+
+        async def api_request(url: str, data: Dict[str, Any]):
             return await requests_wrapper.apatch(url, data=data)
     elif method == "DELETE":
-        async def api_request(url: str):    
+
+        async def api_request(url: str):
             return await requests_wrapper.adelete(url)
-        
+
     api_request.__doc__ = description
     tool = StructuredTool.from_function(coroutine=api_request)
-    tool.name = re.sub(r'[^a-zA-Z0-9]', '_', name.lower())
+    tool.name = re.sub(r"[^a-zA-Z0-9]", "_", name.lower())
     tool.description = description
     tool.metadata = metadata
     tool.tags = tags
     tool.verbose = verbose
     return tool
+
 
 ################################################################################
 ### API from OpenAPI spec
@@ -175,7 +188,7 @@ def make_api_call_func(
 ) -> Any:
     """
     Factory that creates an async function for the given HTTP method and URL.
-    
+
     Args:
         method: HTTP method (GET, POST, PUT, DELETE)
         url: Base URL for the API endpoint
@@ -184,6 +197,7 @@ def make_api_call_func(
         data: Optional request body data for POST/PUT requests
         path_params: Optional dictionary of path parameters to format into the URL
     """
+
     async def api_call(event: str, data: Dict[str, Any] = {}):
         wrapper = GenericRequestsWrapper(headers=headers)
         # Format URL with path parameters if provided
@@ -192,19 +206,25 @@ def make_api_call_func(
             if method == "GET":
                 response = await wrapper.aget(formatted_url)
             elif method == "POST":
-                response = await wrapper.apost(formatted_url, data={'data': data, "event": event})
+                response = await wrapper.apost(
+                    formatted_url, data={"data": data, "event": event}
+                )
             elif method == "PUT":
-                response = await wrapper.aput(formatted_url, data={'data': data, "event": event})
+                response = await wrapper.aput(
+                    formatted_url, data={"data": data, "event": event}
+                )
             elif method == "PATCH":
-                response = await wrapper.apatch(formatted_url, data={'data': data, "event": event})
+                response = await wrapper.apatch(
+                    formatted_url, data={"data": data, "event": event}
+                )
             elif method == "DELETE":
                 response = await wrapper.adelete(formatted_url)
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
-            
+
             logger.debug(f"API Response for {method} {formatted_url}: {response}")
             return response
-            
+
         except Exception as e:
             logger.error(f"API call failed for {method} {formatted_url}: {str(e)}")
             raise
@@ -232,6 +252,7 @@ def resolve_ref(spec: dict, ref: str) -> dict:
         obj = obj[part]
     return obj
 
+
 def resolve_ref_recursive(spec: dict, obj: dict) -> dict:
     """
     Recursively resolves all $ref values in a schema object using the OpenAPI spec.
@@ -257,7 +278,7 @@ def resolve_ref_recursive(spec: dict, obj: dict) -> dict:
     else:
         # Base case: return as is
         return obj
-    
+
 
 def get_field_type(field_type: str) -> Any:
     """
@@ -269,9 +290,10 @@ def get_field_type(field_type: str) -> Any:
         "number": float,
         "boolean": bool,
         "object": Dict[str, Any],
-        "array": list
+        "array": list,
     }
     return type_mapping.get(field_type, Any)
+
 
 def create_schema(model_name: str, fields_json: Dict[str, Any]) -> Type[BaseModel]:
     """
@@ -281,41 +303,52 @@ def create_schema(model_name: str, fields_json: Dict[str, Any]) -> Type[BaseMode
     :param fields_json: A dictionary representing the fields from a JSON object.
     :return: A dynamically created Pydantic model.
     """
-    
+
     if fields_json.get("type") == "string":
-        fields = {model_name: (str, Field(description=fields_json.get("description", "")))}
+        fields = {
+            model_name: (str, Field(description=fields_json.get("description", "")))
+        }
         return create_model(model_name, **fields)
     elif fields_json.get("type") == "integer":
-        fields = {model_name: (int, Field(description=fields_json.get("description", "")))}
+        fields = {
+            model_name: (int, Field(description=fields_json.get("description", "")))
+        }
         return create_model(model_name, **fields)
     elif fields_json.get("type") == "number":
-        fields = {model_name: (float, Field(description=fields_json.get("description", "")))}
+        fields = {
+            model_name: (float, Field(description=fields_json.get("description", "")))
+        }
         return create_model(model_name, **fields)
     elif fields_json.get("type") == "boolean":
-        fields = {model_name: (bool, Field(description=fields_json.get("description", "")))}
+        fields = {
+            model_name: (bool, Field(description=fields_json.get("description", "")))
+        }
         return create_model(model_name, **fields)
     elif fields_json.get("type") == "array":
-        fields = {model_name: (list, Field(description=fields_json.get("description", "")))}
+        fields = {
+            model_name: (list, Field(description=fields_json.get("description", "")))
+        }
         return create_model(model_name, **fields)
     # elif fields_json.get("type") == "object":
     #     fields = {model_name: (dict, Field(description=fields_json.get("description", "")))}
     #     return create_model(model_name, **fields)
-    
+
     fields = {}
     for field_name, field_info in fields_json.get("properties", fields_json.items()):
         if field_info.get("type") == "object" and "properties" in field_info:
             field_type = create_schema(field_name, field_info)
         else:
             field_type = get_field_type(field_info.get("type", ""))
-        
+
         field_params = {"description": field_info.get("description", "")}
         if field_info.get("required", False):
-            field_params["default"] = field_info.get('default', None) or ...
+            field_params["default"] = field_info.get("default", None) or ...
         else:
             field_params["default"] = field_info.get("default", None)
         fields[field_name] = (field_type, Field(**field_params))
-    
+
     return create_model(model_name, **fields)
+
 
 def json_schema_to_base_model(schema: dict[str, Any]) -> Type[BaseModel]:
     type_mapping = {
@@ -351,9 +384,13 @@ def json_schema_to_base_model(schema: dict[str, Any]) -> Type[BaseModel]:
         if field_name not in required_fields:
             default_value = field_props.get("default", None)
 
-        model_fields[field_name] = (field_type, Field(default_value, description=description))
+        model_fields[field_name] = (
+            field_type,
+            Field(default_value, description=description),
+        )
 
     return create_model(schema.get("title", "DynamicModel"), **model_fields)
+
 
 # def generate_tools_from_openapi_json(
 #     openapi_spec: Dict[str, Any],
@@ -398,9 +435,9 @@ def json_schema_to_base_model(schema: dict[str, Any]) -> Type[BaseModel]:
 
 #             # Create the coroutine function for this endpoint
 #             api_func = make_api_call_func(
-#                 method, 
-#                 full_url, 
-#                 headers or {}, 
+#                 method,
+#                 full_url,
+#                 headers or {},
 #                 description,
 #             )
 
@@ -415,6 +452,7 @@ def json_schema_to_base_model(schema: dict[str, Any]) -> Type[BaseModel]:
 #             tools.append(tool)
 
 #     return tools
+
 
 def generate_tools_from_openapi_json(
     openapi_spec: Dict[str, Any],
@@ -446,8 +484,10 @@ def generate_tools_from_openapi_json(
         for http_method, operation in operations.items():
             method = http_method.upper()
             # args_schema = get_args_schema(spec, operation)
-            yaml_str = yaml.dump(operation, sort_keys=False, indent=2, default_flow_style=False)
-            name = re.sub(r'[^a-zA-Z0-9_]', '_', operation.get("operationId").lower())
+            yaml_str = yaml.dump(
+                operation, sort_keys=False, indent=2, default_flow_style=False
+            )
+            name = re.sub(r"[^a-zA-Z0-9_]", "_", operation.get("operationId").lower())
 
             # Use summary or description from spec
             description = (
@@ -463,9 +503,9 @@ def generate_tools_from_openapi_json(
 
             # Create the coroutine function for this endpoint
             api_func = make_api_call_func(
-                method, 
-                full_url, 
-                headers or {}, 
+                method,
+                full_url,
+                headers or {},
                 description,
             )
 
@@ -484,6 +524,7 @@ def generate_tools_from_openapi_json(
             tools.append(tool)
 
     return tools
+
 
 def generate_tools_from_openapi_spec(
     openapi_url: str,
@@ -507,19 +548,20 @@ def generate_tools_from_openapi_spec(
     )
 
     # Determine base server URL
-    server_url = spec.get("servers", [{}])[0].get("url", "") or openapi_url.replace("/openapi.json", "")
+    server_url = spec.get("servers", [{}])[0].get("url", "") or openapi_url.replace(
+        "/openapi.json", ""
+    )
 
     tools: List[StructuredTool] = []
     for path, operations in spec.get("paths", {}).items():
         for http_method, operation in operations.items():
             method = http_method.upper()
             args_schema = get_args_schema(spec, operation)
-            name = re.sub(r'[^a-zA-Z0-9_]', '_', operation.get("summary").lower())
+            name = re.sub(r"[^a-zA-Z0-9_]", "_", operation.get("summary").lower())
 
             # Use summary or description from spec
-            description = (
-                operation.get("summary")
-                or operation.get("description", f"{method} {path}")
+            description = operation.get("summary") or operation.get(
+                "description", f"{method} {path}"
             )
 
             # Construct full URL for this endpoint
@@ -527,14 +569,16 @@ def generate_tools_from_openapi_spec(
 
             # Create the coroutine function for this endpoint
             api_func = make_api_call_func(
-                method, 
-                full_url, 
-                headers or {}, 
+                method,
+                full_url,
+                headers or {},
                 description,
             )
 
             # Build the tool
-            tool = StructuredTool.from_function(coroutine=api_func, args_schema=args_schema)
+            tool = StructuredTool.from_function(
+                coroutine=api_func, args_schema=args_schema
+            )
             tool.name = name
             tool.description = description
             tool.tags = operation.get("tags", [])
@@ -545,10 +589,12 @@ def generate_tools_from_openapi_spec(
 
     return tools
 
+
 # helper to turn a FieldInfo into a (type, default-or-Field) tuple
 def _to_field_def(fi: FieldInfo):
     default = fi.get_default()
     return fi.annotation, Field(default=default, description=fi.description)
+
 
 def merge_models(summary: str, reqBody=None, pathParams=None, queryParams=None):
     all_defs = {}
@@ -560,7 +606,7 @@ def merge_models(summary: str, reqBody=None, pathParams=None, queryParams=None):
             field_with_metadata = Field(
                 default=field_obj.default,
                 description=field_obj.description,
-                metadata={'in': 'path'}
+                metadata={"in": "path"},
             )
             all_defs[name] = (field_annotation, field_with_metadata)
     if queryParams:
@@ -569,7 +615,7 @@ def merge_models(summary: str, reqBody=None, pathParams=None, queryParams=None):
             field_with_metadata = Field(
                 default=field_obj.default,
                 description=field_obj.description,
-                metadata={'in': 'query'}
+                metadata={"in": "query"},
             )
             all_defs[name] = (field_annotation, field_with_metadata)
     if reqBody:
@@ -578,7 +624,7 @@ def merge_models(summary: str, reqBody=None, pathParams=None, queryParams=None):
             field_with_metadata = Field(
                 default=field_obj.default,
                 description=field_obj.description,
-                metadata={'in': 'body'}
+                metadata={"in": "body"},
             )
             all_defs[name] = (field_annotation, field_with_metadata)
     if all_defs:
@@ -588,41 +634,66 @@ def merge_models(summary: str, reqBody=None, pathParams=None, queryParams=None):
     else:
         return None
 
+
 def get_args_schema(spec: Dict[str, Any], operation: Dict[str, Any]) -> Dict[str, Any]:
     try:
         reqBody = None
         pathParams = None
         queryParams = None
-        if operation.get('requestBody'):
-            ref = operation.get('requestBody').get('content').get('application/json').get('schema').get('$ref')
+        if operation.get("requestBody"):
+            ref = (
+                operation.get("requestBody")
+                .get("content")
+                .get("application/json")
+                .get("schema")
+                .get("$ref")
+            )
             if ref:
                 schema = resolve_ref(spec, ref)
                 fully_resolved_schema = resolve_ref_recursive(spec, schema)
-                reqBody = create_schema(fully_resolved_schema.get('title'), fully_resolved_schema.get('properties'))
-                
+                reqBody = create_schema(
+                    fully_resolved_schema.get("title"),
+                    fully_resolved_schema.get("properties"),
+                )
+
             else:
-                model_title = operation.get('operationId').replace("_", " ").replace("-", " ").title().replace(" ", "") + "Args"
-                schema = operation.get('requestBody').get('content').get('application/json').get('schema')
+                model_title = (
+                    operation.get("operationId")
+                    .replace("_", " ")
+                    .replace("-", " ")
+                    .title()
+                    .replace(" ", "")
+                    + "Args"
+                )
+                schema = (
+                    operation.get("requestBody")
+                    .get("content")
+                    .get("application/json")
+                    .get("schema")
+                )
         model = create_schema(model_title or "DynamicArgs", schema)
         return model
     except Exception as e:
-        logger.exception(f"Failed to get args schema for {operation.get('operationId')}: {e}")
-        raise Exception(f"Failed to get args schema for {operation.get('operationId')}: {e}")
-    
+        logger.exception(
+            f"Failed to get args schema for {operation.get('operationId')}: {e}"
+        )
+        raise Exception(
+            f"Failed to get args schema for {operation.get('operationId')}: {e}"
+        )
+
+
 if __name__ == "__main__":
     tool = construct_api_tool(
         name="Get a post",
         description="Get a post",
         method="GET",
         headers={},
-        verbose=True
+        verbose=True,
     )
     print(tool)
-    
+
     # Example usage
-    tools = generate_tools_from_openapi_spec(
-        "http://localhost:8050/openapi.json"
-    )
+    tools = generate_tools_from_openapi_spec("http://localhost:8050/openapi.json")
     for t in tools:
         print(t.name, "-", t.description)
         print(t.args_schema)

@@ -1,7 +1,14 @@
 from enum import Enum
 
-from src.constants import OPENAI_API_KEY, ANTHROPIC_API_KEY, OLLAMA_BASE_URL, GROQ_API_KEY, GEMINI_API_KEY
+from src.constants import (
+    OPENAI_API_KEY,
+    ANTHROPIC_API_KEY,
+    OLLAMA_BASE_URL,
+    GROQ_API_KEY,
+    GEMINI_API_KEY,
+)
 from src.repos.user_repo import UserRepo
+
 
 class ModelName(str, Enum):
     OPENAI_GPT_4O = "openai:gpt-4o"
@@ -24,7 +31,8 @@ class ModelName(str, Enum):
     GROQ_LLAMA_3_2_90B_VISION = "groq:llama-3.2-90b-vision-preview"
     GEMINI_PRO_1_5 = "google_genai:gemini-1.5-pro"
     GEMINI_PRO_2 = "google_genai:gemini-2-pro"
-    
+
+
 MODEL_CONFIG = [
     {
         "id": ModelName.OPENAI_GPT_4O,
@@ -36,7 +44,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OPENAI_GPT_4O_MINI,
@@ -48,7 +56,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OPENAI_GPT_4_1,
@@ -60,7 +68,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OPENAI_GPT_4_5,
@@ -72,7 +80,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OPENAI_REASONING_O4_MINI,
@@ -84,7 +92,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OPENAI_REASONING_O3,
@@ -96,7 +104,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OPENAI_EMBEDDING_LARGE,
@@ -108,7 +116,7 @@ MODEL_CONFIG = [
             "tool_calling": False,
             "multimodal": False,
             "embedding": True,
-        }
+        },
     },
     {
         "id": ModelName.ANTHROPIC_CLAUDE_3_5_SONNET,
@@ -120,7 +128,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.ANTHROPIC_CLAUDE_3_7_SONNET_LATEST,
@@ -132,7 +140,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.ANTHROPIC_CLAUDE_4_SONNET,
@@ -144,7 +152,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.ANTHROPIC_CLAUDE_4_OPUS,
@@ -156,7 +164,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OLLAMA_LLAMA_3_2_VISION,
@@ -168,7 +176,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OLLAMA_DEEPSEEK_R1_14B,
@@ -180,7 +188,7 @@ MODEL_CONFIG = [
             "tool_calling": False,
             "multimodal": False,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.OLLAMA_DEEPSEEK_R1_8B,
@@ -192,7 +200,7 @@ MODEL_CONFIG = [
             "tool_calling": False,
             "multimodal": False,
             "embedding": False,
-        }
+        },
     },
     # {
     #     "id": ModelName.GROQ_DEEPSEEK_R1_DISTILL_LLAMA_70B,
@@ -216,7 +224,7 @@ MODEL_CONFIG = [
             "tool_calling": True,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.GROQ_LLAMA_3_2_90B_VISION,
@@ -228,7 +236,7 @@ MODEL_CONFIG = [
             "tool_calling": False,
             "multimodal": True,
             "embedding": False,
-        }
+        },
     },
     {
         "id": ModelName.GEMINI_PRO_1_5,
@@ -237,7 +245,7 @@ MODEL_CONFIG = [
         "metadata": {
             "system_message": True,
             "reasoning": False,
-            "tool_calling": False, # TODO: Add tool calling, bug in google lib
+            "tool_calling": False,  # TODO: Add tool calling, bug in google lib
             # "tool_calling": True,
             "multimodal": True,
             "embedding": False,
@@ -257,34 +265,36 @@ MODEL_CONFIG = [
     # }
 ]
 
+
 def get_available_models():
     available_models = []
     for model in MODEL_CONFIG:
         provider = model["provider"]
-        
+
         # Check if the provider's API key exists
         if (
-            (provider == "openai" and OPENAI_API_KEY) or
-            (provider == "anthropic" and ANTHROPIC_API_KEY) or
-            (provider == "ollama" and OLLAMA_BASE_URL) or
-            (provider == "groq" and GROQ_API_KEY) or
-            (provider == "google" and GEMINI_API_KEY)
+            (provider == "openai" and OPENAI_API_KEY)
+            or (provider == "anthropic" and ANTHROPIC_API_KEY)
+            or (provider == "ollama" and OLLAMA_BASE_URL)
+            or (provider == "groq" and GROQ_API_KEY)
+            or (provider == "google" and GEMINI_API_KEY)
         ):
             available_models.append(model)
-    
+
     return available_models
+
 
 def get_public_models():
     public_models = []
-    
+
     # Only allow specific models for public use
     allowed_public_models = [ModelName.GEMINI_PRO_1_5, ModelName.OPENAI_GPT_4O_MINI]
-    
+
     for model in MODEL_CONFIG:
         # Skip models not in our allowed list
         if model["id"] not in allowed_public_models:
             continue
-        
+
         public_models.append(model)
-    
+
     return public_models

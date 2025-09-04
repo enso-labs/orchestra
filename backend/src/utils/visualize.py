@@ -1,6 +1,7 @@
 from datetime import datetime
 from langchain_core.runnables.graph import MermaidDrawMethod
 
+
 def visualize_graph(graph, name: str):
     DIR = "./sandbox/graphs"
     # Display the graph and wait for user input before continuing
@@ -8,8 +9,7 @@ def visualize_graph(graph, name: str):
     output_file_path = f"{DIR}/{timestamp}-{name}.png"
     try:
         graph.get_graph().draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API,
-            output_file_path=output_file_path
+            draw_method=MermaidDrawMethod.API, output_file_path=output_file_path
         )
         print(f"Graph image saved to: {output_file_path}")
     except ImportError:

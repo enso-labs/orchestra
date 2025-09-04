@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,83 +6,73 @@ from sqlalchemy import select
 from src.schemas.models import Thread, User, Token
 from src.constants import APP_SECRET_KEY
 from src.utils.logger import logger
+from sqlalchemy import Column
 
 class UserRepo:
-    def __init__(self, db: AsyncSession, user_id: str = None):
+    def __init__(self, db: AsyncSession, user_id: str | None = None):
         self.db = db
         self.user_id = user_id
 
     async def get_by_id(self) -> Optional[User]:
         """Get user by ID."""
         user_id = self.user_id
-        result = await self.db.execute(
-            select(User).filter(User.id == user_id)
-        )
+        result = await self.db.execute(select(User).filter(User.id == user_id))
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: EmailStr) -> Optional[User]:
         """Get user by email."""
-        result = await self.db.execute(
-            select(User).filter(User.email == email)
-        )
+        result = await self.db.execute(select(User).filter(User.email == email))
         return result.scalar_one_or_none()
 
     async def get_by_username(self, username: str) -> Optional[User]:
         """Get user by username."""
-        result = await self.db.execute(
-            select(User).filter(User.username == username)
-        )
+        result = await self.db.execute(select(User).filter(User.username == username))
         return result.scalar_one_or_none()
 
-    async def get_token(self, key: str = None) -> Optional[str]:
+    async def get_token(self, key: str|Token):
         """
         Get decrypted token value for a user by key.
         Returns None if token doesn't exist.
         """
         user_id = self.user_id
-        
+
         if not isinstance(self.db, AsyncSession):
             raise TypeError("Expected AsyncSession but got regular Session")
-            
+
         result = await self.db.execute(
-            select(Token).filter(
-                Token.user_id == user_id,
-                Token.key == key
-            )
+            select(Token).filter(Token.user_id == user_id, Token.key == key)
         )
         token = result.scalar_one_or_none()
 
         if token:
-            return Token.decrypt_value(token.value, APP_SECRET_KEY)
-        return None
+            return Token.decrypt_value(str(token.value), APP_SECRET_KEY)
+        raise ValueError(f"Token not found for key: {key}")
 
     async def get_all_tokens(self) -> list[dict]:
         """Get all tokens for a user."""
         user_id = self.user_id
-        result = await self.db.execute(
-            select(Token).filter(Token.user_id == user_id)
-        )
+        result = await self.db.execute(select(Token).filter(Token.user_id == user_id))
         tokens = result.scalars().all()
         return [
             {
                 "key": token.key,
-                "value": Token.decrypt_value(token.value, APP_SECRET_KEY)
+                "value": Token.decrypt_value(str(token.value), APP_SECRET_KEY),
             }
             for token in tokens
         ]
 
-    async def create(self, user_data: dict | User) -> User:
+    async def create(self, user_data: User) -> User:
         """Create a new user."""
-        if isinstance(user_data, dict):
-            user = User(**user_data, hashed_password=User.get_password_hash(user_data.get('password')))
-        else:
-            user = user_data
+        user = User(
+            **user_data.model_dump(),
+            hashed_password=User.get_password_hash(user_data.password),
+        )
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
         return user
 
-    async def update(self, user_data: dict = None) -> Optional[User]:
+    async def update(self, user_data: dict) -> Optional[User]:
         """Update user data."""
         user_id = self.user_id
         user = await self.get_by_id()
@@ -101,9 +92,9 @@ class UserRepo:
             await self.db.commit()
             return True
         return False
-    
+
     @staticmethod
-    def _get_key_name(key: str = None) -> Optional[str]:
+    def _get_key_name(key: str) -> str:
         if key == "openai":
             return "OPENAI_API_KEY"
         elif key == "anthropic":
@@ -114,45 +105,45 @@ class UserRepo:
             return "GROQ_API_KEY"
         elif key == "gemini":
             return "GEMINI_API_KEY"
-        
-    @staticmethod
-    def get_provider(model_name: str = None) -> Optional[str]:
-        if model_name:
-            return model_name.split(':', 1)[0]
-        return None
+        raise ValueError(f"Invalid key: {key}")
 
-    def get_token_by_provider(self, model_name: str = None) -> Optional[str]:
+    @staticmethod
+    def get_provider(model_name: str) -> str:
+        return model_name.split(":", 1)[0]
+        
+
+    def get_token_by_provider(self, model_name: str | None = None) -> Optional[str]:
         """
         Get decrypted token value for a user by key.
         Returns None if token doesn't exist.
-        
-        The key is expected to be in format 'provider:model', 
+
+        The key is expected to be in format 'provider:model',
         and we'll match on the provider part only.
         """
         if model_name:
             provider = self.get_provider(model_name)
             key_name = self._get_key_name(provider)
-            token = self.get_token(key_name)
+            token = asyncio.run(self.get_token(key_name))
             if token:
                 return Token.decrypt_value(token.value, APP_SECRET_KEY)
         return None
 
-    async def threads(self, page=1, per_page=20, sort_order='desc', agent=None):
+    async def threads(self, page=1, per_page=20, sort_order="desc", agent=None):
         """Get all threads for a user."""
         try:
             query = select(Thread).filter(Thread.user == self.user_id)
-        
+
             if agent:
                 query = query.filter(Thread.agent == agent)
-            
+
             # Apply sort order
-            if sort_order.lower() == 'asc':
+            if sort_order.lower() == "asc":
                 query = query.order_by(Thread.created_at.asc())
             else:
                 query = query.order_by(Thread.created_at.desc())
-                
+
             query = query.offset((page - 1) * per_page).limit(per_page)
-                
+
             result = await self.db.execute(query)
             return result.scalars().all()
         except Exception as e:

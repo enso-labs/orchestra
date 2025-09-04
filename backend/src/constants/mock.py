@@ -379,6 +379,7 @@ INVOKE_MOCK = {
     ]
 }
 
+
 class MockResponse:
     INVOKE_RESPONSE = {
         "description": "Chat completion response.",

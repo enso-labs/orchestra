@@ -13,6 +13,7 @@ from .settings import router as settings
 from .agent import router as agent
 from .model import router as model
 from .server import router as server
+
 if LANGCONNECT_SERVER_URL:
     from .rag import gateway as rag
 

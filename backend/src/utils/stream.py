@@ -8,12 +8,10 @@ from src.services.db import get_checkpoint_db, get_store_db
 from src.schemas.entities import StreamContext
 from langgraph.types import StreamMode
 
+
 # https://langchain-ai.github.io/langgraph/how-tos/streaming/#messages
 async def astream_chunks(
-    graph: StateGraph, 
-    state: dict,
-    config: dict = None,
-    stream_mode: str = "messages"
+    graph: StateGraph, state: dict, config: dict = None, stream_mode: str = "messages"
 ):
     try:
         ctx = StreamContext(msg=None, metadata={}, event=stream_mode)
@@ -22,13 +20,11 @@ async def astream_chunks(
         ):
             graph.checkpointer = checkpointer
             async for msg, metadata in graph.astream(
-                state, 
-                config,
-                stream_mode=stream_mode
-            ):  
+                state, config, stream_mode=stream_mode
+            ):
                 ctx.msg = msg
                 ctx.metadata = metadata
-                logger.debug(f'ctx: {str(ctx.model_dump())}')
+                logger.debug(f"ctx: {str(ctx.model_dump())}")
                 data = ctx.model_dump()
                 yield f"data: {json.dumps(data)}\n\n"
                 await asyncio.sleep(0)
@@ -40,7 +36,8 @@ async def astream_chunks(
     except Exception as e:
         logger.exception("Error in astream_chunks", e)
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
 ###########################################################################
 ## Handlers
 ###########################################################################
