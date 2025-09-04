@@ -8,6 +8,7 @@ from src.constants import APP_SECRET_KEY
 from src.utils.logger import logger
 from sqlalchemy import Column
 
+
 class UserRepo:
     def __init__(self, db: AsyncSession, user_id: str | None = None):
         self.db = db
@@ -29,7 +30,7 @@ class UserRepo:
         result = await self.db.execute(select(User).filter(User.username == username))
         return result.scalar_one_or_none()
 
-    async def get_token(self, key: str|Token):
+    async def get_token(self, key: str | Token):
         """
         Get decrypted token value for a user by key.
         Returns None if token doesn't exist.
@@ -110,7 +111,6 @@ class UserRepo:
     @staticmethod
     def get_provider(model_name: str) -> str:
         return model_name.split(":", 1)[0]
-        
 
     def get_token_by_provider(self, model_name: str | None = None) -> Optional[str]:
         """

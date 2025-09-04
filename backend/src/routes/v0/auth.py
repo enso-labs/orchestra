@@ -164,7 +164,9 @@ async def auth(provider: Literal["github", "google", "azure"]):
             redirect_uri=oauth_service.oauth.server_metadata["redirect_uri"]
         )
     except Exception as e:
-        return UJSONResponse(content={"detail": str(e)}, status_code=status.HTTP_400_BAD_REQUEST)
+        return UJSONResponse(
+            content={"detail": str(e)}, status_code=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @router.get("/auth/{provider}/callback", tags=["Auth"], include_in_schema=False)

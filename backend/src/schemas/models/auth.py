@@ -9,8 +9,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 import uuid
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from .thread import Thread 
+    from .thread import Thread
 from src.services.db import get_db_base
 
 Base = get_db_base()
@@ -39,11 +40,17 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     name: Mapped[str] = mapped_column(String)
     hashed_password: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now()
+    )
 
-    threads: Mapped[list["Thread"]] = relationship("Thread", back_populates="user_relation")
-    
+    threads: Mapped[list["Thread"]] = relationship(
+        "Thread", back_populates="user_relation"
+    )
+
     @staticmethod
     def get_password_hash(password: str) -> str:
         return pwd_context.hash(password)

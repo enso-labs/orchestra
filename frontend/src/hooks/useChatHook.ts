@@ -139,7 +139,7 @@ export default function useChatHook() {
 		
 		// Create a new AbortController if one wasn't provided
 		const controller = abortController || new AbortController();
-		const source = streamThread(payload, agentId);
+		const source = streamThread(payload);
 		
 		// Error handling
 		source.addEventListener("error", (e: any) => {
@@ -160,16 +160,16 @@ export default function useChatHook() {
 			const data = JSON.parse(e.data);
 			const lastMessage = messagesWithAssistant[messagesWithAssistant.length - 1];
 
-			if (data.msg.type === 'AIMessageChunk' && data.msg.tool_call_chunks.length > 0) {
-				logger("Tool call received:", data.msg);
-				const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
+			if (data[0].type === 'AIMessageChunk' && data[0].tool_call_chunks.length > 0) {
+				logger("Tool call received:", data[0]);
+				const toolCallChunk = data[0].tool_call_chunks[data[0].tool_call_chunks.length - 1].args;
 				handleToolCallChunk(toolCallChunk);
                 setLoadingMessage('Constructing tool input...');
 				if (lastMessage.role !== 'tool') {
 					messagesWithAssistant = [...messagesWithAssistant, { role: "tool", args: toolCallRef.current }];
 				}
-			} else if (data.msg.type === 'tool') {
-				logger("Tool chunk received:", data.msg);
+			} else if (data[0].type === 'tool') {
+				logger("Tool chunk received:", data[0]);
 				// Instead of modifying the last tool message, add a new one
 				messagesWithAssistant = [...messagesWithAssistant, { 
 					role: "tool", 
@@ -181,22 +181,22 @@ export default function useChatHook() {
                     setLoading(false);
                 }
 				setMessages(messagesWithAssistant);
-			} else if (data.msg.type === 'stop' || data.msg.response_metadata?.finish_reason === 'stop') {
-				source.close();
-				logger("Thread ended");
-				if (getAuthToken()) getHistory(1, history.per_page, agentId);
-				setController(null);
-				return;
+			// } else if (data.msg.type === 'stop' || data.msg.response_metadata?.finish_reason === 'stop') {
+			// 	source.close();
+			// 	logger("Thread ended");
+			// 	if (getAuthToken()) getHistory(1, history.per_page, agentId);
+			// 	setController(null);
+			// 	return;
 			} else {
-				responseRef.current += typeof data.msg.content === 'string' 
-					? data.msg.content 
-					: (data.msg.content[0]?.text || '');
+				responseRef.current += typeof data[0].content === 'string' 
+					? data[0].content 
+					: (data[0].content[0]?.text || '');
 				if (responseRef.current.length > 0) setLoading(false);
 				setMessages([...messagesWithAssistant, { role: "assistant", content: responseRef.current }]);
 			}
-			setPayload((prev: any) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
+			setPayload((prev: any) => ({ ...prev, query: '', images: [], mcp: prev.mcp }));
 		});
-
+ 
 		// Close handling
 		source.addEventListener("close", () => {
 			logger("Connection closed");

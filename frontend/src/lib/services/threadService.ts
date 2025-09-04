@@ -1,6 +1,6 @@
 import apiClient from '@/lib/utils/apiClient';
-import { ThreadPayload } from '@/lib/entities';
-import { DEFAULT_OPTIMIZE_MODEL } from '@/lib/config/llm';
+import { LLMStreamPayload, ThreadPayload } from '@/lib/entities';
+import { DEFAULT_CHAT_MODEL, DEFAULT_OPTIMIZE_MODEL } from '@/lib/config/llm';
 import { VITE_API_URL } from '@/lib/config';
 import { constructPayload } from '@/lib/utils/llm';
 import { getAuthToken } from '@/lib/utils/auth';
@@ -81,18 +81,40 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
   }
 };
 
-export const streamThread = (payload: ThreadPayload, agentId: string): SSE => {
-  const responseData = constructPayload(payload, agentId);
-  const url = agentId ? `/agents/${agentId}/thread` : '/llm/thread';
-  const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
-  {
-    headers: {
-      'Content-Type': 'application/json', 
-      'Accept': 'text/event-stream',
-      'Authorization': `Bearer ${getAuthToken()}`
+// export const streamThread = (payload: ThreadPayload, agentId: string): SSE => {
+//   const responseData = constructPayload(payload, agentId);
+//   const url = agentId ? `/agents/${agentId}/thread` : '/llm/thread';
+//   const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
+//   {
+//     headers: {
+//       'Content-Type': 'application/json', 
+//       'Accept': 'text/event-stream',
+//       'Authorization': `Bearer ${getAuthToken()}`
+//     },
+//     payload: JSON.stringify(responseData),
+//     method: 'POST'
+//   });
+//   return source;
+// }
+
+export const streamThread = (payload: ThreadPayload): SSE => {
+  const streamPayload: LLMStreamPayload = {
+    model: payload.model || DEFAULT_CHAT_MODEL,
+    system: payload.system || "",
+    stream_mode: "messages",
+    messages: [{ role: "user", content: payload.query }],
+    metadata: {
+      thread_id: payload.threadId,
     },
-    payload: JSON.stringify(responseData),
-    method: 'POST'
-  });
+  }
+  const source = new SSE(`${VITE_API_URL}/llm/stream`, {
+		headers: {
+			"Content-Type": "application/json",
+			Accept: "text/event-stream",
+			Authorization: `Bearer ${getAuthToken()}`,
+		},
+		payload: JSON.stringify(streamPayload),
+		method: "POST",
+	});
   return source;
 }
