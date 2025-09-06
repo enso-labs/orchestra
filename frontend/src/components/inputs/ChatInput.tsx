@@ -4,10 +4,8 @@ import { MainToolTip } from "../tooltips/MainToolTip"
 import { ImagePreview } from "./ImagePreview"
 import { ImagePreviewModal } from "./ImagePreviewModal"
 import { useChatContext } from "@/context/ChatContext"
-import { useCallback, useRef, useEffect, useState } from "react"
+import { useRef, useEffect, useState } from "react"
 import useAppHook from "@/hooks/useAppHook"
-import { useLocation } from "react-router-dom"
-import { useNavigate } from "react-router-dom"
 import { AudioRecorder } from "./AudioRecorder"
 import ChatSubmitButton from "../buttons/ChatSubmitButton"
 import ConfigDrawer from "../drawers/ConfigDrawer"
@@ -22,8 +20,6 @@ export default function ChatInput() {
   
   const { 
     query, 
-    handleQuery, 
-    setPayload, 
     currentModel, 
     abortQuery,
     images,
@@ -35,7 +31,6 @@ export default function ChatInput() {
     handlePaste,
     handleDrop,
     addImages,
-    setImages,
     setPreviewImage,
     handleSubmit,
   } = useChatContext();

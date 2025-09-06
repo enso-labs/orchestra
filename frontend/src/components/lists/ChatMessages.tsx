@@ -6,32 +6,55 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
+import { useChatContext } from "@/context/ChatContext";
 
 
 
 function Message({ message }: { message: any }) {
 	const ICON_SIZE = 4;
 	const [isEditing, setIsEditing] = useState(false);
+	const { handleSubmit, clearMessages, messages } = useChatContext();
 
 	if (["human", "user"].includes(message.role)) {
 		return (
 			<div key={message.id} className="p-2 rounded-md justify-end">
 				<div className="flex justify-end">
-					<div 
-						className={`max-w-[80%] md:max-w-[70%] bg-primary/90 text-primary-foreground px-4 rounded-xl rounded-br-sm relative cursor-pointer ${isEditing ? 'pb-5' : 'py-0'}`}
+					<div
+						className={`max-w-[80%] md:max-w-[70%] bg-primary/90 text-primary-foreground px-4 rounded-xl rounded-br-sm relative cursor-pointer ${
+							isEditing ? "pb-5" : "py-0"
+						}`}
 						onClick={() => setIsEditing(!isEditing)}
 					>
 						<MarkdownCard content={message.content} />
 						{isEditing && (
-							<button 
-								className="absolute bottom-1 right-1 p-1 rounded hover:bg-primary/20 transition-colors"
-								onClick={(e) => {
-									e.stopPropagation();
-									alert("Edit");
-								}}
-							>
-								<Edit className={`h-${ICON_SIZE} w-${ICON_SIZE} text-primary-foreground/70 hover:text-primary-foreground`} />
-							</button>
+							<div className="flex absolute bottom-1 right-1">
+								<button
+									className="p-1 rounded hover:bg-muted transition-colors"
+									onClick={(e) => {
+										e.stopPropagation();
+										const index = messages.findIndex((m: any) => m.id === message.id);
+										// const newMessages = messages.slice(0, index);
+										clearMessages(index);
+										handleSubmit(message.content);
+										setIsEditing(false);
+									}}
+								>
+									<RotateCcw
+										className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
+									/>
+								</button>
+								<button
+									className="p-1 rounded hover:bg-muted transition-colors"
+									onClick={(e) => {
+										e.stopPropagation();
+										alert("Edit");
+									}}
+								>
+									<Edit
+										className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
+									/>
+								</button>
+							</div>
 						)}
 					</div>
 				</div>
@@ -88,11 +111,7 @@ function Message({ message }: { message: any }) {
 								}}
 							/>
 						</button>
-						<button className="p-1 rounded hover:bg-muted transition-colors">
-							<RotateCcw
-								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
-							/>
-						</button>
+						
 						<button className="text-sm text-muted-foreground">
 							{message.model}
 						</button>

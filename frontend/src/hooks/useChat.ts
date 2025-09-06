@@ -6,7 +6,7 @@ import { useAppContext } from "@/context/AppContext";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
-const in_mem_messages: any[] = [];
+let in_mem_messages: any[] = [];
 
 export type ChatContextType = {
 	responseRef: React.RefObject<string>;
@@ -26,6 +26,7 @@ export type ChatContextType = {
 	setMetadata: (metadata: string) => void;
 	// NEW
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+	clearMessages: () => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -88,10 +89,10 @@ export default function useChat(): ChatContextType {
 		});
 	};
 
-	const handleSubmit = () => {
+	const handleSubmit = (argQuery?: string) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
-		handleSSE(query);
+		handleSSE(argQuery || query);
 		setQuery("");
 	};
 
@@ -103,6 +104,15 @@ export default function useChat(): ChatContextType {
 			toolCallChunkRef.current = "";
 		}
 	};
+
+	const clearMessages = (index?: number) => {
+		if (typeof index === "number" && index >= 0 && index < in_mem_messages.length) {
+			in_mem_messages = in_mem_messages.slice(0, index);
+		} else {
+			in_mem_messages = [];
+		}
+		setMessages(in_mem_messages);
+	}
 
 	const handleMessages = (payload: any, history: any[]) => {
 		const response = payload[0];
@@ -191,17 +201,6 @@ export default function useChat(): ChatContextType {
 					updateMessage.checkpoint_ns = metadata.checkpoint_ns;
 				}
 				history.push(updateMessage);
-				// history.push({
-				// 	...response,
-				// 	content: response.content,
-				// 	role: response.type === "tool" ? "tool" : "assistant",
-				// 	model: `${metadata.ls_provider}:${metadata.ls_model_name}`,
-				// 	temperature: metadata.ls_temperature || null,
-				// 	thread_id: metadata.thread_id || null,
-				// 	checkpoint_id:
-				// 		metadata.checkpoint_ns.replace(metadata.checkpoint_node, "") ||
-				// 		null,
-				// });
 				setMessages((prev: any) => [...history]);
 				return;
 			}
@@ -240,5 +239,6 @@ export default function useChat(): ChatContextType {
 		setMetadata,
 		// NEW
 		handleTextareaResize,
+		clearMessages,
 	};
 }
