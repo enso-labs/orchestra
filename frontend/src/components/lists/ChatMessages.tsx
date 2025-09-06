@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Loader2, Wrench } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Wrench, Copy, Edit, RotateCcw } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,13 +10,29 @@ import { cn } from "@/lib/utils";
 
 
 function Message({ message }: { message: any }) {
+	const ICON_SIZE = 4;
+	const [isEditing, setIsEditing] = useState(false);
 
 	if (["human", "user"].includes(message.role)) {
 		return (
-			<div key={message.id} className="p-2 rounded-md bg-gray-800 m-2">
+			<div key={message.id} className="p-2 rounded-md justify-end">
 				<div className="flex justify-end">
-					<div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
+					<div 
+						className={`max-w-[80%] md:max-w-[70%] bg-primary/90 text-primary-foreground px-4 rounded-xl rounded-br-sm relative cursor-pointer ${isEditing ? 'pb-5' : 'py-0'}`}
+						onClick={() => setIsEditing(!isEditing)}
+					>
 						<MarkdownCard content={message.content} />
+						{isEditing && (
+							<button 
+								className="absolute bottom-1 right-1 p-1 rounded hover:bg-primary/20 transition-colors"
+								onClick={(e) => {
+									e.stopPropagation();
+									alert("Edit");
+								}}
+							>
+								<Edit className={`h-${ICON_SIZE} w-${ICON_SIZE} text-primary-foreground/70 hover:text-primary-foreground`} />
+							</button>
+						)}
 					</div>
 				</div>
 			</div>
@@ -25,7 +41,7 @@ function Message({ message }: { message: any }) {
 
 	if (["tool"].includes(message.role || message.type)) {
 		return (
-			<div key={message.id} className="p-2 rounded-md bg-gray-800 m-2">
+			<div key={message.id} className="p-2 rounded bg-gray-800 m-2">
 				<div className="flex items-center space-x-2">
 					<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
 						<Wrench className="h-4 w-4 text-primary" />
@@ -44,7 +60,7 @@ function Message({ message }: { message: any }) {
 					</div>
 				</div>
 				<div className="flex justify-start">
-					<div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
+					<div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard content={message.content} />
 					</div>
 				</div>
@@ -53,18 +69,46 @@ function Message({ message }: { message: any }) {
 	}
 
 	if (["ai", "assistant"].includes(message.role)) {
+		
 		return (
-			<div key={message.id} className="p-2 rounded-md bg-gray-800 m-2">
+			<div className="group">
 				<div className="flex justify-start">
 					<div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard content={message.content} />
+					</div>
+				</div>
+				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
+					<div className="flex gap-1">
+						<button className="p-1 rounded hover:bg-muted transition-colors">
+							<Copy
+								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
+								onClick={() => {
+									navigator.clipboard.writeText(message.content);
+									alert("Copied to clipboard (AI Message)");
+								}}
+							/>
+						</button>
+						<button className="p-1 rounded hover:bg-muted transition-colors">
+							<RotateCcw
+								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
+							/>
+						</button>
+						<button className="text-sm text-muted-foreground">
+							{message.model}
+						</button>
 					</div>
 				</div>
 			</div>
 		);
 	}
 
-	if (["AIMessageChunk"].includes(message.role || message.type)) return <DefaultTool selectedToolMessage={message} />;
+	if (["AIMessageChunk"].includes(message.role || message.type)) {
+		return (
+			<div className="px-2 rounded-lg rounded-bl-sm">
+				<DefaultTool selectedToolMessage={message} />
+			</div>
+		);
+	};
 
 	return <p>{message.content || JSON.stringify(message.input)}</p>;
 }

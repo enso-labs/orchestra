@@ -106,6 +106,7 @@ export default function useChat(): ChatContextType {
 
 	const handleMessages = (payload: any, history: any[]) => {
 		const response = payload[0];
+		const metadata = payload[1];
 		// Handle Tool Input
 		if (response.response_metadata.finish_reason === "stop") {
 			setLoading(false);
@@ -173,11 +174,34 @@ export default function useChat(): ChatContextType {
 				setMessages((prev: any) => [...history]);
 				return;
 			} else {
-				history.push({
+				const updateMessage = {
 					...response,
-					content: response.content,
 					role: response.type === "tool" ? "tool" : "assistant",
-				});
+				}
+				if (metadata.ls_provider && metadata.ls_model_name) {
+					updateMessage.model = `${metadata.ls_provider}:${metadata.ls_model_name}`;
+				}
+				if (metadata.ls_temperature) {
+					updateMessage.temperature = metadata.ls_temperature;
+				}
+				if (metadata.thread_id) {
+					updateMessage.thread_id = metadata.thread_id;
+				}
+				if (metadata.checkpoint_ns && metadata.checkpoint_node) {
+					updateMessage.checkpoint_ns = metadata.checkpoint_ns;
+				}
+				history.push(updateMessage);
+				// history.push({
+				// 	...response,
+				// 	content: response.content,
+				// 	role: response.type === "tool" ? "tool" : "assistant",
+				// 	model: `${metadata.ls_provider}:${metadata.ls_model_name}`,
+				// 	temperature: metadata.ls_temperature || null,
+				// 	thread_id: metadata.thread_id || null,
+				// 	checkpoint_id:
+				// 		metadata.checkpoint_ns.replace(metadata.checkpoint_node, "") ||
+				// 		null,
+				// });
 				setMessages((prev: any) => [...history]);
 				return;
 			}

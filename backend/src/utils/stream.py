@@ -4,8 +4,9 @@ from typing import List
 from fastapi import HTTPException
 from langgraph.graph import StateGraph
 from src.utils.logger import logger
-from src.services.db import get_checkpoint_db, get_store_db
+from src.services.db import get_checkpoint_db
 from src.schemas.entities import StreamContext
+from src.schemas.entities import LLMRequest, LLMStreamRequest
 from langgraph.types import StreamMode
 
 
@@ -129,8 +130,9 @@ def handle_values_mode(payload: dict):
 ## Message Conversion
 ###########################################################################
 def convert_messages(
-    payload: dict, stream_mode: StreamMode | list[StreamMode] | None = None
+    payload: dict, stream_mode: StreamMode
 ):
+
     if stream_mode == "tasks":
         return handle_tasks_mode(payload)
 
