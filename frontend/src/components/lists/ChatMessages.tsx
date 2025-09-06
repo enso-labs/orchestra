@@ -1,8 +1,12 @@
 import { useEffect, useRef } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wrench } from "lucide-react";
+
 import { useAppContext } from "@/context/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
+import { truncateFrom } from "@/lib/utils/format";
+import { Button } from "@/components/ui/button";
+import DefaultTool from "../tools/Default";
 
 
 
@@ -10,9 +14,25 @@ function Message({ message }: { message: any }) {
 
 	if (["ai", "assistant"].includes(message.role)) {
 		return (
-			<MarkdownCard content={message.content} />
+			<div key={message.id} className="flex justify-start">
+				<div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
+					<MarkdownCard content={message.content} />
+				</div>
+			</div>
 		);
 	}
+
+	if (["human", "user"].includes(message.role)) {
+		return (
+			<div key={message.id} className="flex justify-end">
+				<div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
+					<MarkdownCard content={message.content} />
+				</div>
+			</div>
+		);
+	}
+
+	if (["AIMessageChunk"].includes(message.role || message.type)) return <DefaultTool selectedToolMessage={message} />;
 
 	return <p>{message.content || JSON.stringify(message.input)}</p>;
 }
