@@ -1,9 +1,7 @@
 // import MarkdownCard from "@/components/cards/MarkdownCard"
 import { Wrench } from "lucide-react"
-import { cn } from "@/lib/utils"
 import JsonView from "@uiw/react-json-view"
 import { githubDarkTheme } from "@uiw/react-json-view/githubDark"
-import MarkdownCard from "../cards/MarkdownCard"
 
 interface Props {
 	selectedToolMessage: any
@@ -25,19 +23,6 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 
 			<div className="prose prose-sm dark:prose-invert">
 				<div className="space-y-2">
-					{/* <div className="flex items-center gap-2">
-						<span className="font-semibold">Status:</span>
-						<span
-							className={cn(
-								"text-xs px-2 py-0.5 rounded-full",
-								selectedToolMessage.status === "success"
-									? "bg-green-500/20 text-green-500"
-									: "bg-red-500/20 text-red-500",
-							)}
-						>
-							{selectedToolMessage.status}
-						</span>
-					</div> */}
 					<div>
 						<span className="font-semibold">Input:</span>
 						<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
@@ -61,19 +46,6 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 							})()}
 						</div>
 					</div>
-					{/* <div>
-						<span className="font-semibold">Output:</span>
-						<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
-							{(() => {
-								try {
-									const parsedJSON = JSON.parse(selectedToolMessage.content || selectedToolMessage.output);
-									return <JsonView value={parsedJSON} style={githubDarkTheme} />;
-								} catch (error) {
-									return <MarkdownCard content={selectedToolMessage.content || selectedToolMessage.output} />
-								}
-							})()}
-						</div>
-					</div> */}
 				</div>
 			</div>
 		</div>
