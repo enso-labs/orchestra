@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { SSE } from "sse.js";
 import { VITE_API_URL } from "@/lib/config";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
+import { useAppContext } from "@/context/AppContext";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -13,7 +14,11 @@ export type ChatContextType = {
 	query: string;
 	setQuery: (query: string) => void;
 	handleSubmit: (query: string) => void;
-	sseHandler: (payload: any, messages: any[], stream_mode: StreamMode | Array<StreamMode>) => void;
+	sseHandler: (
+		payload: any,
+		messages: any[],
+		stream_mode: StreamMode | Array<StreamMode>
+	) => void;
 	clearContent: () => void;
 	messages: any[];
 	setMessages: (messages: any[]) => void;
@@ -21,10 +26,12 @@ export type ChatContextType = {
 	setMetadata: (metadata: string) => void;
 	// NEW
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-}
+};
 
 export default function useChat(): ChatContextType {
+	const { setLoading, setLoadingMessage } = useAppContext();
 	const responseRef = useRef("");
+	const toolNameRef = useRef("");
 	const toolCallChunkRef = useRef("");
 	const [query, setQuery] = useState("");
 	const [messages, setMessages] = useState<any[]>([]);
@@ -62,9 +69,7 @@ export default function useChat(): ChatContextType {
 				system: "You are a helpful assistant.",
 				metadata: JSON.parse(metadata),
 				messages: updatedMessages
-					.filter(
-						(msg) => msg.role === "user" || msg.role === "assistant"
-					)
+					.filter((msg) => msg.role === "user" || msg.role === "assistant")
 					.map((msg) => ({
 						role: msg.role,
 						content: msg.content,
@@ -84,7 +89,8 @@ export default function useChat(): ChatContextType {
 	};
 
 	const handleSubmit = () => {
-		console.log("Submitted:", query);
+		setLoadingMessage("Request submitted...");
+		setLoading(true);
 		handleSSE(query);
 		setQuery("");
 	};
@@ -101,20 +107,31 @@ export default function useChat(): ChatContextType {
 	const handleMessages = (payload: any, history: any[]) => {
 		const response = payload[0];
 		// Handle Tool Input
+		if (response.response_metadata.finish_reason === "stop") {
+			setLoading(false);
+		}
 		if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
+			// Only set tool name if we don't have one yet or if the new name is truthy
+			if (!toolNameRef.current || response.tool_call_chunks[0].name) {
+				toolNameRef.current = response.tool_call_chunks[0].name;
+			}
+			setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
 			toolCallChunkRef.current += response.tool_call_chunks[0].args;
-			const existingIndex = history.findIndex((msg: any) => msg.id === response.id);
+			const existingIndex = history.findIndex(
+				(msg: any) => msg.id === response.id
+			);
 
 			// If the message already exists, update it
 			if (existingIndex !== -1) {
-			// Consolidate tool_call_chunks for the message with matching id
+				// Consolidate tool_call_chunks for the message with matching id
 				const existingMsg = history[existingIndex];
 				if (toolCallChunkRef.current) {
 					try {
 						existingMsg.input = JSON.parse(toolCallChunkRef.current);
 					} catch {
 						try {
-							const autoAddCommas = "[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
+							const autoAddCommas =
+								"[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
 							existingMsg.input = JSON.parse(autoAddCommas);
 						} catch {
 							existingMsg.input = toolCallChunkRef.current;
@@ -129,6 +146,7 @@ export default function useChat(): ChatContextType {
 				history.push({
 					...response,
 					input: toolCallChunkRef.current,
+					name: toolNameRef.current,
 				});
 			}
 			setMessages((prev: any) => [...history]);
@@ -136,8 +154,13 @@ export default function useChat(): ChatContextType {
 		}
 
 		// Handle Final Response & Tool Response
-		if (response.content && (!response.tool_call_chunks || response.tool_call_chunks.length === 0)) {
-			const existingIndex = history.findIndex((msg: any) => msg.id === response.id);
+		if (
+			response.content &&
+			(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
+		) {
+			const existingIndex = history.findIndex(
+				(msg: any) => msg.id === response.id
+			);
 			if (existingIndex !== -1) {
 				// Always append to the related message content
 				const existingMsg = history[existingIndex];

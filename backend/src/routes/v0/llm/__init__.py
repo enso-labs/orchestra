@@ -25,6 +25,10 @@ from src.utils.stream import convert_messages
 TAG = "Thread"
 router = APIRouter()
 
+def get_stock_price(symbol: str) -> str:
+    """Get the stock price of a given symbol"""
+    import random
+    return f"The stock price of {symbol} is {random.randint(100, 200)}"
 
 def get_weather(location: str) -> str:
     """Get the weather in a given location"""
@@ -45,7 +49,7 @@ async def construct_agent(params: LLMRequest | LLMStreamRequest):
         prompt = (
             params.system + "\n" + memory_prompt if memory_prompt else params.system
         )
-        tools = [get_weather] + MEMORY_TOOLS
+        tools = [get_weather, get_stock_price] + MEMORY_TOOLS
 
     # Asynchronous LLM call
     agent = graph_builder(

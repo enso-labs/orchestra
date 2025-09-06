@@ -39,7 +39,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 			<ScrollArea className="flex-1 h-0">
 				{messages.length > 0 ? (
 					messages.map((message: any) => (
-						<div key={message.id} className="p-2 rounded-md">
+						<div key={message.id} className="p-2 rounded-md bg-gray-800 m-2">
 							<h3 className="text-sm font-bold text-primary">
 								{message.role || message.type}{" "}
 								{message.type === "user" && `[${message.model}]`}
