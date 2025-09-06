@@ -21,7 +21,7 @@ export default function ChatInput() {
   const [isRecording, setIsRecording] = useState(false);
   
   const { 
-    payload, 
+    query, 
     handleQuery, 
     setPayload, 
     currentModel, 
@@ -37,31 +37,15 @@ export default function ChatInput() {
     addImages,
     setImages,
     setPreviewImage,
+    handleSubmit,
   } = useChatContext();
   
   const { isMobile } = useAppHook();
-  const navigate = useNavigate();
-  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize the recorder controls using the hook
   const recorderControls = useVoiceVisualizer();
-
-  const handleSubmit = useCallback(() => {
-    if (selectedAgent) {
-      handleQuery(selectedAgent.id);
-    } else {
-      handleQuery();
-    }
-		// Clear images after sending
-		setImages([]);
-		setPayload((prev: any) => ({
-			...prev,
-      query: "",
-			images: []
-		}));
-	}, [handleQuery, setPayload])
 
   const triggerFileInput = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -74,12 +58,6 @@ export default function ChatInput() {
       cameraInputRef.current.click();
     }
   };
-
-  useEffect(() => {
-    if (location.pathname === "/" && payload.threadId) {
-      navigate(`/thread/${payload.threadId}`);
-    }
-  }, [payload.threadId]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -120,13 +98,13 @@ export default function ChatInput() {
         className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? 'rounded-none' : 'rounded-t-2xl'} focus:outline-none border-b-0`}
         placeholder="How can I help you be present?"
         rows={1}
-        value={payload.query}
+        value={query}
         onChange={handleTextareaResize}
         onPaste={handlePaste}
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey && !isRecording && payload.query.length > 0) {
+          if (e.key === "Enter" && !e.shiftKey && !isRecording && query.length > 0) {
             e.preventDefault()
             handleSubmit()
           }

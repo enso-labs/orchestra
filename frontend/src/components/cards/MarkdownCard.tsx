@@ -137,79 +137,81 @@ const ExpandableCell: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const BaseCard = ({ content }: { content: string }) => {
     return (
-        <ReactMarkdown
-            components={{
-                h1: ({ node, ...props }) => (
-                    <h1 className="text-2xl font-bold my-4" {...props} />
-                ),
-                h2: ({ node, ...props }) => (
-                    <h2 className="text-xl font-bold my-4" {...props} />
-                ),
-                h3: ({ node, ...props }) => (
-                    <h3 className="text-base font-bold mt-3 mb-2" {...props} />
-                ),
-                p: ({ node, ...props }) => (
-                    <p className={`py-2`} {...props} />
-                ),
-                code: CodeBlock as React.ComponentType<any>,
-                ul: ({ node, ...props }) => (
-                    <ul className="list-disc pl-5 my-2" {...props} />
-                ),
-                li: ({ node, ...props }) => <li className="ml-2" {...props} />,
-                a: ({ node, ...props }) => (
-                    <a
-                        target="_blank"
-                        className="text-blue-500 underline"
-                        {...props}
-                    />
-                ),
-                table: ({ node, ...props }) => (
-                    <div className="overflow-x-auto my-6 rounded-lg border-2 border-border shadow-md bg-background">
-                        <table
-                            className="min-w-full divide-y-2 divide-border bg-background border-collapse"
-                            {...props}
-                        />
-                    </div>
-                ),
-                thead: ({ node, ...props }) => (
-                    <thead className="bg-muted/60 border-b-2 border-border" {...props} />
-                ),
-                tbody: ({ node, ...props }) => (
-                    <tbody className="divide-y-2 divide-border bg-background" {...props} />
-                ),
-                tr: ({ node, ...props }) => (
-                    <tr
-                        className="transition-colors hover:bg-muted/30 group even:bg-muted/10 border-b border-border"
-                        {...props}
-                    />
-                ),
-                th: ({ node, ...props }) => (
-                    <th
-                        className="px-3 py-1 text-left text-sm font-bold text-foreground tracking-wider uppercase bg-gradient-to-b from-muted/40 to-muted/70 first:rounded-tl-lg last:rounded-tr-lg border-r-2 border-border last:border-r-0"
-                        {...props}
-                    />
-                ),
-                td: ({ node, ...props }) => (
-                    <td
-                        className="px-3 py-1 text-sm text-foreground border-r-2 border-border last:border-r-0 group-hover:text-foreground/90 transition-colors align-top"
-                        {...props}
-                    >
-                        <ExpandableCell>
-                            {props.children}
-                        </ExpandableCell>
-                    </td>
-                ),
-                hr: () => (
-                    <hr className="my-5" />
-                ),
-            }}
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeRaw, rehypeKatex, rehypeSanitize]}
-            remarkRehypeOptions={{ passThrough: ['link'] }}
-        >
-            {content}
-        </ReactMarkdown>
-    );
+			<ReactMarkdown
+				components={{
+					h1: ({ node, ...props }) => (
+						<h1 className="text-2xl font-bold my-4" {...props} />
+					),
+					h2: ({ node, ...props }) => (
+						<h2 className="text-xl font-bold my-4" {...props} />
+					),
+					h3: ({ node, ...props }) => (
+						<h3 className="text-base font-bold mt-3 mb-2" {...props} />
+					),
+					p: ({ node, ...props }) => <p className={`py-2`} {...props} />,
+					code: CodeBlock as React.ComponentType<any>,
+					ul: ({ node, ...props }) => (
+						<ul className="list-disc pl-5 my-2" {...props} />
+					),
+					ol: ({ ...props }) => (
+						<ol
+							className="list-decimal list-inside mb-2 space-y-1"
+							{...props}
+						/>
+					),
+					li: ({ node, ...props }) => <li className="ml-2" {...props} />,
+					a: ({ node, ...props }) => (
+						<a target="_blank" className="text-blue-500 underline" {...props} />
+					),
+					table: ({ node, ...props }) => (
+						<div className="overflow-x-auto my-6 rounded-lg border-2 border-border shadow-md bg-background">
+							<table
+								className="min-w-full divide-y-2 divide-border bg-background border-collapse"
+								{...props}
+							/>
+						</div>
+					),
+					thead: ({ node, ...props }) => (
+						<thead
+							className="bg-muted/60 border-b-2 border-border"
+							{...props}
+						/>
+					),
+					tbody: ({ node, ...props }) => (
+						<tbody
+							className="divide-y-2 divide-border bg-background"
+							{...props}
+						/>
+					),
+					tr: ({ node, ...props }) => (
+						<tr
+							className="transition-colors hover:bg-muted/30 group even:bg-muted/10 border-b border-border"
+							{...props}
+						/>
+					),
+					th: ({ node, ...props }) => (
+						<th
+							className="px-3 py-1 text-left text-sm font-bold text-foreground tracking-wider uppercase bg-gradient-to-b from-muted/40 to-muted/70 first:rounded-tl-lg last:rounded-tr-lg border-r-2 border-border last:border-r-0"
+							{...props}
+						/>
+					),
+					td: ({ node, ...props }) => (
+						<td
+							className="px-3 py-1 text-sm text-foreground border-r-2 border-border last:border-r-0 group-hover:text-foreground/90 transition-colors align-top"
+							{...props}
+						>
+							<ExpandableCell>{props.children}</ExpandableCell>
+						</td>
+					),
+					hr: () => <hr className="my-5" />,
+				}}
+				remarkPlugins={[remarkGfm, remarkMath]}
+				rehypePlugins={[rehypeRaw, rehypeKatex, rehypeSanitize]}
+				remarkRehypeOptions={{ passThrough: ["link"] }}
+			>
+				{content}
+			</ReactMarkdown>
+		);
 }
 
 const MarkdownCard = ({ content }: { content: string | any[] }) => {
@@ -242,7 +244,7 @@ const MarkdownCard = ({ content }: { content: string | any[] }) => {
         });
     }
     console.error("Invalid content");
-    return null;
+    throw new Error("Invalid content");
 };
 
 export default MarkdownCard;
