@@ -138,10 +138,10 @@ export default function useChatHook() {
         }
     };
 
-    const handleNewChat = () => {
-        setMessages([]);
-        setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
-    };
+    // const handleNewChat = () => {
+    //     setMessages([]);
+    //     setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
+    // };
 
     const useGetHistoryEffect = (agentId: string = '') => {
         useEffect(() => {
@@ -259,7 +259,7 @@ export default function useChatHook() {
         models,
         setModels,
         useSelectModelEffect,
-        handleNewChat,
+        // handleNewChat,
         availableTools,
         setAvailableTools,
         useToolsEffect,
