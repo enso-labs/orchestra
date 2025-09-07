@@ -23,6 +23,9 @@ class Thread(get_db_base()):
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     # Add relationships
     user_relation = relationship("User", back_populates="threads")
@@ -34,4 +37,5 @@ class Thread(get_db_base()):
             "thread": str(self.thread),
             "agent": str(self.agent) if self.agent else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

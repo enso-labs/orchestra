@@ -38,7 +38,7 @@ async def llm_invoke(
 	# Invoke the agent asynchronously with user context
 	response = await agent.ainvoke(
 		{"messages": params.to_langchain_messages()},
-		context={"user": user.model_dump()},
+		context={"user": user} if user else None,
 	)
 	# Return the agent's response
 	return response
@@ -69,7 +69,7 @@ async def llm_stream(
                 async for chunk in agent.astream(
                     {"messages": params.to_langchain_messages()},
                     stream_mode=params.stream_mode,
-                    context={"user": user.model_dump()} if user else None,
+                    context={"user": user} if user else None,
                 ):
                     # Serialize and yield each chunk as SSE
                     data = ujson.dumps(

@@ -3,6 +3,7 @@ import { SSE } from "sse.js";
 import { VITE_API_URL } from "@/lib/config";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import { useAppContext } from "@/context/AppContext";
+import { getAuthToken } from "@/lib/utils/auth";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -75,6 +76,7 @@ export default function useChat(): ChatContextType {
 			headers: {
 				"Content-Type": "application/json",
 				Accept: "text/event-stream",
+				Authorization: `Bearer ${getAuthToken()}`,
 			},
 			payload: JSON.stringify({
 				model: model,
