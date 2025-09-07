@@ -1,12 +1,24 @@
-from typing import Callable, Literal, Any
+from typing import Type, Literal, Any, AsyncGenerator
+from dataclasses import dataclass
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.prebuilt import create_react_agent
 
-# from langgraph.store.base import BaseStore
+from langgraph.store.base import BaseStore
+from langchain_core.messages import BaseMessage, AIMessage
 from langgraph.graph.state import CompiledStateGraph
+from langchain_core.runnables.config import RunnableConfig
 from deepagents import create_deep_agent, SubAgent
+
+from src.schemas.models import ProtectedUser
 from src.services.memory import memory_service
+from src.services.memory import in_memory_store
+from src.services.checkpoint import in_memory_checkpointer
+from src.tools.memory import MEMORY_TOOLS
+from src.schemas.entities import LLMRequest, LLMStreamRequest
+from src.flows.xml_agent import get_weather, get_stock_price
+from src.utils.logger import logger
+from src.services.checkpoint import checkpoint_service
 
 
 async def add_memories_to_system():
@@ -35,13 +47,14 @@ async def add_memories_to_system():
 # TODO: Not sure we need store based on construction of memory_service.
 # TODO: Need to investigate if we need to use store or not.
 def graph_builder(
-    graph_id: Literal["react", "deepagent"] = "react",
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
     prompt: str = "You are a helpful assistant.",
     model: str = "openai:gpt-5-nano",
+    context_schema: Type[Any] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
-    # store: BaseStore | None = None,
+    store: BaseStore | None = None,
+    graph_id: Literal["react", "deepagent"] = "react",
 ) -> CompiledStateGraph:
     if graph_id == "react":
         return create_react_agent(
@@ -50,6 +63,7 @@ def graph_builder(
             prompt=prompt,
             checkpointer=checkpointer,
             # store=store,
+            context_schema=context_schema,
         )
 
     if graph_id == "deepagent":
@@ -59,7 +73,129 @@ def graph_builder(
             instructions=prompt,
             checkpointer=checkpointer,
             subagents=subagents,
+            context_schema=context_schema,
             # store=store,
         )
 
     raise ValueError(f"Invalid graph name: {graph_id}")
+
+
+################################################################################
+### Construct Agent
+################################################################################
+@dataclass
+class ContextSchema:
+    user: ProtectedUser
+
+def get_stock_price(symbol: str) -> str:
+	"""Get the stock price of a given symbol"""
+	import random
+
+	return f"The stock price of {symbol} is {random.randint(100, 200)}"
+
+
+def get_weather(location: str, context: ContextSchema) -> str:
+	"""Get the weather in a given location"""
+	import random
+	user_id = context.user.id
+	logger.info(f"user_id: {user_id}")
+	return f"The weather in {location} is sunny and {random.randint(60, 80)} degrees"
+
+async def construct_agent(params: LLMRequest | LLMStreamRequest):
+	# Add config if it exists
+	config = (
+		RunnableConfig(
+			configurable=params.metadata.model_dump(), metadata={"model": params.model}
+		)
+		if params.metadata
+		else None
+	)
+	
+	tools = [get_weather, get_stock_price]
+	prompt = params.system
+	if config:
+		## Construct the prompt
+		memory_prompt = await add_memories_to_system()
+		prompt = (
+			params.system + "\n" + memory_prompt if memory_prompt else params.system
+		)
+		tools = tools + MEMORY_TOOLS
+
+	# Asynchronous LLM call
+	agent = Orchestra(
+		graph_id=(
+			params.metadata.graph_id
+			if params.metadata and params.metadata.graph_id
+			else "react"
+		),
+		config=config,
+		model=params.model,
+		tools=tools,
+		context_schema=ContextSchema,
+		prompt=prompt,
+		checkpointer=in_memory_checkpointer if config else None,
+		store=in_memory_store if config else None,
+	)
+	return agent
+
+class Orchestra:
+    def __init__(
+        self, 
+        tools: list[BaseTool], 
+        model: str = "openai:gpt-5-nano",
+        prompt: str = "You are a helpful assistant.",
+        config: RunnableConfig = None,
+        context_schema: Type[Any] | None = None,
+        checkpointer: BaseCheckpointSaver = None,
+        store: BaseStore = None,
+        graph_id: Literal["react", "deepagent"] = "react",
+    ):
+        self.tools = tools
+        self.model = model
+        self.prompt = prompt
+        self.config = config
+        self.context_schema = context_schema
+        self.store = store
+        self.checkpointer = checkpointer
+        self.graph = graph_builder(
+            tools=self.tools,
+            model=self.model,
+            prompt=self.prompt,
+            context_schema=self.context_schema,
+            checkpointer=self.checkpointer,
+            store=self.store,
+        )
+
+    def invoke(self, messages: list[BaseMessage]):
+        return self.graph.invoke(messages, self.config)
+    
+    def stream(self, messages: list[BaseMessage]):
+        return self.graph.stream(messages, self.config)
+    
+    def ainvoke(self, messages: list[BaseMessage]):
+        return self.graph.ainvoke(messages, self.config)
+    
+    def astream(self, 
+        messages: list[BaseMessage], 
+        stream_mode: str = "messages", 
+        context: dict[str, Any] = None
+    ) -> AsyncGenerator[BaseMessage, None]:
+        return self.graph.astream(messages, self.config, stream_mode=stream_mode, context=context)
+    
+    def aget_state(self, config: RunnableConfig = None):
+        if config is None:
+            config = self.config
+        return self.graph.aget_state(config)
+    
+    async def add_model_to_ai_message(self, model: str) -> RunnableConfig | None:
+        if self.checkpointer:
+            final_state = await self.aget_state()
+            if isinstance(final_state.values.get("messages")[-1], AIMessage):
+                final_state.values["messages"][-1].model = model
+                new_config = await checkpoint_service.update_checkpoint_state(
+                    self.config, {"messages": final_state.values["messages"]}
+                )
+                logger.info(f"final_state Updated: {str(new_config)}")
+                return new_config
+        return None
+    

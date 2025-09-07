@@ -2,7 +2,7 @@ import base64
 import requests
 from typing import Optional
 from loguru import logger
-from pydantic import TypeAdapter
+from datetime import datetime, timezone
 
 
 def get_base64_image(image_url: str) -> Optional[str]:
@@ -30,3 +30,9 @@ def get_base64_image(image_url: str) -> Optional[str]:
         except Exception as e:
             logger.error(f"Failed to fetch or encode image {image_url}: {str(e)}")
             return None
+
+
+def get_time(ts: str = None) -> str:
+    if ts:
+        return datetime.fromtimestamp(ts, timezone.utc).isoformat()
+    return datetime.now(timezone.utc).isoformat()

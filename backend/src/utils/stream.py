@@ -21,7 +21,7 @@ async def astream_chunks(
         ):
             graph.checkpointer = checkpointer
             async for msg, metadata in graph.astream(
-                state, config, stream_mode=stream_mode
+                state, config, stream_mode=stream_mode, response_format="json"
             ):
                 ctx.msg = msg
                 ctx.metadata = metadata
@@ -129,10 +129,7 @@ def handle_values_mode(payload: dict):
 ###########################################################################
 ## Message Conversion
 ###########################################################################
-def convert_messages(
-    payload: dict, stream_mode: StreamMode
-):
-
+def convert_messages(payload: dict, stream_mode: StreamMode):
     if stream_mode == "tasks":
         return handle_tasks_mode(payload)
 

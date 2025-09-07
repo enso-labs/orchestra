@@ -238,8 +238,6 @@ async def delete_agent(
 ################################################################################
 ### Threads and Revisions
 ################################################################################
-from .thread import router as thread_router
 from .revision import router as revision_router
 
 router.include_router(revision_router)
-router.include_router(thread_router)

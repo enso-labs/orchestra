@@ -7,7 +7,6 @@ from src.services.mcp import McpService
 from src.schemas.entities import ArcadeConfig
 from src.schemas.entities.a2a import A2AServer
 from src.tools.retrieval import retrieval_query
-from src.tools.sql import sql_query_read, sql_query_write
 from src.tools.shell import shell_exec
 from src.tools.search import search_engine
 from src.tools.a2a import init_a2a_tools
@@ -17,8 +16,6 @@ from src.tools.api import generate_tools_from_openapi_json
 TOOL_LIBRARY = [
     shell_exec,
     retrieval_query,
-    sql_query_read,
-    sql_query_write,
     search_engine,
 ]
 TOOL_NODE = ToolNode(TOOL_LIBRARY)

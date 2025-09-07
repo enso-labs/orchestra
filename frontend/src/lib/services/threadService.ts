@@ -80,43 +80,34 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
   }
 };
 
-// export const streamThread = (payload: ThreadPayload, agentId: string): SSE => {
-//   const responseData = constructPayload(payload, agentId);
-//   const url = agentId ? `/agents/${agentId}/thread` : '/llm/thread';
-//   const source = new SSE(`${VITE_API_URL}${url}${payload.threadId ? `/${payload.threadId}` : ''}`,
-//   {
-//     headers: {
-//       'Content-Type': 'application/json', 
-//       'Accept': 'text/event-stream',
-//       'Authorization': `Bearer ${getAuthToken()}`
-//     },
-//     payload: JSON.stringify(responseData),
-//     method: 'POST'
-//   });
-//   return source;
-// }
-
-export const streamThread = (payload: ThreadPayload): SSE => {
-  const streamPayload: LLMStreamPayload = {
-    model: payload.model || DEFAULT_CHAT_MODEL,
-    system: payload.system || "",
-    stream_mode: "messages",
-    messages: [{ role: "user", content: payload.query }],
-    metadata: {
-      thread_id: payload.threadId,
-    },
-  }
-  const source = new SSE(`${VITE_API_URL}/llm/stream`, {
+export const streamThread = (
+	system: string = "",
+	messages: { role: string; content: string; [key: string]: any }[],
+	model: string = DEFAULT_CHAT_MODEL,
+	metadata: {
+		thread_id?: string;
+		checkpoint_id?: string;
+		[key: string]: any;
+	} | string = {},
+	stream_mode: string = "messages"
+): SSE => {
+	const source = new SSE(`${VITE_API_URL}/llm/stream`, {
 		headers: {
 			"Content-Type": "application/json",
 			Accept: "text/event-stream",
 			Authorization: `Bearer ${getAuthToken()}`,
 		},
-		payload: JSON.stringify(streamPayload),
+		payload: JSON.stringify({
+			model,
+			system,
+			stream_mode,
+			messages,
+			metadata: typeof metadata === "string" ? JSON.parse(metadata) : metadata,
+		}),
 		method: "POST",
 	});
-  return source;
-}
+	return source;
+};
 
 export const searchThreads = async (
 		action: 'list_threads' | 'list_checkpoints' | 'get_checkpoint',

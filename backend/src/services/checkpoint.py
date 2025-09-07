@@ -17,15 +17,6 @@ class CheckpointService:
     async def search_threads(self):
         return await thread_service.search()
 
-    # async def search_threads(self, thread_search: ThreadSearch):
-    #     thread_ids = list(self.checkpointer.storage.keys())
-    #     filtered_list = [item for item in thread_ids if item is not None]
-    #     final_list = []
-    #     for thread_id in filtered_list[: thread_search.limit]:
-    #         checkpoint = await self.get_checkpoint(thread_id)
-    #         final_list.append({"thread_id": thread_id, "checkpoint": checkpoint})
-    #     return final_list
-
     async def list_checkpoints(self, thread_id: str):
         config = RunnableConfig(configurable={"thread_id": thread_id})
         checkpoints = []
@@ -51,14 +42,14 @@ class CheckpointService:
         )
         checkpoint = await self.checkpointer.aget(config)
         return checkpoint
-    
+
     async def get_checkpoint_state(self, thread_id: str, checkpoint_id: str):
         config = RunnableConfig(
             configurable={"thread_id": thread_id, "checkpoint_id": checkpoint_id}
         )
         checkpoint = await self.graph.aget_state(config)
         return {**checkpoint.values, **checkpoint.config, **checkpoint.parent_config}
-    
+
     async def update_checkpoint_state(self, config: RunnableConfig, values: dict):
         return await self.graph.aupdate_state(config=config, values=values)
 

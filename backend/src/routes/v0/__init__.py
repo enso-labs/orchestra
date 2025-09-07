@@ -1,6 +1,6 @@
 from src.constants import LANGCONNECT_SERVER_URL
 
-from .llm import router as llm
+from .llm import llm_router as llm
 from .thread import router as thread
 from .tool import router as tool
 from .retrieve import router as retrieve

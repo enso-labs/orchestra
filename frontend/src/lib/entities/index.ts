@@ -61,5 +61,6 @@ export type LLMStreamPayload = {
   metadata?: {
     thread_id?: string;
     checkpoint_id?: string;
+    [key: string]: any;
   };
 }
