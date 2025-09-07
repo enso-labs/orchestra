@@ -6,6 +6,7 @@ from fastapi import Body, HTTPException, status, Depends, APIRouter, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain.chat_models import init_chat_model
 from langchain_core.runnables.config import RunnableConfig
+from langchain_core.messages import AIMessage
 
 from src.schemas.models import ProtectedUser
 from src.schemas.entities import Answer, ChatInput, NewThread, ExistingThread
@@ -21,6 +22,8 @@ from src.flows import graph_builder, add_memories_to_system
 from src.services.checkpoint import in_memory_checkpointer
 from src.tools.memory import MEMORY_TOOLS
 from src.utils.stream import convert_messages
+from src.services.thread import thread_service
+from src.services.checkpoint import checkpoint_service
 
 TAG = "Thread"
 router = APIRouter()
@@ -38,7 +41,7 @@ def get_weather(location: str) -> str:
 async def construct_agent(params: LLMRequest | LLMStreamRequest):
     # Add config if it exists
     config = (
-        RunnableConfig(configurable=params.metadata.model_dump())
+        RunnableConfig(configurable=params.metadata.model_dump(), metadata={'model': params.model})
         if params.metadata
         else None
     )
@@ -116,7 +119,20 @@ async def llm_stream(
             logger.exception("Error in event_generator: %s", e)
             error_msg = ujson.dumps({"error": str(e)})
             yield f"data: {error_msg}\n\n"
-
+        finally:
+            final_state = await agent.aget_state(config)
+            last_message = final_state.values.get("messages")[-1]
+            if isinstance(last_message, AIMessage):
+               final_state.values['messages'][-1].model = params.model
+               updated = await checkpoint_service.update_checkpoint_state(config, values={'messages': final_state.values['messages']})
+               await thread_service.update(params.metadata.thread_id, {
+                   "thread_id": updated.get('configurable').get('thread_id'),
+				   "checkpoint_id": updated.get('configurable').get('checkpoint_id'),
+				   "messages": [last_message],
+			   })
+               logger.info(f"final_state Updated: {str(updated)}")
+           
+           
     # Return the streaming response
     return StreamingResponse(
         event_generator(),

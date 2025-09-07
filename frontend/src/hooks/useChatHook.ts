@@ -35,10 +35,10 @@ const initChatState = {
         mcp: null,
         a2a: null,
         collection: null,
-        arcade: {
-            tools: [] as string[],
-            toolkit: [] as string[],
-        }
+        // arcade: {
+        //     tools: [] as string[],
+        //     toolkit: [] as string[],
+        // }
     },
     history: {
         threads: [],
@@ -63,7 +63,6 @@ export default function useChatHook() {
         isToolCallInProgress,
         currentToolCall,
         selectedToolMessage,
-        // messages,
         history,
         preset,
         toolCall,

@@ -15,6 +15,7 @@ import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import SelectModel from "@/components/selects/SelectModel"
 import { useAgentContext } from "@/context/AgentContext"
+import { useAppContext } from "@/context/AppContext"
 // import SystemMessageCard from "@/components/cards/SystemMessageCard"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
@@ -32,6 +33,7 @@ function ToolAction({ selectedToolMessage }: { selectedToolMessage: any}) {
 }
 
 export default function Chat() {
+  const { loading } = useAppContext();
   const {
     messages,
     payload,
@@ -41,7 +43,8 @@ export default function Chat() {
     currentToolCall,
     setCurrentToolCall,
     // currentModel,
-    setSelectedToolMessage
+    setSelectedToolMessage,
+    useListThreadsEffect
   } = useChatContext()
   const { useEffectGetAgents } = useAgentContext();
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -91,6 +94,7 @@ export default function Chat() {
   }, [payload.threadId])
 
   useEffectGetAgents();
+  useListThreadsEffect(!loading);
 
   if (messages.length === 0) {
     return (

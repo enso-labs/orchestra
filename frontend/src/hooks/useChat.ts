@@ -27,6 +27,13 @@ export type ChatContextType = {
 	// NEW
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
+	resetMetadata: () => void;
+	// tools
+	arcade: {
+		tools: string[];
+		toolkit: string[];
+	};
+	setArcade: (arcade: { tools: string[]; toolkit: string[] }) => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -39,6 +46,11 @@ export default function useChat(): ChatContextType {
 	const [metadata, setMetadata] = useState(() => {
 		const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
 		return JSON.stringify({ thread_id: threadId }, null, 2);
+	});
+
+	const [arcade, setArcade] = useState({
+		tools: [] as string[],
+		toolkit: [] as string[],
 	});
 
 	const handleSSE = (query: string, model: string = DEFAULT_CHAT_MODEL) => {
@@ -68,6 +80,7 @@ export default function useChat(): ChatContextType {
 				model: model,
 				stream_mode: "messages",
 				system: "You are a helpful assistant.",
+				// arcade: arcade,
 				metadata: JSON.parse(metadata),
 				messages: updatedMessages
 					.filter((msg) => msg.role === "user" || msg.role === "assistant")
@@ -105,11 +118,19 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
+	const resetMetadata = () => {
+		setMetadata(() => {
+			const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
+			return JSON.stringify({ thread_id: threadId }, null, 2);
+		});
+	};
+
 	const clearMessages = (index?: number) => {
 		if (typeof index === "number" && index >= 0 && index < in_mem_messages.length) {
 			in_mem_messages = in_mem_messages.slice(0, index);
 		} else {
 			in_mem_messages = [];
+			resetMetadata();
 		}
 		setMessages(in_mem_messages);
 	}
@@ -240,5 +261,9 @@ export default function useChat(): ChatContextType {
 		// NEW
 		handleTextareaResize,
 		clearMessages,
+		resetMetadata,
+		// tools
+		arcade,
+		setArcade,
 	};
 }

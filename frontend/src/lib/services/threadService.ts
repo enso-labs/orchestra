@@ -2,7 +2,6 @@ import apiClient from '@/lib/utils/apiClient';
 import { LLMStreamPayload, ThreadPayload } from '@/lib/entities';
 import { DEFAULT_CHAT_MODEL, DEFAULT_OPTIMIZE_MODEL } from '@/lib/config/llm';
 import { VITE_API_URL } from '@/lib/config';
-import { constructPayload } from '@/lib/utils/llm';
 import { getAuthToken } from '@/lib/utils/auth';
 import { SSE } from 'sse.js';
 
@@ -117,4 +116,46 @@ export const streamThread = (payload: ThreadPayload): SSE => {
 		method: "POST",
 	});
   return source;
+}
+
+export const searchThreads = async (
+		action: 'list_threads' | 'list_checkpoints' | 'get_checkpoint',
+		metadata: {thread_id?: string, checkpoint_id?: string} = {},
+		limit: number = 100,
+		offset: number = 0,
+	) => {
+  let payload;
+  if (action === 'list_threads') {
+    payload = {
+      limit: limit,
+      offset: offset,
+      metadata: metadata,
+    };
+  } else if (action === 'list_checkpoints') {
+    payload = {
+      limit: limit,
+      offset: offset,
+      metadata: { thread_id: metadata.thread_id },
+    };
+  } else if (action === 'get_checkpoint') {
+    payload = {
+      limit: limit,
+      offset: offset,
+      metadata: { thread_id: metadata.thread_id, checkpoint_id: metadata.checkpoint_id },
+    };
+  }
+  const response = await apiClient.post(`/threads/search`, payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const data = await response.data;
+
+  if (action === "list_threads") {
+      return data.threads;
+  } else if (action === "list_checkpoints") {
+      return data.checkpoints;
+  } else if (action === "get_checkpoint") {
+      return data.checkpoint;
+  }
 }

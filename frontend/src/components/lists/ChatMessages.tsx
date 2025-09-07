@@ -10,7 +10,7 @@ import { useChatContext } from "@/context/ChatContext";
 
 
 
-function Message({ message }: { message: any }) {
+export function Message({ message }: { message: any }) {
 	const ICON_SIZE = 4;
 	const [isEditing, setIsEditing] = useState(false);
 	const { handleSubmit, clearMessages, messages } = useChatContext();
@@ -32,9 +32,9 @@ function Message({ message }: { message: any }) {
 									className="p-1 rounded hover:bg-muted transition-colors"
 									onClick={(e) => {
 										e.stopPropagation();
-										const index = messages.findIndex((m: any) => m.id === message.id);
-										// const newMessages = messages.slice(0, index);
-										clearMessages(index);
+										clearMessages(
+											messages.findIndex((m: any) => m.id === message.id)
+										);
 										handleSubmit(message.content);
 										setIsEditing(false);
 									}}

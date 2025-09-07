@@ -205,8 +205,15 @@ const BaseCard = ({ content }: { content: string }) => {
 					),
 					hr: () => <hr className="my-5" />,
 				}}
-				remarkPlugins={[remarkGfm, remarkMath]}
-				rehypePlugins={[rehypeRaw, rehypeKatex, rehypeSanitize]}
+				remarkPlugins={[
+          remarkGfm, 
+          // remarkMath,
+        ]}
+				rehypePlugins={[
+          // rehypeRaw, 
+          // rehypeKatex, 
+          rehypeSanitize
+        ]}
 				remarkRehypeOptions={{ passThrough: ["link"] }}
 			>
 				{content}

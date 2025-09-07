@@ -7,6 +7,8 @@ interface Props {
 
 export default function DefaultTool({ selectedToolMessage }: Props) {
 	if (!selectedToolMessage) return null;
+
+	const input = selectedToolMessage.args || selectedToolMessage.input;
 	return (
 		<div className="space-y-4">
 			<div className="prose prose-sm dark:prose-invert">
@@ -14,10 +16,7 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 					<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 						{(() => {
 							try {
-								const input =
-									selectedToolMessage.args || selectedToolMessage.input;
-								const parsedJSON =
-									typeof input === "object" ? input : JSON.parse(input);
+								const parsedJSON = typeof input === "object" ? input : JSON.parse(input);
 								return (
 									<JsonView
 										value={parsedJSON}
@@ -35,9 +34,7 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 										<p>{(error as Error).message}</p>
 										<p className="mt-2 font-bold">Raw content:</p>
 										<pre className="whitespace-pre-wrap text-xs mt-1 p-2 bg-slate-800 rounded overflow-x-auto">
-											{JSON.stringify(
-												selectedToolMessage.args || selectedToolMessage.input
-											)}
+											{JSON.stringify(input)}
 										</pre>
 									</div>
 								);
