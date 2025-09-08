@@ -131,7 +131,7 @@ jobs:
         mkdir -p src/public/assets
         pip install --upgrade pip
         pip install uv
-        uv sync --frozen --no-cache --no-dev
+        uv sync --frozen --no-cache
 
     - name: Save Python dependencies cache
       if: steps.cache-python.outputs.cache-hit != 'true'
