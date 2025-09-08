@@ -184,7 +184,7 @@ export default function useChat(): ChatContextType {
 					name: toolNameRef.current,
 				});
 			}
-			setMessages((prev: any) => [...history]);
+			setMessages([...history]);
 			return;
 		}
 
@@ -205,7 +205,7 @@ export default function useChat(): ChatContextType {
 					...response,
 					content: updatedContent,
 				};
-				setMessages((prev: any) => [...history]);
+				setMessages([...history]);
 				return;
 			} else {
 				const updateMessage = {
@@ -225,7 +225,7 @@ export default function useChat(): ChatContextType {
 					updateMessage.checkpoint_ns = metadata.checkpoint_ns;
 				}
 				history.push(updateMessage);
-				setMessages((prev: any) => [...history]);
+				setMessages([...history]);
 				return;
 			}
 		}

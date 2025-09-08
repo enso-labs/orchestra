@@ -14,7 +14,7 @@ export function ChatNav({
 	onNewChat 
 }: ChatNavProps) {
     
-	const { handleNewChat, payload, messages, clearMessages } = useChatContext();
+	const { payload, messages, clearMessages } = useChatContext();
 
 	return (
 		<header className="bg-card border-b border-border">

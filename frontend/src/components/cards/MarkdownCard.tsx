@@ -6,9 +6,6 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeRaw from "rehype-raw";
-import rehypeKatex from "rehype-katex";
 import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
 import useImageHook from "@/hooks/useImageHook";
 

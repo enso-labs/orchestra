@@ -1,5 +1,5 @@
 import apiClient from '@/lib/utils/apiClient';
-import { LLMStreamPayload, ThreadPayload } from '@/lib/entities';
+import { ThreadPayload } from '@/lib/entities';
 import { DEFAULT_CHAT_MODEL, DEFAULT_OPTIMIZE_MODEL } from '@/lib/config/llm';
 import { VITE_API_URL } from '@/lib/config';
 import { getAuthToken } from '@/lib/utils/auth';

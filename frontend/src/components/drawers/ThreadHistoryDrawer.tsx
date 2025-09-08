@@ -6,7 +6,6 @@ import { formatMessages, truncateFrom } from "@/lib/utils/format";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { Link } from "react-router-dom";
 import { searchThreads } from "@/lib/services/threadService";
-import { threadId } from "worker_threads";
 
 interface ThreadHistoryDrawerProps {
   isOpen: boolean;

@@ -14,7 +14,7 @@ import MenuAgents from "../menu/MenuAgents/menu-agents"
 import { useAgentContext } from "@/context/AgentContext"
 
 export default function ChatInput() {
-  const { agents, selectedAgent } = useAgentContext();
+  const { agents } = useAgentContext();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   

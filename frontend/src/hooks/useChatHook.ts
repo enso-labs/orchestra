@@ -91,10 +91,10 @@ export default function useChatHook() {
 
     const [controller, setController] = useState<AbortController | null>(null);
     
-    const handleQuery = (agentId: string = '') => {
-        const { controller } = queryThread(payload, agentId, messages);
-        setController(controller);
-    }
+    // const handleQuery = (agentId: string = '') => {
+        // const { controller } = queryThread(payload, agentId, messages);
+        // setController(controller);
+    // }
 
     const abortQuery = () => {
         if (controller) {
@@ -230,7 +230,7 @@ export default function useChatHook() {
             });
             // Refresh the thread list after deletion
             getHistory(history.page, history.per_page);
-            handleNewChat();
+            // handleNewChat();
         } catch (error: any) {
             console.error('Error deleting thread:', error);
             throw new Error(error.response?.data?.detail || 'Failed to delete thread');
@@ -245,7 +245,7 @@ export default function useChatHook() {
         responseRef,
         response,
         setResponse,
-        handleQuery,
+        // handleQuery,
         payload,
         setPayload,
         toolCallMessage,

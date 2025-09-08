@@ -12,7 +12,7 @@ COPY pyproject.toml uv.lock* /app/
 
 # Use psycopg[binary] in pyproject (and remove psycopg2-binary)
 # Then install deps
-RUN uv sync --frozen --no-cache
+RUN uv sync --frozen --no-cache --no-dev
 
 # App code
 COPY . /app

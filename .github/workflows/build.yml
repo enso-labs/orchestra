@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/requirements-dev.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
               ${{ runner.os }}-pip-
 
@@ -72,9 +72,7 @@ jobs:
           env | sort
           pip install --upgrade pip
           pip install uv
-          uv pip install -v --system --no-cache-dir \
-          -r requirements.txt \
-          -r requirements-dev.txt
+          uv sync --frozen --no-cache --no-dev
 
       - name: Build docs
         run: |
@@ -96,7 +94,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/requirements-dev.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
 
       ###############################################################
       ## Docker
