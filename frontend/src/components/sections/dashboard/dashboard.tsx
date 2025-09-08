@@ -1,31 +1,31 @@
-import { useState } from "react"
-import { DashboardTabOption } from "@/lib/entities"
-import DashboardHeader from "./dashboard-header"
-import DashboardSearch from "./dashboard-search"
-import DashboardTabs from "./dashboard-tabs"
-import DashboardTabsContent from "./dashboard-tabs-content"
-import { useAgentContext } from "@/context/AgentContext"
-import { useAppContext } from "@/context/AppContext"
+import { useState } from "react";
+import { DashboardTabOption } from "@/lib/entities";
+import DashboardHeader from "./dashboard-header";
+import DashboardSearch from "./dashboard-search";
+import DashboardTabs from "./dashboard-tabs";
+import DashboardTabsContent from "./dashboard-tabs-content";
+import { useAgentContext } from "@/context/AgentContext";
+import { useAppContext } from "@/context/AppContext";
 
 export default function DashboardSection() {
-  const { loading } = useAppContext();
-  const { 
-    filteredAgents,
-    publicAgents,
-    privateAgents,
-    useEffectGetAgents, 
-    handleDeleteAgent, 
-    useEffectGetFilteredAgents 
-  } = useAgentContext();
+	const { loading } = useAppContext();
+	const {
+		filteredAgents,
+		publicAgents,
+		privateAgents,
+		useEffectGetAgents,
+		handleDeleteAgent,
+		useEffectGetFilteredAgents,
+	} = useAgentContext();
 	const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<DashboardTabOption>("agents");
+	const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+	const [activeTab, setActiveTab] = useState<DashboardTabOption>("agents");
 
-  useEffectGetAgents();
-  useEffectGetFilteredAgents(searchTerm, selectedCategories);
+	useEffectGetAgents();
+	useEffectGetFilteredAgents(searchTerm, selectedCategories);
 
-  return (
-    <main className="px-4 py-4 sm:px-6">
+	return (
+		<main className="px-4 py-4 sm:px-6">
 			<div className="flex flex-col space-y-4">
 				<DashboardHeader activeTab={activeTab} />
 
@@ -59,5 +59,5 @@ export default function DashboardSection() {
 				</div>
 			</div>
 		</main>
-  )
+	);
 }

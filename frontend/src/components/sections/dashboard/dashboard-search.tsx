@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react"
+import { Search, X } from "lucide-react";
 
 function DashboardSearch({
 	searchTerm,
@@ -6,19 +6,18 @@ function DashboardSearch({
 	selectedCategories,
 	setSelectedCategories,
 }: {
-	searchTerm: string
-	setSearchTerm: (searchTerm: string) => void
-	selectedCategories: string[]
-	setSelectedCategories: (selectedCategories: string[]) => void
+	searchTerm: string;
+	setSearchTerm: (searchTerm: string) => void;
+	selectedCategories: string[];
+	setSelectedCategories: (selectedCategories: string[]) => void;
 }) {
-	
 	const clearFilters = () => {
-		setSearchTerm("")
-		setSelectedCategories([])
-	}
+		setSearchTerm("");
+		setSelectedCategories([]);
+	};
 
-  return (
-    <div className="bg-background/50 backdrop-blur-sm sticky top-0 z-10">
+	return (
+		<div className="bg-background/50 backdrop-blur-sm sticky top-0 z-10">
 			<div className="flex flex-col space-y-4">
 				<div className="flex flex-col sm:flex-row gap-4">
 					<div className="relative flex-1">
@@ -53,7 +52,7 @@ function DashboardSearch({
 				</div>
 			</div>
 		</div>
-  )
+	);
 }
 
 export default DashboardSearch;

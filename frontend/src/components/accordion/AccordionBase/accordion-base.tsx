@@ -1,7 +1,12 @@
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import {
+	Accordion,
+	AccordionItem,
+	AccordionTrigger,
+	AccordionContent,
+} from "@/components/ui/accordion";
 
 function AccordionBase({
-	items
+	items,
 }: {
 	items: {
 		title: string;
@@ -17,7 +22,7 @@ function AccordionBase({
 				</AccordionItem>
 			))}
 		</Accordion>
-	)
+	);
 }
 
 export default AccordionBase;

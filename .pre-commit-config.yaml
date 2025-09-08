@@ -1,0 +1,24 @@
+repos:
+  - repo: local
+    hooks:
+      - id: backend-format
+        name: Backend Format
+        entry: bash -c 'cd backend && make format'
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        always_run: false
+      - id: frontend-prettier
+        name: Frontend Prettier
+        entry: npx prettier --write
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx|json|css|scss|html|md)$
+        pass_filenames: true
+        always_run: false
+      - id: frontend-lint
+        name: Frontend Lint
+        entry: bash -c 'cd frontend && npm run lint --fix'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+        always_run: false

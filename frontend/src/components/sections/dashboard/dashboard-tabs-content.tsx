@@ -1,5 +1,5 @@
-import { Agent } from "@/lib/entities"
-import { AgentCard, EmptyState } from "@/components/cards/AgentCard"
+import { Agent } from "@/lib/entities";
+import { AgentCard, EmptyState } from "@/components/cards/AgentCard";
 
 function DashboardTabsContent({
 	activeTab,
@@ -9,18 +9,17 @@ function DashboardTabsContent({
 	isLoading,
 	handleDeleteAgent,
 }: {
-	activeTab: string
-	filteredMyAgents: Agent[]
-	filteredPublicAgents: Agent[]
-	filteredPrivateAgents: Agent[]
-	isLoading: boolean
-	handleDeleteAgent: (agentId: string) => void
+	activeTab: string;
+	filteredMyAgents: Agent[];
+	filteredPublicAgents: Agent[];
+	filteredPrivateAgents: Agent[];
+	isLoading: boolean;
+	handleDeleteAgent: (agentId: string) => void;
 }) {
 	return (
 		<div className="mt-4">
 			{activeTab === "agents" && (
 				<div className="h-[calc(100vh-22rem)] overflow-auto pr-2">
-					
 					{isLoading ? (
 						<div className="flex justify-center items-center h-40">
 							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -28,9 +27,9 @@ function DashboardTabsContent({
 					) : filteredMyAgents.length > 0 ? (
 						<div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6 gap-5">
 							{filteredMyAgents.map((agent) => (
-								<AgentCard 
-									key={agent.id} 
-									agent={agent} 
+								<AgentCard
+									key={agent.id}
+									agent={agent}
 									editable={true}
 									onDelete={handleDeleteAgent}
 								/>
@@ -78,7 +77,7 @@ function DashboardTabsContent({
 				</div>
 			)}
 		</div>
-	)
+	);
 }
 
 export default DashboardTabsContent;

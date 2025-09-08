@@ -25,26 +25,31 @@ src/pages/tools/create/
 ## Components
 
 ### ToolCreateHeader
+
 - Navigation back button
 - Tool creation title
 - Create agent button with loading state
 
-### FullscreenEditor  
+### FullscreenEditor
+
 - Overlay for editing system messages in fullscreen
 - Integrates with PromptGenerator
 - Handles close/toggle actions
 
 ### PromptGenerator
+
 - AI-powered prompt generation widget
 - Supports both "replace" and "alter" modes
 - Handles user input and generation states
 
 ### SettingsForm
+
 - Form fields for tool name, description, system message
 - Model selection dropdown
 - Integrates prompt generator and fullscreen editor
 
 ### PreviewPanel
+
 - Chat interface for testing the tool
 - Shows real-time preview of tool behavior
 - Responsive design for mobile/desktop
@@ -52,7 +57,9 @@ src/pages/tools/create/
 ## Hooks
 
 ### useToolCreation
+
 Custom hook that manages:
+
 - Component state (fullscreen, tabs, generators)
 - Agent creation logic
 - Prompt generation functionality
@@ -61,6 +68,7 @@ Custom hook that manages:
 ## Types
 
 ### Shared Interfaces
+
 - `AgentDetails`: Tool name and description
 - `GenerateMode`: Type for AI generation modes
 - `ChatMessage`: Message structure for chat interface
@@ -69,7 +77,7 @@ Custom hook that manages:
 ## Usage
 
 ```tsx
-import ToolCreate from './tools-create';
+import ToolCreate from "./tools-create";
 
 // The component is fully self-contained and handles:
 // - Mobile/desktop responsive design
@@ -86,4 +94,4 @@ import ToolCreate from './tools-create';
 3. **Maintainability**: Easier to locate and fix issues
 4. **Testability**: Components can be tested in isolation
 5. **Performance**: Smaller bundles through tree-shaking
-6. **Development**: Better developer experience with focused components 
+6. **Development**: Better developer experience with focused components

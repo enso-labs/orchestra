@@ -8,68 +8,68 @@
 } */
 
 .chat-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	max-width: 1200px;
+	margin: 0 auto;
+	width: 100%;
 }
 
 .header {
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+	padding: 1rem;
+	background-color: #f8f9fa;
+	border-bottom: 1px solid #dee2e6;
 }
 
 .chat-history {
-    flex: 1;
-    margin-top: 5px;
-    overflow-y: auto;
-    padding: 1rem;
-    background-color: white;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    max-height: calc(100vh - 115px);
+	flex: 1;
+	margin-top: 5px;
+	overflow-y: auto;
+	padding: 1rem;
+	background-color: white;
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+	max-height: calc(100vh - 115px);
 }
 
 .message {
-    max-width: 80%;
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
-    margin: 0.25rem 0;
+	max-width: 80%;
+	padding: 0.75rem 1rem;
+	border-radius: 1rem;
+	margin: 0.25rem 0;
 }
 
 .user-message {
-    background-color: #007bff;
-    color: white;
-    align-self: flex-end;
-    border-bottom-right-radius: 0.25rem;
+	background-color: #007bff;
+	color: white;
+	align-self: flex-end;
+	border-bottom-right-radius: 0.25rem;
 }
 
 .ai-message {
-    background-color: #f1f3f5;
-    color: black;
-    align-self: flex-start;
-    border-bottom-left-radius: 0.25rem;
+	background-color: #f1f3f5;
+	color: black;
+	align-self: flex-start;
+	border-bottom-left-radius: 0.25rem;
 }
 
 .input-container {
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-    display: flex;
-    gap: 0.5rem;
+	padding: 1rem;
+	background-color: #f8f9fa;
+	border-top: 1px solid #dee2e6;
+	display: flex;
+	gap: 0.5rem;
 }
 
 .message-input {
-    flex: 1;
-    padding: 0.75rem;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    resize: none;
-    min-height: 20px;
-    max-height: 200px;
+	flex: 1;
+	padding: 0.75rem;
+	border: 1px solid #dee2e6;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	resize: none;
+	min-height: 20px;
+	max-height: 200px;
 }

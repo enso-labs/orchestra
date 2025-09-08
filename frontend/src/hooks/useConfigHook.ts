@@ -4,16 +4,16 @@ import { getAuthToken } from "@/lib/utils/auth";
 import { useEffect } from "react";
 
 function useConfigHook() {
-	const {state, actions} = useChatReducer();
-	const {settings} = state;
-	const {setSettings} = actions;
+	const { state, actions } = useChatReducer();
+	const { settings } = state;
+	const { setSettings } = actions;
 
 	const fetchSettings = async () => {
 		try {
-			const response = getAuthToken() ? await apiClient.get('/settings') : null;
+			const response = getAuthToken() ? await apiClient.get("/settings") : null;
 			setSettings(response?.data?.settings || []);
 		} catch (error) {
-			console.error('Failed to fetch settings:', error);
+			console.error("Failed to fetch settings:", error);
 		}
 	};
 
@@ -28,14 +28,14 @@ function useConfigHook() {
 		};
 	};
 
-	return { 
+	return {
 		// State
 		settings,
 		setSettings,
-		// Actions 
+		// Actions
 		fetchSettings,
 		// Effects
-		useSettingsEffect
+		useSettingsEffect,
 	};
 }
 

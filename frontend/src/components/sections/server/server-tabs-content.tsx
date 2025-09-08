@@ -1,7 +1,6 @@
-import { Server } from "@/lib/entities"
-import { EmptyState } from "@/components/cards/AgentCard"
-import { ServerCard } from "@/components/cards/ServerCard"
-
+import { Server } from "@/lib/entities";
+import { EmptyState } from "@/components/cards/AgentCard";
+import { ServerCard } from "@/components/cards/ServerCard";
 
 function ServerTabsContent({
 	activeTab,
@@ -10,12 +9,12 @@ function ServerTabsContent({
 	filteredPrivateAgents,
 	isLoading,
 }: {
-	activeTab: string
-	filteredMyAgents: Server[]
-	filteredPublicAgents: Server[]
-	filteredPrivateAgents: Server[]
-	isLoading: boolean
-	handleDeleteAgent: (agentId: string) => void
+	activeTab: string;
+	filteredMyAgents: Server[];
+	filteredPublicAgents: Server[];
+	filteredPrivateAgents: Server[];
+	isLoading: boolean;
+	handleDeleteAgent: (agentId: string) => void;
 }) {
 	return (
 		<div className="mt-4">
@@ -24,7 +23,7 @@ function ServerTabsContent({
 					<div className="flex justify-between items-center mb-4">
 						<h2 className="text-lg font-medium">My Agents</h2>
 					</div>
-					
+
 					{isLoading ? (
 						<div className="flex justify-center items-center h-40">
 							<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -77,7 +76,7 @@ function ServerTabsContent({
 				</div>
 			)}
 		</div>
-	)
+	);
 }
 
 export default ServerTabsContent;

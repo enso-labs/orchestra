@@ -8,16 +8,19 @@ import { Link } from "react-router-dom";
 import { searchThreads } from "@/lib/services/threadService";
 
 interface ThreadHistoryDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
+	isOpen: boolean;
+	onClose: () => void;
 }
 
-export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProps) {
-  const { threads, metadata, setMessages, setMetadata } = useChatContext();
+export function ThreadHistoryDrawer({
+	isOpen,
+	onClose,
+}: ThreadHistoryDrawerProps) {
+	const { threads, metadata, setMessages, setMetadata } = useChatContext();
 
-  const metadataCopy = JSON.parse(metadata);
+	const metadataCopy = JSON.parse(metadata);
 
-  return (
+	return (
 		<>
 			{/* Overlay for mobile - only shows when drawer is open */}
 			{isOpen && (
@@ -50,16 +53,16 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
 						{threads &&
 							threads.length > 0 &&
 							threads.map((thread: any) => {
-                const config = thread.value;
-                const messages = thread.value.messages;
-                const lastMessage = messages[messages.length - 1];
-                return (
+								const config = thread.value;
+								const messages = thread.value.messages;
+								const lastMessage = messages[messages.length - 1];
+								return (
 									<div key={config.thread_id} className="group relative">
 										<button
 											onClick={async () => {
-                        const checkpoint = await searchThreads(
+												const checkpoint = await searchThreads(
 													"get_checkpoint",
-													config
+													config,
 												);
 												setMessages(formatMessages(checkpoint.messages));
 												setMetadata(JSON.stringify(thread.value));
@@ -72,14 +75,15 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
 										>
 											<div className="w-full pr-8">
 												<p className="text-sm font-medium line-clamp-2 max-w-60">
-												{lastMessage.content ? truncateFrom(
-															lastMessage.content,
-															"end",
-															"...",
-															70
-													  )
-													: "no content found"}
-											</p>
+													{lastMessage.content
+														? truncateFrom(
+																lastMessage.content,
+																"end",
+																"...",
+																70,
+															)
+														: "no content found"}
+												</p>
 												<p className="text-xs text-muted-foreground mt-1 truncate">
 													{formatDistanceToNow(new Date(thread.updated_at), {
 														addSuffix: true,
@@ -110,7 +114,7 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
 										</Button>
 									</div>
 								);
-              })}
+							})}
 					</div>
 				</ScrollArea>
 
@@ -120,4 +124,4 @@ export function ThreadHistoryDrawer({ isOpen, onClose }: ThreadHistoryDrawerProp
 			</div>
 		</>
 	);
-} 
+}

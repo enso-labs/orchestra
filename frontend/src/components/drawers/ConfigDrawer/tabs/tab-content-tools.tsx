@@ -1,16 +1,24 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { 
-	X, Database, 
-	Search, BookOpen, PlusCircle,
-	Filter
+import {
+	X,
+	Database,
+	Search,
+	BookOpen,
+	PlusCircle,
+	Filter,
 } from "lucide-react";
 import ToolCard from "@/components/cards/ToolCard";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useToolContext } from "@/context/ToolContext";
+import { useToolContext } from "@/hooks/useToolContext";
 import { useChatContext } from "@/context/ChatContext";
 import { useNavigate } from "react-router-dom";
 
@@ -19,21 +27,22 @@ function TabContentTools() {
 	const [searchFocused, setSearchFocused] = useState(false);
 	const [activeCategory, setActiveCategory] = useState<string | null>(null);
 	const [groupByCategory, setGroupByCategory] = useState(true);
-	
+
 	// Get functionality from tool context
-	const { 
-		clearTools, 
-		toolFilter, 
+	const {
+		clearTools,
+		toolFilter,
+		setToolFilter,
 		toolsByCategory,
 		filteredTools,
-		hasSavedA2A
+		hasSavedA2A,
 	} = useToolContext();
-	
+
 	const { payload, useToolsEffect } = useChatContext();
-	
+
 	// Get current enabled tools count
-	const enabledCount = (payload.tools?.length || 0);
-	
+	const enabledCount = payload.tools?.length || 0;
+
 	// Reset active category when changing view mode
 	useEffect(() => {
 		setActiveCategory(null);
@@ -41,12 +50,8 @@ function TabContentTools() {
 
 	// Get unique categories from toolsByCategory
 	const categories = Object.keys(toolsByCategory);
-	
-	// Handle tool filter changes - we'll use the one from context
-	const setToolFilter = (value: string) => {
-		// Access the setToolFilter function from context
-		(useToolContext() as any).setToolFilter(value);
-	};
+
+	// setToolFilter is now available from the context destructuring above
 
 	useToolsEffect();
 
@@ -64,7 +69,8 @@ function TabContentTools() {
 							)}
 						</h2>
 						<p className="text-sm text-muted-foreground mt-1">
-							Choose the tools that will help you be more present in this moment.
+							Choose the tools that will help you be more present in this
+							moment.
 						</p>
 					</div>
 					<div className="flex space-x-1">
@@ -104,11 +110,13 @@ function TabContentTools() {
 								</TooltipTrigger>
 								<TooltipContent side="bottom">
 									<p className="text-xs">
-										{hasSavedA2A ? "Edit A2A configuration" : "Add A2A configuration"}
+										{hasSavedA2A
+											? "Edit A2A configuration"
+											: "Add A2A configuration"}
 									</p>
 								</TooltipContent>
 							</Tooltip>
-							
+
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<Button
@@ -134,12 +142,14 @@ function TabContentTools() {
 					</div>
 				</div>
 			</div>
-			
+
 			<div className="mb-5 space-y-3">
-				<div className={cn(
-					"relative transition-all duration-200",
-					searchFocused ? "ring-2 ring-primary ring-offset-1" : ""
-				)}>
+				<div
+					className={cn(
+						"relative transition-all duration-200",
+						searchFocused ? "ring-2 ring-primary ring-offset-1" : "",
+					)}
+				>
 					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<input
 						type="text"
@@ -151,7 +161,7 @@ function TabContentTools() {
 						onBlur={() => setSearchFocused(false)}
 					/>
 					{toolFilter && (
-						<button 
+						<button
 							className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 rounded-full bg-muted/70 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 							onClick={() => setToolFilter("")}
 							aria-label="Clear search"
@@ -160,26 +170,26 @@ function TabContentTools() {
 						</button>
 					)}
 				</div>
-				
+
 				{groupByCategory && (
 					<div className="flex flex-wrap gap-1.5 items-center">
-						<Badge 
+						<Badge
 							variant={activeCategory === null ? "secondary" : "outline"}
 							className={cn(
 								"cursor-pointer hover:bg-secondary/80 transition-colors",
-								activeCategory === null ? "bg-secondary" : ""
+								activeCategory === null ? "bg-secondary" : "",
 							)}
 							onClick={() => setActiveCategory(null)}
 						>
 							All
 						</Badge>
 						{categories.map((category) => (
-							<Badge 
+							<Badge
 								key={category}
 								variant={activeCategory === category ? "secondary" : "outline"}
 								className={cn(
 									"cursor-pointer hover:bg-secondary/80 transition-colors",
-									activeCategory === category ? "bg-secondary" : ""
+									activeCategory === category ? "bg-secondary" : "",
 								)}
 								onClick={() => setActiveCategory(category)}
 							>
@@ -189,17 +199,25 @@ function TabContentTools() {
 					</div>
 				)}
 			</div>
-			
+
 			<ScrollArea className="h-[calc(100vh-300px)]">
 				<div className="grid gap-4">
 					{groupByCategory ? (
 						Object.entries(toolsByCategory)
-							.filter(([category]) => activeCategory === null || category === activeCategory)
+							.filter(
+								([category]) =>
+									activeCategory === null || category === activeCategory,
+							)
 							.map(([category, tools]) => (
 								<div key={category} className="mb-4">
 									<div className="flex items-center gap-2 mb-3">
-										<h3 className="text-sm font-medium text-foreground">{category}</h3>
-										<Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+										<h3 className="text-sm font-medium text-foreground">
+											{category}
+										</h3>
+										<Badge
+											variant="outline"
+											className="text-xs font-normal text-muted-foreground"
+										>
 											{(tools as any[]).length}
 										</Badge>
 									</div>
@@ -217,18 +235,18 @@ function TabContentTools() {
 							))}
 						</div>
 					)}
-					
-					{((groupByCategory && Object.keys(toolsByCategory).length === 0) || 
-					 (!groupByCategory && filteredTools.length === 0)) && (
+
+					{((groupByCategory && Object.keys(toolsByCategory).length === 0) ||
+						(!groupByCategory && filteredTools.length === 0)) && (
 						<div className="flex flex-col items-center justify-center py-10 text-center">
 							<Filter className="h-10 w-10 text-muted-foreground/50 mb-2" />
 							<p className="text-muted-foreground text-sm">
 								No tools match your search criteria
 							</p>
 							{toolFilter && (
-								<Button 
-									variant="link" 
-									className="mt-1 h-auto p-0" 
+								<Button
+									variant="link"
+									className="mt-1 h-auto p-0"
 									onClick={() => setToolFilter("")}
 								>
 									Clear search

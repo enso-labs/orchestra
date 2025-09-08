@@ -1,6 +1,10 @@
 import MarkdownCard from "../cards/MarkdownCard";
 
-export default function SearchEngineTool({ selectedToolMessage }: { selectedToolMessage: any }) {
+export default function SearchEngineTool({
+	selectedToolMessage,
+}: {
+	selectedToolMessage: any;
+}) {
 	return (
 		<div className="max-h-[600px] mt-2 p-2rounded-lg overflow-y-auto">
 			<div className="space-y-4">
@@ -34,7 +38,7 @@ export default function SearchEngineTool({ selectedToolMessage }: { selectedTool
 												>
 													{engine}
 												</span>
-											)
+											),
 										)}
 									</div>
 								</div>

@@ -1,8 +1,8 @@
 // import { Calendar, Home, Inbox, Search, Settings, Users, MessageSquare, FileText } from "lucide-react"
-import { 
-	// Sidebar, 
-	// SidebarContent, 
-	SidebarProvider, 
+import {
+	// Sidebar,
+	// SidebarContent,
+	SidebarProvider,
 	SidebarTrigger,
 	// SidebarGroup,
 	// SidebarGroupLabel,
@@ -10,10 +10,10 @@ import {
 	// SidebarMenu,
 	// SidebarMenuItem,
 	// SidebarMenuButton,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 // import { Link, useLocation } from "react-router-dom"
 // import { cn } from "@/lib/utils"
-import { useAppContext } from "@/context/AppContext"
+import { useAppContext } from "@/context/AppContext";
 
 // // Menu items with proper routing and grouping
 // const menuItems = [
@@ -85,13 +85,13 @@ import { useAppContext } from "@/context/AppContext"
 // 								{group.items.map((item) => (
 // 									<SidebarMenuItem key={item.title}>
 // 										<SidebarMenuButton asChild>
-// 											<Link 
+// 											<Link
 // 												to={item.url}
 // 												className={cn(
 // 													"flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
 // 													"hover:bg-accent hover:text-accent-foreground",
-// 													location.pathname === item.url 
-// 														? "bg-accent text-accent-foreground" 
+// 													location.pathname === item.url
+// 														? "bg-accent text-accent-foreground"
 // 														: "text-muted-foreground"
 // 												)}
 // 											>
@@ -110,7 +110,13 @@ import { useAppContext } from "@/context/AppContext"
 // 	)
 // }
 
-function SideDrawerLayout({ children, drawer }: { children: React.ReactNode, drawer: React.ReactNode }) {
+function SideDrawerLayout({
+	children,
+	drawer,
+}: {
+	children: React.ReactNode;
+	drawer: React.ReactNode;
+}) {
 	const { handleMenuOpen } = useAppContext();
 	return (
 		<SidebarProvider>
@@ -118,15 +124,16 @@ function SideDrawerLayout({ children, drawer }: { children: React.ReactNode, dra
 				{drawer}
 				<main>
 					<div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-8">
-						<SidebarTrigger className="fixed top-4 left-4 z-50" onClick={handleMenuOpen} />
+						<SidebarTrigger
+							className="fixed top-4 left-4 z-50"
+							onClick={handleMenuOpen}
+						/>
 					</div>
-					<div>
-						{children}
-					</div>
+					<div>{children}</div>
 				</main>
 			</div>
 		</SidebarProvider>
-	)
+	);
 }
 
 export default SideDrawerLayout;

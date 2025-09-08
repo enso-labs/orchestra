@@ -1,3 +1,3 @@
-import SelectModel from './SelectModel';
+import SelectModel from "./SelectModel";
 
 export default SelectModel;

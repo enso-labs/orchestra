@@ -1,9 +1,8 @@
-
-import Editor from '@monaco-editor/react';
-import { useToolContext } from "@/context/ToolContext"
-import YAML from 'yaml';
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
+import Editor from "@monaco-editor/react";
+import { useToolContext } from "@/hooks/useToolContext";
+import YAML from "yaml";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { debounce } from "lodash";
 
 function FileEditor() {
@@ -12,17 +11,26 @@ function FileEditor() {
 	// Extract tools from swagger paths
 	const getToolsFromPaths = () => {
 		if (!swagger || !swagger.paths) return [];
-		
-		const tools: any[] = [];
-		Object.entries(swagger.paths).forEach(([path, operations]: [string, any]) => {
-			Object.entries(operations).forEach(([method, operation]: [string, any]) => {
+
+		const tools: {
+			path: string;
+			method: string;
+			operationId: string;
+			summary: string;
+			description: string;
+			tags: string[];
+		}[] = [];
+		Object.entries(swagger.paths).forEach(([path, operations]) => {
+			Object.entries(operations).forEach(([method, operation]) => {
 				tools.push({
 					path,
 					method: method.toUpperCase(),
-					operationId: operation.operationId || `${method}_${path.replace(/[^a-zA-Z0-9]/g, '_')}`,
-					summary: operation.summary || '',
-					description: operation.description || '',
-					tags: operation.tags || []
+					operationId:
+						operation.operationId ||
+						`${method}_${path.replace(/[^a-zA-Z0-9]/g, "_")}`,
+					summary: operation.summary || "",
+					description: operation.description || "",
+					tags: operation.tags || [],
 				});
 			});
 		});
@@ -32,18 +40,19 @@ function FileEditor() {
 	const tools = getToolsFromPaths();
 
 	return (
-
 		<>
-			<label className="block mb-2 text-sm font-medium">OpenAPI Specification</label>
-			<Editor 
-				value={swagger ? YAML.stringify(swagger, null, 2) : ''}
+			<label className="block mb-2 text-sm font-medium">
+				OpenAPI Specification
+			</label>
+			<Editor
+				value={swagger ? YAML.stringify(swagger, null, 2) : ""}
 				height="25vh"
-				onChange={debounce((value: any) => {
+				onChange={debounce((value: string | undefined) => {
 					if (value) {
 						try {
 							const parsed = YAML.parse(value);
 							setSwaggerSpec(parsed);
-						} catch (error) {
+						} catch {
 							// Handle YAML parsing errors if needed
 							setSwaggerSpec(value);
 						}
@@ -54,14 +63,16 @@ function FileEditor() {
 				options={{
 					tabSize: 2,
 					insertSpaces: true,
-					fontSize: 12
+					fontSize: 12,
 				}}
 			/>
 
 			{/* Tools Table */}
 			<div className="mt-4 border rounded-lg bg-card">
 				<div className="p-3 border-b bg-muted/50">
-					<h3 className="text-sm font-medium">Generated Tools ({tools.length})</h3>
+					<h3 className="text-sm font-medium">
+						Generated Tools ({tools.length})
+					</h3>
 				</div>
 				<ScrollArea className="h-[150px]">
 					<div className="overflow-x-auto">
@@ -79,11 +90,18 @@ function FileEditor() {
 								{tools.map((tool, index) => (
 									<tr key={index} className="border-b hover:bg-muted/20">
 										<td className="p-2">
-											<Badge 
-												variant={tool.method === 'GET' ? 'secondary' : 
-														tool.method === 'POST' ? 'default' : 
-														tool.method === 'PUT' ? 'outline' : 
-														tool.method === 'DELETE' ? 'destructive' : 'secondary'}
+											<Badge
+												variant={
+													tool.method === "GET"
+														? "secondary"
+														: tool.method === "POST"
+															? "default"
+															: tool.method === "PUT"
+																? "outline"
+																: tool.method === "DELETE"
+																	? "destructive"
+																	: "secondary"
+												}
 												className="text-xs"
 											>
 												{tool.method}
@@ -91,11 +109,17 @@ function FileEditor() {
 										</td>
 										<td className="p-2 font-mono text-xs">{tool.path}</td>
 										<td className="p-2 text-xs">{tool.operationId}</td>
-										<td className="p-2 text-xs">{tool.summary || tool.description}</td>
+										<td className="p-2 text-xs">
+											{tool.summary || tool.description}
+										</td>
 										<td className="p-2">
 											<div className="flex gap-1 flex-wrap">
 												{tool.tags.map((tag: string, tagIndex: number) => (
-													<Badge key={tagIndex} variant="outline" className="text-xs">
+													<Badge
+														key={tagIndex}
+														variant="outline"
+														className="text-xs"
+													>
 														{tag}
 													</Badge>
 												))}
@@ -105,7 +129,10 @@ function FileEditor() {
 								))}
 								{tools.length === 0 && (
 									<tr>
-										<td colSpan={5} className="p-4 text-center text-muted-foreground">
+										<td
+											colSpan={5}
+											className="p-4 text-center text-muted-foreground"
+										>
 											No tools found. Add paths to your API specification.
 										</td>
 									</tr>
@@ -116,7 +143,7 @@ function FileEditor() {
 				</ScrollArea>
 			</div>
 		</>
-	)
+	);
 }
 
 export default FileEditor;

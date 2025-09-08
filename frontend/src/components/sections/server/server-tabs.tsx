@@ -1,4 +1,4 @@
-import { Server, DashboardTabOption } from "@/lib/entities"
+import { Server, DashboardTabOption } from "@/lib/entities";
 import { useNavigate } from "react-router-dom";
 function ServerTabs({
 	// activeTab,
@@ -7,11 +7,11 @@ function ServerTabs({
 	// filteredPublicAgents,
 	// filteredPrivateAgents,
 }: {
-	activeTab: string
-	setActiveTab: (tab: DashboardTabOption) => void
-	filteredMyAgents: Server[]
-	filteredPublicAgents: Server[]
-	filteredPrivateAgents: Server[]
+	activeTab: string;
+	setActiveTab: (tab: DashboardTabOption) => void;
+	filteredMyAgents: Server[];
+	filteredPublicAgents: Server[];
+	filteredPrivateAgents: Server[];
 }) {
 	const navigate = useNavigate();
 
@@ -42,7 +42,7 @@ function ServerTabs({
 			>
 				Servers
 			</button>
-			
+
 			{/* <button
 				className={`px-4 py-2 text-sm font-medium ${
 					activeTab === "chat"
@@ -74,7 +74,7 @@ function ServerTabs({
 				Workflows
 			</button> */}
 		</div>
-	)
+	);
 }
 
 export default ServerTabs;

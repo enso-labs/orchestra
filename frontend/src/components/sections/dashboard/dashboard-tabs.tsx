@@ -1,4 +1,4 @@
-import { Agent, DashboardTabOption } from "@/lib/entities"
+import { Agent, DashboardTabOption } from "@/lib/entities";
 import { useNavigate } from "react-router-dom";
 function DashboardTabs({
 	// activeTab,
@@ -7,11 +7,11 @@ function DashboardTabs({
 	// filteredPublicAgents,
 	// filteredPrivateAgents,
 }: {
-	activeTab: string
-	setActiveTab: (tab: DashboardTabOption) => void
-	filteredMyAgents: Agent[]
-	filteredPublicAgents: Agent[]
-	filteredPrivateAgents: Agent[]
+	activeTab: string;
+	setActiveTab: (tab: DashboardTabOption) => void;
+	filteredMyAgents: Agent[];
+	filteredPublicAgents: Agent[];
+	filteredPrivateAgents: Agent[];
 }) {
 	const navigate = useNavigate();
 
@@ -74,7 +74,7 @@ function DashboardTabs({
 				Workflows
 			</button> */}
 		</div>
-	)
+	);
 }
 
 export default DashboardTabs;

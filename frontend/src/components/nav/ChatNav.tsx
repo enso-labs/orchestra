@@ -1,19 +1,15 @@
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import { ColorModeButton } from '@/components/buttons/ColorModeButton';
+import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { useChatContext } from "@/context/ChatContext";
 import { Menu, Share } from "lucide-react";
 
 interface ChatNavProps {
-  onMenuClick: () => void;
-  onNewChat?: () => void;
+	onMenuClick: () => void;
+	onNewChat?: () => void;
 }
 
-export function ChatNav({ 
-	onMenuClick, 
-	onNewChat 
-}: ChatNavProps) {
-    
+export function ChatNav({ onMenuClick, onNewChat }: ChatNavProps) {
 	const { payload, messages, clearMessages } = useChatContext();
 
 	return (
@@ -21,14 +17,14 @@ export function ChatNav({
 			<div className="mx-auto px-4 sm:px-6 lg:px-4 py-4">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center">
-						<button 
+						<button
 							onClick={onMenuClick}
 							className="inline-flex md:hidden items-center text-muted-foreground hover:text-foreground transition-colors mr-4"
 						>
 							<Menu className="h-5 w-5" />
 						</button>
 					</div>
-						
+
 					<div className="flex items-center gap-2">
 						<Button
 							variant="outline"
@@ -36,20 +32,21 @@ export function ChatNav({
 							onClick={() => {
 								const { threadId } = payload;
 								if (threadId) {
-								const shareUrl = `${window.location.origin}/share/${threadId}`;
-								navigator.clipboard.writeText(shareUrl)
-									.then(() => {
-										alert(`Copied ${shareUrl}`);
-									})
-									.catch(err => {
-										console.error('Failed to copy URL: ', err);
-									});
+									const shareUrl = `${window.location.origin}/share/${threadId}`;
+									navigator.clipboard
+										.writeText(shareUrl)
+										.then(() => {
+											alert(`Copied ${shareUrl}`);
+										})
+										.catch((err) => {
+											console.error("Failed to copy URL: ", err);
+										});
 								}
 							}}
 							className="h-9 w-9"
 							title="Share Thread"
 						>
-								<Share className="h-4 w-4" />
+							<Share className="h-4 w-4" />
 						</Button>
 						{messages.length > 0 && (
 							<Button
@@ -67,5 +64,5 @@ export function ChatNav({
 				</div>
 			</div>
 		</header>
-	)
+	);
 }
