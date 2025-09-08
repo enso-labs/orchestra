@@ -19,7 +19,7 @@ export type ChatContextType = {
 	sseHandler: (
 		payload: any,
 		messages: any[],
-		stream_mode: StreamMode | Array<StreamMode>
+		stream_mode: StreamMode | Array<StreamMode>,
 	) => void;
 	clearContent: () => void;
 	messages: any[];
@@ -129,14 +129,18 @@ export default function useChat(): ChatContextType {
 	};
 
 	const clearMessages = (index?: number) => {
-		if (typeof index === "number" && index >= 0 && index < in_mem_messages.length) {
+		if (
+			typeof index === "number" &&
+			index >= 0 &&
+			index < in_mem_messages.length
+		) {
 			in_mem_messages = in_mem_messages.slice(0, index);
 		} else {
 			in_mem_messages = [];
 			resetMetadata();
 		}
 		setMessages(in_mem_messages);
-	}
+	};
 
 	const handleMessages = (payload: any, history: any[]) => {
 		const response = payload[0];
@@ -153,7 +157,7 @@ export default function useChat(): ChatContextType {
 			setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
 			toolCallChunkRef.current += response.tool_call_chunks[0].args;
 			const existingIndex = history.findIndex(
-				(msg: any) => msg.id === response.id
+				(msg: any) => msg.id === response.id,
 			);
 
 			// If the message already exists, update it
@@ -194,7 +198,7 @@ export default function useChat(): ChatContextType {
 			(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
 		) {
 			const existingIndex = history.findIndex(
-				(msg: any) => msg.id === response.id
+				(msg: any) => msg.id === response.id,
 			);
 			if (existingIndex !== -1) {
 				// Always append to the related message content
@@ -211,7 +215,7 @@ export default function useChat(): ChatContextType {
 				const updateMessage = {
 					...response,
 					role: response.type === "tool" ? "tool" : "assistant",
-				}
+				};
 				if (metadata.ls_provider && metadata.ls_model_name) {
 					updateMessage.model = `${metadata.ls_provider}:${metadata.ls_model_name}`;
 				}
@@ -234,7 +238,7 @@ export default function useChat(): ChatContextType {
 	function sseHandler(
 		payload: any,
 		messages: any[],
-		stream_mode: StreamMode | Array<StreamMode> = "messages"
+		stream_mode: StreamMode | Array<StreamMode> = "messages",
 	) {
 		if (stream_mode === "messages" || stream_mode.includes("messages")) {
 			console.log("messages: ", payload);

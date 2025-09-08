@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import TwoColumnLayout from "@/layouts/TwoColumnLayout";
 import LeftPanelLayout from "@/layouts/LeftPanelLayout";
 import { ServerForm } from "@/components/ServerConstruct/ServerForm";
-import { highlight, languages } from 'prismjs';
+import { highlight, languages } from "prismjs";
 import Editor from "react-simple-code-editor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToolContext } from "@/context/ToolContext";		
+import { useToolContext } from "@/hooks/useToolContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { Server } from "@/lib/entities";
-import { deleteServer, getServer, updateServer } from "@/lib/services/serverService";
+import {
+	deleteServer,
+	getServer,
+	updateServer,
+} from "@/lib/services/serverService";
 import { base64Compare } from "@/lib/utils/format";
 import { validateServer } from "@/validations/validate-server";
 
@@ -36,8 +40,6 @@ function LeftPanel({
 	onDelete?: () => void;
 	onView?: () => void;
 }) {
-
-	
 	return (
 		<LeftPanelLayout
 			title={title || "New Server"}
@@ -48,18 +50,14 @@ function LeftPanel({
 			onDelete={onDelete}
 			onView={onView}
 		>
-			
 			{error && (
 				<div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-600">
 					{error}
 				</div>
 			)}
-			<ServerForm
-				onSubmit={handleSubmit}
-				onChange={handleFormChange}
-			/>
+			<ServerForm onSubmit={handleSubmit} onChange={handleFormChange} />
 		</LeftPanelLayout>
-	)
+	);
 }
 
 function ServerEdit() {
@@ -83,35 +81,38 @@ function ServerEdit() {
 	} = useToolContext();
 
 	const handleSubmit = async (data: Server) => {
-    try {
+		try {
 			setLoading(true);
-      const validationResult = validateServer(data);
-      if (validationResult) {
-        setError(validationResult);
-        return;
-      }
-      const response = await updateServer(serverId || formData.id, data);
+			const validationResult = validateServer(data);
+			if (validationResult) {
+				setError(validationResult);
+				return;
+			}
+			const response = await updateServer(serverId || formData.id, data);
 			alert(`Server updated: ${response.data.slug}`);
 			// Refresh the current page to show updated data
 			window.location.reload();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update server');
-    } finally {
+		} catch (err: any) {
+			setError(err.message || "Failed to update server");
+		} finally {
 			setLoading(false);
 		}
-  }
+	};
 
 	useEffect(() => {
 		const fetchServer = async () => {
 			const response = await getServer(serverId || formData.id);
 			setFormData(response.data);
 			setOriginalFormData(response.data);
-		}
+		};
 		fetchServer();
 	}, [serverId]);
 
 	useEffect(() => {
-		const matching = base64Compare(JSON.stringify(formData), JSON.stringify(originalFormData));
+		const matching = base64Compare(
+			JSON.stringify(formData),
+			JSON.stringify(originalFormData),
+		);
 		setDataMatch(matching);
 	}, [formData]);
 
@@ -119,14 +120,14 @@ function ServerEdit() {
 	useJsonValidationEffect();
 	useFormHandlerEffect();
 
-  return (
-    <TwoColumnLayout
+	return (
+		<TwoColumnLayout
 			left={{
 				component: (
-					<LeftPanel 
-						onCreate={() => handleSubmit(formData)} 
+					<LeftPanel
+						onCreate={() => handleSubmit(formData)}
 						loading={loading}
-						title={formData.name} 
+						title={formData.name}
 						status={dataMatch ? "✅ Published" : "🔴 Draft (unsaved changes)"}
 						error={error}
 						formData={formData}
@@ -134,10 +135,12 @@ function ServerEdit() {
 						handleFormChange={handleFormChange}
 						disabled={dataMatch}
 						onDelete={async () => {
-							const confirmed = window.confirm('Are you sure you want to delete this server? This action cannot be undone.');
+							const confirmed = window.confirm(
+								"Are you sure you want to delete this server? This action cannot be undone.",
+							);
 							if (confirmed) {
 								await deleteServer(serverId || formData.id);
-								navigate('/servers');
+								navigate("/servers");
 							}
 						}}
 						onView={() => navigate(`/server/${formData.slug}`)}
@@ -159,16 +162,16 @@ function ServerEdit() {
 						)}
 						<Editor
 							value={code}
-							onValueChange={code => setCode(code)}
-							highlight={code => highlight(code, languages.json, 'json')}
+							onValueChange={(code) => setCode(code)}
+							highlight={(code) => highlight(code, languages.json, "json")}
 							padding={16}
 							placeholder={code}
 							// className={`${styles.editor} ${!isJsonValid ? 'bg-red-50/10' : ''}`}
 							style={{
 								fontFamily: '"JetBrains Mono", monospace',
 								fontSize: 14,
-								borderRadius: '0.375rem',
-								minHeight: '100%',
+								borderRadius: "0.375rem",
+								minHeight: "100%",
 							}}
 						/>
 					</>
@@ -178,7 +181,7 @@ function ServerEdit() {
 			}}
 			direction="horizontal"
 		/>
-  );
+	);
 }
 
 export default ServerEdit;

@@ -6,11 +6,12 @@ export const ServerSchema = z.object({
 	// Add other fields as needed
 });
 
-
 export const validateServer = (server: Server) => {
 	const validationResult = ServerSchema.safeParse(server);
 	if (!validationResult.success) {
-		const errorMessage = validationResult.error.errors.map((err: { path: any; message: any; }) => `${err.path}: ${err.message}`).join(', ');
+		const errorMessage = validationResult.error.errors
+			.map((err: { path: any; message: any }) => `${err.path}: ${err.message}`)
+			.join(", ");
 		return errorMessage;
 	}
-}		
+};

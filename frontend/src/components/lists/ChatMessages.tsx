@@ -9,16 +9,13 @@ import { cn } from "@/lib/utils";
 import { useChatContext } from "@/context/ChatContext";
 import SearchEngineTool from "../tools/SearchEngine";
 
-
-function ToolAction({ message }: { message: any}) {
-
+function ToolAction({ message }: { message: any }) {
 	if (["search_engine", "web_search"].includes(message.name)) {
 		return <SearchEngineTool selectedToolMessage={message} />;
 	}
 
 	return <MarkdownCard content={message.content} />;
 }
-
 
 export function Message({ message }: { message: any }) {
 	const ICON_SIZE = 4;
@@ -43,7 +40,7 @@ export function Message({ message }: { message: any }) {
 									onClick={(e) => {
 										e.stopPropagation();
 										clearMessages(
-											messages.findIndex((m: any) => m.id === message.id)
+											messages.findIndex((m: any) => m.id === message.id),
 										);
 										handleSubmit(message.content);
 										setIsEditing(false);
@@ -85,7 +82,7 @@ export function Message({ message }: { message: any }) {
 								"text-xs px-2 py-0.5 rounded-full",
 								message.status === "success"
 									? "bg-green-500/20 text-green-500"
-									: "bg-red-500/20 text-red-500"
+									: "bg-red-500/20 text-red-500",
 							)}
 						>
 							{message.name}
@@ -102,7 +99,6 @@ export function Message({ message }: { message: any }) {
 	}
 
 	if (["ai", "assistant"].includes(message.role)) {
-		
 		return (
 			<div className="group">
 				<div className="flex justify-start">
@@ -121,7 +117,7 @@ export function Message({ message }: { message: any }) {
 								}}
 							/>
 						</button>
-						
+
 						<button className="text-sm text-muted-foreground">
 							{message.model}
 						</button>
@@ -137,7 +133,7 @@ export function Message({ message }: { message: any }) {
 				<DefaultTool selectedToolMessage={message} />
 			</div>
 		);
-	};
+	}
 
 	return <p>{message.content || JSON.stringify(message.input)}</p>;
 }
@@ -162,7 +158,9 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 	return (
 		<div className="flex flex-col gap-2">
 			<ScrollArea className="flex-1 h-0">
-				{messages.length > 0 ? messages.map((message: any) => <Message message={message} />) : (
+				{messages.length > 0 ? (
+					messages.map((message: any) => <Message message={message} />)
+				) : (
 					<div className="pt-4 text-center text-muted-foreground">
 						<p>No messages yet</p>
 						<p className="text-sm mt-2">

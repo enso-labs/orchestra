@@ -1,16 +1,16 @@
-import NoAuthLayout from '../layouts/NoAuthLayout';
-import { ColorModeButton } from '@/components/buttons/ColorModeButton';
-import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useChatContext } from '@/context/ChatContext';
-import HomeSection from '@/components/sections/home';
-import SelectModel from '@/components/selects/SelectModel';
+import NoAuthLayout from "../layouts/NoAuthLayout";
+import { ColorModeButton } from "@/components/buttons/ColorModeButton";
+import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useChatContext } from "@/context/ChatContext";
+import HomeSection from "@/components/sections/home";
+import SelectModel from "@/components/selects/SelectModel";
 
 export default function Home() {
 	const { setPayload, useFetchModelsEffect } = useChatContext();
 
 	useEffect(() => {
-		const a2a = localStorage.getItem('a2a');
+		const a2a = localStorage.getItem("a2a");
 		if (a2a) {
 			setPayload((prev: any) => ({ ...prev, a2a: JSON.parse(a2a) }));
 		}
@@ -23,8 +23,8 @@ export default function Home() {
 		<NoAuthLayout>
 			<main className="flex-1 flex flex-col items-center justify-center bg-background p-6">
 				<div className="absolute top-4 left-4">
-					<Link 
-						to="/login" 
+					<Link
+						to="/login"
 						className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm font-medium"
 					>
 						Login

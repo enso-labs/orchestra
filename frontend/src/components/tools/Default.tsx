@@ -1,8 +1,8 @@
-import JsonView from "@uiw/react-json-view"
-import { githubDarkTheme } from "@uiw/react-json-view/githubDark"
+import JsonView from "@uiw/react-json-view";
+import { githubDarkTheme } from "@uiw/react-json-view/githubDark";
 
 interface Props {
-	selectedToolMessage: any
+	selectedToolMessage: any;
 }
 
 export default function DefaultTool({ selectedToolMessage }: Props) {
@@ -16,7 +16,8 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 					<div className="max-h-[600px] mt-2 p-2 bg-muted rounded-lg overflow-x-auto">
 						{(() => {
 							try {
-								const parsedJSON = typeof input === "object" ? input : JSON.parse(input);
+								const parsedJSON =
+									typeof input === "object" ? input : JSON.parse(input);
 								return (
 									<JsonView
 										value={parsedJSON}

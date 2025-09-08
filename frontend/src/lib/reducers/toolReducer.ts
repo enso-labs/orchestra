@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useReducer } from "react";
 
 // Types
 type ToolState = {
@@ -15,12 +15,12 @@ type ToolState = {
 	isAssistantOpen: boolean;
 	selectedToolMessage: any | null;
 	swagger: any | null;
-}
+};
 
 type ToolAction = {
 	type: string;
 	payload?: any;
-}
+};
 
 // Constants
 // const defaultMCP = {
@@ -35,11 +35,11 @@ type ToolAction = {
 // }
 
 const defaultMCP = {
-  "enso_basic": {
-    "transport": "sse",
-    "url": "https://mcp.enso.sh/sse"
-  }
-}
+	enso_basic: {
+		transport: "sse",
+		url: "https://mcp.enso.sh/sse",
+	},
+};
 
 export const INIT_TOOL_STATE: ToolState = {
 	toolFilter: "",
@@ -49,44 +49,44 @@ export const INIT_TOOL_STATE: ToolState = {
 	testFormValues: {},
 	isAddingMCP: false,
 	mcpCode: JSON.stringify(defaultMCP, null, 2),
-	mcpError: '',
+	mcpError: "",
 	hasSavedMCP: false,
 	hasSavedA2A: false,
 	isAssistantOpen: false,
 	selectedToolMessage: null,
 	swagger: null,
-}
+};
 
 // Reducer
 export const toolReducer = (state: ToolState, action: ToolAction) => {
 	switch (action.type) {
-		case 'SET_IS_ASSISTANT_OPEN':
+		case "SET_IS_ASSISTANT_OPEN":
 			return { ...state, isAssistantOpen: action.payload };
-		case 'SET_SELECTED_TOOL_MESSAGE':
+		case "SET_SELECTED_TOOL_MESSAGE":
 			return { ...state, selectedToolMessage: action.payload };
-		case 'SET_TOOL_FILTER':
+		case "SET_TOOL_FILTER":
 			return { ...state, toolFilter: action.payload };
-		case 'SET_EXPANDED':
+		case "SET_EXPANDED":
 			return { ...state, expanded: action.payload };
-		case 'SET_GROUP_BY_CATEGORY':
+		case "SET_GROUP_BY_CATEGORY":
 			return { ...state, groupByCategory: action.payload };
-		case 'SET_TESTING_TOOL':
+		case "SET_TESTING_TOOL":
 			return { ...state, testingTool: action.payload };
-		case 'SET_TEST_FORM_VALUES':
+		case "SET_TEST_FORM_VALUES":
 			return { ...state, testFormValues: action.payload };
-		case 'SET_IS_ADDING_MCP':
+		case "SET_IS_ADDING_MCP":
 			return { ...state, isAddingMCP: action.payload };
-		case 'SET_HAS_SAVED_A2A':
+		case "SET_HAS_SAVED_A2A":
 			return { ...state, hasSavedA2A: action.payload };
-		case 'SET_MCP_CODE':
+		case "SET_MCP_CODE":
 			return { ...state, mcpCode: action.payload };
-		case 'SET_MCP_ERROR':
+		case "SET_MCP_ERROR":
 			return { ...state, mcpError: action.payload };
-		case 'SET_HAS_SAVED_MCP':
+		case "SET_HAS_SAVED_MCP":
 			return { ...state, hasSavedMCP: action.payload };
-		case 'SET_SWAGGER_SPEC':
+		case "SET_SWAGGER_SPEC":
 			return { ...state, swagger: action.payload };
-		case 'RESET_STATE':
+		case "RESET_STATE":
 			return INIT_TOOL_STATE;
 		default:
 			return state;
@@ -98,52 +98,50 @@ export function useToolReducer() {
 	const [state, dispatch] = useReducer(toolReducer, INIT_TOOL_STATE);
 
 	const actions = {
-		
-		setToolFilter: (filter: string) => 
-			dispatch({ type: 'SET_TOOL_FILTER', payload: filter }),
-		
-		setExpanded: (expanded: Record<string, boolean>) => 
-			dispatch({ type: 'SET_EXPANDED', payload: expanded }),
-		
-		setGroupByCategory: (value: boolean) => 
-			dispatch({ type: 'SET_GROUP_BY_CATEGORY', payload: value }),
-		
-		setTestingTool: (tool: any) => 
-			dispatch({ type: 'SET_TESTING_TOOL', payload: tool }),
-		
-		setTestFormValues: (values: Record<string, any>) => 
-			dispatch({ type: 'SET_TEST_FORM_VALUES', payload: values }),
-		
-		setIsAddingMCP: (value: boolean) => 
-			dispatch({ type: 'SET_IS_ADDING_MCP', payload: value }),
-		
-		setHasSavedA2A: (value: boolean) => 
-			dispatch({ type: 'SET_HAS_SAVED_A2A', payload: value }),
-		
-		setMcpCode: (code: string) => 
-			dispatch({ type: 'SET_MCP_CODE', payload: code }),
-		
-		setMcpError: (error: string) => 
-			dispatch({ type: 'SET_MCP_ERROR', payload: error }),
-		
-		setHasSavedMCP: (value: boolean) => 
-			dispatch({ type: 'SET_HAS_SAVED_MCP', payload: value }),
-		
-		setIsAssistantOpen: (value: boolean) => 
-			dispatch({ type: 'SET_IS_ASSISTANT_OPEN', payload: value }),
-		
-		setSelectedToolMessage: (message: any) => 
-			dispatch({ type: 'SET_SELECTED_TOOL_MESSAGE', payload: message }),
-		
-		setSwaggerSpec: (spec: any) => 
-			dispatch({ type: 'SET_SWAGGER_SPEC', payload: spec }),
-		
-		resetState: () => 
-			dispatch({ type: 'RESET_STATE' })
+		setToolFilter: (filter: string) =>
+			dispatch({ type: "SET_TOOL_FILTER", payload: filter }),
+
+		setExpanded: (expanded: Record<string, boolean>) =>
+			dispatch({ type: "SET_EXPANDED", payload: expanded }),
+
+		setGroupByCategory: (value: boolean) =>
+			dispatch({ type: "SET_GROUP_BY_CATEGORY", payload: value }),
+
+		setTestingTool: (tool: any) =>
+			dispatch({ type: "SET_TESTING_TOOL", payload: tool }),
+
+		setTestFormValues: (values: Record<string, any>) =>
+			dispatch({ type: "SET_TEST_FORM_VALUES", payload: values }),
+
+		setIsAddingMCP: (value: boolean) =>
+			dispatch({ type: "SET_IS_ADDING_MCP", payload: value }),
+
+		setHasSavedA2A: (value: boolean) =>
+			dispatch({ type: "SET_HAS_SAVED_A2A", payload: value }),
+
+		setMcpCode: (code: string) =>
+			dispatch({ type: "SET_MCP_CODE", payload: code }),
+
+		setMcpError: (error: string) =>
+			dispatch({ type: "SET_MCP_ERROR", payload: error }),
+
+		setHasSavedMCP: (value: boolean) =>
+			dispatch({ type: "SET_HAS_SAVED_MCP", payload: value }),
+
+		setIsAssistantOpen: (value: boolean) =>
+			dispatch({ type: "SET_IS_ASSISTANT_OPEN", payload: value }),
+
+		setSelectedToolMessage: (message: any) =>
+			dispatch({ type: "SET_SELECTED_TOOL_MESSAGE", payload: message }),
+
+		setSwaggerSpec: (spec: any) =>
+			dispatch({ type: "SET_SWAGGER_SPEC", payload: spec }),
+
+		resetState: () => dispatch({ type: "RESET_STATE" }),
 	};
 
 	return {
 		state,
-		actions
+		actions,
 	};
 }

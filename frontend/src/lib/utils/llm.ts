@@ -1,8 +1,6 @@
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/config/instruction";
 import { ThreadPayload } from "@/lib/entities";
 
-
-
 // const API_TOOL = {
 // 	"description": "Airtable Tools",
 // 	"headers": {
@@ -175,7 +173,7 @@ import { ThreadPayload } from "@/lib/entities";
 // }
 
 export function constructSystemPrompt(systemPrompt: string) {
-  return `${systemPrompt}
+	return `${systemPrompt}
 ---
 Current Date and Time: ${new Date().toLocaleString()}
 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
@@ -184,18 +182,21 @@ Language: ${navigator.language}
 }
 
 export const constructPayload = (payload: ThreadPayload, agentId?: string) => {
-
 	// payload.tools?.push(API_TOOL);
 
-	return agentId ? {
-		query: payload.query,
-	} : {
-		...payload,
-		// collection: {
-		// 	id: "c904646f-c872-43ba-96d6-05492efc6015",
-		// 	limit: 10,
-		// 	filter: {}
-		// },
-		system: payload.system ? constructSystemPrompt(payload.system) : DEFAULT_SYSTEM_PROMPT,
-	}
-}
+	return agentId
+		? {
+				query: payload.query,
+			}
+		: {
+				...payload,
+				// collection: {
+				// 	id: "c904646f-c872-43ba-96d6-05492efc6015",
+				// 	limit: 10,
+				// 	filter: {}
+				// },
+				system: payload.system
+					? constructSystemPrompt(payload.system)
+					: DEFAULT_SYSTEM_PROMPT,
+			};
+};

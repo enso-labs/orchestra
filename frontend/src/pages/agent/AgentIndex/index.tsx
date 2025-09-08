@@ -1,3 +1,3 @@
-import AgentIndex from './agent-index';
+import AgentIndex from "./agent-index";
 
 export default AgentIndex;

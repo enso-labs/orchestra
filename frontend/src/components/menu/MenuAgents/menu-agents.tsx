@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useAgentContext } from "@/context/AgentContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { Check, ChevronsUpDown, Search, Bot, X } from "lucide-react";
 import { Agent } from "@/lib/entities";
 import { cn } from "@/lib/utils";
@@ -11,7 +15,8 @@ import useAppHook from "@/hooks/useAppHook";
 
 function MenuAgents() {
 	const { setPayload } = useChatContext();
-	const { agents, handleSelectAgent, setSelectedAgent, selectedAgent } = useAgentContext();
+	const { agents, handleSelectAgent, setSelectedAgent, selectedAgent } =
+		useAgentContext();
 	const { isMobile } = useAppHook();
 	const [open, setOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -29,7 +34,7 @@ function MenuAgents() {
 		setSelectedAgent(null);
 		setPayload((prev: any) => ({
 			...prev,
-			agentId: ''
+			agentId: "",
 		}));
 	};
 
@@ -39,7 +44,7 @@ function MenuAgents() {
 		setSearchTerm("");
 		setPayload((prev: any) => ({
 			...prev,
-			agentId: ''
+			agentId: "",
 		}));
 	};
 
@@ -58,16 +63,21 @@ function MenuAgents() {
 	};
 
 	// Filter agents based on search term
-	const filteredAgents = agents?.filter((agent: Agent) =>
-		agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-		agent.description?.toLowerCase().includes(searchTerm.toLowerCase())
-	) || [];
+	const filteredAgents =
+		agents?.filter(
+			(agent: Agent) =>
+				agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				agent.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+		) || [];
 
 	// Shared content component for both popover and drawer
 	const AgentSelectorContent = () => (
 		<div className="flex flex-col">
 			{/* Search Input */}
-			<div className="flex items-center border-b px-3 py-2" onClick={handleSearchClick}>
+			<div
+				className="flex items-center border-b px-3 py-2"
+				onClick={handleSearchClick}
+			>
 				<Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
 				<Input
 					placeholder="Search agents..."
@@ -75,7 +85,9 @@ function MenuAgents() {
 					onChange={handleSearchChange}
 					onClick={handleSearchClick}
 					onKeyDown={handleSearchKeyDown}
-					onFocus={(e: React.FocusEvent<HTMLInputElement>) => handleSearchClick(e as unknown as React.MouseEvent)}
+					onFocus={(e: React.FocusEvent<HTMLInputElement>) =>
+						handleSearchClick(e as unknown as React.MouseEvent)
+					}
 					className="border-0 px-0 py-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
 				/>
 			</div>
@@ -94,7 +106,9 @@ function MenuAgents() {
 			)}
 
 			{/* Agents List */}
-			<div className={`${isMobile() ? 'max-h-[60vh]' : 'max-h-[200px]'} overflow-auto`}>
+			<div
+				className={`${isMobile() ? "max-h-[60vh]" : "max-h-[200px]"} overflow-auto`}
+			>
 				{filteredAgents.length > 0 ? (
 					<div className="p-1">
 						{filteredAgents.map((agent: Agent) => (
@@ -102,7 +116,8 @@ function MenuAgents() {
 								key={agent.id}
 								className={cn(
 									"flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors text-sm",
-									selectedAgent?.id === agent.id && "bg-accent text-accent-foreground"
+									selectedAgent?.id === agent.id &&
+										"bg-accent text-accent-foreground",
 								)}
 								onClick={() => handleAgentSelect(agent)}
 							>
@@ -124,7 +139,9 @@ function MenuAgents() {
 								<Check
 									className={cn(
 										"h-4 w-4 flex-shrink-0",
-										selectedAgent?.id === agent.id ? "opacity-100" : "opacity-0"
+										selectedAgent?.id === agent.id
+											? "opacity-100"
+											: "opacity-0",
 									)}
 								/>
 							</div>
@@ -175,13 +192,13 @@ function MenuAgents() {
 					{open && (
 						<>
 							{/* Overlay */}
-							<div 
+							<div
 								className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
 								onClick={() => setOpen(false)}
 							/>
-							
+
 							{/* Drawer */}
-							<div 
+							<div
 								className="fixed inset-x-0 bottom-0 z-50 bg-background border-t border-border rounded-t-2xl transform transition-transform duration-300 ease-in-out max-h-[80vh]"
 								onClick={(e) => e.stopPropagation()}
 							>
@@ -197,7 +214,7 @@ function MenuAgents() {
 											<X className="h-4 w-4" />
 										</Button>
 									</div>
-									
+
 									{/* Content */}
 									<div className="flex-1 overflow-hidden">
 										<AgentSelectorContent />
@@ -237,7 +254,10 @@ function MenuAgents() {
 							</div>
 						</Button>
 					</PopoverTrigger>
-					<PopoverContent className="w-full p-0 rounded-xl border shadow-lg" align="start">
+					<PopoverContent
+						className="w-full p-0 rounded-xl border shadow-lg"
+						align="start"
+					>
 						<AgentSelectorContent />
 					</PopoverContent>
 				</Popover>

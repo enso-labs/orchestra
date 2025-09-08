@@ -1,10 +1,10 @@
 import TwoColumnLayout from "@/layouts/TwoColumnLayout";
 import LeftPanelLayout from "@/layouts/LeftPanelLayout";
 import { ServerForm } from "@/components/ServerConstruct/ServerForm";
-import { highlight, languages } from 'prismjs';
+import { highlight, languages } from "prismjs";
 import Editor from "react-simple-code-editor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToolContext } from "@/context/ToolContext";		
+import { useToolContext } from "@/hooks/useToolContext";
 import { useNavigate } from "react-router-dom";
 import { Server } from "@/lib/entities";
 import { createServer } from "@/lib/services/serverService";
@@ -30,8 +30,6 @@ function LeftPanel({
 	title?: string;
 	status?: string;
 }) {
-
-	
 	return (
 		<LeftPanelLayout
 			title={title}
@@ -39,18 +37,14 @@ function LeftPanel({
 			onCreate={onCreate}
 			loading={loading}
 		>
-			
 			{error && (
 				<div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-600">
 					{error}
 				</div>
 			)}
-			<ServerForm
-				onSubmit={handleSubmit}
-				onChange={handleFormChange}
-			/>
+			<ServerForm onSubmit={handleSubmit} onChange={handleFormChange} />
 		</LeftPanelLayout>
-	)
+	);
 }
 
 function ServerCreate() {
@@ -75,33 +69,33 @@ function ServerCreate() {
 	useEffect(() => {
 		if (error) {
 			const timer = setTimeout(() => {
-				setError('');
+				setError("");
 			}, 3000);
-			
+
 			// Clean up the timer when component unmounts or error changes
 			return () => clearTimeout(timer);
 		}
 	}, [error, setError]);
 
 	const handleSubmit = async (data: Server) => {
-    try {
-      const validationResult = validateServer(data);
-      if (validationResult) {
-        setError(validationResult);
-        return;
-      }
-      
-      const response = await createServer(data);
-      console.log('Server created:', response);
+		try {
+			const validationResult = validateServer(data);
+			if (validationResult) {
+				setError(validationResult);
+				return;
+			}
+
+			const response = await createServer(data);
+			console.log("Server created:", response);
 			// resetFormData();
 			alert(`Server created: ${response.data.slug}`);
 			navigate(`/servers`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create server');
-    } finally {
+		} catch (err: any) {
+			setError(err.message || "Failed to create server");
+		} finally {
 			setLoading(false);
 		}
-  }
+	};
 
 	useEffect(() => {
 		setFormData(INIT_SERVER_STATE.formData);
@@ -111,15 +105,15 @@ function ServerCreate() {
 	useJsonValidationEffect();
 	useFormHandlerEffect();
 
-  return (
-    <TwoColumnLayout
+	return (
+		<TwoColumnLayout
 			left={{
 				component: (
-					<LeftPanel 
-						onCreate={() => handleSubmit(formData)} 
-						loading={loading} 
-						title="New Server" 
-						status="Draft" 
+					<LeftPanel
+						onCreate={() => handleSubmit(formData)}
+						loading={loading}
+						title="New Server"
+						status="Draft"
 						error={error}
 						formData={formData}
 						handleSubmit={handleSubmit}
@@ -142,16 +136,16 @@ function ServerCreate() {
 						)}
 						<Editor
 							value={code}
-							onValueChange={code => setCode(code)}
-							highlight={code => highlight(code, languages.json, 'json')}
+							onValueChange={(code) => setCode(code)}
+							highlight={(code) => highlight(code, languages.json, "json")}
 							padding={16}
 							placeholder={code}
 							// className={`${styles.editor} ${!isJsonValid ? 'bg-red-50/10' : ''}`}
 							style={{
 								fontFamily: '"JetBrains Mono", monospace',
 								fontSize: 14,
-								borderRadius: '0.375rem',
-								minHeight: '100%',
+								borderRadius: "0.375rem",
+								minHeight: "100%",
 							}}
 						/>
 					</>
@@ -161,7 +155,7 @@ function ServerCreate() {
 			}}
 			direction="horizontal"
 		/>
-  );
+	);
 }
 
 export default ServerCreate;

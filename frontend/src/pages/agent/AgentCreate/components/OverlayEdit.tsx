@@ -21,17 +21,17 @@ function OverlayEdit() {
 			<div className="flex justify-between items-center mb-4">
 				<h2 className="text-lg font-medium">Edit System Message</h2>
 				<div className="flex items-center gap-2">
-					<Button 
-						variant="ghost" 
-						size="icon" 
+					<Button
+						variant="ghost"
+						size="icon"
 						onClick={() => setShowPromptGenerator(!showPromptGenerator)}
 						title="Generate system prompt"
 					>
 						<Wand2 className="h-5 w-5" />
 					</Button>
-					<Button 
-						variant="ghost" 
-						size="icon" 
+					<Button
+						variant="ghost"
+						size="icon"
 						onClick={() => setIsFullscreen(false)}
 					>
 						<X className="h-5 w-5" />
@@ -42,7 +42,9 @@ function OverlayEdit() {
 			{showPromptGenerator && (
 				<div className="bg-background border rounded-md shadow-md p-4 mb-4">
 					<div className="flex flex-col gap-3">
-						<div className="text-sm font-medium">Describe what you want the AI to do</div>
+						<div className="text-sm font-medium">
+							Describe what you want the AI to do
+						</div>
 						<input
 							type="text"
 							className="w-full p-2 border rounded text-sm"
@@ -52,24 +54,24 @@ function OverlayEdit() {
 							autoFocus
 						/>
 						<div className="flex justify-end gap-2">
-							<Button 
-								variant="outline" 
-								size="sm" 
+							<Button
+								variant="outline"
+								size="sm"
 								onClick={() => setShowPromptGenerator(false)}
 							>
 								Cancel
 							</Button>
-							<Button 
-								variant="outline" 
-								size="sm" 
-								onClick={() => handleGeneratePrompt('alter')}
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => handleGeneratePrompt("alter")}
 								disabled={isGenerating || !promptDescription.trim()}
 							>
 								{isGenerating ? "Processing..." : "Alter"}
 							</Button>
-							<Button 
-								size="sm" 
-								onClick={() => handleGeneratePrompt('replace')}
+							<Button
+								size="sm"
+								onClick={() => handleGeneratePrompt("replace")}
 								disabled={isGenerating || !promptDescription.trim()}
 							>
 								{isGenerating ? "Processing..." : "Replace"}
@@ -84,12 +86,12 @@ function OverlayEdit() {
 				className="flex-1 resize-none h-full"
 				value={payload.system}
 				onChange={(e) => {
-					setPayload({ ...payload, system: e.target.value })
+					setPayload({ ...payload, system: e.target.value });
 				}}
 				autoFocus={!showPromptGenerator}
 			/>
 		</div>
-	)
+	);
 }
 
 export default OverlayEdit;
