@@ -12,18 +12,17 @@ from langchain_core.runnables.config import RunnableConfig
 from deepagents import create_deep_agent, SubAgent
 
 
-from src.schemas.models import ProtectedUser
 from src.services.memory import memory_service
 from src.services.memory import in_memory_store
 from src.services.checkpoint import in_memory_checkpointer
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest, LLMStreamRequest
-from src.flows.xml_agent import get_weather, get_stock_price
 from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
 from src.utils.format import get_time
-from src.tools.search import web_search, web_scrape
+from src.tools import TOOL_LIBRARY
+from src.schemas.contexts import ContextSchema
 
 
 async def add_memories_to_system():
@@ -86,28 +85,6 @@ def graph_builder(
 ################################################################################
 ### Construct Agent
 ################################################################################
-@dataclass
-class ContextSchema:
-    user: ProtectedUser
-
-
-def get_stock_price(symbol: str) -> str:
-    """Get the stock price of a given symbol"""
-    import random
-
-    return f"The stock price of {symbol} is {random.randint(100, 200)}"
-
-
-def get_weather(location: str) -> str:
-    """Get the weather in a given location"""
-    import random
-
-    runtime = get_runtime(ContextSchema)
-    user_id = runtime.context.user.id
-    logger.info(f"user_id: {user_id}")
-    return f"The weather in {location} is sunny and {random.randint(60, 80)} degrees"
-
-
 async def construct_agent(params: LLMRequest | LLMStreamRequest):
     # Add config if it exists
     config = (
@@ -118,7 +95,7 @@ async def construct_agent(params: LLMRequest | LLMStreamRequest):
         else None
     )
 
-    tools = [get_weather, get_stock_price, web_search, web_scrape]
+    tools = TOOL_LIBRARY
     prompt = params.system
     if config:
         ## Construct the prompt

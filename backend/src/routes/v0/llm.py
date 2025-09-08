@@ -13,7 +13,6 @@ from fastapi import (
     UploadFile,
 )
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import AIMessage
 
 from src.schemas.models import ProtectedUser
 from src.schemas.entities import Answer, ChatInput
@@ -23,7 +22,6 @@ from src.constants.mock import MockResponse
 from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.stream import convert_messages
-from src.services.checkpoint import checkpoint_service
 from src.utils.llm import audio_to_text
 from src.flows import construct_agent
 
@@ -74,9 +72,6 @@ async def llm_stream(
         agent = await construct_agent(params)
 
         async def event_generator():
-            """
-            Async generator yielding LLM output as SSE data.
-            """
             try:
                 async for chunk in agent.astream(
                     {"messages": params.to_langchain_messages()},
