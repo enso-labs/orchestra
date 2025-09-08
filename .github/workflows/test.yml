@@ -131,7 +131,7 @@ jobs:
         mkdir -p src/public/assets
         pip install --upgrade pip
         pip install uv
-        uv sync --frozen --no-cache
+        uv sync --frozen --no-cache --dev
 
     - name: Save Python dependencies cache
       if: steps.cache-python.outputs.cache-hit != 'true'
@@ -149,4 +149,4 @@ jobs:
         # Create the database directory
         mkdir -p ./docker/postgres/data
         # Run your tests
-        pytest -rs
+        uv run pytest -rs

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
-from pydantic import BaseModel, UUID4, Field
+from pydantic import BaseModel, UUID4, Field, ConfigDict
 from src.utils.logger import logger
 
 from src.utils.auth import verify_credentials
@@ -39,8 +39,7 @@ class SettingResponse(SettingBase):
     id: UUID4
     slug: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SettingsListResponse(BaseModel):

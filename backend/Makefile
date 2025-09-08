@@ -1,4 +1,4 @@
-.PHONY: dev docs build run tag seeds
+.PHONY: dev docs build run tag seeds test format
 
 dev:
 	make docs
@@ -10,9 +10,6 @@ docs:
 build:
 	bash scripts/build.sh
 
-run:
-	bash scripts/run.sh
-
 tag:
 	bash scripts/tag.sh
 
@@ -21,3 +18,6 @@ seeds:
 
 format:
 	uvx ruff format
+
+test:
+	uv run pytest

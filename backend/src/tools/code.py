@@ -2,7 +2,7 @@ import os
 import httpx
 import logging
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from langchain_core.tools import BaseToolkit
 from langchain.tools import StructuredTool
@@ -257,10 +257,7 @@ class InterpreterToolkit(BaseToolkit):
 
     api_url: str = Field(default=os.getenv("INTERPRETER_URL", "http://localhost:8100"))
 
-    class Config:
-        """Pydantic config."""
-
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def get_tools(self) -> List[StructuredTool]:
         """Get the tools in the toolkit."""
