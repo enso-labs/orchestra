@@ -23,7 +23,7 @@ from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
 from src.utils.format import get_time
-from src.tools.search import web_search
+from src.tools.search import web_search, web_scrape
 
 
 async def add_memories_to_system():
@@ -118,7 +118,7 @@ async def construct_agent(params: LLMRequest | LLMStreamRequest):
         else None
     )
 
-    tools = [get_weather, get_stock_price, web_search]
+    tools = [get_weather, get_stock_price, web_search, web_scrape]
     prompt = params.system
     if config:
         ## Construct the prompt

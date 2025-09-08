@@ -92,8 +92,8 @@ export function Message({ message }: { message: any }) {
 						</h3>
 					</div>
 				</div>
-				<div className="flex justify-start">
-					<div className="bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm">
+				<div className="flex justify-start max-w-[91vw] overflow-y-auto">
+					<div className="bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
 						<ToolAction message={message} />
 					</div>
 				</div>
