@@ -5,15 +5,41 @@ from langchain_core.tools import ToolException
 from langchain_community.utilities import SearxSearchWrapper
 
 
-Categories = Literal['general', 'images', 'videos', 'news', 'map', 'music', 'it', 'science', 'files', 'social media']
-Engines = Literal['duckduckgo', 'google', 'bing', 'github', 'wikipedia', 'reuters', 'arxiv', 'adobe_stock']
+Categories = Literal[
+    "general",
+    "images",
+    "videos",
+    "news",
+    "map",
+    "music",
+    "it",
+    "science",
+    "files",
+    "social media",
+]
+Engines = Literal[
+    "duckduckgo",
+    "google",
+    "bing",
+    "github",
+    "wikipedia",
+    "reuters",
+    "arxiv",
+    "adobe_stock",
+]
+
+
 @tool
 async def web_search(
     query: str,  # The search query.
     num_results: Optional[int] = 5,  # The number of results to return. Defaults to 10.
-    engines: Optional[List[Engines]] = ['google'],  # The list of search engines to use. Defaults to None.
-    categories: Optional[List[Categories]] = [], 
-    language: Optional[str] = "en",  # The language to use for the search. Defaults to None.
+    engines: Optional[List[Engines]] = [
+        "google"
+    ],  # The list of search engines to use. Defaults to None.
+    categories: Optional[List[Categories]] = [],
+    language: Optional[
+        str
+    ] = "en",  # The language to use for the search. Defaults to None.
 ) -> list:  # The search results.
     """
     Title: Web Search
@@ -56,6 +82,7 @@ async def web_search(
         language=language,
     )
     return results
+
 
 def web_scrape(urls: List[str]) -> str:
     """Retrieve content from a list of URLs or Paths"""
