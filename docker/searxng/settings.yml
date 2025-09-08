@@ -4,7 +4,7 @@ use_default_settings: true # <- rely on built-in defaults
 server:
   limiter: true
   bind_address: 0.0.0.0
-  port: 8888
+#   port: 8888
   api: true # enable API
   secret_key: "352532tf23ttqaewggadfsafasf"
 
