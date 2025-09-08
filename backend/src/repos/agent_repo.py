@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from src.schemas.models import Agent, Revision
 from src.utils.logger import logger
 
+
 class AgentRepo:
     def __init__(self, db: AsyncSession, user_id: str):
         self.db = db
@@ -14,44 +15,51 @@ class AgentRepo:
 
     async def get_by_id(self, agent_id: str) -> Optional[Agent]:
         """Get agent by ID with revisions and settings included."""
-        stmt = select(Agent).options(
-            selectinload(Agent.revisions).selectinload(Revision.setting)
-        ).where(
-            Agent.id == agent_id,
-            Agent.user_id == self.user_id
+        stmt = (
+            select(Agent)
+            .options(selectinload(Agent.revisions).selectinload(Revision.setting))
+            .where(Agent.id == agent_id, Agent.user_id == self.user_id)
         )
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
     def get_by_slug(self, slug: str) -> Optional[Agent]:
         """Get agent by slug with settings included."""
-        return self.db.query(Agent).filter(Agent.slug == slug and Agent.user_id == self.user_id).first()
-        
-    async def get_all_user_agents(self, public: Optional[bool] = None, include_relations: bool = True) -> List[Agent]:
+        return (
+            self.db.query(Agent)
+            .filter(Agent.slug == slug and Agent.user_id == self.user_id)
+            .first()
+        )
+
+    async def get_all_user_agents(
+        self, public: Optional[bool] = None, include_relations: bool = True
+    ) -> List[Agent]:
         """Get all user agents with optional relation loading."""
         query = select(Agent)
-        
+
         if include_relations:
             query = query.options(
                 selectinload(Agent.revisions).selectinload(Revision.setting)
             )
-        
+
         if public is True:
             query = query.filter(Agent.public == True)
         elif public is False:
             query = query.filter(Agent.public == False)
         else:  # public is None
             query = query.filter(Agent.user_id == self.user_id)
-        
+
         result = await self.db.execute(query)
         return result.scalars().all()
 
-    async def create(self, name: str, description: str, settings_id: str, public: bool = False) -> Agent:
+    async def create(
+        self, name: str, description: str, settings_id: str, public: bool = False
+    ) -> Agent:
         """Create a new agent."""
         try:
             # Generate a slug for the agent name
             slug = Agent.generate_slug(name)
-            
+
             # Create a new agent with revision_number=1 (initial version)
             agent = Agent(
                 user_id=self.user_id,
@@ -59,22 +67,23 @@ class AgentRepo:
                 description=description,
                 public=public,
                 slug=slug,
-                revision_number=1  # Start with revision 1
+                revision_number=1,  # Start with revision 1
             )
-            
+
             self.db.add(agent)
             await self.db.flush()
-            
+
             # Now create the first revision for this agent
             from src.repos.revision_repo import RevisionRepo
+
             revision_repo = RevisionRepo(db=self.db, user_id=self.user_id)
             revision = await revision_repo.create(
                 agent_id=str(agent.id),
                 settings_id=settings_id,
                 name="Initial version",
-                description="Initial agent configuration"
+                description="Initial agent configuration",
             )
-            
+
             await self.db.commit()
             await self.db.refresh(agent)
             return await self.get_by_id(str(agent.id))
@@ -95,8 +104,8 @@ class AgentRepo:
                 if hasattr(agent, key):
                     setattr(agent, key, value)
             # If name is updated, regenerate slug
-            if 'name' in data:
-                agent.slug = Agent.generate_slug(data['name'])
+            if "name" in data:
+                agent.slug = Agent.generate_slug(data["name"])
             self.db.commit()
             self.db.refresh(agent)
         return agent

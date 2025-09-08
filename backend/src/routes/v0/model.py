@@ -6,6 +6,7 @@ from src.services.db import get_async_db
 from src.schemas.models import ProtectedUser
 from src.utils.auth import get_optional_user
 from src.utils.logger import logger
+
 TAG = "Model"
 router = APIRouter(tags=[TAG])
 
@@ -13,31 +14,24 @@ router = APIRouter(tags=[TAG])
 ### List Models
 ################################################################################
 from src.constants.llm import get_available_models, get_public_models
+
+
 @router.get(
-    "/models", 
+    "/models",
     tags=[TAG],
     responses={
         status.HTTP_200_OK: {
             "description": "All models.",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "models": []
-                    }
-                }
-            }
+            "content": {"application/json": {"example": {"models": []}}},
         }
-    }
+    },
 )
 async def list_models(
     user: ProtectedUser = Depends(get_optional_user),
 ):
     try:
         models = get_available_models() if user else get_public_models()
-        return JSONResponse(
-            content={"models": models},
-            status_code=status.HTTP_200_OK
-        )
+        return JSONResponse(content={"models": models}, status_code=status.HTTP_200_OK)
     except Exception as e:
         logger.exception(f"Error listing models: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

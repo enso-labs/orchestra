@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Description(Enum):
     ARCADE_TOOLS = (
         "List all tools from Arcade.dev.\n\n"

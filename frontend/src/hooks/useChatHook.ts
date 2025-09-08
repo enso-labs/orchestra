@@ -1,14 +1,11 @@
 import debug from 'debug';
 import { useEffect, useRef, useState } from "react";
-import { ThreadPayload } from '../lib/entities';
 import apiClient from '@/lib/utils/apiClient';
 import { listModels, Model } from '@/lib/services/modelService';
 import { listTools } from '@/lib/services/toolService';
 import { useChatReducer } from '@/lib/reducers/chatReducer';
 import { DEFAULT_CHAT_MODEL, isValidModelName } from '@/lib/config/llm';
 import { getAuthToken } from '@/lib/utils/auth';
-import { streamThread } from '@/lib/services/threadService';
-import { useAppContext } from '@/context/AppContext';
 import { getMemory, getModel, getSystemPrompt } from '@/lib/utils/storage';
 
 const KEY_NAME = 'config:mcp';
@@ -38,10 +35,10 @@ const initChatState = {
         mcp: null,
         a2a: null,
         collection: null,
-        arcade: {
-            tools: [] as string[],
-            toolkit: [] as string[],
-        }
+        // arcade: {
+        //     tools: [] as string[],
+        //     toolkit: [] as string[],
+        // }
     },
     history: {
         threads: [],
@@ -66,7 +63,6 @@ export default function useChatHook() {
         isToolCallInProgress,
         currentToolCall,
         selectedToolMessage,
-        messages,
         history,
         preset,
         toolCall,
@@ -84,11 +80,9 @@ export default function useChatHook() {
         setToolCall,
         setMessages,
     } = actions;
-    const { setLoading, setLoadingMessage } = useAppContext();
     const token = getAuthToken();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const responseRef = useRef(initChatState.responseRef);
-    const toolCallRef = useRef(initChatState.toolCallRef);
     const [payload, setPayload] = useState(initChatState.payload);
 
     const currentModel = models.find((model: Model) => model.id === payload.model);
@@ -97,10 +91,10 @@ export default function useChatHook() {
 
     const [controller, setController] = useState<AbortController | null>(null);
     
-    const handleQuery = (agentId: string = '') => {
-        const { controller } = queryThread(payload, agentId, messages);
-        setController(controller);
-    }
+    // const handleQuery = (agentId: string = '') => {
+        // const { controller } = queryThread(payload, agentId, messages);
+        // setController(controller);
+    // }
 
     const abortQuery = () => {
         if (controller) {
@@ -108,136 +102,7 @@ export default function useChatHook() {
             setController(null);
         }
     }
-
-    const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		const textarea = e.target
-		textarea.style.height = "auto"
-		textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
-		setPayload({ ...payload, query: e.target.value })
-	}
-
-    const handleToolCallChunk = (chunk: string) => {
-        toolCallRef.current += chunk;
-        setToolCall({
-            input: toolCallRef.current,
-        });
-    }
-
-    const queryThread = (
-		payload: ThreadPayload, 
-		agentId: string = '', 
-		previousMessages: any[] = [],
-		abortController?: AbortController
-	) => {
-		logger("Querying thread:", payload);
-		setLoading(true);
-		setLoadingMessage('Querying...');
-		let messagesWithAssistant = [...previousMessages, { role: 'user', content: payload.query }];
-		setMessages(messagesWithAssistant);
-		setResponse("");
-		responseRef.current = "";
-		
-		// Create a new AbortController if one wasn't provided
-		const controller = abortController || new AbortController();
-		const source = streamThread(payload, agentId);
-		
-		// Error handling
-		source.addEventListener("error", (e: any) => {
-			logger("Error received from server:", e);
-			const errData = JSON.parse(e?.data);
-			alert(errData?.detail);
-			source.close();
-		});
-
-		// Open handling
-		source.addEventListener("open", () => {
-			logger("Connection opened");
-		});
-
-		// Message handling
-		source.addEventListener("message", (e: any) => {
-			logger("Message received:", e);
-			const data = JSON.parse(e.data);
-			const lastMessage = messagesWithAssistant[messagesWithAssistant.length - 1];
-
-			if (data.msg.type === 'AIMessageChunk' && data.msg.tool_call_chunks.length > 0) {
-				logger("Tool call received:", data.msg);
-				const toolCallChunk = data.msg.tool_call_chunks[data.msg.tool_call_chunks.length - 1].args;
-				handleToolCallChunk(toolCallChunk);
-                setLoadingMessage('Constructing tool input...');
-				if (lastMessage.role !== 'tool') {
-					messagesWithAssistant = [...messagesWithAssistant, { role: "tool", args: toolCallRef.current }];
-				}
-			} else if (data.msg.type === 'tool') {
-				logger("Tool chunk received:", data.msg);
-				// Instead of modifying the last tool message, add a new one
-				messagesWithAssistant = [...messagesWithAssistant, { 
-					role: "tool", 
-					args: toolCallRef.current, 
-					...data.msg 
-				}];
-                if (toolCallRef.current.length > 0) {
-                    setLoadingMessage('Fetching tool response...');
-                    setLoading(false);
-                }
-				setMessages(messagesWithAssistant);
-			} else if (data.msg.type === 'stop' || data.msg.response_metadata?.finish_reason === 'stop') {
-				source.close();
-				logger("Thread ended");
-				if (getAuthToken()) getHistory(1, history.per_page, agentId);
-				setController(null);
-				return;
-			} else {
-				responseRef.current += typeof data.msg.content === 'string' 
-					? data.msg.content 
-					: (data.msg.content[0]?.text || '');
-				if (responseRef.current.length > 0) setLoading(false);
-				setMessages([...messagesWithAssistant, { role: "assistant", content: responseRef.current }]);
-			}
-			setPayload((prev: any) => ({ ...prev, query: '', threadId: data.metadata.thread_id, images: [], mcp: prev.mcp }));
-		});
-
-		// Close handling
-		source.addEventListener("close", () => {
-			logger("Connection closed");
-            setController(null);
-            setLoading(false);
-		});
-
-		// Retry handling
-		source.addEventListener("retry", () => {
-			logger("Connection retrying");
-		});
-
-		// Reconnect handling
-		source.addEventListener("reconnect", () => {
-			logger("Connection reconnected");
-		});
-
-		// Reconnect attempt handling
-		source.addEventListener("reconnectAttempt", () => {
-			logger("Connection reconnect attempt");
-		});
-
-		// Stream handling
-		source.stream();
-		responseRef.current = "";
-		toolCallRef.current = "";
-		
-		// Setup abort capability
-		controller.signal.addEventListener('abort', () => {
-			logger("Aborting stream connection");
-			source.close();
-			setLoading(false);
-		});
-		
-		// Return the controller so the caller can abort if needed
-		return {
-            controller,
-            source,
-        };
-	}
-
+    
     const getHistory = async (page: number = 1, perPage: number = 20, agentId: string = '') => {
         try {
             const url = agentId ? `/agents/${agentId}/threads` : '/threads';
@@ -272,10 +137,10 @@ export default function useChatHook() {
         }
     };
 
-    const handleNewChat = () => {
-        setMessages([]);
-        setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
-    };
+    // const handleNewChat = () => {
+    //     setMessages([]);
+    //     setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
+    // };
 
     const useGetHistoryEffect = (agentId: string = '') => {
         useEffect(() => {
@@ -365,7 +230,7 @@ export default function useChatHook() {
             });
             // Refresh the thread list after deletion
             getHistory(history.page, history.per_page);
-            handleNewChat();
+            // handleNewChat();
         } catch (error: any) {
             console.error('Error deleting thread:', error);
             throw new Error(error.response?.data?.detail || 'Failed to delete thread');
@@ -375,12 +240,12 @@ export default function useChatHook() {
     return {
         ...initChatState,
         messagesEndRef,
-        messages,
+        // messages,
         setMessages,
         responseRef,
         response,
         setResponse,
-        handleQuery,
+        // handleQuery,
         payload,
         setPayload,
         toolCallMessage,
@@ -393,7 +258,7 @@ export default function useChatHook() {
         models,
         setModels,
         useSelectModelEffect,
-        handleNewChat,
+        // handleNewChat,
         availableTools,
         setAvailableTools,
         useToolsEffect,
@@ -415,6 +280,6 @@ export default function useChatHook() {
         abortQuery,
         controller,
         setController,
-        handleTextareaResize,
+        // handleTextareaResize,
     };
 }

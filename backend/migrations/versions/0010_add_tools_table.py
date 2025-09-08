@@ -4,6 +4,7 @@ Revision ID: 0010
 Revises: 0009
 Create Date: 2025-05-09 00:00:00
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -61,9 +62,7 @@ def upgrade() -> None:
     op.create_index("tools_user_id_idx", "tools", ["user_id"])
     op.create_index("tools_name_idx", "tools", ["name"])
     op.create_index("tools_url_idx", "tools", ["url"])
-    op.create_index(
-        "tools_name_user_id_idx", "tools", ["name", "user_id"], unique=True
-    )
+    op.create_index("tools_name_user_id_idx", "tools", ["name", "user_id"], unique=True)
 
 
 def downgrade() -> None:

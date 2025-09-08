@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.models import Settings
 
+
 class SettingsRepo:
     def __init__(self, db: AsyncSession, user_id: str):
         self.db = db
@@ -11,8 +12,7 @@ class SettingsRepo:
     async def get_by_id(self, settings_id: str) -> Optional[Settings]:
         """Get setting by ID."""
         query = select(Settings).filter(
-            Settings.id == settings_id,
-            Settings.user_id == self.user_id
+            Settings.id == settings_id, Settings.user_id == self.user_id
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -20,17 +20,14 @@ class SettingsRepo:
     async def get_by_slug(self, slug: str) -> Optional[Settings]:
         """Get setting by slug."""
         query = select(Settings).filter(
-            Settings.slug == slug,
-            Settings.user_id == self.user_id
+            Settings.slug == slug, Settings.user_id == self.user_id
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_all(self) -> List[Settings]:
         """Get all settings."""
-        query = select(Settings).filter(
-            Settings.user_id == self.user_id
-        )
+        query = select(Settings).filter(Settings.user_id == self.user_id)
         result = await self.db.execute(query)
         return result.scalars().all()
 
@@ -44,7 +41,7 @@ class SettingsRepo:
         except Exception as e:
             await self.db.rollback()
             raise e
-        
+
     async def update(self, settings_id: str, data: dict) -> Optional[Settings]:
         """Update setting data."""
         setting = await self.get_by_id(settings_id)
@@ -54,8 +51,8 @@ class SettingsRepo:
                     if hasattr(setting, key):
                         setattr(setting, key, value)
                 # If name is updated, regenerate slug
-                if 'name' in data:
-                    setting.slug = Settings.generate_slug(data['name'])
+                if "name" in data:
+                    setting.slug = Settings.generate_slug(data["name"])
                 await self.db.commit()
                 await self.db.refresh(setting)
             except Exception as e:

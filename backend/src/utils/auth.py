@@ -13,54 +13,57 @@ from src.schemas.models import User
 from src.services.db import get_async_db
 from src.utils.logger import logger
 
-security = HTTPBearer(auto_error=False)  # Make auto_error=False to not require the Authorization header
+security = HTTPBearer(
+    auto_error=False
+)  # Make auto_error=False to not require the Authorization header
+
 
 def create_access_token(user: User, expires_delta: timedelta | None = None):
-	if expires_delta:
-		expire = datetime.utcnow() + expires_delta
-	else:
-		expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
-	
-	# Create JWT payload with user data
-	to_encode = {
-		"user": {
-			"sub": user.email,
-			"id": str(user.id),
-			"username": user.username,
-			"email": user.email,
-			"name": user.name
-		},
-		"exp": expire
-	}
-	
-	return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
+
+    # Create JWT payload with user data
+    to_encode = {
+        "user": {
+            "sub": user.email,
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "name": user.name,
+        },
+        "exp": expire,
+    }
+
+    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
 
 async def get_optional_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db),
 ) -> Optional[User]:
     if credentials is None:
         return None
-        
+
     try:
         return await verify_credentials(request, credentials, db)
     except HTTPException:
         return None
 
+
 async def verify_credentials(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = Depends(get_async_db) # type: ignore
+    db: AsyncSession = Depends(get_async_db),  # type: ignore
 ) -> User:
     try:
         # Verify JWT token
         payload = jwt.decode(
-            credentials.credentials, 
-            JWT_SECRET_KEY, 
-            algorithms=[JWT_ALGORITHM]
+            credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
         )
-        
+
         # Check if token has expired
         exp = payload.get("exp")
         if exp is None:
@@ -70,7 +73,7 @@ async def verify_credentials(
                 detail="Token is missing expiration",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         if datetime.utcnow().timestamp() > exp:
             logger.warning(f"Token has expired: {credentials.credentials}")
             raise HTTPException(
@@ -82,7 +85,9 @@ async def verify_credentials(
         # Extract user data from token
         user_data = payload.get("user")
         if user_data is None:
-            logger.warning(f"Token payload is missing user data: {credentials.credentials}")
+            logger.warning(
+                f"Token payload is missing user data: {credentials.credentials}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token payload",

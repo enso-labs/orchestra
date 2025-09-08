@@ -43,7 +43,7 @@ const CATEGORIES = [
 const STORAGE_KEY = 'enso:chat:payload:arcade'
 
 export function TabContentArcade({ category }: ToolsTabProps) {
-	const { setPayload } = useChatContext();
+	const { setArcade } = useChatContext();
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>(category || "All")
   const [visibleTools, setVisibleTools] = useState<Tool[]>([])
@@ -157,13 +157,10 @@ export function TabContentArcade({ category }: ToolsTabProps) {
         // Handle both old and new storage formats
         const tools = Array.isArray(arcadeData) ? arcadeData : arcadeData.tools || []
         setEnabledTools(new Set(tools))
-        setPayload((prev: any) => ({
-          ...prev,
-          arcade: {
-            tools: tools,
-            toolkit: arcadeData.toolkit || []
-          }
-        }))
+        setArcade({
+						tools: tools,
+						toolkit: arcadeData.toolkit || [],
+				});
       } catch (error) {
         console.error('Error loading arcade tools from localStorage:', error)
       }
@@ -182,37 +179,20 @@ export function TabContentArcade({ category }: ToolsTabProps) {
     })
 
     // Update payload.arcade list and localStorage
-    setPayload((prev: any) => {
-      const currentArcade = prev.arcade || { tools: [], toolkit: [] }
-      let newArcade = { ...currentArcade }
-      
-      if (isEnabled) {
-        // Add tool if not already in the list
-        if (!currentArcade.tools.includes(toolId)) {
-          newArcade.tools = [...currentArcade.tools, toolId]
-        }
-      } else {
-        // Remove tool from the list
-        newArcade.tools = currentArcade.tools.filter((id: string) => id !== toolId)
-      }
-
-      // Update localStorage
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newArcade))
-      
-      return {
-        ...prev,
-        arcade: newArcade
-      }
-    })
+    setArcade((prev: any) => {
+      const tools = isEnabled
+        ? [...(prev.tools || []), toolId].filter((v, i, a) => a.indexOf(v) === i)
+        : (prev.tools || []).filter((id: string) => id !== toolId);
+      const newArcade = { ...prev, tools };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newArcade));
+      return newArcade;
+    });
   }
 
   const handleClearSelection = () => {
     setEnabledTools(new Set())
-    setPayload((prev: any) => ({
-      ...prev,
-      arcade: { tools: [], toolkit: [] }
-    }))
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tools: [], toolkit: [] }))
+    setArcade({ tools: [], toolkit: [] });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tools: [], toolkit: [] }));
   }
 
   // Update the category click handler

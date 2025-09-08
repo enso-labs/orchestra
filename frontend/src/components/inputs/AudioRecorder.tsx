@@ -14,7 +14,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   onRecordingChange, 
   recorderControls 
 }) => {
-  const { setPayload } = useChatContext();
+  const { setQuery } = useChatContext();
 
   const {
     startRecording,
@@ -71,16 +71,13 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       },
     })
     .then((response) => {
-      setPayload((prev: any) => ({
-        ...prev,
-        query: prev.query ? `${prev.query} ${response.data.transcript.text}` : response.data.transcript.text,
-      }));
+      setQuery((prev: string) => prev ? `${prev} ${response.data.transcript.text}` : response.data.transcript.text);
     })
     .catch((error) => {
       console.error('Error uploading audio:', error);
       alert("Error uploading audio");
     });
-  }, [recordedBlob, setPayload]);
+  }, [recordedBlob, setQuery]);
 
   const handleStartRecording = async () => {
     if (startRecording) {

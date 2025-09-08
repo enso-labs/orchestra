@@ -12,6 +12,7 @@ from src.utils.auth import verify_credentials
 TAG = "Retrieval"
 router = APIRouter(tags=[TAG])
 
+
 ################################################################################
 ### Add Documents
 ################################################################################
@@ -22,34 +23,30 @@ router = APIRouter(tags=[TAG])
             "description": "Upload files to output documents.",
             "content": {
                 "application/json": {
-                    "example": AddDocuments.model_json_schema()['example']
+                    "example": AddDocuments.model_json_schema()["example"]
                 }
-            }
+            },
         }
-    }
+    },
 )
 async def upload_sources_to_documents(
-    files: list[UploadFile] = File(...),
-    username: str = Depends(verify_credentials)
+    files: list[UploadFile] = File(...), username: str = Depends(verify_credentials)
 ):
     logger.info(f"Processing {len(files)} uploaded files")
-    
+
     documents = []
     with tempfile.TemporaryDirectory() as temp_dir:
         for file in files:
             file_content = await file.read()
-            file_type = file.filename.split('.')[-1].lower()
-            
+            file_type = file.filename.split(".")[-1].lower()
+
             # Save file to temp directory
             temp_file_path = os.path.join(temp_dir, file.filename)
-            with open(temp_file_path, 'wb') as f:
+            with open(temp_file_path, "wb") as f:
                 f.write(file_content)
-            
-            loader_config = {
-                'file_path': temp_file_path,
-                'extract_images': True
-            }
-            
+
+            loader_config = {"file_path": temp_file_path, "extract_images": True}
+
             try:
                 loader = Loader.create(file_type, loader_config)
                 docs = loader.load()
@@ -58,11 +55,17 @@ async def upload_sources_to_documents(
                 logger.error(f"Error processing file {file.filename}: {str(e)}")
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={"error": f"Failed to process file {file.filename}: {str(e)}"}
+                    content={
+                        "error": f"Failed to process file {file.filename}: {str(e)}"
+                    },
                 )
 
     return JSONResponse(
-        status_code=status.HTTP_200_OK, 
-        content={"documents": [{k:v for k,v in doc.model_dump().items() if k != 'id'} for doc in documents]}
+        status_code=status.HTTP_200_OK,
+        content={
+            "documents": [
+                {k: v for k, v in doc.model_dump().items() if k != "id"}
+                for doc in documents
+            ]
+        },
     )
-        

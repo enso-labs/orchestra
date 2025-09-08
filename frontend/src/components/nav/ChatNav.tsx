@@ -14,7 +14,7 @@ export function ChatNav({
 	onNewChat 
 }: ChatNavProps) {
     
-	const { handleNewChat, payload, messages } = useChatContext();
+	const { payload, messages, clearMessages } = useChatContext();
 
 	return (
 		<header className="bg-card border-b border-border">
@@ -55,7 +55,7 @@ export function ChatNav({
 							<Button
 								variant="outline"
 								size="icon"
-								onClick={onNewChat || handleNewChat}
+								onClick={onNewChat || clearMessages}
 								className="h-9 w-9"
 								title="New Chat"
 							>

@@ -27,14 +27,14 @@ This project includes tools for running shell commands and Docker container oper
 2. **Set up a virtual environment using virutalenv:**
 
    ```bash
-   python -m venv .venv
+   uv venv
    source .venv/bin/activate  # On Windows use `.venv\Scripts\activate`
    ```
 
 3. **Install the dependencies:**
 
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 
 ## Configuration

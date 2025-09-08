@@ -193,3 +193,54 @@ export function base64Decode(str: string) {
 export function base64Compare(str1: string, str2: string) {
   return str1 === str2;
 }
+
+export function formatMessages(messages: any[]) {
+	return messages.map((message: any) => {
+    let messageCopy = { ...message };
+    // User Message
+		if (["user", "human"].includes(message.type)) {
+			messageCopy = {
+				...messageCopy,
+				role: "user",
+			};
+		}
+		
+    // Input Message
+		if (
+			["assistant", "ai"].includes(message.type) &&
+			message.tool_calls?.length
+		) {
+			const input = message.tool_calls.map((tool_call: any) => {
+				return {
+					...tool_call.args,
+				};
+			});
+			messageCopy = {
+				...messageCopy,
+				role: "AIMessageChunk",
+				input,
+			};
+		}
+
+    if (
+			["tool"].includes(message.type)
+		) {
+			messageCopy = {
+				...messageCopy,
+				role: "tool",
+			};
+		}
+
+    // Assistant Message
+    if (
+			["assistant", "ai"].includes(message.type) &&
+			!message.tool_calls?.length
+		) {
+			messageCopy = {
+				...messageCopy,
+				role: "assistant",
+			};
+		}
+		return messageCopy;
+	});
+}

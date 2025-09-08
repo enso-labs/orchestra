@@ -5,7 +5,7 @@ import { useChatContext } from "@/context/ChatContext"
 import { ArrowUp } from "lucide-react";
 
 function ChatSubmitButton({abortQuery, handleSubmit}: {abortQuery: () => void, handleSubmit: () => void}) {
-	const { controller, payload, images } = useChatContext();
+	const { controller, query, images } = useChatContext();
 
   if (controller) {
     return (
@@ -25,7 +25,7 @@ function ChatSubmitButton({abortQuery, handleSubmit}: {abortQuery: () => void, h
     <MainToolTip content="Send Message" delayDuration={500}>
 			<Button
 				onClick={handleSubmit}
-				disabled={payload.query.trim() === "" && images.length === 0}
+				disabled={query.trim() === "" && images.length === 0}
 				size="icon"
 				className="w-8 h-8 rounded-full m-1"
 			>

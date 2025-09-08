@@ -60,7 +60,7 @@ jobs:
           tmux new-session -d -s \"\${SESSION_NAME}\" '
             cd ~/agent_api/backend
             source .venv/bin/activate
-            uv pip install -r requirements.txt
+            uv sync --frozen --no-cache --no-dev
             export APP_VERSION=${TAG}
             export APP_USER_LIST=${{ secrets.APP_USER_LIST }}
             export ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}

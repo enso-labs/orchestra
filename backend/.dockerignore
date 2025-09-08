@@ -10,3 +10,11 @@
 **/vscode
 **Dockerfile
 **/requirements-dev.txt
+.example.env
+**/.venv/
+Makefile
+**/.vscode
+**/.pytest_cache/
+**.cursor*
+**/__pycache__/
+**/logs/

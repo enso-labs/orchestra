@@ -49,3 +49,18 @@ export type Server = {
 }
 
 export type DashboardTabOption = "agents" | "workflows" | "servers"
+
+export type LLMStreamPayload = {
+  model: string;
+  system: string;
+  stream_mode: string;
+  messages: {
+    role: string;
+    content: string;
+  }[];
+  metadata?: {
+    thread_id?: string;
+    checkpoint_id?: string;
+    [key: string]: any;
+  };
+}

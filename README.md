@@ -70,7 +70,7 @@ This project includes tools for running shell commands and Docker container oper
 	source .venv/bin/activate
 
 	# Install
-	uv pip install -r requirements.txt -r requirements-dev.txt
+	uv sync
 
 	# Run
 	bash scripts/dev.sh # Select "no" when prompted.
