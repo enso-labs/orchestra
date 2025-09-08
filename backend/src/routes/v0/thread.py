@@ -8,6 +8,7 @@ from src.constants.examples import Examples
 
 router = APIRouter(tags=["Thread"])
 
+
 @router.post("/threads/search", name="Query Threads in Checkpointer")
 async def search_threads(
     thread_search: ThreadSearch = Body(

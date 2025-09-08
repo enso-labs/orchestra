@@ -7,7 +7,17 @@ import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/context/ChatContext";
+import SearchEngineTool from "../tools/SearchEngine";
 
+
+function ToolAction({ message }: { message: any}) {
+
+	if (["search_engine", "web_search"].includes(message.name)) {
+		return <SearchEngineTool selectedToolMessage={message} />;
+	}
+
+	return <MarkdownCard content={message.content} />;
+}
 
 
 export function Message({ message }: { message: any }) {
@@ -83,8 +93,8 @@ export function Message({ message }: { message: any }) {
 					</div>
 				</div>
 				<div className="flex justify-start">
-					<div className="max-w-[90%] md:max-w-[80%] bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm">
-						<MarkdownCard content={message.content} />
+					<div className="bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm">
+						<ToolAction message={message} />
 					</div>
 				</div>
 			</div>

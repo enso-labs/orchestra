@@ -24,7 +24,11 @@ class ThreadService:
         limit: int = 1000,
     ) -> list[dict]:
         threads = await self.store.asearch(("threads",), limit=limit)
-        return sorted([thread.dict() for thread in threads], key=lambda x: x.get("updated_at"), reverse=True)
+        return sorted(
+            [thread.dict() for thread in threads],
+            key=lambda x: x.get("updated_at"),
+            reverse=True,
+        )
 
 
 thread_service = ThreadService()

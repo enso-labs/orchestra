@@ -1,12 +1,28 @@
 # ./docker/searxng/settings.yml
 use_default_settings: true # <- rely on built-in defaults
+
 server:
-    bind_address: 0.0.0.0
-    port: 8888
-    api: true # enable API
-    secret_key: "super-secret-key"
+  limiter: true
+  bind_address: 0.0.0.0
+  port: 8888
+  api: true # enable API
+  secret_key: "352532tf23ttqaewggadfsafasf"
+
+general:
+  debug: true
+
 search:
-    formats: # allow JSON API responses
-        - html
-        - json
-    default_lang: en # default language for search results
+  default_lang: en # default language for search results
+  formats:
+    - html
+    - json
+
+engines:
+  - name: wikipedia
+    disabled: true
+  - name: wikipedia (en)
+    disabled: true
+  - name: wikidata
+    disabled: false
+  - name: startpage
+    disabled: false

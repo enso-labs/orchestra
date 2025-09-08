@@ -23,6 +23,8 @@ from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
 from src.utils.format import get_time
+from src.tools.search import web_search
+
 
 async def add_memories_to_system():
     memories = await memory_service.search()
@@ -65,22 +67,20 @@ def graph_builder(
             tools=tools,
             prompt=prompt,
             checkpointer=checkpointer,
-            # store=store,
             context_schema=context_schema,
+            # store=store,
         )
 
     if graph_id == "deepagent":
         return create_deep_agent(
             model=model,
             tools=tools,
+            subagents=subagents,
             instructions=prompt,
             checkpointer=checkpointer,
-            subagents=subagents,
             context_schema=context_schema,
             # store=store,
         )
-
-    raise ValueError(f"Invalid graph name: {graph_id}")
 
 
 ################################################################################
@@ -90,62 +90,66 @@ def graph_builder(
 class ContextSchema:
     user: ProtectedUser
 
-def get_stock_price(symbol: str) -> str:
-	"""Get the stock price of a given symbol"""
-	import random
 
-	return f"The stock price of {symbol} is {random.randint(100, 200)}"
+def get_stock_price(symbol: str) -> str:
+    """Get the stock price of a given symbol"""
+    import random
+
+    return f"The stock price of {symbol} is {random.randint(100, 200)}"
 
 
 def get_weather(location: str) -> str:
-	"""Get the weather in a given location"""
-	import random
-	runtime = get_runtime(ContextSchema)
-	user_id = runtime.context.user.id
-	logger.info(f"user_id: {user_id}")
-	return f"The weather in {location} is sunny and {random.randint(60, 80)} degrees"
+    """Get the weather in a given location"""
+    import random
+
+    runtime = get_runtime(ContextSchema)
+    user_id = runtime.context.user.id
+    logger.info(f"user_id: {user_id}")
+    return f"The weather in {location} is sunny and {random.randint(60, 80)} degrees"
+
 
 async def construct_agent(params: LLMRequest | LLMStreamRequest):
-	# Add config if it exists
-	config = (
-		RunnableConfig(
-			configurable=params.metadata.model_dump(), metadata={"model": params.model}
-		)
-		if params.metadata
-		else None
-	)
-	
-	tools = [get_weather, get_stock_price]
-	prompt = params.system
-	if config:
-		## Construct the prompt
-		memory_prompt = await add_memories_to_system()
-		prompt = (
-			params.system + "\n" + memory_prompt if memory_prompt else params.system
-		)
-		tools = tools + MEMORY_TOOLS
+    # Add config if it exists
+    config = (
+        RunnableConfig(
+            configurable=params.metadata.model_dump(), metadata={"model": params.model}
+        )
+        if params.metadata
+        else None
+    )
 
-	# Asynchronous LLM call
-	agent = Orchestra(
-		graph_id=(
-			params.metadata.graph_id
-			if params.metadata and params.metadata.graph_id
-			else "react"
-		),
-		config=config,
-		model=params.model,
-		tools=tools,
-		context_schema=ContextSchema,
-		prompt=prompt,
-		checkpointer=in_memory_checkpointer if config else None,
-		store=in_memory_store if config else None,
-	)
-	return agent
+    tools = [get_weather, get_stock_price, web_search]
+    prompt = params.system
+    if config:
+        ## Construct the prompt
+        memory_prompt = await add_memories_to_system()
+        prompt = (
+            params.system + "\n" + memory_prompt if memory_prompt else params.system
+        )
+        tools = tools + MEMORY_TOOLS
+
+    # Asynchronous LLM call
+    agent = Orchestra(
+        graph_id=(
+            params.metadata.graph_id
+            if params.metadata and params.metadata.graph_id
+            else "react"
+        ),
+        config=config,
+        model=params.model,
+        tools=tools,
+        context_schema=ContextSchema,
+        prompt=prompt,
+        checkpointer=in_memory_checkpointer if config else None,
+        store=in_memory_store if config else None,
+    )
+    return agent
+
 
 class Orchestra:
     def __init__(
-        self, 
-        tools: list[BaseTool], 
+        self,
+        tools: list[BaseTool],
         model: str = "openai:gpt-5-nano",
         prompt: str = "You are a helpful assistant.",
         config: RunnableConfig = None,
@@ -172,25 +176,28 @@ class Orchestra:
 
     def invoke(self, messages: list[BaseMessage]):
         return self.graph.invoke(messages, self.config)
-    
+
     def stream(self, messages: list[BaseMessage]):
         return self.graph.stream(messages, self.config)
-    
+
     def ainvoke(self, messages: list[BaseMessage]):
         return self.graph.ainvoke(messages, self.config)
-    
-    def astream(self, 
-        messages: list[BaseMessage], 
-        stream_mode: str = "messages", 
-        context: dict[str, Any] = None
+
+    def astream(
+        self,
+        messages: list[BaseMessage],
+        stream_mode: str = "messages",
+        context: dict[str, Any] = None,
     ) -> AsyncGenerator[BaseMessage, None]:
-        return self.graph.astream(messages, self.config, stream_mode=stream_mode, context=context)
-    
+        return self.graph.astream(
+            messages, self.config, stream_mode=stream_mode, context=context
+        )
+
     def aget_state(self, config: RunnableConfig = None):
         if config is None:
             config = self.config
         return self.graph.aget_state(config)
-    
+
     async def add_model_to_ai_message(self, model: str) -> RunnableConfig | None:
         # Only proceed if a checkpointer is set
         if self.checkpointer:
@@ -209,21 +216,23 @@ class Orchestra:
                 )
 
                 # Extract thread and checkpoint IDs from config
-                configurable = new_config.get('configurable')
+                configurable = new_config.get("configurable")
                 thread_id = configurable.get("thread_id")
                 checkpoint_id = configurable.get("checkpoint_id")
 
                 # Update thread with new message and timestamp
-                await thread_service.update(thread_id, {
-                    "thread_id": thread_id,
-                    "checkpoint_id": checkpoint_id,
-                    "messages": [last_message],
-                    "updated_at": get_time()
-                })
+                await thread_service.update(
+                    thread_id,
+                    {
+                        "thread_id": thread_id,
+                        "checkpoint_id": checkpoint_id,
+                        "messages": [last_message],
+                        "updated_at": get_time(),
+                    },
+                )
 
                 # Log the update for debugging
                 logger.info(f"final_state Updated: {str(new_config)}")
                 return new_config
         # Return None if no checkpointer or update not performed
         return None
-    

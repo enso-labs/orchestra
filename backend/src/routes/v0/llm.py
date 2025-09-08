@@ -1,7 +1,17 @@
 import ujson
 from typing import Annotated, Any
 from fastapi.responses import JSONResponse, StreamingResponse
-from fastapi import Body, HTTPException, status, Depends, APIRouter, Request, File, Form, UploadFile
+from fastapi import (
+    Body,
+    HTTPException,
+    status,
+    Depends,
+    APIRouter,
+    Request,
+    File,
+    Form,
+    UploadFile,
+)
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 
@@ -20,36 +30,38 @@ from src.flows import construct_agent
 
 llm_router = APIRouter(tags=["Graphs"], prefix="/llm")
 
+
 ################################################################################
 ### Invoke Graph
 ################################################################################
 @llm_router.post(
-	"/invoke",
-	responses={status.HTTP_200_OK: MockResponse.INVOKE_RESPONSE},
-	name="Invoke Graph",
-	tags=["LLM"],
+    "/invoke",
+    responses={status.HTTP_200_OK: MockResponse.INVOKE_RESPONSE},
+    name="Invoke Graph",
+    tags=["LLM"],
 )
 async def llm_invoke(
-	params: LLMRequest = Body(openapi_examples=Examples.LLM_INVOKE_EXAMPLES),
-	user: ProtectedUser = Depends(get_optional_user),
+    params: LLMRequest = Body(openapi_examples=Examples.LLM_INVOKE_EXAMPLES),
+    user: ProtectedUser = Depends(get_optional_user),
 ) -> dict[str, Any] | Any:
-	# Construct the agent with the given parameters
-	agent = await construct_agent(params)
-	# Invoke the agent asynchronously with user context
-	response = await agent.ainvoke(
-		{"messages": params.to_langchain_messages()},
-		context={"user": user} if user else None,
-	)
-	# Return the agent's response
-	return response
+    # Construct the agent with the given parameters
+    agent = await construct_agent(params)
+    # Invoke the agent asynchronously with user context
+    response = await agent.ainvoke(
+        {"messages": params.to_langchain_messages()},
+        context={"user": user} if user else None,
+    )
+    # Return the agent's response
+    return response
+
 
 ################################################################################
 ### Stream Graph
 ################################################################################
 @llm_router.post(
-	"/stream",
-	responses={status.HTTP_200_OK: MockResponse.STREAM_RESPONSE},
-	name="Stream Graph",
+    "/stream",
+    responses={status.HTTP_200_OK: MockResponse.STREAM_RESPONSE},
+    name="Stream Graph",
 )
 async def llm_stream(
     params: LLMStreamRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
@@ -95,6 +107,7 @@ async def llm_stream(
         logger.exception("Error in llm_stream: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
+
 ################################################################################
 ### Transcribe
 ################################################################################
@@ -127,52 +140,53 @@ async def transcribe(
         logger.exception(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
+
 ################################################################################
 ### Chat Completion
 ################################################################################
 @llm_router.post(
-	"/chat",
-	name="Chat Completion",
-	responses={
-		status.HTTP_200_OK: {
-			"description": "Chat completion response.",
-			"content": {
-				"application/json": {
-					"example": Answer.model_json_schema()["examples"]["new_thread"]
-				},
-			},
-		}
-	},
+    "/chat",
+    name="Chat Completion",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Chat completion response.",
+            "content": {
+                "application/json": {
+                    "example": Answer.model_json_schema()["examples"]["new_thread"]
+                },
+            },
+        }
+    },
 )
 async def chat_completion(
-	request: Request,
-	body: Annotated[ChatInput, Body()],
-	user: ProtectedUser = Depends(get_optional_user),
-	# db: AsyncSession = Depends(get_async_db)
+    request: Request,
+    body: Annotated[ChatInput, Body()],
+    user: ProtectedUser = Depends(get_optional_user),
+    # db: AsyncSession = Depends(get_async_db)
 ):
-	try:
-		model = body.model.split(":")
-		provider = model[0]
-		model_name = model[1]
-		llm = init_chat_model(
-			model=model_name,
-			model_provider=provider,
-			temperature=0.9,
-			# max_tokens=1000,
-			max_retries=3,
-			# timeout=1000
-		)
-		response = await llm.ainvoke(
-			[
-				{"role": "system", "content": body.system},
-				{"role": "user", "content": body.query},
-			]
-		)
-		return JSONResponse(
-			content={"answer": response.model_dump()},
-			media_type="application/json",
-			status_code=200,
-		)
-	except Exception as e:
-		logger.exception(str(e))
-		raise HTTPException(status_code=500, detail=str(e))
+    try:
+        model = body.model.split(":")
+        provider = model[0]
+        model_name = model[1]
+        llm = init_chat_model(
+            model=model_name,
+            model_provider=provider,
+            temperature=0.9,
+            # max_tokens=1000,
+            max_retries=3,
+            # timeout=1000
+        )
+        response = await llm.ainvoke(
+            [
+                {"role": "system", "content": body.system},
+                {"role": "user", "content": body.query},
+            ]
+        )
+        return JSONResponse(
+            content={"answer": response.model_dump()},
+            media_type="application/json",
+            status_code=200,
+        )
+    except Exception as e:
+        logger.exception(str(e))
+        raise HTTPException(status_code=500, detail=str(e))

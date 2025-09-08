@@ -52,6 +52,7 @@ def get_provider(model_name: str):
     provider, model = model_name.split(":", maxsplit=1)
     return provider, model
 
+
 def audio_to_text(
     filename: str,
     file_bytes: bytes,

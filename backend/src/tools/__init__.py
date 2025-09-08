@@ -8,7 +8,7 @@ from src.schemas.entities import ArcadeConfig
 from src.schemas.entities.a2a import A2AServer
 from src.tools.retrieval import retrieval_query
 from src.tools.shell import shell_exec
-from src.tools.search import search_engine
+from src.tools.search import web_search
 from src.tools.a2a import init_a2a_tools
 from src.tools.arcade import init_arcade_tools
 from src.tools.api import generate_tools_from_openapi_json
@@ -16,7 +16,7 @@ from src.tools.api import generate_tools_from_openapi_json
 TOOL_LIBRARY = [
     shell_exec,
     retrieval_query,
-    search_engine,
+    web_search,
 ]
 TOOL_NODE = ToolNode(TOOL_LIBRARY)
 

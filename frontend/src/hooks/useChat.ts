@@ -4,6 +4,7 @@ import { VITE_API_URL } from "@/lib/config";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import { useAppContext } from "@/context/AppContext";
 import { getAuthToken } from "@/lib/utils/auth";
+import { constructSystemPrompt } from "@/lib/utils/format";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -81,7 +82,7 @@ export default function useChat(): ChatContextType {
 			payload: JSON.stringify({
 				model: model,
 				stream_mode: "messages",
-				system: "You are a helpful assistant.",
+				system: constructSystemPrompt("You are a helpful assistant."),
 				// arcade: arcade,
 				metadata: JSON.parse(metadata),
 				messages: updatedMessages
