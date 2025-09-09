@@ -62,12 +62,15 @@ class UserRepo:
             for token in tokens
         ]
 
-    async def create(self, user_data: User) -> User:
+    async def create(self, user_data) -> User:
         """Create a new user."""
-        user = User(
-            **user_data.model_dump(),
-            hashed_password=User.get_password_hash(user_data.password),
-        )
+        data = user_data.model_dump()
+        password = data.pop("password")
+        # Avoid using **data in a multi-line call to prevent syntax errors in some debuggers
+        user = User()
+        for key, value in data.items():
+            setattr(user, key, value)
+        user.hashed_password = User.get_password_hash(password)
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
