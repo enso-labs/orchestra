@@ -1,29 +1,37 @@
+from re import S
 from typing import Any
+from dataclasses import dataclass
 from langgraph.store.memory import InMemoryStore
 
 in_memory_store = InMemoryStore()
 
 
+@dataclass
 class ThreadService:
-    def __init__(self, store: InMemoryStore = in_memory_store):
-        self.store = store
+    store: InMemoryStore = in_memory_store
+    user_id: str | None = None
 
     async def update(self, thread_id: str, data: dict):
-        await self.store.aput(namespace=("threads",), key=thread_id, value=data)
+        await self.store.aput(
+            namespace=("threads", self.user_id), key=thread_id, value=data
+        )
         return True
 
     async def get(self, key: str) -> Any:
-        return await self.store.aget(("threads",), key)
+        return await self.store.aget(("threads", self.user_id), key)
 
     async def delete(self, key: str) -> bool:
-        await self.store.adelete(("threads",), key)
+        await self.store.adelete(("threads", self.user_id), key)
         return True
 
     async def search(
         self,
+        user_id: str,
         limit: int = 1000,
     ) -> list[dict]:
-        threads = await self.store.asearch(("threads",), limit=limit)
+        threads = await self.store.asearch(
+            ("threads", self.user_id or user_id), limit=limit
+        )
         return sorted(
             [thread.dict() for thread in threads],
             key=lambda x: x.get("updated_at"),

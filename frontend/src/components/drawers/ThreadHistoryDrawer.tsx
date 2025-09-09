@@ -64,7 +64,7 @@ export function ThreadHistoryDrawer({
 													"get_checkpoint",
 													config,
 												);
-												setMessages(formatMessages(checkpoint.messages));
+												setMessages(formatMessages(checkpoint.values.messages));
 												setMetadata(JSON.stringify(thread.value));
 											}}
 											className={`w-full text-left p-3 rounded-lg transition-colors border ${

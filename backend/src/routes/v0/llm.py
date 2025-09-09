@@ -12,6 +12,7 @@ from fastapi import (
     Form,
     UploadFile,
 )
+from langgraph.types import StateSnapshot
 from langchain.chat_models import init_chat_model
 
 from src.schemas.models import ProtectedUser
@@ -24,6 +25,9 @@ from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.stream import convert_messages
 from src.utils.llm import audio_to_text
 from src.flows import construct_agent
+from src.services.thread import ThreadService
+from src.utils.format import get_time
+from langchain_core.messages import AIMessage
 
 
 llm_router = APIRouter(tags=["Graphs"], prefix="/llm")
@@ -89,8 +93,29 @@ async def llm_stream(
                 error_msg = ujson.dumps({"error": str(e)})
                 yield f"data: {error_msg}\n\n"
             finally:
+                state: StateSnapshot = await agent.aget_state()
+                messages = state.values.get("messages")
+
+                # Update model info in last message
+                if isinstance(messages[-1], AIMessage):
+                    messages[-1].response_metadata["model"] = params.model
+                    await agent.graph.aupdate_state(
+                        state.config, {"messages": messages}
+                    )
+
                 # Update model info in checkpoint after streaming
-                await agent.add_model_to_ai_message(params.model)
+                thread_service = ThreadService(user_id=user.id)
+                await thread_service.update(
+                    params.metadata.thread_id,
+                    {
+                        "thread_id": state.config.get("configurable").get("thread_id"),
+                        "checkpoint_id": state.config.get("configurable").get(
+                            "checkpoint_id"
+                        ),
+                        "messages": [messages[-1]],
+                        "updated_at": get_time(),
+                    },
+                )
 
         # Return streaming response with appropriate headers
         return StreamingResponse(

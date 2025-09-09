@@ -119,7 +119,7 @@ export function Message({ message }: { message: any }) {
 						</button>
 
 						<button className="text-sm text-muted-foreground">
-							{message.model}
+							{message.model || message.response_metadata.model}
 						</button>
 					</div>
 				</div>

@@ -46,10 +46,6 @@ def load_models():
     return _Base
 
 
-def get_checkpoint_db():
-    return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
-
-
 def get_store_db(embed: str = "openai:text-embedding-3-small"):
     return AsyncPostgresStore.from_conn_string(
         conn_string=DB_URI,

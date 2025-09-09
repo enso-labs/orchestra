@@ -1,15 +1,14 @@
-from typing import Type, Literal, Any, AsyncGenerator
-from dataclasses import dataclass
+from typing import Type, Literal, Any, AsyncGenerator, Coroutine
 
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.prebuilt import create_react_agent
-from langgraph.runtime import get_runtime
 from langgraph.store.base import BaseStore
-from langchain_core.messages import BaseMessage, AIMessage
+from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from deepagents import create_deep_agent, SubAgent
+from langgraph.types import StateSnapshot
 
 
 from src.services.memory import memory_service
@@ -17,10 +16,6 @@ from src.services.memory import in_memory_store
 from src.services.checkpoint import in_memory_checkpointer
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest, LLMStreamRequest
-from src.utils.logger import logger
-from src.services.checkpoint import checkpoint_service
-from src.services.thread import thread_service
-from src.utils.format import get_time
 from src.tools import TOOL_LIBRARY
 from src.schemas.contexts import ContextSchema
 
@@ -151,14 +146,12 @@ class Orchestra:
             store=self.store,
         )
 
-    def invoke(self, messages: list[BaseMessage]):
-        return self.graph.invoke(messages, self.config)
-
-    def stream(self, messages: list[BaseMessage]):
-        return self.graph.stream(messages, self.config)
-
-    def ainvoke(self, messages: list[BaseMessage]):
-        return self.graph.ainvoke(messages, self.config)
+    def ainvoke(
+        self,
+        messages: list[BaseMessage],
+        context: dict[str, Any] = None,
+    ):
+        return self.graph.ainvoke(messages, self.config, context=context)
 
     def astream(
         self,
@@ -170,46 +163,9 @@ class Orchestra:
             messages, self.config, stream_mode=stream_mode, context=context
         )
 
-    def aget_state(self, config: RunnableConfig = None):
+    def aget_state(
+        self, config: RunnableConfig = None
+    ) -> Coroutine[Any, Any, StateSnapshot]:
         if config is None:
             config = self.config
         return self.graph.aget_state(config)
-
-    async def add_model_to_ai_message(self, model: str) -> RunnableConfig | None:
-        # Only proceed if a checkpointer is set
-        if self.checkpointer:
-            # Get the latest state from the graph
-            final_state = await self.aget_state()
-            messages = final_state.values.get("messages")
-            last_message = messages[-1] if messages else None
-
-            # Update the model attribute if the last message is an AIMessage
-            if isinstance(last_message, AIMessage):
-                messages[-1].model = model  # Set model on last AI message
-
-                # Update checkpoint state with modified messages
-                new_config = await checkpoint_service.update_checkpoint_state(
-                    self.config, {"messages": messages}
-                )
-
-                # Extract thread and checkpoint IDs from config
-                configurable = new_config.get("configurable")
-                thread_id = configurable.get("thread_id")
-                checkpoint_id = configurable.get("checkpoint_id")
-
-                # Update thread with new message and timestamp
-                await thread_service.update(
-                    thread_id,
-                    {
-                        "thread_id": thread_id,
-                        "checkpoint_id": checkpoint_id,
-                        "messages": [last_message],
-                        "updated_at": get_time(),
-                    },
-                )
-
-                # Log the update for debugging
-                logger.info(f"final_state Updated: {str(new_config)}")
-                return new_config
-        # Return None if no checkpointer or update not performed
-        return None
