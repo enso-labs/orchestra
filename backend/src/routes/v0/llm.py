@@ -98,7 +98,7 @@ async def llm_stream(
 
                 # Update model info in last message
                 if isinstance(messages[-1], AIMessage):
-                    messages[-1].response_metadata["model"] = params.model
+                    messages[-1].model = params.model
                     await agent.graph.aupdate_state(
                         state.config, {"messages": messages}
                     )
