@@ -1,7 +1,7 @@
 import debug from "debug";
 import { useEffect, useRef, useState } from "react";
 import apiClient from "@/lib/utils/apiClient";
-import { listModels, Model } from "@/lib/services/modelService";
+import { Model } from "@/lib/services/modelService";
 import { listTools } from "@/lib/services/toolService";
 import { useChatReducer } from "@/lib/reducers/chatReducer";
 import { DEFAULT_CHAT_MODEL, isValidModelName } from "@/lib/config/llm";
@@ -92,19 +92,19 @@ export default function useChatHook() {
 		payload.tools.includes(tool.id),
 	);
 
-	const [controller, setController] = useState<AbortController | null>(null);
+	// const [controller, setController] = useState<AbortController | null>(null);
 
 	// const handleQuery = (agentId: string = '') => {
 	// const { controller } = queryThread(payload, agentId, messages);
 	// setController(controller);
 	// }
 
-	const abortQuery = () => {
-		if (controller) {
-			controller.abort();
-			setController(null);
-		}
-	};
+	// const abortQuery = () => {
+	// 	if (controller) {
+	// 		controller.abort();
+	// 		setController(null);
+	// 	}
+	// };
 
 	const getHistory = async (
 		page: number = 1,

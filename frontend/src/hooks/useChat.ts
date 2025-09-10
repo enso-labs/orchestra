@@ -1,9 +1,6 @@
 import { useRef, useState } from "react";
-import { SSE } from "sse.js";
-import { VITE_API_URL } from "@/lib/config";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import { useAppContext } from "@/context/AppContext";
-import { getAuthToken } from "@/lib/utils/auth";
+import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import { constructSystemPrompt } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
 

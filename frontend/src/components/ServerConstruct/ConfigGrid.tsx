@@ -30,7 +30,9 @@ export const ConfigGrid = ({
 					<ConfigCard
 						key={config.id}
 						config={config}
-						isSelected={selectedConfig && selectedConfig.id === config.id}
+						isSelected={
+							selectedConfig ? selectedConfig.id === config.id : false
+						}
 						onSelect={onSelectConfig}
 					/>
 				))}

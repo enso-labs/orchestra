@@ -1,6 +1,7 @@
 import { CheckCircleIcon, ServerIcon } from "lucide-react";
 
 interface Config {
+	id: string;
 	name: string;
 	description: string;
 	version: string;

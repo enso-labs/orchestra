@@ -11,24 +11,11 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useToolContext } from "@/hooks/useToolContext";
-interface FormData {
-	name: string;
-	description: string;
-	type: string;
-	public: boolean;
-	config: {
-		transport?: string;
-		url?: string;
-		headers?: Record<string, string>;
-		agent_card_path?: string;
-		[key: string]: unknown;
-	};
-	[key: string]: unknown;
-}
+import { Server } from "@/lib/entities";
 
 interface ServerFormProps {
-	onSubmit: (formData: FormData) => void;
-	onChange: (formData: FormData) => void;
+	onSubmit: (formData: Server) => void;
+	onChange: (formData: Server) => void;
 }
 
 export const ServerForm = ({ onSubmit, onChange }: ServerFormProps) => {
@@ -96,7 +83,7 @@ export const ServerForm = ({ onSubmit, onChange }: ServerFormProps) => {
 		};
 		delete newHeaders[headerKeys[index]];
 		setHeaderKeys((prev) => prev.filter((_, i) => i !== index));
-		setFormData((prev: FormData) => ({
+		setFormData((prev: Server) => ({
 			...prev,
 			config: {
 				...prev.config,

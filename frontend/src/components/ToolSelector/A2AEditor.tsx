@@ -36,11 +36,13 @@ interface Skill {
 	name: string;
 	description: string;
 	examples?: string[];
+	tags?: string[];
 }
 
 interface Agent {
 	name: string;
 	version?: string;
+	description?: string;
 	documentationUrl: string;
 	skills: Skill[];
 }

@@ -21,18 +21,20 @@ function FileEditor() {
 			tags: string[];
 		}[] = [];
 		Object.entries(swagger.paths).forEach(([path, operations]) => {
-			Object.entries(operations).forEach(([method, operation]) => {
-				tools.push({
-					path,
-					method: method.toUpperCase(),
-					operationId:
-						operation.operationId ||
-						`${method}_${path.replace(/[^a-zA-Z0-9]/g, "_")}`,
-					summary: operation.summary || "",
-					description: operation.description || "",
-					tags: operation.tags || [],
-				});
-			});
+			Object.entries(operations as Record<string, any>).forEach(
+				([method, operation]) => {
+					tools.push({
+						path,
+						method: method.toUpperCase(),
+						operationId:
+							operation?.operationId ||
+							`${method}_${path.replace(/[^a-zA-Z0-9]/g, "_")}`,
+						summary: operation?.summary || "",
+						description: operation?.description || "",
+						tags: operation?.tags || [],
+					});
+				},
+			);
 		});
 		return tools;
 	};
