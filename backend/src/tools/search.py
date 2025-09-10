@@ -84,6 +84,7 @@ async def web_search(
     return results
 
 
+@tool
 def web_scrape(urls: List[str]) -> str:
     """Retrieve content from a list of URLs or Paths"""
     md = MarkItDown(enable_plugins=False)

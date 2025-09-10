@@ -20,6 +20,7 @@ export default function DefaultTool({ selectedToolMessage }: Props) {
 									typeof input === "object" ? input : JSON.parse(input);
 								return (
 									<JsonView
+										collapsed={true}
 										value={parsedJSON}
 										onCopied={async (text) => {
 											await navigator.clipboard.writeText(text);

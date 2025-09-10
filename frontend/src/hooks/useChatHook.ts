@@ -130,32 +130,6 @@ export default function useChatHook() {
 		}
 	};
 
-	const fetchModels = async (
-		setSearchParams: (params: any) => void,
-		currentModel: string = DEFAULT_CHAT_MODEL,
-	) => {
-		try {
-			const response = await listModels();
-			setModels(response.models);
-
-			// Set default model if none selected
-			if (!currentModel && response.models.length > 0) {
-				setSearchParams({
-					model: response.models.find(
-						(model: Model) => model.id === DEFAULT_CHAT_MODEL,
-					)?.id,
-				});
-			}
-		} catch (error) {
-			console.error("Failed to fetch models:", error);
-		}
-	};
-
-	// const handleNewChat = () => {
-	//     setMessages([]);
-	//     setPayload((prev: any) => ({ ...prev, threadId: '', query: '' }));
-	// };
-
 	const useGetHistoryEffect = (agentId: string = "") => {
 		useEffect(() => {
 			getHistory(history.page, history.per_page, agentId);
@@ -191,19 +165,6 @@ export default function useChatHook() {
 				localStorage.removeItem("config:a2a");
 			}
 		}, [payload.a2a]);
-	};
-
-	const useFetchModelsEffect = (
-		setSearchParams: (params: any) => void,
-		currentModel: string = DEFAULT_CHAT_MODEL,
-	) => {
-		useEffect(() => {
-			fetchModels(setSearchParams, currentModel);
-
-			return () => {
-				// Cleanup logic if needed
-			};
-		}, []);
 	};
 
 	const useSelectModelEffect = (currentModel: string = DEFAULT_CHAT_MODEL) => {
@@ -272,7 +233,6 @@ export default function useChatHook() {
 		history,
 		setHistory,
 		useGetHistoryEffect,
-		useFetchModelsEffect,
 		models,
 		setModels,
 		useSelectModelEffect,

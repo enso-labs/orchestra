@@ -88,6 +88,9 @@ export function Message({ message }: { message: any }) {
 							{message.name}
 						</h3>
 					</div>
+					<p className="text-xs text-muted-foreground">
+						{message.tool_call_id}
+					</p>
 				</div>
 				<div className="flex justify-start max-w-[91vw] overflow-y-auto">
 					<div className="bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
@@ -159,7 +162,9 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 		<div className="flex flex-col gap-2">
 			<ScrollArea className="flex-1 h-0">
 				{messages.length > 0 ? (
-					messages.map((message: any) => <Message message={message} />)
+					messages.map((message: any) => (
+						<Message key={message.id} message={message} />
+					))
 				) : (
 					<div className="pt-4 text-center text-muted-foreground">
 						<p>No messages yet</p>
