@@ -71,7 +71,7 @@ jobs:
         run: |
           env | sort
           pip install --upgrade pip
-          pip install uv
+          pip install uv mkdocs
           uv sync --frozen --no-cache --no-dev
 
       - name: Build docs
