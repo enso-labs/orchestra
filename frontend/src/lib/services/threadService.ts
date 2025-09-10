@@ -82,32 +82,22 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
 	}
 };
 
-export const streamThread = (
-	system: string = "",
-	messages: { role: string; content: string; [key: string]: any }[],
-	model: string = DEFAULT_CHAT_MODEL,
-	metadata:
-		| {
-				thread_id?: string;
-				checkpoint_id?: string;
-				[key: string]: any;
-		  }
-		| string = {},
-	stream_mode: string = "messages",
-): SSE => {
+interface StreamThreadPayload {
+	system: string;
+	messages: { role: string; content: string; [key: string]: any }[];
+	model: string;
+	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
+	stream_mode: string;
+}
+
+export const streamThread = (payload: StreamThreadPayload): SSE => {
 	const source = new SSE(`${VITE_API_URL}/llm/stream`, {
 		headers: {
 			"Content-Type": "application/json",
 			Accept: "text/event-stream",
 			Authorization: `Bearer ${getAuthToken()}`,
 		},
-		payload: JSON.stringify({
-			model,
-			system,
-			stream_mode,
-			messages,
-			metadata: typeof metadata === "string" ? JSON.parse(metadata) : metadata,
-		}),
+		payload: JSON.stringify(payload),
 		method: "POST",
 	});
 	return source;

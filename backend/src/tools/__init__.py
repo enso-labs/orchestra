@@ -12,12 +12,13 @@ from src.tools.search import web_search, web_scrape
 from src.tools.a2a import init_a2a_tools
 from src.tools.arcade import init_arcade_tools
 from src.tools.api import generate_tools_from_openapi_json
+from src.tools.test import TEST_TOOLS
 
 TOOL_LIBRARY = [
     # shell_exec,
     web_search,
     web_scrape,
-]
+] + TEST_TOOLS
 TOOL_NODE = ToolNode(TOOL_LIBRARY)
 
 

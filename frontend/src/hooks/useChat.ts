@@ -5,6 +5,7 @@ import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import { useAppContext } from "@/context/AppContext";
 import { getAuthToken } from "@/lib/utils/auth";
 import { constructSystemPrompt } from "@/lib/utils/format";
+import { streamThread } from "@/lib/services";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -24,8 +25,11 @@ export type ChatContextType = {
 	clearContent: () => void;
 	messages: any[];
 	setMessages: (messages: any[]) => void;
+	controller: AbortController | null;
+	setController: (controller: AbortController | null) => void;
 	metadata: string;
 	setMetadata: (metadata: string) => void;
+	abortQuery: () => void;
 	// NEW
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
@@ -49,13 +53,25 @@ export default function useChat(): ChatContextType {
 		const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
 		return JSON.stringify({ thread_id: threadId }, null, 2);
 	});
+	const [controller, setController] = useState<AbortController | null>(null);
 
 	const [arcade, setArcade] = useState({
 		tools: [] as string[],
 		toolkit: [] as string[],
 	});
 
-	const handleSSE = (query: string, model: string = DEFAULT_CHAT_MODEL) => {
+	const abortQuery = () => {
+		if (controller) {
+			controller.abort();
+			setController(null);
+		}
+	};
+
+	const handleSSE = (
+		query: string,
+		model: string = DEFAULT_CHAT_MODEL,
+		abortController: AbortController | null = null,
+	) => {
 		// Add user message to the existing messages state
 		const userMessage = {
 			id: `user-${Date.now()}`,
@@ -72,43 +88,66 @@ export default function useChat(): ChatContextType {
 		in_mem_messages.push(userMessage);
 
 		clearContent();
-		const options = {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "text/event-stream",
-				Authorization: `Bearer ${getAuthToken()}`,
-			},
-			payload: JSON.stringify({
-				model: model,
-				stream_mode: "messages",
-				system: constructSystemPrompt("You are a helpful assistant."),
-				// arcade: arcade,
-				metadata: JSON.parse(metadata),
-				messages: updatedMessages
-					.filter((msg) => msg.role === "user" || msg.role === "assistant")
-					.map((msg) => ({
-						role: msg.role,
-						content: msg.content,
-					})),
-			}),
-		};
-		const source = new SSE(`${VITE_API_URL}/llm/stream`, options);
+		const controller = abortController || new AbortController();
+		const source = streamThread({
+			system: constructSystemPrompt("You are a helpful assistant."),
+			messages: updatedMessages
+				.filter((msg) => ["user", "assistant"].includes(msg.role))
+				.map((msg) => ({
+					role: msg.role,
+					content: msg.content,
+				})),
+			model: model,
+			metadata: JSON.parse(metadata),
+			stream_mode: "messages",
+		});
+
 		source.addEventListener("message", function (e: any) {
 			// Assuming we receive JSON-encoded data payloads:
 			const payload = JSON.parse(e.data);
 			sseHandler(payload, in_mem_messages, "messages");
 		});
 
+		// Close handling
+		source.addEventListener("close", () => {
+			console.log("Connection closed");
+			setController(null);
+			setLoading(false);
+		});
+
+		// Retry handling
+		source.addEventListener("retry", () => {
+			console.log("Connection retrying");
+		});
+
+		// Reconnect handling
+		source.addEventListener("reconnect", () => {
+			console.log("Connection reconnected");
+		});
+
+		// Reconnect attempt handling
+		source.addEventListener("reconnectAttempt", () => {
+			console.log("Connection reconnect attempt");
+		});
+
 		source.addEventListener("error", (e: any) => {
 			console.error("Error:", e);
 		});
+
+		controller.signal.addEventListener("abort", () => {
+			console.log("Aborting stream connection");
+			source.close();
+			setLoading(false);
+		});
+
+		return { controller, source };
 	};
 
 	const handleSubmit = (argQuery?: string) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
-		handleSSE(argQuery || query);
+		const { controller } = handleSSE(argQuery || query);
+		setController(controller);
 		setQuery("");
 	};
 
@@ -148,6 +187,7 @@ export default function useChat(): ChatContextType {
 		// Handle Tool Input
 		if (response.response_metadata.finish_reason === "stop") {
 			setLoading(false);
+			setController(null);
 		}
 		if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
 			// Only set tool name if we don't have one yet or if the new name is truthy
@@ -265,10 +305,13 @@ export default function useChat(): ChatContextType {
 		setMessages,
 		metadata,
 		setMetadata,
+		controller,
+		setController,
 		// NEW
 		handleTextareaResize,
 		clearMessages,
 		resetMetadata,
+		abortQuery,
 		// tools
 		arcade,
 		setArcade,

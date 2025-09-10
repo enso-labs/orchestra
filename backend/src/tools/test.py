@@ -1,16 +1,18 @@
 import random
-from langgraph.prebuilt import tool
-from langgraph.runtime import interrupt
+from langchain_core.tools import tool
+from langgraph.types import interrupt
 from langgraph.runtime import get_runtime
 from src.schemas.contexts import ContextSchema
 from src.utils.logger import logger
 
 
+@tool
 def get_stock_price(symbol: str) -> str:
     """Get the stock price of a given symbol"""
     return f"The stock price of {symbol} is {random.randint(100, 200)}"
 
 
+@tool
 def get_weather(location: str) -> str:
     """Get the weather in a given location"""
     runtime = get_runtime(ContextSchema)

@@ -255,9 +255,9 @@ export default function useChatHook() {
 		toolCall,
 		setToolCall,
 		useA2AEffect,
-		abortQuery,
-		controller,
-		setController,
+		// abortQuery,
+		// controller,
+		// setController,
 		// handleTextareaResize,
 	};
 }
