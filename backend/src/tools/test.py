@@ -16,8 +16,9 @@ def get_stock_price(symbol: str) -> str:
 def get_weather(location: str) -> str:
     """Get the weather in a given location"""
     runtime = get_runtime(ContextSchema)
-    user_id = runtime.context.user.id
-    logger.info(f"user_id: {user_id}")
+    if runtime.context and runtime.context.user:
+        user_id = runtime.context.user.id
+        logger.debug(f"user_id: {user_id}")
     return f"The weather in {location} is sunny and {random.randint(60, 80)} degrees"
 
 

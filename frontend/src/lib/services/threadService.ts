@@ -91,12 +91,16 @@ interface StreamThreadPayload {
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Accept: "text/event-stream",
+	};
+	const isAuthenticated = Boolean(getAuthToken());
+	if (isAuthenticated) {
+		headers.Authorization = `Bearer ${getAuthToken()}`;
+	}
 	const source = new SSE(`${VITE_API_URL}/llm/stream`, {
-		headers: {
-			"Content-Type": "application/json",
-			Accept: "text/event-stream",
-			Authorization: `Bearer ${getAuthToken()}`,
-		},
+		headers: headers,
 		payload: JSON.stringify(payload),
 		method: "POST",
 	});

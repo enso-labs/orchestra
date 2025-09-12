@@ -112,21 +112,6 @@ export default function useChat(): ChatContextType {
 			setLoading(false);
 		});
 
-		// Retry handling
-		source.addEventListener("retry", () => {
-			console.log("Connection retrying");
-		});
-
-		// Reconnect handling
-		source.addEventListener("reconnect", () => {
-			console.log("Connection reconnected");
-		});
-
-		// Reconnect attempt handling
-		source.addEventListener("reconnectAttempt", () => {
-			console.log("Connection reconnect attempt");
-		});
-
 		source.addEventListener("error", (e: any) => {
 			console.error("Error:", e);
 		});
