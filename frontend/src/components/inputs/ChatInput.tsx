@@ -8,11 +8,9 @@ import { useRef, useEffect, useState } from "react";
 import useAppHook from "@/hooks/useAppHook";
 import { AudioRecorder } from "./AudioRecorder";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
-import ConfigDrawer from "../drawers/ConfigDrawer";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 
 export default function ChatInput() {
-	const { agents } = useAgentContext();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
 
@@ -110,13 +108,6 @@ export default function ChatInput() {
 			/>
 			<div className="flex justify-between items-center bg-background border border-input rounded-b-2xl border-t-0">
 				<div className="flex items-center gap-2 mb-1 px-1 flex-1">
-					{/* Agent Selector - positioned at bottom left */}
-					{agents.length > 0 && (
-						<div className="w-48">
-							<MenuAgents />
-						</div>
-					)}
-
 					<div className="flex gap-1">
 						{currentModel?.metadata?.multimodal && (
 							<>
@@ -170,7 +161,6 @@ export default function ChatInput() {
 								)}
 							</>
 						)}
-						<ConfigDrawer />
 					</div>
 				</div>
 				<div className="flex items-center gap-2 mr-2">

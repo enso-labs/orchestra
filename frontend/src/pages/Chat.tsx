@@ -45,7 +45,7 @@ export default function Chat() {
 		setSelectedToolMessage,
 		useListThreadsEffect,
 	} = useChatContext();
-	const { useEffectGetAgents } = useAgentContext();
+	// const { useEffectGetAgents } = useAgentContext();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -92,7 +92,7 @@ export default function Chat() {
 		setCurrentThreadId(payload.threadId || null);
 	}, [payload.threadId]);
 
-	useEffectGetAgents();
+	// useEffectGetAgents();
 	useListThreadsEffect(!loading);
 
 	if (messages.length === 0) {
@@ -122,7 +122,6 @@ export default function Chat() {
 						</div>
 						<div className="absolute top-4 right-4">
 							<div className="flex flex-row gap-2 items-center">
-								<SelectModel />
 								<div className="flex-shrink-0">
 									<ColorModeButton />
 								</div>
