@@ -23,8 +23,7 @@ function ToolAction({ selectedToolMessage }: { selectedToolMessage: any }) {
 }
 
 function ChatPanel() {
-	const { messages, messagesEndRef, currentToolCall, handleDrawerClose } =
-		useChatContext();
+	const { messages, currentToolCall, handleDrawerClose } = useChatContext();
 	const isAssistantOpen = false;
 
 	return (
