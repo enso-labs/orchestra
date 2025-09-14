@@ -3,7 +3,6 @@ import { useChatContext } from "@/context/ChatContext";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { formatMessages, truncateFrom } from "@/lib/utils/format";
-import { SettingsPopover } from "../popovers/SettingsPopover";
 import { Link } from "react-router-dom";
 import { searchThreads } from "@/lib/services/threadService";
 
@@ -117,10 +116,6 @@ export function ThreadHistoryDrawer({
 							})}
 					</div>
 				</ScrollArea>
-
-				<div className="p-4 border-t border-border">
-					<SettingsPopover />
-				</div>
 			</div>
 		</>
 	);

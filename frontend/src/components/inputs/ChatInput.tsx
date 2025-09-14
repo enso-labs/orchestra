@@ -10,8 +10,6 @@ import { AudioRecorder } from "./AudioRecorder";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import ConfigDrawer from "../drawers/ConfigDrawer";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
-import MenuAgents from "../menu/MenuAgents/menu-agents";
-import { useAgentContext } from "@/context/AgentContext";
 
 export default function ChatInput() {
 	const { agents } = useAgentContext();

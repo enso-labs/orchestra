@@ -4,9 +4,6 @@ import { createRoot } from "react-dom/client";
 import { AppRoutes } from "./routes";
 import ChatProvider from "./context/ChatContext";
 import ThemeProvider from "./context/ThemeContext";
-import ToolProvider from "./context/ToolContext";
-import AgentProvider from "./context/AgentContext";
-import FlowProvider from "./context/FlowContext";
 import AppProvider from "./context/AppContext";
 
 // Register service worker
@@ -29,13 +26,7 @@ createRoot(document.getElementById("root")!).render(
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<AppProvider>
 				<ChatProvider>
-					<ToolProvider>
-						<AgentProvider>
-							<FlowProvider>
-								<AppRoutes />
-							</FlowProvider>
-						</AgentProvider>
-					</ToolProvider>
+					<AppRoutes />
 				</ChatProvider>
 			</AppProvider>
 		</ThemeProvider>
