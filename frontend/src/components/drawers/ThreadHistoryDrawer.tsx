@@ -1,4 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAppContext } from "@/context/AppContext";
 import { useChatContext } from "@/context/ChatContext";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export function ThreadHistoryDrawer({
 	isOpen,
 	onClose,
 }: ThreadHistoryDrawerProps) {
+	const { setIsDrawerOpen } = useAppContext();
 	const { threads, metadata, setMessages, setMetadata } = useChatContext();
 
 	const metadataCopy = JSON.parse(metadata);
@@ -66,6 +68,7 @@ export function ThreadHistoryDrawer({
 												);
 												setMessages(formatMessages(checkpoint.messages));
 												setMetadata(JSON.stringify(thread.value));
+												setIsDrawerOpen(false);
 											}}
 											className={`w-full text-left p-3 rounded-lg transition-colors border ${
 												metadataCopy.thread_id === thread.thread_id

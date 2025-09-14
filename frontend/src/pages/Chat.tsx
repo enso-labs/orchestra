@@ -32,7 +32,7 @@ function ToolAction({ selectedToolMessage }: { selectedToolMessage: any }) {
 }
 
 export default function Chat() {
-	const { loading } = useAppContext();
+	const { loading, isDrawerOpen, setIsDrawerOpen } = useAppContext();
 	const {
 		messages,
 		payload,
@@ -47,7 +47,6 @@ export default function Chat() {
 	} = useChatContext();
 	// const { useEffectGetAgents } = useAgentContext();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
 	const [, setCurrentThreadId] = useState<string | null>(null);

@@ -13,8 +13,8 @@ export function ChatNav({ onMenuClick, onNewChat }: ChatNavProps) {
 	const { payload, messages, clearMessages } = useChatContext();
 
 	return (
-		<header className="bg-card border-b border-border">
-			<div className="mx-auto px-4 sm:px-6 lg:px-4 py-4">
+		<header>
+			<div className="mx-auto px-4 sm:px-6 lg:px-4 pt-4">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center">
 						<button

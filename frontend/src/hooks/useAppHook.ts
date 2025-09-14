@@ -11,6 +11,7 @@ const INIT_APP_STATE = {
 	loadingMessage: "",
 	appVersion: APP_VERSION,
 	isMenuOpen: false,
+	isDrawerOpen: false,
 };
 
 export default function useAppHook() {
@@ -20,6 +21,7 @@ export default function useAppHook() {
 	);
 	const [appVersion, setAppVersion] = useState(INIT_APP_STATE.appVersion);
 	const [isMenuOpen, setIsMenuOpen] = useState(INIT_APP_STATE.isMenuOpen);
+	const [isDrawerOpen, setIsDrawerOpen] = useState(INIT_APP_STATE.isDrawerOpen);
 
 	const isMobile = () => {
 		const isClient = typeof window === "object";
@@ -99,5 +101,7 @@ export default function useAppHook() {
 		handleMenuOpen,
 		useIsMobile,
 		useDynamicScriptInjectEffect,
+		isDrawerOpen,
+		setIsDrawerOpen,
 	};
 }
