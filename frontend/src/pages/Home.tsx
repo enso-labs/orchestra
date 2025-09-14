@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import HomeSection from "@/components/sections/home";
-import SelectModel from "@/components/selects/SelectModel";
 import ChatPanel from "./chat/ChatPanel";
 
 export default function Home() {
@@ -31,7 +30,6 @@ export default function Home() {
 					</div>
 					<div className="absolute top-4 right-4">
 						<div className="flex flex-row gap-2 items-center">
-							<SelectModel />
 							<div className="flex-shrink-0">
 								<ColorModeButton />
 							</div>

@@ -20,12 +20,6 @@ body {
 	width: 100%;
 }
 
-#root {
-	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
-}
-
 main {
 	padding: 2rem;
 }
@@ -147,7 +141,12 @@ main {
 	* {
 		@apply border-border;
 	}
+	html,
+	body,
+	#root {
+		@apply h-full overflow-hidden;
+	}
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-background text-foreground m-0;
 	}
 }

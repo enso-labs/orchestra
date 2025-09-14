@@ -91,20 +91,24 @@ interface StreamThreadPayload {
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
-	const headers: Record<string, string> = {
-		"Content-Type": "application/json",
-		Accept: "text/event-stream",
-	};
-	const isAuthenticated = Boolean(getAuthToken());
-	if (isAuthenticated) {
-		headers.Authorization = `Bearer ${getAuthToken()}`;
+	try {
+		const headers: Record<string, string> = {
+			"Content-Type": "application/json",
+			Accept: "text/event-stream",
+		};
+		const token = getAuthToken();
+		if (token) headers.Authorization = `Bearer ${token}`;
+
+		const source = new SSE(`${VITE_API_URL}/llm/stream`, {
+			headers: headers,
+			payload: JSON.stringify(payload),
+			method: "POST",
+		});
+		return source;
+	} catch (error: unknown) {
+		console.error("Error streaming thread:", error);
+		throw error;
 	}
-	const source = new SSE(`${VITE_API_URL}/llm/stream`, {
-		headers: headers,
-		payload: JSON.stringify(payload),
-		method: "POST",
-	});
-	return source;
 };
 
 export const searchThreads = async (

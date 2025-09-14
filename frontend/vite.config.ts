@@ -64,7 +64,7 @@ export default defineConfig({
 		},
 	},
 	server: {
-		allowedHosts: ["1a0b-99-36-3-176.ngrok-free.app"],
+		allowedHosts: ["working-cindy-gabriel-ste.trycloudflare.com"],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",

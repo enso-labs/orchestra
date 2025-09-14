@@ -10,7 +10,7 @@ export default function NoAuthLayout({
 	useFetchAppVersionEffect();
 
 	return (
-		<div className="min-h-screen flex flex-col bg-background">
+		<div className="h-full flex flex-col bg-background">
 			{children}
 			<footer className="mt-auto bg-card border-t border-border">
 				<div className="px-4 sm:px-6 lg:px-8 py-4">

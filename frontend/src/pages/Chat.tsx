@@ -13,8 +13,6 @@ import HomeSection from "@/components/sections/home";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import SelectModel from "@/components/selects/SelectModel";
-import { useAgentContext } from "@/context/AgentContext";
 import { useAppContext } from "@/context/AppContext";
 // import SystemMessageCard from "@/components/cards/SystemMessageCard"
 
@@ -47,7 +45,7 @@ export default function Chat() {
 		setSelectedToolMessage,
 		useListThreadsEffect,
 	} = useChatContext();
-	const { useEffectGetAgents } = useAgentContext();
+	// const { useEffectGetAgents } = useAgentContext();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -94,7 +92,7 @@ export default function Chat() {
 		setCurrentThreadId(payload.threadId || null);
 	}, [payload.threadId]);
 
-	useEffectGetAgents();
+	// useEffectGetAgents();
 	useListThreadsEffect(!loading);
 
 	if (messages.length === 0) {
@@ -102,7 +100,7 @@ export default function Chat() {
 			<ChatLayout>
 				<div
 					className={`
-            flex min-h-[calc(100vh-0px)] max-h-[calc(100vh-0px)] relative
+            flex h-full relative
             transition-all duration-200 ease-in-out
             ${isAssistantOpen ? "pr-[var(--chat-drawer-width,320px)]" : ""}
         `}
@@ -124,7 +122,6 @@ export default function Chat() {
 						</div>
 						<div className="absolute top-4 right-4">
 							<div className="flex flex-row gap-2 items-center">
-								<SelectModel />
 								<div className="flex-shrink-0">
 									<ColorModeButton />
 								</div>
@@ -141,7 +138,7 @@ export default function Chat() {
 		<ChatLayout>
 			<div
 				className={`
-          flex min-h-[calc(100vh-0px)] max-h-[calc(100vh-0px)] relative
+          flex h-full relative
           transition-all duration-200 ease-in-out
           ${isAssistantOpen ? "pr-[var(--chat-drawer-width,320px)]" : ""}
       `}
@@ -151,14 +148,10 @@ export default function Chat() {
 					onClose={() => setIsDrawerOpen(false)}
 				/>
 
-				<div className="flex-1 flex flex-col overflow-hidden">
+				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					<ChatNav onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)} />
-					<div className="flex-1 overflow-y-auto p-3 min-h-0">
-						<div className="space-y-4 max-w-4xl mx-auto pb-4">
-							<ChatMessages messages={messages} />
-							<div ref={messagesEndRef} />{" "}
-							{/* Invisible element to scroll to */}
-						</div>
+					<div className="flex-1 min-h-0">
+						<ChatMessages messages={messages} />
 					</div>
 
 					<div className="sticky bottom-0 bg-background border-border">

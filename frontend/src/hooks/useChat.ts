@@ -45,7 +45,12 @@ export default function useChat(): ChatContextType {
 	const toolNameRef = useRef("");
 	const toolCallChunkRef = useRef("");
 	const [query, setQuery] = useState("");
-	const [messages, setMessages] = useState<any[]>([]);
+	const [messages, setMessagesState] = useState<any[]>([]);
+
+	const setMessages = (newMessages: any[]) => {
+		in_mem_messages = [...newMessages];
+		setMessagesState(newMessages);
+	};
 	const [metadata, setMetadata] = useState(() => {
 		const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
 		return JSON.stringify({ thread_id: threadId }, null, 2);
@@ -81,9 +86,6 @@ export default function useChat(): ChatContextType {
 		const updatedMessages = [...messages, userMessage];
 		setMessages(updatedMessages);
 
-		// Add user message to in-memory messages for SSE handling
-		in_mem_messages.push(userMessage);
-
 		clearContent();
 		const controller = abortController || new AbortController();
 		const source = streamThread({
@@ -113,7 +115,7 @@ export default function useChat(): ChatContextType {
 		});
 
 		source.addEventListener("error", (e: any) => {
-			console.error("Error:", e);
+			console.error("Error on stream:", e);
 		});
 
 		controller.signal.addEventListener("abort", () => {
@@ -210,7 +212,7 @@ export default function useChat(): ChatContextType {
 					name: toolNameRef.current,
 				});
 			}
-			setMessages([...history]);
+			setMessagesState([...history]);
 			return;
 		}
 
@@ -231,7 +233,7 @@ export default function useChat(): ChatContextType {
 					...response,
 					content: updatedContent,
 				};
-				setMessages([...history]);
+				setMessagesState([...history]);
 				return;
 			} else {
 				const updateMessage = {
@@ -251,7 +253,7 @@ export default function useChat(): ChatContextType {
 					updateMessage.checkpoint_ns = metadata.checkpoint_ns;
 				}
 				history.push(updateMessage);
-				setMessages([...history]);
+				setMessagesState([...history]);
 				return;
 			}
 		}

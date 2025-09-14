@@ -4,10 +4,14 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { logout } from "@/lib/utils/auth";
 import { Settings, LayoutDashboard, Cog } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useChatContext } from "@/context/ChatContext";
 
 export function SettingsPopover() {
+	const navigate = useNavigate();
+	const { clearMessages } = useChatContext();
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
@@ -41,15 +45,18 @@ export function SettingsPopover() {
 							Dashboard
 						</Button>
 					</Link>
-					<Link to="/settings" className="w-full">
-						<Button
-							variant="ghost"
-							className="w-full justify-start gap-2 text-sm font-normal"
-						>
-							<Cog className="h-4 w-4" />
-							Settings
-						</Button>
-					</Link>
+					<Button
+						onClick={() => {
+							logout();
+							clearMessages();
+							navigate("/");
+						}}
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+					>
+						<Cog className="h-4 w-4" />
+						Logout
+					</Button>
 				</div>
 			</PopoverContent>
 		</Popover>

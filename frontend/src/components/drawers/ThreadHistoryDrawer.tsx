@@ -3,9 +3,9 @@ import { useChatContext } from "@/context/ChatContext";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { formatMessages, truncateFrom } from "@/lib/utils/format";
-import { SettingsPopover } from "../popovers/SettingsPopover";
 import { Link } from "react-router-dom";
 import { searchThreads } from "@/lib/services/threadService";
+import { SettingsPopover } from "@/components/popovers/SettingsPopover";
 
 interface ThreadHistoryDrawerProps {
 	isOpen: boolean;
