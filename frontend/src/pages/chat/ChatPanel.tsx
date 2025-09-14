@@ -1,7 +1,7 @@
 import { ChatNav } from "@/components/nav/ChatNav";
 import { ChatDrawer } from "@/components/drawers/ChatDrawer";
 import ChatInput from "@/components/inputs/ChatInput";
-import ChatMessages from "@/components/lists/ChatMessages";
+// import ChatMessages from "@/components/lists/ChatMessages";
 import ChatLayout from "@/layouts/ChatLayout";
 import { useToolContext } from "@/hooks/useToolContext";
 import { useChatContext } from "@/context/ChatContext";
@@ -41,8 +41,19 @@ function ChatPanel() {
 					<ChatNav onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)} />
 					<div className="flex-1 overflow-y-auto p-3 min-h-0">
 						<div className="space-y-4 max-w-4xl mx-auto pb-4">
-							<ChatMessages messages={messages} />
-							<div ref={messagesEndRef} />{" "}
+							{/* <ChatMessages messages={messages} /> */}
+							{messages.length > 0 &&
+								messages.map((message: any) => (
+									<div key={message.id} className="p-2 rounded-md my-2">
+										<h3 className="text-sm font-bold">
+											{message.role || message.type}{" "}
+											{message.type === "user" && `[${message.model}]`}
+											{message.type === "tool" && `[${message.name}]`}
+										</h3>
+										<p>{message.content || JSON.stringify(message.input)}</p>
+									</div>
+								))}
+							<div ref={messagesEndRef} />
 							{/* Invisible element to scroll to */}
 						</div>
 					</div>

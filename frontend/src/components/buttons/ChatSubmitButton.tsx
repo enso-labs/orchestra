@@ -30,7 +30,10 @@ function ChatSubmitButton({
 	return (
 		<MainToolTip content="Send Message" delayDuration={500}>
 			<Button
-				onClick={handleSubmit}
+				onClick={(e) => {
+					e.stopPropagation();
+					handleSubmit();
+				}}
 				disabled={query.trim() === "" && images.length === 0}
 				size="icon"
 				className="w-8 h-8 rounded-full m-1"

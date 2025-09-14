@@ -113,7 +113,7 @@ export default function useChat(): ChatContextType {
 		});
 
 		source.addEventListener("error", (e: any) => {
-			console.error("Error:", e);
+			console.error("Error on stream:", e);
 		});
 
 		controller.signal.addEventListener("abort", () => {
