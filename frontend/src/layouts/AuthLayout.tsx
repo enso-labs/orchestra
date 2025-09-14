@@ -19,7 +19,7 @@ export default function AuthLayout({
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col bg-background">
+		<div className="h-full flex flex-col bg-background">
 			<header className="bg-card border-b border-border">
 				<div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
 					<div className="flex justify-between items-center">

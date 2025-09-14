@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { formatMessages, truncateFrom } from "@/lib/utils/format";
 import { Link } from "react-router-dom";
 import { searchThreads } from "@/lib/services/threadService";
+import { SettingsPopover } from "@/components/popovers/SettingsPopover";
 
 interface ThreadHistoryDrawerProps {
 	isOpen: boolean;
@@ -116,6 +117,10 @@ export function ThreadHistoryDrawer({
 							})}
 					</div>
 				</ScrollArea>
+
+				<div className="p-4 border-t border-border">
+					<SettingsPopover />
+				</div>
 			</div>
 		</>
 	);

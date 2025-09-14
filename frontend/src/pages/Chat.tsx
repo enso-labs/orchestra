@@ -100,7 +100,7 @@ export default function Chat() {
 			<ChatLayout>
 				<div
 					className={`
-            flex min-h-[calc(100vh-0px)] max-h-[calc(100vh-0px)] relative
+            flex h-full relative
             transition-all duration-200 ease-in-out
             ${isAssistantOpen ? "pr-[var(--chat-drawer-width,320px)]" : ""}
         `}
@@ -138,7 +138,7 @@ export default function Chat() {
 		<ChatLayout>
 			<div
 				className={`
-          flex min-h-[calc(100vh-0px)] max-h-[calc(100vh-0px)] relative
+          flex h-full relative
           transition-all duration-200 ease-in-out
           ${isAssistantOpen ? "pr-[var(--chat-drawer-width,320px)]" : ""}
       `}
@@ -148,14 +148,10 @@ export default function Chat() {
 					onClose={() => setIsDrawerOpen(false)}
 				/>
 
-				<div className="flex-1 flex flex-col overflow-hidden">
+				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					<ChatNav onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)} />
-					<div className="flex-1 overflow-y-auto p-3 min-h-0">
-						<div className="space-y-4 max-w-4xl mx-auto pb-4">
-							<ChatMessages messages={messages} />
-							<div ref={messagesEndRef} />{" "}
-							{/* Invisible element to scroll to */}
-						</div>
+					<div className="flex-1 min-h-0">
+						<ChatMessages messages={messages} />
 					</div>
 
 					<div className="sticky bottom-0 bg-background border-border">

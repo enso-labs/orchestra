@@ -92,7 +92,7 @@ export function Message({ message }: { message: any }) {
 						{message.tool_call_id}
 					</p>
 				</div>
-				<div className="flex justify-start max-w-[91vw] overflow-y-auto">
+				<div className="flex justify-start max-w-[80%] md:max-w-[90%] overflow-y-auto">
 					<div className="bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
 						<ToolAction message={message} />
 					</div>
@@ -159,24 +159,26 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 	}
 
 	return (
-		<div className="flex flex-col gap-2">
-			<ScrollArea className="flex-1 h-0">
-				{messages.length > 0 ? (
-					messages.map((message: any) => (
-						<Message key={message.id} message={message} />
-					))
-				) : (
-					<div className="pt-4 text-center text-muted-foreground">
-						<p>No messages yet</p>
-						<p className="text-sm mt-2">
-							Start a conversation by typing in the input field above.
-						</p>
-					</div>
-				)}
-				<div ref={bottomRef} />
+		<div className="flex flex-col h-full min-h-0 overflow-hidden">
+			<ScrollArea className="flex-1 h-0 p-3">
+				<div className="space-y-4 max-w-4xl mx-auto pb-4">
+					{messages.length > 0 ? (
+						messages.map((message: any) => (
+							<Message key={message.id} message={message} />
+						))
+					) : (
+						<div className="pt-4 text-center text-muted-foreground">
+							<p>No messages yet</p>
+							<p className="text-sm mt-2">
+								Start a conversation by typing in the input field above.
+							</p>
+						</div>
+					)}
+					<div ref={bottomRef} />
+				</div>
 			</ScrollArea>
 			{loading && (
-				<div className="flex justify-start h-full mt-2">
+				<div className="flex justify-start p-3 pt-0">
 					<Loader2 className="h-5 w-5 animate-spin mx-2" />
 					<span className="text-muted-foreground">{loadingMessage}</span>
 				</div>
