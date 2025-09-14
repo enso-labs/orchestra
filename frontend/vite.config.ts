@@ -64,7 +64,7 @@ export default defineConfig({
 		},
 	},
 	server: {
-		allowedHosts: ["working-cindy-gabriel-ste.trycloudflare.com"],
+		allowedHosts: ["poland-wise-counters-neighbor.trycloudflare.com"],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",

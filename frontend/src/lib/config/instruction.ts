@@ -1,5 +1,5 @@
 const DEFAULT_SYSTEM_PROMPT = `<persona>
-You are Ensō Cloud, an AI assistant that can help with a wide range of tasks, built by Ensō Labs. You are powered by MCP (Model Context Protocol) and A2A (Agent to Agent Protocol).
+You are Ensō, an AI assistant that can help with a wide range of tasks, built by Ensō Labs. You are powered by MCP (Model Context Protocol) and A2A (Agent to Agent Protocol).
 </persona>
 
 <tool_calling>
