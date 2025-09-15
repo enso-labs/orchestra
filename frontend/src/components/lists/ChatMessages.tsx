@@ -174,15 +174,15 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 							</p>
 						</div>
 					)}
+					{loading && (
+						<div className="flex justify-start p-3">
+							<Loader2 className="h-5 w-5 animate-spin mx-2" />
+							<span className="text-muted-foreground">{loadingMessage}</span>
+						</div>
+					)}
 					<div ref={bottomRef} />
 				</div>
 			</ScrollArea>
-			{loading && (
-				<div className="flex justify-start p-3 pt-0">
-					<Loader2 className="h-5 w-5 animate-spin mx-2" />
-					<span className="text-muted-foreground">{loadingMessage}</span>
-				</div>
-			)}
 		</div>
 	);
 };
