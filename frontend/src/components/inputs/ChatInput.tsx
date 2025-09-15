@@ -6,7 +6,6 @@ import { ImagePreviewModal } from "./ImagePreviewModal";
 import { useChatContext } from "@/context/ChatContext";
 import { useRef, useEffect, useState } from "react";
 import useAppHook from "@/hooks/useAppHook";
-import { AudioRecorder } from "./AudioRecorder";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 
@@ -70,7 +69,7 @@ export default function ChatInput() {
 
 			{/* Voice Visualizer - only show when recording */}
 			{isRecording && (
-				<div className="px-4 py-2 bg-background border border-input rounded-t-2xl border-b-0">
+				<div className="px-4 py-2 bg-background border border-input rounded-t-3xl border-b-0">
 					<VoiceVisualizer
 						controls={recorderControls}
 						height={35}
@@ -86,7 +85,7 @@ export default function ChatInput() {
 
 			<textarea
 				ref={textareaRef}
-				className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? "rounded-none" : "rounded-t-2xl"} focus:outline-none border-b-0`}
+				className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? "rounded-none" : "rounded-t-3xl"} focus:outline-none border-b-0`}
 				placeholder="How can I help you be present?"
 				rows={1}
 				value={query}
@@ -106,7 +105,7 @@ export default function ChatInput() {
 					}
 				}}
 			/>
-			<div className="flex justify-between items-center bg-background border border-input rounded-b-2xl border-t-0">
+			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
 				<div className="flex items-center gap-2 mb-1 px-1 flex-1">
 					<div className="flex gap-1">
 						{currentModel?.metadata?.multimodal && (
@@ -163,14 +162,12 @@ export default function ChatInput() {
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2 mr-2">
-					<AudioRecorder
-						onRecordingChange={setIsRecording}
-						recorderControls={recorderControls}
-					/>
+				<div className="flex items-center gap-2">
 					<ChatSubmitButton
 						abortQuery={abortQuery}
 						handleSubmit={handleSubmit}
+						onRecordingChange={setIsRecording}
+						recorderControls={recorderControls}
 					/>
 				</div>
 			</div>

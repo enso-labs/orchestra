@@ -75,6 +75,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 					margin: 0,
 					borderTopLeftRadius: 0,
 					borderTopRightRadius: 0,
+					fontSize: "10px",
 				}}
 			>
 				{code}
