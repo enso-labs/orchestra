@@ -21,13 +21,8 @@ function ChatSubmitButton({
 }: ChatSubmitButtonProps) {
 	const { controller, query, images, setQuery } = useChatContext();
 
-	const {
-		startRecording,
-		stopRecording,
-		isRecordingInProgress,
-		recordedBlob,
-		error,
-	} = recorderControls || {};
+	const { startRecording, stopRecording, isRecordingInProgress, recordedBlob } =
+		recorderControls || {};
 
 	// Notify parent component when recording state changes
 	useEffect(() => {

@@ -13,7 +13,7 @@ export function ChatNav({ onMenuClick, onNewChat }: ChatNavProps) {
 	const { payload, messages, clearMessages } = useChatContext();
 
 	return (
-		<header>
+		<header className="bg-transparent">
 			<div className="mx-auto px-4 sm:px-6 lg:px-4 pt-4">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center">
