@@ -1,6 +1,7 @@
 import random
 from langchain_core.tools import tool
 from langgraph.types import interrupt
+from src.constants import APP_ENV
 from langgraph.runtime import get_runtime
 from src.schemas.contexts import ContextSchema
 from src.utils.logger import logger
@@ -28,4 +29,6 @@ def human_assistance(query: str) -> str:
     return human_response["data"]
 
 
-TEST_TOOLS = [get_stock_price, get_weather, human_assistance]
+TEST_TOOLS = (
+    [get_stock_price, get_weather, human_assistance] if APP_ENV == "test" else []
+)

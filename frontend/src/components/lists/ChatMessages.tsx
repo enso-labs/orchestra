@@ -92,8 +92,8 @@ export function Message({ message }: { message: any }) {
 						{message.tool_call_id}
 					</p>
 				</div>
-				<div className="flex justify-start max-w-[80%] md:max-w-[90%] overflow-y-auto">
-					<div className="bg-transparent text-foreground px-3 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
+				<div className="flex justify-start overflow-y-auto">
+					<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
 						<ToolAction message={message} />
 					</div>
 				</div>
