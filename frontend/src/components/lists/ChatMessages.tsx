@@ -160,8 +160,8 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 
 	return (
 		<div className="flex flex-col h-full min-h-0 overflow-hidden">
-			<ScrollArea className="flex-1 h-0 p-3">
-				<div className="space-y-4 max-w-4xl mx-auto pb-4">
+			<ScrollArea className="flex-1 h-0 p-1">
+				<div className="space-y-4 max-w-4xl mx-auto pb-4 px-5">
 					{messages.length > 0 ? (
 						messages.map((message: any) => (
 							<Message key={message.id} message={message} />
