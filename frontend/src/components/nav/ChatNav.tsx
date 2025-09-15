@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { useChatContext } from "@/context/ChatContext";
 import { Menu, Share } from "lucide-react";
+import SelectModel from "../lists/SelectModel";
 
 interface ChatNavProps {
 	onMenuClick: () => void;
@@ -26,40 +27,49 @@ export function ChatNav({ onMenuClick, onNewChat }: ChatNavProps) {
 					</div>
 
 					<div className="flex items-center gap-2">
-						<Button
-							variant="outline"
-							size="icon"
-							onClick={() => {
-								const { threadId } = payload;
-								if (threadId) {
-									const shareUrl = `${window.location.origin}/share/${threadId}`;
-									navigator.clipboard
-										.writeText(shareUrl)
-										.then(() => {
-											alert(`Copied ${shareUrl}`);
-										})
-										.catch((err) => {
-											console.error("Failed to copy URL: ", err);
-										});
-								}
-							}}
-							className="h-9 w-9"
-							title="Share Thread"
-						>
-							<Share className="h-4 w-4" />
-						</Button>
-						{messages.length > 0 && (
+						<div className="w-36">
+							<SelectModel />
+						</div>
+						<div className="w-9">
 							<Button
 								variant="outline"
 								size="icon"
-								onClick={onNewChat || clearMessages}
+								onClick={() => {
+									const { threadId } = payload;
+									if (threadId) {
+										const shareUrl = `${window.location.origin}/share/${threadId}`;
+										navigator.clipboard
+											.writeText(shareUrl)
+											.then(() => {
+												alert(`Copied ${shareUrl}`);
+											})
+											.catch((err) => {
+												console.error("Failed to copy URL: ", err);
+											});
+									}
+								}}
 								className="h-9 w-9"
-								title="New Chat"
+								title="Share Thread"
 							>
-								<FaPlus className="h-4 w-4" />
+								<Share className="h-4 w-4" />
 							</Button>
+						</div>
+						{messages.length > 0 && (
+							<div className="w-9">
+								<Button
+									variant="outline"
+									size="icon"
+									onClick={onNewChat || clearMessages}
+									className="h-9 w-9"
+									title="New Chat"
+								>
+									<FaPlus className="h-4 w-4" />
+								</Button>
+							</div>
 						)}
-						<ColorModeButton />
+						<div className="w-9">
+							<ColorModeButton />
+						</div>
 					</div>
 				</div>
 			</div>

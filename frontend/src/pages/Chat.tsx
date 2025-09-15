@@ -14,6 +14,7 @@ import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
+import SelectModel from "@/components/lists/SelectModel";
 // import SystemMessageCard from "@/components/cards/SystemMessageCard"
 
 function ToolAction({ selectedToolMessage }: { selectedToolMessage: any }) {
@@ -121,6 +122,7 @@ export default function Chat() {
 						</div>
 						<div className="absolute top-4 right-4">
 							<div className="flex flex-row gap-2 items-center">
+								<SelectModel />
 								<div className="flex-shrink-0">
 									<ColorModeButton />
 								</div>

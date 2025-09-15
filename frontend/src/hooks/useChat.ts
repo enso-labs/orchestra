@@ -27,6 +27,8 @@ export type ChatContextType = {
 	metadata: string;
 	setMetadata: (metadata: string) => void;
 	abortQuery: () => void;
+	model: string;
+	setModel: (model: string) => void;
 	// NEW
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
@@ -45,6 +47,7 @@ export default function useChat(): ChatContextType {
 	const toolNameRef = useRef("");
 	const toolCallChunkRef = useRef("");
 	const [query, setQuery] = useState("");
+	const [model, setModel] = useState<string>(DEFAULT_CHAT_MODEL);
 	const [messages, setMessagesState] = useState<any[]>([]);
 
 	const setMessages = (newMessages: any[]) => {
@@ -71,7 +74,6 @@ export default function useChat(): ChatContextType {
 
 	const handleSSE = (
 		query: string,
-		model: string = DEFAULT_CHAT_MODEL,
 		abortController: AbortController | null = null,
 	) => {
 		// Add user message to the existing messages state
@@ -291,6 +293,8 @@ export default function useChat(): ChatContextType {
 		setMetadata,
 		controller,
 		setController,
+		model,
+		setModel,
 		// NEW
 		handleTextareaResize,
 		clearMessages,
