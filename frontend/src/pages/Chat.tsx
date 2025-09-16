@@ -1,13 +1,9 @@
 import ChatLayout from "../layouts/ChatLayout";
 import { useChatContext } from "../context/ChatContext";
 import { ThreadHistoryDrawer } from "@/components/drawers/ThreadHistoryDrawer";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChatNav } from "@/components/nav/ChatNav";
-import { ChatDrawer } from "@/components/drawers/ChatDrawer";
 import ChatInput from "@/components/inputs/ChatInput";
-import DefaultTool from "@/components/tools/Default";
-import SearchEngineTool from "@/components/tools/SearchEngine";
-import { findToolCall } from "@/lib/utils/format";
 import ChatMessages from "@/components/lists/ChatMessages";
 import HomeSection from "@/components/sections/home";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
@@ -15,42 +11,13 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import SelectModel from "@/components/lists/SelectModel";
-// import SystemMessageCard from "@/components/cards/SystemMessageCard"
-
-function ToolAction({ selectedToolMessage }: { selectedToolMessage: any }) {
-	if (selectedToolMessage)
-		return (
-			<>
-				{selectedToolMessage.name === "search_engine" ? (
-					<SearchEngineTool selectedToolMessage={selectedToolMessage} />
-				) : selectedToolMessage.name === "available_tools" ? (
-					<DefaultTool selectedToolMessage={selectedToolMessage} />
-				) : (
-					<DefaultTool selectedToolMessage={selectedToolMessage} />
-				)}
-			</>
-		);
-}
 
 export default function Chat() {
 	const { loading, isDrawerOpen, setIsDrawerOpen } = useAppContext();
-	const {
-		messages,
-		payload,
-		useGetHistoryEffect,
-		isToolCallInProgress,
-		setIsToolCallInProgress,
-		currentToolCall,
-		setCurrentToolCall,
-		// currentModel,
-		setSelectedToolMessage,
-		useListThreadsEffect,
-	} = useChatContext();
-	// const { useEffectGetAgents } = useAgentContext();
+	const { messages, useListThreadsEffect, useListCheckpointsEffect, metadata } =
+		useChatContext();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-
-	const [, setCurrentThreadId] = useState<string | null>(null);
+	const isAssistantOpen = false;
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,40 +27,8 @@ export default function Chat() {
 		scrollToBottom();
 	}, [messages]); // Scroll when messages change
 
-	useEffect(() => {
-		if (currentToolCall) {
-			const foundToolCall = findToolCall(currentToolCall, messages);
-			setSelectedToolMessage(foundToolCall);
-			setIsAssistantOpen(true);
-		}
-	}, [isToolCallInProgress, currentToolCall]);
-
-	useGetHistoryEffect();
-
-	const handleDrawerClose = () => {
-		setIsAssistantOpen(false);
-		setSelectedToolMessage(null);
-		setIsToolCallInProgress(false);
-		setCurrentToolCall(null);
-	};
-
-	const prevThreadIdRef = useRef();
-
-	useEffect(() => {
-		// Only perform the check if we have a previous value
-		if (prevThreadIdRef.current !== undefined) {
-			if (payload.threadId && payload.threadId !== prevThreadIdRef.current) {
-				handleDrawerClose();
-			}
-		}
-
-		// Update the ref and state
-		prevThreadIdRef.current = payload.threadId;
-		setCurrentThreadId(payload.threadId || null);
-	}, [payload.threadId]);
-
-	// useEffectGetAgents();
 	useListThreadsEffect(!loading);
+	useListCheckpointsEffect(!loading, JSON.parse(metadata));
 
 	if (messages.length === 0) {
 		return (
@@ -163,12 +98,6 @@ export default function Chat() {
 						</div>
 					</div>
 				</div>
-
-				<ChatDrawer isOpen={isAssistantOpen} onClose={handleDrawerClose}>
-					{currentToolCall && (
-						<ToolAction selectedToolMessage={currentToolCall} />
-					)}
-				</ChatDrawer>
 			</div>
 		</ChatLayout>
 	);

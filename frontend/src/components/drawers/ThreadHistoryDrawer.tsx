@@ -7,6 +7,7 @@ import { formatMessages, truncateFrom } from "@/lib/utils/format";
 import { Link } from "react-router-dom";
 import { searchThreads } from "@/lib/services/threadService";
 import { SettingsPopover } from "@/components/popovers/SettingsPopover";
+import { useState } from "react";
 
 interface ThreadHistoryDrawerProps {
 	isOpen: boolean;
@@ -19,6 +20,7 @@ export function ThreadHistoryDrawer({
 }: ThreadHistoryDrawerProps) {
 	const { setIsDrawerOpen } = useAppContext();
 	const { threads, metadata, setMessages, setMetadata } = useChatContext();
+	const [copiedThreadId, setCopiedThreadId] = useState<string | null>(null);
 
 	const metadataCopy = JSON.parse(metadata);
 
@@ -71,7 +73,7 @@ export function ThreadHistoryDrawer({
 												setIsDrawerOpen(false);
 											}}
 											className={`w-full text-left p-3 rounded-lg transition-colors border ${
-												metadataCopy.thread_id === thread.thread_id
+												metadataCopy.thread_id === thread.value.thread_id
 													? "bg-accent border-accent"
 													: "hover:bg-accent/50 border-border"
 											}`}
@@ -87,11 +89,45 @@ export function ThreadHistoryDrawer({
 															)
 														: "no content found"}
 												</p>
-												<p className="text-xs text-muted-foreground mt-1 truncate">
-													{formatDistanceToNow(new Date(thread.updated_at), {
-														addSuffix: true,
-													})}
-												</p>
+												<div className="flex justify-between items-center mt-1">
+													<p className="text-xs text-muted-foreground truncate">
+														{formatDistanceToNow(new Date(thread.updated_at), {
+															addSuffix: true,
+														})}
+													</p>
+													<div className="flex items-center gap-1">
+														<p
+															className="text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+															onClick={(e) => {
+																e.stopPropagation();
+																navigator.clipboard.writeText(
+																	thread.value.thread_id,
+																);
+																setCopiedThreadId(thread.value.thread_id);
+																setTimeout(() => setCopiedThreadId(null), 2000);
+															}}
+															title="Click to copy thread ID"
+														>
+															{thread.value.thread_id}
+														</p>
+														{copiedThreadId === thread.value.thread_id && (
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																className="h-3 w-3 text-green-500"
+																fill="none"
+																viewBox="0 0 24 24"
+																stroke="currentColor"
+															>
+																<path
+																	strokeLinecap="round"
+																	strokeLinejoin="round"
+																	strokeWidth={2}
+																	d="M5 13l4 4L19 7"
+																/>
+															</svg>
+														)}
+													</div>
+												</div>
 											</div>
 										</button>
 										<Button

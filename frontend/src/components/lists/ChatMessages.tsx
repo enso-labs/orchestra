@@ -39,6 +39,7 @@ export function Message({ message }: { message: any }) {
 									className="p-1 rounded hover:bg-muted transition-colors"
 									onClick={() => {
 										navigator.clipboard.writeText(message.content);
+										console.log(message);
 										alert("Copied to clipboard (User Message)");
 									}}
 								>
@@ -138,8 +139,8 @@ export function Message({ message }: { message: any }) {
 }
 
 const ChatMessages = ({ messages }: { messages: any[] }) => {
-	const bottomRef = useRef<HTMLDivElement>(null);
 	const { loading, loadingMessage } = useAppContext();
+	const bottomRef = useRef<HTMLDivElement>(null);
 
 	// Scroll to bottom of messages when messages change
 	useEffect(() => {

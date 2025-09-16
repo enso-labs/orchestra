@@ -35,6 +35,7 @@ export default function Login() {
 				const data = await response.json();
 				// Store JWT token in localStorage
 				localStorage.setItem(TOKEN_NAME, data.access_token);
+				localStorage.setItem("enso:auth:user", JSON.stringify(data.user));
 				navigate("/chat");
 			} else {
 				const errorData = await response.json();

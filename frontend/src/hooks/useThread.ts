@@ -13,6 +13,10 @@ export type ThreadContextType = {
 		metadata: { thread_id?: string; checkpoint_id?: string },
 	) => void;
 	useListThreadsEffect: (trigger?: boolean) => void;
+	useListCheckpointsEffect: (
+		trigger?: boolean,
+		metadata?: { thread_id?: string },
+	) => void;
 };
 
 export default function useThread(): ThreadContextType {
@@ -41,6 +45,15 @@ export default function useThread(): ThreadContextType {
 		}, [null, trigger]);
 	};
 
+	const useListCheckpointsEffect = (
+		trigger?: boolean,
+		metadata: { thread_id?: string } = {},
+	) => {
+		useEffect(() => {
+			fetchThreads("list_checkpoints", metadata);
+		}, [null, trigger]);
+	};
+
 	return {
 		threads,
 		setThreads,
@@ -50,5 +63,6 @@ export default function useThread(): ThreadContextType {
 		setCheckpoint,
 		searchThreads,
 		useListThreadsEffect,
+		useListCheckpointsEffect,
 	};
 }
