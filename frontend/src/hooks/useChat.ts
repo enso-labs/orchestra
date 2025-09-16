@@ -112,6 +112,7 @@ export default function useChat(): ChatContextType {
 		// Close handling
 		source.addEventListener("close", () => {
 			console.log("Connection closed");
+			source.close();
 			setController(null);
 			setLoading(false);
 		});

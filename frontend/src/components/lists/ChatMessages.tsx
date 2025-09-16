@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Wrench, Copy, Edit, RotateCcw } from "lucide-react";
+import { Loader2, Wrench, Copy, Edit } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
-import { useChatContext } from "@/context/ChatContext";
+// import { useChatContext } from "@/context/ChatContext";
 import SearchEngineTool from "../tools/SearchEngine";
 
 function ToolAction({ message }: { message: any }) {
@@ -20,7 +20,7 @@ function ToolAction({ message }: { message: any }) {
 export function Message({ message }: { message: any }) {
 	const ICON_SIZE = 4;
 	const [isEditing, setIsEditing] = useState(false);
-	const { handleSubmit, clearMessages, messages } = useChatContext();
+	// const { handleSubmit, clearMessages, messages } = useChatContext();
 
 	if (["human", "user"].includes(message.role)) {
 		return (
@@ -37,17 +37,14 @@ export function Message({ message }: { message: any }) {
 							<div className="flex absolute bottom-1 right-1">
 								<button
 									className="p-1 rounded hover:bg-muted transition-colors"
-									onClick={(e) => {
-										e.stopPropagation();
-										clearMessages(
-											messages.findIndex((m: any) => m.id === message.id),
-										);
-										handleSubmit(message.content);
-										setIsEditing(false);
+									onClick={() => {
+										navigator.clipboard.writeText(message.content);
+										console.log(message);
+										alert("Copied to clipboard (User Message)");
 									}}
 								>
-									<RotateCcw
-										className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
+									<Copy
+										className={`h-${ICON_SIZE} w-${ICON_SIZE} hover:text-foreground`}
 									/>
 								</button>
 								<button
@@ -58,7 +55,7 @@ export function Message({ message }: { message: any }) {
 									}}
 								>
 									<Edit
-										className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
+										className={`h-${ICON_SIZE} w-${ICON_SIZE} hover:text-foreground`}
 									/>
 								</button>
 							</div>
@@ -142,8 +139,8 @@ export function Message({ message }: { message: any }) {
 }
 
 const ChatMessages = ({ messages }: { messages: any[] }) => {
-	const bottomRef = useRef<HTMLDivElement>(null);
 	const { loading, loadingMessage } = useAppContext();
+	const bottomRef = useRef<HTMLDivElement>(null);
 
 	// Scroll to bottom of messages when messages change
 	useEffect(() => {

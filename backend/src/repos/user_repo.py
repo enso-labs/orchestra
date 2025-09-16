@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from src.schemas.entities.auth import UserCreate
 from src.schemas.models import Thread, User, Token
 from src.constants import APP_SECRET_KEY
 from src.utils.logger import logger
@@ -62,10 +63,12 @@ class UserRepo:
             for token in tokens
         ]
 
-    async def create(self, user_data: User) -> User:
+    async def create(self, user_data: UserCreate) -> User:
         """Create a new user."""
         user = User(
-            **user_data.model_dump(),
+            email=user_data.email,
+            username=user_data.username,
+            name=user_data.name,
             hashed_password=User.get_password_hash(user_data.password),
         )
         self.db.add(user)

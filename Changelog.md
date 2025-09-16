@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.2
+
+### Changed
+  - feat/367-checkpointing (2025-09-15)
+  - feat/359-pre-commit-hooks (2025-09-07)
+  - feat/357-graph-selection (2025-09-02)
+
 ## v0.0.1
 
 ### Fixed
@@ -34,8 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bugfix/28-cannot-auth-tools-list (2024-11-30)
 
 ### Changed 
-  - feat/359-pre-commit-hooks (2025-09-07)
-  - feat/357-graph-selection (2025-09-02)
   - feat/332-add-memories (2025-06-15)
   - feat/290-api-as-a-tool-v2 (2025-06-08)
   - feat/327-agent-select-from-chatinput (2025-06-06)
