@@ -76,7 +76,7 @@ async def llm_stream(
                 async for chunk in agent.astream(
                     {"messages": params.to_langchain_messages()},
                     stream_mode=params.stream_mode,
-                    context={"user": user} if user else None,
+                    context={"user_id": user.id} if user else None,
                 ):
                     # Serialize and yield each chunk as SSE
                     data = ujson.dumps(

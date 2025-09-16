@@ -63,7 +63,7 @@ async def register(
         )
 
     # Create new user
-    user = await user_repo.create(user_data.model_dump())
+    user = await user_repo.create(user_data)
     # Create user response
     user_response = UserResponse(
         id=str(user.id), username=user.username, email=user.email, name=user.name
