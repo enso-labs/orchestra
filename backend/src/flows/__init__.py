@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.prebuilt import create_react_agent
-from langgraph.runtime import get_runtime
 from langgraph.store.base import BaseStore
 from langchain_core.messages import BaseMessage, AIMessage
 from langgraph.graph.state import CompiledStateGraph
@@ -13,8 +12,6 @@ from deepagents import create_deep_agent, SubAgent
 
 
 from src.services.memory import memory_service
-from src.services.memory import in_memory_store
-from src.services.checkpoint import in_memory_checkpointer
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.logger import logger
@@ -67,7 +64,7 @@ def graph_builder(
             prompt=prompt,
             checkpointer=checkpointer,
             context_schema=context_schema,
-            # store=store,
+            store=store,
         )
 
     if graph_id == "deepagent":
@@ -78,7 +75,7 @@ def graph_builder(
             instructions=prompt,
             checkpointer=checkpointer,
             context_schema=context_schema,
-            # store=store,
+            store=store,
         )
 
 
@@ -117,8 +114,8 @@ async def construct_agent(params: LLMRequest | LLMStreamRequest):
         tools=tools,
         context_schema=ContextSchema,
         prompt=prompt,
-        checkpointer=in_memory_checkpointer if config else None,
-        store=in_memory_store if config else None,
+        checkpointer=checkpoint_service.checkpointer if config else None,
+        store=thread_service.store if config else None,
     )
     return agent
 
@@ -150,15 +147,6 @@ class Orchestra:
             checkpointer=self.checkpointer,
             store=self.store,
         )
-
-    def invoke(self, messages: list[BaseMessage]):
-        return self.graph.invoke(messages, self.config)
-
-    def stream(self, messages: list[BaseMessage]):
-        return self.graph.stream(messages, self.config)
-
-    def ainvoke(self, messages: list[BaseMessage]):
-        return self.graph.ainvoke(messages, self.config)
 
     def astream(
         self,

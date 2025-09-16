@@ -42,7 +42,7 @@ export default function useThread(): ThreadContextType {
 	const useListThreadsEffect = (trigger?: boolean) => {
 		useEffect(() => {
 			fetchThreads("list_threads");
-		}, [null, trigger]);
+		}, [trigger]);
 	};
 
 	const useListCheckpointsEffect = (
@@ -51,7 +51,7 @@ export default function useThread(): ThreadContextType {
 	) => {
 		useEffect(() => {
 			fetchThreads("list_checkpoints", metadata);
-		}, [null, trigger]);
+		}, [trigger]);
 	};
 
 	return {

@@ -211,7 +211,7 @@ class LLMRequest(BaseModel):
     # tools: Optional[List[BaseTool]] = Field(default_factory=list)
     # mcp: Optional[dict] = Field(default_factory=dict)
     metadata: Optional[Config] = Field(
-        default=None, description="LangGraph configuration"
+        default={}, description="LangGraph configuration"
     )
 
     class ChatMessage(BaseModel):

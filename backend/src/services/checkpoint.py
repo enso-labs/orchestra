@@ -3,19 +3,12 @@ from langchain_core.runnables.config import RunnableConfig
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.base import Checkpoint
 
-from src.schemas.entities import ThreadSearch
-from src.services.thread import thread_service
-
-in_memory_checkpointer = InMemorySaver()
-
 
 class CheckpointService:
-    def __init__(self, checkpointer: InMemorySaver = in_memory_checkpointer):
-        self.checkpointer = checkpointer
+    def __init__(self, user_id: str = None):
+        self.user_id = user_id
+        self.checkpointer = InMemorySaver()
         self.graph = create_react_agent("", [], checkpointer=self.checkpointer)
-
-    async def search_threads(self):
-        return await thread_service.search()
 
     async def list_checkpoints(self, thread_id: str):
         config = RunnableConfig(configurable={"thread_id": thread_id})
@@ -52,6 +45,12 @@ class CheckpointService:
 
     async def update_checkpoint_state(self, config: RunnableConfig, values: dict):
         return await self.graph.aupdate_state(config=config, values=values)
+
+    async def delete_thread(self, thread_id: str) -> bool:
+        if thread_id in self.checkpointer.storage:
+            del self.checkpointer.storage[thread_id]
+            return True
+        return False
 
 
 checkpoint_service = CheckpointService()
