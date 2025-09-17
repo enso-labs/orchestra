@@ -14,15 +14,9 @@ class CheckpointService:
         config = RunnableConfig(configurable={"thread_id": thread_id})
         checkpoints = []
         async for checkpoint in self.graph.aget_state_history(config):
-            checkpoints.append(
-                {
-                    **checkpoint.config,
-                    "values": checkpoint.values,
-                    "metadata": checkpoint.metadata,
-                    "parent_config": checkpoint.parent_config,
-                    "created_at": checkpoint.created_at,
-                }
-            )
+            checkpoint = checkpoint._asdict()
+            del checkpoint["tasks"]
+            checkpoints.append(checkpoint)
         return checkpoints
 
     async def get_checkpoint(
@@ -41,12 +35,13 @@ class CheckpointService:
             configurable={"thread_id": thread_id, "checkpoint_id": checkpoint_id}
         )
         checkpoint = await self.graph.aget_state(config)
-        return {**checkpoint.values, **checkpoint.config, **checkpoint.parent_config}
+        return checkpoint._asdict()
+        # return {**checkpoint.values, **checkpoint.config, **checkpoint.parent_config}
 
     async def update_checkpoint_state(self, config: RunnableConfig, values: dict):
         return await self.graph.aupdate_state(config=config, values=values)
 
-    async def delete_thread(self, thread_id: str) -> bool:
+    async def delete_checkpoints_for_thread(self, thread_id: str) -> bool:
         if thread_id in self.checkpointer.storage:
             del self.checkpointer.storage[thread_id]
             return True

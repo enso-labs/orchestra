@@ -3,7 +3,6 @@ import { useAppContext } from "@/context/AppContext";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import { constructSystemPrompt } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
-import { handleStopReason } from "./useStream";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -177,8 +176,13 @@ export default function useChat(): ChatContextType {
 	const handleMessages = (payload: any, history: any[]) => {
 		const response = payload[0];
 		const metadata = payload[1];
-		// Handle Stop Reason
-		if (handleStopReason(response.response_metadata)) {
+		// Handle Tool Input
+		if (
+			["stop", "end_turn"].includes(
+				response.response_metadata.finish_reason ||
+					response.response_metadata.stop_reason,
+			)
+		) {
 			setLoading(false);
 			setController(null);
 		}

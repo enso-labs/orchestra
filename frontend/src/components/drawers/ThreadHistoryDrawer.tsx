@@ -65,10 +65,12 @@ export function ThreadHistoryDrawer({
 										<button
 											onClick={async () => {
 												const checkpoint = await searchThreads(
-													"get_checkpoint",
+													"list_checkpoints",
 													config,
 												);
-												setMessages(formatMessages(checkpoint.messages));
+												setMessages(
+													formatMessages(checkpoint[0].values.messages),
+												);
 												setMetadata(JSON.stringify(thread.value));
 												setIsDrawerOpen(false);
 											}}
