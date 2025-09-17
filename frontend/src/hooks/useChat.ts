@@ -33,6 +33,8 @@ export type ChatContextType = {
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
 	resetMetadata: () => void;
+	state: any[];
+	setState: (state: any[]) => void;
 	// tools
 	arcade: {
 		tools: string[];
@@ -49,6 +51,7 @@ export default function useChat(): ChatContextType {
 	const [query, setQuery] = useState("");
 	const [model, setModel] = useState<string>(DEFAULT_CHAT_MODEL);
 	const [messages, setMessagesState] = useState<any[]>([]);
+	const [state, setState] = useState<any[]>([]);
 
 	const setMessages = (newMessages: any[]) => {
 		in_mem_messages = [...newMessages];
@@ -92,17 +95,7 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const source = streamThread({
 			system: constructSystemPrompt("You are a helpful assistant."),
-			messages: updatedMessages
-				.filter((msg) => ["user", "assistant"].includes(msg.role))
-				.map((msg) => ({
-					role: msg.role,
-					content: [
-						{
-							type: "text",
-							text: msg.content,
-						},
-					],
-				})),
+			messages: [{ role: "user", content: [{ type: "text", text: query }] }],
 			model: model,
 			metadata: JSON.parse(metadata),
 			stream_mode: "messages",
@@ -176,6 +169,7 @@ export default function useChat(): ChatContextType {
 	const handleMessages = (payload: any, history: any[]) => {
 		const response = payload[0];
 		const metadata = payload[1];
+
 		// Handle Tool Input
 		if (
 			["stop", "end_turn"].includes(
@@ -315,6 +309,8 @@ export default function useChat(): ChatContextType {
 		setController,
 		model,
 		setModel,
+		state,
+		setState,
 		// NEW
 		handleTextareaResize,
 		clearMessages,

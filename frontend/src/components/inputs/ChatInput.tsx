@@ -8,11 +8,12 @@ import { useRef, useEffect, useState } from "react";
 import useAppHook from "@/hooks/useAppHook";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
+import { useAppContext } from "@/context/AppContext";
 
 export default function ChatInput() {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
-
+	const { loading } = useAppContext();
 	const {
 		query,
 		currentModel,
@@ -101,7 +102,7 @@ export default function ChatInput() {
 						query.length > 0
 					) {
 						e.preventDefault();
-						handleSubmit();
+						if (!loading && !isMobile()) handleSubmit();
 					}
 				}}
 			/>

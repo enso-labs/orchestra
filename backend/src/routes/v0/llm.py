@@ -72,27 +72,32 @@ async def llm_stream(
     try:
         agent = await construct_agent(params)
 
-        async def event_generator():
+        async def event_generator(attach_state: bool = False):
             try:
                 async for chunk in agent.astream(
                     {"messages": params.to_langchain_messages()},
                     stream_mode=params.stream_mode,
                     context={"user_id": user.id} if user else None,
                 ):
-                    # Serialize and yield each chunk as SSE
-                    data = ujson.dumps(
-                        convert_messages(chunk, stream_mode=params.stream_mode)
+                    # Get the state of the agent
+                    state = await agent.aget_state()
+
+                    # Convert the chunk to the appropriate format
+                    converted_chunk = convert_messages(
+                        chunk, stream_mode=params.stream_mode
                     )
-                    import os
+                    if attach_state:
+                        converted_state = convert_messages(
+                            state.values, stream_mode="values"
+                        )
+                        converted_chunk.extend([converted_state])
 
-                    # Ensure the logs directory exists
-                    logs_dir = "logs"
-                    os.makedirs(logs_dir, exist_ok=True)
-
-                    # Find the next available log file name by incrementing a counter
+                    # Serialize and yield each chunk as SSE
+                    data = ujson.dumps(converted_chunk)
                     log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
-                    logger.debug(str(data))
+                    logger.debug(f"data: {str(data)}")
                     yield f"data: {data}\n\n"
+
             except Exception as e:
                 # Yield error as SSE if streaming fails
                 logger.exception("Error in event_generator: %s", e)

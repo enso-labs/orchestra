@@ -20,7 +20,6 @@ function ToolAction({ message }: { message: any }) {
 export function Message({ message }: { message: any }) {
 	const ICON_SIZE = 4;
 	const [isEditing, setIsEditing] = useState(false);
-	// const { handleSubmit, clearMessages, messages } = useChatContext();
 
 	if (["human", "user"].includes(message.role)) {
 		return (
