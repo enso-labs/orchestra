@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.0.2
 
+### Fixed
+  - bug/370-anthropic-streaming (2025-09-16)
+
 ### Changed
   - feat/361-separate-user-threads (2025-09-16)
   - feat/367-checkpointing (2025-09-15)

@@ -82,9 +82,11 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
 	}
 };
 
+type MessageContent = string | Array<{ type: string; [key: string]: any }>;
+
 interface StreamThreadPayload {
 	system: string;
-	messages: { role: string; content: string; [key: string]: any }[];
+	messages: { role: string; content: MessageContent; [key: string]: any }[];
 	model: string;
 	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
 	stream_mode: string;

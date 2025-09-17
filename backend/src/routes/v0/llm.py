@@ -14,10 +14,11 @@ from fastapi import (
 )
 from langchain.chat_models import init_chat_model
 
+from src.constants import APP_LOG_LEVEL
 from src.schemas.models import ProtectedUser
 from src.schemas.entities import Answer, ChatInput
 from src.utils.auth import get_optional_user
-from src.utils.logger import logger
+from src.utils.logger import logger, log_to_file
 from src.constants.mock import MockResponse
 from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest, LLMStreamRequest
@@ -82,6 +83,15 @@ async def llm_stream(
                     data = ujson.dumps(
                         convert_messages(chunk, stream_mode=params.stream_mode)
                     )
+                    import os
+
+                    # Ensure the logs directory exists
+                    logs_dir = "logs"
+                    os.makedirs(logs_dir, exist_ok=True)
+
+                    # Find the next available log file name by incrementing a counter
+                    log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
+                    logger.debug(str(data))
                     yield f"data: {data}\n\n"
             except Exception as e:
                 # Yield error as SSE if streaming fails

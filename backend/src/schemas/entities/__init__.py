@@ -216,7 +216,7 @@ class LLMRequest(BaseModel):
 
     class ChatMessage(BaseModel):
         role: Literal["user", "assistant", "system", "tool"] = Field(examples=["user"])
-        content: str = Field(examples=["Weather in Dallas?"])
+        content: str | List[Any] = Field(examples=["Weather in Dallas?"])
 
     messages: List[ChatMessage]
 

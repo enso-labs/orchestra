@@ -13,10 +13,10 @@ export class ChatModels {
 	public static readonly OPENAI_GPT_5_NANO = "openai:gpt-5-nano";
 	public static readonly OPENAI_GPT_5_MINI = "openai:gpt-5-mini";
 	public static readonly OPENAI_GPT_5 = "openai:gpt-5";
-	// public static readonly ANTHROPIC_CLAUDE_4_SONNET =
-	// 	"anthropic:claude-sonnet-4-20250514";
-	// public static readonly ANTHROPIC_CLAUDE_4_OPUS =
-	// 	"anthropic:claude-opus-4-20250514";
+	public static readonly ANTHROPIC_CLAUDE_4_SONNET =
+		"anthropic:claude-sonnet-4-20250514";
+	public static readonly ANTHROPIC_CLAUDE_4_OPUS =
+		"anthropic:claude-opus-4-20250514";
 	// public static readonly XAI_GROK_4 = "xai:grok-4-0709";
 	// public static readonly GOOGLE_GEMINI_2_0_PRO = "google-vertexai:gemini-2.0-pro";
 	// public static readonly GOOGLE_GEMINI_2_5_FLASH_LITE =

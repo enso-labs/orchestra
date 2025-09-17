@@ -3,6 +3,7 @@ import { useAppContext } from "@/context/AppContext";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import { constructSystemPrompt } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
+import { handleStopReason } from "./useStream";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -96,7 +97,12 @@ export default function useChat(): ChatContextType {
 				.filter((msg) => ["user", "assistant"].includes(msg.role))
 				.map((msg) => ({
 					role: msg.role,
-					content: msg.content,
+					content: [
+						{
+							type: "text",
+							text: msg.content,
+						},
+					],
 				})),
 			model: model,
 			metadata: JSON.parse(metadata),
@@ -171,8 +177,8 @@ export default function useChat(): ChatContextType {
 	const handleMessages = (payload: any, history: any[]) => {
 		const response = payload[0];
 		const metadata = payload[1];
-		// Handle Tool Input
-		if (response.response_metadata.finish_reason === "stop") {
+		// Handle Stop Reason
+		if (handleStopReason(response.response_metadata)) {
 			setLoading(false);
 			setController(null);
 		}
@@ -230,17 +236,26 @@ export default function useChat(): ChatContextType {
 			if (existingIndex !== -1) {
 				// Always append to the related message content
 				const existingMsg = history[existingIndex];
-				const updatedContent = (existingMsg.content || "") + response.content;
+				const expectedContent =
+					typeof existingMsg.content === "string"
+						? existingMsg.content
+						: (existingMsg.content[0]?.text ?? "");
+				const updatedContent = (expectedContent || "") + response.content;
 				history[existingIndex] = {
-					...existingMsg,
 					...response,
+					...existingMsg,
 					content: updatedContent,
 				};
 				setMessagesState([...history]);
 				return;
 			} else {
+				const expectedContent =
+					typeof response.content === "string"
+						? response.content
+						: (response.content[0]?.text ?? "");
 				const updateMessage = {
 					...response,
+					content: expectedContent,
 					role: response.type === "tool" ? "tool" : "assistant",
 				};
 				if (metadata.ls_provider && metadata.ls_model_name) {
