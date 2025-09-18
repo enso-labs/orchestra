@@ -71,18 +71,16 @@ export default function useAppHook() {
 
 	const useDynamicScriptInjectEffect = () => {
 		useEffect(() => {
-			if (APP_ENV === "development") {
-				const script = document.createElement("script");
-				script.src = "https://cdn.jsdelivr.net/npm/eruda";
-				script.async = true;
-				script.onload = () => {
-					(window as any).eruda.init();
-				};
-				document.head.appendChild(script);
-				return () => {
-					document.head.removeChild(script);
-				};
-			}
+			const script = document.createElement("script");
+			script.src = "https://cdn.jsdelivr.net/npm/eruda";
+			script.async = true;
+			script.onload = () => {
+				(window as any).eruda.init();
+			};
+			document.head.appendChild(script);
+			return () => {
+				document.head.removeChild(script);
+			};
 			return;
 		}, []);
 
