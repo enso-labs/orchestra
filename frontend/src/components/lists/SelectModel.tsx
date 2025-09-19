@@ -13,22 +13,21 @@ export class ChatModels {
 	public static readonly OPENAI_GPT_5_NANO = "openai:gpt-5-nano";
 	public static readonly OPENAI_GPT_5_MINI = "openai:gpt-5-mini";
 	public static readonly OPENAI_GPT_5 = "openai:gpt-5";
-	// public static readonly ANTHROPIC_CLAUDE_4_SONNET =
-	// 	"anthropic:claude-sonnet-4-20250514";
-	// public static readonly ANTHROPIC_CLAUDE_4_OPUS =
-	// 	"anthropic:claude-opus-4-20250514";
-	// public static readonly XAI_GROK_4 = "xai:grok-4-0709";
-	// public static readonly GOOGLE_GEMINI_2_0_PRO = "google-vertexai:gemini-2.0-pro";
-	// public static readonly GOOGLE_GEMINI_2_5_FLASH_LITE =
-	// 	"google-vertexai:gemini-2.5-flash-lite-preview-06-17";
-	// public static readonly GOOGLE_GEMINI_2_5_FLASH =
-	// 	"google-vertexai:gemini-2.5-flash";
-	// public static readonly GOOGLE_GEMINI_2_5_PRO =
-	// 	"google-vertexai:gemini-2.5-pro";
-	// public static readonly GROQ_DEEPSEEK_R1_DISTILL_LLAMA_70B = "groq:deepseek-r1-distill-llama-70b"; # Issues parsing route.ts (21:24)
-	// public static readonly GROQ_LLAMA_3_3_70B_VERSATILE =
-	// 	"groq:llama-3.3-70b-versatile";
-	// public static readonly OLLAMA_QWEN3 = "ollama:qwen3";
+	public static readonly ANTHROPIC_CLAUDE_4_SONNET =
+		"anthropic:claude-sonnet-4-20250514";
+	public static readonly ANTHROPIC_CLAUDE_4_OPUS =
+		"anthropic:claude-opus-4-20250514";
+	public static readonly XAI_GROK_4 = "xai:grok-4";
+	public static readonly XAI_GROK_CODE_FAST_1 = "xai:grok-code-fast-1";
+	public static readonly GOOGLE_GEMINI_2_5_FLASH_LITE =
+		"google_genai:gemini-2.5-flash-lite";
+	public static readonly GOOGLE_GEMINI_2_5_FLASH =
+		"google_genai:gemini-2.5-flash";
+	public static readonly GOOGLE_GEMINI_2_5_PRO = "google_genai:gemini-2.5-pro";
+	public static readonly GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b";
+	public static readonly GROQ_LLAMA_3_3_70B_VERSATILE =
+		"groq:llama-3.3-70b-versatile";
+	public static readonly OLLAMA_QWEN3 = "ollama:qwen3";
 }
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
@@ -54,7 +53,7 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 		}
 		if (
 			modelValue.startsWith("google:") ||
-			modelValue.startsWith("google-vertexai:")
+			modelValue.startsWith("google_genai:")
 		) {
 			return <SiGoogle className="h-4 w-4" />;
 		}

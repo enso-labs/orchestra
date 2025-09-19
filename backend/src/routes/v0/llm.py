@@ -22,7 +22,7 @@ from src.utils.logger import logger, log_to_file
 from src.constants.mock import MockResponse
 from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest, LLMStreamRequest
-from src.utils.stream import convert_messages
+from src.utils.stream import convert_messages, handle_multi_mode
 from src.utils.llm import audio_to_text
 from src.flows import construct_agent
 
@@ -76,27 +76,18 @@ async def llm_stream(
             try:
                 async for chunk in agent.astream(
                     {"messages": params.to_langchain_messages()},
-                    stream_mode=params.stream_mode,
+                    stream_mode=["messages", "values"],
                     context={"user_id": user.id} if user else None,
                 ):
-                    # Get the state of the agent
-                    state = await agent.aget_state()
-
-                    # Convert the chunk to the appropriate format
-                    converted_chunk = convert_messages(
-                        chunk, stream_mode=params.stream_mode
-                    )
-                    if attach_state:
-                        converted_state = convert_messages(
-                            state.values, stream_mode="values"
-                        )
-                        converted_chunk.extend([converted_state])
-
                     # Serialize and yield each chunk as SSE
-                    data = ujson.dumps(converted_chunk)
-                    log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
-                    logger.debug(f"data: {str(data)}")
-                    yield f"data: {data}\n\n"
+                    stream_chunk = handle_multi_mode(chunk)
+                    if stream_chunk:
+                        data = ujson.dumps(stream_chunk)
+                        log_to_file(
+                            str(data), params.model
+                        ) and APP_LOG_LEVEL == "DEBUG"
+                        logger.debug(f"data: {str(data)}")
+                        yield f"data: {data}\n\n"
 
             except Exception as e:
                 # Yield error as SSE if streaming fails

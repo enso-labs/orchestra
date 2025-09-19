@@ -31,7 +31,9 @@ export function Message({ message }: { message: any }) {
 						}`}
 						onClick={() => setIsEditing(!isEditing)}
 					>
-						<MarkdownCard content={message.content} />
+						<MarkdownCard
+							content={message.content || message.content[0].text}
+						/>
 						{isEditing && (
 							<div className="flex absolute bottom-1 right-1">
 								<button
@@ -102,7 +104,9 @@ export function Message({ message }: { message: any }) {
 			<div className="group">
 				<div className="flex justify-start">
 					<div className="max-w-[90vw] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
-						<MarkdownCard content={message.content} />
+						<MarkdownCard
+							content={message.content || message.content[0].text}
+						/>
 					</div>
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
@@ -111,7 +115,9 @@ export function Message({ message }: { message: any }) {
 							<Copy
 								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
 								onClick={() => {
-									navigator.clipboard.writeText(message.content);
+									navigator.clipboard.writeText(
+										message.content || message.content[0].text,
+									);
 									alert("Copied to clipboard (AI Message)");
 								}}
 							/>
