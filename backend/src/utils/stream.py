@@ -97,19 +97,6 @@ def handle_values_mode(payload: dict):
     return payload
 
 
-def handle_stream_variance(chunk: dict):
-    if "values" in chunk:
-        chunk[1]["messages"] = from_message_to_dict(chunk[1]["messages"])
-        return chunk
-    if "messages" in chunk:
-        # content_type = type(chunk[1][0])
-        content = chunk[1][0].content
-        reasoning_content = chunk[1][0].additional_kwargs.get("reasoning_content", "")
-        if content or reasoning_content:
-            # print(f"{content_type}: {content or reasoning_content}")
-            return chunk
-
-
 ###########################################################################
 ## Message Conversion
 ###########################################################################
@@ -130,40 +117,6 @@ def convert_messages(payload: dict, stream_mode: StreamMode):
         return handle_values_mode(payload)
 
     raise ValueError(f"Invalid stream mode: {stream_mode}")
-
-
-# def handle_multi_mode(chunk: dict):
-#     try:
-#         if 'values' in chunk:
-#             chunk[1]['messages'] = from_message_to_dict(chunk[1]['messages'])
-#             return chunk
-#         if 'messages' in chunk:
-#             message: BaseMessage|BaseMessageChunk = chunk[1][0]
-#             if isinstance(message, ToolMessage):
-#                 return message.model_dump()
-#             if isinstance(message, AIMessageChunk):
-
-#                 stop_reason = message.response_metadata.get('finish_reason') \
-#                     or message.response_metadata.get('finish_reason')
-
-#                 # Tool Input
-#                 if message.tool_calls or message.tool_call_chunks or stop_reason:
-#                     return (chunk[0], (chunk[1][0].model_dump(), chunk[1][1] if chunk[1][1] else None))
-
-#                 # Final Content
-#                 content = message.content
-#                 reasoning_content = message.additional_kwargs.get('reasoning_content', "")
-#                 if content or reasoning_content:
-#                     return (chunk[0], (chunk[1][0].model_dump(), chunk[1][1] if chunk[1][1] else None))
-#                 else:
-#                     logger.warning(f"No content: {chunk}")
-#                     return None
-
-#         logger.error(f"Invalid chunk: {chunk}")
-#         return None
-#     except Exception as e:
-#         logger.error(f"Error in handle_multi_mode: {e}")
-#         return None
 
 
 def handle_multi_mode(chunk: dict):

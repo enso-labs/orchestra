@@ -28,7 +28,7 @@ export class ChatModels {
 	public static readonly GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b";
 	public static readonly GROQ_LLAMA_3_3_70B_VERSATILE =
 		"groq:llama-3.3-70b-versatile";
-	public static readonly OLLAMA_QWEN3 = "ollama:qwen3";
+	// public static readonly OLLAMA_QWEN3 = "ollama:qwen3";
 }
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {

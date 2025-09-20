@@ -22,7 +22,7 @@ from src.utils.logger import logger, log_to_file
 from src.constants.mock import MockResponse
 from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest, LLMStreamRequest
-from src.utils.stream import convert_messages, handle_multi_mode
+from src.utils.stream import handle_multi_mode
 from src.utils.llm import audio_to_text
 from src.flows import construct_agent
 
