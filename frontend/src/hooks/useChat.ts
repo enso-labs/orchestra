@@ -117,6 +117,10 @@ export default function useChat(): ChatContextType {
 
 		source.addEventListener("error", (e: any) => {
 			console.error("Error on stream:", e);
+			alert("Error on stream: " + e.message);
+			source.close();
+			setController(null);
+			setLoading(false);
 		});
 
 		controller.signal.addEventListener("abort", () => {
@@ -166,122 +170,14 @@ export default function useChat(): ChatContextType {
 		setMessages(in_mem_messages);
 	};
 
-	// const handleMessages = (payload: any) => {
-	// 	const streamMode = payload[0];
-
-	// 	console.log(payload);
-	// 	if (streamMode === "messages") {
-	// 		const [response, metadata] = payload[1];
-
-	// 		// Stop
-	// 		const reason = response.response_metadata.finish_reason
-	// 			|| response.response_metadata.stop_reason;
-
-	// 		if (["stop", "end_turn"].includes(reason)) {
-	// 			setLoading(false);
-	// 			setController(null);
-	// 			return;
-	// 		}
-
-	// 		// Tool Call Chunks
-	// 		if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
-	// 			if (!toolNameRef.current || response.tool_call_chunks[0].name) {
-	// 				toolNameRef.current = response.tool_call_chunks[0].name;
-	// 			}
-	// 			setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
-	// 			toolCallChunkRef.current += response.tool_call_chunks[0].args;
-	// 			const existingIndex = in_mem_messages.findIndex(
-	// 				(msg: any) => msg.id === response.id,
-	// 			);
-	// 			if (existingIndex === -1) {
-	// 				in_mem_messages.push({
-	// 					...response,
-	// 					input: toolCallChunkRef.current,
-	// 					name: toolNameRef.current,
-	// 				});
-	// 			} else {
-	// 				const existingMsg = in_mem_messages[existingIndex];
-	// 				if (toolCallChunkRef.current) {
-	// 					try {
-	// 						existingMsg.input = JSON.parse(toolCallChunkRef.current);
-	// 					} catch {
-	// 						try {
-	// 							const autoAddCommas =
-	// 								"[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
-	// 							existingMsg.input = JSON.parse(autoAddCommas);
-	// 						} catch {
-	// 							existingMsg.input = toolCallChunkRef.current;
-	// 						}
-	// 					}
-	// 				}
-	// 				in_mem_messages[existingIndex] = {
-	// 					...existingMsg,
-	// 					...response,
-	// 					input: toolCallChunkRef.current,
-	// 					name: toolNameRef.current,
-	// 				};
-	// 			}
-	// 			setMessages(in_mem_messages);
-	// 			return;
-	// 		}
-
-	// 		if (
-	// 			response.content &&
-	// 			(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
-	// 		) {
-	// 			const existingIndex = in_mem_messages.findIndex(
-	// 				(msg: any) => msg.id === response.id,
-	// 			);
-	// 			if (existingIndex !== -1) {
-	// 				// Always append to the related message content
-	// 				const existingMsg = in_mem_messages[existingIndex];
-	// 				const expectedContent =
-	// 					typeof existingMsg.content === "string"
-	// 						? existingMsg.content
-	// 						: (existingMsg.content[0]?.text ?? "");
-	// 				const updatedContent = (expectedContent || "") + response.content;
-	// 				in_mem_messages[existingIndex] = {
-	// 					...response,
-	// 					...existingMsg,
-	// 					content: updatedContent,
-	// 				};
-	// 				setMessagesState([...in_mem_messages]);
-	// 				return;
-	// 			} else {
-	// 				const expectedContent =
-	// 					typeof response.content === "string"
-	// 						? response.content
-	// 						: (response.content[0]?.text ?? "");
-	// 				const updateMessage = {
-	// 					...response,
-	// 					content: expectedContent,
-	// 					role: response.type === "tool" ? "tool" : "assistant",
-	// 				};
-	// 				if (metadata.ls_provider && metadata.ls_model_name) {
-	// 					updateMessage.model = `${metadata.ls_provider}:${metadata.ls_model_name}`;
-	// 				}
-	// 				if (metadata.ls_temperature) {
-	// 					updateMessage.temperature = metadata.ls_temperature;
-	// 				}
-	// 				if (metadata.thread_id) {
-	// 					updateMessage.thread_id = metadata.thread_id;
-	// 				}
-	// 				if (metadata.checkpoint_ns && metadata.checkpoint_node) {
-	// 					updateMessage.checkpoint_ns = metadata.checkpoint_ns;
-	// 				}
-	// 				in_mem_messages.push(updateMessage);
-	// 				setMessagesState([...in_mem_messages]);
-	// 				return;
-	// 			}
-	// 		}
-	// 	}
-	// 	// if (streamMode === "values") {
-	// 	// 	setMessages(response.messages);
-	// 	// }
-	// };
-
 	const handleMessages = (payload: any, history: any[]) => {
 		const streamMode = payload[0];
+		if (streamMode === "error") {
+			alert("Error on stream: " + payload[1]);
+			setLoading(false);
+			setController(null);
+			return;
+		}
 
 		if (streamMode === "messages") {
 			const response = payload[1][0];

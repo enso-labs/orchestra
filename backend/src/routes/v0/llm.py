@@ -92,7 +92,7 @@ async def llm_stream(
             except Exception as e:
                 # Yield error as SSE if streaming fails
                 logger.exception("Error in event_generator: %s", e)
-                error_msg = ujson.dumps({"error": str(e)})
+                error_msg = ujson.dumps(("error", str(e)))
                 yield f"data: {error_msg}\n\n"
             finally:
                 # Update model info in checkpoint after streaming
