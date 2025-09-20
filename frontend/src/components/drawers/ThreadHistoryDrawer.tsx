@@ -60,6 +60,10 @@ export function ThreadHistoryDrawer({
 								const config = thread.value;
 								const messages = thread.value.messages;
 								const lastMessage = messages[messages.length - 1];
+								const lastMessageContent =
+									typeof lastMessage.content === "string"
+										? lastMessage.content
+										: (lastMessage.content[0]?.text ?? "");
 								return (
 									<div key={config.thread_id} className="group relative">
 										<button
@@ -82,13 +86,8 @@ export function ThreadHistoryDrawer({
 										>
 											<div className="w-full pr-8">
 												<p className="text-sm font-medium line-clamp-2 max-w-60">
-													{lastMessage.content
-														? truncateFrom(
-																lastMessage.content,
-																"end",
-																"...",
-																70,
-															)
+													{lastMessageContent
+														? truncateFrom(lastMessageContent, "end", "...", 70)
 														: "no content found"}
 												</p>
 												<div className="flex justify-between items-center mt-1">

@@ -8,6 +8,7 @@ import {
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
 import GroqIcon from "@/components/icons/GroqIcon";
 import { useChatContext } from "@/context/ChatContext";
+import XAIIcon from "../icons/XAIIcon";
 
 export class ChatModels {
 	public static readonly OPENAI_GPT_5_NANO = "openai:gpt-5-nano";
@@ -51,9 +52,13 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 		if (modelValue.startsWith("groq:")) {
 			return <GroqIcon />;
 		}
+		if (modelValue.startsWith("xai:")) {
+			return <XAIIcon />;
+		}
 		if (
 			modelValue.startsWith("google:") ||
-			modelValue.startsWith("google_genai:")
+			modelValue.startsWith("google_genai:") ||
+			modelValue.startsWith("google-vertexai:")
 		) {
 			return <SiGoogle className="h-4 w-4" />;
 		}

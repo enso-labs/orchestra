@@ -177,12 +177,14 @@ def handle_multi_mode(chunk: dict):
             msg = i1[0]
 
             if isinstance(msg, ToolMessage):
-                return msg.model_dump()
+                return (i0, (msg.model_dump(), i1[1] or None))
 
             if isinstance(msg, AIMessageChunk):
-                stop = msg.response_metadata.get(
-                    "finish_reason"
-                ) or msg.response_metadata.get("stop_reasoning")
+                stop = (
+                    msg.response_metadata.get("finish_reason")
+                    or msg.response_metadata.get("stop_reasoning")
+                    or msg.response_metadata.get("stop_reason")
+                )
                 content = msg.content or msg.additional_kwargs.get("reasoning_content")
                 if msg.tool_calls or msg.tool_call_chunks or stop or content:
                     return (i0, (msg.model_dump(), i1[1] or None))
