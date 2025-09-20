@@ -188,16 +188,6 @@ export default function useChat(): ChatContextType {
 					: (response.content[0]?.text ?? "");
 			console.log(payload);
 			// Handle Tool Input
-			if (
-				["stop", "end_turn", "STOP"].includes(
-					response.response_metadata?.finish_reason ||
-						response.response_metadata.stop_reason,
-				)
-			) {
-				setLoading(false);
-				setController(null);
-				return;
-			}
 			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
 				// Only set tool name if we don't have one yet or if the new name is truthy
 				if (!toolNameRef.current || response.tool_call_chunks[0].name) {
@@ -238,7 +228,6 @@ export default function useChat(): ChatContextType {
 					});
 				}
 				setMessagesState([...history]);
-				return;
 			}
 
 			// Handle Final Response & Tool Response
@@ -283,8 +272,18 @@ export default function useChat(): ChatContextType {
 					}
 					history.push(updateMessage);
 					setMessagesState([...history]);
-					return;
 				}
+			}
+
+			if (
+				["stop", "end_turn", "STOP"].includes(
+					response.response_metadata?.finish_reason ||
+						response.response_metadata.stop_reason,
+				)
+			) {
+				setLoading(false);
+				setController(null);
+				return;
 			}
 		}
 	};

@@ -23,12 +23,16 @@ export function SettingsPopover() {
 				>
 					<div className="flex items-center gap-3 flex-1">
 						<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-							<span className="text-sm font-medium">{user.name.charAt(0)}</span>
+							<span className="text-sm font-medium">
+								{user?.name?.charAt(0) || "U"}
+							</span>
 						</div>
 						<div className="flex-1 text-left min-w-0">
-							<p className="text-sm font-medium truncate">{user.name}</p>
+							<p className="text-sm font-medium truncate">
+								{user?.name || "User"}
+							</p>
 							<p className="text-xs text-muted-foreground truncate">
-								{user.email}
+								{user?.email || "No email"}
 							</p>
 						</div>
 						<Settings className="h-4 w-4 flex-shrink-0" />

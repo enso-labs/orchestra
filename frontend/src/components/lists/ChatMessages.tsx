@@ -69,30 +69,34 @@ export function Message({ message }: { message: any }) {
 
 	if (["tool"].includes(message.role || message.type)) {
 		return (
-			<div key={message.id} className="p-2 rounded bg-gray-800 m-2">
-				<div className="flex items-center space-x-2">
-					<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-						<Wrench className="h-4 w-4 text-primary" />
-					</div>
-					<div>
-						<h3
-							className={cn(
-								"text-xs px-2 py-0.5 rounded-full",
-								message.status === "success"
-									? "bg-green-500/20 text-green-500"
-									: "bg-red-500/20 text-red-500",
-							)}
-						>
-							{message.name}
-						</h3>
-					</div>
-					<p className="text-xs text-muted-foreground">
-						{message.tool_call_id}
-					</p>
-				</div>
-				<div className="flex justify-start overflow-y-auto">
-					<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
-						<ToolAction message={message} />
+			<div className="group">
+				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
+					<div key={message.id} className="p-2 rounded bg-gray-800 m-2">
+						<div className="flex items-center space-x-2">
+							<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+								<Wrench className="h-4 w-4 text-primary" />
+							</div>
+							<div>
+								<h3
+									className={cn(
+										"text-xs px-2 py-0.5 rounded-full",
+										message.status === "success"
+											? "bg-green-500/20 text-green-500"
+											: "bg-red-500/20 text-red-500",
+									)}
+								>
+									{message.name}
+								</h3>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								{message.tool_call_id}
+							</p>
+						</div>
+						<div className="flex justify-start overflow-y-auto">
+							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
+								<ToolAction message={message} />
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -136,8 +140,10 @@ export function Message({ message }: { message: any }) {
 
 	if (["AIMessageChunk"].includes(message.role || message.type)) {
 		return (
-			<div className="px-2 rounded-lg rounded-bl-sm">
-				<DefaultTool selectedToolMessage={message} />
+			<div className="group">
+				<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
+					<DefaultTool selectedToolMessage={message} />
+				</div>
 			</div>
 		);
 	}
