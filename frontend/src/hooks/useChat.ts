@@ -117,7 +117,7 @@ export default function useChat(): ChatContextType {
 
 		source.addEventListener("error", (e: any) => {
 			console.error("Error on stream:", e);
-			alert("Error on stream: " + e.message);
+			alert("Error on stream: " + JSON.parse(e.data).detail);
 			source.close();
 			setController(null);
 			setLoading(false);

@@ -1275,6 +1275,21 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-xai"
+version = "0.2.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "langchain-core" },
+    { name = "langchain-openai" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3e/6c/f491dc55c7f91fe8196b59b6111788ee62b2d4efd629230788caa08e0fd6/langchain_xai-0.2.5.tar.gz", hash = "sha256:e94b17d4928aaa26998acf7cff537bb6b3c72468177e00ed7de7747dc9b2ecdc", size = 11086 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/50/fc6ae91c9b40ca8259d501c0754d91136ac98e2502c67b4a55b78a426fba/langchain_xai-0.2.5-py3-none-any.whl", hash = "sha256:8d351393eddc0ad024a82a1120b815e6e3ccfe83390cbc65a2fce81786584795", size = 9297 },
+]
+
+[[package]]
 name = "langgraph"
 version = "0.6.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1948,6 +1963,7 @@ dependencies = [
     { name = "langchain-mcp-adapters" },
     { name = "langchain-ollama" },
     { name = "langchain-openai" },
+    { name = "langchain-xai" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
     { name = "loguru" },
@@ -1996,6 +2012,7 @@ requires-dist = [
     { name = "langchain-mcp-adapters", specifier = ">=0.1.9" },
     { name = "langchain-ollama", specifier = ">=0.3.7" },
     { name = "langchain-openai", specifier = ">=0.3.32" },
+    { name = "langchain-xai", specifier = ">=0.2.5" },
     { name = "langgraph", specifier = ">=0.6.6" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=2.0.23" },
     { name = "loguru", specifier = ">=0.7.3" },

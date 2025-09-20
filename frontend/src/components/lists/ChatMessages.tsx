@@ -105,7 +105,9 @@ export function Message({ message }: { message: any }) {
 				<div className="flex justify-start">
 					<div className="max-w-[90vw] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard
-							content={message.content || message.content[0].text}
+							content={
+								message.content || message.content[0]?.text || "Invalid message"
+							}
 						/>
 					</div>
 				</div>
