@@ -106,8 +106,8 @@ export function Message({ message }: { message: any }) {
 	if (["ai", "assistant"].includes(message.role)) {
 		return (
 			<div className="group">
-				<div className="flex justify-start">
-					<div className="max-w-[90vw] md:max-w-[80%] bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
+				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
+					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard
 							content={
 								message.content || message.content[0]?.text || "Invalid message"
