@@ -64,7 +64,7 @@ export default defineConfig({
 		},
 	},
 	server: {
-		allowedHosts: ["poland-wise-counters-neighbor.trycloudflare.com"],
+		allowedHosts: ["sql-targets-clay-accounting.trycloudflare.com"],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",

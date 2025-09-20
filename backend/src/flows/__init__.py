@@ -158,10 +158,11 @@ class Orchestra:
             messages, self.config, stream_mode=stream_mode, context=context
         )
 
-    def aget_state(self, config: RunnableConfig = None):
+    async def aget_state(self, config: RunnableConfig = None):
         if config is None:
             config = self.config
-        return self.graph.aget_state(config)
+        state = await self.graph.aget_state(config)
+        return state
 
     async def add_model_to_ai_message(self, model: str) -> RunnableConfig | None:
         # Only proceed if a checkpointer is set

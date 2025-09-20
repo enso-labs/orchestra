@@ -33,6 +33,8 @@ export type ChatContextType = {
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
 	resetMetadata: () => void;
+	state: any[];
+	setState: (state: any[]) => void;
 	// tools
 	arcade: {
 		tools: string[];
@@ -49,6 +51,7 @@ export default function useChat(): ChatContextType {
 	const [query, setQuery] = useState("");
 	const [model, setModel] = useState<string>(DEFAULT_CHAT_MODEL);
 	const [messages, setMessagesState] = useState<any[]>([]);
+	const [state, setState] = useState<any[]>([]);
 
 	const setMessages = (newMessages: any[]) => {
 		in_mem_messages = [...newMessages];
@@ -92,12 +95,7 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const source = streamThread({
 			system: constructSystemPrompt("You are a helpful assistant."),
-			messages: updatedMessages
-				.filter((msg) => ["user", "assistant"].includes(msg.role))
-				.map((msg) => ({
-					role: msg.role,
-					content: msg.content,
-				})),
+			messages: [{ role: "user", content: [{ type: "text", text: query }] }],
 			model: model,
 			metadata: JSON.parse(metadata),
 			stream_mode: "messages",
@@ -106,7 +104,7 @@ export default function useChat(): ChatContextType {
 		source.addEventListener("message", function (e: any) {
 			// Assuming we receive JSON-encoded data payloads:
 			const payload = JSON.parse(e.data);
-			sseHandler(payload, in_mem_messages, "messages");
+			sseHandler(payload, in_mem_messages);
 		});
 
 		// Close handling
@@ -119,6 +117,10 @@ export default function useChat(): ChatContextType {
 
 		source.addEventListener("error", (e: any) => {
 			console.error("Error on stream:", e);
+			alert("Error on stream: " + e.message);
+			source.close();
+			setController(null);
+			setLoading(false);
 		});
 
 		controller.signal.addEventListener("abort", () => {
@@ -169,109 +171,138 @@ export default function useChat(): ChatContextType {
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
-		const response = payload[0];
-		const metadata = payload[1];
-		// Handle Tool Input
-		if (response.response_metadata.finish_reason === "stop") {
+		const streamMode = payload[0];
+		if (streamMode === "error") {
+			alert("Error on stream: " + payload[1]);
 			setLoading(false);
 			setController(null);
-		}
-		if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
-			// Only set tool name if we don't have one yet or if the new name is truthy
-			if (!toolNameRef.current || response.tool_call_chunks[0].name) {
-				toolNameRef.current = response.tool_call_chunks[0].name;
-			}
-			setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
-			toolCallChunkRef.current += response.tool_call_chunks[0].args;
-			const existingIndex = history.findIndex(
-				(msg: any) => msg.id === response.id,
-			);
-
-			// If the message already exists, update it
-			if (existingIndex !== -1) {
-				// Consolidate tool_call_chunks for the message with matching id
-				const existingMsg = history[existingIndex];
-				if (toolCallChunkRef.current) {
-					try {
-						existingMsg.input = JSON.parse(toolCallChunkRef.current);
-					} catch {
-						try {
-							const autoAddCommas =
-								"[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
-							existingMsg.input = JSON.parse(autoAddCommas);
-						} catch {
-							existingMsg.input = toolCallChunkRef.current;
-						}
-					}
-				}
-				history[existingIndex] = {
-					...existingMsg,
-					...response,
-				};
-			} else {
-				history.push({
-					...response,
-					input: toolCallChunkRef.current,
-					name: toolNameRef.current,
-				});
-			}
-			setMessagesState([...history]);
 			return;
 		}
 
-		// Handle Final Response & Tool Response
-		if (
-			response.content &&
-			(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
-		) {
-			const existingIndex = history.findIndex(
-				(msg: any) => msg.id === response.id,
-			);
-			if (existingIndex !== -1) {
-				// Always append to the related message content
-				const existingMsg = history[existingIndex];
-				const updatedContent = (existingMsg.content || "") + response.content;
-				history[existingIndex] = {
-					...existingMsg,
-					...response,
-					content: updatedContent,
-				};
+		if (streamMode === "messages") {
+			const response = payload[1][0];
+			const responseMetadata = payload[1][1];
+			const expectedContent =
+				typeof response.content === "string"
+					? response.content
+					: (response.content[0]?.text ?? "");
+			console.log(payload);
+			// Handle Tool Input
+			if (
+				["stop", "end_turn", "STOP"].includes(
+					response.response_metadata?.finish_reason ||
+						response.response_metadata.stop_reason,
+				)
+			) {
+				setLoading(false);
+				setController(null);
+				return;
+			}
+			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
+				// Only set tool name if we don't have one yet or if the new name is truthy
+				if (!toolNameRef.current || response.tool_call_chunks[0].name) {
+					toolNameRef.current = response.tool_call_chunks[0].name;
+				}
+				setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
+				toolCallChunkRef.current += response.tool_call_chunks[0].args;
+				const existingIndex = history.findIndex(
+					(msg: any) => msg.id === response.id,
+				);
+
+				// If the message already exists, update it
+				if (existingIndex !== -1) {
+					// Consolidate tool_call_chunks for the message with matching id
+					const existingMsg = history[existingIndex];
+					if (toolCallChunkRef.current) {
+						try {
+							existingMsg.input = JSON.parse(toolCallChunkRef.current);
+						} catch {
+							try {
+								const autoAddCommas =
+									"[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
+								existingMsg.input = JSON.parse(autoAddCommas);
+							} catch {
+								existingMsg.input = toolCallChunkRef.current;
+							}
+						}
+					}
+					history[existingIndex] = {
+						...existingMsg,
+						...response,
+					};
+				} else {
+					history.push({
+						...response,
+						input: toolCallChunkRef.current,
+						name: toolNameRef.current,
+					});
+				}
 				setMessagesState([...history]);
 				return;
-			} else {
-				const updateMessage = {
-					...response,
-					role: response.type === "tool" ? "tool" : "assistant",
-				};
-				if (metadata.ls_provider && metadata.ls_model_name) {
-					updateMessage.model = `${metadata.ls_provider}:${metadata.ls_model_name}`;
+			}
+
+			// Handle Final Response & Tool Response
+			if (
+				expectedContent &&
+				(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
+			) {
+				const existingIndex = history.findIndex(
+					(msg: any) => msg.id === response.id,
+				);
+				if (existingIndex !== -1) {
+					// Always append to the related message content
+					const existingMsg = history[existingIndex];
+					const updatedContent = (existingMsg.content || "") + expectedContent;
+					history[existingIndex] = {
+						...response,
+						...existingMsg,
+						content: updatedContent,
+					};
+					setMessagesState([...history]);
+					return;
+				} else {
+					const updateMessage = {
+						...response,
+						content: expectedContent,
+						role: response.type === "tool" ? "tool" : "assistant",
+					};
+					if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
+						updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
+					}
+					if (responseMetadata.ls_temperature) {
+						updateMessage.temperature = responseMetadata.ls_temperature;
+					}
+					if (responseMetadata.thread_id) {
+						updateMessage.thread_id = responseMetadata.thread_id;
+					}
+					if (
+						responseMetadata.checkpoint_ns &&
+						responseMetadata.checkpoint_node
+					) {
+						updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
+					}
+					history.push(updateMessage);
+					setMessagesState([...history]);
+					return;
 				}
-				if (metadata.ls_temperature) {
-					updateMessage.temperature = metadata.ls_temperature;
-				}
-				if (metadata.thread_id) {
-					updateMessage.thread_id = metadata.thread_id;
-				}
-				if (metadata.checkpoint_ns && metadata.checkpoint_node) {
-					updateMessage.checkpoint_ns = metadata.checkpoint_ns;
-				}
-				history.push(updateMessage);
-				setMessagesState([...history]);
-				return;
 			}
 		}
 	};
 
-	function sseHandler(
-		payload: any,
-		messages: any[],
-		stream_mode: StreamMode | Array<StreamMode> = "messages",
-	) {
-		if (stream_mode === "messages" || stream_mode.includes("messages")) {
-			console.log("messages: ", payload);
-			handleMessages(payload, messages);
-		}
-	}
+	// function sseHandler(
+	// 	payload: any,
+	// 	messages: any[],
+	// 	stream_mode: StreamMode | Array<StreamMode> = "messages",
+	// ) {
+	// 	if (stream_mode === "messages" || stream_mode.includes("messages")) {
+	// 		handleMessages(payload, messages);
+	// 	}
+	// }
+
+	const sseHandler = (payload: any, messages: any[]) => {
+		handleMessages(payload, messages);
+		return true;
+	};
 
 	const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const textarea = e.target;
@@ -296,6 +327,8 @@ export default function useChat(): ChatContextType {
 		setController,
 		model,
 		setModel,
+		state,
+		setState,
 		// NEW
 		handleTextareaResize,
 		clearMessages,

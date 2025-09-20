@@ -1,6 +1,6 @@
 import debug from "debug";
 import { useEffect, useState } from "react";
-import { APP_ENV, APP_VERSION } from "../lib/config";
+import { APP_VERSION } from "../lib/config";
 import apiClient from "@/lib/utils/apiClient";
 
 debug.enable("hooks:*");
@@ -71,18 +71,16 @@ export default function useAppHook() {
 
 	const useDynamicScriptInjectEffect = () => {
 		useEffect(() => {
-			if (APP_ENV === "development") {
-				const script = document.createElement("script");
-				script.src = "https://cdn.jsdelivr.net/npm/eruda";
-				script.async = true;
-				script.onload = () => {
-					(window as any).eruda.init();
-				};
-				document.head.appendChild(script);
-				return () => {
-					document.head.removeChild(script);
-				};
-			}
+			const script = document.createElement("script");
+			script.src = "https://cdn.jsdelivr.net/npm/eruda";
+			script.async = true;
+			script.onload = () => {
+				(window as any).eruda.init();
+			};
+			document.head.appendChild(script);
+			return () => {
+				document.head.removeChild(script);
+			};
 			return;
 		}, []);
 
