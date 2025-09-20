@@ -48,7 +48,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 	}
 
 	return (
-		<div className="relative group mb-3">
+		<div className="relative group my-2">
 			<div className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-t-lg border-b border-border">
 				<span className="text-xs text-muted-foreground font-medium">
 					{language || "code"}
