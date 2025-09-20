@@ -8,6 +8,8 @@ import { Link } from "react-router-dom";
 import { searchThreads } from "@/lib/services/threadService";
 import { SettingsPopover } from "@/components/popovers/SettingsPopover";
 import { useState } from "react";
+import { StringParam, useQueryParam } from "use-query-params";
+import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 
 interface ThreadHistoryDrawerProps {
 	isOpen: boolean;
@@ -20,6 +22,7 @@ export function ThreadHistoryDrawer({
 }: ThreadHistoryDrawerProps) {
 	const { setIsDrawerOpen } = useAppContext();
 	const { threads, metadata, setMessages, setMetadata } = useChatContext();
+	const [, setQueryModel] = useQueryParam("model", StringParam);
 	const [copiedThreadId, setCopiedThreadId] = useState<string | null>(null);
 
 	const metadataCopy = JSON.parse(metadata);
@@ -71,6 +74,11 @@ export function ThreadHistoryDrawer({
 												const checkpoint = await searchThreads(
 													"list_checkpoints",
 													config,
+												);
+												setQueryModel(
+													thread.value.messages[
+														thread.value.messages.length - 1
+													].model || DEFAULT_CHAT_MODEL,
 												);
 												setMessages(
 													formatMessages(checkpoint[0].values.messages),

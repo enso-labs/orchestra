@@ -9,6 +9,8 @@ import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
 import GroqIcon from "@/components/icons/GroqIcon";
 import { useChatContext } from "@/context/ChatContext";
 import XAIIcon from "../icons/XAIIcon";
+import { useModel } from "@/hooks/useModel";
+import { StringParam, useQueryParam } from "use-query-params";
 
 export class ChatModels {
 	public static readonly OPENAI_GPT_5_NANO = "openai:gpt-5-nano";
@@ -32,10 +34,11 @@ export class ChatModels {
 }
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
-	const { model, setModel } = useChatContext();
+	const model = useModel();
+	const [, setQueryModel] = useQueryParam("model", StringParam);
 
 	const handleModelChange = (value: string) => {
-		setModel(value);
+		setQueryModel(value);
 		onModelSelected?.();
 	};
 
