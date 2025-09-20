@@ -1,25 +1,23 @@
 import { useChatContext } from "@/context/ChatContext";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
-import { getModel, setModel } from "@/lib/utils/storage";
 import { useEffect } from "react";
 
+import { StringParam, useQueryParam } from "use-query-params";
+
 export function useModel() {
-	const { payload, setPayload } = useChatContext();
+	const { model, setModel } = useChatContext();
+	const [queryModel, setQueryModel] = useQueryParam("model", StringParam);
 
 	useEffect(() => {
-		// Initialize model from localStorage on mount
-		const model = getModel();
-		if (model) {
-			setPayload((prev: any) => ({ ...prev, model }));
+		// Initialize from query param on mount or when query param changes
+		if (queryModel && queryModel !== model) {
+			setModel(queryModel);
+		} else if (!queryModel && !model) {
+			// Set default if neither exists
+			setModel(DEFAULT_CHAT_MODEL);
+			setQueryModel(DEFAULT_CHAT_MODEL);
 		}
-	}, []);
+	}, [queryModel, setModel, setQueryModel, model]);
 
-	useEffect(() => {
-		// Update localStorage whenever payload.model changes
-		if (typeof payload.model === "string") {
-			setModel(payload.model);
-		}
-	}, [payload.model]);
-
-	return typeof payload.model === "string" ? payload.model : DEFAULT_CHAT_MODEL;
+	return typeof model === "string" ? model : DEFAULT_CHAT_MODEL;
 }

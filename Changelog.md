@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/372-query-params (2025-09-19)
   - feat/361-separate-user-threads (2025-09-16)
   - feat/367-checkpointing (2025-09-15)
   - feat/359-pre-commit-hooks (2025-09-07)
