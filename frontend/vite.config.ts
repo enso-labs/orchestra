@@ -12,9 +12,9 @@ const MANIFEST: Partial<VitePWAOptions> = {
 		maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
 	},
 	manifest: {
-		name: "Threadable Chat",
-		short_name: "Threadable Chat",
-		description: "Threadable Chat",
+		name: "Ensō",
+		short_name: "Ensō",
+		description: "Ensō",
 		theme_color: "#000000",
 		background_color: "#000000",
 		display: "standalone",
