@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/select";
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
 import GroqIcon from "@/components/icons/GroqIcon";
-import { useChatContext } from "@/context/ChatContext";
 import XAIIcon from "../icons/XAIIcon";
 import { useModel } from "@/hooks/useModel";
 import { StringParam, useQueryParam } from "use-query-params";
