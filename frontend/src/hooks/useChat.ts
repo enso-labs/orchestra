@@ -1,8 +1,13 @@
 import { useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
-import { constructSystemPrompt } from "@/lib/utils/format";
+import {
+	constructSystemPrompt,
+	formatMultimodalPayload,
+} from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
+import { useChatContext } from "@/context/ChatContext";
+import useImageHook from "./useImageHook";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -76,8 +81,9 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
-	const handleSSE = (
+	const handleSSE = async (
 		query: string,
+		images: File[],
 		abortController: AbortController | null = null,
 	) => {
 		// Add user message to the existing messages state
@@ -96,9 +102,10 @@ export default function useChat(): ChatContextType {
 		const parsedMetadata = JSON.parse(metadata);
 		parsedMetadata.graph_id = "deepagent";
 		const controller = abortController || new AbortController();
+		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
 			system: constructSystemPrompt("You are a helpful assistant."),
-			messages: [{ role: "user", content: [{ type: "text", text: query }] }],
+			messages: formatedMessages,
 			model: model,
 			metadata: parsedMetadata,
 			stream_mode: "messages",
@@ -147,10 +154,10 @@ export default function useChat(): ChatContextType {
 		return { controller, source };
 	};
 
-	const handleSubmit = (argQuery?: string) => {
+	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
-		const { controller } = handleSSE(argQuery || query);
+		const { controller } = await handleSSE(argQuery || query, images);
 		setController(controller);
 		setQuery("");
 	};
@@ -302,16 +309,6 @@ export default function useChat(): ChatContextType {
 			}
 		}
 	};
-
-	// function sseHandler(
-	// 	payload: any,
-	// 	messages: any[],
-	// 	stream_mode: StreamMode | Array<StreamMode> = "messages",
-	// ) {
-	// 	if (stream_mode === "messages" || stream_mode.includes("messages")) {
-	// 		handleMessages(payload, messages);
-	// 	}
-	// }
 
 	const sseHandler = (payload: any, messages: any[]) => {
 		handleMessages(payload, messages);

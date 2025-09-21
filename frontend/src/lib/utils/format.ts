@@ -43,21 +43,6 @@ export function truncateFrom(
 	);
 }
 
-interface Message {
-	id: string;
-	type: string;
-	name?: string | null;
-	args?: any;
-	content?: any;
-	output?: any;
-	additional_kwargs?: any;
-	response_metadata?: any;
-	tool_call_id?: string;
-	// sometimes tool calls appear as an array inside an ai message:
-	tool_calls?: any[];
-	[key: string]: any;
-}
-
 export function findToolCall(message: any, messages: any[]) {
 	for (const msg of messages) {
 		if (msg.tool_calls && msg.tool_calls.length > 0) {
@@ -81,91 +66,6 @@ export function findToolCall(message: any, messages: any[]) {
 		}
 	}
 	return null;
-}
-
-/**
- * Combines a tool call (the “input”) with its corresponding tool message (the “output”)
- * by matching the tool call’s id to the tool message’s tool_call_id.
- * Other messages (system, human, ai) are returned untouched.
- */
-export function combineToolMessages(messages: Message[]): Message[] {
-	// First, build a mapping of tool output messages (“tool–chunk”) keyed by tool_call_id.
-	const toolChunksById: Record<string, Message> = {};
-	for (const msg of messages) {
-		if (msg.type === "tool" && msg.tool_call_id) {
-			toolChunksById[msg.tool_call_id] = msg;
-		}
-	}
-
-	const result: Message[] = [];
-
-	// Iterate through the original messages.
-	for (const msg of messages) {
-		// Leave system, human and ai messages AS-IS.
-		if (["system", "human", "ai"].includes(msg.type)) {
-			result.push(msg);
-
-			// If an ai message “issued” a tool call (often stored in a tool_calls array)
-			// then for each such tool call create a combined message.
-			if (msg.type === "ai" && Array.isArray(msg.tool_calls)) {
-				for (const toolCall of msg.tool_calls) {
-					// Look up the corresponding tool output (“tool–chunk”) using the tool call id.
-					const toolChunk = toolChunksById[toolCall.id];
-					// If there is no output (or it’s falsy), mark status as error.
-					// const status = output ? (toolChunk.status || "success") : "error";
-
-					// Build a combined message.
-					const combinedMessage = {
-						...toolChunk,
-						...toolCall,
-						id: toolCall.id,
-						type: "tool", // Add required type property
-					};
-					result.push(combinedMessage);
-				}
-			}
-		} else if (msg.type === "tool") {
-			// If a tool message was not combined (because it wasn't paired with a tool call)
-			// then you might choose to push it as–is. (Here we ignore it since we already merged it above.)
-			// If you want to include it when there’s no matching tool call, uncomment below:
-			//
-			// if (!msg.tool_call_id || !toolChunksById[msg.tool_call_id]) {
-			//   result.push(msg);
-			// }
-		}
-	}
-
-	return result;
-}
-
-export function handleStreamChunk(data: any) {
-	// Tool Calls
-	if (data.msg.type === "AIMessageChunk" && data.msg.tool_calls.length > 0) {
-		const toolCallData = {
-			content: data.msg.content || data.msg,
-			type: "tool",
-			name: data.msg.name || data.msg[0].name,
-			status: "pending",
-			tool_call_id: data.msg.id,
-			id: data.msg.id,
-		};
-		return toolCallData;
-	}
-	// Tool Chunk
-	if (data.msg.type === "tool") {
-		const toolChunkData = {
-			content: data.msg.content || data.msg,
-			type: "tool",
-			name: data.msg.name,
-			status: "success",
-			tool_call_id: data.msg.id,
-			isOutput: true,
-		};
-		return toolChunkData;
-	}
-	if (data.event === "end") {
-		return data.msg;
-	}
 }
 
 export function constructSystemPrompt(systemPrompt: string) {
@@ -238,4 +138,86 @@ export function formatMessages(messages: any[]) {
 		}
 		return messageCopy;
 	});
+}
+
+export async function formatMultimodalPayload(
+	query: string,
+	images: File[] | string[],
+) {
+	const content: Array<
+		| { type: "text"; text: string }
+		| { type: "image_url"; image_url: { url: string; detail: string } }
+	> = [{ type: "text", text: query }];
+
+	if (images.length > 0) {
+		for (const image of images) {
+			if (image instanceof File) {
+				// For File objects, convert to base64
+				const arrayBuffer = await image.arrayBuffer();
+				const bytes = new Uint8Array(arrayBuffer);
+				let binary = "";
+				for (let i = 0; i < bytes.byteLength; i++) {
+					binary += String.fromCharCode(bytes[i]);
+				}
+				const base64Data = btoa(binary);
+
+				// Determine MIME type
+				const mimeType = image.type || "image/jpeg";
+
+				content.push({
+					type: "image_url",
+					image_url: {
+						url: `data:${mimeType};base64,${base64Data}`,
+						detail: "auto",
+					},
+				});
+			} else if (typeof image === "string") {
+				// For URL strings, check if it's already base64 or needs fetching
+				if (image.startsWith("data:")) {
+					// Already a data URL, use as-is
+					content.push({
+						type: "image_url",
+						image_url: {
+							url: image,
+							detail: "auto",
+						},
+					});
+				} else {
+					// External URL - fetch and convert to base64
+					try {
+						const response = await fetch(image);
+						const blob = await response.blob();
+						const arrayBuffer = await blob.arrayBuffer();
+						const bytes = new Uint8Array(arrayBuffer);
+						let binary = "";
+						for (let i = 0; i < bytes.byteLength; i++) {
+							binary += String.fromCharCode(bytes[i]);
+						}
+						const base64Data = btoa(binary);
+						const mimeType = blob.type || "image/jpeg";
+
+						content.push({
+							type: "image_url",
+							image_url: {
+								url: `data:${mimeType};base64,${base64Data}`,
+								detail: "auto",
+							},
+						});
+					} catch (error) {
+						// If fetching fails, fall back to using the URL directly
+						console.error("Failed to fetch and encode image:", error);
+						content.push({
+							type: "image_url",
+							image_url: {
+								url: image,
+								detail: "auto",
+							},
+						});
+					}
+				}
+			}
+		}
+	}
+
+	return [{ role: "user", content: content }];
 }

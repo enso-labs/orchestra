@@ -42,7 +42,7 @@ export default function useImageHook() {
 				},
 			});
 			if (response.data.status === "success") {
-				return response.data.files.map((file: any) => file.url);
+				return response.data.files.map((file: any) => file);
 			}
 			throw new Error("Failed to upload images");
 		} catch (error) {
@@ -95,12 +95,9 @@ export default function useImageHook() {
 			// Upload images and get presigned URLs
 			const presignedUrls = await uploadImages(validImages);
 
-			setPayload((prev: any) => ({
-				...prev,
-				images: [...prev.images, ...presignedUrls],
-			}));
+			// setImages((prev: any) => [...prev, ...validImages]);
 		},
-		[setPayload],
+		[setImages],
 	);
 
 	const handlePaste = useCallback(
@@ -132,12 +129,8 @@ export default function useImageHook() {
 	const removeImage = useCallback(
 		(index: number) => {
 			setImages((currentImages) => currentImages.filter((_, i) => i !== index));
-			setPayload((prev: any) => ({
-				...prev,
-				images: prev.images.filter((_: any, i: number) => i !== index),
-			}));
 		},
-		[setPayload],
+		[setImages],
 	);
 
 	const handleImageClick = useCallback((image: File, index: number) => {
