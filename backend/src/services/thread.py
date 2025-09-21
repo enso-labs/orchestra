@@ -3,9 +3,9 @@ from langgraph.store.memory import InMemoryStore
 
 
 class ThreadService:
-    def __init__(self, user_id: str = None):
+    def __init__(self, user_id: str = None, store: InMemoryStore = InMemoryStore()):
         self.user_id = user_id
-        self.store = InMemoryStore()
+        self.store = store
 
     async def update(self, thread_id: str, data: dict):
         await self.store.aput(

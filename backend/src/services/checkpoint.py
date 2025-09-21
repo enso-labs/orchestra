@@ -5,9 +5,11 @@ from langgraph.checkpoint.base import Checkpoint
 
 
 class CheckpointService:
-    def __init__(self, user_id: str = None):
+    def __init__(
+        self, user_id: str = None, checkpointer: InMemorySaver = InMemorySaver()
+    ):
         self.user_id = user_id
-        self.checkpointer = InMemorySaver()
+        self.checkpointer = checkpointer
         self.graph = create_react_agent("", [], checkpointer=self.checkpointer)
 
     async def list_checkpoints(self, thread_id: str):
