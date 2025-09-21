@@ -25,6 +25,9 @@ from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.stream import handle_multi_mode
 from src.utils.llm import audio_to_text
 from src.flows import construct_agent
+from src.services.db import get_checkpointer, get_store
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.store.postgres.aio import AsyncPostgresStore
 
 
 llm_router = APIRouter(tags=["Graphs"], prefix="/llm")
@@ -65,14 +68,18 @@ async def llm_invoke(
 async def llm_stream(
     params: LLMStreamRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
+    checkpointer: AsyncPostgresSaver = Depends(get_checkpointer),
+    store: AsyncPostgresStore = Depends(get_store),
 ) -> StreamingResponse:
     """
     Streams LLM output as server-sent events (SSE).
     """
     try:
         agent = await construct_agent(params)
+        agent.checkpointer = checkpointer
+        agent.store = store
 
-        async def event_generator(attach_state: bool = False):
+        async def event_generator():
             try:
                 async for chunk in agent.astream(
                     {"messages": params.to_langchain_messages()},

@@ -1,5 +1,4 @@
 from typing import Type, Literal, Any, AsyncGenerator
-from dataclasses import dataclass
 
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -12,13 +11,14 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import create_deep_agent, SubAgent
 
 
-from src.services.mcp import McpService
 from src.services.memory import memory_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
+from src.services.db import get_checkpoint_db, get_store_db
+from src.constants import DB_URI
 from src.utils.format import get_time
 from src.tools import TOOL_LIBRARY
 from src.schemas.contexts import ContextSchema
@@ -82,37 +82,44 @@ def graph_builder(
         return deep_agent
 
 
+async def init_tools(params: LLMRequest | LLMStreamRequest):
+    tools = TOOL_LIBRARY
+    if params.a2a:
+        tools = tools + params.a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
+    if params.mcp:
+        mcp_client = MultiServerMCPClient(params.mcp)
+        tools = tools + await mcp_client.get_tools()
+    return tools
+
+
+async def init_memories(params: LLMRequest | LLMStreamRequest, tools: list[BaseTool]):
+    memory_prompt = await add_memories_to_system()
+    prompt = params.system + "\n" + memory_prompt if memory_prompt else params.system
+    return tools + MEMORY_TOOLS, prompt
+
+
+def init_config(params: LLMRequest | LLMStreamRequest):
+    if params.metadata:
+        return RunnableConfig(
+            configurable=params.metadata.model_dump(),
+            # metadata={"model": params.model},
+        )
+    else:
+        return None
+
+
 ################################################################################
 ### Construct Agent
 ################################################################################
 async def construct_agent(params: LLMRequest | LLMStreamRequest):
     try:
         # Add config if it exists
-        config = (
-            RunnableConfig(
-                configurable=params.metadata.model_dump(),
-                metadata={"model": params.model},
-            )
-            if params.metadata
-            else None
-        )
-
-        tools = TOOL_LIBRARY
+        config = init_config(params)
+        # Initialize tools
+        tools = await init_tools(params)
         prompt = params.system
         if config:
-            ## Construct the prompt
-            memory_prompt = await add_memories_to_system()
-            prompt = (
-                params.system + "\n" + memory_prompt if memory_prompt else params.system
-            )
-            tools = tools + MEMORY_TOOLS
-        if params.a2a:
-            tools = tools + params.a2a.fetch_agent_cards_as_tools(
-                params.metadata.thread_id
-            )
-        if params.mcp:
-            mcp_client = MultiServerMCPClient(params.mcp)
-            tools = tools + await mcp_client.get_tools()
+            tools, prompt = await init_memories(params, tools)
 
         # Asynchronous LLM call
         agent = Orchestra(

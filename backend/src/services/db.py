@@ -1,5 +1,5 @@
-import contextlib
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from fastapi import Request
 from typing import AsyncGenerator, Generator
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -46,11 +46,23 @@ def load_models():
     return _Base
 
 
-def get_checkpoint_db():
+async def get_checkpointer(request: Request) -> AsyncPostgresSaver:
+    async with get_checkpoint_db() as checkpointer:
+        request.app.state.checkpointer = checkpointer
+    return request.app.state.checkpointer
+
+
+async def get_store(request: Request) -> AsyncPostgresStore:
+    async with get_store_db() as store:
+        request.app.state.store = store
+    return request.app.state.store
+
+
+def get_checkpoint_db() -> AsyncPostgresSaver:
     return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
 
 
-def get_store_db(embed: str = "openai:text-embedding-3-small"):
+def get_store_db(embed: str = "openai:text-embedding-3-small") -> AsyncPostgresStore:
     return AsyncPostgresStore.from_conn_string(
         conn_string=DB_URI,
         index=PostgresIndexConfig(dims=1536, embed=embed, fields=["text"]),
