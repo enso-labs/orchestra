@@ -47,8 +47,6 @@ async def add_memories_to_system():
     )
 
 
-# TODO: Not sure we need store based on construction of memory_service.
-# TODO: Need to investigate if we need to use store or not.
 def graph_builder(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
@@ -57,9 +55,11 @@ def graph_builder(
     context_schema: Type[Any] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
-    graph_id: Literal["react", "deepagents", "deepagent"] = "deepagents",
+    graph_id: Literal[
+        "react", "deepagents", "deepagent", "create_react_agent", "create_deep_agent"
+    ] = "deepagents",
 ) -> CompiledStateGraph:
-    if ["react", "create_react_agent"] in graph_id:
+    if graph_id in ["react", "create_react_agent"]:
         return create_react_agent(
             model=model,
             tools=tools,
@@ -69,16 +69,17 @@ def graph_builder(
             store=store,
         )
 
-    if ["deepagents", "deepagent", "create_deep_agent"] in graph_id:
-        return create_deep_agent(
+    if graph_id in ["deepagents", "deepagent", "create_deep_agent"]:
+        deep_agent = create_deep_agent(
             model=model,
             tools=tools,
             subagents=subagents,
             instructions=prompt,
             checkpointer=checkpointer,
-            # context_schema=context_schema,
-            # store=store,
         )
+        deep_agent.context_schema = context_schema
+        deep_agent.store = store
+        return deep_agent
 
 
 ################################################################################
