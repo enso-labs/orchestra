@@ -27,7 +27,7 @@ export function ChatNav({ onMenuClick, onNewChat }: ChatNavProps) {
 					</div>
 
 					<div className="flex items-center gap-2">
-						<div className="w-60">
+						<div className="w-56">
 							<SelectModel />
 						</div>
 						<div className="w-9">

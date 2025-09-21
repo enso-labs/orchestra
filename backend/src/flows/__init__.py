@@ -8,9 +8,11 @@ from langgraph.store.base import BaseStore
 from langchain_core.messages import BaseMessage, AIMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import create_deep_agent, SubAgent
 
 
+from src.services.mcp import McpService
 from src.services.memory import memory_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest, LLMStreamRequest
@@ -83,41 +85,53 @@ def graph_builder(
 ### Construct Agent
 ################################################################################
 async def construct_agent(params: LLMRequest | LLMStreamRequest):
-    # Add config if it exists
-    config = (
-        RunnableConfig(
-            configurable=params.metadata.model_dump(), metadata={"model": params.model}
+    try:
+        # Add config if it exists
+        config = (
+            RunnableConfig(
+                configurable=params.metadata.model_dump(),
+                metadata={"model": params.model},
+            )
+            if params.metadata
+            else None
         )
-        if params.metadata
-        else None
-    )
 
-    tools = TOOL_LIBRARY
-    prompt = params.system
-    if config:
-        ## Construct the prompt
-        memory_prompt = await add_memories_to_system()
-        prompt = (
-            params.system + "\n" + memory_prompt if memory_prompt else params.system
+        tools = TOOL_LIBRARY
+        prompt = params.system
+        if config:
+            ## Construct the prompt
+            memory_prompt = await add_memories_to_system()
+            prompt = (
+                params.system + "\n" + memory_prompt if memory_prompt else params.system
+            )
+            tools = tools + MEMORY_TOOLS
+        if params.a2a:
+            tools = tools + params.a2a.fetch_agent_cards_as_tools(
+                params.metadata.thread_id
+            )
+        if params.mcp:
+            mcp_client = MultiServerMCPClient(params.mcp)
+            tools = tools + await mcp_client.get_tools()
+
+        # Asynchronous LLM call
+        agent = Orchestra(
+            graph_id=(
+                params.metadata.graph_id
+                if params.metadata and params.metadata.graph_id
+                else "react"
+            ),
+            config=config,
+            model=params.model,
+            tools=tools,
+            context_schema=ContextSchema,
+            prompt=prompt,
+            checkpointer=checkpoint_service.checkpointer if config else None,
+            store=thread_service.store if config else None,
         )
-        tools = tools + MEMORY_TOOLS
-
-    # Asynchronous LLM call
-    agent = Orchestra(
-        graph_id=(
-            params.metadata.graph_id
-            if params.metadata and params.metadata.graph_id
-            else "react"
-        ),
-        config=config,
-        model=params.model,
-        tools=tools,
-        context_schema=ContextSchema,
-        prompt=prompt,
-        checkpointer=checkpoint_service.checkpointer if config else None,
-        store=thread_service.store if config else None,
-    )
-    return agent
+        return agent
+    except Exception as e:
+        logger.error(f"Error constructing agent: {e}")
+        raise e
 
 
 class Orchestra:

@@ -99,6 +99,18 @@ export default function useChat(): ChatContextType {
 			model: model,
 			metadata: JSON.parse(metadata),
 			stream_mode: "messages",
+			a2a: {
+				enso_a2a: {
+					base_url: "https://a2a.enso.sh",
+					agent_card_path: "/.well-known/agent.json",
+				},
+			},
+			// mcp: {
+			// 	playwright: {
+			// 		url: "https://confidentiality-titles-showcase-artist.trycloudflare.com/mcp",
+			// 		transport: "streamable_http",
+			// 	},
+			// },
 		});
 
 		source.addEventListener("message", function (e: any) {

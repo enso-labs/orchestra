@@ -6,20 +6,35 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
+import { truncateFrom } from "@/lib/utils/format";
 // import { useChatContext } from "@/context/ChatContext";
 import SearchEngineTool from "../tools/SearchEngine";
 
-function ToolAction({ message }: { message: any }) {
+const MAX_LENGTH = 1000;
+
+function ToolAction({
+	message,
+	maxLength = MAX_LENGTH,
+}: {
+	message: any;
+	maxLength?: number;
+}) {
 	if (["search_engine", "web_search"].includes(message.name)) {
 		return <SearchEngineTool selectedToolMessage={message} />;
 	}
 
-	return <MarkdownCard content={message.content} />;
+	return (
+		<MarkdownCard
+			content={truncateFrom(message.content, "end", "...", maxLength)}
+		/>
+	);
 }
 
 export function Message({ message }: { message: any }) {
 	const ICON_SIZE = 4;
 	const [isEditing, setIsEditing] = useState(false);
+	const [maxLength, setMaxLength] = useState(MAX_LENGTH);
+	const [isEditingLength, setIsEditingLength] = useState(false);
 
 	if (["human", "user"].includes(message.role)) {
 		return (
@@ -68,15 +83,18 @@ export function Message({ message }: { message: any }) {
 	}
 
 	if (["tool"].includes(message.role || message.type)) {
+		const totalChars = message.content?.length || 0;
+		const displayedChars = Math.min(totalChars, maxLength);
+
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
 					<div key={message.id} className="p-2 rounded bg-gray-800 m-2">
-						<div className="flex items-center space-x-2">
-							<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-								<Wrench className="h-4 w-4 text-primary" />
-							</div>
-							<div>
+						<div className="flex items-center justify-between">
+							<div className="flex items-center space-x-2">
+								<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+									<Wrench className="h-4 w-4 text-primary" />
+								</div>
 								<h3
 									className={cn(
 										"text-xs px-2 py-0.5 rounded-full",
@@ -87,14 +105,49 @@ export function Message({ message }: { message: any }) {
 								>
 									{message.name}
 								</h3>
+								<p className="text-xs text-muted-foreground">
+									{message.tool_call_id}
+								</p>
 							</div>
-							<p className="text-xs text-muted-foreground">
-								{message.tool_call_id}
-							</p>
+							<div className="flex items-center space-x-1">
+								{isEditingLength ? (
+									<>
+										<input
+											type="number"
+											min="100"
+											max={totalChars}
+											step="100"
+											value={maxLength}
+											onChange={(e) => {
+												const value = Number(e.target.value);
+												setMaxLength(value < 100 ? 100 : value);
+											}}
+											onBlur={() => setIsEditingLength(false)}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" || e.key === "Escape") {
+													setIsEditingLength(false);
+												}
+											}}
+											className="w-20 px-1 py-0.5 text-xs bg-background border border-primary rounded"
+											autoFocus
+										/>
+										<span className="text-xs text-muted-foreground">
+											/ {totalChars}
+										</span>
+									</>
+								) : (
+									<button
+										onClick={() => setIsEditingLength(true)}
+										className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer px-2 py-0.5 rounded hover:bg-muted"
+									>
+										{displayedChars} / {totalChars} chars
+									</button>
+								)}
+							</div>
 						</div>
-						<div className="flex justify-start overflow-y-auto">
+						<div className="flex justify-start overflow-y-auto mt-2">
 							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
-								<ToolAction message={message} />
+								<ToolAction message={message} maxLength={maxLength} />
 							</div>
 						</div>
 					</div>

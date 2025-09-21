@@ -90,6 +90,8 @@ interface StreamThreadPayload {
 	model: string;
 	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
 	stream_mode: string;
+	a2a?: object;
+	mcp?: object;
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
