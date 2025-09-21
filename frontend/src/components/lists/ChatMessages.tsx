@@ -12,6 +12,15 @@ import SearchEngineTool from "../tools/SearchEngine";
 
 const MAX_LENGTH = 1000;
 
+function isValidJSON(str: string): boolean {
+	try {
+		JSON.parse(str);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 function ToolAction({
 	message,
 	maxLength = MAX_LENGTH,
@@ -21,6 +30,15 @@ function ToolAction({
 }) {
 	if (["search_engine", "web_search"].includes(message.name)) {
 		return <SearchEngineTool selectedToolMessage={message} />;
+	}
+
+	// Check if message.content is valid JSON
+	if (
+		message.content &&
+		typeof message.content === "string" &&
+		isValidJSON(message.content)
+	) {
+		return <DefaultTool selectedToolMessage={message} collapsed={true} />;
 	}
 
 	return (
@@ -145,7 +163,7 @@ export function Message({ message }: { message: any }) {
 								)}
 							</div>
 						</div>
-						<div className="flex justify-start overflow-y-auto mt-2">
+						<div className="overflow-y-auto mt-2">
 							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
 								<ToolAction message={message} maxLength={maxLength} />
 							</div>
