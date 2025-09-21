@@ -213,7 +213,7 @@ export function Message({ message }: { message: any }) {
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
-					<DefaultTool selectedToolMessage={message} />
+					<DefaultTool selectedToolMessage={message} collapsed={false} />
 				</div>
 			</div>
 		);

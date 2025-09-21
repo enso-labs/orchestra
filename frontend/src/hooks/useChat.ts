@@ -59,7 +59,8 @@ export default function useChat(): ChatContextType {
 	};
 	const [metadata, setMetadata] = useState(() => {
 		const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
-		return JSON.stringify({ thread_id: threadId }, null, 2);
+		const graphId = `deepagent`;
+		return JSON.stringify({ thread_id: threadId, graph_id: graphId }, null, 2);
 	});
 	const [controller, setController] = useState<AbortController | null>(null);
 
@@ -92,12 +93,14 @@ export default function useChat(): ChatContextType {
 		setMessages(updatedMessages);
 
 		clearContent();
+		const parsedMetadata = JSON.parse(metadata);
+		parsedMetadata.graph_id = "deepagent";
 		const controller = abortController || new AbortController();
 		const source = streamThread({
 			system: constructSystemPrompt("You are a helpful assistant."),
 			messages: [{ role: "user", content: [{ type: "text", text: query }] }],
 			model: model,
-			metadata: JSON.parse(metadata),
+			metadata: parsedMetadata,
 			stream_mode: "messages",
 			a2a: {
 				enso_a2a: {

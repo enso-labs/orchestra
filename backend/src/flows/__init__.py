@@ -57,9 +57,9 @@ def graph_builder(
     context_schema: Type[Any] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
-    graph_id: Literal["react", "deepagent"] = "react",
+    graph_id: Literal["react", "deepagents", "deepagent"] = "deepagents",
 ) -> CompiledStateGraph:
-    if graph_id == "react":
+    if ["react", "create_react_agent"] in graph_id:
         return create_react_agent(
             model=model,
             tools=tools,
@@ -69,15 +69,15 @@ def graph_builder(
             store=store,
         )
 
-    if graph_id == "deepagent":
+    if ["deepagents", "deepagent", "create_deep_agent"] in graph_id:
         return create_deep_agent(
             model=model,
             tools=tools,
             subagents=subagents,
             instructions=prompt,
             checkpointer=checkpointer,
-            context_schema=context_schema,
-            store=store,
+            # context_schema=context_schema,
+            # store=store,
         )
 
 
@@ -160,6 +160,7 @@ class Orchestra:
             context_schema=self.context_schema,
             checkpointer=self.checkpointer,
             store=self.store,
+            graph_id=graph_id,
         )
 
     def astream(
