@@ -127,7 +127,7 @@ export function Message({ message }: { message: any }) {
 									{message.tool_call_id}
 								</p>
 							</div>
-							<div className="flex items-center space-x-1">
+							{/* <div className="flex items-center space-x-1">
 								{isEditingLength ? (
 									<>
 										<input
@@ -161,11 +161,14 @@ export function Message({ message }: { message: any }) {
 										{displayedChars} / {totalChars} chars
 									</button>
 								)}
-							</div>
+							</div> */}
 						</div>
 						<div className="overflow-y-auto mt-2">
 							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
-								<ToolAction message={message} maxLength={maxLength} />
+								<ToolAction
+									message={message}
+									// maxLength={maxLength}
+								/>
 							</div>
 						</div>
 					</div>
@@ -213,7 +216,7 @@ export function Message({ message }: { message: any }) {
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
-					<DefaultTool selectedToolMessage={message} collapsed={false} />
+					<DefaultTool selectedToolMessage={message} />
 				</div>
 			</div>
 		);
