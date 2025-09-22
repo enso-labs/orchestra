@@ -80,6 +80,7 @@ async def llm_stream(
             thread_service.store = store
             checkpoint_service.checkpointer = checkpointer
             agent = await construct_agent(params, checkpointer, store)
+            checkpoint_service.graph = agent.graph
             try:
                 async for chunk in agent.astream(
                     {"messages": params.to_langchain_messages()},

@@ -6,6 +6,8 @@ import {
 	formatMultimodalPayload,
 } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
+import apiClient from "@/lib/utils/apiClient";
+import { getAuthToken } from "@/lib/utils/auth";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -30,6 +32,7 @@ export type ChatContextType = {
 	metadata: string;
 	setMetadata: (metadata: string) => void;
 	abortQuery: () => void;
+	deleteThread: (threadId: string) => void;
 	model: string;
 	setModel: (model: string) => void;
 	// NEW
@@ -320,6 +323,27 @@ export default function useChat(): ChatContextType {
 		setQuery(e.target.value);
 	};
 
+	const deleteThread = async (threadId: string) => {
+		try {
+			const response = await apiClient.delete(`/threads/${threadId}`, {
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			});
+			if (response.status >= 200 && response.status < 300) {
+				return true;
+			}
+			return false;
+		} catch (error: any) {
+			console.error("Error deleting thread:", error);
+			throw new Error(
+				error.response?.data?.detail || "Failed to delete thread",
+			);
+		}
+	};
+
 	return {
 		responseRef,
 		toolCallChunkRef,
@@ -343,6 +367,7 @@ export default function useChat(): ChatContextType {
 		clearMessages,
 		resetMetadata,
 		abortQuery,
+		deleteThread,
 		// tools
 		arcade,
 		setArcade,

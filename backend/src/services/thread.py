@@ -21,8 +21,12 @@ class ThreadService:
         return await self.store.aget(("threads", self.user_id), key)
 
     async def delete(self, key: str) -> bool:
-        await self.store.adelete(("threads", self.user_id), key)
-        return True
+        try:
+            await self.store.adelete(("threads", self.user_id), key)
+            return True
+        except Exception as e:
+            logger.exception(f"Error deleting thread: {e}")
+            return False
 
     async def search(
         self,

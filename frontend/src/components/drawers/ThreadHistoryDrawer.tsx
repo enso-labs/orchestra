@@ -21,11 +21,33 @@ export function ThreadHistoryDrawer({
 	onClose,
 }: ThreadHistoryDrawerProps) {
 	const { setIsDrawerOpen } = useAppContext();
-	const { threads, metadata, setMessages, setMetadata } = useChatContext();
+	const {
+		threads,
+		metadata,
+		setMessages,
+		setMetadata,
+		deleteThread,
+		setThreads,
+	} = useChatContext();
 	const [, setQueryModel] = useQueryParam("model", StringParam);
 	const [copiedThreadId, setCopiedThreadId] = useState<string | null>(null);
 
 	const metadataCopy = JSON.parse(metadata);
+
+	const handleDeleteClick = async (e: React.MouseEvent, threadId: string) => {
+		e.stopPropagation(); // Prevent thread selection when clicking delete
+
+		if (window.confirm("Are you sure you want to delete this thread?")) {
+			try {
+				const deleted = await deleteThread(threadId);
+				if (deleted) {
+					setThreads(threads.filter((thread: any) => thread.key !== threadId));
+				}
+			} catch (error) {
+				alert("Failed to delete thread");
+			}
+		}
+	};
 
 	return (
 		<>
@@ -143,7 +165,7 @@ export function ThreadHistoryDrawer({
 											variant="ghost"
 											size="icon"
 											className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-											// onClick={(e) => handleDeleteClick(e, thread.thread_id)}
+											onClick={(e) => handleDeleteClick(e, thread.key)}
 										>
 											<svg
 												xmlns="http://www.w3.org/2000/svg"

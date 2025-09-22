@@ -159,3 +159,19 @@ export const searchThreads = async (
 		return data.checkpoint;
 	}
 };
+
+export const deleteThread = async (threadId: string) => {
+	try {
+		const response = await apiClient.delete(`/threads/${threadId}`, {
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json",
+				Authorization: `Bearer ${getAuthToken()}`,
+			},
+		});
+		return response;
+	} catch (error: any) {
+		console.error("Error deleting thread:", error);
+		throw new Error(error.response?.data?.detail || "Failed to delete thread");
+	}
+};
