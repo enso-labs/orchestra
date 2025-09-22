@@ -6,8 +6,6 @@ import {
 	formatMultimodalPayload,
 } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
-import { useChatContext } from "@/context/ChatContext";
-import useImageHook from "./useImageHook";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 

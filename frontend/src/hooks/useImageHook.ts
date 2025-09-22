@@ -1,7 +1,6 @@
 import debug from "debug";
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { useChatContext } from "@/context/ChatContext";
 import apiClient from "@/lib/utils/apiClient";
 
 const MAX_IMAGES = 10;
@@ -16,7 +15,6 @@ const INIT_IMAGE_STATE = {
 };
 
 export default function useImageHook() {
-	const { setPayload } = useChatContext();
 	const [images, setImages] = useState<File[]>(INIT_IMAGE_STATE.images);
 	const [previewImage, setPreviewImage] = useState<File | null>(
 		INIT_IMAGE_STATE.previewImage,
@@ -93,7 +91,7 @@ export default function useImageHook() {
 			});
 
 			// Upload images and get presigned URLs
-			const presignedUrls = await uploadImages(validImages);
+			await uploadImages(validImages);
 
 			// setImages((prev: any) => [...prev, ...validImages]);
 		},
