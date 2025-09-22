@@ -17,8 +17,6 @@ from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
-from src.services.db import get_checkpoint_db, get_store_db
-from src.constants import DB_URI
 from src.utils.format import get_time
 from src.tools import TOOL_LIBRARY
 from src.schemas.contexts import ContextSchema
@@ -111,7 +109,11 @@ def init_config(params: LLMRequest | LLMStreamRequest):
 ################################################################################
 ### Construct Agent
 ################################################################################
-async def construct_agent(params: LLMRequest | LLMStreamRequest):
+async def construct_agent(
+    params: LLMRequest | LLMStreamRequest,
+    checkpointer: BaseCheckpointSaver = None,
+    store: BaseStore = None,
+):
     try:
         # Add config if it exists
         config = init_config(params)
@@ -133,8 +135,8 @@ async def construct_agent(params: LLMRequest | LLMStreamRequest):
             tools=tools,
             context_schema=ContextSchema,
             prompt=prompt,
-            checkpointer=checkpoint_service.checkpointer if config else None,
-            store=thread_service.store if config else None,
+            checkpointer=checkpointer,
+            store=store,
         )
         return agent
     except Exception as e:
@@ -201,7 +203,7 @@ class Orchestra:
 
                 # Update checkpoint state with modified messages
                 new_config = await checkpoint_service.update_checkpoint_state(
-                    self.config, {"messages": messages}
+                    final_state.config, {"messages": messages}
                 )
 
                 # Extract thread and checkpoint IDs from config
@@ -215,7 +217,7 @@ class Orchestra:
                     {
                         "thread_id": thread_id,
                         "checkpoint_id": checkpoint_id,
-                        "messages": [last_message],
+                        "messages": [last_message.model_dump()],
                         "updated_at": get_time(),
                     },
                 )

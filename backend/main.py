@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from src.services.db import get_checkpoint_db, get_store_db
 from src.utils.logger import logger
 
 from src.routes.v0 import (
@@ -49,9 +50,19 @@ async def lifespan(app: FastAPI):
     print(f"APP_ENV: {APP_ENV}")
     if APP_ENV == "production" or APP_ENV == "staging":
         run_migrations()
-    yield
-    # Shutdown
-    pass
+
+    # Enter the async context managers to get live instances
+    async with get_checkpoint_db() as saver, get_store_db() as store:
+        # optional: create tables/indexes
+        await saver.setup()
+        await store.setup()
+
+        # share across requests
+        app.state.checkpointer = saver
+        app.state.store = store
+
+        # serve requests
+        yield
 
 
 app = FastAPI(

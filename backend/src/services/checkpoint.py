@@ -1,12 +1,16 @@
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.base import Checkpoint
+from langgraph.checkpoint.base import Checkpoint, BaseCheckpointSaver
+
+IN_MEMORY_CHECKPOINTER = InMemorySaver()
 
 
 class CheckpointService:
     def __init__(
-        self, user_id: str = None, checkpointer: InMemorySaver = InMemorySaver()
+        self,
+        user_id: str = None,
+        checkpointer: BaseCheckpointSaver = IN_MEMORY_CHECKPOINTER,
     ):
         self.user_id = user_id
         self.checkpointer = checkpointer

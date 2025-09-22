@@ -9,8 +9,7 @@ from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.utils.auth import get_optional_user
 from src.services.db import get_store, get_checkpointer
-from langgraph.store.postgres.aio import AsyncPostgresStore
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.store.base import BaseStore
 
 router = APIRouter(tags=["Thread"])
 
@@ -21,8 +20,8 @@ async def search_threads(
         openapi_examples=Examples.THREAD_SEARCH_EXAMPLES
     ),
     user: ProtectedUser = Depends(get_optional_user),
-    store: AsyncPostgresStore = Depends(get_store),
-    checkpointer: AsyncPostgresSaver = Depends(get_checkpointer),
+    store=Depends(get_store),
+    checkpointer=Depends(get_checkpointer),
 ):
     try:
         thread_service.store = store
