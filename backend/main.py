@@ -13,16 +13,10 @@ from src.routes.v0 import (
     tool,
     llm,
     thread,
-    retrieve,
-    source,
     info,
     auth,
     token,
     storage,
-    settings,
-    agent,
-    model,
-    server,
     rag,
 )
 from src.constants import (
@@ -72,9 +66,9 @@ app = FastAPI(
         "This is a simple API for building chatbots with LangGraph. "
         "It allows you to create new threads, query existing threads, "
         "and get the history of a thread.\n Check out the repo on "
-        f"<a href='https://github.com/enso-labs/cloud'>Github</a>"
+        f"<a href='https://github.com/enso-labs/orchestra'>Github</a>"
     ),
-    contact={"name": "Ryan Eggleston", "email": "ryaneggleston@promptengineers.ai"},
+    contact={"name": "Ryan Eggleston", "email": "reggleston@enso.sh"},
     debug=True,
     docs_url="/api",
     lifespan=lifespan,
@@ -122,15 +116,9 @@ app.include_router(token, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
-app.include_router(model, prefix=PREFIX)
-app.include_router(settings, prefix=PREFIX)
-app.include_router(agent, prefix=PREFIX)
 if LANGCONNECT_SERVER_URL:
     app.include_router(rag, prefix=PREFIX)
-# app.include_router(retrieve, prefix=PREFIX)
-app.include_router(source, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
-app.include_router(server, prefix=PREFIX)
 # Mount specific directories only if they exist
 app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
 app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
