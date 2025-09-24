@@ -3,8 +3,6 @@ import httpx
 import json
 from httpx_sse import connect_sse
 from typing import Any, AsyncIterable
-from src.schemas.entities import ExistingThread, NewThread
-from src.schemas.entities.a2a import A2AServer
 from src.utils.logger import logger
 from fastapi.responses import StreamingResponse, JSONResponse
 from src.common.types import (
@@ -115,7 +113,7 @@ class A2AClient:
 
 
 async def process_a2a_streaming(
-    thread: NewThread | ExistingThread,
+    thread: dict,
     thread_id: str,
 ):
     client = A2AClient(url=thread.a2a.base_url)
@@ -145,7 +143,7 @@ async def process_a2a_streaming(
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
-async def process_a2a(thread: NewThread | ExistingThread, thread_id: str):
+async def process_a2a(thread: dict, thread_id: str):
     client = A2AClient(url=thread.a2a.base_url)
     response = await client.send_task(
         payload={

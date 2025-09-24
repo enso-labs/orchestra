@@ -1,7 +1,6 @@
 import debug from "debug";
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { useChatContext } from "@/context/ChatContext";
 import apiClient from "@/lib/utils/apiClient";
 
 const MAX_IMAGES = 10;
@@ -16,7 +15,6 @@ const INIT_IMAGE_STATE = {
 };
 
 export default function useImageHook() {
-	const { setPayload } = useChatContext();
 	const [images, setImages] = useState<File[]>(INIT_IMAGE_STATE.images);
 	const [previewImage, setPreviewImage] = useState<File | null>(
 		INIT_IMAGE_STATE.previewImage,
@@ -42,7 +40,7 @@ export default function useImageHook() {
 				},
 			});
 			if (response.data.status === "success") {
-				return response.data.files.map((file: any) => file.url);
+				return response.data.files.map((file: any) => file);
 			}
 			throw new Error("Failed to upload images");
 		} catch (error) {
@@ -93,14 +91,11 @@ export default function useImageHook() {
 			});
 
 			// Upload images and get presigned URLs
-			const presignedUrls = await uploadImages(validImages);
+			await uploadImages(validImages);
 
-			setPayload((prev: any) => ({
-				...prev,
-				images: [...prev.images, ...presignedUrls],
-			}));
+			// setImages((prev: any) => [...prev, ...validImages]);
 		},
-		[setPayload],
+		[setImages],
 	);
 
 	const handlePaste = useCallback(
@@ -132,12 +127,8 @@ export default function useImageHook() {
 	const removeImage = useCallback(
 		(index: number) => {
 			setImages((currentImages) => currentImages.filter((_, i) => i !== index));
-			setPayload((prev: any) => ({
-				...prev,
-				images: prev.images.filter((_: any, i: number) => i !== index),
-			}));
 		},
-		[setPayload],
+		[setImages],
 	);
 
 	const handleImageClick = useCallback((image: File, index: number) => {

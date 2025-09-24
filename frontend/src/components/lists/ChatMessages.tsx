@@ -6,15 +6,46 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
+import { truncateFrom } from "@/lib/utils/format";
 // import { useChatContext } from "@/context/ChatContext";
 import SearchEngineTool from "../tools/SearchEngine";
 
-function ToolAction({ message }: { message: any }) {
+const MAX_LENGTH = 1000;
+
+function isValidJSON(str: string): boolean {
+	try {
+		JSON.parse(str);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function ToolAction({
+	message,
+	maxLength = MAX_LENGTH,
+}: {
+	message: any;
+	maxLength?: number;
+}) {
 	if (["search_engine", "web_search"].includes(message.name)) {
 		return <SearchEngineTool selectedToolMessage={message} />;
 	}
 
-	return <MarkdownCard content={message.content} />;
+	// Check if message.content is valid JSON
+	if (
+		message.content &&
+		typeof message.content === "string" &&
+		isValidJSON(message.content)
+	) {
+		return <DefaultTool selectedToolMessage={message} collapsed={true} />;
+	}
+
+	return (
+		<MarkdownCard
+			content={truncateFrom(message.content, "end", "...", maxLength)}
+		/>
+	);
 }
 
 export function Message({ message }: { message: any }) {
@@ -72,11 +103,11 @@ export function Message({ message }: { message: any }) {
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
 					<div key={message.id} className="p-2 rounded bg-gray-800 m-2">
-						<div className="flex items-center space-x-2">
-							<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-								<Wrench className="h-4 w-4 text-primary" />
-							</div>
-							<div>
+						<div className="flex items-center justify-between">
+							<div className="flex items-center space-x-2">
+								<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+									<Wrench className="h-4 w-4 text-primary" />
+								</div>
 								<h3
 									className={cn(
 										"text-xs px-2 py-0.5 rounded-full",
@@ -87,14 +118,17 @@ export function Message({ message }: { message: any }) {
 								>
 									{message.name}
 								</h3>
+								<p className="text-xs text-muted-foreground">
+									{message.tool_call_id}
+								</p>
 							</div>
-							<p className="text-xs text-muted-foreground">
-								{message.tool_call_id}
-							</p>
 						</div>
-						<div className="flex justify-start overflow-y-auto">
+						<div className="overflow-y-auto mt-2">
 							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
-								<ToolAction message={message} />
+								<ToolAction
+									message={message}
+									// maxLength={maxLength}
+								/>
 							</div>
 						</div>
 					</div>
@@ -142,7 +176,7 @@ export function Message({ message }: { message: any }) {
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
-					<DefaultTool selectedToolMessage={message} />
+					<DefaultTool selectedToolMessage={message} collapsed={false} />
 				</div>
 			</div>
 		);

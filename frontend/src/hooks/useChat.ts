@@ -1,8 +1,13 @@
 import { useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
-import { constructSystemPrompt } from "@/lib/utils/format";
+import {
+	constructSystemPrompt,
+	formatMultimodalPayload,
+} from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
+import apiClient from "@/lib/utils/apiClient";
+import { getAuthToken } from "@/lib/utils/auth";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -27,6 +32,7 @@ export type ChatContextType = {
 	metadata: string;
 	setMetadata: (metadata: string) => void;
 	abortQuery: () => void;
+	deleteThread: (threadId: string) => void;
 	model: string;
 	setModel: (model: string) => void;
 	// NEW
@@ -59,7 +65,8 @@ export default function useChat(): ChatContextType {
 	};
 	const [metadata, setMetadata] = useState(() => {
 		const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
-		return JSON.stringify({ thread_id: threadId }, null, 2);
+		const graphId = `deepagent`;
+		return JSON.stringify({ thread_id: threadId, graph_id: graphId }, null, 2);
 	});
 	const [controller, setController] = useState<AbortController | null>(null);
 
@@ -75,8 +82,9 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
-	const handleSSE = (
+	const handleSSE = async (
 		query: string,
+		images: File[],
 		abortController: AbortController | null = null,
 	) => {
 		// Add user message to the existing messages state
@@ -92,13 +100,28 @@ export default function useChat(): ChatContextType {
 		setMessages(updatedMessages);
 
 		clearContent();
+		const parsedMetadata = JSON.parse(metadata);
+		parsedMetadata.graph_id = "deepagent";
 		const controller = abortController || new AbortController();
+		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
 			system: constructSystemPrompt("You are a helpful assistant."),
-			messages: [{ role: "user", content: [{ type: "text", text: query }] }],
+			messages: formatedMessages,
 			model: model,
-			metadata: JSON.parse(metadata),
+			metadata: parsedMetadata,
 			stream_mode: "messages",
+			a2a: {
+				enso_a2a: {
+					base_url: "https://a2a.enso.sh",
+					agent_card_path: "/.well-known/agent.json",
+				},
+			},
+			// mcp: {
+			// 	playwright: {
+			// 		url: "https://confidentiality-titles-showcase-artist.trycloudflare.com/mcp",
+			// 		transport: "streamable_http",
+			// 	},
+			// },
 		});
 
 		source.addEventListener("message", function (e: any) {
@@ -132,10 +155,10 @@ export default function useChat(): ChatContextType {
 		return { controller, source };
 	};
 
-	const handleSubmit = (argQuery?: string) => {
+	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
-		const { controller } = handleSSE(argQuery || query);
+		const { controller } = await handleSSE(argQuery || query, images);
 		setController(controller);
 		setQuery("");
 	};
@@ -288,16 +311,6 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
-	// function sseHandler(
-	// 	payload: any,
-	// 	messages: any[],
-	// 	stream_mode: StreamMode | Array<StreamMode> = "messages",
-	// ) {
-	// 	if (stream_mode === "messages" || stream_mode.includes("messages")) {
-	// 		handleMessages(payload, messages);
-	// 	}
-	// }
-
 	const sseHandler = (payload: any, messages: any[]) => {
 		handleMessages(payload, messages);
 		return true;
@@ -308,6 +321,27 @@ export default function useChat(): ChatContextType {
 		textarea.style.height = "auto";
 		textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
 		setQuery(e.target.value);
+	};
+
+	const deleteThread = async (threadId: string) => {
+		try {
+			const response = await apiClient.delete(`/threads/${threadId}`, {
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			});
+			if (response.status >= 200 && response.status < 300) {
+				return true;
+			}
+			return false;
+		} catch (error: any) {
+			console.error("Error deleting thread:", error);
+			throw new Error(
+				error.response?.data?.detail || "Failed to delete thread",
+			);
+		}
 	};
 
 	return {
@@ -333,6 +367,7 @@ export default function useChat(): ChatContextType {
 		clearMessages,
 		resetMetadata,
 		abortQuery,
+		deleteThread,
 		// tools
 		arcade,
 		setArcade,

@@ -1,14 +1,24 @@
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.base import Checkpoint
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.checkpoint.base import Checkpoint, BaseCheckpointSaver
+from src.utils.logger import logger
+
+
+IN_MEMORY_CHECKPOINTER = InMemorySaver()
 
 
 class CheckpointService:
-    def __init__(self, user_id: str = None):
+    def __init__(
+        self,
+        user_id: str = None,
+        checkpointer: BaseCheckpointSaver = IN_MEMORY_CHECKPOINTER,
+        graph: CompiledStateGraph = None,
+    ):
         self.user_id = user_id
-        self.checkpointer = InMemorySaver()
-        self.graph = create_react_agent("", [], checkpointer=self.checkpointer)
+        self.checkpointer = checkpointer
+        self.graph = graph
 
     async def list_checkpoints(self, thread_id: str):
         config = RunnableConfig(configurable={"thread_id": thread_id})
@@ -42,10 +52,12 @@ class CheckpointService:
         return await self.graph.aupdate_state(config=config, values=values)
 
     async def delete_checkpoints_for_thread(self, thread_id: str) -> bool:
-        if thread_id in self.checkpointer.storage:
-            del self.checkpointer.storage[thread_id]
+        try:
+            await self.checkpointer.adelete_thread(thread_id)
             return True
-        return False
+        except Exception as e:
+            logger.exception(f"Error deleting checkpoints for thread: {e}")
+            return False
 
 
 checkpoint_service = CheckpointService()

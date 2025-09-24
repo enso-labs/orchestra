@@ -2,7 +2,16 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ImagePreviewProps {
-	images: File[];
+	images:
+		| File[]
+		| {
+				content_type: string;
+				url: string;
+				directory: string;
+				filename: string;
+				object_name: string;
+				size: number;
+		  }[];
 	onRemove: (index: number) => void;
 	onImageClick: (image: File) => void;
 }
@@ -17,15 +26,19 @@ export function ImagePreview({
 	return (
 		<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
 			{images.map((image, index) => (
-				<div key={`${image.name}-${index}`} className="relative">
+				<div key={`${index}`} className="relative">
 					<div className="flex items-center gap-2 p-2 bg-background/50 border border-input rounded-lg">
 						<div
 							className="flex items-center gap-2 text-sm text-muted-foreground w-full cursor-pointer"
-							onClick={() => onImageClick(image)}
+							onClick={() => onImageClick(image as File)}
 						>
 							<div className="w-8 h-8 bg-muted rounded flex items-center justify-center shrink-0">
 								<img
-									src={URL.createObjectURL(image) || "/placeholder.svg"}
+									src={
+										(image as { url: string }).url ||
+										URL.createObjectURL(image as File) ||
+										"/placeholder.svg"
+									}
 									alt="Preview"
 									className="w-6 h-6 object-cover"
 								/>

@@ -90,6 +90,8 @@ interface StreamThreadPayload {
 	model: string;
 	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
 	stream_mode: string;
+	a2a?: object;
+	mcp?: object;
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
@@ -155,5 +157,21 @@ export const searchThreads = async (
 		return data.checkpoints;
 	} else if (action === "get_checkpoint") {
 		return data.checkpoint;
+	}
+};
+
+export const deleteThread = async (threadId: string) => {
+	try {
+		const response = await apiClient.delete(`/threads/${threadId}`, {
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "application/json",
+				Authorization: `Bearer ${getAuthToken()}`,
+			},
+		});
+		return response;
+	} catch (error: any) {
+		console.error("Error deleting thread:", error);
+		throw new Error(error.response?.data?.detail || "Failed to delete thread");
 	}
 };

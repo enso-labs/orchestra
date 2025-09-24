@@ -31,16 +31,12 @@ Engines = Literal[
 
 @tool
 async def web_search(
-    query: str,  # The search query.
-    num_results: Optional[int] = 5,  # The number of results to return. Defaults to 10.
-    engines: Optional[List[Engines]] = [
-        "google"
-    ],  # The list of search engines to use. Defaults to None.
+    query: str,
+    num_results: Optional[int] = 5,
+    engines: Optional[List[Engines]] = ["google"],
     categories: Optional[List[Categories]] = [],
-    language: Optional[
-        str
-    ] = "en",  # The language to use for the search. Defaults to None.
-) -> list:  # The search results.
+    language: Optional[str] = "en",
+) -> list:
     """
     Title: Web Search
     Description: Perform a targeted web search for the provided query.

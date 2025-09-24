@@ -14,7 +14,7 @@ from langgraph.types import StreamMode
 from uuid import uuid4
 from langchain_core.tools import BaseTool
 
-from src.schemas.entities.a2a import A2AServer
+from src.schemas.entities.a2a import A2AServer, A2AServers
 from src.constants.llm import ModelName
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
@@ -209,7 +209,9 @@ class LLMRequest(BaseModel):
     model: str = "openai:gpt-5-nano"
     system: str = "You are a helpful assistant."
     # tools: Optional[List[BaseTool]] = Field(default_factory=list)
-    # mcp: Optional[dict] = Field(default_factory=dict)
+    a2a: Optional[A2AServers] = Field(default_factory=A2AServers)
+    mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
+
     metadata: Optional[Config] = Field(
         default={}, description="LangGraph configuration"
     )

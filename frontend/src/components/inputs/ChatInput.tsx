@@ -16,7 +16,6 @@ export default function ChatInput() {
 	const { loading } = useAppContext();
 	const {
 		query,
-		currentModel,
 		abortQuery,
 		images,
 		previewImage,
@@ -102,14 +101,14 @@ export default function ChatInput() {
 						query.length > 0
 					) {
 						e.preventDefault();
-						if (!loading && !isMobile()) handleSubmit();
+						if (!loading && !isMobile()) handleSubmit(query, images);
 					}
 				}}
 			/>
 			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
 				<div className="flex items-center gap-2 mb-1 px-1 flex-1">
 					<div className="flex gap-1">
-						{currentModel?.metadata?.multimodal && (
+						{
 							<>
 								{isMobile() ? (
 									<MainToolTip content="Take Photo">
@@ -160,7 +159,7 @@ export default function ChatInput() {
 									</MainToolTip>
 								)}
 							</>
-						)}
+						}
 					</div>
 				</div>
 				<div className="flex items-center gap-2">

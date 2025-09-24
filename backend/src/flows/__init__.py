@@ -1,5 +1,4 @@
 from typing import Type, Literal, Any, AsyncGenerator
-from dataclasses import dataclass
 
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -8,6 +7,7 @@ from langgraph.store.base import BaseStore
 from langchain_core.messages import BaseMessage, AIMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import create_deep_agent, SubAgent
 
 
@@ -45,8 +45,6 @@ async def add_memories_to_system():
     )
 
 
-# TODO: Not sure we need store based on construction of memory_service.
-# TODO: Need to investigate if we need to use store or not.
 def graph_builder(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
@@ -55,9 +53,11 @@ def graph_builder(
     context_schema: Type[Any] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
-    graph_id: Literal["react", "deepagent"] = "react",
+    graph_id: Literal[
+        "react", "deepagents", "deepagent", "create_react_agent", "create_deep_agent"
+    ] = "deepagents",
 ) -> CompiledStateGraph:
-    if graph_id == "react":
+    if graph_id in ["react", "create_react_agent"]:
         return create_react_agent(
             model=model,
             tools=tools,
@@ -67,57 +67,81 @@ def graph_builder(
             store=store,
         )
 
-    if graph_id == "deepagent":
-        return create_deep_agent(
+    if graph_id in ["deepagents", "deepagent", "create_deep_agent"]:
+        deep_agent = create_deep_agent(
             model=model,
             tools=tools,
             subagents=subagents,
             instructions=prompt,
             checkpointer=checkpointer,
-            context_schema=context_schema,
-            store=store,
         )
+        deep_agent.context_schema = context_schema
+        deep_agent.store = store
+        return deep_agent
+
+
+async def init_tools(params: LLMRequest | LLMStreamRequest):
+    tools = TOOL_LIBRARY
+    if params.a2a:
+        tools = tools + params.a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
+    if params.mcp:
+        mcp_client = MultiServerMCPClient(params.mcp)
+        tools = tools + await mcp_client.get_tools()
+    return tools
+
+
+async def init_memories(params: LLMRequest | LLMStreamRequest, tools: list[BaseTool]):
+    memory_prompt = await add_memories_to_system()
+    prompt = params.system + "\n" + memory_prompt if memory_prompt else params.system
+    return tools + MEMORY_TOOLS, prompt
+
+
+def init_config(params: LLMRequest | LLMStreamRequest):
+    if params.metadata:
+        return RunnableConfig(
+            configurable=params.metadata.model_dump(),
+            # metadata={"model": params.model},
+        )
+    else:
+        return None
 
 
 ################################################################################
 ### Construct Agent
 ################################################################################
-async def construct_agent(params: LLMRequest | LLMStreamRequest):
-    # Add config if it exists
-    config = (
-        RunnableConfig(
-            configurable=params.metadata.model_dump(), metadata={"model": params.model}
-        )
-        if params.metadata
-        else None
-    )
+async def construct_agent(
+    params: LLMRequest | LLMStreamRequest,
+    checkpointer: BaseCheckpointSaver = None,
+    store: BaseStore = None,
+):
+    try:
+        # Add config if it exists
+        config = init_config(params)
+        # Initialize tools
+        tools = await init_tools(params)
+        prompt = params.system
+        if config:
+            tools, prompt = await init_memories(params, tools)
 
-    tools = TOOL_LIBRARY
-    prompt = params.system
-    if config:
-        ## Construct the prompt
-        memory_prompt = await add_memories_to_system()
-        prompt = (
-            params.system + "\n" + memory_prompt if memory_prompt else params.system
+        # Asynchronous LLM call
+        agent = Orchestra(
+            graph_id=(
+                params.metadata.graph_id
+                if params.metadata and params.metadata.graph_id
+                else "react"
+            ),
+            config=config,
+            model=params.model,
+            tools=tools,
+            context_schema=ContextSchema,
+            prompt=prompt,
+            checkpointer=checkpointer,
+            store=store,
         )
-        tools = tools + MEMORY_TOOLS
-
-    # Asynchronous LLM call
-    agent = Orchestra(
-        graph_id=(
-            params.metadata.graph_id
-            if params.metadata and params.metadata.graph_id
-            else "react"
-        ),
-        config=config,
-        model=params.model,
-        tools=tools,
-        context_schema=ContextSchema,
-        prompt=prompt,
-        checkpointer=checkpoint_service.checkpointer if config else None,
-        store=thread_service.store if config else None,
-    )
-    return agent
+        return agent
+    except Exception as e:
+        logger.error(f"Error constructing agent: {e}")
+        raise e
 
 
 class Orchestra:
@@ -146,6 +170,7 @@ class Orchestra:
             context_schema=self.context_schema,
             checkpointer=self.checkpointer,
             store=self.store,
+            graph_id=graph_id,
         )
 
     def astream(
@@ -178,7 +203,7 @@ class Orchestra:
 
                 # Update checkpoint state with modified messages
                 new_config = await checkpoint_service.update_checkpoint_state(
-                    self.config, {"messages": messages}
+                    final_state.config, {"messages": messages}
                 )
 
                 # Extract thread and checkpoint IDs from config
@@ -192,7 +217,7 @@ class Orchestra:
                     {
                         "thread_id": thread_id,
                         "checkpoint_id": checkpoint_id,
-                        "messages": [last_message],
+                        "messages": [last_message.model_dump()],
                         "updated_at": get_time(),
                     },
                 )

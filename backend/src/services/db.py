@@ -1,6 +1,6 @@
-import contextlib
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from typing import AsyncGenerator, Generator
+from fastapi import Request
+from typing import AsyncGenerator, Generator, AsyncIterator
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -46,15 +46,22 @@ def load_models():
     return _Base
 
 
-def get_checkpoint_db():
+def get_checkpointer(req: Request) -> AsyncPostgresSaver:
+    return req.app.state.checkpointer
+
+
+def get_store(req: Request) -> AsyncPostgresStore:
+    return req.app.state.store
+
+
+def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
     return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
 
 
-def get_store_db(embed: str = "openai:text-embedding-3-small"):
-    return AsyncPostgresStore.from_conn_string(
-        conn_string=DB_URI,
-        index=PostgresIndexConfig(dims=1536, embed=embed, fields=["text"]),
-    )
+def get_store_db(
+    embed: str = "openai:text-embedding-3-small",
+) -> AsyncIterator[AsyncPostgresStore]:
+    return AsyncPostgresStore.from_conn_string(conn_string=DB_URI)
 
 
 # Session context managers

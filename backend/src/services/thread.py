@@ -1,11 +1,15 @@
 from typing import Any
 from langgraph.store.memory import InMemoryStore
+from langgraph.store.base import BaseStore
+from src.utils.logger import logger
+
+IN_MEMORY_STORE = InMemoryStore()
 
 
 class ThreadService:
-    def __init__(self, user_id: str = None):
+    def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
         self.user_id = user_id
-        self.store = InMemoryStore()
+        self.store: BaseStore = store
 
     async def update(self, thread_id: str, data: dict):
         await self.store.aput(
@@ -17,19 +21,28 @@ class ThreadService:
         return await self.store.aget(("threads", self.user_id), key)
 
     async def delete(self, key: str) -> bool:
-        await self.store.adelete(("threads", self.user_id), key)
-        return True
+        try:
+            await self.store.adelete(("threads", self.user_id), key)
+            return True
+        except Exception as e:
+            logger.exception(f"Error deleting thread: {e}")
+            return False
 
     async def search(
         self,
         limit: int = 1000,
     ) -> list[dict]:
-        threads = await self.store.asearch(("threads", self.user_id), limit=limit)
-        return sorted(
-            [thread.dict() for thread in threads],
-            key=lambda x: x.get("updated_at"),
-            reverse=True,
-        )
+        try:
+            async with self.store as store:
+                threads = await store.asearch(("threads", self.user_id), limit=limit)
+                return sorted(
+                    [thread.dict() for thread in threads],
+                    key=lambda x: x.get("updated_at"),
+                    reverse=True,
+                )
+        except Exception as e:
+            logger.error(f"Error searching threads: {e}")
+            return []
 
 
 thread_service = ThreadService()
