@@ -153,7 +153,7 @@ export default function useAgentHook() {
 	};
 
 	const handleGetAgents = async () => {
-		const response = await getAgents();
+		const response = (await getAgents()) || [];
 		setAgents(response.data.agents);
 	};
 

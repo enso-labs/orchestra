@@ -15,6 +15,7 @@ import Chat from "@/pages/Chat";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import OAuthCallback from "@/pages/OAuthCallback";
+import AgentCreatePage from "@/pages/agents/create";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -57,6 +58,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<Chat />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/agents"
+						element={
+							<PrivateRoute>
+								<AgentCreatePage />
 							</PrivateRoute>
 						}
 					/>

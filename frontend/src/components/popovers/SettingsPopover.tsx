@@ -40,15 +40,18 @@ export function SettingsPopover() {
 					<span className="sr-only">Open settings menu</span>
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="p-2" align="end">
+			<PopoverContent
+				className="p-2 w-[var(--radix-popover-trigger-width)]"
+				align="end"
+			>
 				<div className="flex flex-col gap-1">
-					<Link to="/dashboard" className="w-full">
+					<Link to="/agents" className="w-full">
 						<Button
 							variant="ghost"
 							className="w-full justify-start gap-2 text-sm font-normal"
 						>
 							<LayoutDashboard className="h-4 w-4" />
-							Dashboard
+							Agents
 						</Button>
 					</Link>
 					<Button
