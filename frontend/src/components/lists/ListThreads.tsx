@@ -6,10 +6,11 @@ import { formatMessages, truncateFrom } from "@/lib/utils/format";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { StringParam, useQueryParam } from "use-query-params";
+import { useAppContext } from "@/context/AppContext";
 
 function ListThreads({ threads }: { threads: any[] }) {
-	const { setMessages, setMetadata, setIsDrawerOpen, metadata, setThreads } =
-		useChatContext();
+	const { setIsDrawerOpen } = useAppContext();
+	const { setMessages, setMetadata, metadata, setThreads } = useChatContext();
 	const [, setQueryModel] = useQueryParam("model", StringParam);
 	const [copiedThreadId, setCopiedThreadId] = useState<string | null>(null);
 
