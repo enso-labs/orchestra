@@ -10,24 +10,29 @@ function AgentCreatePage() {
 	};
 
 	return (
-		<Tabs
-			defaultValue="config"
-			value={activeTab || "config"}
-			onValueChange={handleTabChange}
-		>
-			<div className="absolute top-4 left-4">
-				<TabsList>
-					<TabsTrigger value="config">Config</TabsTrigger>
-					<TabsTrigger value="preview">Preview</TabsTrigger>
-				</TabsList>
-			</div>
-			<TabsContent value="config">
-				Make changes to your account here.
-			</TabsContent>
-			<TabsContent value="preview">
-				<ChatPanel nav={false} />
-			</TabsContent>
-		</Tabs>
+		<div className="h-full flex flex-col">
+			<Tabs
+				defaultValue="config"
+				value={activeTab || "config"}
+				onValueChange={handleTabChange}
+				className="h-full flex flex-col"
+			>
+				<div className="px-4 pt-4">
+					<TabsList>
+						<TabsTrigger value="config">Config</TabsTrigger>
+						<TabsTrigger value="preview">Preview</TabsTrigger>
+					</TabsList>
+				</div>
+				<TabsContent value="config" className="flex-1 p-4">
+					Make changes to your account here.
+				</TabsContent>
+				<TabsContent value="preview" className="flex-1 h-0">
+					<div className="h-full">
+						<ChatPanel nav={false} />
+					</div>
+				</TabsContent>
+			</Tabs>
+		</div>
 	);
 }
 

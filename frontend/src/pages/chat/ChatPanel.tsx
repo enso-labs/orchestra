@@ -2,8 +2,8 @@ import { ChatNav } from "@/components/nav/ChatNav";
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
 import { useChatContext } from "@/context/ChatContext";
-import HomeSection from "@/components/sections/home";
 import ChatLayout from "@/layouts/ChatLayout";
+import HomeSection from "@/components/sections/home";
 
 function ChatPanel({ nav = true }: { nav?: boolean }) {
 	const { messages } = useChatContext();

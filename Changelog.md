@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/375-interface-for-agent-config (2025-09-24)
   - feat/375-readd-mcp-a2a (2025-09-20)
   - feat/372-query-params (2025-09-19)
   - feat/361-separate-user-threads (2025-09-16)
