@@ -18,6 +18,8 @@ export type ChatContextType = {
 	toolCallChunkRef: React.RefObject<string>;
 	query: string;
 	setQuery: (query: string) => void;
+	systemMessage: string;
+	setSystemMessage: (systemMessage: string) => void;
 	handleSubmit: (query: string) => void;
 	sseHandler: (
 		payload: any,
@@ -56,6 +58,9 @@ export default function useChat(): ChatContextType {
 	const toolCallChunkRef = useRef("");
 	const [query, setQuery] = useState("");
 	const [model, setModel] = useState<string>(DEFAULT_CHAT_MODEL);
+	const [systemMessage, setSystemMessage] = useState<string>(
+		"You are a helpful assistant.",
+	);
 	const [messages, setMessagesState] = useState<any[]>([]);
 	const [state, setState] = useState<any[]>([]);
 
@@ -105,7 +110,7 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
-			system: constructSystemPrompt("You are a helpful assistant."),
+			system: constructSystemPrompt(systemMessage),
 			messages: formatedMessages,
 			model: model,
 			metadata: parsedMetadata,
@@ -362,6 +367,8 @@ export default function useChat(): ChatContextType {
 		setModel,
 		state,
 		setState,
+		systemMessage,
+		setSystemMessage,
 		// NEW
 		handleTextareaResize,
 		clearMessages,

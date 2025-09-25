@@ -1,17 +1,17 @@
-import { FaPlus } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { useChatContext } from "@/context/ChatContext";
 import { Menu, Share } from "lucide-react";
 import SelectModel from "../lists/SelectModel";
+import NewThreadButton from "../buttons/NewThreadButton";
 
 interface ChatNavProps {
 	onMenuClick: () => void;
 	onNewChat?: () => void;
 }
 
-export function ChatNav({ onMenuClick, onNewChat }: ChatNavProps) {
-	const { payload, messages, clearMessages } = useChatContext();
+export function ChatNav({ onMenuClick }: ChatNavProps) {
+	const { payload } = useChatContext();
 
 	return (
 		<header className="bg-transparent">
@@ -54,19 +54,7 @@ export function ChatNav({ onMenuClick, onNewChat }: ChatNavProps) {
 								<Share className="h-4 w-4" />
 							</Button>
 						</div>
-						{messages.length > 0 && (
-							<div className="w-9">
-								<Button
-									variant="outline"
-									size="icon"
-									onClick={onNewChat || clearMessages}
-									className="h-9 w-9"
-									title="New Chat"
-								>
-									<FaPlus className="h-4 w-4" />
-								</Button>
-							</div>
-						)}
+						<NewThreadButton />
 						<div className="w-9">
 							<ColorModeButton />
 						</div>

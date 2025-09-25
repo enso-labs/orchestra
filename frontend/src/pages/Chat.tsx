@@ -11,11 +11,13 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import SelectModel from "@/components/lists/SelectModel";
+import { useSearchParams } from "react-router-dom";
 
 export default function Chat() {
 	const { loading, isDrawerOpen, setIsDrawerOpen } = useAppContext();
 	const { messages, useListThreadsEffect, useListCheckpointsEffect, metadata } =
 		useChatContext();
+	const [, setSearchParams] = useSearchParams();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const isAssistantOpen = false;
 
@@ -29,6 +31,12 @@ export default function Chat() {
 
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, JSON.parse(metadata));
+
+	useEffect(() => {
+		return () => {
+			setSearchParams(new URLSearchParams());
+		};
+	}, []);
 
 	if (messages.length === 0) {
 		return (

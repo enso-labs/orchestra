@@ -1,22 +1,19 @@
-import { ChatNav } from "@/components/nav/ChatNav";
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
 import { useChatContext } from "@/context/ChatContext";
-import ChatLayout from "@/layouts/ChatLayout";
-import HomeSection from "@/components/sections/home";
 
-function ChatPanel({ nav = true }: { nav?: boolean }) {
+function ChatPanel() {
 	const { messages } = useChatContext();
 
-	if (messages.length === 0) {
-		return (
-			<ChatLayout>
-				<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
-					<HomeSection />
-				</div>
-			</ChatLayout>
-		);
-	}
+	// if (messages.length === 0) {
+	// 	return (
+	// 		<ChatLayout>
+	// 			<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
+	// 				<HomeSection />
+	// 			</div>
+	// 		</ChatLayout>
+	// 	);
+	// }
 
 	return (
 		<div
@@ -26,7 +23,6 @@ function ChatPanel({ nav = true }: { nav?: boolean }) {
 			`}
 		>
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-				{nav && <ChatNav onMenuClick={() => {}} />}
 				<div className="flex-1 min-h-0">
 					<ChatMessages messages={messages} />
 				</div>

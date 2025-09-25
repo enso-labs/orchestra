@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AppRoutes } from "./routes";
 import ChatProvider from "./context/ChatContext";
+import AgentProvider from "./context/AgentContext";
 import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
 
@@ -26,7 +27,9 @@ createRoot(document.getElementById("root")!).render(
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<AppProvider>
 				<ChatProvider>
-					<AppRoutes />
+					<AgentProvider>
+						<AppRoutes />
+					</AgentProvider>
 				</ChatProvider>
 			</AppProvider>
 		</ThemeProvider>
