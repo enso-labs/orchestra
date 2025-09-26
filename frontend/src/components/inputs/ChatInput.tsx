@@ -1,6 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { MainToolTip } from "../tooltips/MainToolTip";
 import { ImagePreview } from "./ImagePreview";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { useChatContext } from "@/context/ChatContext";
