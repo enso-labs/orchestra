@@ -5,7 +5,7 @@ const INIT_AGENT_STATE = {
 		name: "",
 		description: "",
 		system: "You are a helpful assistant.",
-		tools: ["web_search", "web_scrape"],
+		tools: [],
 		mcp: {},
 		a2a: {},
 	},

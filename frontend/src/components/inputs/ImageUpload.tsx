@@ -1,7 +1,7 @@
 import { useChatContext } from "@/context/ChatContext";
 import { MainToolTip } from "../tooltips/MainToolTip";
-import { Button } from "../ui/button";
-import { Plus } from "lucide-react";
+import { DropdownMenuItem } from "../ui/dropdown-menu";
+import { Camera } from "lucide-react";
 import { useRef } from "react";
 import useAppHook from "@/hooks/useAppHook";
 
@@ -21,14 +21,13 @@ function ImageUploadMobile({
 	return (
 		<MainToolTip content="Take Photo">
 			<>
-				<Button
-					size="icon"
-					variant="outline"
-					className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+				<DropdownMenuItem
+					className="flex items-center gap-2 cursor-pointer text-base"
 					onClick={triggerCameraInput}
 				>
-					<Plus className="h-4 w-4" />
-				</Button>
+					<Camera className="h-6 w-6" />
+					Upload Photo
+				</DropdownMenuItem>
 				<input
 					type="file"
 					className="hidden"
@@ -51,28 +50,27 @@ function ImageUploadDesktop({
 	addImages,
 }: ImageUploadProps) {
 	return (
-		<MainToolTip content="Upload Files">
-			<Button
-				size="icon"
-				variant="outline"
-				className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+		<>
+			<DropdownMenuItem
+				className="flex items-center gap-2 cursor-pointer text-base"
 				onClick={triggerFileInput}
 			>
-				<input
-					type="file"
-					className="hidden"
-					ref={fileInputRef}
-					multiple
-					accept="image/*"
-					onChange={(e) => {
-						const files = Array.from(e.target.files || []);
-						addImages(files);
-						e.target.value = ""; // Reset input
-					}}
-				/>
-				<Plus className="h-4 w-4" />
-			</Button>
-		</MainToolTip>
+				<Camera className="h-4 w-4" />
+				Upload Photo
+			</DropdownMenuItem>
+			<input
+				type="file"
+				className="hidden"
+				ref={fileInputRef}
+				multiple
+				accept="image/*"
+				onChange={(e) => {
+					const files = Array.from(e.target.files || []);
+					addImages(files);
+					e.target.value = ""; // Reset input
+				}}
+			/>
+		</>
 	);
 }
 

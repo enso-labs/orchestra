@@ -6,7 +6,7 @@ import useAppHook from "@/hooks/useAppHook";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { useAppContext } from "@/context/AppContext";
-import ImageUpload from "./ImageUpload";
+import BaseToolMenu from "../menus/BaseToolMenu";
 
 export default function ChatInput() {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -89,9 +89,10 @@ export default function ChatInput() {
 				}}
 			/>
 			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
-				<div className="flex items-center gap-2 mb-1 px-1 flex-1">
+				<div className="flex items-center gap-2">
 					<div className="flex gap-1">
-						<ImageUpload />
+						{/* <ImageUpload /> */}
+						<BaseToolMenu />
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
