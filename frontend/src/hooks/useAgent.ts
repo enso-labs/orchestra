@@ -1,12 +1,14 @@
 import { useState } from "react";
+import ToolConfig from "@/lib/config/tool";
 
 const INIT_AGENT_STATE = {
 	agent: {
-		system: "",
-		model: "",
+		name: "",
+		description: "",
+		system: "You are a helpful assistant.",
 		tools: [],
-		a2a: {},
-		mcp: {},
+		mcp: ToolConfig.DEFAULT_MCP_CONFIG,
+		a2a: ToolConfig.DEFAULT_A2A_CONFIG,
 	},
 };
 

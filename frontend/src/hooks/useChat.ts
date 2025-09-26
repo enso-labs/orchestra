@@ -8,6 +8,7 @@ import {
 import { streamThread } from "@/lib/services";
 import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
+import { useAgentContext } from "@/context/AgentContext";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -18,8 +19,6 @@ export type ChatContextType = {
 	toolCallChunkRef: React.RefObject<string>;
 	query: string;
 	setQuery: (query: string) => void;
-	systemMessage: string;
-	setSystemMessage: (systemMessage: string) => void;
 	handleSubmit: (query: string) => void;
 	sseHandler: (
 		payload: any,
@@ -35,8 +34,6 @@ export type ChatContextType = {
 	setMetadata: (metadata: string) => void;
 	abortQuery: () => void;
 	deleteThread: (threadId: string) => void;
-	model: string;
-	setModel: (model: string) => void;
 	// NEW
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
@@ -53,14 +50,11 @@ export type ChatContextType = {
 
 export default function useChat(): ChatContextType {
 	const { setLoading, setLoadingMessage } = useAppContext();
+	const { agent } = useAgentContext();
 	const responseRef = useRef("");
 	const toolNameRef = useRef("");
 	const toolCallChunkRef = useRef("");
 	const [query, setQuery] = useState("");
-	const [model, setModel] = useState<string>(DEFAULT_CHAT_MODEL);
-	const [systemMessage, setSystemMessage] = useState<string>(
-		"You are a helpful assistant.",
-	);
 	const [messages, setMessagesState] = useState<any[]>([]);
 	const [state, setState] = useState<any[]>([]);
 
@@ -95,7 +89,7 @@ export default function useChat(): ChatContextType {
 		// Add user message to the existing messages state
 		const userMessage = {
 			id: `user-${Date.now()}`,
-			model: model,
+			model: agent.model,
 			content: query,
 			role: "user",
 			type: "user",
@@ -110,23 +104,13 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
-			system: constructSystemPrompt(systemMessage),
+			system: constructSystemPrompt(agent.system),
 			messages: formatedMessages,
-			model: model,
+			model: agent.model,
 			metadata: parsedMetadata,
 			stream_mode: "messages",
-			a2a: {
-				enso_a2a: {
-					base_url: "https://a2a.enso.sh",
-					agent_card_path: "/.well-known/agent.json",
-				},
-			},
-			// mcp: {
-			// 	playwright: {
-			// 		url: "https://confidentiality-titles-showcase-artist.trycloudflare.com/mcp",
-			// 		transport: "streamable_http",
-			// 	},
-			// },
+			a2a: agent.a2a,
+			mcp: agent.mcp,
 		});
 
 		source.addEventListener("message", function (e: any) {
@@ -363,12 +347,12 @@ export default function useChat(): ChatContextType {
 		setMetadata,
 		controller,
 		setController,
-		model,
-		setModel,
+		// model,
+		// setModel,
 		state,
 		setState,
-		systemMessage,
-		setSystemMessage,
+		// systemMessage,
+		// setSystemMessage,
 		// NEW
 		handleTextareaResize,
 		clearMessages,

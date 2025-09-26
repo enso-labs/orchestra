@@ -1,23 +1,25 @@
-import { useChatContext } from "@/context/ChatContext";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
+import { useAgentContext } from "@/context/AgentContext";
+import LLLMConfig from "@/lib/config/llm";
 import { useEffect } from "react";
 
 import { StringParam, useQueryParam } from "use-query-params";
 
 export function useModel() {
-	const { model, setModel } = useChatContext();
+	const { agent, setAgent } = useAgentContext();
 	const [queryModel, setQueryModel] = useQueryParam("model", StringParam);
 
 	useEffect(() => {
 		// Initialize from query param on mount or when query param changes
-		if (queryModel && queryModel !== model) {
-			setModel(queryModel);
-		} else if (!queryModel && !model) {
+		if (queryModel && queryModel !== agent.model) {
+			setAgent({ ...agent, model: queryModel });
+		} else if (!queryModel && !agent.model) {
 			// Set default if neither exists
-			setModel(DEFAULT_CHAT_MODEL);
-			setQueryModel(DEFAULT_CHAT_MODEL);
+			setAgent({ ...agent, model: LLLMConfig.DEFAULT_CHAT_MODEL });
+			setQueryModel(LLLMConfig.DEFAULT_CHAT_MODEL);
 		}
-	}, [queryModel, setModel, setQueryModel, model]);
+	}, [queryModel, setAgent, setQueryModel, agent.model]);
 
-	return typeof model === "string" ? model : DEFAULT_CHAT_MODEL;
+	return typeof agent.model === "string"
+		? agent.model
+		: LLLMConfig.DEFAULT_CHAT_MODEL;
 }

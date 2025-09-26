@@ -10,8 +10,17 @@ import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import HouseIcon from "@/components/icons/HouseIcon";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Textarea } from "@/components/ui/textarea";
+import { useAgentContext } from "@/context/AgentContext";
 
 function AgentCreatePage() {
+	const { agent, setAgent } = useAgentContext();
 	const { threads, useListThreadsEffect, metadata } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
 	const [, setSearchParams] = useSearchParams();
@@ -55,9 +64,7 @@ function AgentCreatePage() {
 						<TabsTrigger value="config">Config</TabsTrigger>
 						<TabsTrigger value="preview">Preview</TabsTrigger>
 						<TabsTrigger value="threads">Threads</TabsTrigger>
-						<TabsTrigger disabled value="tools">
-							Tools
-						</TabsTrigger>
+						<TabsTrigger value="tools">Tools</TabsTrigger>
 					</TabsList>
 				</div>
 				<TabsContent value="config" className="flex-1 p-4">
@@ -74,6 +81,40 @@ function AgentCreatePage() {
 							<ListThreads threads={threads} />
 						</div>
 					</ScrollArea>
+				</TabsContent>
+				<TabsContent value="tools" className="flex-1 p-4 h-0">
+					<Accordion type="single" collapsible>
+						<AccordionItem value="mcp">
+							<AccordionTrigger>MCP</AccordionTrigger>
+							<AccordionContent>
+								<Textarea
+									className="h-full"
+									placeholder="MCP"
+									rows={10}
+									onChange={(e) =>
+										setAgent({ ...agent, mcp: JSON.parse(e.target.value) })
+									}
+								>
+									{JSON.stringify(agent.mcp, null, 2)}
+								</Textarea>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="a2a">
+							<AccordionTrigger>A2A</AccordionTrigger>
+							<AccordionContent>
+								<Textarea
+									className="h-full"
+									placeholder="A2A"
+									rows={8}
+									onChange={(e) =>
+										setAgent({ ...agent, a2a: JSON.parse(e.target.value) })
+									}
+								>
+									{JSON.stringify(agent.a2a, null, 2)}
+								</Textarea>
+							</AccordionContent>
+						</AccordionItem>
+					</Accordion>
 				</TabsContent>
 			</Tabs>
 		</div>

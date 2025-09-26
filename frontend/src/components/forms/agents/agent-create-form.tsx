@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { useAgentContext } from "@/context/AgentContext";
+import { useEffect } from "react";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -27,6 +29,7 @@ const formSchema = z.object({
 });
 
 export function AgentCreateForm() {
+	const { agent, setAgent } = useAgentContext();
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -40,6 +43,10 @@ export function AgentCreateForm() {
 		console.log(values);
 	};
 
+	useEffect(() => {
+		form.setValue("systemMessage", agent.system);
+	}, []);
+
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
@@ -50,7 +57,13 @@ export function AgentCreateForm() {
 						<FormItem>
 							<FormLabel>Name</FormLabel>
 							<FormControl>
-								<Input placeholder="Agent name" {...field} />
+								<Input
+									placeholder="Agent name"
+									{...field}
+									onChangeCapture={(e) =>
+										setAgent({ ...agent, name: e.currentTarget.value })
+									}
+								/>
 							</FormControl>
 							{/* <FormDescription>This is your agent name.</FormDescription> */}
 							<FormMessage />
@@ -64,7 +77,13 @@ export function AgentCreateForm() {
 						<FormItem>
 							<FormLabel>Description</FormLabel>
 							<FormControl>
-								<Textarea placeholder="Agent description" {...field} />
+								<Textarea
+									placeholder="Agent description"
+									{...field}
+									onChangeCapture={(e) =>
+										setAgent({ ...agent, description: e.currentTarget.value })
+									}
+								/>
 							</FormControl>
 							{/* <FormDescription>This is your agent description.</FormDescription> */}
 							<FormMessage />
@@ -79,8 +98,10 @@ export function AgentCreateForm() {
 							<FormLabel>System Message</FormLabel>
 							<FormControl>
 								<Textarea
-									placeholder="You are a helpful assistant."
 									{...field}
+									onChangeCapture={(e) =>
+										setAgent({ ...agent, system: e.currentTarget.value })
+									}
 								/>
 							</FormControl>
 							{/* <FormDescription>This is your system message.</FormDescription> */}

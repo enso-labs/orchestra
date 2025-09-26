@@ -26,11 +26,11 @@ createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<AppProvider>
-				<ChatProvider>
-					<AgentProvider>
+				<AgentProvider>
+					<ChatProvider>
 						<AppRoutes />
-					</AgentProvider>
-				</ChatProvider>
+					</ChatProvider>
+				</AgentProvider>
 			</AppProvider>
 		</ThemeProvider>
 	</StrictMode>,

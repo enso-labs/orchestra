@@ -11,8 +11,6 @@ export enum ModelName {
 	GEMINI_PRO_2_5_FLASH_LITE = "google_genai:gemini-2.5-flash-lite",
 }
 
-export default ModelName;
-
 export const DEFAULT_CHAT_MODEL = ModelName.OPENAI_GPT_5_NANO;
 export const DEFAULT_OPTIMIZE_MODEL = ModelName.OPENAI_GPT_5_NANO;
 
@@ -20,3 +18,11 @@ export const DEFAULT_OPTIMIZE_MODEL = ModelName.OPENAI_GPT_5_NANO;
 export function isValidModelName(model: string | null): boolean {
 	return !!model && Object.values(ModelName).includes(model as ModelName);
 }
+
+class LLLMConfig {
+	static DEFAULT_CHAT_MODEL = DEFAULT_CHAT_MODEL;
+	static DEFAULT_OPTIMIZE_MODEL = DEFAULT_OPTIMIZE_MODEL;
+	static MODELS = ModelName;
+}
+
+export default LLLMConfig;
