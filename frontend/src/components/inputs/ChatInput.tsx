@@ -26,29 +26,14 @@ export default function ChatInput() {
 		handleTextareaResize,
 		handlePaste,
 		handleDrop,
-		addImages,
 		setPreviewImage,
 		handleSubmit,
 	} = useChatContext();
 
 	const { isMobile } = useAppHook();
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const cameraInputRef = useRef<HTMLInputElement>(null);
 
 	// Initialize the recorder controls using the hook
 	const recorderControls = useVoiceVisualizer();
-
-	const triggerFileInput = (e: React.MouseEvent) => {
-		e.preventDefault();
-		fileInputRef.current?.click();
-	};
-
-	const triggerCameraInput = (e: React.MouseEvent) => {
-		e.preventDefault();
-		if (cameraInputRef.current) {
-			cameraInputRef.current.click();
-		}
-	};
 
 	useEffect(() => {
 		if (textareaRef.current) {
