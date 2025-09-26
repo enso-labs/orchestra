@@ -20,6 +20,7 @@ from src.services.thread import thread_service
 from src.utils.format import get_time
 from src.tools import TOOL_LIBRARY
 from src.schemas.contexts import ContextSchema
+from src.schemas.entities.a2a import A2AServers
 
 
 async def add_memories_to_system():
@@ -82,8 +83,9 @@ def graph_builder(
 
 async def init_tools(params: LLMRequest | LLMStreamRequest):
     tools = TOOL_LIBRARY
-    if params.a2a:
-        tools = tools + params.a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
+    a2a = A2AServers(a2a=params.a2a)
+    if a2a.validate():
+        tools = tools + a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
     if params.mcp:
         mcp_client = MultiServerMCPClient(params.mcp)
         tools = tools + await mcp_client.get_tools()

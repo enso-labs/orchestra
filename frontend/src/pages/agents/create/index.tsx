@@ -16,8 +16,9 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Textarea } from "@/components/ui/textarea";
 import { useAgentContext } from "@/context/AgentContext";
+import MonacoEditor from "@/components/inputs/MonacoEditor";
+import ToolConfig from "@/lib/config/tool";
 
 function AgentCreatePage() {
 	const { agent, setAgent } = useAgentContext();
@@ -37,8 +38,14 @@ function AgentCreatePage() {
 	}, [metadata]);
 
 	useEffect(() => {
+		setAgent({
+			...agent,
+			mcp: ToolConfig.DEFAULT_MCP_CONFIG,
+			a2a: ToolConfig.DEFAULT_A2A_CONFIG,
+		});
 		return () => {
 			setSearchParams(new URLSearchParams());
+			setAgent({ ...agent, mcp: {}, a2a: {} });
 		};
 	}, []);
 
@@ -87,31 +94,23 @@ function AgentCreatePage() {
 						<AccordionItem value="mcp">
 							<AccordionTrigger>MCP</AccordionTrigger>
 							<AccordionContent>
-								<Textarea
-									className="h-full"
-									placeholder="MCP"
-									rows={10}
-									onChange={(e) =>
-										setAgent({ ...agent, mcp: JSON.parse(e.target.value) })
+								<MonacoEditor
+									value={JSON.stringify(agent.mcp, null, 2)}
+									handleChange={(val) =>
+										setAgent({ ...agent, mcp: JSON.parse(val) })
 									}
-								>
-									{JSON.stringify(agent.mcp, null, 2)}
-								</Textarea>
+								/>
 							</AccordionContent>
 						</AccordionItem>
 						<AccordionItem value="a2a">
 							<AccordionTrigger>A2A</AccordionTrigger>
 							<AccordionContent>
-								<Textarea
-									className="h-full"
-									placeholder="A2A"
-									rows={8}
-									onChange={(e) =>
-										setAgent({ ...agent, a2a: JSON.parse(e.target.value) })
+								<MonacoEditor
+									value={JSON.stringify(agent.a2a, null, 2)}
+									handleChange={(val) =>
+										setAgent({ ...agent, a2a: JSON.parse(val) })
 									}
-								>
-									{JSON.stringify(agent.a2a, null, 2)}
-								</Textarea>
+								/>
 							</AccordionContent>
 						</AccordionItem>
 					</Accordion>

@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import {
 	constructSystemPrompt,
 	formatMultimodalPayload,
