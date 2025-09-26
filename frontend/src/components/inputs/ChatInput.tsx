@@ -9,6 +9,7 @@ import useAppHook from "@/hooks/useAppHook";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { useAppContext } from "@/context/AppContext";
+import ImageUpload from "./ImageUpload";
 
 export default function ChatInput() {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -108,58 +109,7 @@ export default function ChatInput() {
 			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
 				<div className="flex items-center gap-2 mb-1 px-1 flex-1">
 					<div className="flex gap-1">
-						{
-							<>
-								{isMobile() ? (
-									<MainToolTip content="Take Photo">
-										<>
-											<Button
-												size="icon"
-												variant="outline"
-												className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
-												onClick={triggerCameraInput}
-											>
-												<Plus className="h-4 w-4" />
-											</Button>
-											<input
-												type="file"
-												className="hidden"
-												ref={cameraInputRef}
-												accept="image/*"
-												onChange={(e) => {
-													const files = Array.from(e.target.files || []);
-													addImages(files);
-													e.target.value = ""; // Reset input
-												}}
-											/>
-										</>
-									</MainToolTip>
-								) : (
-									<MainToolTip content="Upload Files">
-										<Button
-											size="icon"
-											variant="outline"
-											className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
-											onClick={triggerFileInput}
-										>
-											<input
-												type="file"
-												className="hidden"
-												ref={fileInputRef}
-												multiple
-												accept="image/*"
-												onChange={(e) => {
-													const files = Array.from(e.target.files || []);
-													addImages(files);
-													e.target.value = ""; // Reset input
-												}}
-											/>
-											<Plus className="h-4 w-4" />
-										</Button>
-									</MainToolTip>
-								)}
-							</>
-						}
+						<ImageUpload />
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
