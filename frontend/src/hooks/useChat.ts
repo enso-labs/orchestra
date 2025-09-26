@@ -108,6 +108,7 @@ export default function useChat(): ChatContextType {
 			model: agent.model,
 			metadata: parsedMetadata,
 			stream_mode: "messages",
+			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,
 		});

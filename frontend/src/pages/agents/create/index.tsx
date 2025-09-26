@@ -113,6 +113,17 @@ function AgentCreatePage() {
 								/>
 							</AccordionContent>
 						</AccordionItem>
+						<AccordionItem value="base">
+							<AccordionTrigger>Base</AccordionTrigger>
+							<AccordionContent>
+								<MonacoEditor
+									value={JSON.stringify(agent.tools, null, 2)}
+									handleChange={(val) =>
+										setAgent({ ...agent, tools: JSON.parse(val) })
+									}
+								/>
+							</AccordionContent>
+						</AccordionItem>
 					</Accordion>
 				</TabsContent>
 			</Tabs>

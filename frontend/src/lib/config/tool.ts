@@ -13,6 +13,8 @@ const DEFAULT_A2A_CONFIG = {
 	},
 };
 
+const DEFAULT_TOOLS = ["get_weather"];
+
 class ToolConfig {
 	static DEFAULT_MCP_CONFIG = DEFAULT_MCP_CONFIG;
 	static DEFAULT_A2A_CONFIG = DEFAULT_A2A_CONFIG;

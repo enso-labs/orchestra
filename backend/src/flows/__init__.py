@@ -18,7 +18,7 @@ from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
 from src.utils.format import get_time
-from src.tools import TOOL_LIBRARY
+from src.tools import default_tools
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 
@@ -82,7 +82,7 @@ def graph_builder(
 
 
 async def init_tools(params: LLMRequest | LLMStreamRequest):
-    tools = TOOL_LIBRARY
+    tools = default_tools(params.tools)
     a2a = A2AServers(a2a=params.a2a)
     if a2a.validate():
         tools = tools + a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
