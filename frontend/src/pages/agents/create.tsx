@@ -9,8 +9,10 @@ import ListThreads from "@/components/lists/ListThreads";
 import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import HouseIcon from "@/components/icons/HouseIcon";
 import { useAgentContext } from "@/context/AgentContext";
+import { Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MainToolTip } from "@/components/tooltips/MainToolTip";
 
 function AgentCreatePage() {
 	const { agent, setAgent } = useAgentContext();
@@ -55,11 +57,17 @@ function AgentCreatePage() {
 				onValueChange={handleTabChange}
 				className="h-full flex flex-col"
 			>
-				<div className="px-4 pt-4">
+				<div className="px-4 pt-4 flex flex-row gap-1 items-center">
+					<MainToolTip content="Agents" delayDuration={500}>
+						<Button
+							variant="outline"
+							size="icon"
+							onClick={() => navigate("/agents")}
+						>
+							<Bot />
+						</Button>
+					</MainToolTip>
 					<TabsList>
-						<TabsTrigger value="home" onClick={() => navigate("/")}>
-							<HouseIcon />
-						</TabsTrigger>
 						<TabsTrigger value="config">Config</TabsTrigger>
 						<TabsTrigger value="preview">Preview</TabsTrigger>
 						<TabsTrigger value="threads">Threads</TabsTrigger>

@@ -1963,7 +1963,7 @@ dependencies = [
     { name = "mkdocstrings", extra = ["python"] },
     { name = "nest-asyncio" },
     { name = "passlib", extra = ["bcrypt"] },
-    { name = "psycopg", extra = ["binary"] },
+    { name = "psycopg", extra = ["binary", "pool"] },
     { name = "psycopg2-binary" },
     { name = "pydantic", extra = ["email"] },
     { name = "pypdf" },
@@ -2012,7 +2012,7 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.30.0" },
     { name = "nest-asyncio", specifier = ">=1.6.0" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.2.9" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2.9" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.11.7" },
     { name = "pypdf", specifier = ">=6.0.0" },
@@ -2328,6 +2328,9 @@ wheels = [
 [package.optional-dependencies]
 binary = [
     { name = "psycopg-binary", marker = "implementation_name != 'pypy'" },
+]
+pool = [
+    { name = "psycopg-pool" },
 ]
 
 [[package]]
