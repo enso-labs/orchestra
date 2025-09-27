@@ -16,7 +16,7 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 
 function AgentCreatePage() {
 	const { agent, setAgent } = useAgentContext();
-	const { threads, useListThreadsEffect, metadata } = useChatContext();
+	const { threads, useListThreadsEffect, messages } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
 	const [, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
@@ -28,8 +28,18 @@ function AgentCreatePage() {
 	useListThreadsEffect();
 
 	useEffect(() => {
-		setActiveTab("preview");
-	}, [metadata]);
+		// Only clear search params if there are none on init
+		const params = new URLSearchParams(window.location.search);
+		if (!Array.from(params.keys()).length) {
+			setSearchParams(new URLSearchParams());
+		}
+	}, []);
+
+	useEffect(() => {
+		if (messages.length > 0) {
+			setActiveTab("preview");
+		}
+	}, [messages]);
 
 	useEffect(() => {
 		setAgent({

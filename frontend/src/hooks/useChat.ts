@@ -66,6 +66,7 @@ export default function useChat(): ChatContextType {
 		const graphId = `deepagent`;
 		return JSON.stringify({ thread_id: threadId, graph_id: graphId }, null, 2);
 	});
+
 	const [controller, setController] = useState<AbortController | null>(null);
 
 	const [arcade, setArcade] = useState({

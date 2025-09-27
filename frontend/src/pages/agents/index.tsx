@@ -3,10 +3,17 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { Button } from "@/components/ui/button";
 import HouseIcon from "@/components/icons/HouseIcon";
 import { Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 
 function AgentIndexPage() {
 	const navigate = useNavigate();
+	const [, setSearchParams] = useSearchParams();
+
+	useEffect(() => {
+		setSearchParams(new URLSearchParams());
+	}, []);
+
 	return (
 		<div className="h-full flex flex-col">
 			<div className="absolute top-4 right-4">
