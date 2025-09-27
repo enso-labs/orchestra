@@ -208,8 +208,8 @@ class ThreadSearch(BaseModel):
 class LLMRequest(BaseModel):
     model: str = "openai:gpt-5-nano"
     system: str = "You are a helpful assistant."
-    # tools: Optional[List[BaseTool]] = Field(default_factory=list)
-    a2a: Optional[A2AServers] = Field(default_factory=A2AServers)
+    tools: Optional[List[str]] = Field(default_factory=list)
+    a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
 
     metadata: Optional[Config] = Field(

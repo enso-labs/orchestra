@@ -20,9 +20,9 @@ body {
 	width: 100%;
 }
 
-main {
+/* main {
 	padding: 2rem;
-}
+} */
 
 @media (prefers-color-scheme: light) {
 	:root {

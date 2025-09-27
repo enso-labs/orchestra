@@ -1,44 +1,39 @@
-import { useState, useEffect } from "react";
-import YAML from "yaml";
 import Editor from "@monaco-editor/react";
+import { useState } from "react";
 
 interface Props {
-	jsonData: object;
-	handleChange: (val: any) => void;
+	value: string;
+	handleChange: (val: string) => void;
+	language?: string;
 }
 
-function MonacoEditor(props: Props) {
-	const [data, setData] = useState({});
+function MonacoEditor({ value, handleChange, language }: Props) {
 	const [error, setError] = useState("");
 
-	useEffect(() => {
-		setData(props.jsonData);
-	}, [props]);
-
-	const handleChange = (val: any) => {
+	const onChange = (val: any) => {
 		try {
-			const obj = YAML.parse(val);
-			setData(obj);
+			handleChange(val);
 			setError("");
-		} catch (err: any) {
-			setError(`${err.name}: ${err.message}`);
+		} catch (e: any) {
+			setError(`${e.name}: ${e.message}`);
 		}
 	};
 
 	return (
 		<div>
+			<pre className="text-red-500 text-sm whitespace-pre-wrap">{error}</pre>
 			<Editor
-				value={YAML.stringify(data)}
-				onChange={handleChange}
-				defaultLanguage="yaml"
-				height="100vh"
+				value={value}
+				onChange={onChange}
+				defaultLanguage={language || "json"}
+				height="80vh"
 				theme="vs-dark"
 				options={{
+					fontSize: 12,
 					tabSize: 2,
 					insertSpaces: true,
 				}}
 			/>
-			<pre>{error}</pre>
 		</div>
 	);
 }

@@ -21,14 +21,7 @@ class A2AServer(BaseModel):
 
 
 class A2AServers(BaseModel):
-    a2a: dict[str, A2AServer] = Field(
-        default={
-            "enso_a2a": A2AServer(
-                base_url="https://a2a.enso.sh",
-                agent_card_path="/.well-known/agent.json",
-            )
-        }
-    )
+    a2a: dict[str, A2AServer] = Field(default_factory=dict[str, A2AServer])
 
     model_config = {
         "json_schema_extra": {
@@ -42,6 +35,16 @@ class A2AServers(BaseModel):
             }
         }
     }
+
+    def validate(self) -> bool:
+        if not self.a2a:
+            return False
+        if not self.a2a.keys():
+            return False
+        for _, server in self.a2a.items():
+            if not server.base_url or not server.agent_card_path:
+                return False
+        return True
 
     def fetch_agent_cards(self) -> list[AgentCard]:
         agent_cards = []

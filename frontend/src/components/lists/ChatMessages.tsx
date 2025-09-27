@@ -7,7 +7,6 @@ import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
 import { truncateFrom } from "@/lib/utils/format";
-// import { useChatContext } from "@/context/ChatContext";
 import SearchEngineTool from "../tools/SearchEngine";
 
 const MAX_LENGTH = 1000;

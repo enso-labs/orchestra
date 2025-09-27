@@ -1,13 +1,10 @@
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.prebuilt import ToolNode
-from langchain_core.tools import StructuredTool
+from langchain_core.tools import StructuredTool, BaseTool
 from typing import Any
 
 from src.services.mcp import McpService
 from src.schemas.entities import ArcadeConfig
 from src.schemas.entities.a2a import A2AServer
 
-# from src.tools.shell import shell_exec
 from src.tools.search import web_search, web_scrape
 from src.tools.a2a import init_a2a_tools
 from src.tools.arcade import init_arcade_tools
@@ -15,43 +12,16 @@ from src.tools.api import generate_tools_from_openapi_json
 from src.tools.test import TEST_TOOLS
 
 TOOL_LIBRARY = [
-    # shell_exec,
     web_search,
     web_scrape,
 ] + TEST_TOOLS
-TOOL_NODE = ToolNode(TOOL_LIBRARY)
 
 
-###################################### UTILS ######################################
-def dynamic_tools(selected_tools: list[str] | str, metadata: dict = None):
-    # Convert string to list if single string provided
-    if isinstance(selected_tools, str):
-        selected_tools = [selected_tools]
-
-    if metadata and metadata.get("collection"):
-        selected_tools.append("retrieval_query")
-
-    # Filter tools by name
-    filtered_tools = [tool for tool in TOOL_LIBRARY if tool.name in selected_tools]
-
-    if len(filtered_tools) == 0:
-        raise ValueError(f"No tools found by the names: {', '.join(selected_tools)}")
-
-    # Update metadata for each tool
-    for tool in filtered_tools:
-        tool.metadata = metadata
-
-    return filtered_tools
-
-
-async def mcp_client(config: dict):
-    async with MultiServerMCPClient(config) as client:
-        return client.get_tools()
-
-
-async def get_mcp_tools(config: dict):
-    async with MultiServerMCPClient(config) as client:
-        return client.get_tools()
+def default_tools(tools: list[str]) -> list[BaseTool]:
+    if not tools:
+        return []
+    default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
+    return default_tools
 
 
 def attach_tool_details(tool):
@@ -99,8 +69,6 @@ async def init_tools(
             tools_to_add = generate_tools_from_openapi_json(
                 tool.get("spec"), headers=tool.get("headers", {})
             )
-        elif isinstance(tool, str):
-            tools_to_add = dynamic_tools(selected_tools=tool)
 
         if tools_to_add:
             if metadata:

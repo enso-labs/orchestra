@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/popover";
 import { logout } from "@/lib/utils/auth";
 import { Settings, LayoutDashboard, Cog } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 
 export function SettingsPopover() {
@@ -40,17 +40,19 @@ export function SettingsPopover() {
 					<span className="sr-only">Open settings menu</span>
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="p-2" align="end">
+			<PopoverContent
+				className="p-2 w-[var(--radix-popover-trigger-width)]"
+				align="end"
+			>
 				<div className="flex flex-col gap-1">
-					<Link to="/dashboard" className="w-full">
-						<Button
-							variant="ghost"
-							className="w-full justify-start gap-2 text-sm font-normal"
-						>
-							<LayoutDashboard className="h-4 w-4" />
-							Dashboard
-						</Button>
-					</Link>
+					<Button
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+						onClick={() => navigate("/agents")}
+					>
+						<LayoutDashboard className="h-4 w-4" />
+						Agents
+					</Button>
 					<Button
 						onClick={() => {
 							logout();

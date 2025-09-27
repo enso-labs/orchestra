@@ -92,6 +92,7 @@ interface StreamThreadPayload {
 	stream_mode: string;
 	a2a?: object;
 	mcp?: object;
+	tools?: string[];
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
