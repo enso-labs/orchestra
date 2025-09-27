@@ -10,15 +10,7 @@ import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import HouseIcon from "@/components/icons/HouseIcon";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
 import { useAgentContext } from "@/context/AgentContext";
-import MonacoEditor from "@/components/inputs/MonacoEditor";
-import ToolConfig from "@/lib/config/tool";
 
 function AgentCreatePage() {
 	const { agent, setAgent } = useAgentContext();
@@ -40,8 +32,8 @@ function AgentCreatePage() {
 	useEffect(() => {
 		setAgent({
 			...agent,
-			mcp: ToolConfig.DEFAULT_MCP_CONFIG,
-			a2a: ToolConfig.DEFAULT_A2A_CONFIG,
+			mcp: {},
+			a2a: {},
 		});
 		return () => {
 			setSearchParams(new URLSearchParams());
@@ -71,11 +63,12 @@ function AgentCreatePage() {
 						<TabsTrigger value="config">Config</TabsTrigger>
 						<TabsTrigger value="preview">Preview</TabsTrigger>
 						<TabsTrigger value="threads">Threads</TabsTrigger>
-						<TabsTrigger value="tools">Tools</TabsTrigger>
 					</TabsList>
 				</div>
-				<TabsContent value="config" className="flex-1 p-4">
-					<AgentCreateForm />
+				<TabsContent value="config" className="flex-1 p-4 h-0">
+					<ScrollArea className="h-full">
+						<AgentCreateForm />
+					</ScrollArea>
 				</TabsContent>
 				<TabsContent value="preview" className="flex-1 h-0">
 					<div className="h-full">
@@ -88,43 +81,6 @@ function AgentCreatePage() {
 							<ListThreads threads={threads} />
 						</div>
 					</ScrollArea>
-				</TabsContent>
-				<TabsContent value="tools" className="flex-1 p-4 h-0">
-					<Accordion type="single" collapsible>
-						<AccordionItem value="mcp">
-							<AccordionTrigger>MCP</AccordionTrigger>
-							<AccordionContent>
-								<MonacoEditor
-									value={JSON.stringify(agent.mcp, null, 2)}
-									handleChange={(val) =>
-										setAgent({ ...agent, mcp: JSON.parse(val) })
-									}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="a2a">
-							<AccordionTrigger>A2A</AccordionTrigger>
-							<AccordionContent>
-								<MonacoEditor
-									value={JSON.stringify(agent.a2a, null, 2)}
-									handleChange={(val) =>
-										setAgent({ ...agent, a2a: JSON.parse(val) })
-									}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="base">
-							<AccordionTrigger>Base</AccordionTrigger>
-							<AccordionContent>
-								<MonacoEditor
-									value={JSON.stringify(agent.tools, null, 2)}
-									handleChange={(val) =>
-										setAgent({ ...agent, tools: JSON.parse(val) })
-									}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-					</Accordion>
 				</TabsContent>
 			</Tabs>
 		</div>

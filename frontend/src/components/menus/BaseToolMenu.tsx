@@ -20,7 +20,10 @@ const DEFAULT_AGENT_TOOLS = ["web_search", "web_scrape"];
 export function BaseToolMenu() {
 	const { agent, setAgent } = useAgentContext();
 	const [open, setOpen] = useState<boolean>(false);
-	const [webSearchCheck, setWebSearchCheck] = useState<Checked>(true);
+	const [webSearchCheck, setWebSearchCheck] = useState<Checked>(() => {
+		const saved = localStorage.getItem("enso:tool:search");
+		return saved !== null ? JSON.parse(saved) : true;
+	});
 
 	useEffect(() => {
 		setAgent({ ...agent, tools: [...agent.tools, ...DEFAULT_AGENT_TOOLS] });
@@ -28,6 +31,7 @@ export function BaseToolMenu() {
 	}, []);
 
 	useEffect(() => {
+		localStorage.setItem("enso:tool:search", JSON.stringify(webSearchCheck));
 		if (webSearchCheck) {
 			setAgent({
 				...agent,
