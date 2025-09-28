@@ -73,7 +73,8 @@ class AirtableService:
         try:
             contact = await self.find_contact(email)
             if not contact or not contact.get("records"):
-                raise Exception(f"Contact not found for email: {email}")
+                logger.error(f"Contact not found for email: {email}")
+                return None
             record_id = contact["records"][0]["id"]
             # Forward the request to Airtable
             async with httpx.AsyncClient() as client:
@@ -90,7 +91,7 @@ class AirtableService:
                 return response.json()
         except Exception as e:
             logger.error(f"Error updating contact: {e}")
-            raise e
+            return None
 
 
 # Example usage

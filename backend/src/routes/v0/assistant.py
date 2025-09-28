@@ -1,15 +1,19 @@
 import uuid
 from fastapi import APIRouter, Body, Depends, HTTPException, status, Path, Response
-from pydantic import BaseModel
+
+from langgraph.store.postgres import AsyncPostgresStore
+
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store
 from src.utils.auth import verify_credentials
-from langgraph.store.postgres import AsyncPostgresStore
-from src.services.assistant import assistant_service
-from src.schemas.models.assistant import Assistant
-from src.schemas.models.assistant import AssistantSearch
 from src.utils.logger import logger
+from src.services.assistant import (
+    assistant_service,
+    AssistantSearch,
+    Assistant,
+    ASSISTANT_EXAMPLES,
+)
 
 
 ################################################################################
@@ -34,9 +38,7 @@ async def search_assistants(
 
 @router.post("", name="Create Assistant")
 async def create_assistant(
-    assistant: Assistant = Body(
-        ..., example=Examples.ASSISTANT_EXAMPLES["currency_agent"]
-    ),
+    assistant: Assistant = Body(..., example=ASSISTANT_EXAMPLES["currency_agent"]),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):

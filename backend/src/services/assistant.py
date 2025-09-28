@@ -2,8 +2,9 @@ from typing import Any
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 from src.utils.logger import logger
-from src.schemas.models.assistant import Assistant
+from src.schemas.models.assistant import *
 from langgraph.store.base import SearchItem
+from src.constants.examples import Examples
 
 IN_MEMORY_STORE = InMemoryStore()
 STORE_KEY = "assistants"
@@ -84,3 +85,5 @@ class AssistantService:
 
 
 assistant_service = AssistantService()
+
+ASSISTANT_EXAMPLES = {"currency_agent": Examples.ASSISTANT_EXAMPLES["currency_agent"]}

@@ -6,8 +6,12 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from src.services.db import get_checkpoint_db, get_store_db
 from src.utils.logger import logger
+from src.services.db import (
+    get_checkpoint_db,
+    get_store_db,
+    # get_async_db,
+)
 
 from src.routes.v0 import (
     tool,
@@ -47,12 +51,17 @@ async def lifespan(app: FastAPI):
         run_migrations()
 
     # Enter the async context managers to get live instances
-    async with get_checkpoint_db() as saver, get_store_db() as store:
+    async with (
+        get_checkpoint_db() as saver,
+        get_store_db() as store,
+        # get_async_db() as async_db,
+    ):
         # optional: create tables/indexes
         await saver.setup()
         await store.setup()
 
         # share across requests
+        # app.state.async_db = async_db
         app.state.checkpointer = saver
         app.state.store = store
 

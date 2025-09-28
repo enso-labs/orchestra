@@ -59,6 +59,13 @@ async def verify_credentials(
     db: AsyncSession = Depends(get_async_db),  # type: ignore
 ) -> User:
     try:
+        if not credentials or not credentials.credentials:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No credentials provided",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         # Verify JWT token
         payload = jwt.decode(
             credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
