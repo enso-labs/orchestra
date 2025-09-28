@@ -9,11 +9,14 @@ import { useAppContext } from "@/context/AppContext";
 import BaseToolMenu from "../menus/BaseToolMenu";
 import AgentMenu from "../menus/AgentMenu";
 
-export default function ChatInput() {
+export default function ChatInput({
+	showAgentMenu = false,
+}: {
+	showAgentMenu?: boolean;
+}) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
 	const { loading } = useAppContext();
-	const { showAgentMenu } = useAppHook();
 	const {
 		query,
 		abortQuery,

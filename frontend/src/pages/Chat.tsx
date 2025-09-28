@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { ChatNav } from "@/components/nav/ChatNav";
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
-import HomeSection from "@/components/sections/home";
+import ChatSection from "@/components/sections/chat-section";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,7 +75,7 @@ export default function Chat() {
 								</div>
 							</div>
 						</div>
-						<HomeSection />
+						<ChatSection />
 					</div>
 				</div>
 			</ChatLayout>
@@ -105,7 +105,7 @@ export default function Chat() {
 					<div className="sticky bottom-0 bg-background border-border">
 						<div className="max-w-4xl mx-auto">
 							<div className="flex flex-col gap-2 px-4 pb-4">
-								<ChatInput />
+								<ChatInput showAgentMenu={true} />
 							</div>
 						</div>
 					</div>
