@@ -18,6 +18,7 @@ from src.routes.v0 import (
     token,
     storage,
     rag,
+    assistant,
 )
 from src.constants import (
     HOST,
@@ -116,6 +117,7 @@ app.include_router(token, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
+app.include_router(assistant, prefix=PREFIX)
 if LANGCONNECT_SERVER_URL:
     app.include_router(rag, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)

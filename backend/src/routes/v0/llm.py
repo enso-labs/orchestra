@@ -40,7 +40,6 @@ llm_router = APIRouter(tags=["Graphs"], prefix="/llm")
     "/invoke",
     responses={status.HTTP_200_OK: MockResponse.INVOKE_RESPONSE},
     name="Invoke Graph",
-    tags=["LLM"],
 )
 async def llm_invoke(
     params: LLMRequest = Body(openapi_examples=Examples.LLM_INVOKE_EXAMPLES),

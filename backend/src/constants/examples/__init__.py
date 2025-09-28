@@ -425,3 +425,16 @@ class Examples:
             },
         ),
     }
+
+    ASSISTANT_EXAMPLES = {
+        "currency_agent": Example(
+            name="Currency Agent",
+            description="Helps with exchange rates for currencies",
+            model="openai:gpt-5-nano",
+            prompt="You are a helpful assistant.",
+            tools=["web_search"],
+            mcp=MCP_REQ_BODY_EXAMPLE["mcp"],
+            a2a=A2A_REQ_BODY_EXAMPLE["a2a"],
+            metadata={},
+        ),
+    }

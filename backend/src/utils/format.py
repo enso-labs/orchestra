@@ -1,5 +1,7 @@
 import base64
 import requests
+import re
+import unicodedata
 from typing import Optional
 from loguru import logger
 from datetime import datetime, timezone
@@ -36,3 +38,22 @@ def get_time(ts: str = None) -> str:
     if ts:
         return datetime.fromtimestamp(ts, timezone.utc).isoformat()
     return datetime.now(timezone.utc).isoformat()
+
+
+def slugify(text: str) -> str:
+    """
+    Convert a string into a slug (URL-friendly format).
+    """
+    # Normalize unicode characters (e.g., café -> cafe)
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+
+    # Lowercase
+    text = text.lower()
+
+    # Replace non-alphanumeric characters with hyphens
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+
+    # Remove leading/trailing hyphens
+    text = text.strip("-")
+
+    return text

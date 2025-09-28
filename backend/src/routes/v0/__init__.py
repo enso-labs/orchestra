@@ -7,6 +7,7 @@ from .info import router as info
 from .auth import router as auth
 from .token import router as token
 from .storage import router as storage
+from .assistant import router as assistant
 
 __all__ = [
     "llm",
@@ -16,6 +17,7 @@ __all__ = [
     "auth",
     "token",
     "storage",
+    "assistant",
 ]
 
 if LANGCONNECT_SERVER_URL:
