@@ -182,11 +182,11 @@ function AgentIndexPage() {
 														</div>
 
 														{/* Model info */}
-														{/* {agent.setting?.value?.model && (
+														{agent.model && (
 															<div className="text-xs text-muted-foreground">
-																Model: {agent.setting?.value.model}
+																Model: {agent.model}
 															</div>
-														)} */}
+														)}
 													</div>
 												</CardContent>
 											</Card>
