@@ -9,6 +9,8 @@ import {
 	Download,
 	ToggleLeft,
 	ToggleRight,
+	Pencil,
+	Trash2,
 } from "lucide-react";
 
 import {
@@ -39,6 +41,7 @@ import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Button } from "@/components/ui/button";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -56,6 +59,7 @@ const formSchema = z.object({
 });
 
 export function AgentCreateForm() {
+	const navigate = useNavigate();
 	const {
 		agent,
 		setAgent,
@@ -95,6 +99,40 @@ export function AgentCreateForm() {
 		console.log("Saving agent configuration:", configData);
 		await agentService.create(configData);
 		alert("Configuration saved! Check console for details.");
+	};
+
+	const updateConfiguration = async () => {
+		const configData: Agent = {
+			id: agent.id,
+			name: agent.name,
+			description: agent.description,
+			model: agent.model,
+			prompt: agent.system,
+			mcp: agent.mcp,
+			a2a: agent.a2a,
+			tools: agent.tools,
+		};
+		console.log("Updating agent configuration:", configData);
+		await agentService.update(configData);
+		alert("Configuration updated! Check console for details.");
+	};
+
+	const deleteAgent = async () => {
+		if (!agent.id) return;
+
+		const confirmed = confirm(
+			"Are you sure you want to delete this agent? This action cannot be undone.",
+		);
+		if (!confirmed) return;
+
+		try {
+			await agentService.delete(agent.id);
+			navigate("/agents");
+			// Navigate back to agents list or handle post-delete action
+		} catch (error) {
+			console.error("Failed to delete agent:", error);
+			alert("Failed to delete agent. Please try again.");
+		}
 	};
 
 	const openFullscreen = () => {
@@ -167,16 +205,41 @@ export function AgentCreateForm() {
 								</p>
 							</div>
 						</div>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={saveConfiguration}
-							className="flex items-center gap-2"
-						>
-							<Save className="h-4 w-4" />
-							Save
-						</Button>
+						{agent.id ? (
+							<div className="flex items-center gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={updateConfiguration}
+									className="flex items-center gap-2"
+								>
+									<Pencil className="h-4 w-4" />
+									Update
+								</Button>
+								<Button
+									type="button"
+									variant="destructive"
+									size="sm"
+									onClick={deleteAgent}
+									className="flex items-center gap-2"
+								>
+									<Trash2 className="h-4 w-4" />
+									Delete
+								</Button>
+							</div>
+						) : (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={saveConfiguration}
+								className="flex items-center gap-2"
+							>
+								<Save className="h-4 w-4" />
+								Save
+							</Button>
+						)}
 					</div>
 					<div className="flex flex-col gap-2">
 						<FormField
