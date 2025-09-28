@@ -125,7 +125,7 @@ function AgentIndexPage() {
 											<Card
 												key={agent.id}
 												className="cursor-pointer hover:shadow-lg transition-shadow duration-200 group"
-												onClick={() => handleAgentClick(agent.id)}
+												onClick={() => handleAgentClick(agent.id || "")}
 											>
 												<CardHeader className="pb-3">
 													<div className="flex items-start justify-between">
@@ -173,7 +173,11 @@ function AgentIndexPage() {
 															</div>
 															<div className="flex items-center gap-1">
 																<Calendar className="h-3 w-3" />
-																<span>{formatDate(agent.created_at)}</span>
+																<span>
+																	{agent.created_at
+																		? formatDate(agent.created_at)
+																		: "Invalid date"}
+																</span>
 															</div>
 														</div>
 

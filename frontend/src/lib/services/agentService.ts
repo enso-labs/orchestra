@@ -1,16 +1,17 @@
 import apiClient from "@/lib/utils/apiClient";
 
 export type Agent = {
-	id: string;
+	id?: string;
 	name: string;
 	description: string;
-	system: string;
+	model: string;
+	prompt: string;
 	tools: string[];
-	mcp: object;
-	a2a: object;
-	metadata: object;
-	created_at: string;
-	updated_at: string;
+	mcp?: object;
+	a2a?: object;
+	metadata?: object;
+	created_at?: string;
+	updated_at?: string;
 };
 
 export default class AgentService {

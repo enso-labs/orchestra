@@ -1,9 +1,26 @@
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
+import AgentSection from "@/components/sections/agent-section";
 import { useChatContext } from "@/context/ChatContext";
+import ChatLayout from "@/layouts/ChatLayout";
+import { Agent } from "@/lib/services/agentService";
 
-function ChatPanel() {
+interface ChatPanelProps {
+	agent?: Agent;
+}
+
+function ChatPanel({ agent }: ChatPanelProps) {
 	const { messages } = useChatContext();
+
+	if (agent && messages.length === 0) {
+		return (
+			<ChatLayout>
+				<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
+					<AgentSection />
+				</div>
+			</ChatLayout>
+		);
+	}
 
 	// if (messages.length === 0) {
 	// 	return (

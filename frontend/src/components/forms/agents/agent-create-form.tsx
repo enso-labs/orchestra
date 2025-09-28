@@ -36,8 +36,9 @@ import {
 import { useAgentContext } from "@/context/AgentContext";
 import { useEffect, useState } from "react";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
-import ToolConfig from "@/lib/config/tool";
 import { Button } from "@/components/ui/button";
+import agentService, { Agent } from "@/lib/services/agentService";
+import SelectModel from "@/components/lists/SelectModel";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -49,10 +50,20 @@ const formSchema = z.object({
 	systemMessage: z.string().min(2, {
 		message: "System message must be at least 2 characters.",
 	}),
+	model: z.string().min(2, {
+		message: "Model must be at least 2 characters.",
+	}),
 });
 
 export function AgentCreateForm() {
-	const { agent, setAgent } = useAgentContext();
+	const {
+		agent,
+		setAgent,
+		loadMcpTemplate,
+		loadA2aTemplate,
+		clearMcp,
+		clearA2a,
+	} = useAgentContext();
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 	const [fullscreenSystemMessage, setFullscreenSystemMessage] = useState("");
 	const [systemMessageUrl, setSystemMessageUrl] = useState("");
@@ -71,32 +82,18 @@ export function AgentCreateForm() {
 		console.log(values);
 	};
 
-	const loadMcpTemplate = () => {
-		setAgent({ ...agent, mcp: ToolConfig.DEFAULT_MCP_CONFIG });
-	};
-
-	const loadA2aTemplate = () => {
-		setAgent({ ...agent, a2a: ToolConfig.DEFAULT_A2A_CONFIG });
-	};
-
-	const clearMcp = () => {
-		setAgent({ ...agent, mcp: {} });
-	};
-
-	const clearA2a = () => {
-		setAgent({ ...agent, a2a: {} });
-	};
-
-	const saveConfiguration = () => {
-		const configData = {
+	const saveConfiguration = async () => {
+		const configData: Agent = {
 			name: agent.name,
 			description: agent.description,
-			system: agent.system,
+			model: agent.model,
+			prompt: agent.system,
 			mcp: agent.mcp,
 			a2a: agent.a2a,
 			tools: agent.tools,
 		};
 		console.log("Saving agent configuration:", configData);
+		await agentService.create(configData);
 		alert("Configuration saved! Check console for details.");
 	};
 
@@ -251,6 +248,23 @@ export function AgentCreateForm() {
 										/>
 									</FormControl>
 									{/* <FormDescription>This is your system message.</FormDescription> */}
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="model"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Model</FormLabel>
+									<FormControl>
+										<SelectModel
+											onModelSelected={() => {
+												setAgent({ ...agent, model: field.value });
+											}}
+										/>
+									</FormControl>
 									<FormMessage />
 								</FormItem>
 							)}

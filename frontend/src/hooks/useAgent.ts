@@ -1,5 +1,6 @@
 import agentService, { Agent } from "@/lib/services/agentService";
 import { useEffect, useState } from "react";
+import ToolConfig from "@/lib/config/tool";
 
 const INIT_AGENT_STATE = {
 	agent: {
@@ -54,6 +55,22 @@ export function useAgent() {
 		};
 	};
 
+	const clearMcp = () => {
+		setAgent({ ...agent, mcp: {} });
+	};
+
+	const clearA2a = () => {
+		setAgent({ ...agent, a2a: {} });
+	};
+
+	const loadMcpTemplate = () => {
+		setAgent({ ...agent, mcp: ToolConfig.DEFAULT_MCP_CONFIG });
+	};
+
+	const loadA2aTemplate = () => {
+		setAgent({ ...agent, a2a: ToolConfig.DEFAULT_A2A_CONFIG });
+	};
+
 	return {
 		agent,
 		setAgent,
@@ -63,6 +80,10 @@ export function useAgent() {
 		useEffectGetAgents,
 		useEffectGetAgent,
 		handleGetAgent,
+		clearMcp,
+		clearA2a,
+		loadMcpTemplate,
+		loadA2aTemplate,
 	};
 }
 

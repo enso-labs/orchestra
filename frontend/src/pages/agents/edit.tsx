@@ -40,7 +40,7 @@ function AgentEditPage() {
 
 	useEffect(() => {
 		if (messages.length > 0) {
-			setActiveTab("preview");
+			setActiveTab("chat");
 		}
 	}, [messages]);
 
@@ -66,7 +66,7 @@ function AgentEditPage() {
 			</div>
 			<Tabs
 				defaultValue="config"
-				value={activeTab || "config"}
+				value={activeTab || "chat"}
 				onValueChange={handleTabChange}
 				className="h-full flex flex-col"
 			>
@@ -81,19 +81,14 @@ function AgentEditPage() {
 						</Button>
 					</MainToolTip>
 					<TabsList>
-						<TabsTrigger value="config">Config</TabsTrigger>
-						<TabsTrigger value="preview">Preview</TabsTrigger>
+						<TabsTrigger value="chat">Chat</TabsTrigger>
 						<TabsTrigger value="threads">Threads</TabsTrigger>
+						<TabsTrigger value="config">Config</TabsTrigger>
 					</TabsList>
 				</div>
-				<TabsContent value="config" className="flex-1 p-4 h-0">
-					<ScrollArea className="h-full">
-						<AgentCreateForm />
-					</ScrollArea>
-				</TabsContent>
-				<TabsContent value="preview" className="flex-1 h-0">
+				<TabsContent value="chat" className="flex-1 h-0">
 					<div className="h-full">
-						<ChatPanel />
+						<ChatPanel agent={agent} />
 					</div>
 				</TabsContent>
 				<TabsContent value="threads" className="flex-1 p-4 h-0">
@@ -101,6 +96,11 @@ function AgentEditPage() {
 						<div className="p-2 space-y-2">
 							<ListThreads threads={threads} />
 						</div>
+					</ScrollArea>
+				</TabsContent>
+				<TabsContent value="config" className="flex-1 p-4 h-0">
+					<ScrollArea className="h-full">
+						<AgentCreateForm />
 					</ScrollArea>
 				</TabsContent>
 			</Tabs>
