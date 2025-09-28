@@ -7,9 +7,10 @@ import { Agent } from "@/lib/services/agentService";
 
 interface ChatPanelProps {
 	agent?: Agent;
+	showAgentMenu: boolean;
 }
 
-function ChatPanel({ agent }: ChatPanelProps) {
+function ChatPanel({ agent, showAgentMenu = true }: ChatPanelProps) {
 	const { messages } = useChatContext();
 
 	if (agent && messages.length === 0) {
@@ -47,7 +48,7 @@ function ChatPanel({ agent }: ChatPanelProps) {
 				<div className="sticky bottom-0 bg-background border-border">
 					<div className="max-w-4xl mx-auto">
 						<div className="flex flex-col gap-2 px-4 pb-4">
-							<ChatInput />
+							<ChatInput showAgentMenu={showAgentMenu} />
 						</div>
 					</div>
 				</div>

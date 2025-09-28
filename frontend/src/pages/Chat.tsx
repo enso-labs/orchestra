@@ -12,14 +12,18 @@ import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import SelectModel from "@/components/lists/SelectModel";
 import { useSearchParams } from "react-router-dom";
+import { useAgentContext } from "@/context/AgentContext";
 
 export default function Chat() {
 	const { loading, isDrawerOpen, setIsDrawerOpen } = useAppContext();
+	const { useEffectGetAgents } = useAgentContext();
 	const { messages, useListThreadsEffect, useListCheckpointsEffect, metadata } =
 		useChatContext();
 	const [, setSearchParams] = useSearchParams();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const isAssistantOpen = false;
+
+	useEffectGetAgents();
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -101,7 +105,7 @@ export default function Chat() {
 					<div className="sticky bottom-0 bg-background border-border">
 						<div className="max-w-4xl mx-auto">
 							<div className="flex flex-col gap-2 px-4 pb-4">
-								<ChatInput />
+								<ChatInput showAgentMenu={true} />
 							</div>
 						</div>
 					</div>

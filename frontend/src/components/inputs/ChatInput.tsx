@@ -7,8 +7,13 @@ import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { useAppContext } from "@/context/AppContext";
 import BaseToolMenu from "../menus/BaseToolMenu";
+import AgentMenu from "../menus/AgentMenu";
 
-export default function ChatInput() {
+export default function ChatInput({
+	showAgentMenu = true,
+}: {
+	showAgentMenu: boolean;
+}) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
 	const { loading } = useAppContext();
@@ -89,11 +94,16 @@ export default function ChatInput() {
 				}}
 			/>
 			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-1">
 					<div className="flex gap-1">
 						{/* <ImageUpload /> */}
 						<BaseToolMenu />
 					</div>
+					{showAgentMenu && (
+						<div className="w-48">
+							<AgentMenu />
+						</div>
+					)}
 				</div>
 				<div className="flex items-center gap-2">
 					<ChatSubmitButton
