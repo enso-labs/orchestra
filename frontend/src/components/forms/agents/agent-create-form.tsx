@@ -149,8 +149,10 @@ export function AgentCreateForm() {
 	};
 
 	useEffect(() => {
+		form.setValue("name", agent.name);
+		form.setValue("description", agent.description);
 		form.setValue("systemMessage", agent.system);
-	}, []);
+	}, [agent]);
 
 	return (
 		<Form {...form}>

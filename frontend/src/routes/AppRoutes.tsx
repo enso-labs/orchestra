@@ -17,6 +17,7 @@ import Register from "@/pages/Register";
 import OAuthCallback from "@/pages/OAuthCallback";
 import AgentCreatePage from "@/pages/agents/create";
 import AgentIndexPage from "@/pages/agents";
+import AgentEditPage from "@/pages/agents/edit";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -67,6 +68,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<AgentIndexPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/agents/:id"
+						element={
+							<PrivateRoute>
+								<AgentEditPage />
 							</PrivateRoute>
 						}
 					/>

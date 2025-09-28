@@ -1,6 +1,7 @@
 from typing import Optional
 from src.utils.format import slugify
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, computed_field, field_serializer
+from datetime import datetime
 
 
 class AssistantSearch(BaseModel):
@@ -18,9 +19,9 @@ class Assistant(BaseModel):
     model: str
     prompt: str
     tools: list[str]
-    mcp: Optional[dict] = None
-    a2a: Optional[dict] = None
-    metadata: Optional[dict] = None
+    mcp: dict = {}
+    a2a: dict = {}
+    metadata: dict = {}
     updated_at: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -28,3 +29,7 @@ class Assistant(BaseModel):
     @property
     def slug(self) -> str:
         return slugify(self.name)
+
+    @field_serializer("created_at", "updated_at")
+    def serialize_dt(self, dt: Optional[datetime], _):
+        return dt.isoformat() if dt else None

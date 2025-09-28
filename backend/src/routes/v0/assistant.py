@@ -30,9 +30,12 @@ async def search_assistants(
 ):
     assistant_service.store = store
     assistant_service.user_id = user.id
-    assistants = await assistant_service.search(
-        limit=assistant_search.limit,
-    )
+    # If id is provided, return the assistant
+    if "id" in assistant_search.filter:
+        assistant = await assistant_service.get(assistant_search.filter["id"])
+        return {"assistants": [assistant]}
+    # If id is not provided, return all assistants
+    assistants = await assistant_service.search()
     return {"assistants": assistants}
 
 

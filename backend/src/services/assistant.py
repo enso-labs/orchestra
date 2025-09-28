@@ -28,7 +28,10 @@ class AssistantService:
         return True
 
     async def get(self, key: str) -> Any:
-        return await self.store.aget((STORE_KEY, self.user_id), key)
+        assistant_raw = await self.store.aget((STORE_KEY, self.user_id), key)
+        if assistant_raw:
+            return self._format_assistant([assistant_raw])[0]
+        return None
 
     async def delete(self, key: str) -> bool:
         try:
@@ -37,6 +40,21 @@ class AssistantService:
         except Exception as e:
             logger.exception(f"Error deleting {STORE_KEY} {key}: {e}")
             return False
+
+    async def search(
+        self,
+        limit: int = 1000,
+    ) -> list[dict]:
+        try:
+            assistants = []
+            if isinstance(self.store, InMemoryStore):
+                assistants = await self._in_memory_search(limit)
+            else:
+                assistants = await self._postgres_search(limit)
+            return self._format_assistant(assistants)
+        except Exception as e:
+            logger.error(f"Error searching {STORE_KEY}: {e}")
+            return []
 
     ###########################################################################
     ## Search
@@ -67,21 +85,6 @@ class AssistantService:
             assistant.created_at = item.created_at
             assistants.append(assistant.model_dump())
         return assistants
-
-    async def search(
-        self,
-        limit: int = 1000,
-    ) -> list[dict]:
-        try:
-            assistants = []
-            if isinstance(self.store, InMemoryStore):
-                assistants = await self._in_memory_search(limit)
-            else:
-                assistants = await self._postgres_search(limit)
-            return self._format_assistant(assistants)
-        except Exception as e:
-            logger.error(f"Error searching {STORE_KEY}: {e}")
-            return []
 
 
 assistant_service = AssistantService()

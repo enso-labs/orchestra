@@ -1,51 +1,75 @@
 import apiClient from "@/lib/utils/apiClient";
 
-export const getAgents = async () => {
-	const response = await apiClient.get("/agents");
-	return response;
-};
-
-export const getAgent = async (agentId: string) => {
-	const response = await apiClient.get(`/agents/${agentId}`);
-	return response.data;
-};
-
-export const createAgent = async (data: {
+export type Agent = {
+	id: string;
 	name: string;
 	description: string;
-	settings_id: string;
-	public?: boolean;
-}) => {
-	const response = await apiClient.post("/agents", data);
-	return response.data;
+	system: string;
+	tools: string[];
+	mcp: object;
+	a2a: object;
+	metadata: object;
+	created_at: string;
+	updated_at: string;
 };
 
-export const updateAgent = async (
-	agentId: string,
-	data: {
-		name?: string;
-		description?: string;
-		// settings_id?: string;
-		public?: boolean;
-	},
-) => {
-	const response = await apiClient.put(`/agents/${agentId}`, data);
-	return response.data;
-};
+export default class AgentService {
+	private static readonly BASE_URL = "/assistants";
 
-export const deleteAgent = async (agentId: string) => {
-	const response = await apiClient.delete(`/agents/${agentId}`);
-	return response.data;
-};
+	static async search({
+		filter = {},
+		limit = 200,
+		offset = 0,
+	}: {
+		filter?: object;
+		limit?: number;
+		offset?: number;
+	} = {}) {
+		try {
+			const response = await apiClient.post(this.BASE_URL + "/search", {
+				limit,
+				offset,
+				filter,
+			});
+			return response;
+		} catch (error) {
+			console.error("Failed to search agents:", error);
+			throw error;
+		}
+	}
 
-export const createAgentRevision = async (
-	agentId: string,
-	data: {
-		name: string;
-		description: string;
-		settings_id: string;
-	},
-) => {
-	const response = await apiClient.post(`/agents/${agentId}/v`, data);
-	return response;
-};
+	static async create(agent: Agent) {
+		try {
+			const response = await apiClient.post(this.BASE_URL, agent);
+			return response;
+		} catch (error) {
+			console.error("Failed to create agent:", error);
+			throw error;
+		}
+	}
+
+	static async update(agent: Agent) {
+		try {
+			const response = await apiClient.put(
+				`${this.BASE_URL}/${agent.id}`,
+				agent,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to update agent:", error);
+			throw error;
+		}
+	}
+
+	static async delete(agentId: string) {
+		try {
+			const response = await apiClient.delete(`${this.BASE_URL}/${agentId}`);
+			return response;
+		} catch (error) {
+			console.error("Failed to delete agent:", error);
+			throw error;
+		}
+	}
+}
+
+export const agentService = new AgentService();

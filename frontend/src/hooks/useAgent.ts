@@ -1,4 +1,5 @@
-import { useState } from "react";
+import agentService, { Agent } from "@/lib/services/agentService";
+import { useEffect, useState } from "react";
 
 const INIT_AGENT_STATE = {
 	agent: {
@@ -9,19 +10,59 @@ const INIT_AGENT_STATE = {
 		mcp: {},
 		a2a: {},
 	},
+	agents: [],
 };
 
 export function useAgent() {
 	const [agent, setAgent] = useState(INIT_AGENT_STATE.agent);
+	const [agents, setAgents] = useState<Agent[]>([]);
 
 	const setAgentSystemMessage = (system: string) => {
 		setAgent({ ...agent, system });
+	};
+
+	const handleGetAgents = async () => {
+		const response = await agentService.search();
+		setAgents(response.data.assistants);
+	};
+
+	const handleGetAgent = async (id: string) => {
+		const response = await agentService.search({
+			filter: {
+				id: id,
+			},
+		});
+		setAgent({
+			...response.data.assistants[0],
+			system: response.data.assistants[0].prompt,
+		});
+	};
+
+	const useEffectGetAgent = (id: string) => {
+		useEffect(() => {
+			handleGetAgent(id);
+		}, [id]);
+	};
+
+	const useEffectGetAgents = () => {
+		useEffect(() => {
+			handleGetAgents();
+		}, []);
+
+		return () => {
+			setAgents([]);
+		};
 	};
 
 	return {
 		agent,
 		setAgent,
 		setAgentSystemMessage,
+		agents,
+		handleGetAgents,
+		useEffectGetAgents,
+		useEffectGetAgent,
+		handleGetAgent,
 	};
 }
 
