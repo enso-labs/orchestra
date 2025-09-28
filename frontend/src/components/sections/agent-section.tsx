@@ -25,7 +25,7 @@ export function AgentSection() {
 				)}
 			</div>
 			<div className="flex flex-col w-full lg:w-[600px]">
-				<ChatInput showAgentMenu={false} />
+				<ChatInput />
 			</div>
 		</>
 	);

@@ -10,7 +10,7 @@ interface ChatPanelProps {
 	showAgentMenu: boolean;
 }
 
-function ChatPanel({ agent, showAgentMenu = true }: ChatPanelProps) {
+function ChatPanel({ agent }: ChatPanelProps) {
 	const { messages } = useChatContext();
 
 	if (agent && messages.length === 0) {
@@ -22,16 +22,6 @@ function ChatPanel({ agent, showAgentMenu = true }: ChatPanelProps) {
 			</ChatLayout>
 		);
 	}
-
-	// if (messages.length === 0) {
-	// 	return (
-	// 		<ChatLayout>
-	// 			<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
-	// 				<HomeSection />
-	// 			</div>
-	// 		</ChatLayout>
-	// 	);
-	// }
 
 	return (
 		<div
@@ -48,7 +38,7 @@ function ChatPanel({ agent, showAgentMenu = true }: ChatPanelProps) {
 				<div className="sticky bottom-0 bg-background border-border">
 					<div className="max-w-4xl mx-auto">
 						<div className="flex flex-col gap-2 px-4 pb-4">
-							<ChatInput showAgentMenu={showAgentMenu} />
+							<ChatInput />
 						</div>
 					</div>
 				</div>

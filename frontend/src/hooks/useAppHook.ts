@@ -12,12 +12,16 @@ const INIT_APP_STATE = {
 	appVersion: APP_VERSION,
 	isMenuOpen: false,
 	isDrawerOpen: false,
+	showAgentMenu: false,
 };
 
 export default function useAppHook() {
 	const [loading, setLoading] = useState(INIT_APP_STATE.loading);
 	const [loadingMessage, setLoadingMessage] = useState(
 		INIT_APP_STATE.loadingMessage,
+	);
+	const [showAgentMenu, setShowAgentMenu] = useState(
+		INIT_APP_STATE.showAgentMenu,
 	);
 	const [appVersion, setAppVersion] = useState(INIT_APP_STATE.appVersion);
 	const [isMenuOpen, setIsMenuOpen] = useState(INIT_APP_STATE.isMenuOpen);
@@ -101,5 +105,7 @@ export default function useAppHook() {
 		useDynamicScriptInjectEffect,
 		isDrawerOpen,
 		setIsDrawerOpen,
+		showAgentMenu,
+		setShowAgentMenu,
 	};
 }

@@ -105,7 +105,7 @@ export default function Chat() {
 					<div className="sticky bottom-0 bg-background border-border">
 						<div className="max-w-4xl mx-auto">
 							<div className="flex flex-col gap-2 px-4 pb-4">
-								<ChatInput showAgentMenu={true} />
+								<ChatInput />
 							</div>
 						</div>
 					</div>
