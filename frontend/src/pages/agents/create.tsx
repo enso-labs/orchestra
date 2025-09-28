@@ -13,6 +13,7 @@ import { useAgentContext } from "@/context/AgentContext";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
+import { INIT_AGENT_STATE } from "@/hooks/useAgent";
 
 function AgentCreatePage() {
 	const { agent, setAgent } = useAgentContext();
@@ -49,7 +50,7 @@ function AgentCreatePage() {
 		});
 		return () => {
 			setSearchParams(new URLSearchParams());
-			setAgent({ ...agent, mcp: {}, a2a: {} });
+			setAgent(INIT_AGENT_STATE.agent);
 		};
 	}, []);
 
@@ -90,7 +91,7 @@ function AgentCreatePage() {
 				</TabsContent>
 				<TabsContent value="preview" className="flex-1 h-0">
 					<div className="h-full">
-						<ChatPanel />
+						<ChatPanel showAgentMenu={false} />
 					</div>
 				</TabsContent>
 				<TabsContent value="threads" className="flex-1 p-4 h-0">

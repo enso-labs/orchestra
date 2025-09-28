@@ -14,5 +14,5 @@ export default function Home() {
 		);
 	}
 
-	return <ChatPanel />;
+	return <ChatPanel showAgentMenu={false} />;
 }

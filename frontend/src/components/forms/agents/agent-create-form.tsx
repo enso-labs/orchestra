@@ -9,6 +9,8 @@ import {
 	Download,
 	ToggleLeft,
 	ToggleRight,
+	Pencil,
+	Trash2,
 } from "lucide-react";
 
 import {
@@ -34,11 +36,13 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { useAgentContext } from "@/context/AgentContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Button } from "@/components/ui/button";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
+import { useNavigate } from "react-router-dom";
+import { base64Compare } from "@/lib/utils/format";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -47,8 +51,8 @@ const formSchema = z.object({
 	description: z.string().min(2, {
 		message: "Description must be at least 2 characters.",
 	}),
-	systemMessage: z.string().min(2, {
-		message: "System message must be at least 2 characters.",
+	systemMessage: z.string().min(1, {
+		message: "System message is required.",
 	}),
 	model: z.string().min(2, {
 		message: "Model must be at least 2 characters.",
@@ -56,8 +60,10 @@ const formSchema = z.object({
 });
 
 export function AgentCreateForm() {
+	const navigate = useNavigate();
 	const {
 		agent,
+		agents,
 		setAgent,
 		loadMcpTemplate,
 		loadA2aTemplate,
@@ -78,23 +84,50 @@ export function AgentCreateForm() {
 		},
 	});
 
-	const onSubmit = (values: z.infer<typeof formSchema>) => {
-		console.log(values);
-	};
-
-	const saveConfiguration = async () => {
+	const onSubmit = async (values: z.infer<typeof formSchema>) => {
 		const configData: Agent = {
-			name: agent.name,
-			description: agent.description,
-			model: agent.model,
-			prompt: agent.system,
+			name: values.name.trim(),
+			description: values.description.trim(),
+			model: values.model.trim(),
+			prompt: values.systemMessage.trim(),
 			mcp: agent.mcp,
 			a2a: agent.a2a,
 			tools: agent.tools,
 		};
-		console.log("Saving agent configuration:", configData);
-		await agentService.create(configData);
-		alert("Configuration saved! Check console for details.");
+		if (!agent.id) {
+			console.log("Saving agent configuration:", configData);
+			const response = await agentService.create(configData);
+			alert(`${values.name} created successfully!`);
+			navigate(`/agents/${response.data.assistant_id}`);
+		} else {
+			const confirmed = confirm(
+				"Are you sure you want to update this agent? This action cannot be undone.",
+			);
+			if (!confirmed) return;
+
+			console.log("Updating agent configuration:", configData);
+			await agentService.update(agent.id, configData);
+			alert(`${values.name} updated successfully!`);
+			navigate(`/agents`);
+		}
+	};
+
+	const deleteAgent = async () => {
+		if (!agent.id) return;
+
+		const confirmed = confirm(
+			"Are you sure you want to delete this agent? This action cannot be undone.",
+		);
+		if (!confirmed) return;
+
+		try {
+			await agentService.delete(agent.id);
+			navigate("/agents");
+			// Navigate back to agents list or handle post-delete action
+		} catch (error) {
+			console.error("Failed to delete agent:", error);
+			alert("Failed to delete agent. Please try again.");
+		}
 	};
 
 	const openFullscreen = () => {
@@ -148,8 +181,16 @@ export function AgentCreateForm() {
 	useEffect(() => {
 		form.setValue("name", agent.name);
 		form.setValue("description", agent.description);
-		form.setValue("systemMessage", agent.system);
+		form.setValue("systemMessage", agent.prompt);
+		form.setValue("model", agent.model);
 	}, [agent]);
+
+	const agentHasChanged = useMemo(() => {
+		const prevAssistant = agents.find((a: Agent) => a.id === agent.id);
+		if (!prevAssistant) return true;
+		delete agent.system;
+		return !base64Compare(JSON.stringify(prevAssistant), JSON.stringify(agent));
+	}, [agents, agent]);
 
 	return (
 		<Form {...form}>
@@ -167,16 +208,42 @@ export function AgentCreateForm() {
 								</p>
 							</div>
 						</div>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={saveConfiguration}
-							className="flex items-center gap-2"
-						>
-							<Save className="h-4 w-4" />
-							Save
-						</Button>
+						{agent.id ? (
+							<div className="flex items-center gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={!agentHasChanged}
+									onClick={form.handleSubmit(onSubmit)}
+									className="flex items-center gap-2"
+								>
+									<Pencil className="h-4 w-4" />
+									Update
+								</Button>
+								<Button
+									type="button"
+									variant="destructive"
+									size="sm"
+									onClick={deleteAgent}
+									className="flex items-center gap-2"
+								>
+									<Trash2 className="h-4 w-4" />
+									Delete
+								</Button>
+							</div>
+						) : (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={form.handleSubmit(onSubmit)}
+								className="flex items-center gap-2"
+							>
+								<Save className="h-4 w-4" />
+								Save
+							</Button>
+						)}
 					</div>
 					<div className="flex flex-col gap-2">
 						<FormField
@@ -242,8 +309,9 @@ export function AgentCreateForm() {
 									<FormControl>
 										<Textarea
 											{...field}
+											required
 											onChangeCapture={(e) =>
-												setAgent({ ...agent, system: e.currentTarget.value })
+												setAgent({ ...agent, prompt: e.currentTarget.value })
 											}
 										/>
 									</FormControl>
