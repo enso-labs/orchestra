@@ -36,12 +36,13 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { useAgentContext } from "@/context/AgentContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Button } from "@/components/ui/button";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
 import { useNavigate } from "react-router-dom";
+import { base64Compare } from "@/lib/utils/format";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -50,8 +51,8 @@ const formSchema = z.object({
 	description: z.string().min(2, {
 		message: "Description must be at least 2 characters.",
 	}),
-	systemMessage: z.string().min(2, {
-		message: "System message must be at least 2 characters.",
+	systemMessage: z.string().min(1, {
+		message: "System message is required.",
 	}),
 	model: z.string().min(2, {
 		message: "Model must be at least 2 characters.",
@@ -62,6 +63,7 @@ export function AgentCreateForm() {
 	const navigate = useNavigate();
 	const {
 		agent,
+		agents,
 		setAgent,
 		loadMcpTemplate,
 		loadA2aTemplate,
@@ -82,39 +84,32 @@ export function AgentCreateForm() {
 		},
 	});
 
-	const onSubmit = (values: z.infer<typeof formSchema>) => {
-		console.log(values);
-	};
-
-	const saveConfiguration = async () => {
+	const onSubmit = async (values: z.infer<typeof formSchema>) => {
 		const configData: Agent = {
-			name: agent.name,
-			description: agent.description,
-			model: agent.model,
-			prompt: agent.system,
+			name: values.name.trim(),
+			description: values.description.trim(),
+			model: values.model.trim(),
+			prompt: values.systemMessage.trim(),
 			mcp: agent.mcp,
 			a2a: agent.a2a,
 			tools: agent.tools,
 		};
-		console.log("Saving agent configuration:", configData);
-		await agentService.create(configData);
-		alert("Configuration saved! Check console for details.");
-	};
+		if (!agent.id) {
+			console.log("Saving agent configuration:", configData);
+			const response = await agentService.create(configData);
+			alert(`${values.name} created successfully!`);
+			navigate(`/agents/${response.data.assistant_id}`);
+		} else {
+			const confirmed = confirm(
+				"Are you sure you want to update this agent? This action cannot be undone.",
+			);
+			if (!confirmed) return;
 
-	const updateConfiguration = async () => {
-		const configData: Agent = {
-			id: agent.id,
-			name: agent.name,
-			description: agent.description,
-			model: agent.model,
-			prompt: agent.system,
-			mcp: agent.mcp,
-			a2a: agent.a2a,
-			tools: agent.tools,
-		};
-		console.log("Updating agent configuration:", configData);
-		await agentService.update(configData);
-		alert("Configuration updated! Check console for details.");
+			console.log("Updating agent configuration:", configData);
+			await agentService.update(agent.id, configData);
+			alert(`${values.name} updated successfully!`);
+			navigate(`/agents`);
+		}
 	};
 
 	const deleteAgent = async () => {
@@ -186,8 +181,16 @@ export function AgentCreateForm() {
 	useEffect(() => {
 		form.setValue("name", agent.name);
 		form.setValue("description", agent.description);
-		form.setValue("systemMessage", agent.system);
+		form.setValue("systemMessage", agent.prompt);
+		form.setValue("model", agent.model);
 	}, [agent]);
+
+	const agentHasChanged = useMemo(() => {
+		const prevAssistant = agents.find((a: Agent) => a.id === agent.id);
+		if (!prevAssistant) return true;
+		delete agent.system;
+		return !base64Compare(JSON.stringify(prevAssistant), JSON.stringify(agent));
+	}, [agents, agent]);
 
 	return (
 		<Form {...form}>
@@ -211,7 +214,8 @@ export function AgentCreateForm() {
 									type="button"
 									variant="outline"
 									size="sm"
-									onClick={updateConfiguration}
+									disabled={!agentHasChanged}
+									onClick={form.handleSubmit(onSubmit)}
 									className="flex items-center gap-2"
 								>
 									<Pencil className="h-4 w-4" />
@@ -233,7 +237,7 @@ export function AgentCreateForm() {
 								type="button"
 								variant="outline"
 								size="sm"
-								onClick={saveConfiguration}
+								onClick={form.handleSubmit(onSubmit)}
 								className="flex items-center gap-2"
 							>
 								<Save className="h-4 w-4" />
@@ -305,8 +309,9 @@ export function AgentCreateForm() {
 									<FormControl>
 										<Textarea
 											{...field}
+											required
 											onChangeCapture={(e) =>
-												setAgent({ ...agent, system: e.currentTarget.value })
+												setAgent({ ...agent, prompt: e.currentTarget.value })
 											}
 										/>
 									</FormControl>

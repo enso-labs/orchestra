@@ -2,7 +2,7 @@ import agentService, { Agent } from "@/lib/services/agentService";
 import { useEffect, useState } from "react";
 import ToolConfig from "@/lib/config/tool";
 
-const INIT_AGENT_STATE = {
+export const INIT_AGENT_STATE = {
 	agent: {
 		name: "",
 		description: "",

@@ -13,11 +13,14 @@ import { useAgentContext } from "@/context/AgentContext";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
+import { INIT_AGENT_STATE } from "@/hooks/useAgent";
 
 function AgentEditPage() {
 	const { id } = useParams();
-	const { agent, setAgent, useEffectGetAgent } = useAgentContext();
+	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
+		useAgentContext();
 	useEffectGetAgent(id);
+	useEffectGetAgents();
 
 	const { threads, useListThreadsEffect, messages } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
@@ -52,7 +55,7 @@ function AgentEditPage() {
 		});
 		return () => {
 			setSearchParams(new URLSearchParams());
-			setAgent({ ...agent, mcp: {}, a2a: {} });
+			setAgent(INIT_AGENT_STATE.agent);
 		};
 	}, []);
 

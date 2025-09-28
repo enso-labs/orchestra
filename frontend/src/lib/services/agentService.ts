@@ -49,10 +49,10 @@ export default class AgentService {
 		}
 	}
 
-	static async update(agent: Agent) {
+	static async update(assistantId: string, agent: Agent) {
 		try {
 			const response = await apiClient.put(
-				`${this.BASE_URL}/${agent.id}`,
+				`${this.BASE_URL}/${assistantId}`,
 				agent,
 			);
 			return response;

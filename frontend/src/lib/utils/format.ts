@@ -87,8 +87,8 @@ export function base64Decode(str: string) {
 	return decodeURIComponent(atob(str));
 }
 
-export function base64Compare(str1: string, str2: string) {
-	return str1 === str2;
+export function base64Compare(a: string, b: string) {
+	return base64Encode(a) === base64Encode(b);
 }
 
 export function formatMessages(messages: any[]) {
