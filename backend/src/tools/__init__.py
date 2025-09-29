@@ -14,14 +14,14 @@ from src.tools.test import TEST_TOOLS
 TOOL_LIBRARY = [
     web_search,
     web_scrape,
-] + TEST_TOOLS
+]
 
 
 def default_tools(tools: list[str]) -> list[BaseTool]:
     if not tools:
-        return []
+        return [] + TEST_TOOLS
     default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
-    return default_tools
+    return default_tools + TEST_TOOLS
 
 
 def attach_tool_details(tool):

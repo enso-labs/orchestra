@@ -56,7 +56,7 @@ def graph_builder(
     store: BaseStore | None = None,
     graph_id: Literal[
         "react", "deepagents", "deepagent", "create_react_agent", "create_deep_agent"
-    ] = "deepagents",
+    ] = "react",
 ) -> CompiledStateGraph:
     if graph_id in ["react", "create_react_agent"]:
         return create_react_agent(
