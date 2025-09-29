@@ -100,7 +100,7 @@ export default function useChat(): ChatContextType {
 
 		clearContent();
 		const parsedMetadata = JSON.parse(metadata);
-		parsedMetadata.graph_id = "deepagent";
+		parsedMetadata.graph_id = "react";
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
@@ -130,7 +130,8 @@ export default function useChat(): ChatContextType {
 
 		source.addEventListener("error", (e: any) => {
 			console.error("Error on stream:", e);
-			alert("Error on stream: " + JSON.parse(e.data).detail);
+			const error = JSON.parse(e.data);
+			alert(error.detail || error.error);
 			source.close();
 			setController(null);
 			setLoading(false);

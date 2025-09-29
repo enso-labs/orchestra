@@ -6,6 +6,9 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from src.utils.logger import logger
 from src.services.db import (
     get_checkpoint_db,
@@ -14,7 +17,7 @@ from src.services.db import (
 )
 
 from src.routes.v0 import (
-    tool,
+    # tool,
     llm,
     thread,
     info,
@@ -33,6 +36,7 @@ from src.constants import (
     APP_ENV,
 )
 from src.utils.migrations import run_migrations
+from src.utils.rate_limit import limiter
 
 from contextlib import asynccontextmanager
 
@@ -83,6 +87,8 @@ app = FastAPI(
     docs_url="/api",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.middleware("http")

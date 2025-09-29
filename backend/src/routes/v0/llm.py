@@ -28,9 +28,13 @@ from src.flows import construct_agent
 from src.services.thread import thread_service
 from src.services.checkpoint import checkpoint_service
 from src.services.db import get_store, get_checkpointer
+from src.utils.rate_limit import limiter
 
 
 llm_router = APIRouter(tags=["Graphs"], prefix="/llm")
+
+# TIME_LIMIT = "1/minute"
+TIME_LIMIT = "200/day"
 
 
 ################################################################################
@@ -41,7 +45,9 @@ llm_router = APIRouter(tags=["Graphs"], prefix="/llm")
     responses={status.HTTP_200_OK: MockResponse.INVOKE_RESPONSE},
     name="Invoke Graph",
 )
+@limiter.limit(TIME_LIMIT)
 async def llm_invoke(
+    request: Request,
     params: LLMRequest = Body(openapi_examples=Examples.LLM_INVOKE_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
 ) -> dict[str, Any] | Any:
@@ -64,7 +70,9 @@ async def llm_invoke(
     responses={status.HTTP_200_OK: MockResponse.STREAM_RESPONSE},
     name="Stream Graph",
 )
+@limiter.limit(TIME_LIMIT)
 async def llm_stream(
+    request: Request,
     params: LLMStreamRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
     store=Depends(get_store),
@@ -100,7 +108,8 @@ async def llm_stream(
                 # Yield error as SSE if streaming fails
                 logger.exception("Error in event_generator: %s", e)
                 error_msg = ujson.dumps(("error", str(e)))
-                yield f"data: {error_msg}\n\n"
+                raise HTTPException(status_code=500, detail=str(e))
+                # yield f"data: {error_msg}\n\n"
             finally:
                 # Update model info in checkpoint after streaming
                 await agent.add_model_to_ai_message(params.model)
@@ -120,7 +129,9 @@ async def llm_stream(
 ### Transcribe
 ################################################################################
 @llm_router.post("/transcribe")
+@limiter.limit(TIME_LIMIT)
 async def transcribe(
+    request: Request,
     file: UploadFile = File(...),
     model: str = Form("whisper-large-v3"),
     prompt: str = Form(None),
@@ -166,6 +177,7 @@ async def transcribe(
         }
     },
 )
+@limiter.limit(TIME_LIMIT)
 async def chat_completion(
     request: Request,
     body: Annotated[ChatInput, Body()],
