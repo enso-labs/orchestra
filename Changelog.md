@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/380-subagent-configure (2025-09-29)
   - feat/387-ip-rate-limit (2025-09-28)
   - feat/381-delete-agent (2025-09-28)
   - feat/375-interface-for-agent-config (2025-09-24)

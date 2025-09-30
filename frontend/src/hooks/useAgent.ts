@@ -2,24 +2,66 @@ import agentService, { Agent } from "@/lib/services/agentService";
 import { useEffect, useState } from "react";
 import ToolConfig from "@/lib/config/tool";
 
-export const INIT_AGENT_STATE = {
+export type AgentState = {
+	agent: Agent;
+	agents: Agent[];
+};
+
+export const INIT_AGENT_STATE: AgentState = {
 	agent: {
 		name: "",
 		description: "",
-		system: "You are a helpful assistant.",
+		prompt: "You are a helpful assistant.",
 		tools: [],
+		model: "",
 		mcp: {},
 		a2a: {},
+		subagents: [],
 	},
 	agents: [],
 };
 
 export function useAgent() {
-	const [agent, setAgent] = useState(INIT_AGENT_STATE.agent);
+	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
 	const [agents, setAgents] = useState<Agent[]>([]);
 
 	const setAgentSystemMessage = (system: string) => {
-		setAgent({ ...agent, system });
+		setAgent({ ...agent, prompt: system });
+	};
+
+	const addAgentToSubagents = (newAgent: Agent) => {
+		setAgent({ ...agent, subagents: [...(agent.subagents || []), newAgent] });
+	};
+
+	const removeAgentFromSubagents = (agentId: string) => {
+		setAgent({
+			...agent,
+			subagents: (agent.subagents || []).filter(
+				(subagent) => subagent.id !== agentId,
+			),
+		});
+	};
+
+	const toggleSubagent = (targetAgent: Agent) => {
+		const isSelected = (agent.subagents || []).some(
+			(subagent) => subagent.id === targetAgent.id,
+		);
+		if (isSelected) {
+			removeAgentFromSubagents(targetAgent.id!);
+		} else {
+			addAgentToSubagents(targetAgent);
+		}
+	};
+
+	const isAgentSelected = (agentId: string) => {
+		return (agent.subagents || []).some((subagent) => subagent.id === agentId);
+	};
+
+	const setAgentSubagents = (subagents: Agent[]) => {
+		setAgent({
+			...agent,
+			subagents: [...(agent.subagents || []), ...subagents],
+		});
 	};
 
 	const handleGetAgents = async () => {
@@ -84,6 +126,11 @@ export function useAgent() {
 		clearA2a,
 		loadMcpTemplate,
 		loadA2aTemplate,
+		setAgentSubagents,
+		addAgentToSubagents,
+		removeAgentFromSubagents,
+		toggleSubagent,
+		isAgentSelected,
 	};
 }
 

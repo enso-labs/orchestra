@@ -4,6 +4,7 @@ import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
 import { SSE } from "sse.js";
+import { Agent } from "./agentService";
 
 const SYSTEM_PROMPT = `GOAL:
 Generate a system prompt for an AI Agent.
@@ -93,6 +94,7 @@ interface StreamThreadPayload {
 	a2a?: object;
 	mcp?: object;
 	tools?: string[];
+	subagents?: Agent[];
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
