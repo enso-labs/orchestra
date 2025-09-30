@@ -1,6 +1,6 @@
 from typing import Optional
 from src.utils.format import slugify
-from pydantic import BaseModel, computed_field, field_serializer
+from pydantic import BaseModel, computed_field, field_serializer, Field
 from datetime import datetime
 
 
@@ -15,12 +15,13 @@ class AssistantSearch(BaseModel):
 class Assistant(BaseModel):
     id: Optional[str] = None
     name: str
-    description: str
-    model: str
-    prompt: str
+    description: str = Field(default="Helpful AI Assistant.")
+    model: Optional[str] = None
+    prompt: str = Field(default="You are a helpful assistant.")
     tools: list[str]
-    mcp: dict = {}
-    a2a: dict = {}
+    subagents: Optional[list["Assistant"]] = []
+    mcp: Optional[dict] = {}
+    a2a: Optional[dict] = {}
     metadata: dict = {}
     updated_at: Optional[str] = None
     created_at: Optional[str] = None

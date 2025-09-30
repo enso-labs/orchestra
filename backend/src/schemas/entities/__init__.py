@@ -14,6 +14,7 @@ from langgraph.types import StreamMode
 from uuid import uuid4
 from langchain_core.tools import BaseTool
 
+from src.schemas.models.assistant import Assistant
 from src.schemas.entities.a2a import A2AServer, A2AServers
 from src.constants.llm import ModelName
 from src.constants.examples import (
@@ -205,12 +206,14 @@ class ThreadSearch(BaseModel):
     )
 
 
-class SubAgent(BaseModel):
-    name: str
-    description: str = Field(default="Helpful AI Assistant.")
-    prompt: str = Field(default="You are a helpful assistant.")
-    model: Optional[str] = Field(default=None)
-    tools: Optional[List[str]] = Field(default_factory=list)
+# class SubAgent(BaseModel):
+#     name: str
+#     description: str = Field(default="Helpful AI Assistant.")
+#     prompt: str = Field(default="You are a helpful assistant.")
+#     model: Optional[str] = Field(default=None)
+#     tools: Optional[List[str]] = Field(default_factory=list)
+#     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
+#     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
 
 
 class LLMRequest(BaseModel):
@@ -219,7 +222,7 @@ class LLMRequest(BaseModel):
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
-    subagents: Optional[List[SubAgent]] = Field(default_factory=list)
+    subagents: Optional[List[Assistant]] = Field(default_factory=list)
 
     metadata: Optional[Config] = Field(
         default={}, description="LangGraph configuration"

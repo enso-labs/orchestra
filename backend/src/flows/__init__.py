@@ -113,15 +113,16 @@ async def init_subagents(params: LLMRequest | LLMStreamRequest) -> list[SubAgent
     result = []
     for subagent in params.subagents:
         subagent_dict = {
-            "name": subagent.name,
+            "name": subagent.slug,
             "description": subagent.description,
             "prompt": subagent.prompt,
             "tools": await init_tools(
-                subagent.tools, params.a2a, params.mcp, params.metadata.thread_id
+                subagent.tools, subagent.a2a, subagent.mcp, params.metadata.thread_id
             ),
         }
-        if getattr(subagent, "model", None) is not None:
-            subagent_dict["model"] = subagent.model
+
+        # if getattr(subagent, "model", None) is not None:
+        #     subagent_dict["model"] = subagent.model
         result.append(subagent_dict)
     return result
 
