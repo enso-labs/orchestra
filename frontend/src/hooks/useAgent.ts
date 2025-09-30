@@ -7,7 +7,7 @@ export const INIT_AGENT_STATE = {
 		name: "",
 		description: "",
 		system: "You are a helpful assistant.",
-		tools: ["get_weather", "get_stock_price"],
+		tools: [],
 		mcp: {},
 		a2a: {},
 		subagents: [
