@@ -1,4 +1,4 @@
-from typing import Type, Literal, Any, AsyncGenerator
+from typing import Type, Literal, Any, AsyncGenerator, Optional
 
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -72,7 +72,9 @@ def graph_builder(
         deep_agent = create_deep_agent(
             model=model,
             tools=tools,
-            subagents=subagents,
+            subagents=[
+                subagent.model_dump(exclude_none=True) for subagent in subagents
+            ],
             instructions=prompt,
             checkpointer=checkpointer,
         )
@@ -81,15 +83,41 @@ def graph_builder(
         return deep_agent
 
 
-async def init_tools(params: LLMRequest | LLMStreamRequest):
-    tools = default_tools(params.tools)
-    a2a = A2AServers(a2a=params.a2a)
-    if a2a.validate():
-        tools = tools + a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
-    if params.mcp:
-        mcp_client = MultiServerMCPClient(params.mcp)
+# async def init_tools(params: LLMRequest | LLMStreamRequest):
+#     tools = default_tools(params.tools)
+#     a2a = A2AServers(a2a=params.a2a)
+#     if a2a.validate():
+#         tools = tools + a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
+#     if params.mcp:
+#         mcp_client = MultiServerMCPClient(params.mcp)
+#         tools = tools + await mcp_client.get_tools()
+#     return tools
+
+
+async def init_tools(
+    tools: list[BaseTool],
+    a2a: A2AServers,
+    mcp: dict = None,
+    thread_id: str = None,
+) -> list[BaseTool]:
+    """Initialize tools for a subagent."""
+    tools = default_tools(tools)
+    a2a = A2AServers(a2a=a2a)
+    if a2a.validate() and thread_id:
+        tools = tools + a2a.fetch_agent_cards_as_tools(thread_id)
+    if mcp:
+        mcp_client = MultiServerMCPClient(mcp)
         tools = tools + await mcp_client.get_tools()
     return tools
+
+
+async def init_subagents(
+    subagents: list[SubAgent], a2a: A2AServers, mcp: dict = None, thread_id: str = None
+) -> list[SubAgent]:
+    for subagent in subagents:
+        tools = await init_tools(subagent.tools, a2a, mcp, thread_id)
+        subagent.tools = tools
+    return subagents
 
 
 async def init_memories(params: LLMRequest | LLMStreamRequest, tools: list[BaseTool]):
@@ -120,7 +148,12 @@ async def construct_agent(
         # Add config if it exists
         config = init_config(params)
         # Initialize tools
-        tools = await init_tools(params)
+        tools = await init_tools(
+            tools=params.tools,
+            a2a=params.a2a,
+            mcp=params.mcp,
+            thread_id=params.metadata.thread_id,
+        )
         prompt = params.system
         if config:
             tools, prompt = await init_memories(params, tools)
@@ -135,6 +168,7 @@ async def construct_agent(
             config=config,
             model=params.model,
             tools=tools,
+            subagents=params.subagents,
             context_schema=ContextSchema,
             prompt=prompt,
             checkpointer=checkpointer,
@@ -150,6 +184,7 @@ class Orchestra:
     def __init__(
         self,
         tools: list[BaseTool],
+        subagents: Optional[list[SubAgent]] = None,
         model: str = "openai:gpt-5-nano",
         prompt: str = "You are a helpful assistant.",
         config: RunnableConfig = None,
@@ -165,8 +200,10 @@ class Orchestra:
         self.context_schema = context_schema
         self.store = store
         self.checkpointer = checkpointer
+        self.subagents = subagents
         self.graph = graph_builder(
             tools=self.tools,
+            subagents=self.subagents,
             model=self.model,
             prompt=self.prompt,
             context_schema=self.context_schema,

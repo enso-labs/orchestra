@@ -7,9 +7,25 @@ export const INIT_AGENT_STATE = {
 		name: "",
 		description: "",
 		system: "You are a helpful assistant.",
-		tools: [],
+		tools: ["get_weather", "get_stock_price"],
 		mcp: {},
 		a2a: {},
+		subagents: [
+			{
+				name: "weather_agent",
+				// model: "openai:gpt-5-nano",
+				description: "You are a weather agent, that speaks like a parrot.",
+				tools: ["get_weather"],
+				prompt: "You are a weather agent, that speaks like a parrot.",
+			},
+			{
+				name: "stock_agent",
+				// model: "openai:gpt-5-nano",
+				description: "You are a stock agent, that speaks like a pirate.",
+				tools: ["get_stock_price"],
+				prompt: "You are a stock agent, that speaks like a pirate.",
+			},
+		],
 	},
 	agents: [],
 };

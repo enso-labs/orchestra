@@ -9,19 +9,22 @@ from src.tools.search import web_search, web_scrape
 from src.tools.a2a import init_a2a_tools
 from src.tools.arcade import init_arcade_tools
 from src.tools.api import generate_tools_from_openapi_json
-from src.tools.test import TEST_TOOLS
+from src.tools.test import TEST_TOOLS, get_stock_price, get_weather, human_assistance
 
 TOOL_LIBRARY = [
     web_search,
     web_scrape,
+    get_stock_price,
+    get_weather,
+    human_assistance,
 ]
 
 
 def default_tools(tools: list[str]) -> list[BaseTool]:
     if not tools:
-        return [] + TEST_TOOLS
+        return []
     default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
-    return default_tools + TEST_TOOLS
+    return default_tools
 
 
 def attach_tool_details(tool):

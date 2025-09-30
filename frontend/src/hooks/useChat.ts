@@ -100,7 +100,7 @@ export default function useChat(): ChatContextType {
 
 		clearContent();
 		const parsedMetadata = JSON.parse(metadata);
-		parsedMetadata.graph_id = "react";
+		parsedMetadata.graph_id = "deepagent";
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
@@ -112,6 +112,7 @@ export default function useChat(): ChatContextType {
 			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,
+			subagents: agent.subagents,
 		});
 
 		source.addEventListener("message", function (e: any) {

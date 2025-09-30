@@ -205,12 +205,21 @@ class ThreadSearch(BaseModel):
     )
 
 
+class SubAgent(BaseModel):
+    name: str
+    description: str = Field(default="Helpful AI Assistant.")
+    prompt: str = Field(default="You are a helpful assistant.")
+    model: Optional[str] = Field(default=None)
+    tools: Optional[List[str]] = Field(default_factory=list)
+
+
 class LLMRequest(BaseModel):
     model: str = "openai:gpt-5-nano"
     system: str = "You are a helpful assistant."
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
+    subagents: Optional[List[SubAgent]] = Field(default_factory=list)
 
     metadata: Optional[Config] = Field(
         default={}, description="LangGraph configuration"
