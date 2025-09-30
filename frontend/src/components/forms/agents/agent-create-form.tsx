@@ -11,6 +11,9 @@ import {
 	ToggleRight,
 	Pencil,
 	Trash2,
+	Users,
+	Check,
+	X,
 } from "lucide-react";
 
 import {
@@ -69,6 +72,8 @@ export function AgentCreateForm() {
 		loadA2aTemplate,
 		clearMcp,
 		clearA2a,
+		toggleSubagent,
+		isAgentSelected,
 	} = useAgentContext();
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 	const [fullscreenSystemMessage, setFullscreenSystemMessage] = useState("");
@@ -93,6 +98,7 @@ export function AgentCreateForm() {
 			mcp: agent.mcp,
 			a2a: agent.a2a,
 			tools: agent.tools,
+			subagents: agent.subagents,
 		};
 		if (!agent.id) {
 			console.log("Saving agent configuration:", configData);
@@ -416,7 +422,114 @@ export function AgentCreateForm() {
 					</Accordion>
 				</div>
 
-				{/* <Button type="submit">Submit</Button> */}
+				<div className="border border-border rounded-lg p-6">
+					<div className="flex items-center gap-3 mb-6">
+						<Users className="h-5 w-5 text-foreground" />
+						<div>
+							<h2 className="text-lg font-semibold text-foreground">
+								SubAgents
+							</h2>
+							<p className="text-sm text-muted-foreground">
+								Select agents to work as subagents for this agent
+							</p>
+						</div>
+					</div>
+
+					{/* Selected Subagents */}
+					{agent.subagents && agent.subagents.length > 0 && (
+						<div className="mb-6">
+							<h3 className="text-sm font-medium text-foreground mb-3">
+								Selected Subagents ({agent.subagents.length})
+							</h3>
+							<div className="flex flex-wrap gap-2">
+								{agent.subagents.map((subagent: Agent) => (
+									<div
+										key={subagent.id}
+										className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-sm"
+									>
+										<span className="text-foreground">{subagent.name}</span>
+										<button
+											type="button"
+											onClick={() => toggleSubagent(subagent)}
+											className="text-muted-foreground hover:text-foreground transition-colors"
+											aria-label={`Remove ${subagent.name}`}
+										>
+											<X className="h-3 w-3" />
+										</button>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+
+					<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+						{agents.map((ag: Agent) => {
+							const isSelected = isAgentSelected(ag.id!);
+							return (
+								<div
+									key={ag.id}
+									className={`border rounded-lg p-4 cursor-pointer hover:shadow-md transition-all relative ${
+										isSelected
+											? "border-primary bg-primary/10 hover:bg-primary/15"
+											: "bg-muted/50 hover:bg-muted"
+									}`}
+									onClick={() => toggleSubagent(ag)}
+									tabIndex={0}
+									role="button"
+									aria-pressed={isSelected}
+								>
+									{/* Selection indicator */}
+									<div
+										className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+											isSelected
+												? "bg-primary text-primary-foreground"
+												: "bg-muted border border-border"
+										}`}
+									>
+										{isSelected ? (
+											<Check className="h-3 w-3" />
+										) : (
+											<div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+										)}
+									</div>
+
+									<div className="flex items-start justify-between mb-2 pr-8">
+										<h3 className="text-base font-semibold text-foreground line-clamp-1">
+											{ag.name}
+										</h3>
+									</div>
+
+									{ag.tools && ag.tools.length > 0 && (
+										<div className="flex flex-wrap gap-1 mb-2">
+											{ag.tools.slice(0, 2).map((tool) => (
+												<span
+													key={tool}
+													className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground"
+												>
+													{tool}
+												</span>
+											))}
+											{ag.tools.length > 2 && (
+												<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
+													+{ag.tools.length - 2} more
+												</span>
+											)}
+										</div>
+									)}
+
+									<p className="text-sm text-muted-foreground mb-1 line-clamp-2">
+										{ag.description}
+									</p>
+									{ag.prompt && (
+										<p className="text-xs text-foreground/80 mb-1 line-clamp-2 italic">
+											{ag.prompt}
+										</p>
+									)}
+								</div>
+							);
+						})}
+					</div>
+				</div>
 			</form>
 
 			{/* Fullscreen System Message Dialog */}

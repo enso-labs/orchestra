@@ -16,11 +16,13 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
 
 function AgentCreatePage() {
-	const { agent, setAgent } = useAgentContext();
+	const { agent, setAgent, useEffectGetAgents } = useAgentContext();
 	const { threads, useListThreadsEffect, messages } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
 	const [, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
+
+	useEffectGetAgents();
 
 	const handleTabChange = (value: string) => {
 		setActiveTab(value);

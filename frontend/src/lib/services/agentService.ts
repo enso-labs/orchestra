@@ -7,6 +7,7 @@ export type Agent = {
 	model: string;
 	prompt: string;
 	tools: string[];
+	subagents?: Agent[];
 	mcp?: object;
 	a2a?: object;
 	metadata?: object;
