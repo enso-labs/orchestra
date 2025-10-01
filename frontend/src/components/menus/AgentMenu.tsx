@@ -170,11 +170,11 @@ function AgentMenuMobile({
 				<div className="flex items-center gap-2 flex-1 min-w-0">
 					<Bot className="h-4 w-4 opacity-50 flex-shrink-0" />
 					<span className="truncate">
-						{agent ? agent.name : "Search agents..."}
+						{agent.id ? agent.name : "Search agents..."}
 					</span>
 				</div>
 				<div className="flex items-center gap-1 flex-shrink-0">
-					{agent && (
+					{agent.id && (
 						<button
 							onClick={handleClearSelection}
 							className="rounded-full p-1 hover:bg-accent hover:text-accent-foreground transition-colors"
