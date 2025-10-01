@@ -39,3 +39,5 @@ export function ColorModeButton() {
 		</DropdownMenu>
 	);
 }
+
+export default ColorModeButton;

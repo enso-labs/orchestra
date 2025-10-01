@@ -1,6 +1,7 @@
 import useAppHook from "@/hooks/useAppHook";
 import { Link, useLocation } from "react-router-dom";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
+import SelectModel from "@/components/lists/SelectModel";
 
 export default function NoAuthLayout({
 	children,
@@ -27,6 +28,7 @@ export default function NoAuthLayout({
 				)}
 				<div className="absolute top-4 right-4">
 					<div className="flex flex-row gap-2 items-center">
+						<SelectModel />
 						<div className="flex-shrink-0">
 							<ColorModeButton />
 						</div>

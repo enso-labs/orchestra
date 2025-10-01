@@ -104,11 +104,10 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
-			system: constructSystemPrompt(agent.system),
+			system: constructSystemPrompt(agent.prompt),
 			messages: formatedMessages,
 			model: agent.model,
 			metadata: parsedMetadata,
-			stream_mode: "messages",
 			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,

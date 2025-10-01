@@ -75,7 +75,7 @@ export default function Login() {
 						aria-label="Go to Home"
 					>
 						<HouseIcon />
-						Home
+						<span className="ml-2">Home</span>
 					</button>
 				</div>
 				<div className="absolute top-4 right-4">
@@ -191,9 +191,10 @@ export default function Login() {
 						<div className="flex gap-4 justify-center">
 							<button
 								type="button"
+								disabled={true}
 								// onClick={() => handleOAuthLogin('google')
 								onClick={() => alert("Coming soon!")}
-								className="flex items-center justify-center w-full p-2 border border-input rounded-md hover:bg-accent transition-colors"
+								className="flex items-center justify-center w-full p-2 border border-input rounded-md hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 								aria-label="Sign in with Google"
 							>
 								<SiGoogle className="h-5 w-5" />
@@ -211,7 +212,7 @@ export default function Login() {
 								disabled={true}
 								// onClick={() => handleOAuthLogin('azure')}
 								onClick={() => alert("Coming soon!")}
-								className="flex items-center justify-center w-full p-2 border border-input rounded-md hover:bg-accent transition-colors"
+								className="flex items-center justify-center w-full p-2 border border-input rounded-md hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 								aria-label="Sign in with Microsoft"
 							>
 								<FaMicrosoft className="h-5 w-5" />
