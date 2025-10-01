@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2
 
 ### Fixed
+  - bug/392-new-chat-buttons-no-auth (2025-09-30)
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed

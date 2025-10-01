@@ -33,6 +33,22 @@ class ModelName(str, Enum):
     GEMINI_PRO_2 = "google_genai:gemini-2-pro"
 
 
+class ChatModels(str, Enum):
+    OPENAI_GPT_5_NANO = "openai:gpt-5-nano"
+    OPENAI_GPT_5_MINI = "openai:gpt-5-mini"
+    OPENAI_GPT_5 = "openai:gpt-5"
+    ANTHROPIC_CLAUDE_4_SONNET = "anthropic:claude-sonnet-4-20250514"
+    ANTHROPIC_CLAUDE_4_OPUS = "anthropic:claude-opus-4-20250514"
+    XAI_GROK_4 = "xai:grok-4"
+    XAI_GROK_CODE_FAST_1 = "xai:grok-code-fast-1"
+    GOOGLE_GEMINI_2_5_FLASH_LITE = "google_genai:gemini-2.5-flash-lite"
+    GOOGLE_GEMINI_2_5_FLASH = "google_genai:gemini-2.5-flash"
+    GOOGLE_GEMINI_2_5_PRO = "google_genai:gemini-2.5-pro"
+    GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b"
+    GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
+    OLLAMA_QWEN3 = "ollama:qwen3"
+
+
 MODEL_CONFIG = [
     {
         "id": ModelName.OPENAI_GPT_4O,

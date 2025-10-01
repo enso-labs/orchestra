@@ -84,7 +84,9 @@ async def llm_stream(
     try:
 
         async def event_generator():
-            thread_service.store = store
+            ## Keeps in memory if not auth user
+            if user:
+                thread_service.store = store
             checkpoint_service.checkpointer = checkpointer
             agent = await construct_agent(params, checkpointer, store)
             checkpoint_service.graph = agent.graph
@@ -107,8 +109,8 @@ async def llm_stream(
             except Exception as e:
                 # Yield error as SSE if streaming fails
                 logger.exception("Error in event_generator: %s", e)
-                error_msg = ujson.dumps(("error", str(e)))
                 raise HTTPException(status_code=500, detail=str(e))
+                # error_msg = ujson.dumps(("error", str(e)))
                 # yield f"data: {error_msg}\n\n"
             finally:
                 # Update model info in checkpoint after streaming

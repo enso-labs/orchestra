@@ -90,7 +90,6 @@ interface StreamThreadPayload {
 	messages: { role: string; content: MessageContent; [key: string]: any }[];
 	model: string;
 	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
-	stream_mode: string;
 	a2a?: object;
 	mcp?: object;
 	tools?: string[];

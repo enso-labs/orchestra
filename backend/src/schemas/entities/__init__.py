@@ -16,7 +16,7 @@ from langchain_core.tools import BaseTool
 
 from src.schemas.models.assistant import Assistant
 from src.schemas.entities.a2a import A2AServer, A2AServers
-from src.constants.llm import ModelName
+from src.constants.llm import ChatModels, ModelName
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     NEW_THREAD_API_TOOLS,
@@ -217,7 +217,7 @@ class ThreadSearch(BaseModel):
 
 
 class LLMRequest(BaseModel):
-    model: str = "openai:gpt-5-nano"
+    model: ChatModels = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
     system: str = "You are a helpful assistant."
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)

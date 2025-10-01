@@ -8,9 +8,10 @@ import { Agent } from "@/lib/services/agentService";
 interface ChatPanelProps {
 	agent?: Agent;
 	showAgentMenu: boolean;
+	chatNav?: React.ReactNode | undefined;
 }
 
-function ChatPanel({ agent }: ChatPanelProps) {
+function ChatPanel({ agent, chatNav }: ChatPanelProps) {
 	const { messages } = useChatContext();
 
 	if (agent && messages.length === 0) {
@@ -31,6 +32,7 @@ function ChatPanel({ agent }: ChatPanelProps) {
 			`}
 		>
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+				{chatNav}
 				<div className="flex-1 min-h-0">
 					<ChatMessages messages={messages} />
 				</div>

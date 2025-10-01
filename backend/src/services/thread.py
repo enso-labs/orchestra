@@ -2,13 +2,14 @@ from typing import Any
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 from src.utils.logger import logger
+from src.constants import TEST_USER_ID
 
 IN_MEMORY_STORE = InMemoryStore()
 
 
 class ThreadService:
     def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
-        self.user_id = user_id
+        self.user_id = user_id or TEST_USER_ID
         self.store: BaseStore = store
 
     async def update(self, thread_id: str, data: dict):
