@@ -39,13 +39,13 @@ class ChatModels(str, Enum):
         OPENAI_GPT_5_NANO = "openai:gpt-5-nano"
         OPENAI_GPT_5_MINI = "openai:gpt-5-mini"
         OPENAI_GPT_5 = "openai:gpt-5"
-        OPENAI_GPT_5_CODEX = "openai:gpt-5-codex"
+        # OPENAI_GPT_5_CODEX = "openai:gpt-5-codex"
     if ANTHROPIC_API_KEY:
         ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic:claude-3-7-sonnet-20250219"
         ANTHROPIC_CLAUDE_4_SONNET = "anthropic:claude-sonnet-4-20250514"
         ANTHROPIC_CLAUDE_4_OPUS = "anthropic:claude-opus-4-20250514"
-        ANTHROPIC_CLAUDE_4_1_OPUS = "anthropic:claude-opus-4-1-20250805"
-        ANTHROPIC_CLAUDE_4_5_SONNET = "anthropic:claude-sonnet-4-5-20250929"
+        # ANTHROPIC_CLAUDE_4_1_OPUS = "anthropic:claude-opus-4-1-20250805"
+        # ANTHROPIC_CLAUDE_4_5_SONNET = "anthropic:claude-sonnet-4-5-20250929"
     if GOOGLE_API_KEY:
         XAI_GROK_4 = "xai:grok-4"
         XAI_GROK_4_FAST = "xai:grok-4-fast"
