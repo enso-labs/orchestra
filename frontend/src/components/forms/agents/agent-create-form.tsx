@@ -385,9 +385,14 @@ export function AgentCreateForm() {
 									</div>
 									<MonacoEditor
 										value={JSON.stringify(agent.mcp, null, 2)}
-										handleChange={(val) =>
-											setAgent({ ...agent, mcp: JSON.parse(val) })
-										}
+										handleChange={(val) => {
+											try {
+												setAgent({ ...agent, mcp: JSON.parse(val) });
+											} catch (e) {
+												// Keep the raw value in case user is still editing
+												// The MonacoEditor will show the error
+											}
+										}}
 									/>
 								</div>
 							</AccordionContent>
