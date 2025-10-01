@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 from src.services.db import get_db_base
 
 Base = get_db_base()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
 
 class ProtectedUser(BaseModel):
@@ -53,7 +53,24 @@ class User(Base):
 
     @staticmethod
     def get_password_hash(password: str) -> str:
+        # Always hash with the default scheme, which is argon2 if set in CryptContext
         return pwd_context.hash(password)
+
+    @staticmethod
+    def verify_and_upgrade_password(
+        plain_password: str, stored_hash: str
+    ) -> tuple[bool, str | None]:
+        """
+        Returns (ok, new_hash_or_None).
+        If ok and the stored hash is deprecated/old, returns an upgraded hash using Argon2.
+        """
+        ok = pwd_context.verify(plain_password, stored_hash)
+        if not ok:
+            return False, None
+        if pwd_context.needs_update(stored_hash):
+            # Rehash using the default, which will be Argon2
+            return True, pwd_context.hash(plain_password)
+        return True, None
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:

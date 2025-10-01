@@ -119,7 +119,9 @@ async def login(
                 headers={"WWW-Authenticate": "Basic"},
             )
 
-        if not User.verify_password(credentials.password, user.hashed_password):
+        if not User.verify_and_upgrade_password(
+            credentials.password, user.hashed_password
+        ):
             logger.warning(f"Incorrect password for user: {credentials.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
