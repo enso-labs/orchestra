@@ -72,7 +72,7 @@ const AppRoutes: React.FC = () => {
 						}
 					/>
 					<Route
-						path="/agents/:id"
+						path="/agents/:agentId"
 						element={
 							<PrivateRoute>
 								<AgentEditPage />

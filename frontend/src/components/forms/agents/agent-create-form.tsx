@@ -46,6 +46,7 @@ import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
 import { useNavigate } from "react-router-dom";
 import { base64Compare } from "@/lib/utils/format";
+import { useParams } from "react-router-dom";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -64,6 +65,7 @@ const formSchema = z.object({
 
 export function AgentCreateForm() {
 	const navigate = useNavigate();
+	const { agentId } = useParams();
 	const {
 		agent,
 		agents,
@@ -197,6 +199,8 @@ export function AgentCreateForm() {
 		delete agent.system;
 		return !base64Compare(JSON.stringify(prevAssistant), JSON.stringify(agent));
 	}, [agents, agent]);
+
+	const filteredSubagents = agents.filter((a: Agent) => a.id !== agentId);
 
 	return (
 		<Form {...form}>
@@ -463,7 +467,7 @@ export function AgentCreateForm() {
 					)}
 
 					<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-						{agents.map((ag: Agent) => {
+						{filteredSubagents.map((ag: Agent) => {
 							const isSelected = isAgentSelected(ag.id!);
 							return (
 								<div

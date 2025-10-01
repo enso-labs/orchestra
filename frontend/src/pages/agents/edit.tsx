@@ -16,10 +16,10 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
 
 function AgentEditPage() {
-	const { id } = useParams();
+	const { agentId } = useParams();
 	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
 		useAgentContext();
-	useEffectGetAgent(id);
+	useEffectGetAgent(agentId);
 	useEffectGetAgents();
 
 	const { threads, useListThreadsEffect, messages } = useChatContext();
