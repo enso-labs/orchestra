@@ -14,7 +14,7 @@ from fastapi import (
 )
 from langchain.chat_models import init_chat_model
 
-from src.constants import APP_LOG_LEVEL
+from src.constants import APP_LOG_LEVEL, GROQ_API_KEY
 from src.schemas.models import ProtectedUser
 from src.schemas.entities import Answer, ChatInput
 from src.utils.auth import get_optional_user
@@ -152,6 +152,8 @@ async def transcribe(
     temperature: float = Form(None),
     timeout: float = Form(None),
 ):
+    if not GROQ_API_KEY:
+        raise HTTPException(status_code=400, detail="GROQ API key not found")
     try:
         audio_bytes = await file.read()
         transcript = audio_to_text(
