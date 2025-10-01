@@ -75,7 +75,7 @@ export default function Login() {
 						aria-label="Go to Home"
 					>
 						<HouseIcon />
-						Home
+						<span className="ml-2">Home</span>
 					</button>
 				</div>
 				<div className="absolute top-4 right-4">
