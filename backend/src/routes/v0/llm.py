@@ -29,12 +29,22 @@ from src.services.thread import thread_service
 from src.services.checkpoint import checkpoint_service
 from src.services.db import get_store, get_checkpointer
 from src.utils.rate_limit import limiter
+from src.constants.llm import ChatModels
 
 
-llm_router = APIRouter(tags=["Graphs"], prefix="/llm")
+llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
 # TIME_LIMIT = "1/minute"
 TIME_LIMIT = "200/day"
+
+
+@llm_router.get(
+    "/models",
+    name="List Models",
+)
+async def list_models():
+    chat_models = sorted({model.value for model in ChatModels})
+    return JSONResponse(content={"models": chat_models}, status_code=200)
 
 
 ################################################################################

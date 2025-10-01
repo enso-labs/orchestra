@@ -16,10 +16,10 @@ export interface Model {
 }
 
 export interface ModelsResponse {
-	models: Model[];
+	models: string[];
 }
 
 export const listModels = async () => {
-	const response = await apiClient.get<ModelsResponse>("/models");
-	return response.data;
+	const response = await apiClient.get<ModelsResponse>("/llm/models");
+	return response;
 };
