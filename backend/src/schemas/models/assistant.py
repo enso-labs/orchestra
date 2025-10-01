@@ -23,8 +23,8 @@ class Assistant(BaseModel):
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
     metadata: dict = {}
-    updated_at: Optional[str] = None
-    created_at: Optional[str] = None
+    updated_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
 
     @computed_field
     @property

@@ -76,7 +76,7 @@ async def update_assistant(
     try:
         assistant_service.store = store
         assistant_service.user_id = user.id
-        assistant = await assistant_service.update(assistant_id, assistant.model_dump())
+        await assistant_service.update(assistant_id, assistant.model_dump())
         return {"assistant_id": assistant_id}
 
     except HTTPException as e:
