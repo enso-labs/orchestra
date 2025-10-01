@@ -11,6 +11,9 @@ import XAIIcon from "../icons/XAIIcon";
 import { useModel } from "@/hooks/useModel";
 import { StringParam, useQueryParam } from "use-query-params";
 
+// Import getAuthToken from your auth utility
+import { getAuthToken } from "@/lib/utils/auth";
+
 export class ChatModels {
 	public static readonly OPENAI_GPT_5_NANO = "openai:gpt-5-nano";
 	public static readonly OPENAI_GPT_5_MINI = "openai:gpt-5-mini";
@@ -73,20 +76,31 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 
 	const modelValues = Object.values(ChatModels).sort();
 
+	const authToken = getAuthToken?.();
+
+	const allowedModelsIfNoAuth = [
+		ChatModels.OPENAI_GPT_5_NANO,
+		ChatModels.GOOGLE_GEMINI_2_5_FLASH_LITE,
+	];
+
 	return (
 		<Select value={model} onValueChange={handleModelChange}>
 			<SelectTrigger>
 				<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
 			<SelectContent>
-				{modelValues.map((modelValue) => (
-					<SelectItem key={modelValue} value={modelValue}>
-						<div className="flex items-center gap-2">
-							{getModelIcon(modelValue)}
-							{getModelLabel(modelValue)}
-						</div>
-					</SelectItem>
-				))}
+				{modelValues.map((modelValue) => {
+					const disabled =
+						!authToken && !allowedModelsIfNoAuth.includes(modelValue as string);
+					return (
+						<SelectItem key={modelValue} value={modelValue} disabled={disabled}>
+							<div className="flex items-center gap-2">
+								{getModelIcon(modelValue)}
+								{getModelLabel(modelValue)}
+							</div>
+						</SelectItem>
+					);
+				})}
 			</SelectContent>
 		</Select>
 	);

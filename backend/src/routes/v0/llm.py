@@ -44,6 +44,7 @@ TIME_LIMIT = "200/day"
     "/invoke",
     responses={status.HTTP_200_OK: MockResponse.INVOKE_RESPONSE},
     name="Invoke Graph",
+    dependencies=[Depends(get_optional_user)],
 )
 @limiter.limit(TIME_LIMIT)
 async def llm_invoke(
