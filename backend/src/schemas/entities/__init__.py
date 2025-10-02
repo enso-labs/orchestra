@@ -187,11 +187,17 @@ class StreamContext(BaseModel):
 
 
 class Config(BaseModel):
+    user_id: Optional[str] = Field(
+        default=None, description="The user id", examples=[str(uuid4())]
+    )
     thread_id: Optional[str] = Field(
         default=None, description="The thread id", examples=[str(uuid4())]
     )
     checkpoint_id: Optional[str] = Field(
         default=None, description="The checkpoint id", examples=[str(uuid4())]
+    )
+    assistant_id: Optional[str] = Field(
+        default=None, description="The assistant id", examples=[str(uuid4())]
     )
     graph_id: Optional[Literal["react", "deepagent"]] = Field(
         default=None, description="The graph id", examples=["react", "deepagent"]
@@ -201,19 +207,9 @@ class Config(BaseModel):
 class ThreadSearch(BaseModel):
     limit: int = Field(default=100, description="The limit of threads to search")
     offset: int = Field(default=0, description="The offset of threads to search")
-    metadata: Optional[dict] = Field(
-        default=None, description="The metadata of threads to search"
+    filter: Optional[Config] = Field(
+        default_factory=Config, description="The filter of threads to search"
     )
-
-
-# class SubAgent(BaseModel):
-#     name: str
-#     description: str = Field(default="Helpful AI Assistant.")
-#     prompt: str = Field(default="You are a helpful assistant.")
-#     model: Optional[str] = Field(default=None)
-#     tools: Optional[List[str]] = Field(default_factory=list)
-#     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
-#     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
 
 
 class LLMRequest(BaseModel):

@@ -304,8 +304,24 @@ A2A_GET_AGENT_CARD_EXAMPLE = {
     ]
 }
 
+LOGIN_RESPONSE_EXAMPLE = Example(
+    summary="login_response",
+    description="Login Response",
+    value={
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "token_type": "bearer",
+        "user": {
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "username": "johndoe",
+            "email": "john@example.com",
+            "name": "John Doe",
+        },
+    },
+)
+
 
 class Examples:
+    LOGIN_RESPONSE_EXAMPLE = LOGIN_RESPONSE_EXAMPLE
     NEW_THREAD_QUERY_EXAMPLE = NEW_THREAD_QUERY_EXAMPLE
     NEW_THREAD_ANSWER_EXAMPLE = NEW_THREAD_ANSWER_EXAMPLE
     EXISTING_THREAD_QUERY_EXAMPLE = EXISTING_THREAD_QUERY_EXAMPLE

@@ -101,6 +101,8 @@ async def llm_stream(
             ## Keeps in memory if not auth user
             if user:
                 thread_service.store = store
+                thread_service.user_id = user.id
+                params.metadata.user_id = user.id
             checkpoint_service.checkpointer = checkpointer
             agent = await construct_agent(params, checkpointer, store)
             checkpoint_service.graph = agent.graph

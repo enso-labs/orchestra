@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import {
 	constructSystemPrompt,
@@ -41,6 +41,7 @@ export type ChatContextType = {
 	resetMetadata: () => void;
 	state: any[];
 	setState: (state: any[]) => void;
+	useEffectUpdateAssistantId: () => void;
 	// tools
 	arcade: {
 		tools: string[];
@@ -337,6 +338,21 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
+	const useEffectUpdateAssistantId = () => {
+		useEffect(() => {
+			setMetadata((prev) => ({
+				...prev,
+				assistant_id: agent.id,
+			}));
+			return () => {
+				setMetadata((prev) => ({
+					...prev,
+					assistant_id: undefined,
+				}));
+			};
+		}, [agent.id]);
+	};
+
 	return {
 		responseRef,
 		toolCallChunkRef,
@@ -366,5 +382,6 @@ export default function useChat(): ChatContextType {
 		// tools
 		arcade,
 		setArcade,
+		useEffectUpdateAssistantId,
 	};
 }

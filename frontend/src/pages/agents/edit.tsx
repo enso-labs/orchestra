@@ -22,16 +22,23 @@ function AgentEditPage() {
 	useEffectGetAgent(agentId);
 	useEffectGetAgents();
 
-	const { threads, useListThreadsEffect, messages } = useChatContext();
+	const {
+		threads,
+		useListThreadsEffect,
+		messages,
+		useEffectUpdateAssistantId,
+	} = useChatContext();
 	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
 	const [, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
+
+	useEffectUpdateAssistantId();
 
 	const handleTabChange = (value: string) => {
 		setActiveTab(value);
 	};
 
-	useListThreadsEffect();
+	useListThreadsEffect(null, { assistant_id: agentId });
 
 	useEffect(() => {
 		// Only clear search params if there are none on init

@@ -262,16 +262,20 @@ class Orchestra:
                 configurable = new_config.get("configurable")
                 thread_id = configurable.get("thread_id")
                 checkpoint_id = configurable.get("checkpoint_id")
+                assistant_id = final_state.metadata.get("assistant_id")
+                user_id = final_state.metadata.get("user_id")
 
                 # Update thread with new message and timestamp
+                thread_service.user_id = user_id
                 await thread_service.update(
-                    thread_id,
-                    {
+                    thread_id=thread_id,
+                    data={
                         "thread_id": thread_id,
                         "checkpoint_id": checkpoint_id,
                         "messages": [last_message.model_dump()],
                         "updated_at": get_time(),
                     },
+                    assistant_id=assistant_id,
                 )
 
                 # Log the update for debugging
