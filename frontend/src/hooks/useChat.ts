@@ -41,7 +41,7 @@ export type ChatContextType = {
 	resetMetadata: () => void;
 	state: any[];
 	setState: (state: any[]) => void;
-	updateAssistantId: () => void;
+	useEffectUpdateAssistantId: () => void;
 	// tools
 	arcade: {
 		tools: string[];
