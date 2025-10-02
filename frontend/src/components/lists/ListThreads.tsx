@@ -18,8 +18,6 @@ function ListThreads({ threads }: { threads: any[] }) {
 		return <div>No threads found</div>;
 	}
 
-	const metadataCopy = JSON.parse(metadata);
-
 	const handleDeleteClick = async (e: React.MouseEvent, threadId: string) => {
 		e.stopPropagation(); // Prevent thread selection when clicking delete
 
@@ -53,11 +51,11 @@ function ListThreads({ threads }: { threads: any[] }) {
 								DEFAULT_CHAT_MODEL,
 						);
 						setMessages(formatMessages(checkpoint[0].values.messages));
-						setMetadata(JSON.stringify(thread.value));
+						setMetadata(thread.value);
 						setIsDrawerOpen(false);
 					}}
 					className={`w-full text-left p-3 rounded-lg transition-colors border ${
-						metadataCopy.thread_id === thread.value.thread_id
+						metadata.thread_id === thread.value.thread_id
 							? "bg-accent border-accent"
 							: "hover:bg-accent/50 border-border"
 					}`}

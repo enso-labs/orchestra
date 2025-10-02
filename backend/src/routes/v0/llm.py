@@ -61,15 +61,18 @@ async def llm_invoke(
     request: Request,
     params: LLMRequest = Body(openapi_examples=Examples.LLM_INVOKE_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
+    store=Depends(get_store),
+    checkpointer=Depends(get_checkpointer),
 ) -> dict[str, Any] | Any:
-    # Construct the agent with the given parameters
-    agent = await construct_agent(params)
-    # Invoke the agent asynchronously with user context
+    if user:
+        thread_service.store = store
+    checkpoint_service.checkpointer = checkpointer
+    agent = await construct_agent(params, checkpointer, store)
+    checkpoint_service.graph = agent.graph
     response = await agent.ainvoke(
         {"messages": params.to_langchain_messages()},
         context={"user": user} if user else None,
     )
-    # Return the agent's response
     return response
 
 
@@ -84,7 +87,7 @@ async def llm_invoke(
 @limiter.limit(TIME_LIMIT)
 async def llm_stream(
     request: Request,
-    params: LLMStreamRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
+    params: LLMRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
     store=Depends(get_store),
     checkpointer=Depends(get_checkpointer),
@@ -120,9 +123,9 @@ async def llm_stream(
             except Exception as e:
                 # Yield error as SSE if streaming fails
                 logger.exception("Error in event_generator: %s", e)
-                raise HTTPException(status_code=500, detail=str(e))
-                # error_msg = ujson.dumps(("error", str(e)))
-                # yield f"data: {error_msg}\n\n"
+                # raise HTTPException(status_code=500, detail=str(e))
+                error_msg = ujson.dumps(("error", str(e)))
+                yield f"data: {error_msg}\n\n"
             finally:
                 # Update model info in checkpoint after streaming
                 await agent.add_model_to_ai_message(params.model)

@@ -29,8 +29,10 @@ export type ChatContextType = {
 	setMessages: (messages: any[]) => void;
 	controller: AbortController | null;
 	setController: (controller: AbortController | null) => void;
-	metadata: string;
-	setMetadata: (metadata: string) => void;
+	metadata: {
+		[key: string]: any;
+	};
+	setMetadata: (metadata: { [key: string]: any }) => void;
 	abortQuery: () => void;
 	deleteThread: (threadId: string) => void;
 	// NEW
@@ -61,11 +63,7 @@ export default function useChat(): ChatContextType {
 		in_mem_messages = [...newMessages];
 		setMessagesState(newMessages);
 	};
-	const [metadata, setMetadata] = useState(() => {
-		const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
-		const graphId = `deepagent`;
-		return JSON.stringify({ thread_id: threadId, graph_id: graphId }, null, 2);
-	});
+	const [metadata, setMetadata] = useState({});
 
 	const [controller, setController] = useState<AbortController | null>(null);
 
@@ -99,15 +97,13 @@ export default function useChat(): ChatContextType {
 		setMessages(updatedMessages);
 
 		clearContent();
-		const parsedMetadata = JSON.parse(metadata);
-		parsedMetadata.graph_id = "deepagent";
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
 			system: constructSystemPrompt(agent.prompt),
 			messages: formatedMessages,
 			model: agent.model,
-			metadata: parsedMetadata,
+			metadata: metadata,
 			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,
@@ -164,9 +160,11 @@ export default function useChat(): ChatContextType {
 	};
 
 	const resetMetadata = () => {
-		setMetadata(() => {
-			const threadId = `thread_${Math.random().toString(36).substring(2, 15)}`;
-			return JSON.stringify({ thread_id: threadId }, null, 2);
+		setMetadata({
+			graph_id: undefined,
+			thread_id: undefined,
+			assistant_id: undefined,
+			checkpoint_id: undefined,
 		});
 	};
 
@@ -196,6 +194,10 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
+			setMetadata((prev) => ({
+				...prev,
+				thread_id: responseMetadata.thread_id,
+			}));
 			const expectedContent =
 				typeof response.content === "string"
 					? response.content

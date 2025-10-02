@@ -188,7 +188,7 @@ class StreamContext(BaseModel):
 
 class Config(BaseModel):
     thread_id: Optional[str] = Field(
-        ..., description="The thread id", examples=[str(uuid4())]
+        default=None, description="The thread id", examples=[str(uuid4())]
     )
     checkpoint_id: Optional[str] = Field(
         default=None, description="The checkpoint id", examples=[str(uuid4())]
