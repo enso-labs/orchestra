@@ -86,6 +86,7 @@ app = FastAPI(
     debug=True,
     docs_url="/api",
     lifespan=lifespan,
+    swagger_ui_parameters={"docExpansion": "none"},
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -126,9 +127,8 @@ app.add_middleware(
 
 # Include routers
 PREFIX = "/api"
-app.include_router(auth, prefix=PREFIX)
 app.include_router(info, prefix=PREFIX)
-app.include_router(token, prefix=PREFIX)
+app.include_router(auth, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(assistant, prefix=PREFIX)

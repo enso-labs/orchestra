@@ -38,15 +38,6 @@ llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 TIME_LIMIT = "200/day"
 
 
-@llm_router.get(
-    "/models",
-    name="List Models",
-)
-async def list_models():
-    chat_models = sorted({model.value for model in ChatModels})
-    return JSONResponse(content={"models": chat_models}, status_code=200)
-
-
 ################################################################################
 ### Invoke Graph
 ################################################################################
@@ -183,50 +174,59 @@ async def transcribe(
 ################################################################################
 ### Chat Completion
 ################################################################################
-@llm_router.post(
-    "/chat",
-    name="Chat Completion",
-    responses={
-        status.HTTP_200_OK: {
-            "description": "Chat completion response.",
-            "content": {
-                "application/json": {
-                    "example": Answer.model_json_schema()["examples"]["new_thread"]
-                },
-            },
-        }
-    },
+# @llm_router.post(
+#     "/chat",
+#     name="Chat Completion",
+#     responses={
+#         status.HTTP_200_OK: {
+#             "description": "Chat completion response.",
+#             "content": {
+#                 "application/json": {
+#                     "example": Answer.model_json_schema()["examples"]["new_thread"]
+#                 },
+#             },
+#         }
+#     },
+# )
+# @limiter.limit(TIME_LIMIT)
+# async def chat_completion(
+#     request: Request,
+#     body: Annotated[ChatInput, Body()],
+#     user: ProtectedUser = Depends(get_optional_user),
+#     # db: AsyncSession = Depends(get_async_db)
+# ):
+#     try:
+#         model = body.model.split(":")
+#         provider = model[0]
+#         model_name = model[1]
+#         llm = init_chat_model(
+#             model=model_name,
+#             model_provider=provider,
+#             temperature=0.9,
+#             # max_tokens=1000,
+#             max_retries=3,
+#             # timeout=1000
+#         )
+#         response = await llm.ainvoke(
+#             [
+#                 {"role": "system", "content": body.system},
+#                 {"role": "user", "content": body.query},
+#             ]
+#         )
+#         return JSONResponse(
+#             content={"answer": response.model_dump()},
+#             media_type="application/json",
+#             status_code=200,
+#         )
+#     except Exception as e:
+#         logger.exception(str(e))
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+@llm_router.get(
+    "/models",
+    name="List Models",
 )
-@limiter.limit(TIME_LIMIT)
-async def chat_completion(
-    request: Request,
-    body: Annotated[ChatInput, Body()],
-    user: ProtectedUser = Depends(get_optional_user),
-    # db: AsyncSession = Depends(get_async_db)
-):
-    try:
-        model = body.model.split(":")
-        provider = model[0]
-        model_name = model[1]
-        llm = init_chat_model(
-            model=model_name,
-            model_provider=provider,
-            temperature=0.9,
-            # max_tokens=1000,
-            max_retries=3,
-            # timeout=1000
-        )
-        response = await llm.ainvoke(
-            [
-                {"role": "system", "content": body.system},
-                {"role": "user", "content": body.query},
-            ]
-        )
-        return JSONResponse(
-            content={"answer": response.model_dump()},
-            media_type="application/json",
-            status_code=200,
-        )
-    except Exception as e:
-        logger.exception(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+async def list_models():
+    chat_models = sorted({model.value for model in ChatModels})
+    return JSONResponse(content={"models": chat_models}, status_code=200)
