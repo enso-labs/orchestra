@@ -8,12 +8,12 @@ import { logout } from "@/lib/utils/auth";
 import { Settings, LayoutDashboard, Cog } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export function SettingsPopover() {
+	const { user } = useAuth();
 	const navigate = useNavigate();
 	const { clearMessages } = useChatContext();
-
-	const user = JSON.parse(localStorage.getItem("enso:auth:user") || "{}");
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
