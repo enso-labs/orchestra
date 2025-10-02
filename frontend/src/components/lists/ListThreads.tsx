@@ -15,7 +15,11 @@ function ListThreads({ threads }: { threads: any[] }) {
 	const [copiedThreadId, setCopiedThreadId] = useState<string | null>(null);
 
 	if (threads.length === 0) {
-		return <div>No threads found</div>;
+		return (
+			<div className="flex justify-center items-center h-full">
+				<p className="text-muted-foreground">No threads found</p>
+			</div>
+		);
 	}
 
 	const handleDeleteClick = async (e: React.MouseEvent, threadId: string) => {

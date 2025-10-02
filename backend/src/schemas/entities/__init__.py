@@ -193,6 +193,9 @@ class Config(BaseModel):
     checkpoint_id: Optional[str] = Field(
         default=None, description="The checkpoint id", examples=[str(uuid4())]
     )
+    assistant_id: Optional[str] = Field(
+        default=None, description="The assistant id", examples=[str(uuid4())]
+    )
     graph_id: Optional[Literal["react", "deepagent"]] = Field(
         default=None, description="The graph id", examples=["react", "deepagent"]
     )

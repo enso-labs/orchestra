@@ -422,3 +422,21 @@ class MockResponse:
             }
         },
     }
+
+    LOGIN_RESPONSE = {
+        "description": "Successfully logged in",
+        "content": {
+            "application/json": {
+                "example": {
+                    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "token_type": "bearer",
+                    "user": {
+                        "id": "123e4567-e89b-12d3-a456-426614174000",
+                        "username": "johndoe",
+                        "email": "john@example.com",
+                        "name": "John Doe",
+                    },
+                }
+            },
+        },
+    }

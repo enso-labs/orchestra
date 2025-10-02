@@ -17,13 +17,19 @@ import { useAgentContext } from "@/context/AgentContext";
 export default function Chat() {
 	const { loading, isDrawerOpen, setIsDrawerOpen } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
-	const { messages, useListThreadsEffect, useListCheckpointsEffect, metadata } =
-		useChatContext();
+	const {
+		messages,
+		useListThreadsEffect,
+		useListCheckpointsEffect,
+		metadata,
+		useEffectUpdateAssistantId,
+	} = useChatContext();
 	const [, setSearchParams] = useSearchParams();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const isAssistantOpen = false;
 
 	useEffectGetAgents();
+	useEffectUpdateAssistantId();
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

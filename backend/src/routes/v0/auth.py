@@ -4,6 +4,7 @@ from fastapi.responses import UJSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from src.constants.mock import MockResponse
 from src.repos.user_repo import UserRepo
 from src.services.airtable import AirtableService
 from src.services.oauth import OAuthService
@@ -23,23 +24,7 @@ router = APIRouter(tags=["Auth"])
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
-        status.HTTP_201_CREATED: {
-            "description": "User successfully registered",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "token_type": "bearer",
-                        "user": {
-                            "id": "123e4567-e89b-12d3-a456-426614174000",
-                            "username": "johndoe",
-                            "email": "john@example.com",
-                            "name": "John Doe",
-                        },
-                    }
-                }
-            },
-        },
+        status.HTTP_201_CREATED: MockResponse.LOGIN_RESPONSE,
         status.HTTP_400_BAD_REQUEST: {
             "description": "Username or email already exists"
         },
@@ -82,23 +67,7 @@ async def register(
     "/auth/login",
     response_model=TokenResponse,
     responses={
-        status.HTTP_200_OK: {
-            "description": "Successfully logged in",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "token_type": "bearer",
-                        "user": {
-                            "id": "123e4567-e89b-12d3-a456-426614174000",
-                            "username": "johndoe",
-                            "email": "john@example.com",
-                            "name": "John Doe",
-                        },
-                    }
-                }
-            },
-        },
+        status.HTTP_200_OK: MockResponse.LOGIN_RESPONSE,
         status.HTTP_401_UNAUTHORIZED: {"description": "Incorrect email or password"},
     },
 )
@@ -136,8 +105,8 @@ async def login(
 
         # Create access token with full user object
         access_token = create_access_token(user)
-        # Update airtable with latest login
 
+        # Update airtable with latest login
         await airtable_service.latest_login(user.email)
     except Exception as e:
         logger.exception(f"Error logging in: {e}")
