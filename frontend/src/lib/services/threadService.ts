@@ -119,7 +119,7 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 
 export const searchThreads = async (
 	action: "list_threads" | "list_checkpoints" | "get_checkpoint",
-	metadata: { thread_id?: string; checkpoint_id?: string } = {},
+	filter: { thread_id?: string; checkpoint_id?: string } = {},
 	limit: number = 100,
 	offset: number = 0,
 ) => {
@@ -128,21 +128,21 @@ export const searchThreads = async (
 		payload = {
 			limit: limit,
 			offset: offset,
-			metadata: metadata,
+			filter: filter,
 		};
 	} else if (action === "list_checkpoints") {
 		payload = {
 			limit: limit,
 			offset: offset,
-			metadata: { thread_id: metadata.thread_id },
+			filter: { thread_id: filter.thread_id },
 		};
 	} else if (action === "get_checkpoint") {
 		payload = {
 			limit: limit,
 			offset: offset,
-			metadata: {
-				thread_id: metadata.thread_id,
-				checkpoint_id: metadata.checkpoint_id,
+			filter: {
+				thread_id: filter.thread_id,
+				checkpoint_id: filter.checkpoint_id,
 			},
 		};
 	}

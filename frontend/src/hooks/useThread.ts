@@ -26,9 +26,13 @@ export default function useThread(): ThreadContextType {
 
 	const fetchThreads = async (
 		action: "list_threads" | "list_checkpoints" | "get_checkpoint",
-		metadata: { thread_id?: string; checkpoint_id?: string } = {},
+		filter: {
+			thread_id?: string;
+			checkpoint_id?: string;
+			assistant_id?: string;
+		} = {},
 	) => {
-		const data = await searchThreads(action, metadata);
+		const data = await searchThreads(action, filter);
 
 		if (action === "list_threads") {
 			setThreads(data);
@@ -39,9 +43,12 @@ export default function useThread(): ThreadContextType {
 		}
 	};
 
-	const useListThreadsEffect = (trigger?: boolean) => {
+	const useListThreadsEffect = (
+		trigger?: boolean,
+		filter: { assistant_id?: string } = {},
+	) => {
 		useEffect(() => {
-			fetchThreads("list_threads");
+			fetchThreads("list_threads", filter);
 		}, [trigger]);
 	};
 

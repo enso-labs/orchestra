@@ -30,9 +30,9 @@ async def search_threads(
     try:
         thread_service.store = store
         thread_service.user_id = user.id
-        metadata = thread_search.model_dump().get("metadata", {})
-        if "thread_id" in metadata and not "checkpoint_id" in metadata:
-            thread_id = metadata["thread_id"]
+        filter = thread_search.model_dump(exclude_none=True).get("filter", {})
+        if "thread_id" in filter and not "checkpoint_id" in filter:
+            thread_id = filter["thread_id"]
             checkpoints = []
             config = RunnableConfig(configurable={"thread_id": thread_id})
             checkpoint_generator = checkpointer.alist(config)
@@ -61,7 +61,7 @@ async def search_threads(
                 raise HTTPException(status_code=404, detail="Checkpoints not found")
             return {"checkpoints": checkpoints}
 
-        threads = await thread_service.search()
+        threads = await thread_service.search(filter=filter)
         return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")

@@ -12,10 +12,12 @@ class ThreadService:
         self.user_id = user_id or TEST_USER_ID
         self.store: BaseStore = store
 
-    async def update(self, thread_id: str, data: dict):
-        await self.store.aput(
-            namespace=("threads", self.user_id), key=thread_id, value=data
-        )
+    async def update(self, thread_id: str, data: dict, assistant_id: str = None):
+        if assistant_id:
+            namespace = ("threads", self.user_id, assistant_id)
+        else:
+            namespace = ("threads", self.user_id)
+        await self.store.aput(namespace=namespace, key=thread_id, value=data)
         return True
 
     async def get(self, key: str) -> Any:
@@ -32,10 +34,14 @@ class ThreadService:
     async def search(
         self,
         limit: int = 1000,
+        filter: dict = {},
     ) -> list[dict]:
         try:
+            default_namespace = ("threads", self.user_id)
+            if "assistant_id" in filter:
+                default_namespace = ("threads", self.user_id, filter["assistant_id"])
             async with self.store as store:
-                threads = await store.asearch(("threads", self.user_id), limit=limit)
+                threads = await store.asearch(default_namespace, limit=limit)
                 return sorted(
                     [thread.dict() for thread in threads],
                     key=lambda x: x.get("updated_at"),

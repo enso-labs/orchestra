@@ -38,7 +38,7 @@ function AgentEditPage() {
 		setActiveTab(value);
 	};
 
-	useListThreadsEffect();
+	useListThreadsEffect(null, { assistant_id: agentId });
 
 	useEffect(() => {
 		// Only clear search params if there are none on init
