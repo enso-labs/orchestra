@@ -1,5 +1,5 @@
 from typing import Type, Literal, Any, AsyncGenerator, Optional
-
+from uuid import uuid4
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langchain.agents import create_agent
@@ -135,6 +135,7 @@ async def init_memories(params: LLMRequest | LLMStreamRequest, tools: list[BaseT
 
 def init_config(params: LLMRequest | LLMStreamRequest):
     if params.metadata:
+        # params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         return RunnableConfig(
             configurable=params.metadata.model_dump(),
             # metadata={"model": params.model},
@@ -152,6 +153,7 @@ async def construct_agent(
     store: BaseStore = None,
 ):
     try:
+        params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         # Add config if it exists
         config = init_config(params)
         # Initialize tools

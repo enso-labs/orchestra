@@ -34,7 +34,7 @@ export default function Chat() {
 	}, [messages]); // Scroll when messages change
 
 	useListThreadsEffect(!loading);
-	useListCheckpointsEffect(!loading, JSON.parse(metadata));
+	useListCheckpointsEffect(!loading, metadata);
 
 	useEffect(() => {
 		return () => {
