@@ -224,6 +224,13 @@ class Orchestra:
             graph_id=graph_id,
         )
 
+    async def invoke(
+        self,
+        messages: list[BaseMessage],
+        context: dict[str, Any] = None,
+    ) -> BaseMessage:
+        return await self.graph.ainvoke(messages, self.config, context=context)
+
     def astream(
         self,
         messages: list[BaseMessage],
