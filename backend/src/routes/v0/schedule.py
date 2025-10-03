@@ -31,6 +31,7 @@ async def create_job(
         args=[job.task.model_dump()],
         kwargs={"metadata": {"user_id": user.id}},
         replace_existing=True,
+        misfire_grace_time=300,
     )
 
     IN_MEMORY_JOBS[job_id] = job
