@@ -58,7 +58,7 @@ def graph_builder(
         "react", "deepagents", "deepagent", "create_react_agent", "create_deep_agent"
     ] = "react",
 ) -> CompiledStateGraph:
-    if graph_id in ["react", "create_react_agent", "create_agent"]:
+    if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
         return create_agent(
             model=model,
             tools=tools,
@@ -68,17 +68,16 @@ def graph_builder(
             store=store,
         )
 
-    if graph_id in ["deepagents", "deepagent", "create_deep_agent"]:
-        deep_agent = async_create_deep_agent(
-            model=model,
-            tools=tools,
-            subagents=subagents,
-            instructions=prompt,
-            checkpointer=checkpointer,
-        )
-        deep_agent.context_schema = context_schema
-        deep_agent.store = store
-        return deep_agent
+    deep_agent = async_create_deep_agent(
+        model=model,
+        tools=tools,
+        subagents=subagents,
+        instructions=prompt,
+        checkpointer=checkpointer,
+    )
+    deep_agent.context_schema = context_schema
+    deep_agent.store = store
+    return deep_agent
 
 
 # async def init_tools(params: LLMRequest | LLMStreamRequest):
@@ -135,10 +134,10 @@ async def init_memories(params: LLMRequest | LLMStreamRequest, tools: list[BaseT
 
 def init_config(params: LLMRequest | LLMStreamRequest):
     if params.metadata:
-        # params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         return RunnableConfig(
             configurable=params.metadata.model_dump(),
-            # metadata={"model": params.model},
+            max_concurrency=10,
+            recursion_limit=100,
         )
     else:
         return None

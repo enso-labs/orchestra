@@ -3,6 +3,7 @@ from markitdown import MarkItDown
 from langchain_core.tools import tool
 from langchain_core.tools import ToolException
 from langchain_community.utilities import SearxSearchWrapper
+from src.utils.logger import logger
 
 
 Categories = Literal[
@@ -69,15 +70,23 @@ async def web_search(
     # Create a SearxSearchWrapper instance.
     searx = SearxSearchWrapper(searx_host=SEARX_SEARCH_HOST_URL)
 
-    # Perform the search and return the results.
-    results = await searx.aresults(
-        query=query,
-        num_results=num_results,
-        engines=engines,
-        categories=categories,
-        language=language,
+    logger.info(
+        f"Searching for {query} with {engines} engines and {categories} categories and {language} language"
     )
-    return results
+
+    try:
+        results = await searx.aresults(
+            query=query,
+            num_results=num_results,
+            engines=engines,
+            categories=categories,
+            language=language,
+        )
+        logger.info(f"Found {len(results)} results")
+        return results
+    except Exception as e:
+        logger.error(f"Error searching for {query}: {e}")
+        raise ToolException(f"Error searching for {query}: {e}")
 
 
 @tool
@@ -86,7 +95,13 @@ def web_scrape(urls: List[str]) -> str:
     md = MarkItDown(enable_plugins=False)
     docs = []
     for url in urls:
-        document = md.convert(url)
+        logger.info(f"Scraping {url} START")
+        try:
+            document = md.convert(url)
+            logger.info(f"Scraped {url}, DONE")
+        except Exception as e:
+            logger.warning(f"Error scraping {url}: {e}")
+            continue
         if document.title:
             formatted_output = f"# {document.title}\n\n{document.markdown}"
         else:
