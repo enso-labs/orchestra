@@ -10,7 +10,7 @@ from src.schemas.entities.schedule import JobTrigger, Job
 
 logger = logging.getLogger(__name__)
 
-jobstores = {"default": SQLAlchemyJobStore(url=DB_URI)}
+jobstores = {"default": SQLAlchemyJobStore(url=DB_URI, tablename="schedules")}
 scheduler = AsyncIOScheduler(jobstores=jobstores)
 
 IN_MEMORY_JOBS = {}

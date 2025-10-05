@@ -2,13 +2,21 @@ from pydantic import BaseModel, Field
 from typing import Callable
 from uuid import uuid4
 from fastapi.openapi.models import Example
+from datetime import datetime
 
 from src.schemas.entities import LLMRequest
+from apscheduler.triggers.cron import CronTrigger
 
 
 class JobTrigger(BaseModel):
     type: str = Field(..., example="cron")
     expression: str = Field(..., example="0 0 * * *")
+
+    @classmethod
+    def from_trigger(cls, trigger: CronTrigger) -> "JobTrigger":
+        """Create model from APScheduler CronTrigger"""
+        expr = " ".join(str(f) for f in trigger.fields[:6])
+        return cls(type="cron", expression=expr)
 
 
 class JobId(BaseModel):
@@ -93,3 +101,10 @@ class ScheduleCreate(BaseModel):
             }
         }
     }
+
+
+class Schedule(BaseModel):
+    id: str = Field(..., example=str(uuid4()))
+    trigger: JobTrigger
+    task: LLMRequest
+    next_run_time: datetime = Field(..., example=datetime.now())
