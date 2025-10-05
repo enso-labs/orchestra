@@ -2,12 +2,16 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Check, Copy, ChevronDown, ChevronUp } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+	oneDark,
+	oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
 import useImageHook from "@/hooks/useImageHook";
+import { useTheme } from "@/hooks/useTheme";
 
 interface CodeBlockProps {
 	inline?: boolean;
@@ -22,9 +26,19 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 	...props
 }) => {
 	const [copied, setCopied] = useState(false);
+	const { theme } = useTheme();
 	const match = /language-(\w+)/.exec(className || "");
 	const language = match ? match[1] : "";
 	const code = String(children).replace(/\n$/, "");
+
+	// Select syntax highlighting theme based on current theme
+	const getSyntaxTheme = () => {
+		if (theme === "light") {
+			return oneLight;
+		}
+		// Use dark theme for both "dark" and "gray" themes, and system default
+		return oneDark;
+	};
 
 	const handleCopy = async () => {
 		try {
@@ -67,7 +81,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 				</Button>
 			</div>
 			<SyntaxHighlighter
-				style={oneDark}
+				style={getSyntaxTheme()}
 				language={language}
 				PreTag="div"
 				className="!mt-0 !rounded-t-none"
@@ -169,7 +183,11 @@ const BaseCard = ({ content }: { content: string }) => {
 				),
 				li: ({ node: _node, ...props }) => <li className="ml-2" {...props} />,
 				a: ({ node, ...props }) => (
-					<a target="_blank" className="text-blue-500 underline" {...props} />
+					<a
+						target="_blank"
+						className="text-primary underline hover:text-primary/80"
+						{...props}
+					/>
 				),
 				table: ({ node, ...props }) => (
 					<div className="overflow-x-auto my-6 rounded-lg border-2 border-border shadow-md bg-background">
