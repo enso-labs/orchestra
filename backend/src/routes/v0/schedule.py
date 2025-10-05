@@ -74,7 +74,9 @@ async def get_job(
 
 @router.post("/schedules", status_code=201, responses={201: {"model": JobUpdated}})
 async def create_job(
-    job: ScheduleCreate = Body(openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLE),
+    job: ScheduleCreate = Body(
+        openapi_examples={"create_schedule": Examples.SCHEDULE_CREATE_EXAMPLE}
+    ),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     job_id = str(uuid4())
