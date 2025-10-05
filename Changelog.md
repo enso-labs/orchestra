@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/408-edit-existing-schedules (2025-10-05)
   - feat/216-shot-at-scheduled-tasks (2025-10-02)
   - feat/382-move-threadid-gen-to-backend (2025-10-01)
   - feat/380-subagent-configure (2025-09-29)
