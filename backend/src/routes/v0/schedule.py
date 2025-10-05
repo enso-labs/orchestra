@@ -95,9 +95,17 @@ async def create_job(
 
     print(f"✅ Scheduled job created: {scheduled_job}")
     print(f"   Job ID: {job_id}")
-    print(f"   Next run time: {scheduled_job.next_run_time}")
+    print(f"   Next run time: {scheduled_job.next_run_time.isoformat()}")
 
-    return JSONResponse(status_code=201, content={"job": {"id": job_id}})
+    return JSONResponse(
+        status_code=201,
+        content={
+            "job": {
+                "id": job_id,
+                "next_run_time": scheduled_job.next_run_time.isoformat(),
+            }
+        },
+    )
 
 
 @router.delete("/schedules/{job_id}")

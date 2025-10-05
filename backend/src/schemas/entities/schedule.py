@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 class JobTrigger(BaseModel):
     type: str = Field(..., example="cron")
-    expression: str = Field(..., example="0 0 * * *")
+    expression: str = Field(..., example=" 0 1 * * *")
 
     @field_validator("expression")
     def validate_expression(cls, v: str) -> str:
@@ -43,7 +43,9 @@ class JobTrigger(BaseModel):
     @classmethod
     def from_trigger(cls, trigger: CronTrigger) -> "JobTrigger":
         """Create model from APScheduler CronTrigger"""
-        expr = " ".join(str(f) for f in trigger.fields[:6])
+        trigger.fields.reverse()
+        trigger.fields.pop(0)
+        expr = " ".join(str(f) for f in trigger.fields[:5])
         return cls(type="cron", expression=expr)
 
 

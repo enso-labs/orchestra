@@ -331,7 +331,7 @@ SCHEDULE_FIND_EXAMPLE = Example(
     {
         "schedule": {
             "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
-            "trigger": {"type": "cron", "expression": "* * * * * *"},
+            "trigger": {"type": "cron", "expression": "0 1 * * *"},
             "task": {
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
@@ -347,7 +347,7 @@ SCHEDULE_LIST_EXAMPLE = Example(
         "schedules": [
             {
                 "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
-                "trigger": {"type": "cron", "expression": "* * * * * *"},
+                "trigger": {"type": "cron", "expression": "0 1 * * *"},
                 "task": {
                     "model": "openai:gpt-5-nano",
                     "system": "You are a helpful assistant.",
@@ -365,7 +365,7 @@ SCHEDULE_LIST_EXAMPLE = Example(
 )
 SCHEDULE_CREATE_EXAMPLE = Example(
     {
-        "trigger": {"type": "cron", "expression": "* * * * * *"},
+        "trigger": {"type": "cron", "expression": "0 1 * * *"},
         "task": {
             "model": "openai:gpt-5-nano",
             "system": "You are a helpful assistant.",
