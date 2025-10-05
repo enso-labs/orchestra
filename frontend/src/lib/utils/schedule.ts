@@ -6,10 +6,12 @@ import { ScheduleCreate } from "@/lib/entities/schedule";
  */
 export const createScheduleFromAgent = (
 	agent: Agent,
+	title: string,
 	cronExpression: string,
 	message: string,
 ): ScheduleCreate => {
 	return {
+		title,
 		trigger: {
 			type: "cron",
 			expression: cronExpression,
