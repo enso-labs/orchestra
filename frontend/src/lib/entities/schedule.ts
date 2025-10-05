@@ -1,7 +1,7 @@
 export interface ScheduleCreate {
 	trigger: {
 		type: "cron";
-		expression: string; // e.g., "0 1 * * *" (minimum 1 hour intervals)
+		expression: string; // e.g., "0 */1 * * *" (minimum 1 hour intervals)
 	};
 	task: {
 		model: string;

@@ -20,7 +20,7 @@ This document outlines the comprehensive plan for implementing an agent-centric 
 interface ScheduleCreate {
 	trigger: {
 		type: "cron";
-		expression: string; // e.g., "0 1 * * *" (minimum 1 hour intervals)
+		expression: string; // e.g., "0 */1 * * *" (minimum 1 hour intervals)
 	};
 	task: LLMRequest; // Inherits from agent configuration
 }

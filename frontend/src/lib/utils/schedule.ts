@@ -62,7 +62,7 @@ export const getHumanReadableCron = (expression: string): string => {
 
 	// Common patterns
 	const patterns: Record<string, string> = {
-		"0 * * * *": "Every hour",
+		"0 */1 * * *": "Every hour",
 		"0 */2 * * *": "Every 2 hours",
 		"0 */6 * * *": "Every 6 hours",
 		"0 9 * * *": "Daily at 9:00 AM",
@@ -150,7 +150,7 @@ export const getStatusColor = (
 export const CRON_PRESETS = [
 	{
 		label: "Every hour",
-		value: "0 * * * *",
+		value: "0 */1 * * *",
 		description: "Runs at the top of every hour",
 	},
 	{

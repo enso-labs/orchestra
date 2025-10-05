@@ -33,6 +33,7 @@ async def llm_invoke(
     ):
         try:
             thread_service.store = store
+            thread_service.assistant_id = params.metadata.assistant_id
             checkpoint_service.checkpointer = checkpointer
             agent = await construct_agent(params, checkpointer, store)
             checkpoint_service.graph = agent.graph
@@ -54,7 +55,6 @@ async def llm_invoke(
                     "messages": [response.get("messages")[-1].model_dump()],
                     "updated_at": get_time(),
                 },
-                assistant_id=params.metadata.assistant_id,
             )
 
 
