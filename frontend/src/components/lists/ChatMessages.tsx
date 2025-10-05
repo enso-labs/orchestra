@@ -101,7 +101,7 @@ export function Message({ message }: { message: any }) {
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
-					<div key={message.id} className="p-2 rounded bg-gray-800 m-2">
+					<div key={message.id} className="p-2 rounded bg-muted m-2">
 						<div className="flex items-center justify-between">
 							<div className="flex items-center space-x-2">
 								<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
