@@ -8,24 +8,35 @@ IN_MEMORY_STORE = InMemoryStore()
 
 
 class ThreadService:
-    def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
+    def __init__(
+        self,
+        user_id: str = None,
+        assistant_id: str = None,
+        store: BaseStore = IN_MEMORY_STORE,
+    ):
         self.user_id = user_id or TEST_USER_ID
+        self.assistant_id = assistant_id
         self.store: BaseStore = store
 
-    async def update(self, thread_id: str, data: dict, assistant_id: str = None):
-        if assistant_id:
-            namespace = ("threads", self.user_id, assistant_id)
+    def _get_namespace(self):
+        if self.assistant_id:
+            return ("threads", self.user_id, self.assistant_id)
         else:
-            namespace = ("threads", self.user_id)
+            return ("threads", self.user_id)
+
+    async def update(self, thread_id: str, data: dict):
+        namespace = self._get_namespace()
         await self.store.aput(namespace=namespace, key=thread_id, value=data)
         return True
 
     async def get(self, key: str) -> Any:
-        return await self.store.aget(("threads", self.user_id), key)
+        namespace = self._get_namespace()
+        return await self.store.aget(namespace, key)
 
     async def delete(self, key: str) -> bool:
         try:
-            await self.store.adelete(("threads", self.user_id), key)
+            namespace = self._get_namespace()
+            await self.store.adelete(namespace, key)
             return True
         except Exception as e:
             logger.exception(f"Error deleting thread: {e}")

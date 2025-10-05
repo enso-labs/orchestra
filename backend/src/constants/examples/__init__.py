@@ -254,7 +254,11 @@ LIST_DOCUMENTS_EXAMPLE = {
     "documents": [
         {
             "id": "317369e3-d061-4a7c-afea-948edea9856b",
-            "text": "The boy who cried wolf is a story about a boy who cried wolf to trick the villagers into thinking there was a wolf when there wasn't.",
+            "text": (
+                "The boy who cried wolf is a story about a boy "
+                "who cried wolf to trick the villagers into thinking "
+                "there was a wolf when there wasn't."
+            ),
             "metadata": {
                 "source": "https://en.wikipedia.org/wiki/The_Boy_Who_Cried_Wolf",
                 "title": "The Boy Who Cried Wolf",
@@ -263,7 +267,11 @@ LIST_DOCUMENTS_EXAMPLE = {
         },
         {
             "id": "84d83f48-b01b-4bf3-b027-765c61772344",
-            "text": "The three little pigs went to the market. One pig went to the store and bought a pound of sugar. Another pig went to the store and bought a pound of flour. The third pig went to the store and bought a pound of lard.",
+            "text": (
+                "The three little pigs went to the market. One pig went to the store and bought "
+                "a pound of sugar. Another pig went to the store and bought a pound of flour. "
+                "The third pig went to the store and bought a pound of lard."
+            ),
             "metadata": {
                 "source": "https://en.wikipedia.org/wiki/The_Three_Little_Pigs",
                 "title": "The Three Little Pigs",
@@ -319,6 +327,54 @@ LOGIN_RESPONSE_EXAMPLE = Example(
     },
 )
 
+SCHEDULE_FIND_EXAMPLE = Example(
+    {
+        "schedule": {
+            "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
+            "trigger": {"type": "cron", "expression": "0 1 * * *"},
+            "task": {
+                "model": "openai:gpt-5-nano",
+                "system": "You are a helpful assistant.",
+                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+            },
+            "next_run_time": "2025-10-04T18:27:00-06:00",
+        }
+    }
+)
+
+SCHEDULE_LIST_EXAMPLE = Example(
+    {
+        "schedules": [
+            {
+                "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
+                "trigger": {"type": "cron", "expression": "0 1 * * *"},
+                "task": {
+                    "model": "openai:gpt-5-nano",
+                    "system": "You are a helpful assistant.",
+                    "tools": ["get_weather"],
+                    "a2a": {},
+                    "mcp": {},
+                    "subagents": [],
+                    "metadata": {},
+                    "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                },
+                "next_run_time": "2025-10-04T18:27:00-06:00",
+            }
+        ]
+    }
+)
+SCHEDULE_CREATE_EXAMPLE = Example(
+    {
+        "trigger": {"type": "cron", "expression": "0 1 * * *"},
+        "task": {
+            "model": "openai:gpt-5-nano",
+            "system": "You are a helpful assistant.",
+            "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+            "tools": ["get_weather"],
+        },
+    }
+)
+
 
 class Examples:
     LOGIN_RESPONSE_EXAMPLE = LOGIN_RESPONSE_EXAMPLE
@@ -330,6 +386,9 @@ class Examples:
     ADD_DOCUMENTS_EXAMPLE = ADD_DOCUMENTS_EXAMPLE
     LIST_DOCUMENTS_EXAMPLE = LIST_DOCUMENTS_EXAMPLE
     A2A_GET_AGENT_CARD_EXAMPLE = A2A_GET_AGENT_CARD_EXAMPLE
+    SCHEDULE_LIST_EXAMPLE = SCHEDULE_LIST_EXAMPLE
+    SCHEDULE_CREATE_EXAMPLE = SCHEDULE_CREATE_EXAMPLE
+    SCHEDULE_FIND_EXAMPLE = SCHEDULE_FIND_EXAMPLE
     THREAD_SEARCH_EXAMPLES = {
         "list_threads": Example(
             summary="list_threads",

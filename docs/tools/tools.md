@@ -5,6 +5,5 @@ Details support Enso Cloud tools. The below information should provide the user 
 ## Table of Contents
 
 - [Search](./search.md)
-- [Shell](./shell_exec.md)
 - [MCP](./mcp.md)
 - [A2A](./a2a.md)

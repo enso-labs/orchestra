@@ -8,6 +8,7 @@ from .auth import router as auth
 from .token import router as token
 from .storage import router as storage
 from .assistant import router as assistant
+from .schedule import router as schedule
 
 __all__ = [
     "llm",
@@ -18,6 +19,7 @@ __all__ = [
     "token",
     "storage",
     "assistant",
+    "schedule",
 ]
 
 if LANGCONNECT_SERVER_URL:

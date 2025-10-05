@@ -27,7 +27,6 @@ export function BaseToolMenu() {
 
 	useEffect(() => {
 		setAgent({ ...agent, tools: [...agent.tools, ...DEFAULT_AGENT_TOOLS] });
-		// eslint-disable-next-line
 	}, []);
 
 	useEffect(() => {
@@ -45,7 +44,6 @@ export function BaseToolMenu() {
 				),
 			});
 		}
-		// eslint-disable-next-line
 	}, [webSearchCheck]);
 
 	return (

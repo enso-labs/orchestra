@@ -224,6 +224,13 @@ class Orchestra:
             graph_id=graph_id,
         )
 
+    async def invoke(
+        self,
+        messages: list[BaseMessage],
+        context: dict[str, Any] = None,
+    ) -> BaseMessage:
+        return await self.graph.ainvoke(messages, self.config, context=context)
+
     def astream(
         self,
         messages: list[BaseMessage],
@@ -266,6 +273,8 @@ class Orchestra:
 
                 # Update thread with new message and timestamp
                 thread_service.user_id = user_id
+                if assistant_id:
+                    thread_service.assistant_id = assistant_id
                 await thread_service.update(
                     thread_id=thread_id,
                     data={
@@ -274,7 +283,6 @@ class Orchestra:
                         "messages": [last_message.model_dump()],
                         "updated_at": get_time(),
                     },
-                    assistant_id=assistant_id,
                 )
 
                 # Log the update for debugging

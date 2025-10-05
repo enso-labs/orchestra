@@ -26,6 +26,7 @@ from src.routes.v0 import (
     storage,
     rag,
     assistant,
+    schedule,
 )
 from src.constants import (
     HOST,
@@ -37,7 +38,7 @@ from src.constants import (
 )
 from src.utils.migrations import run_migrations
 from src.utils.rate_limit import limiter
-
+from src.services.schedule import scheduler
 from contextlib import asynccontextmanager
 
 
@@ -53,6 +54,8 @@ async def lifespan(app: FastAPI):
     print(f"APP_ENV: {APP_ENV}")
     if APP_ENV == "production" or APP_ENV == "staging":
         run_migrations()
+
+    scheduler.start()
 
     # Enter the async context managers to get live instances
     async with (
@@ -132,6 +135,7 @@ app.include_router(auth, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(assistant, prefix=PREFIX)
+app.include_router(schedule, prefix=PREFIX)
 if LANGCONNECT_SERVER_URL:
     app.include_router(rag, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)

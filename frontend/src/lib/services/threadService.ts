@@ -162,9 +162,13 @@ export const searchThreads = async (
 	}
 };
 
-export const deleteThread = async (threadId: string) => {
+export const deleteThread = async (threadId: string, assistantId?: string) => {
 	try {
-		const response = await apiClient.delete(`/threads/${threadId}`, {
+		let url = `/threads/${threadId}`;
+		if (assistantId) {
+			url = `/assistants/${assistantId}/threads/${threadId}`;
+		}
+		const response = await apiClient.delete(url, {
 			headers: {
 				"Content-Type": "application/json",
 				Accept: "application/json",

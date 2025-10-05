@@ -68,6 +68,32 @@ async def search_threads(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.delete(
+    "/assistants/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread"
+)
+async def delete_thread(
+    assistant_id: str,
+    thread_id: str,
+    user: ProtectedUser = Depends(verify_credentials),
+    store=Depends(get_store),
+    checkpointer=Depends(get_checkpointer),
+):
+    try:
+        thread_service.store = store
+        thread_service.user_id = user.id
+        thread_service.assistant_id = assistant_id
+        checkpoint_service.checkpointer = checkpointer
+        checkpoint_service.user_id = user.id
+        await checkpoint_service.delete_checkpoints_for_thread(thread_id)
+        success = await thread_service.delete(thread_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Thread not found")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        logger.exception(f"Error deleting thread: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/threads/{thread_id}", name="Delete Thread")
 async def delete_thread(
     thread_id: str,

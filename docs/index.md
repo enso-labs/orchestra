@@ -1,5 +1,4 @@
-# Enso Labs - Cloud ☁️
-
+# Enso Labs - Orchestra 🪶 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
 <a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
 <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
