@@ -90,6 +90,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 		}
 
 		const scheduleData: ScheduleCreate = {
+			title: data.name,
 			trigger: {
 				type: "cron",
 				expression: data.cronExpression,
@@ -113,7 +114,6 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 				subagents: agent.subagents,
 				metadata: {
 					...agent.metadata,
-					schedule_name: data.name,
 					schedule_description: data.description,
 					inherited_from_agent: data.inheritFromAgent,
 					enabled: data.enabled,

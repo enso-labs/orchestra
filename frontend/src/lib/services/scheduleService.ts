@@ -65,6 +65,25 @@ export class ScheduleService {
 	}
 
 	/**
+	 * Update an existing schedule
+	 */
+	static async updateSchedule(
+		scheduleId: string,
+		schedule: ScheduleCreate,
+	): Promise<{ job: { id: string; next_run_time: string } }> {
+		try {
+			const response = await apiClient.put(
+				`${this.BASE_URL}/${scheduleId}`,
+				schedule,
+			);
+			return response.data;
+		} catch (error) {
+			console.error("Failed to update schedule:", error);
+			throw error;
+		}
+	}
+
+	/**
 	 * Delete a schedule
 	 */
 	static async deleteSchedule(scheduleId: string): Promise<void> {
@@ -72,6 +91,33 @@ export class ScheduleService {
 			await apiClient.delete(`${this.BASE_URL}/${scheduleId}`);
 		} catch (error) {
 			console.error("Failed to delete schedule:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Update a schedule for a specific agent with agent context
+	 */
+	static async updateAgentSchedule(
+		agentId: string,
+		scheduleId: string,
+		schedule: ScheduleCreate,
+	): Promise<{ job: { id: string; next_run_time: string } }> {
+		try {
+			// Enhance schedule with agent context
+			const enhancedSchedule: ScheduleCreate = {
+				...schedule,
+				task: {
+					...schedule.task,
+					metadata: {
+						...schedule.task.metadata,
+						agent_id: agentId,
+					},
+				},
+			};
+			return await this.updateSchedule(scheduleId, enhancedSchedule);
+		} catch (error) {
+			console.error("Failed to update agent schedule:", error);
 			throw error;
 		}
 	}

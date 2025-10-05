@@ -48,6 +48,32 @@ export const useAgentSchedules = (agentId?: string) => {
 		[agentId, fetchSchedules],
 	);
 
+	const updateSchedule = useCallback(
+		async (scheduleId: string, schedule: ScheduleCreate) => {
+			if (!agentId) return;
+
+			setLoading(true);
+			try {
+				await ScheduleService.updateAgentSchedule(
+					agentId,
+					scheduleId,
+					schedule,
+				);
+				toast.success("Schedule updated successfully");
+				await fetchSchedules(); // Refresh the list
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Failed to update schedule";
+				setError(errorMessage);
+				toast.error("Failed to update schedule");
+				throw err;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[agentId, fetchSchedules],
+	);
+
 	const deleteSchedule = useCallback(
 		async (scheduleId: string) => {
 			setLoading(true);
@@ -90,6 +116,7 @@ export const useAgentSchedules = (agentId?: string) => {
 		error,
 		fetchSchedules,
 		createSchedule,
+		updateSchedule,
 		deleteSchedule,
 		getSchedule,
 	};

@@ -25,7 +25,7 @@ import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
 import { AgentScheduleForm } from "@/components/forms/AgentScheduleForm";
 import { useAgentSchedules } from "@/hooks/useAgentSchedules";
 import { Agent } from "@/lib/services/agentService";
-import { ScheduleCreate } from "@/lib/entities/schedule";
+import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
 import { getScheduleStatus } from "@/lib/utils/schedule";
 import {
 	Plus,
@@ -47,9 +47,18 @@ type SortBy = "next_run" | "created" | "name";
 export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 	agent,
 }) => {
-	const { schedules, loading, fetchSchedules, createSchedule, deleteSchedule } =
-		useAgentSchedules(agent.id);
+	const {
+		schedules,
+		loading,
+		fetchSchedules,
+		createSchedule,
+		updateSchedule,
+		deleteSchedule,
+		getSchedule,
+	} = useAgentSchedules(agent.id);
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
+	const [showEditDialog, setShowEditDialog] = useState(false);
+	const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 	const [sortBy, setSortBy] = useState<SortBy>("next_run");
@@ -68,6 +77,31 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 		} catch (error) {
 			console.error("Failed to create schedule:", error);
 			toast.error("Failed to create schedule");
+		}
+	};
+
+	const handleEditSchedule = async (scheduleId: string) => {
+		try {
+			const schedule = await getSchedule(scheduleId);
+			setEditingSchedule(schedule);
+			setShowEditDialog(true);
+		} catch (error) {
+			console.error("Failed to fetch schedule for editing:", error);
+			toast.error("Failed to load schedule for editing");
+		}
+	};
+
+	const handleUpdateSchedule = async (scheduleData: ScheduleCreate) => {
+		if (!editingSchedule) return;
+
+		try {
+			await updateSchedule(editingSchedule.id, scheduleData);
+			setShowEditDialog(false);
+			setEditingSchedule(null);
+			toast.success("Schedule updated successfully!");
+		} catch (error) {
+			console.error("Failed to update schedule:", error);
+			toast.error("Failed to update schedule");
 		}
 	};
 
@@ -93,10 +127,8 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			// Search filter
 			const matchesSearch =
 				searchQuery === "" ||
+				schedule.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				schedule.task.messages?.[0]?.content
-					?.toLowerCase()
-					.includes(searchQuery.toLowerCase()) ||
-				schedule.task.metadata?.schedule_name
 					?.toLowerCase()
 					.includes(searchQuery.toLowerCase());
 
@@ -118,14 +150,8 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 					// Fallback to ID if no created date
 					return a.id.localeCompare(b.id);
 				case "name": {
-					const nameA =
-						a.task.metadata?.schedule_name ||
-						a.task.messages?.[0]?.content ||
-						"";
-					const nameB =
-						b.task.metadata?.schedule_name ||
-						b.task.messages?.[0]?.content ||
-						"";
+					const nameA = a.title || "";
+					const nameB = b.title || "";
 					return nameA.localeCompare(nameB);
 				}
 				default:
@@ -187,6 +213,39 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 							onCancel={() => setShowCreateDialog(false)}
 							isLoading={loading}
 						/>
+					</DialogContent>
+				</Dialog>
+
+				{/* Edit Dialog */}
+				<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+					<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+						<DialogHeader>
+							<DialogTitle>Edit Schedule for {agent.name}</DialogTitle>
+						</DialogHeader>
+						{editingSchedule && (
+							<AgentScheduleForm
+								agent={agent}
+								onSubmit={handleUpdateSchedule}
+								onCancel={() => {
+									setShowEditDialog(false);
+									setEditingSchedule(null);
+								}}
+								initialData={{
+									name: editingSchedule.title || "",
+									description:
+										editingSchedule.task.metadata?.schedule_description || "",
+									enabled: editingSchedule.task.metadata?.enabled ?? true,
+									cronExpression: editingSchedule.trigger.expression,
+									message: editingSchedule.task.messages?.[0]?.content || "",
+									inheritFromAgent:
+										editingSchedule.task.metadata?.inherited_from_agent || true,
+									customModel: editingSchedule.task.model,
+									customSystem: editingSchedule.task.system,
+									customTools: editingSchedule.task.tools || [],
+								}}
+								isLoading={loading}
+							/>
+						)}
 					</DialogContent>
 				</Dialog>
 			</div>
@@ -298,6 +357,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 							key={schedule.id}
 							schedule={schedule}
 							agent={agent}
+							onEdit={handleEditSchedule}
 							onDelete={handleDeleteSchedule}
 							onDuplicate={handleDuplicateSchedule}
 						/>
