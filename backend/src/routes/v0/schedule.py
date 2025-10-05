@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Response, HTTPException
+from fastapi import APIRouter, Depends, Response, HTTPException, Body
 from fastapi.responses import JSONResponse
 from src.schemas.entities.schedule import (
     ScheduleCreate,
@@ -15,11 +15,19 @@ from src.services.schedule import (
 )
 from src.schemas.models import ProtectedUser
 from src.utils.auth import verify_credentials
+from src.constants.examples import Examples
 
 router = APIRouter(tags=["Schedule"])
 
 
-@router.get("/schedules")
+@router.get(
+    "/schedules",
+    responses={
+        200: {
+            "content": {"application/json": {"example": Examples.SCHEDULE_LIST_EXAMPLE}}
+        }
+    },
+)
 async def get_jobs(
     user: ProtectedUser = Depends(verify_credentials),
 ):
@@ -38,7 +46,14 @@ async def get_jobs(
     return {"schedules": user_jobs}
 
 
-@router.get("/schedules/{job_id}")
+@router.get(
+    "/schedules/{job_id}",
+    responses={
+        200: {
+            "content": {"application/json": {"example": Examples.SCHEDULE_FIND_EXAMPLE}}
+        }
+    },
+)
 async def get_job(
     job_id: str,
     user: ProtectedUser = Depends(verify_credentials),
@@ -59,7 +74,7 @@ async def get_job(
 
 @router.post("/schedules", status_code=201, responses={201: {"model": JobUpdated}})
 async def create_job(
-    job: ScheduleCreate,
+    job: ScheduleCreate = Body(openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLE),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     job_id = str(uuid4())
