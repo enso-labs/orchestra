@@ -4,12 +4,21 @@ import { Plus } from "lucide-react";
 
 function NewThreadButton() {
 	const { messages, clearMessages } = useChatContext();
+
+	const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+		if (e.ctrlKey) {
+			window.open(window.location.href, "_blank");
+		} else {
+			clearMessages();
+		}
+	};
+
 	if (messages.length > 0) {
 		return (
 			<div className="w-9">
 				<Button
 					size="icon"
-					onClick={clearMessages}
+					onClick={handleClick}
 					variant="outline"
 					className="h-9 w-9"
 					title="New Chat"

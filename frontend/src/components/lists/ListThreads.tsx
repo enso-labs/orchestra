@@ -7,9 +7,12 @@ import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { StringParam, useQueryParam } from "use-query-params";
 import { useAppContext } from "@/context/AppContext";
+import { useAgentContext } from "@/context/AgentContext";
+import { AxiosResponse } from "axios";
 
 function ListThreads({ threads }: { threads: any[] }) {
 	const { setIsDrawerOpen } = useAppContext();
+	const { agent } = useAgentContext();
 	const { setMessages, setMetadata, metadata, setThreads } = useChatContext();
 	const [, setQueryModel] = useQueryParam("model", StringParam);
 	const [copiedThreadId, setCopiedThreadId] = useState<string | null>(null);
@@ -27,7 +30,12 @@ function ListThreads({ threads }: { threads: any[] }) {
 
 		if (window.confirm("Are you sure you want to delete this thread?")) {
 			try {
-				const deleted = await deleteThread(threadId);
+				let deleted: boolean | AxiosResponse<any, any> = false;
+				if (agent.id) {
+					deleted = await deleteThread(threadId, agent.id);
+				} else {
+					deleted = await deleteThread(threadId);
+				}
 				if (deleted) {
 					setThreads(threads.filter((thread: any) => thread.key !== threadId));
 				}
