@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Response, HTTPException, Body
 from fastapi.responses import JSONResponse
 from src.schemas.entities.schedule import (
     ScheduleCreate,
+    ScheduleUpdate,
     JobUpdated,
     Schedule,
     JobTrigger,
@@ -37,9 +38,10 @@ async def get_jobs(
         if job.kwargs["metadata"]["user_id"] == user.id:
             schedule = Schedule(
                 id=job.id,
+                title=job.kwargs["metadata"].get("title", "Untitled Schedule"),
                 trigger=JobTrigger.from_trigger(job.trigger),
                 task=job.args[0],
-                next_run_time=job.next_run_time.isoformat(),
+                next_run_time=job.next_run_time,
             )
             user_jobs.append(schedule.model_dump())
 
@@ -64,10 +66,10 @@ async def get_job(
 
     schedule = Schedule(
         id=job.id,
+        title=job.kwargs["metadata"].get("title", "Untitled Schedule"),
         trigger=JobTrigger.from_trigger(job.trigger),
         task=job.args[0],
-        # created_at=job.created_at,
-        # updated_at=job.updated_at,
+        next_run_time=job.next_run_time,
     )
     return {"schedule": schedule.model_dump()}
 
@@ -88,7 +90,7 @@ async def create_job(
         func=scheduled_llm_invoke_wrapper,
         trigger=trigger,
         args=[job.task.model_dump()],
-        kwargs={"metadata": {"user_id": user.id}},
+        kwargs={"metadata": {"user_id": user.id, "title": job.title}},
         replace_existing=True,
         misfire_grace_time=300,
     )
@@ -103,6 +105,58 @@ async def create_job(
             "job": {
                 "id": job_id,
                 "next_run_time": scheduled_job.next_run_time.isoformat(),
+            }
+        },
+    )
+
+
+@router.put("/schedules/{job_id}", responses={200: {"model": JobUpdated}})
+async def update_job(
+    job_id: str,
+    job_update: ScheduleUpdate = Body(
+        openapi_examples={"update_schedule": Examples.SCHEDULE_UPDATE_EXAMPLE}
+    ),
+    user: ProtectedUser = Depends(verify_credentials),
+):
+    # Get existing job and verify ownership
+    existing_job = scheduler.get_job(job_id)
+    if not existing_job:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    if existing_job.kwargs["metadata"]["user_id"] != user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this job")
+
+    # Prepare update parameters
+    update_params = {}
+
+    if job_update.trigger is not None:
+        update_params["trigger"] = create_trigger(job_update.trigger)
+
+    if job_update.task is not None:
+        update_params["args"] = [job_update.task.model_dump()]
+
+    # Handle title update by updating kwargs metadata
+    if job_update.title is not None:
+        current_metadata = existing_job.kwargs.get("metadata", {})
+        current_metadata["title"] = job_update.title
+        update_params["kwargs"] = {"metadata": current_metadata}
+
+    # Update the job using modify_job
+    scheduler.modify_job(job_id, **update_params)
+
+    # Get the updated job to return current state
+    updated_job = scheduler.get_job(job_id)
+
+    print(f"✅ Scheduled job updated: {updated_job}")
+    print(f"   Job ID: {job_id}")
+    print(f"   Next run time: {updated_job.next_run_time.isoformat()}")
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "job": {
+                "id": job_id,
+                "next_run_time": updated_job.next_run_time.isoformat(),
             }
         },
     )

@@ -365,11 +365,27 @@ SCHEDULE_LIST_EXAMPLE = Example(
 )
 SCHEDULE_CREATE_EXAMPLE = Example(
     {
+        "title": "Daily Weather Check",
         "trigger": {"type": "cron", "expression": "0 1 * * *"},
         "task": {
             "model": "openai:gpt-5-nano",
             "system": "You are a helpful assistant.",
             "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+            "tools": ["get_weather"],
+        },
+    }
+)
+
+SCHEDULE_UPDATE_EXAMPLE = Example(
+    {
+        "title": "Updated Daily Weather Check",
+        "trigger": {"type": "cron", "expression": "0 2 * * *"},
+        "task": {
+            "model": "openai:gpt-5-nano",
+            "system": "You are a helpful assistant.",
+            "messages": [
+                {"role": "user", "content": "Updated weather check for Dallas?"}
+            ],
             "tools": ["get_weather"],
         },
     }
@@ -388,6 +404,7 @@ class Examples:
     A2A_GET_AGENT_CARD_EXAMPLE = A2A_GET_AGENT_CARD_EXAMPLE
     SCHEDULE_LIST_EXAMPLE = SCHEDULE_LIST_EXAMPLE
     SCHEDULE_CREATE_EXAMPLE = SCHEDULE_CREATE_EXAMPLE
+    SCHEDULE_UPDATE_EXAMPLE = SCHEDULE_UPDATE_EXAMPLE
     SCHEDULE_FIND_EXAMPLE = SCHEDULE_FIND_EXAMPLE
     THREAD_SEARCH_EXAMPLES = {
         "list_threads": Example(

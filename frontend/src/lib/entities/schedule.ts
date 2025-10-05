@@ -1,4 +1,5 @@
 export interface ScheduleCreate {
+	title: string;
 	trigger: {
 		type: "cron";
 		expression: string; // e.g., "0 */1 * * *" (minimum 1 hour intervals)
@@ -20,6 +21,7 @@ export interface ScheduleCreate {
 
 export interface Schedule {
 	id: string;
+	title: string;
 	trigger: {
 		type: "cron";
 		expression: string;

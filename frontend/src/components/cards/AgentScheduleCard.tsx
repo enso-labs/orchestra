@@ -114,12 +114,15 @@ export const AgentScheduleCard: React.FC<AgentScheduleCardProps> = ({
 					</DropdownMenu>
 				</div>
 				<CardTitle className="text-base line-clamp-2">
-					{getTaskSummary()}
+					{schedule.title}
 				</CardTitle>
 				<CardDescription className="text-sm">
 					<div className="flex items-center gap-1">
 						<Clock className="h-3 w-3" />
 						{getHumanReadableCron(schedule.trigger.expression)}
+					</div>
+					<div className="mt-1 text-xs text-muted-foreground line-clamp-1">
+						{getTaskSummary()}
 					</div>
 				</CardDescription>
 			</CardHeader>

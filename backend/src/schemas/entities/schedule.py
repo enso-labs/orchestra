@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Callable
+from typing import Callable, Optional
 from uuid import uuid4
 from fastapi.openapi.models import Example
 from datetime import datetime
@@ -111,12 +111,14 @@ class JobDeleted(BaseModel):
 
 
 class ScheduleCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200, example="Daily Weather Check")
     trigger: JobTrigger
     task: LLMRequest
 
     model_config = {
         "json_schema_extra": {
             "example": {
+                "title": "Daily Weather Check",
                 "trigger": {"type": "cron", "expression": "* * * * *"},
                 "task": {
                     "model": "openai:gpt-5-nano",
@@ -133,8 +135,38 @@ class ScheduleCreate(BaseModel):
     }
 
 
+class ScheduleUpdate(BaseModel):
+    title: Optional[str] = Field(
+        None, min_length=1, max_length=200, example="Updated Daily Weather Check"
+    )
+    trigger: Optional[JobTrigger] = None
+    task: Optional[LLMRequest] = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "title": "Updated Daily Weather Check",
+                "trigger": {"type": "cron", "expression": "0 2 * * *"},
+                "task": {
+                    "model": "openai:gpt-5-nano",
+                    "system": "You are a helpful assistant.",
+                    "messages": [
+                        {"role": "user", "content": "Updated weather check for Dallas?"}
+                    ],
+                    "tools": [],
+                    "a2a": {},
+                    "mcp": {},
+                    "subagents": [],
+                    "metadata": {},
+                },
+            }
+        }
+    }
+
+
 class Schedule(BaseModel):
     id: str = Field(..., example=str(uuid4()))
+    title: str = Field(..., example="Daily Weather Check")
     trigger: JobTrigger
     task: LLMRequest
     next_run_time: datetime = Field(..., example=datetime.now())
