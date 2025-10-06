@@ -108,3 +108,6 @@ def web_scrape(urls: List[str]) -> str:
             formatted_output = document.markdown
         docs.append(formatted_output)
     return "\n\n---\n\n".join(docs)
+
+
+SEARCH_TOOLS = [web_search, web_scrape]

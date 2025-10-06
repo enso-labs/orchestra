@@ -5,7 +5,7 @@ from typing import List
 from pydantic import BaseModel, Field, ConfigDict
 
 from langchain_core.tools import BaseToolkit
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 from langchain_core.tools import ToolException
 
 
@@ -265,4 +265,4 @@ class InterpreterToolkit(BaseToolkit):
         return toolkit
 
 
-python_code_interpreter = InterpreterToolkit().get_tools()
+PYTHON_CODE_INTERPRETER_TOOLS = InterpreterToolkit().get_tools()

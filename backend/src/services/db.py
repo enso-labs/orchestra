@@ -5,11 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from psycopg_pool import ConnectionPool
-from src.constants import DB_URI, CONNECTION_POOL_KWARGS
+from src.constants import DB_URI
 from langgraph.store.postgres import AsyncPostgresStore
-from langgraph.store.postgres.base import PostgresIndexConfig
-from langchain.embeddings.base import init_embeddings
 
 MAX_CONNECTION_POOL_SIZE = None
 

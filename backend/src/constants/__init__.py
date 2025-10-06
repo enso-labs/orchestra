@@ -1,16 +1,6 @@
 import os
-import json
-import base64
-from dotenv import load_dotenv
+
 from enum import Enum
-
-load_dotenv()
-
-
-def fix_base64_padding(s):
-    """Ensure base64 string has correct padding."""
-    return s + "=" * (-len(s) % 4)
-
 
 # Server
 HOST = str(os.getenv("HOST", "0.0.0.0"))
@@ -23,9 +13,7 @@ OAUTH_GITHUB_CLIENT_SECRET = os.getenv("OAUTH_GITHUB_CLIENT_SECRET")
 OAUTH_GITHUB_REDIRECT_URI = os.getenv("OAUTH_GITHUB_REDIRECT_URI")
 
 # JWT Settings
-JWT_SECRET_KEY = os.getenv(
-    "JWT_SECRET_KEY", "this-is-a-secret-key"
-)  # Change this in production!
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "this-is-a-secret-key")
 JWT_ALGORITHM = "HS256"
 JWT_TOKEN_EXPIRE_MINUTES = 60 * 24
 
@@ -34,21 +22,12 @@ APP_ENV = os.getenv("APP_ENV", "development")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 APP_SECRET_KEY = os.getenv("APP_SECRET_KEY", "this-is-a-secret-key")
 APP_LOG_LEVEL = os.getenv("APP_LOG_LEVEL", "INFO").upper()
-DEFAULT_VECTOR_STORE_PATH = "./sandbox/db/vectorstore.json"
 
 # Database
 DB_URI = os.getenv(
     "POSTGRES_CONNECTION_STRING",
     "postgresql://admin:test1234@localhost:5432/lg_template_dev?sslmode=disable",
 )
-DB_URI_SANDBOX = os.getenv(
-    "POSTGRES_CONNECTION_STRING_SANDBOX",
-    "postgresql://admin:test1234@localhost:5432/lg_template_agent?sslmode=disable",
-)
-CONNECTION_POOL_KWARGS = {
-    "autocommit": True,
-    "prepare_threshold": 0,
-}
 
 
 class UserTokenKey(Enum):
