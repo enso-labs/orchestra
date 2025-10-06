@@ -23,7 +23,7 @@ from src.routes.v0 import (
     tool,
     llm,
     thread,
-    info,
+    health,
     auth,
     storage,
     rag,
@@ -132,8 +132,8 @@ app.add_middleware(
 
 # Include routers
 PREFIX = "/api"
-app.include_router(info, prefix=PREFIX)
 app.include_router(auth, prefix=PREFIX)
+app.include_router(health, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(assistant, prefix=PREFIX)

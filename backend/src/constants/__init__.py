@@ -29,6 +29,12 @@ DB_URI = os.getenv(
     "postgresql://admin:test1234@localhost:5432/lg_template_dev?sslmode=disable",
 )
 
+# Database Connection Pool Settings
+DB_POOL_MIN_SIZE = int(os.getenv("DB_POOL_MIN_SIZE", "5"))
+DB_POOL_MAX_SIZE = int(os.getenv("DB_POOL_MAX_SIZE", "20"))
+DB_POOL_MAX_IDLE_TIME = int(os.getenv("DB_POOL_MAX_IDLE_TIME", "300"))  # 5 minutes
+DB_POOL_MAX_LIFETIME = int(os.getenv("DB_POOL_MAX_LIFETIME", "3600"))  # 1 hour
+
 
 class UserTokenKey(Enum):
     ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY"

@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
@@ -68,13 +69,30 @@ class AssistantService:
         )
 
     async def _postgres_search(self, limit: int = 1000) -> list[dict]:
-        async with self.store as store:
-            items = await store.asearch((STORE_KEY, self.user_id), limit=limit)
-            return sorted(
-                [item for item in items],
-                key=lambda x: x.updated_at,
-                reverse=True,
-            )
+        max_retries = 3
+        retry_delay = 1  # seconds
+
+        for attempt in range(max_retries):
+            try:
+                async with self.store as store:
+                    items = await store.asearch((STORE_KEY, self.user_id), limit=limit)
+                    return sorted(
+                        [item for item in items],
+                        key=lambda x: x.updated_at,
+                        reverse=True,
+                    )
+            except Exception as e:
+                error_msg = str(e).lower()
+                if "connection" in error_msg and "closed" in error_msg:
+                    logger.warning(
+                        f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}"
+                    )
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(
+                            retry_delay * (2**attempt)
+                        )  # Exponential backoff
+                        continue
+                raise e
 
     def _format_assistant(self, items: list[SearchItem]) -> list[Assistant]:
         assistants = []

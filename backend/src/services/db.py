@@ -7,7 +7,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from src.constants import DB_URI
+from src.constants import (
+    DB_URI,
+    DB_POOL_MIN_SIZE,
+    DB_POOL_MAX_SIZE,
+    DB_POOL_MAX_IDLE_TIME,
+    DB_POOL_MAX_LIFETIME,
+)
 from langgraph.store.postgres import AsyncPostgresStore, PoolConfig
 
 MAX_CONNECTION_POOL_SIZE = None
@@ -62,7 +68,11 @@ def get_store_db(
 ) -> AsyncIterator[AsyncPostgresStore]:
     return AsyncPostgresStore.from_conn_string(
         conn_string=DB_URI,
-        pool_config=PoolConfig(min_size=2, max_size=10),
+        pool_config=PoolConfig(
+            min_size=DB_POOL_MIN_SIZE,
+            max_size=DB_POOL_MAX_SIZE,
+            max_lifetime=DB_POOL_MAX_LIFETIME,
+        ),
         index=PostgresIndexConfig(
             embed=init_embeddings(embed),
             dims=1536,
