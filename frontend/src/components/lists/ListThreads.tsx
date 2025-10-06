@@ -85,18 +85,6 @@ function ListThreads({ threads }: { threads: any[] }) {
 								})}
 							</p>
 							<div className="flex items-center gap-1">
-								<p
-									className="text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-									onClick={(e) => {
-										e.stopPropagation();
-										navigator.clipboard.writeText(thread.value.thread_id);
-										setCopiedThreadId(thread.value.thread_id);
-										setTimeout(() => setCopiedThreadId(null), 2000);
-									}}
-									title="Click to copy thread ID"
-								>
-									{thread.value.thread_id}
-								</p>
 								{copiedThreadId === thread.value.thread_id && (
 									<svg
 										xmlns="http://www.w3.org/2000/svg"

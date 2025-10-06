@@ -12,9 +12,8 @@ from src.constants import ARCADE_API_KEY
 
 
 class ToolService:
-    def default_tools(self, tools: list[str]) -> list[BaseTool]:
-        if not tools:
-            return []
+    @staticmethod
+    def default_tools(tools: list[str]) -> list[BaseTool]:
         default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
         return default_tools
 
