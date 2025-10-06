@@ -15,7 +15,7 @@ function ListThreads({ threads }: { threads: any[] }) {
 	const { agent } = useAgentContext();
 	const { setMessages, setMetadata, metadata, setThreads } = useChatContext();
 	const [, setQueryModel] = useQueryParam("model", StringParam);
-	const [copiedThreadId, setCopiedThreadId] = useState<string | null>(null);
+	const [copiedThreadId] = useState<string | null>(null);
 
 	if (threads.length === 0) {
 		return (
