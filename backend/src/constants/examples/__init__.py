@@ -1,25 +1,19 @@
 import httpx
 from fastapi.openapi.models import Example
 
-
-MCP_REQ_BODY_EXAMPLE = {
-    "mcp": {
-        "enso_mcp": {
-            "transport": "sse",
-            "url": "https://mcp.enso.sh/sse",
-            "headers": {"x-mcp-key": "your_api_key"},
-        }
-    }
+MCP_SERVER_EXAMPLE = {
+    "transport": "sse",
+    "url": "https://mcp.enso.sh/sse",
+    "headers": {"x-mcp-key": "your_api_key"},
 }
+MCP_DICT_EXAMPLE = {"enso_mcp": MCP_SERVER_EXAMPLE}
+MCP_REQ_BODY_EXAMPLE = {"mcp": MCP_DICT_EXAMPLE}
 
-A2A_REQ_BODY_EXAMPLE = {
-    "a2a": {
-        "currency_agent": {
-            "base_url": "https://a2a.enso.sh",
-            "agent_card_path": "/.well-known/agent.json",
-        }
-    }
+A2A_SERVER_EXAMPLE = {
+    "base_url": "https://a2a.enso.sh",
+    "agent_card_path": "/.well-known/agent.json",
 }
+A2A_DICT_EXAMPLE = {"currency_agent": A2A_SERVER_EXAMPLE}
 
 ARCADE_REQ_BODY_EXAMPLE = {
     "arcade": {"tools": ["Web.ScrapeUrl"], "toolkits": ["Google"]}
@@ -29,21 +23,6 @@ ARCADE_RESPONSE_EXAMPLE = httpx.get(
     "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json"
 ).json()
 
-NEW_THREAD_QUERY_EXAMPLE = {
-    "system": "You are a helpful assistant.",
-    "query": "What is the capital of France?",
-    "model": "openai:gpt-4o",
-    "tools": [],
-    "images": [],
-    "collection": {
-        "id": "e208fbc9-92cd-4f50-9286-6eab533693c4",
-        "limit": 10,
-        "filter": {},
-    },
-    **A2A_REQ_BODY_EXAMPLE,
-    **MCP_REQ_BODY_EXAMPLE,
-    **ARCADE_REQ_BODY_EXAMPLE,
-}
 
 NEW_THREAD_API_TOOLS = {
     "system": "You are",
@@ -88,23 +67,6 @@ NEW_THREAD_ANSWER_EXAMPLE = {
             "input_token_details": {},
         },
     },
-}
-
-
-EXISTING_THREAD_QUERY_EXAMPLE = {
-    "query": "What about Germany?",
-    "model": "openai:gpt-4o",
-    "memory": True,
-    "tools": [],
-    "images": [],
-    "collection": {
-        "id": "e208fbc9-92cd-4f50-9286-6eab533693c4",
-        "limit": 10,
-        "filter": None,
-    },
-    **A2A_REQ_BODY_EXAMPLE,
-    **MCP_REQ_BODY_EXAMPLE,
-    **ARCADE_REQ_BODY_EXAMPLE,
 }
 
 
@@ -394,9 +356,6 @@ SCHEDULE_UPDATE_EXAMPLE = Example(
 
 class Examples:
     LOGIN_RESPONSE_EXAMPLE = LOGIN_RESPONSE_EXAMPLE
-    NEW_THREAD_QUERY_EXAMPLE = NEW_THREAD_QUERY_EXAMPLE
-    NEW_THREAD_ANSWER_EXAMPLE = NEW_THREAD_ANSWER_EXAMPLE
-    EXISTING_THREAD_QUERY_EXAMPLE = EXISTING_THREAD_QUERY_EXAMPLE
     EXISTING_THREAD_ANSWER_EXAMPLE = EXISTING_THREAD_ANSWER_EXAMPLE
     THREAD_HISTORY_EXAMPLE = THREAD_HISTORY_EXAMPLE
     ADD_DOCUMENTS_EXAMPLE = ADD_DOCUMENTS_EXAMPLE
@@ -526,7 +485,7 @@ class Examples:
             prompt="You are a helpful assistant.",
             tools=["web_search"],
             mcp=MCP_REQ_BODY_EXAMPLE["mcp"],
-            a2a=A2A_REQ_BODY_EXAMPLE["a2a"],
+            a2a=A2A_DICT_EXAMPLE,
             metadata={},
         ),
     }

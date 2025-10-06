@@ -2,7 +2,7 @@ from langchain_core.tools import StructuredTool, BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_arcade import ArcadeToolManager
 
-from src.schemas.entities.a2a import A2AServer
+from src.schemas.entities.a2a import A2AServer, McpServer
 from src.tools import TOOL_LIBRARY
 from src.utils.a2a import A2ACardResolver
 from src.schemas.entities import ArcadeConfig
@@ -35,7 +35,7 @@ class ToolService:
         return tool_details
 
     @staticmethod
-    async def mcp_tools(mcp: dict):
+    async def mcp_tools(mcp: dict[str, McpServer]):
         try:
             mcp_client = MultiServerMCPClient(mcp)
             mcp_tools = await mcp_client.get_tools()
@@ -45,15 +45,15 @@ class ToolService:
             return []
 
     @staticmethod
-    def a2a_tools(a2a: dict[str, A2AServer]):
+    def agent_cards(a2a: dict[str, A2AServer]):
         agent_cards = []
-        for server_name, server in a2a.items():
+        for _, server in a2a.items():
             try:
                 a2a_card_resolver = A2ACardResolver(
                     server.base_url, server.agent_card_path
                 )
                 agent_card = a2a_card_resolver.get_agent_card()
-                agent_cards.append(agent_card)
+                agent_cards.append(agent_card.model_dump())
             except Exception as e:
                 logger.error(f"Error fetching agent card for {server.base_url}: {e}")
         return agent_cards

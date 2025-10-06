@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Body, status
 from fastapi.responses import JSONResponse
-from src.constants.examples import MCP_REQ_BODY_EXAMPLE
+from src.constants.examples import MCP_DICT_EXAMPLE
 from src.services.tool import tool_service
-from src.schemas.entities.a2a import A2AServers
+from src.schemas.entities.a2a import A2AServer, McpServer, A2A_DICT_EXAMPLE
 from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE
 
 router = APIRouter()
@@ -20,9 +20,17 @@ router = APIRouter()
         }
     },
 )
-async def list_mcp_info(config: dict = Body(openapi_examples=MCP_REQ_BODY_EXAMPLE)):
+async def list_mcp_info(
+    config: dict[str, McpServer] = Body(openapi_examples=MCP_DICT_EXAMPLE),
+):
     try:
-        tools = await tool_service.mcp_tools(config.mcp)
+        for name, server in config.items():
+            config[name] = {
+                "transport": server.transport,
+                "url": server.url,
+                "headers": server.headers,
+            }
+        tools = await tool_service.mcp_tools(config)
         return JSONResponse(
             content={
                 "mcp": [
@@ -54,15 +62,11 @@ async def list_mcp_info(config: dict = Body(openapi_examples=MCP_REQ_BODY_EXAMPL
         }
     },
 )
-async def get_a2a_agent_card(body: A2AServers):
+async def get_a2a_agent_card(
+    config: dict[str, A2AServer] = Body(openapi_examples=A2A_DICT_EXAMPLE),
+):
     try:
-        if not body.a2a:
-            return JSONResponse(
-                content={"error": "No A2A servers or A2A config found"},
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        agent_cards = tool_service.a2a_tools(body.a2a)
+        agent_cards = tool_service.agent_cards(config)
 
         return JSONResponse(
             content={"agent_cards": agent_cards}, status_code=status.HTTP_200_OK

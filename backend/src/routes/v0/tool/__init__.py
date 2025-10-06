@@ -19,13 +19,17 @@ router = APIRouter(tags=["Tool"], prefix="/tools")
     responses={
         status.HTTP_200_OK: {
             "description": "All tools.",
-            "content": {"application/json": {"example": tool_service.tool_details()}},
+            "content": {
+                "application/json": {"example": {"tools": tool_service.tool_details()}}
+            },
         }
     },
 )
 def list_tools(user: ProtectedUser = Depends(verify_credentials)):
     tools_response = tool_service.tool_details()
-    return JSONResponse(content=tools_response, status_code=status.HTTP_200_OK)
+    return JSONResponse(
+        content={"tools": tools_response}, status_code=status.HTTP_200_OK
+    )
 
 
 router.include_router(info_router)
