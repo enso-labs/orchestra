@@ -15,6 +15,7 @@ import {
 	Check,
 	X,
 } from "lucide-react";
+import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 
 import {
 	Form,
@@ -27,12 +28,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
@@ -40,7 +35,6 @@ import {
 } from "@/components/ui/dialog";
 import { useAgentContext } from "@/context/AgentContext";
 import { useEffect, useState, useMemo } from "react";
-import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Button } from "@/components/ui/button";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
@@ -66,22 +60,14 @@ const formSchema = z.object({
 export function AgentCreateForm() {
 	const navigate = useNavigate();
 	const { agentId } = useParams();
-	const {
-		agent,
-		agents,
-		setAgent,
-		loadMcpTemplate,
-		loadA2aTemplate,
-		clearMcp,
-		clearA2a,
-		toggleSubagent,
-		isAgentSelected,
-	} = useAgentContext();
+	const { agent, agents, setAgent, toggleSubagent, isAgentSelected } =
+		useAgentContext();
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 	const [fullscreenSystemMessage, setFullscreenSystemMessage] = useState("");
 	const [systemMessageUrl, setSystemMessageUrl] = useState("");
 	const [isUsingUrl, setIsUsingUrl] = useState(false);
 	const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
+	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -351,84 +337,45 @@ export function AgentCreateForm() {
 				</div>
 
 				<div className="border border-border rounded-lg p-6">
-					<div className="flex items-center gap-3 mb-6">
-						<Wrench className="h-5 w-5 text-foreground" />
-						<div>
-							<h2 className="text-lg font-semibold text-foreground">Tools</h2>
-							<p className="text-sm text-muted-foreground">
-								Configure tool integrations and settings
-							</p>
+					<div className="flex items-center justify-between mb-4">
+						<div className="flex items-center gap-3">
+							<Wrench className="h-5 w-5 text-foreground" />
+							<div>
+								<h2 className="text-lg font-semibold text-foreground">Tools</h2>
+								<p className="text-sm text-muted-foreground">
+									Configure tool integrations and settings
+								</p>
+							</div>
 						</div>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsToolModalOpen(true)}
+						>
+							<Wrench className="h-4 w-4 mr-2" />
+							Manage Tools ({agent.tools?.length || 0})
+						</Button>
 					</div>
-					<Accordion type="single" collapsible>
-						<AccordionItem value="mcp">
-							<AccordionTrigger>MCP</AccordionTrigger>
-							<AccordionContent>
-								<div className="space-y-4">
-									<div className="flex gap-2">
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											onClick={loadMcpTemplate}
-										>
-											Load Default Template
-										</Button>
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											onClick={clearMcp}
-										>
-											Clear
-										</Button>
-									</div>
-									<MonacoEditor
-										value={JSON.stringify(agent.mcp, null, 2)}
-										handleChange={(val) => {
-											try {
-												setAgent({ ...agent, mcp: JSON.parse(val) });
-											} catch (e) {
-												// Keep the raw value in case user is still editing
-												// The MonacoEditor will show the error
-											}
-										}}
-									/>
-								</div>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="a2a">
-							<AccordionTrigger>A2A</AccordionTrigger>
-							<AccordionContent>
-								<div className="space-y-4">
-									<div className="flex gap-2">
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											onClick={loadA2aTemplate}
-										>
-											Load Default Template
-										</Button>
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											onClick={clearA2a}
-										>
-											Clear
-										</Button>
-									</div>
-									<MonacoEditor
-										value={JSON.stringify(agent.a2a, null, 2)}
-										handleChange={(val) =>
-											setAgent({ ...agent, a2a: JSON.parse(val) })
-										}
-									/>
-								</div>
-							</AccordionContent>
-						</AccordionItem>
-					</Accordion>
+
+					{/* Selected Tools Preview */}
+					{agent.tools && agent.tools.length > 0 && (
+						<div className="flex flex-wrap gap-2">
+							{agent.tools.map((tool: string) => (
+								<span
+									key={tool}
+									className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-sm text-foreground"
+								>
+									{tool}
+								</span>
+							))}
+						</div>
+					)}
+
+					{(!agent.tools || agent.tools.length === 0) && (
+						<p className="text-sm text-muted-foreground">
+							No tools selected. Click "Manage Tools" to add tools.
+						</p>
+					)}
 				</div>
 
 				<div className="border border-border rounded-lg p-6">
@@ -630,6 +577,17 @@ export function AgentCreateForm() {
 					</div>
 				</DialogContent>
 			</Dialog>
+
+			{/* Tool Selection Modal */}
+			<ToolSelectionModal
+				isOpen={isToolModalOpen}
+				onClose={() => setIsToolModalOpen(false)}
+				initialSelectedTools={agent.tools || []}
+				onApply={(selectedTools) => {
+					setAgent({ ...agent, tools: selectedTools });
+					setIsToolModalOpen(false);
+				}}
+			/>
 		</Form>
 	);
 }
