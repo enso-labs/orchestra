@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
 import { PlatformToolsPanel } from "./PlatformToolsPanel";
@@ -54,18 +53,7 @@ export function ToolSelectionModal({
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
 			<DialogContent className="max-w-[1400px] w-full sm:w-[95vw] h-[100vh] sm:h-[90vh] max-h-none sm:max-h-[900px] p-0 gap-0">
-				<DialogHeader className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={handleClose}
-						className="rounded-full"
-					>
-						<X className="h-4 w-4" />
-					</Button>
-				</DialogHeader>
-
-				<div className="flex flex-col sm:flex-row h-full">
+				<div className="flex flex-col sm:flex-row h-full overflow-hidden">
 					<Sidebar
 						activeCategory={activeCategory}
 						onCategoryChange={setActiveCategory}
