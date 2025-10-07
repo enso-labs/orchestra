@@ -18,3 +18,5 @@ Makefile
 **.cursor*
 **/__pycache__/
 **/logs/
+**/.plans/
+**/AGENTS.md
