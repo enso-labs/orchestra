@@ -57,8 +57,7 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 filterwarnings = [
-    "ignore::DeprecationWarning:passlib.*",
-    "ignore:AgentStatePydantic has been moved to langchain.agents"
+    "ignore::DeprecationWarning:passlib.*"
 ]
 
 [tool.uv]
