@@ -33,6 +33,7 @@ dependencies = [
     "mkdocs-material>=9.6.18",
     "mkdocstrings[python]>=0.30.0",
     "nest-asyncio>=1.6.0",
+    "openai>=1.68.0",
     "passlib[argon2]>=1.7.4",
     "psycopg2-binary>=2.9.10",
     "psycopg[binary,pool]>=3.2.9",

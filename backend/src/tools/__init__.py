@@ -6,6 +6,7 @@ from src.schemas.entities import ArcadeConfig
 from src.schemas.entities.a2a import A2AServer
 
 from src.tools.search import web_search, web_scrape
+from src.tools.image import generate_image, refine_image
 from src.tools.a2a import init_a2a_tools
 from src.tools.arcade import init_arcade_tools
 from src.tools.api import generate_tools_from_openapi_json
@@ -14,6 +15,8 @@ from src.tools.test import TEST_TOOLS, get_stock_price, get_weather, human_assis
 TOOL_LIBRARY = [
     web_search,
     web_scrape,
+    generate_image,
+    refine_image,
     get_stock_price,
     get_weather,
     human_assistance,
@@ -34,6 +37,8 @@ def attach_tool_details(tool):
         tool["tags"] = ["sql"]
     elif tool["id"] == "search_engine":
         tool["tags"] = ["search"]
+    elif tool["id"] == "generate_image" or tool["id"] == "refine_image":
+        tool["tags"] = ["image", "generation", "openai"]
     elif (
         tool["id"] == "retrieval_query"
         or tool["id"] == "retrieval_add"
