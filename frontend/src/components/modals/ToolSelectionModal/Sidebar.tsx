@@ -15,33 +15,66 @@ interface SidebarProps {
 
 export function Sidebar({ activeCategory, onCategoryChange }: SidebarProps) {
 	return (
-		<div className="w-60 border-r border-border flex-shrink-0">
-			<nav className="p-4 space-y-1">
-				{categories.map((category) => {
-					const Icon = category.icon;
-					const isActive = activeCategory === category.id;
+		<>
+			{/* Mobile: Horizontal scrolling tabs */}
+			<div className="sm:hidden border-b border-border flex-shrink-0 overflow-x-auto">
+				<nav className="flex p-2 gap-1 min-w-max">
+					{categories.map((category) => {
+						const Icon = category.icon;
+						const isActive = activeCategory === category.id;
 
-					return (
-						<button
-							key={category.id}
-							onClick={() => onCategoryChange(category.id)}
-							className={`
-                w-full flex items-center gap-3 px-4 py-2.5 rounded-lg
-                text-sm font-medium transition-colors
-                ${
-									isActive
-										? "bg-muted text-foreground border-l-2 border-primary"
-										: "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-								}
-              `}
-							aria-current={isActive ? "page" : undefined}
-						>
-							<Icon className="h-4 w-4" />
-							<span>{category.label}</span>
-						</button>
-					);
-				})}
-			</nav>
-		</div>
+						return (
+							<button
+								key={category.id}
+								onClick={() => onCategoryChange(category.id)}
+								className={`
+                  flex items-center gap-2 px-3 py-2 rounded-lg
+                  text-sm font-medium transition-colors whitespace-nowrap
+                  ${
+										isActive
+											? "bg-primary text-primary-foreground"
+											: "text-muted-foreground hover:bg-muted hover:text-foreground"
+									}
+                `}
+								aria-current={isActive ? "page" : undefined}
+							>
+								<Icon className="h-4 w-4" />
+								<span>{category.label}</span>
+							</button>
+						);
+					})}
+				</nav>
+			</div>
+
+			{/* Desktop: Vertical sidebar */}
+			<div className="hidden sm:block w-60 border-r border-border flex-shrink-0">
+				<nav className="p-4 space-y-1">
+					{categories.map((category) => {
+						const Icon = category.icon;
+						const isActive = activeCategory === category.id;
+
+						return (
+							<button
+								key={category.id}
+								onClick={() => onCategoryChange(category.id)}
+								className={`
+                  w-full flex items-center gap-3 px-4 py-2.5 rounded-lg
+                  text-sm font-medium transition-colors
+                  ${
+										isActive
+											? "bg-muted text-foreground border-l-2 border-primary"
+											: "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+									}
+                `}
+								aria-current={isActive ? "page" : undefined}
+							>
+								<Icon className="h-4 w-4" />
+								<span>{category.label}</span>
+							</button>
+						);
+					})}
+				</nav>
+			</div>
+		</>
 	);
 }

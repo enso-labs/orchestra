@@ -32,8 +32,8 @@ export function PlatformToolsPanel({
 	return (
 		<div className="flex flex-col h-full">
 			{/* Header */}
-			<div className="flex-shrink-0 border-b border-border px-12 py-6 space-y-2">
-				<h2 className="text-2xl font-semibold text-foreground">
+			<div className="flex-shrink-0 border-b border-border px-4 sm:px-8 lg:px-12 py-4 sm:py-6 space-y-2">
+				<h2 className="text-xl sm:text-2xl font-semibold text-foreground">
 					Tools & Integrations
 				</h2>
 				<p className="text-sm text-muted-foreground">
@@ -41,8 +41,8 @@ export function PlatformToolsPanel({
 				</p>
 
 				{/* Search */}
-				<div className="pt-4">
-					<div className="relative max-w-md">
+				<div className="pt-3 sm:pt-4">
+					<div className="relative max-w-full sm:max-w-md">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
 							placeholder="Search tools..."

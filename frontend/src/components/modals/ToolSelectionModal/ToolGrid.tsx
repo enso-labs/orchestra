@@ -28,7 +28,7 @@ export function ToolGrid({
 
 	return (
 		<ScrollArea className="h-full">
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-12">
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-8 lg:p-12">
 				{tools.map((tool) => (
 					<ToolCard
 						key={tool.name}

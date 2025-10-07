@@ -53,8 +53,8 @@ export function ToolSelectionModal({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
-			<DialogContent className="max-w-[1400px] w-[95vw] h-[90vh] max-h-[900px] p-0">
-				<DialogHeader className="absolute top-4 right-4 z-10">
+			<DialogContent className="max-w-[1400px] w-full sm:w-[95vw] h-[100vh] sm:h-[90vh] max-h-none sm:max-h-[900px] p-0 gap-0">
+				<DialogHeader className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10">
 					<Button
 						variant="ghost"
 						size="icon"
@@ -65,7 +65,7 @@ export function ToolSelectionModal({
 					</Button>
 				</DialogHeader>
 
-				<div className="flex h-full">
+				<div className="flex flex-col sm:flex-row h-full">
 					<Sidebar
 						activeCategory={activeCategory}
 						onCategoryChange={setActiveCategory}
@@ -105,8 +105,8 @@ export function ToolSelectionModal({
 						)}
 
 						{/* Action Bar */}
-						<div className="flex-shrink-0 border-t border-border px-6 py-4 bg-background">
-							<div className="flex items-center justify-between">
+						<div className="flex-shrink-0 border-t border-border px-4 sm:px-6 py-3 sm:py-4 bg-background">
+							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
 								<div className="text-sm text-muted-foreground">
 									{selectedCount > 0 ? (
 										<span>
@@ -117,11 +117,17 @@ export function ToolSelectionModal({
 										<span>No tools selected</span>
 									)}
 								</div>
-								<div className="flex items-center gap-3">
-									<Button variant="outline" onClick={handleClose}>
+								<div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+									<Button
+										variant="outline"
+										onClick={handleClose}
+										className="flex-1 sm:flex-none"
+									>
 										Cancel
 									</Button>
-									<Button onClick={handleApply}>Apply Changes</Button>
+									<Button onClick={handleApply} className="flex-1 sm:flex-none">
+										Apply Changes
+									</Button>
 								</div>
 							</div>
 						</div>
