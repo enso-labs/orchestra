@@ -4,7 +4,6 @@ import ChatPanel from "@/pages/chat/ChatPanel";
 import NewThreadButton from "@/components/buttons/NewThreadButton";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { AgentCreateForm } from "@/components/forms/agents/agent-create-form";
-import { AgentSchedulesPanel } from "@/components/panels/AgentSchedulesPanel";
 import { useChatContext } from "@/context/ChatContext";
 import ListThreads from "@/components/lists/ListThreads";
 import { useEffect } from "react";
@@ -94,7 +93,6 @@ function AgentEditPage() {
 					<TabsList>
 						<TabsTrigger value="chat">Chat</TabsTrigger>
 						<TabsTrigger value="threads">Threads</TabsTrigger>
-						<TabsTrigger value="schedules">Schedules</TabsTrigger>
 						<TabsTrigger value="config">Config</TabsTrigger>
 					</TabsList>
 				</div>
@@ -108,11 +106,6 @@ function AgentEditPage() {
 						<div className="p-2 space-y-2">
 							<ListThreads threads={threads} />
 						</div>
-					</ScrollArea>
-				</TabsContent>
-				<TabsContent value="schedules" className="flex-1 p-4 h-0">
-					<ScrollArea className="h-full">
-						<AgentSchedulesPanel agent={agent} />
 					</ScrollArea>
 				</TabsContent>
 				<TabsContent value="config" className="flex-1 p-4 h-0">
