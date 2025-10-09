@@ -8,6 +8,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from src.utils.logger import logger
 from src.services.db import (
@@ -17,12 +20,11 @@ from src.services.db import (
 )
 
 from src.routes.v0 import (
-    # tool,
+    tool,
     llm,
     thread,
-    info,
+    health,
     auth,
-    token,
     storage,
     rag,
     assistant,
@@ -130,11 +132,12 @@ app.add_middleware(
 
 # Include routers
 PREFIX = "/api"
-app.include_router(info, prefix=PREFIX)
 app.include_router(auth, prefix=PREFIX)
+app.include_router(health, prefix=PREFIX)
 app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(assistant, prefix=PREFIX)
+app.include_router(tool, prefix=PREFIX)
 app.include_router(schedule, prefix=PREFIX)
 if LANGCONNECT_SERVER_URL:
     app.include_router(rag, prefix=PREFIX)

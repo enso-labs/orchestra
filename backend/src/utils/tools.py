@@ -3,6 +3,16 @@ from langchain_core.tools import BaseTool, tool as create_tool
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 from langgraph.prebuilt.interrupt import HumanInterruptConfig, HumanInterrupt
+from langchain_core.tools import StructuredTool
+from src.tools.search import SEARCH_TOOLS
+from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
+from src.tools.test import TEST_TOOLS
+
+
+def attach_tool_details(tool: StructuredTool):
+    if tool.name in ["search_engine", "web_search", "web_scrape"]:
+        tool.tags = ["search"]
+    return tool
 
 
 def add_human_in_the_loop(
@@ -62,3 +72,13 @@ def get_thread_id(config: RunnableConfig) -> str:
         raise ValueError("Thread ID needs to be provided to save a memory.")
 
     return thread_id
+
+
+def attach_tool_details(tool: StructuredTool):
+    if tool.name in [n.name for n in SEARCH_TOOLS]:
+        tool.tags = ["search"]
+    if tool.name in [n.name for n in PYTHON_CODE_INTERPRETER_TOOLS]:
+        tool.tags = ["python"]
+    if tool.name in [n.name for n in TEST_TOOLS]:
+        tool.tags = ["test"]
+    return tool

@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 
 from src.utils.openapi import fetch_openapi_spec_sync, get_response_model
-from src.utils.retrieval import forward
+from src.utils.retrieval import langconnect_proxy
 from src.constants import LANGCONNECT_SERVER_URL
 
 
@@ -42,7 +42,7 @@ if CLIENT_SPEC:
         # response_model=list[get_response_model("CollectionResponse", CLIENT_SPEC)],
     )
     async def collection_list(request: Request):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())
 
     @gateway.post(
@@ -66,7 +66,7 @@ if CLIENT_SPEC:
         request: Request,
         collection_data: get_response_model("CollectionCreate", CLIENT_SPEC),  # type: ignore
     ):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())
 
     @gateway.get(
@@ -85,7 +85,7 @@ if CLIENT_SPEC:
         response_model=get_response_model("CollectionResponse", CLIENT_SPEC),
     )
     async def collection_get(request: Request, collection_id: UUID):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())
 
     @gateway.patch(
@@ -113,7 +113,7 @@ if CLIENT_SPEC:
         collection_id: UUID,
         collection_data: get_response_model("CollectionCreate", CLIENT_SPEC),  # type: ignore
     ):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())
 
     @gateway.delete(
@@ -132,7 +132,7 @@ if CLIENT_SPEC:
         ],
     )
     async def collection_delete(request: Request, collection_id: UUID):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return Response(status_code=response.status_code)
 
     #####################################################################################################
@@ -164,7 +164,7 @@ if CLIENT_SPEC:
         limit: int = Query(10, ge=1, le=100),
         offset: int = Query(0, ge=0),
     ):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())
 
     @gateway.post(
@@ -193,7 +193,7 @@ if CLIENT_SPEC:
         files: list[UploadFile] = File(...),
         metadatas_json: str | None = Form(None),
     ):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())
 
     @gateway.post(
@@ -233,7 +233,7 @@ if CLIENT_SPEC:
         collection_id: UUID,
         search_query: get_response_model("SearchQuery", CLIENT_SPEC),  # type: ignore
     ):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())
 
     @gateway.delete(
@@ -261,5 +261,5 @@ if CLIENT_SPEC:
         collection_id: UUID,
         document_id: str,
     ):
-        response = await forward(request)
+        response = await langconnect_proxy(request)
         return JSONResponse(status_code=response.status_code, content=response.json())

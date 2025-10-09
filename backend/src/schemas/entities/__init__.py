@@ -1,7 +1,9 @@
 from enum import Enum
+from uuid import uuid4
 from typing import Optional, List, Any, Literal
 
 from pydantic import BaseModel, Field
+from langgraph.types import StreamMode
 from langchain_core.messages import (
     AnyMessage,
     BaseMessage,
@@ -10,22 +12,14 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from langgraph.types import StreamMode
-from uuid import uuid4
-from langchain_core.tools import BaseTool
 
 from src.schemas.models.assistant import Assistant
-from src.schemas.entities.a2a import A2AServer, A2AServers
-from src.constants.llm import ChatModels, ModelName
+from src.constants.llm import ChatModels
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
-    NEW_THREAD_API_TOOLS,
-    # LIST_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,
     NEW_THREAD_ANSWER_EXAMPLE,
     EXISTING_THREAD_ANSWER_EXAMPLE,
-    EXISTING_THREAD_QUERY_EXAMPLE,
-    NEW_THREAD_QUERY_EXAMPLE,
 )
 
 
@@ -54,49 +48,6 @@ class ArcadeConfig(BaseModel):
             "example": {"tools": ["Web.ScrapeUrl"], "toolkits": ["Google"]}
         }
     }
-
-
-class ExistingThread(ChatInput):
-    tools: Optional[List[Any]] = Field(default_factory=list)
-    mcp: Optional[dict] = Field(default_factory=dict)
-    arcade: Optional[ArcadeConfig] = Field(default_factory=ArcadeConfig)
-    a2a: Optional[dict[str, A2AServer]] = Field(default_factory=dict[str, A2AServer])
-    images: Optional[List[str]] = Field(default_factory=list)
-    model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
-    memory: Optional[bool] = Field(default=False)
-    collection: Optional[dict] = Field(
-        default={
-            "id": "default",
-            "metadata": None,
-            "search_type": "mmr",
-            "search_kwargs": {
-                "k": 10,
-                "fetch_k": 2,
-                "lambda_mult": 0.5,
-                "filter": None,
-            },
-            "tags": [],
-        }
-    )
-
-    model_config = {"json_schema_extra": {"example": EXISTING_THREAD_QUERY_EXAMPLE}}
-
-
-class AgentThread(BaseModel):
-    query: str
-    images: Optional[List[str]] = Field(default_factory=list)
-    model: Optional[str] = Field(default=ModelName.ANTHROPIC_CLAUDE_3_5_SONNET)
-
-    model_config = {
-        "json_schema_extra": {"example": {"query": "What is the capital of France?"}}
-    }
-
-
-class NewThread(ExistingThread):
-    system: Optional[str] = Field(default="You are a helpful assistant.")
-    visualize: Optional[bool] = Field(default=False)
-
-    model_config = {"json_schema_extra": {"example": NEW_THREAD_API_TOOLS}}
 
 
 class Thread(BaseModel):

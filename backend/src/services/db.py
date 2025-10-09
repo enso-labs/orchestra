@@ -1,15 +1,20 @@
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from fastapi import Request
 from typing import AsyncGenerator, Generator, AsyncIterator
+from langgraph.store.postgres.base import PostgresIndexConfig
+from langchain.embeddings import init_embeddings
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from psycopg_pool import ConnectionPool
-from src.constants import DB_URI, CONNECTION_POOL_KWARGS
-from langgraph.store.postgres import AsyncPostgresStore
-from langgraph.store.postgres.base import PostgresIndexConfig
-from langchain.embeddings.base import init_embeddings
+from src.constants import (
+    DB_URI,
+    DB_POOL_MIN_SIZE,
+    DB_POOL_MAX_SIZE,
+    DB_POOL_MAX_IDLE_TIME,
+    DB_POOL_MAX_LIFETIME,
+)
+from langgraph.store.postgres import AsyncPostgresStore, PoolConfig
 
 MAX_CONNECTION_POOL_SIZE = None
 
@@ -61,7 +66,18 @@ def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
 def get_store_db(
     embed: str = "openai:text-embedding-3-small",
 ) -> AsyncIterator[AsyncPostgresStore]:
-    return AsyncPostgresStore.from_conn_string(conn_string=DB_URI)
+    return AsyncPostgresStore.from_conn_string(
+        conn_string=DB_URI,
+        pool_config=PoolConfig(
+            min_size=DB_POOL_MIN_SIZE,
+            max_size=DB_POOL_MAX_SIZE,
+            max_lifetime=DB_POOL_MAX_LIFETIME,
+        ),
+        index=PostgresIndexConfig(
+            embed=init_embeddings(embed),
+            dims=1536,
+        ),
+    )
 
 
 # Session context managers

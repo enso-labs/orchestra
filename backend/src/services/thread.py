@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
@@ -51,13 +52,31 @@ class ThreadService:
             default_namespace = ("threads", self.user_id)
             if "assistant_id" in filter:
                 default_namespace = ("threads", self.user_id, filter["assistant_id"])
-            async with self.store as store:
-                threads = await store.asearch(default_namespace, limit=limit)
-                return sorted(
-                    [thread.dict() for thread in threads],
-                    key=lambda x: x.get("updated_at"),
-                    reverse=True,
-                )
+
+            max_retries = 3
+            retry_delay = 1  # seconds
+
+            for attempt in range(max_retries):
+                try:
+                    async with self.store as store:
+                        threads = await store.asearch(default_namespace, limit=limit)
+                        return sorted(
+                            [thread.dict() for thread in threads],
+                            key=lambda x: x.get("updated_at"),
+                            reverse=True,
+                        )
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if "connection" in error_msg and "closed" in error_msg:
+                        logger.warning(
+                            f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}"
+                        )
+                        if attempt < max_retries - 1:
+                            await asyncio.sleep(
+                                retry_delay * (2**attempt)
+                            )  # Exponential backoff
+                            continue
+                    raise e
         except Exception as e:
             logger.error(f"Error searching threads: {e}")
             return []

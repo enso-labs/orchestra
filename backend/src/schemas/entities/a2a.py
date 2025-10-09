@@ -1,40 +1,46 @@
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
-
+from typing import Literal
 from src.common.types import AgentCard
 from src.utils.logger import logger
 from src.utils.a2a import A2ACardResolver, a2a_builder
+from src.constants.examples import (
+    A2A_SERVER_EXAMPLE,
+    A2A_DICT_EXAMPLE,
+    MCP_SERVER_EXAMPLE,
+    MCP_DICT_EXAMPLE,
+)
+
+
+class McpServer(BaseModel):
+    transport: Literal["sse", "streamable_http", "stdio"]
+    url: str
+    headers: dict[str, str]
+
+    # model_config = {
+    #     "json_schema_extra": {
+    #         "example": MCP_SERVER_EXAMPLE
+    #     }
+    # }
+
+
+class McpServers(BaseModel):
+    mcp: dict[str, McpServer] = Field(default_factory=dict[str, McpServer])
+
+    model_config = {"json_schema_extra": {"example": MCP_DICT_EXAMPLE}}
 
 
 class A2AServer(BaseModel):
     base_url: str
     agent_card_path: str
 
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "base_url": "https://a2a.enso.sh",
-                "agent_card_path": "/.well-known/agent.json",
-            }
-        }
-    }
+    model_config = {"json_schema_extra": {"example": A2A_SERVER_EXAMPLE}}
 
 
 class A2AServers(BaseModel):
     a2a: dict[str, A2AServer] = Field(default_factory=dict[str, A2AServer])
 
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "a2a": {
-                    "enso_a2a": {
-                        "base_url": "https://a2a.enso.sh",
-                        "agent_card_path": "/.well-known/agent.json",
-                    }
-                }
-            }
-        }
-    }
+    model_config = {"json_schema_extra": {"example": A2A_DICT_EXAMPLE}}
 
     def validate(self) -> bool:
         if not self.a2a:

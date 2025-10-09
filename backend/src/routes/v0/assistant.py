@@ -41,7 +41,9 @@ async def search_assistants(
 
 @router.post("", name="Create Assistant")
 async def create_assistant(
-    assistant: Assistant = Body(..., example=ASSISTANT_EXAMPLES["currency_agent"]),
+    assistant: Assistant = Body(
+        ..., examples={"currency_agent": ASSISTANT_EXAMPLES["currency_agent"]}
+    ),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
@@ -68,7 +70,7 @@ async def create_assistant(
 async def update_assistant(
     assistant_id: str = Path(..., description="The ID of the assistant to update"),
     assistant: Assistant = Body(
-        ..., example=Examples.ASSISTANT_EXAMPLES["currency_agent"]
+        ..., examples={"currency_agent": Examples.ASSISTANT_EXAMPLES["currency_agent"]}
     ),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),

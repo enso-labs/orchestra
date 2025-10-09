@@ -9,8 +9,8 @@ from apscheduler.triggers.cron import CronTrigger
 
 
 class JobTrigger(BaseModel):
-    type: str = Field(..., example="cron")
-    expression: str = Field(..., example=" 0 1 * * *")
+    type: str = Field(..., json_schema_extra={"example": "cron"})
+    expression: str = Field(..., json_schema_extra={"example": " 0 1 * * *"})
 
     @field_validator("expression")
     def validate_expression(cls, v: str) -> str:
@@ -50,68 +50,86 @@ class JobTrigger(BaseModel):
 
 
 class JobId(BaseModel):
-    id: str = Field(..., example=str(uuid4()))
+    id: str = Field(..., json_schema_extra={"example": str(uuid4())})
 
 
 class Job(JobId):
     trigger: JobTrigger
-    func: str | Callable = Field(..., example="src.jobs.my_job")
+    func: str | Callable = Field(..., json_schema_extra={"example": "src.jobs.my_job"})
     args: list = Field(default_factory=list)
     kwargs: dict = Field(default_factory=dict)
 
 
 class JobCreate(BaseModel):
     trigger: JobTrigger
-    func: str = Field(..., example="src.jobs.my_job")
+    func: str = Field(..., json_schema_extra={"example": "src.jobs.my_job"})
     args: list = Field(default_factory=list)
     kwargs: dict = Field(default_factory=dict)
 
-    class Config:
-        arbitrary_types_allowed = True
-        example = {
-            "trigger": {"type": "cron", "expression": "0 0 * * *"},
-            "func": "src.jobs.my_job",
-            "args": [],
-            "kwargs": {},
-        }
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "json_schema_extra": {
+            "example": {
+                "trigger": {"type": "cron", "expression": "0 0 * * *"},
+                "func": "src.jobs.my_job",
+                "args": [],
+                "kwargs": {},
+            }
+        },
+    }
 
 
 class JobUpdated(BaseModel):
-    job: Job = Field(..., example={"id": "123e4567-e89b-12d3-a456-426614174000"})
+    job: Job = Field(
+        ...,
+        json_schema_extra={"example": {"id": "123e4567-e89b-12d3-a456-426614174000"}},
+    )
 
-    class Config:
-        example = {"job": {"id": "123e4567-e89b-12d3-a456-426614174000"}}
+    model_config = {
+        "json_schema_extra": {
+            "example": {"job": {"id": "123e4567-e89b-12d3-a456-426614174000"}}
+        }
+    }
 
 
 class JobList(BaseModel):
     jobs: list[Job] = Field(...)
 
-    class Config:
-        example = {
-            "jobs": [
-                {
-                    "job_id": "123e4567-e89b-12d3-a456-426614174000",
-                    "trigger": {"type": "cron", "expression": "0 0 * * *"},
-                    "func": "src.jobs.my_job",
-                    "args": [],
-                    "kwargs": {},
-                }
-            ]
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "jobs": [
+                    {
+                        "job_id": "123e4567-e89b-12d3-a456-426614174000",
+                        "trigger": {"type": "cron", "expression": "0 0 * * *"},
+                        "func": "src.jobs.my_job",
+                        "args": [],
+                        "kwargs": {},
+                    }
+                ]
+            }
         }
+    }
 
 
 class JobDeleted(BaseModel):
-    message: str = Field(..., example="Job deleted successfully")
+    message: str = Field(..., json_schema_extra={"example": "Job deleted successfully"})
 
-    class Config:
-        example = {"message": "Job deleted successfully"}
+    model_config = {
+        "json_schema_extra": {"example": {"message": "Job deleted successfully"}}
+    }
 
 
 ######################################################
 
 
 class ScheduleCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200, example="Daily Weather Check")
+    title: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        json_schema_extra={"example": "Daily Weather Check"},
+    )
     trigger: JobTrigger
     task: LLMRequest
 
@@ -137,7 +155,10 @@ class ScheduleCreate(BaseModel):
 
 class ScheduleUpdate(BaseModel):
     title: Optional[str] = Field(
-        None, min_length=1, max_length=200, example="Updated Daily Weather Check"
+        None,
+        min_length=1,
+        max_length=200,
+        json_schema_extra={"example": "Updated Daily Weather Check"},
     )
     trigger: Optional[JobTrigger] = None
     task: Optional[LLMRequest] = None
@@ -165,8 +186,8 @@ class ScheduleUpdate(BaseModel):
 
 
 class Schedule(BaseModel):
-    id: str = Field(..., example=str(uuid4()))
-    title: str = Field(..., example="Daily Weather Check")
+    id: str = Field(..., json_schema_extra={"example": str(uuid4())})
+    title: str = Field(..., json_schema_extra={"example": "Daily Weather Check"})
     trigger: JobTrigger
     task: LLMRequest
-    next_run_time: datetime = Field(..., example=datetime.now())
+    next_run_time: datetime = Field(..., json_schema_extra={"example": datetime.now()})

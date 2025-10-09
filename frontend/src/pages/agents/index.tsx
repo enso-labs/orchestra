@@ -9,8 +9,19 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import HouseIcon from "@/components/icons/HouseIcon";
-import { Plus, Search, Computer, Users, Star, Calendar } from "lucide-react";
+import {
+	Plus,
+	Search,
+	Computer,
+	Users,
+	Star,
+	Calendar,
+	Zap,
+	Network,
+	UserCog,
+} from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -144,6 +155,48 @@ function AgentIndexPage() {
 												</CardHeader>
 												<CardContent className="pt-0">
 													<div className="space-y-2">
+														{/* MCP, A2A & Subagents Indicators */}
+														{(agent.mcp ||
+															agent.a2a ||
+															(agent.subagents &&
+																agent.subagents.length > 0)) && (
+															<div className="flex flex-wrap gap-1">
+																{agent.mcp &&
+																	Object.keys(agent.mcp).length > 0 && (
+																		<Badge
+																			variant="secondary"
+																			className="text-xs gap-1"
+																		>
+																			<Zap className="h-3 w-3" />
+																			MCP
+																		</Badge>
+																	)}
+																{agent.a2a &&
+																	Object.keys(agent.a2a).length > 0 && (
+																		<Badge
+																			variant="secondary"
+																			className="text-xs gap-1"
+																		>
+																			<Network className="h-3 w-3" />
+																			A2A
+																		</Badge>
+																	)}
+																{agent.subagents &&
+																	agent.subagents.length > 0 && (
+																		<Badge
+																			variant="outline"
+																			className="text-xs gap-1"
+																		>
+																			<UserCog className="h-3 w-3" />
+																			{agent.subagents.length}{" "}
+																			{agent.subagents.length === 1
+																				? "Subagent"
+																				: "Subagents"}
+																		</Badge>
+																	)}
+															</div>
+														)}
+
 														{/* Categories */}
 														{agent.tools && agent.tools.length > 0 && (
 															<div className="flex flex-wrap gap-1">

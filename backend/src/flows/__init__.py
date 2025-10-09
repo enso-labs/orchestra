@@ -12,13 +12,13 @@ from deepagents import async_create_deep_agent, SubAgent
 
 
 from src.services.memory import memory_service
+from src.services.tool import tool_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
 from src.utils.format import get_time
-from src.tools import default_tools
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 
@@ -80,17 +80,6 @@ def graph_builder(
     return deep_agent
 
 
-# async def init_tools(params: LLMRequest | LLMStreamRequest):
-#     tools = default_tools(params.tools)
-#     a2a = A2AServers(a2a=params.a2a)
-#     if a2a.validate():
-#         tools = tools + a2a.fetch_agent_cards_as_tools(params.metadata.thread_id)
-#     if params.mcp:
-#         mcp_client = MultiServerMCPClient(params.mcp)
-#         tools = tools + await mcp_client.get_tools()
-#     return tools
-
-
 async def init_tools(
     tools: list[BaseTool],
     a2a: A2AServers,
@@ -98,7 +87,7 @@ async def init_tools(
     thread_id: str = None,
 ) -> list[BaseTool]:
     """Initialize tools for a subagent."""
-    tools = default_tools(tools)
+    tools = tool_service.default_tools(tools)
     a2a = A2AServers(a2a=a2a)
     if a2a.validate() and thread_id:
         tools = tools + a2a.fetch_agent_cards_as_tools(thread_id)
