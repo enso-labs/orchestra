@@ -39,7 +39,7 @@ export default function useAppHook() {
 	};
 
 	const fetchAppVersion = async () => {
-		const response = await apiClient.get("/info");
+		const response = await apiClient.get("/health");
 		setAppVersion(response.data.version);
 	};
 
