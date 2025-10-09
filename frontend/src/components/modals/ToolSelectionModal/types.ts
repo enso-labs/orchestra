@@ -27,3 +27,9 @@ export interface CategoryConfig {
 	label: string;
 	icon: any; // Lucide icon component
 }
+
+export interface McpServerConfig {
+	transport: "sse" | "streamable_http" | "stdio";
+	url: string;
+	headers: Record<string, string>;
+}

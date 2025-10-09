@@ -31,6 +31,11 @@ export const getServerInfo = async (type: string, config: any) => {
 	return response;
 };
 
+export const getMcpTools = async (mcpServers: Record<string, any>) => {
+	const response = await apiClient.post("/tools/mcp/info", mcpServers);
+	return response.data;
+};
+
 export const getDefaultSpec = async () => {
 	const response = await fetch(
 		"https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/airtable-spec.json",

@@ -3,9 +3,10 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
 import { PlatformToolsPanel } from "./PlatformToolsPanel";
+import { McpServerPanel } from "./McpServerPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
-import { ToolCategory, Tool } from "./types";
-import { listTools } from "@/lib/services/toolService";
+import { ToolCategory, Tool, McpServerConfig } from "./types";
+import { listTools, getMcpTools } from "@/lib/services/toolService";
 
 interface ToolSelectionModalProps {
 	isOpen: boolean;
@@ -23,6 +24,11 @@ export function ToolSelectionModal({
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
+	const [mcpServers, setMcpServers] = useState<Record<string, McpServerConfig>>(
+		{},
+	);
+	const [mcpTools, setMcpTools] = useState<Tool[]>([]);
+	const [isMcpLoading, setIsMcpLoading] = useState(false);
 
 	const { selectedTools, toggleTool, selectedArray, selectedCount } =
 		useToolSelection(initialSelectedTools);
@@ -50,6 +56,42 @@ export function ToolSelectionModal({
 		onClose();
 	};
 
+	const handleAddMcpServer = (name: string, config: McpServerConfig) => {
+		setMcpServers((prev) => ({ ...prev, [name]: config }));
+	};
+
+	const handleRemoveMcpServer = (name: string) => {
+		setMcpServers((prev) => {
+			const updated = { ...prev };
+			delete updated[name];
+			return updated;
+		});
+	};
+
+	const handleFetchMcpTools = async (
+		servers: Record<string, McpServerConfig>,
+	) => {
+		setIsMcpLoading(true);
+		try {
+			const response = await getMcpTools(servers);
+			const tools = response.mcp || [];
+			setMcpTools(
+				tools.map((tool: any) => ({
+					name: tool.name,
+					description: tool.description || "",
+					tags: tool.tags || [],
+					metadata: tool.metadata || {},
+					args: tool.args || {},
+					category: "mcp" as const,
+				})),
+			);
+		} catch (error) {
+			console.error("Failed to load MCP tools:", error);
+		} finally {
+			setIsMcpLoading(false);
+		}
+	};
+
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
 			<DialogContent className="max-w-[1400px] w-full sm:w-[95vw] h-[100vh] sm:h-[90vh] max-h-none sm:max-h-[900px] p-0 gap-0">
@@ -69,11 +111,16 @@ export function ToolSelectionModal({
 						)}
 
 						{activeCategory === "mcp" && (
-							<div className="flex items-center justify-center h-full">
-								<p className="text-muted-foreground">
-									MCP integration coming soon
-								</p>
-							</div>
+							<McpServerPanel
+								mcpServers={mcpServers}
+								mcpTools={mcpTools}
+								selectedTools={selectedTools}
+								onToggleSelection={toggleTool}
+								onAddServer={handleAddMcpServer}
+								onRemoveServer={handleRemoveMcpServer}
+								onTestConnection={handleFetchMcpTools}
+								isLoading={isMcpLoading}
+							/>
 						)}
 
 						{activeCategory === "a2a" && (
