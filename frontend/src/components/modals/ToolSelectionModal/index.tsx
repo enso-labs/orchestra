@@ -4,9 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
 import { PlatformToolsPanel } from "./PlatformToolsPanel";
 import { McpServerPanel } from "./McpServerPanel";
+import { A2aAgentPanel } from "./A2aAgentPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
-import { ToolCategory, Tool, McpServerConfig } from "./types";
-import { listTools, getMcpTools } from "@/lib/services/toolService";
+import { ToolCategory, Tool, McpServerConfig, A2aServerConfig } from "./types";
+import {
+	listTools,
+	getMcpTools,
+	getA2aAgents,
+} from "@/lib/services/toolService";
 
 interface ToolSelectionModalProps {
 	isOpen: boolean;
@@ -29,6 +34,11 @@ export function ToolSelectionModal({
 	);
 	const [mcpTools, setMcpTools] = useState<Tool[]>([]);
 	const [isMcpLoading, setIsMcpLoading] = useState(false);
+	const [a2aServers, setA2aServers] = useState<Record<string, A2aServerConfig>>(
+		{},
+	);
+	const [a2aAgents, setA2aAgents] = useState<any[]>([]);
+	const [isA2aLoading, setIsA2aLoading] = useState(false);
 
 	const { selectedTools, toggleTool, selectedArray, selectedCount } =
 		useToolSelection(initialSelectedTools);
@@ -92,6 +102,32 @@ export function ToolSelectionModal({
 		}
 	};
 
+	const handleAddA2aServer = (name: string, config: A2aServerConfig) => {
+		setA2aServers((prev) => ({ ...prev, [name]: config }));
+	};
+
+	const handleRemoveA2aServer = (name: string) => {
+		setA2aServers((prev) => {
+			const updated = { ...prev };
+			delete updated[name];
+			return updated;
+		});
+	};
+
+	const handleFetchA2aAgents = async (
+		servers: Record<string, A2aServerConfig>,
+	) => {
+		setIsA2aLoading(true);
+		try {
+			const response = await getA2aAgents(servers);
+			setA2aAgents(response.agent_cards || []);
+		} catch (error) {
+			console.error("Failed to load A2A agents:", error);
+		} finally {
+			setIsA2aLoading(false);
+		}
+	};
+
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
 			<DialogContent className="max-w-[1400px] w-full sm:w-[95vw] h-[100vh] sm:h-[90vh] max-h-none sm:max-h-[900px] p-0 gap-0">
@@ -124,11 +160,16 @@ export function ToolSelectionModal({
 						)}
 
 						{activeCategory === "a2a" && (
-							<div className="flex items-center justify-center h-full">
-								<p className="text-muted-foreground">
-									A2A integration coming soon
-								</p>
-							</div>
+							<A2aAgentPanel
+								a2aServers={a2aServers}
+								a2aAgents={a2aAgents}
+								selectedTools={selectedTools}
+								onToggleSelection={toggleTool}
+								onAddServer={handleAddA2aServer}
+								onRemoveServer={handleRemoveA2aServer}
+								onFetchAgents={handleFetchA2aAgents}
+								isLoading={isA2aLoading}
+							/>
 						)}
 
 						{activeCategory === "arcade" && (

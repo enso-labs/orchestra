@@ -33,3 +33,8 @@ export interface McpServerConfig {
 	url: string;
 	headers: Record<string, string>;
 }
+
+export interface A2aServerConfig {
+	base_url: string;
+	agent_card_path: string;
+}
