@@ -17,6 +17,8 @@ interface ToolSelectionModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	initialSelectedTools?: string[];
+	initialMcpConfig?: Record<string, McpServerConfig>;
+	initialA2aConfig?: Record<string, A2aServerConfig>;
 	onApply: (selectedTools: string[]) => void;
 }
 
@@ -24,19 +26,19 @@ export function ToolSelectionModal({
 	isOpen,
 	onClose,
 	initialSelectedTools = [],
+	initialMcpConfig = {},
+	initialA2aConfig = {},
 	onApply,
 }: ToolSelectionModalProps) {
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
-	const [mcpServers, setMcpServers] = useState<Record<string, McpServerConfig>>(
-		{},
-	);
+	const [mcpServers, setMcpServers] =
+		useState<Record<string, McpServerConfig>>(initialMcpConfig);
 	const [mcpTools, setMcpTools] = useState<Tool[]>([]);
 	const [isMcpLoading, setIsMcpLoading] = useState(false);
-	const [a2aServers, setA2aServers] = useState<Record<string, A2aServerConfig>>(
-		{},
-	);
+	const [a2aServers, setA2aServers] =
+		useState<Record<string, A2aServerConfig>>(initialA2aConfig);
 	const [a2aAgents, setA2aAgents] = useState<any[]>([]);
 	const [isA2aLoading, setIsA2aLoading] = useState(false);
 
@@ -55,6 +57,24 @@ export function ToolSelectionModal({
 				});
 		}
 	}, [isOpen, activeCategory]);
+
+	// Auto-fetch MCP tools if servers are pre-configured
+	useEffect(() => {
+		if (isOpen && Object.keys(mcpServers).length > 0 && mcpTools.length === 0) {
+			handleFetchMcpTools(mcpServers);
+		}
+	}, [isOpen, mcpServers]);
+
+	// Auto-fetch A2A agents if servers are pre-configured
+	useEffect(() => {
+		if (
+			isOpen &&
+			Object.keys(a2aServers).length > 0 &&
+			a2aAgents.length === 0
+		) {
+			handleFetchA2aAgents(a2aServers);
+		}
+	}, [isOpen, a2aServers]);
 
 	const handleApply = () => {
 		onApply(selectedArray);

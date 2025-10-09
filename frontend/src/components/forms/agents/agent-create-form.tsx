@@ -583,6 +583,8 @@ export function AgentCreateForm() {
 				isOpen={isToolModalOpen}
 				onClose={() => setIsToolModalOpen(false)}
 				initialSelectedTools={agent.tools || []}
+				initialMcpConfig={agent.mcp as Record<string, any>}
+				initialA2aConfig={agent.a2a as Record<string, any>}
 				onApply={(selectedTools) => {
 					setAgent({ ...agent, tools: selectedTools });
 					setIsToolModalOpen(false);
