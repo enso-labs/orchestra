@@ -5,7 +5,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { logout } from "@/lib/utils/auth";
-import { Settings, LayoutDashboard, Cog } from "lucide-react";
+import { Settings, LayoutDashboard, Cog, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +52,14 @@ export function SettingsPopover() {
 					>
 						<LayoutDashboard className="h-4 w-4" />
 						Agents
+					</Button>
+					<Button
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+						onClick={() => navigate("/schedules")}
+					>
+						<Calendar className="h-4 w-4" />
+						Schedules
 					</Button>
 					<Button
 						onClick={() => {

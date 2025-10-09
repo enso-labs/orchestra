@@ -18,6 +18,7 @@ import OAuthCallback from "@/pages/OAuthCallback";
 import AgentCreatePage from "@/pages/agents/create";
 import AgentIndexPage from "@/pages/agents";
 import AgentEditPage from "@/pages/agents/edit";
+import SchedulesIndexPage from "@/pages/schedules";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -84,6 +85,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<AgentCreatePage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/schedules"
+						element={
+							<PrivateRoute>
+								<SchedulesIndexPage />
 							</PrivateRoute>
 						}
 					/>
