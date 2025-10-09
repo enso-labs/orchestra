@@ -237,9 +237,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								<div className="flex justify-between">
 									<span className="text-muted-foreground">System Prompt:</span>
 									<span className="text-right max-w-xs truncate">
-										{agent.prompt.length > 50
+										{agent.prompt && agent.prompt.length > 50
 											? `${agent.prompt.substring(0, 50)}...`
-											: agent.prompt}
+											: agent.prompt || "No prompt configured"}
 									</span>
 								</div>
 								{agent.tools && agent.tools.length > 0 && (

@@ -70,7 +70,7 @@ async def create_job(
         content={
             "job": {
                 "id": schedule.id,
-                "next_run_time": schedule.next_run_time,
+                "next_run_time": schedule.next_run_time.isoformat(),
             }
         },
     )
@@ -94,7 +94,7 @@ async def update_job(
         content={
             "job": {
                 "id": schedule.id,
-                "next_run_time": schedule.next_run_time,
+                "next_run_time": schedule.next_run_time.isoformat(),
             }
         },
     )

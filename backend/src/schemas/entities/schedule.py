@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Callable, Optional
 from uuid import uuid4
-from fastapi.openapi.models import Example
 from datetime import datetime
 
 from src.schemas.entities import LLMRequest
@@ -42,7 +41,9 @@ class JobTrigger(BaseModel):
 
     @classmethod
     def from_trigger(cls, trigger: CronTrigger) -> "JobTrigger":
-        """Create model from APScheduler CronTrigger"""
+        """Create model from APScheduler CronTrigger or JobTrigger"""
+        if isinstance(trigger, JobTrigger):
+            return trigger
         trigger.fields.reverse()
         trigger.fields.pop(0)
         expr = " ".join(str(f) for f in trigger.fields[:5])
