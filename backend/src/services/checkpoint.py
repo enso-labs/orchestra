@@ -2,8 +2,12 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.prebuilt import create_react_agent
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.checkpoint.base import Checkpoint, BaseCheckpointSaver
+from langgraph.checkpoint.base import Checkpoint, BaseCheckpointSaver, CheckpointTuple
+from langgraph.types import StateSnapshot
+from langchain_core.messages import BaseMessage
 from src.utils.logger import logger
+from src.utils.messages import from_message_to_dict
+from src.utils.retry import retry_db_operation
 
 
 IN_MEMORY_CHECKPOINTER = InMemorySaver()
@@ -20,7 +24,18 @@ class CheckpointService:
         self.checkpointer = checkpointer
         self.graph = graph
 
-    async def list_checkpoints(self, thread_id: str):
+    @staticmethod
+    def _collect_messages(checkpoint: CheckpointTuple) -> list[BaseMessage]:
+        messages = (
+            checkpoint.checkpoint["channel_values"]
+            .get("__start__", {})
+            .get("messages", [])
+            or checkpoint.checkpoint["channel_values"].get("messages", [])
+            or []
+        )
+        return messages
+
+    async def list_checkpoints_from_graph(self, thread_id: str):
         config = RunnableConfig(configurable={"thread_id": thread_id})
         checkpoints = []
         async for checkpoint in self.graph.aget_state_history(config):
@@ -28,6 +43,31 @@ class CheckpointService:
             del checkpoint["tasks"]
             checkpoints.append(checkpoint)
         return checkpoints
+
+    @retry_db_operation(tries=3, delay=1, backoff=2, exceptions=(Exception,))
+    async def list_checkpoints(self, thread_id: str) -> list[StateSnapshot]:
+        try:
+            config = RunnableConfig(configurable={"thread_id": thread_id})
+            checkpoints = []
+            async for checkpoint in self.checkpointer.alist(config):
+                messages = self._collect_messages(checkpoint)
+                snapshot = StateSnapshot(
+                    values={"messages": from_message_to_dict(messages)},
+                    config=checkpoint.config,
+                    parent_config=checkpoint.parent_config,
+                    metadata=checkpoint.metadata,
+                    created_at=checkpoint.checkpoint["ts"],
+                    interrupts=[],
+                    next=[],
+                    tasks=[],
+                )
+                formatted_snapshot = snapshot._asdict()
+                del formatted_snapshot["tasks"]
+                checkpoints.append(formatted_snapshot)
+            return checkpoints
+        except Exception as e:
+            logger.exception(f"Error listing checkpoints: {e}")
+            return []
 
     async def get_checkpoint(
         self,

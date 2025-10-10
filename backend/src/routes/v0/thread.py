@@ -30,33 +30,11 @@ async def search_threads(
     try:
         thread_service.store = store
         thread_service.user_id = user.id
+        checkpoint_service.user_id = user.id
+        checkpoint_service.checkpointer = checkpointer
         filter = thread_search.model_dump(exclude_none=True).get("filter", {})
         if "thread_id" in filter and not "checkpoint_id" in filter:
-            thread_id = filter["thread_id"]
-            checkpoints = []
-            config = RunnableConfig(configurable={"thread_id": thread_id})
-            checkpoint_generator = checkpointer.alist(config)
-            async for checkpoint in checkpoint_generator:
-                messages = (
-                    checkpoint.checkpoint["channel_values"]
-                    .get("__start__", {})
-                    .get("messages", [])
-                    or checkpoint.checkpoint["channel_values"].get("messages", [])
-                    or []
-                )
-                snapshot = StateSnapshot(
-                    values={"messages": from_message_to_dict(messages)},
-                    config=checkpoint.config,
-                    parent_config=checkpoint.parent_config,
-                    metadata=checkpoint.metadata,
-                    created_at=checkpoint.checkpoint["ts"],
-                    interrupts=[],
-                    next=[],
-                    tasks=[],
-                )
-                formatted_snapshot = snapshot._asdict()
-                del formatted_snapshot["tasks"]
-                checkpoints.append(formatted_snapshot)
+            checkpoints = await checkpoint_service.list_checkpoints(filter["thread_id"])
             if checkpoints is None:
                 raise HTTPException(status_code=404, detail="Checkpoints not found")
             return {"checkpoints": checkpoints}
