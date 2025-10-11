@@ -41,6 +41,7 @@ import SelectModel from "@/components/lists/SelectModel";
 import { useNavigate } from "react-router-dom";
 import { base64Compare } from "@/lib/utils/format";
 import { useParams } from "react-router-dom";
+import MonacoEditor from "@/components/inputs/MonacoEditor";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -125,7 +126,7 @@ export function AgentCreateForm() {
 	};
 
 	const openFullscreen = () => {
-		setFullscreenSystemMessage(agent.system || "");
+		setFullscreenSystemMessage(agent.prompt || "");
 		setIsFullscreenOpen(true);
 	};
 
@@ -490,7 +491,7 @@ export function AgentCreateForm() {
 
 			{/* Fullscreen System Message Dialog */}
 			<Dialog open={isFullscreenOpen} onOpenChange={setIsFullscreenOpen}>
-				<DialogContent className="max-w-[95vw] max-h-[95vh] h-[95vh] w-[95vw] flex flex-col">
+				<DialogContent className="max-w-[99vw] max-h-[99vh] h-[99vh] w-[99vw] flex flex-col">
 					<DialogHeader className="flex-shrink-0">
 						<DialogTitle className="flex items-center justify-between">
 							<div className="flex items-center gap-2">
@@ -541,20 +542,29 @@ export function AgentCreateForm() {
 								</Button>
 							</div>
 						)}
-						<div className="flex-1 min-h-0">
-							<Textarea
-								value={fullscreenSystemMessage}
-								onChange={(e) =>
-									handleFullscreenSystemMessageChange(e.target.value)
-								}
-								placeholder={
-									isUsingUrl
-										? "Content from URL will appear here. Click 'Fetch' to load..."
-										: "Enter your system message here. This will define how your AI agent behaves and responds to user inputs..."
-								}
-								className="h-full w-full resize-none text-sm leading-relaxed"
-								readOnly={isUsingUrl && isLoadingFromUrl}
-							/>
+						<div className="flex-1 min-h-0 h-full">
+							{isUsingUrl && isLoadingFromUrl ? (
+								<div className="h-full w-full flex items-center justify-center bg-muted rounded-md">
+									<p className="text-muted-foreground">
+										Loading content from URL...
+									</p>
+								</div>
+							) : (
+								<div className="h-full w-full">
+									<MonacoEditor
+										value={fullscreenSystemMessage}
+										handleChange={handleFullscreenSystemMessageChange}
+										language="markdown"
+										height="100%"
+										options={{
+											wordWrap: "on",
+											minimap: false,
+											fontSize: 12,
+											lineNumbers: "on",
+										}}
+									/>
+								</div>
+							)}
 						</div>
 						<div className="flex gap-2 justify-end flex-shrink-0">
 							<Button

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/425-editor-for-system-message (2025-10-10)
   - feat/415-schedules-page (2025-10-08)
   - feat/411-tools-api (2025-10-05)
   - feat/408-edit-existing-schedules (2025-10-05)
