@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: changelog
         name: Generate Changelog
-        entry: bash backend/scripts/changelog.sh
+        entry: bash -c 'bash backend/scripts/changelog.sh && git add Changelog.md'
         language: system
         pass_filenames: false
         always_run: false
