@@ -1,7 +1,6 @@
-from fastapi import status, Depends, APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import Depends, APIRouter, HTTPException
 from src.constants import APP_VERSION
-from src.services.db import get_store, get_checkpointer
+from src.services.db import get_store, get_checkpoint_db
 from langgraph.store.postgres import AsyncPostgresStore
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from src.utils.logger import logger
@@ -58,13 +57,14 @@ async def check_store_health(
 
 
 @router.get("/health/checkpointer", name="Checkpointer Health Check")
-async def check_checkpointer_health(
-    checkpointer: AsyncPostgresSaver = Depends(get_checkpointer),
-):
+async def check_checkpointer_health():
     """Check if the AsyncPostgresSaver connection is healthy"""
     try:
         # Test basic checkpointer operation with timeout
-        async with asyncio.timeout(5.0):  # 5 second timeout
+        async with (
+            get_checkpoint_db() as checkpointer,
+            asyncio.timeout(5.0),
+        ):  # 5 second timeout
             # Try to list checkpoints (this tests the connection)
             from langgraph.checkpoint.base import RunnableConfig
 
