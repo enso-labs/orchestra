@@ -3,8 +3,10 @@ repos:
     hooks:
       - id: update-changelog
         name: Update Changelog
-        entry: bash backend/scripts/changelog.sh && git add Changelog.md
+        entry: bash -lc 'bash backend/scripts/changelog.sh && git add Changelog.md'
         language: system
+        pass_filenames: false   # don’t pass staged file paths to your command
+        always_run: true        # run every time, not only when certain files change
         stages: [pre-commit]
       - id: backend-format
         name: Backend Format
