@@ -7,7 +7,7 @@ repos:
         language: system
         pass_filenames: false   # don’t pass staged file paths to your command
         always_run: true        # run every time, not only when certain files change
-        stages: [pre-commit]
+        files: ^backend/ & ^frontend/ & ^docs/
       - id: backend-format
         name: Backend Format
         entry: bash -c 'cd backend && make format'

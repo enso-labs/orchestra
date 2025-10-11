@@ -85,7 +85,9 @@ async def llm_stream(
                     stream_chunk = handle_multi_mode(chunk)
                     if stream_chunk:
                         data = ujson.dumps(stream_chunk)
-                        log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
+                        log_to_file(
+                            str(data), params.model
+                        ) and APP_LOG_LEVEL == "DEBUG"
                         logger.debug(f"data: {str(data)}")
                         yield f"data: {data}\n\n"
             except Exception as e:

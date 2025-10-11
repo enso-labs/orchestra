@@ -34,7 +34,9 @@ async def search_threads(
             checkpoint_service.checkpointer = checkpointer
             filter = thread_search.model_dump(exclude_none=True).get("filter", {})
             if "thread_id" in filter and not "checkpoint_id" in filter:
-                checkpoints = await checkpoint_service.list_checkpoints(filter["thread_id"])
+                checkpoints = await checkpoint_service.list_checkpoints(
+                    filter["thread_id"]
+                )
                 if checkpoints is None:
                     raise HTTPException(status_code=404, detail="Checkpoints not found")
                 return {"checkpoints": checkpoints}

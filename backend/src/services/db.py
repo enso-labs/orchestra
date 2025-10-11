@@ -54,6 +54,7 @@ def load_models():
 def get_store(req: Request) -> AsyncPostgresStore:
     return req.app.state.store
 
+
 def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
     return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
 
