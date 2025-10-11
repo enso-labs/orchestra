@@ -1,3 +1,5 @@
+import ujson
+from uuid import uuid4
 from typing import Annotated, AsyncGenerator, Any
 from fastapi import Depends
 from langgraph.store.base import BaseStore
@@ -5,17 +7,13 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 
 from src.schemas.entities import LLMRequest
 from src.schemas.models import ProtectedUser
-from src.services.db import get_store, get_checkpointer
+from src.services.db import get_store, get_checkpoint_db, get_store_db
 from src.services.thread import thread_service
 from src.services.checkpoint import checkpoint_service
 from src.flows import construct_agent
 from src.utils.stream import handle_multi_mode
 from src.utils.logger import logger, log_to_file
 from src.constants import APP_LOG_LEVEL
-from src.services.db import get_store_db, get_checkpoint_db
-import ujson
-from uuid import uuid4
-
 from src.utils.format import get_time
 
 
@@ -62,7 +60,6 @@ async def llm_stream(
     params: LLMRequest,
     user: ProtectedUser,
     store: Annotated[BaseStore, Depends(get_store)],
-    checkpointer: Annotated[BaseCheckpointSaver, Depends(get_checkpointer)],
 ) -> AsyncGenerator[str, None]:
     """
     Streams LLM output as server-sent events (SSE).
@@ -74,30 +71,31 @@ async def llm_stream(
             thread_service.store = store
             thread_service.user_id = user.id
             params.metadata.user_id = user.id
-        checkpoint_service.checkpointer = checkpointer
-        agent = await construct_agent(params, checkpointer, store)
-        checkpoint_service.graph = agent.graph
-        try:
-            async for chunk in agent.astream(
-                {"messages": params.to_langchain_messages()},
-                stream_mode=["messages", "values"],
-                context={"user_id": user.id} if user else None,
-            ):
-                # Serialize and yield each chunk as SSE
-                stream_chunk = handle_multi_mode(chunk)
-                if stream_chunk:
-                    data = ujson.dumps(stream_chunk)
-                    log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
-                    logger.debug(f"data: {str(data)}")
-                    yield f"data: {data}\n\n"
-        except Exception as e:
-            # Yield error as SSE if streaming fails
-            logger.exception("Error in event_generator: %s", e)
-            # raise HTTPException(status_code=500, detail=str(e))
-            error_msg = ujson.dumps(("error", str(e)))
-            yield f"data: {error_msg}\n\n"
-        finally:
-            # Update model info in checkpoint after streaming
-            await agent.add_model_to_ai_message(params.model)
+        async with get_checkpoint_db() as checkpointer:
+            checkpoint_service.checkpointer = checkpointer
+            agent = await construct_agent(params, checkpointer, store)
+            checkpoint_service.graph = agent.graph
+            try:
+                async for chunk in agent.astream(
+                    {"messages": params.to_langchain_messages()},
+                    stream_mode=["messages", "values"],
+                    context={"user_id": user.id} if user else None,
+                ):
+                    # Serialize and yield each chunk as SSE
+                    stream_chunk = handle_multi_mode(chunk)
+                    if stream_chunk:
+                        data = ujson.dumps(stream_chunk)
+                        log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
+                        logger.debug(f"data: {str(data)}")
+                        yield f"data: {data}\n\n"
+            except Exception as e:
+                # Yield error as SSE if streaming fails
+                logger.exception("Error in event_generator: %s", e)
+                # raise HTTPException(status_code=500, detail=str(e))
+                error_msg = ujson.dumps(("error", str(e)))
+                yield f"data: {error_msg}\n\n"
+            finally:
+                # Update model info in checkpoint after streaming
+                await agent.add_model_to_ai_message(params.model)
 
     return event_generator

@@ -7,7 +7,7 @@ from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
-from src.services.db import get_store, get_checkpointer
+from src.services.db import get_store, get_checkpoint_db
 from src.utils.auth import verify_credentials
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.postgres import AsyncPostgresStore
@@ -24,25 +24,47 @@ async def search_threads(
         openapi_examples=Examples.THREAD_SEARCH_EXAMPLES
     ),
     user: ProtectedUser = Depends(verify_credentials),
-    checkpointer: AsyncPostgresSaver = Depends(get_checkpointer),
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
         thread_service.store = store
         thread_service.user_id = user.id
         checkpoint_service.user_id = user.id
-        checkpoint_service.checkpointer = checkpointer
-        filter = thread_search.model_dump(exclude_none=True).get("filter", {})
-        if "thread_id" in filter and not "checkpoint_id" in filter:
-            checkpoints = await checkpoint_service.list_checkpoints(filter["thread_id"])
-            if checkpoints is None:
-                raise HTTPException(status_code=404, detail="Checkpoints not found")
-            return {"checkpoints": checkpoints}
+        async with get_checkpoint_db() as checkpointer:
+            checkpoint_service.checkpointer = checkpointer
+            filter = thread_search.model_dump(exclude_none=True).get("filter", {})
+            if "thread_id" in filter and not "checkpoint_id" in filter:
+                checkpoints = await checkpoint_service.list_checkpoints(filter["thread_id"])
+                if checkpoints is None:
+                    raise HTTPException(status_code=404, detail="Checkpoints not found")
+                return {"checkpoints": checkpoints}
 
-        threads = await thread_service.search(filter=filter)
-        return {"threads": threads}
+            threads = await thread_service.search(filter=filter)
+            return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/threads/{thread_id}", name="Delete Thread")
+async def delete_thread(
+    thread_id: str,
+    user: ProtectedUser = Depends(verify_credentials),
+    store=Depends(get_store),
+):
+    try:
+        thread_service.store = store
+        thread_service.user_id = user.id
+        async with get_checkpoint_db() as checkpointer:
+            checkpoint_service.checkpointer = checkpointer
+            checkpoint_service.user_id = user.id
+            await checkpoint_service.delete_checkpoints_for_thread(thread_id)
+            success = await thread_service.delete(thread_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Thread not found")
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        logger.exception(f"Error deleting thread: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -54,41 +76,19 @@ async def delete_thread(
     thread_id: str,
     user: ProtectedUser = Depends(verify_credentials),
     store=Depends(get_store),
-    checkpointer=Depends(get_checkpointer),
 ):
     try:
         thread_service.store = store
         thread_service.user_id = user.id
         thread_service.assistant_id = assistant_id
-        checkpoint_service.checkpointer = checkpointer
-        checkpoint_service.user_id = user.id
-        await checkpoint_service.delete_checkpoints_for_thread(thread_id)
-        success = await thread_service.delete(thread_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Thread not found")
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except Exception as e:
-        logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.delete("/threads/{thread_id}", name="Delete Thread")
-async def delete_thread(
-    thread_id: str,
-    user: ProtectedUser = Depends(verify_credentials),
-    store=Depends(get_store),
-    checkpointer=Depends(get_checkpointer),
-):
-    try:
-        thread_service.store = store
-        thread_service.user_id = user.id
-        checkpoint_service.checkpointer = checkpointer
-        checkpoint_service.user_id = user.id
-        await checkpoint_service.delete_checkpoints_for_thread(thread_id)
-        success = await thread_service.delete(thread_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Thread not found")
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+        async with get_checkpoint_db() as checkpointer:
+            checkpoint_service.checkpointer = checkpointer
+            checkpoint_service.user_id = user.id
+            await checkpoint_service.delete_checkpoints_for_thread(thread_id)
+            success = await thread_service.delete(thread_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Thread not found")
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
         raise HTTPException(status_code=500, detail=str(e))

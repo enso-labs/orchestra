@@ -17,11 +17,11 @@ class CheckpointService:
     def __init__(
         self,
         user_id: str = None,
-        checkpointer: BaseCheckpointSaver = IN_MEMORY_CHECKPOINTER,
+        checkpointer: BaseCheckpointSaver = None,
         graph: CompiledStateGraph = None,
     ):
         self.user_id = user_id
-        self.checkpointer = checkpointer
+        self.checkpointer = checkpointer or IN_MEMORY_CHECKPOINTER
         self.graph = graph
 
     @staticmethod

@@ -63,15 +63,12 @@ async def lifespan(app: FastAPI):
     async with (
         get_checkpoint_db() as saver,
         get_store_db() as store,
-        # get_async_db() as async_db,
     ):
         # optional: create tables/indexes
         await saver.setup()
         await store.setup()
 
         # share across requests
-        # app.state.async_db = async_db
-        app.state.checkpointer = saver
         app.state.store = store
 
         # serve requests
