@@ -1,12 +1,11 @@
 repos:
   - repo: local
     hooks:
-      - id: changelog
-        name: Generate Changelog
-        entry: bash -c 'bash backend/scripts/changelog.sh && git add Changelog.md'
+      - id: update-changelog
+        name: Update Changelog
+        entry: bash backend/scripts/changelog.sh && git add Changelog.md
         language: system
-        pass_filenames: false
-        always_run: false
+        stages: [pre-commit]
       - id: backend-format
         name: Backend Format
         entry: bash -c 'cd backend && make format'
