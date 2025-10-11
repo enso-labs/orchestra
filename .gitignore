@@ -16,4 +16,4 @@
 backend/src/public
 **/.worktrees/
 **/.playwright*
-**/.plans/
+**/.plans*
