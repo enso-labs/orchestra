@@ -48,10 +48,10 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => navigate("/agents")}
+						onClick={() => navigate("/assistants")}
 					>
 						<LayoutDashboard className="h-4 w-4" />
-						Agents
+						Assistants
 					</Button>
 					<Button
 						variant="ghost"

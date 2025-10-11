@@ -58,7 +58,7 @@ function AgentIndexPage() {
 
 	const handleAgentClick = (agentId: string) => {
 		// Navigate to agent detail or chat page
-		navigate(`/agents/${agentId}`);
+		navigate(`/a/${agentId}`);
 	};
 
 	return (
@@ -70,7 +70,7 @@ function AgentIndexPage() {
 						<Button
 							variant="outline"
 							size="icon"
-							onClick={() => navigate("/agents/create")}
+							onClick={() => navigate("/a/create")}
 						>
 							<Plus className="h-4 w-4" />
 						</Button>
@@ -94,10 +94,10 @@ function AgentIndexPage() {
 						{/* Page title and search */}
 						<div className="mb-5">
 							<h1 className="text-3xl font-bold text-foreground mb-2">
-								Enso Agents
+								Assistants
 							</h1>
 							<p className="text-muted-foreground mb-6">
-								Discover and deploy specialized AI agents for your workflows
+								Discover and deploy specialized AI assistants for your workflows
 							</p>
 
 							{/* Search bar */}

@@ -246,7 +246,7 @@ function SchedulesIndexPage() {
 						<Button
 							variant="outline"
 							size="icon"
-							onClick={() => navigate("/agents")}
+							onClick={() => navigate("/assistants")}
 						>
 							<Bot />
 						</Button>
@@ -441,7 +441,7 @@ function SchedulesIndexPage() {
 											{!searchQuery &&
 												filterStatus === "all" &&
 												filterAgentId === "all" && (
-													<Button onClick={() => navigate("/agents")}>
+													<Button onClick={() => navigate("/assistants")}>
 														<Bot className="h-4 w-4 mr-2" />
 														Go to Agents
 													</Button>

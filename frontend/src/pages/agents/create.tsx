@@ -71,11 +71,11 @@ function AgentCreatePage() {
 				className="h-full flex flex-col"
 			>
 				<div className="px-4 pt-4 flex flex-row gap-1 items-center">
-					<MainToolTip content="Agents" delayDuration={500}>
+					<MainToolTip content="Assistants" delayDuration={500}>
 						<Button
 							variant="outline"
 							size="icon"
-							onClick={() => navigate("/agents")}
+							onClick={() => navigate("/assistants")}
 						>
 							<Bot />
 						</Button>

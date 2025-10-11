@@ -166,7 +166,7 @@ export const deleteThread = async (threadId: string, assistantId?: string) => {
 	try {
 		let url = `/threads/${threadId}`;
 		if (assistantId) {
-			url = `/assistants/${assistantId}/threads/${threadId}`;
+			url = `/a/${assistantId}/threads/${threadId}`;
 		}
 		const response = await apiClient.delete(url, {
 			headers: {

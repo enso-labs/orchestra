@@ -93,7 +93,7 @@ export function AgentCreateForm() {
 			console.log("Saving agent configuration:", configData);
 			const response = await agentService.create(configData);
 			alert(`${values.name} created successfully!`);
-			navigate(`/agents/${response.data.assistant_id}`);
+			navigate(`/a/${response.data.assistant_id}`);
 		} else {
 			const confirmed = confirm(
 				"Are you sure you want to update this agent? This action cannot be undone.",
@@ -103,7 +103,7 @@ export function AgentCreateForm() {
 			console.log("Updating agent configuration:", configData);
 			await agentService.update(agent.id, configData);
 			alert(`${values.name} updated successfully!`);
-			navigate(`/agents`);
+			navigate(`/assistants`);
 		}
 	};
 
@@ -117,7 +117,7 @@ export function AgentCreateForm() {
 
 		try {
 			await agentService.delete(agent.id);
-			navigate("/agents");
+			navigate("/assistants");
 			// Navigate back to agents list or handle post-delete action
 		} catch (error) {
 			console.error("Failed to delete agent:", error);
