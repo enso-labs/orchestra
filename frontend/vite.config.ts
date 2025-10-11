@@ -64,7 +64,7 @@ export default defineConfig({
 		},
 	},
 	server: {
-		allowedHosts: ["sql-targets-clay-accounting.trycloudflare.com"],
+		allowedHosts: ["palace-expiration-que-rebound.trycloudflare.com"],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",

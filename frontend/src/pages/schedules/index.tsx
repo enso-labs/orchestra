@@ -457,7 +457,7 @@ function SchedulesIndexPage() {
 
 			{/* Create Schedule Dialog with Agent Selection */}
 			<Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+				<DialogContent className="max-h-[98vh] max-w-[98vw] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Create New Schedule</DialogTitle>
 					</DialogHeader>
@@ -504,7 +504,7 @@ function SchedulesIndexPage() {
 
 			{/* Edit Schedule Dialog */}
 			<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+				<DialogContent className="max-h-[99vh] max-w-[99vw] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Edit Schedule</DialogTitle>
 					</DialogHeader>

@@ -203,7 +203,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 							Create Schedule
 						</Button>
 					</DialogTrigger>
-					<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+					<DialogContent className="max-h-[99vh] max-w-[99vw] overflow-y-auto">
 						<DialogHeader>
 							<DialogTitle>Create New Schedule for {agent.name}</DialogTitle>
 						</DialogHeader>
