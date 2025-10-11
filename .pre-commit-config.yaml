@@ -5,9 +5,9 @@ repos:
         name: Update Changelog
         entry: bash -lc 'bash backend/scripts/changelog.sh && git add Changelog.md'
         language: system
+        files: ^backend/ & ^frontend/
         pass_filenames: false   # don’t pass staged file paths to your command
         always_run: true        # run every time, not only when certain files change
-        files: ^backend/ & ^frontend/ & ^docs/
       - id: backend-format
         name: Backend Format
         entry: bash -c 'cd backend && make format'
