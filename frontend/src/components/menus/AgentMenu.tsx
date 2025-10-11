@@ -161,30 +161,35 @@ function AgentMenuMobile({
 	return (
 		<>
 			<Button
-				variant="outline"
+				variant={agent.id ? "outline" : "default"}
 				role="combobox"
 				aria-expanded={open}
-				className="w-full justify-between rounded-xl h-9 text-sm font-normal"
+				className={cn(
+					"rounded-xl h-9 text-sm font-normal",
+					agent.id ? "w-full justify-between" : "w-9 p-0 justify-center",
+				)}
 				onClick={() => setOpen(true)}
 			>
-				<div className="flex items-center gap-2 flex-1 min-w-0">
-					<Bot className="h-4 w-4 opacity-50 flex-shrink-0" />
-					<span className="truncate">
-						{agent.id ? agent.name : "Search agents..."}
-					</span>
-				</div>
-				<div className="flex items-center gap-1 flex-shrink-0">
-					{agent.id && (
-						<button
-							onClick={handleClearSelection}
-							className="rounded-full p-1 hover:bg-accent hover:text-accent-foreground transition-colors"
-							aria-label="Clear selection"
-						>
-							<X className="h-3 w-3" />
-						</button>
-					)}
-					<ChevronsUpDown className="h-4 w-4 opacity-50" />
-				</div>
+				{agent.id ? (
+					<>
+						<div className="flex items-center gap-2 flex-1 min-w-0">
+							<Bot className="h-4 w-4 opacity-50 flex-shrink-0" />
+							<span className="truncate">{agent.name}</span>
+						</div>
+						<div className="flex items-center gap-1 flex-shrink-0">
+							<button
+								onClick={handleClearSelection}
+								className="rounded-full p-1 hover:bg-accent hover:text-accent-foreground transition-colors"
+								aria-label="Clear selection"
+							>
+								<X className="h-3 w-3" />
+							</button>
+							<ChevronsUpDown className="h-4 w-4 opacity-50" />
+						</div>
+					</>
+				) : (
+					<Bot className="h-5 w-5" />
+				)}
 			</Button>
 
 			{/* Mobile Drawer */}
@@ -248,33 +253,38 @@ function AgentMenu() {
 	}
 
 	return (
-		<div className="w-full">
+		<div className={agent.id ? "w-full" : "w-auto"}>
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild>
 					<Button
-						variant="outline"
+						variant={agent.id ? "outline" : "default"}
 						role="combobox"
 						aria-expanded={open}
-						className="w-full justify-between rounded-xl h-9 text-sm font-normal"
+						className={cn(
+							"rounded-xl h-9 text-sm font-normal",
+							agent.id ? "w-full justify-between" : "w-9 p-0 justify-center",
+						)}
 					>
-						<div className="flex items-center gap-2 flex-1 min-w-0">
-							<Bot className="h-4 w-4 opacity-50 flex-shrink-0" />
-							<span className="truncate">
-								{agent.id ? agent.name : "Search agents..."}
-							</span>
-						</div>
-						<div className="flex items-center gap-1 flex-shrink-0">
-							{agent.id && (
-								<button
-									onClick={handleClearSelection}
-									className="rounded-full p-1 hover:bg-accent hover:text-accent-foreground transition-colors"
-									aria-label="Clear selection"
-								>
-									<X className="h-3 w-3" />
-								</button>
-							)}
-							<ChevronsUpDown className="h-4 w-4 opacity-50" />
-						</div>
+						{agent.id ? (
+							<>
+								<div className="flex items-center gap-2 flex-1 min-w-0">
+									<Bot className="h-4 w-4 opacity-50 flex-shrink-0" />
+									<span className="truncate">{agent.name}</span>
+								</div>
+								<div className="flex items-center gap-1 flex-shrink-0">
+									<button
+										onClick={handleClearSelection}
+										className="rounded-full p-1 hover:bg-accent hover:text-accent-foreground transition-colors"
+										aria-label="Clear selection"
+									>
+										<X className="h-3 w-3" />
+									</button>
+									<ChevronsUpDown className="h-4 w-4 opacity-50" />
+								</div>
+							</>
+						) : (
+							<Bot className="h-6 w-6" />
+						)}
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent
