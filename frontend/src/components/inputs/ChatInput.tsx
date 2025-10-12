@@ -72,6 +72,7 @@ export default function ChatInput({
 			)}
 
 			<textarea
+				data-intro="chat-input"
 				ref={textareaRef}
 				className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? "rounded-none" : "rounded-t-3xl"} focus:outline-none border-b-0`}
 				placeholder="How can I help you be present?"
@@ -95,12 +96,12 @@ export default function ChatInput({
 			/>
 			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
 				<div className="flex items-center gap-1">
-					<div className="flex gap-1">
+					<div className="flex gap-1" data-intro="base-tool-menu">
 						{/* <ImageUpload /> */}
 						<BaseToolMenu />
 					</div>
 					{showAgentMenu && (
-						<div className="maxw-62">
+						<div className="maxw-62" data-intro="agent-menu">
 							<AgentMenu />
 						</div>
 					)}

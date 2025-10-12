@@ -4,6 +4,7 @@ export function HomeSection() {
 	return (
 		<>
 			<img
+				data-intro="welcome-logo"
 				src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
 				alt="Logo"
 				className="w-32 h-32 mx-auto rounded-full"
