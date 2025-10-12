@@ -1,21 +1,19 @@
 import ChatLayout from "../layouts/ChatLayout";
 import { useChatContext } from "../context/ChatContext";
 import { ThreadHistoryDrawer } from "@/components/drawers/ThreadHistoryDrawer";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChatNav } from "@/components/nav/ChatNav";
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
 import ChatSection from "@/components/sections/chat-section";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
-import { Menu } from "lucide-react";
+import { Menu, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import SelectModel from "@/components/lists/SelectModel";
 import { useSearchParams } from "react-router-dom";
 import { useAgentContext } from "@/context/AgentContext";
-import { useIntroTour } from "@/hooks/useIntroTour";
-import { TOUR_IDS, chatInterfaceSteps } from "@/lib/intro/steps";
-
+import { TourButton } from "@/components/intro/TourButton";
 export default function Chat() {
 	const { loading, isDrawerOpen, setIsDrawerOpen } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
@@ -29,19 +27,9 @@ export default function Chat() {
 	const [, setSearchParams] = useSearchParams();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const isAssistantOpen = false;
-	const [hasShownTour, setHasShownTour] = useState(false);
 
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
-
-	// Trigger tour after first message
-	useEffect(() => {
-		if (messages.length > 0 && !hasShownTour) {
-			setHasShownTour(true);
-		}
-	}, [messages.length, hasShownTour]);
-
-	useIntroTour(TOUR_IDS.CHAT_INTERFACE, chatInterfaceSteps, hasShownTour);
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,15 +64,19 @@ export default function Chat() {
 					/>
 
 					<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
-						<div className="absolute top-4 left-4">
+						<div className="absolute top-4 left-4 flex gap-2 items-center">
 							<Button
 								data-intro="menu-button"
 								onClick={() => setIsDrawerOpen(!isDrawerOpen)}
 								variant="outline"
 								size="icon"
+								className="md:hidden"
 							>
 								<Menu className="h-5 w-5" />
 							</Button>
+							<div className="md:hidden">
+								<TourButton />
+							</div>
 						</div>
 						<div className="absolute top-4 right-4">
 							<div className="flex flex-row gap-2 items-center">
@@ -117,7 +109,10 @@ export default function Chat() {
 
 				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					<ChatNav onMenuClick={() => setIsDrawerOpen(!isDrawerOpen)} />
-					<div className="flex-1 min-h-0">
+					<div className="flex-1 min-h-0 relative">
+						<div className="hidden md:block absolute top-4 left-4 z-10">
+							<TourButton />
+						</div>
 						<ChatMessages data-intro="chat-messages" messages={messages} />
 					</div>
 

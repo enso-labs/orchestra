@@ -41,8 +41,6 @@ import { useSchedules } from "@/hooks/useSchedules";
 import { useAgentContext } from "@/context/AgentContext";
 import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
 import { toast } from "sonner";
-import { useIntroTour } from "@/hooks/useIntroTour";
-import { TOUR_IDS, schedulesSteps } from "@/lib/intro/steps";
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
 type SortBy = "next_run" | "created" | "name";
@@ -60,9 +58,6 @@ function SchedulesIndexPage() {
 		getSchedule,
 	} = useSchedules();
 	const { agents, useEffectGetAgents } = useAgentContext();
-
-	// Trigger schedules tour
-	useIntroTour(TOUR_IDS.SCHEDULES, schedulesSteps, true);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 	const [sortBy, setSortBy] = useState<SortBy>("next_run");

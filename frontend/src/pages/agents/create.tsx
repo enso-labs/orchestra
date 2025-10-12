@@ -14,8 +14,6 @@ import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
-import { useIntroTour } from "@/hooks/useIntroTour";
-import { TOUR_IDS, agentCreationSteps } from "@/lib/intro/steps";
 
 function AgentCreatePage() {
 	const { agent, setAgent, useEffectGetAgents } = useAgentContext();
@@ -23,9 +21,6 @@ function AgentCreatePage() {
 	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
 	const [, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
-
-	// Trigger agent creation tour
-	useIntroTour(TOUR_IDS.AGENT_CREATION, agentCreationSteps, true);
 
 	useEffectGetAgents();
 

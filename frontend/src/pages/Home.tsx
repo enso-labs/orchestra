@@ -7,15 +7,10 @@ import { useEffect } from "react";
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
 import { ChatNav } from "@/components/nav/ChatNav";
-import { useIntroTour } from "@/hooks/useIntroTour";
-import { TOUR_IDS, firstTimeUserSteps } from "@/lib/intro/steps";
 
 export default function Home() {
 	const { messages } = useChatContext();
 	const { setAgent } = useAgentContext();
-
-	// Trigger FTUE tour when no messages
-	useIntroTour(TOUR_IDS.FIRST_TIME, firstTimeUserSteps, messages.length === 0);
 
 	useEffect(() => {
 		setAgent((prev: Agent) => ({

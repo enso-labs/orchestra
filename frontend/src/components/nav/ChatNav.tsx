@@ -4,7 +4,6 @@ import { useChatContext } from "@/context/ChatContext";
 import { Menu, Share } from "lucide-react";
 import SelectModel from "../lists/SelectModel";
 import NewThreadButton from "../buttons/NewThreadButton";
-import { TourButton } from "@/components/intro/TourButton";
 
 interface ChatNavProps {
 	onMenuClick: () => void;
@@ -56,9 +55,6 @@ export function ChatNav({ onMenuClick }: ChatNavProps) {
 							</Button>
 						</div>
 						<NewThreadButton />
-						<div className="w-9">
-							<TourButton />
-						</div>
 						<div className="w-9">
 							<ColorModeButton />
 						</div>
