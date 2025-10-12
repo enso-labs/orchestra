@@ -192,7 +192,7 @@ export function AgentCreateForm() {
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-				<div className="border border-border rounded-lg p-6">
+				<div className="border border-border rounded-lg p-6" data-intro="basic-config">
 					<div className="flex items-start justify-between mb-6">
 						<div className="flex items-center gap-3">
 							<Computer className="h-5 w-5 text-foreground" />
@@ -231,6 +231,7 @@ export function AgentCreateForm() {
 							</div>
 						) : (
 							<Button
+								data-intro="save-button"
 								type="button"
 								variant="outline"
 								size="sm"
@@ -290,7 +291,7 @@ export function AgentCreateForm() {
 							control={form.control}
 							name="systemMessage"
 							render={({ field }) => (
-								<FormItem>
+								<FormItem data-intro="system-message">
 									<div className="flex items-center justify-between">
 										<FormLabel>System Message</FormLabel>
 										<Button
@@ -337,7 +338,7 @@ export function AgentCreateForm() {
 					</div>
 				</div>
 
-				<div className="border border-border rounded-lg p-6">
+				<div className="border border-border rounded-lg p-6" data-intro="tools-section">
 					<div className="flex items-center justify-between mb-4">
 						<div className="flex items-center gap-3">
 							<Wrench className="h-5 w-5 text-foreground" />
@@ -379,7 +380,7 @@ export function AgentCreateForm() {
 					)}
 				</div>
 
-				<div className="border border-border rounded-lg p-6">
+				<div className="border border-border rounded-lg p-6" data-intro="subagents-section">
 					<div className="flex items-center gap-3 mb-6">
 						<Users className="h-5 w-5 text-foreground" />
 						<div>

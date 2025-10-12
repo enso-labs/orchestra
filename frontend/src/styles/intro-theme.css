@@ -1,0 +1,156 @@
+/* Orchestra IntroJS Custom Theme */
+/* Following Apple's design principles: minimal, elegant, purposeful */
+
+:root {
+  --intro-bg: hsl(var(--background));
+  --intro-text: hsl(var(--foreground));
+  --intro-border: hsl(var(--border));
+  --intro-primary: hsl(var(--primary));
+  --intro-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Tooltip Container */
+.orchestra-intro-tooltip {
+  max-width: 420px;
+  background: var(--intro-bg);
+  border: 1px solid var(--intro-border);
+  border-radius: 12px;
+  box-shadow: var(--intro-shadow);
+  padding: 0;
+  overflow: hidden;
+}
+
+.orchestra-intro-tooltip .introjs-tooltip-header {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--intro-border);
+}
+
+.orchestra-intro-tooltip .introjs-tooltip-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--intro-text);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.orchestra-intro-tooltip .introjs-tooltiptext {
+  padding: 16px 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--intro-text);
+  opacity: 0.9;
+}
+
+/* Progress Bullets */
+.orchestra-intro-tooltip .introjs-bullets {
+  padding: 12px 24px 16px;
+  text-align: center;
+}
+
+.orchestra-intro-tooltip .introjs-bullets ul li a {
+  width: 8px;
+  height: 8px;
+  background: var(--intro-border);
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.orchestra-intro-tooltip .introjs-bullets ul li a.active {
+  width: 24px;
+  border-radius: 4px;
+  background: var(--intro-primary);
+}
+
+/* Buttons */
+.orchestra-intro-tooltip .introjs-tooltipbuttons {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--intro-border);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.orchestra-intro-tooltip .introjs-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.orchestra-intro-tooltip .introjs-skipbutton {
+  background: transparent;
+  color: var(--intro-text);
+  opacity: 0.7;
+}
+
+.orchestra-intro-tooltip .introjs-skipbutton:hover {
+  opacity: 1;
+  background: hsl(var(--muted));
+}
+
+.orchestra-intro-tooltip .introjs-prevbutton,
+.orchestra-intro-tooltip .introjs-nextbutton,
+.orchestra-intro-tooltip .introjs-donebutton {
+  background: var(--intro-primary);
+  color: white;
+  padding: 8px 20px;
+}
+
+.orchestra-intro-tooltip .introjs-prevbutton:hover,
+.orchestra-intro-tooltip .introjs-nextbutton:hover,
+.orchestra-intro-tooltip .introjs-donebutton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.orchestra-intro-tooltip .introjs-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Highlight */
+.orchestra-intro-highlight {
+  border: 2px solid var(--intro-primary);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+}
+
+/* Arrow */
+.orchestra-intro-tooltip .introjs-arrow {
+  border: 8px solid var(--intro-bg);
+}
+
+/* Progress bar */
+.orchestra-intro-tooltip .introjs-progress {
+  height: 3px;
+  background: var(--intro-border);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.orchestra-intro-tooltip .introjs-progressbar {
+  background: var(--intro-primary);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Animations */
+@keyframes intro-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.orchestra-intro-tooltip {
+  animation: intro-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

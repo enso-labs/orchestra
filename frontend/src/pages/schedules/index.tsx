@@ -227,6 +227,7 @@ function SchedulesIndexPage() {
 				<div className="flex flex-row gap-2 items-center">
 					<MainToolTip content="Create Schedule" delayDuration={500}>
 						<Button
+							data-intro="create-schedule"
 							variant="outline"
 							size="icon"
 							onClick={() => setShowCreateDialog(true)}
@@ -260,7 +261,7 @@ function SchedulesIndexPage() {
 				<div className="flex-shrink-0 px-4">
 					<div className="mx-auto">
 						{/* Page title */}
-						<div className="mb-5">
+						<div className="mb-5" data-intro="schedules-heading">
 							<h1 className="text-3xl font-bold text-foreground mb-2">
 								Schedules
 							</h1>
@@ -270,7 +271,7 @@ function SchedulesIndexPage() {
 						</div>
 
 						{/* Stats Cards */}
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" data-intro="stats-cards">
 							<Card>
 								<CardContent className="p-4">
 									<div className="flex items-center gap-2">
