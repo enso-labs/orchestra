@@ -29,6 +29,8 @@ from src.routes.v0 import (
     rag,
     assistant,
     schedule,
+    prompt,
+    # static_prompt,
 )
 from src.constants import (
     HOST,
@@ -135,6 +137,7 @@ app.include_router(llm, prefix=PREFIX)
 app.include_router(thread, prefix=PREFIX)
 app.include_router(assistant, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
+app.include_router(prompt, prefix=PREFIX)
 app.include_router(schedule, prefix=PREFIX)
 if LANGCONNECT_SERVER_URL:
     app.include_router(rag, prefix=PREFIX)
