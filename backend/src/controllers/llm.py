@@ -3,7 +3,6 @@ from uuid import uuid4
 from typing import Annotated, AsyncGenerator, Any
 from fastapi import Depends
 from langgraph.store.base import BaseStore
-from langgraph.checkpoint.base import BaseCheckpointSaver
 
 from src.schemas.entities import LLMRequest
 from src.schemas.models import ProtectedUser

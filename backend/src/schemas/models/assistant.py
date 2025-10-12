@@ -19,7 +19,7 @@ class Assistant(BaseModel):
     model: Optional[str] = None
     prompt: str = Field(default="You are a helpful assistant.")
     tools: list[str]
-    subagents: Optional[list["Assistant"]] = []
+    subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
     metadata: dict = {}
