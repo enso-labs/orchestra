@@ -57,3 +57,16 @@ def slugify(text: str) -> str:
     text = text.strip("-")
 
     return text
+
+
+def raw_html(content: str) -> str:
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+  <title>Prompt Content</title>
+  <meta charset="utf-8">
+</head>
+<body>
+<pre>{content}</pre>
+</body>
+</html>"""

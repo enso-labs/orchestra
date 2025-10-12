@@ -9,7 +9,8 @@ from .token import router as token
 from .storage import router as storage
 from .assistant import router as assistant
 from .schedule import router as schedule
-
+from .prompt import router as prompt
+from .prompt import static_router as static_prompt
 __all__ = [
     "llm",
     "thread",
@@ -20,6 +21,8 @@ __all__ = [
     "storage",
     "assistant",
     "schedule",
+    "prompt",
+    "static_prompt",
 ]
 
 if LANGCONNECT_SERVER_URL:
