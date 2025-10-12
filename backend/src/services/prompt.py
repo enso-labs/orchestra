@@ -16,7 +16,7 @@ IN_MEMORY_STORE = InMemoryStore()
 STORE_KEY = "prompts"
 
 class PromptSearch(BaseModel):
-    limit: int = 200
+    limit: int = 500
     offset: int = 0
     sort: str = "updated_at"
     sort_order: str = "desc"
@@ -50,7 +50,7 @@ class PromptService:
         self.user_id = user_id
         self.store: BaseStore = store
         
-    def _get_namespace(self, prompt_id: str = None, public: bool = False):
+    def _get_namespace(self, prompt_id: str = "", public: bool = False):
         if public:
             return ("public", STORE_KEY, prompt_id)
         if prompt_id is None:
@@ -122,14 +122,14 @@ class PromptService:
 
     async def search(
         self,
-        limit: int = 1000,
+        params: PromptSearch,
     ) -> list[dict]:
         try:
             prompts = []
             if isinstance(self.store, InMemoryStore):
-                prompts = await self._in_memory_search(limit)
+                prompts = await self._in_memory_search(params)
             else:
-                prompts = await self._postgres_search(limit)
+                prompts = await self._postgres_search(params)
             return self._format(prompts)
         except Exception as e:
             logger.error(f"Error searching {STORE_KEY}: {e}")
@@ -138,22 +138,26 @@ class PromptService:
     ###########################################################################
     ## Search
     ###########################################################################
-    async def _in_memory_search(self, limit: int = 1000) -> list[dict]:
-        items = await self.store.asearch(self._get_namespace(), limit=limit)
+    async def _in_memory_search(self, params: PromptSearch) -> list[dict]:
+        items = await self.store.asearch(self._get_namespace(), limit=params.limit)
         return sorted(
             [item for item in items],
             key=lambda x: (x.updated_at, getattr(x, "v", 1)),
             reverse=True,
         )
 
-    async def _postgres_search(self, limit: int = 1000) -> list[dict]:
+    async def _postgres_search(self, params: PromptSearch) -> list[dict]:
         max_retries = 3
         retry_delay = 1  # seconds
+        
+        namespace = self._get_namespace()
+        if "public" in params.filter:
+            namespace = self._get_namespace(public=params.filter["public"])
 
         for attempt in range(max_retries):
             try:
                 async with self.store as store:
-                    items = await store.asearch(self._get_namespace(), limit=limit)
+                    items = await store.asearch(namespace, limit=params.limit)
                     return sorted(
                         [item for item in items],
                         key=lambda x: (x.updated_at, getattr(x, "v", 1)),

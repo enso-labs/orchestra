@@ -30,7 +30,7 @@ from src.routes.v0 import (
     assistant,
     schedule,
     prompt,
-    static_prompt,
+    # static_prompt,
 )
 from src.constants import (
     HOST,
@@ -139,7 +139,6 @@ app.include_router(assistant, prefix=PREFIX)
 app.include_router(tool, prefix=PREFIX)
 app.include_router(prompt, prefix=PREFIX)
 app.include_router(schedule, prefix=PREFIX)
-app.include_router(static_prompt, prefix=PREFIX)
 if LANGCONNECT_SERVER_URL:
     app.include_router(rag, prefix=PREFIX)
 app.include_router(storage, prefix=PREFIX)
