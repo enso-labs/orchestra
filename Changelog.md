@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2
 
 ### Fixed
+  - bug/419-schedule-modal (2025-10-12)
   - bug/423-fix-checkpointer-conn-closed (2025-10-10)
   - bug/406-day-mode-theme-fix (2025-10-05)
   - bug/400-make-login-suck-less (2025-10-01)
