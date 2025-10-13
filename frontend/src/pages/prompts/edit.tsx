@@ -11,8 +11,6 @@ import {
 	Trash2,
 	GitBranch,
 	History,
-	ToggleLeft,
-	ToggleRight,
 } from "lucide-react";
 import {
 	Form,
@@ -56,8 +54,10 @@ const formSchema = z.object({
 	content: z.string().min(10, {
 		message: "Content must be at least 10 characters.",
 	}),
-	public: z.boolean().default(false),
+	public: z.boolean(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function PromptEditPage() {
 	const navigate = useNavigate();
@@ -74,7 +74,7 @@ export default function PromptEditPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [showHistory, setShowHistory] = useState(false);
 
-	const form = useForm<z.infer<typeof formSchema>>({
+	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: "",
@@ -138,7 +138,7 @@ export default function PromptEditPage() {
 		}
 	};
 
-	const onUpdate = async (values: z.infer<typeof formSchema>) => {
+	const onUpdate = async (values: FormValues) => {
 		if (!promptId || !prompt) return;
 
 		try {
@@ -163,7 +163,7 @@ export default function PromptEditPage() {
 		}
 	};
 
-	const onNewVersion = async (values: z.infer<typeof formSchema>) => {
+	const onNewVersion = async (values: FormValues) => {
 		if (!promptId || !prompt) return;
 
 		const confirmed = confirm(
@@ -211,7 +211,7 @@ export default function PromptEditPage() {
 			const revisionsResponse = await promptService.listRevisions(promptId);
 			const revisionsList = revisionsResponse.data.revisions || [];
 			setRevisions(revisionsList);
-			const currentRevision = revisionsList.find((r) => r.v === selectedVersion);
+			const currentRevision = revisionsList.find((r: Prompt) => r.v === selectedVersion);
 			if (currentRevision) {
 				setPrompt(currentRevision);
 				form.setValue("public", currentRevision.public);
@@ -578,7 +578,7 @@ export default function PromptEditPage() {
 								height="100%"
 								options={{
 									wordWrap: "on",
-									minimap: { enabled: false },
+									minimap: false,
 									fontSize: 14,
 									lineNumbers: "on",
 								}}

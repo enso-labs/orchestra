@@ -2,7 +2,6 @@ import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import HouseIcon from "@/components/icons/HouseIcon";
 import { Plus, Search, FileText } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";

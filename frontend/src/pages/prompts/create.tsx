@@ -41,8 +41,10 @@ const formSchema = z.object({
 	content: z.string().min(10, {
 		message: "Content must be at least 10 characters.",
 	}),
-	public: z.boolean().default(false),
+	public: z.boolean(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function PromptCreatePage() {
 	const navigate = useNavigate();
@@ -53,7 +55,7 @@ export default function PromptCreatePage() {
 	const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 
-	const form = useForm<z.infer<typeof formSchema>>({
+	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: "",
@@ -62,7 +64,7 @@ export default function PromptCreatePage() {
 		},
 	});
 
-	const onSubmit = async (values: z.infer<typeof formSchema>) => {
+	const onSubmit = async (values: FormValues) => {
 		try {
 			setIsSaving(true);
 			const response = await promptService.create({
@@ -282,7 +284,7 @@ export default function PromptCreatePage() {
 								height="100%"
 								options={{
 									wordWrap: "on",
-									minimap: { enabled: false },
+									minimap: false,
 									fontSize: 14,
 									lineNumbers: "on",
 								}}
