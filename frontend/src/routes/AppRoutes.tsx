@@ -19,6 +19,9 @@ import AgentCreatePage from "@/pages/agents/create";
 import AgentIndexPage from "@/pages/agents";
 import AgentEditPage from "@/pages/agents/edit";
 import SchedulesIndexPage from "@/pages/schedules";
+import PromptsIndexPage from "@/pages/prompts";
+import PromptCreatePage from "@/pages/prompts/create";
+import PromptEditPage from "@/pages/prompts/edit";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -93,6 +96,30 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<SchedulesIndexPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/prompts"
+						element={
+							<PrivateRoute>
+								<PromptsIndexPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/prompts/create"
+						element={
+							<PrivateRoute>
+								<PromptCreatePage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/prompts/:promptId/edit"
+						element={
+							<PrivateRoute>
+								<PromptEditPage />
 							</PrivateRoute>
 						}
 					/>

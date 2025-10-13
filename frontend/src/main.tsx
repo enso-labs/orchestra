@@ -6,6 +6,7 @@ import ChatProvider from "./context/ChatContext";
 import AgentProvider from "./context/AgentContext";
 import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
+import { PromptProvider } from "./context/PromptContext";
 
 // Register service worker
 if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
@@ -27,9 +28,11 @@ createRoot(document.getElementById("root")!).render(
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<AppProvider>
 				<AgentProvider>
-					<ChatProvider>
-						<AppRoutes />
-					</ChatProvider>
+					<PromptProvider>
+						<ChatProvider>
+							<AppRoutes />
+						</ChatProvider>
+					</PromptProvider>
 				</AgentProvider>
 			</AppProvider>
 		</ThemeProvider>
