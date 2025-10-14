@@ -5,6 +5,7 @@ import { Prompt } from "@/lib/entities/prompt";
 type PromptContextType = {
 	prompts: Prompt[];
 	selectedPrompt: Prompt | null;
+	useEffectRefreshPrompts: () => void;
 	setSelectedPrompt: (prompt: Prompt | null) => void;
 	refreshPrompts: () => Promise<void>;
 	isLoading: boolean;
@@ -37,9 +38,15 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
 		}
 	};
 
-	useEffect(() => {
-		refreshPrompts();
-	}, []);
+	const useEffectRefreshPrompts = () => {
+		useEffect(() => {
+			refreshPrompts();
+		}, []);
+
+		return () => {
+			setPrompts([]);
+		};
+	};
 
 	return (
 		<PromptContext.Provider
@@ -50,6 +57,7 @@ export const PromptProvider = ({ children }: { children: ReactNode }) => {
 				refreshPrompts,
 				isLoading,
 				error,
+				useEffectRefreshPrompts,
 			}}
 		>
 			{children}

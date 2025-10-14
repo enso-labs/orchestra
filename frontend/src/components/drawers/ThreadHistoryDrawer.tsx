@@ -3,6 +3,7 @@ import { useChatContext } from "@/context/ChatContext";
 import { Link } from "react-router-dom";
 import { SettingsPopover } from "@/components/popovers/SettingsPopover";
 import ListThreads from "../lists/ListThreads";
+import useLinkClick from "@/hooks/useLinkClick";
 
 interface ThreadHistoryDrawerProps {
 	isOpen: boolean;
@@ -33,7 +34,16 @@ export function ThreadHistoryDrawer({
       `}
 			>
 				<div className="p-4 border-b border-border">
-					<Link to="/" className="flex items-center gap-2">
+					<Link
+						to="/"
+						onClick={(e) => {
+							const handleLinkClick = useLinkClick("/");
+							handleLinkClick(
+								e as React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+							);
+						}}
+						className="flex items-center gap-2"
+					>
 						<img
 							src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
 							alt="Logo"
