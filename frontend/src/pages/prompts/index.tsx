@@ -15,7 +15,7 @@ type FilterType = "all" | "mine" | "public";
 
 function PromptsIndexPage() {
 	const navigate = useNavigate();
-	const { prompts, isLoading } = usePromptContext();
+	const { prompts, isLoading, useEffectRefreshPrompts } = usePromptContext();
 	const [, setSearchParams] = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filter, setFilter] = useState<FilterType>("all");
@@ -23,6 +23,8 @@ function PromptsIndexPage() {
 	useEffect(() => {
 		setSearchParams(new URLSearchParams());
 	}, []);
+
+	useEffectRefreshPrompts();
 
 	// Filter and search prompts
 	const filteredPrompts = useMemo(() => {

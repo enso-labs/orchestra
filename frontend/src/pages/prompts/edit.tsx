@@ -11,6 +11,7 @@ import {
 	Trash2,
 	GitBranch,
 	History,
+	FileText,
 } from "lucide-react";
 import {
 	Form,
@@ -39,7 +40,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import promptService from "@/lib/services/promptService";
@@ -200,18 +200,15 @@ export default function PromptEditPage() {
 		if (!promptId) return;
 
 		try {
-			const response = await promptService.togglePublic(promptId);
-			const newPublicState = response.data.public;
-
-			alert(
-				`Prompt is now ${newPublicState ? "public" : "private"}!`,
-			);
+			await promptService.togglePublic(promptId);
 			await refreshPrompts();
 			// Reload revisions to update state
 			const revisionsResponse = await promptService.listRevisions(promptId);
 			const revisionsList = revisionsResponse.data.revisions || [];
 			setRevisions(revisionsList);
-			const currentRevision = revisionsList.find((r: Prompt) => r.v === selectedVersion);
+			const currentRevision = revisionsList.find(
+				(r: Prompt) => r.v === selectedVersion,
+			);
 			if (currentRevision) {
 				setPrompt(currentRevision);
 				form.setValue("public", currentRevision.public);
@@ -232,7 +229,7 @@ export default function PromptEditPage() {
 
 		try {
 			await promptService.deleteRevision(promptId, prompt.v);
-			alert("Version deleted successfully!");
+			// alert("Version deleted successfully!");
 			await refreshPrompts();
 			navigate("/prompts");
 		} catch (error) {
@@ -307,7 +304,7 @@ export default function PromptEditPage() {
 		<div className="min-h-screen bg-background p-6">
 			<div className="max-w-6xl mx-auto">
 				{/* Header */}
-				<div className="flex items-center justify-between mb-6">
+				<div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
 					<div className="flex items-center gap-4">
 						<Button
 							variant="ghost"
@@ -317,8 +314,8 @@ export default function PromptEditPage() {
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
 						<div>
-							<div className="flex items-center gap-2">
-								<h1 className="text-2xl font-bold text-foreground">
+							<div className="flex items-center gap-2 flex-wrap">
+								<h1 className="text-xl md:text-2xl font-bold text-foreground">
 									{prompt.name}
 								</h1>
 								<Badge variant="outline">v{prompt.v}</Badge>
@@ -336,44 +333,59 @@ export default function PromptEditPage() {
 									)}
 								</Badge>
 							</div>
-							<p className="text-sm text-muted-foreground">
+							<p className="text-xs md:text-sm text-muted-foreground">
 								Last updated: {formatDate(prompt.updated_at)}
 							</p>
 						</div>
 					</div>
-					<div className="flex gap-2">
+					<div className="flex gap-2 flex-wrap">
+						{prompt.public && (
+							<Button variant="outline" size="sm" asChild>
+								<a
+									href={`http://localhost:8000/api/prompts/${promptId}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center gap-1"
+								>
+									<FileText className="h-4 w-4" />
+									<span className="hidden sm:inline">View Raw</span>
+								</a>
+							</Button>
+						)}
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={() => setShowHistory(!showHistory)}
+							className="flex items-center gap-1"
 						>
-							<History className="h-4 w-4 mr-2" />
-							{showHistory ? "Hide" : "Show"} History
+							<History className="h-4 w-4" />
+							<span className="hidden sm:inline">
+								{showHistory ? "Hide" : "Show"} History
+							</span>
 						</Button>
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={form.handleSubmit(onNewVersion)}
 							disabled={isSaving}
+							className="flex items-center gap-1"
 						>
-							<GitBranch className="h-4 w-4 mr-2" />
-							New Version
+							<GitBranch className="h-4 w-4" />
+							<span className="hidden sm:inline">New Version</span>
 						</Button>
 						<Button
 							type="submit"
 							size="sm"
 							onClick={form.handleSubmit(onUpdate)}
 							disabled={isSaving}
-							className="flex items-center gap-2"
+							className="flex items-center gap-1"
 						>
 							<Save className="h-4 w-4" />
-							{isSaving ? "Saving..." : "Update"}
+							<span className="hidden sm:inline">
+								{isSaving ? "Saving..." : "Update"}
+							</span>
 						</Button>
-						<Button
-							variant="destructive"
-							size="sm"
-							onClick={deletePrompt}
-						>
+						<Button variant="destructive" size="sm" onClick={deletePrompt}>
 							<Trash2 className="h-4 w-4" />
 						</Button>
 					</div>
@@ -397,7 +409,10 @@ export default function PromptEditPage() {
 											</SelectTrigger>
 											<SelectContent>
 												{revisions.map((rev) => (
-													<SelectItem key={rev.v} value={rev.v?.toString() || "1"}>
+													<SelectItem
+														key={rev.v}
+														value={rev.v?.toString() || "1"}
+													>
 														v{rev.v}
 														{rev.v === prompt.v && " (current)"}
 													</SelectItem>
@@ -414,7 +429,10 @@ export default function PromptEditPage() {
 											<FormItem>
 												<FormLabel>Name</FormLabel>
 												<FormControl>
-													<Input placeholder="E.g., Customer Support Expert" {...field} />
+													<Input
+														placeholder="E.g., Customer Support Expert"
+														{...field}
+													/>
 												</FormControl>
 												<FormMessage />
 											</FormItem>
@@ -498,8 +516,8 @@ export default function PromptEditPage() {
 									<History className="h-5 w-5" />
 									Version History
 								</h3>
-								<ScrollArea className="h-96">
-									<div className="space-y-2">
+								<div className="max-h-[60vh] lg:h-96 overflow-auto">
+									<div className="space-y-2 pr-4">
 										{revisions
 											.slice()
 											.reverse()
@@ -530,7 +548,7 @@ export default function PromptEditPage() {
 												</div>
 											))}
 									</div>
-								</ScrollArea>
+								</div>
 							</div>
 						</div>
 					)}
