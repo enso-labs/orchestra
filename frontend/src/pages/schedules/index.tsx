@@ -260,63 +260,63 @@ function SchedulesIndexPage() {
 				<div className="flex-shrink-0 px-4">
 					<div className="mx-auto">
 						{/* Page title */}
-						<div className="mb-5">
-							<h1 className="text-3xl font-bold text-foreground mb-2">
+						<div className="mb-3 md:mb-5">
+							<h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">
 								Schedules
 							</h1>
-							<p className="text-muted-foreground mb-6">
+							<p className="text-sm md:text-base text-muted-foreground mb-3 md:mb-6">
 								Manage all your automated agent schedules
 							</p>
 						</div>
 
 						{/* Stats Cards */}
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+						<div className="grid grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-6">
 							<Card>
-								<CardContent className="p-4">
-									<div className="flex items-center gap-2">
-										<Calendar className="h-4 w-4 text-muted-foreground" />
-										<div>
-											<p className="text-2xl font-bold">{statusCounts.all}</p>
-											<p className="text-xs text-muted-foreground">Total</p>
+								<CardContent className="p-2 md:p-4">
+									<div className="flex flex-col md:flex-row items-center gap-1 md:gap-2">
+										<Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+										<div className="text-center md:text-left">
+											<p className="text-sm md:text-2xl font-bold">{statusCounts.all}</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Total</p>
 										</div>
 									</div>
 								</CardContent>
 							</Card>
 							<Card>
-								<CardContent className="p-4">
-									<div className="flex items-center gap-2">
-										<Clock className="h-4 w-4 text-green-500" />
-										<div>
-											<p className="text-2xl font-bold">
+								<CardContent className="p-2 md:p-4">
+									<div className="flex flex-col md:flex-row items-center gap-1 md:gap-2">
+										<Clock className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
+										<div className="text-center md:text-left">
+											<p className="text-sm md:text-2xl font-bold">
 												{statusCounts.active}
 											</p>
-											<p className="text-xs text-muted-foreground">Active</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Active</p>
 										</div>
 									</div>
 								</CardContent>
 							</Card>
 							<Card>
-								<CardContent className="p-4">
-									<div className="flex items-center gap-2">
-										<Clock className="h-4 w-4 text-orange-500" />
-										<div>
-											<p className="text-2xl font-bold">
+								<CardContent className="p-2 md:p-4">
+									<div className="flex flex-col md:flex-row items-center gap-1 md:gap-2">
+										<Clock className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
+										<div className="text-center md:text-left">
+											<p className="text-sm md:text-2xl font-bold">
 												{statusCounts.upcoming}
 											</p>
-											<p className="text-xs text-muted-foreground">Upcoming</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Upcoming</p>
 										</div>
 									</div>
 								</CardContent>
 							</Card>
 							<Card>
-								<CardContent className="p-4">
-									<div className="flex items-center gap-2">
-										<AlertCircle className="h-4 w-4 text-red-500" />
-										<div>
-											<p className="text-2xl font-bold">
+								<CardContent className="p-2 md:p-4">
+									<div className="flex flex-col md:flex-row items-center gap-1 md:gap-2">
+										<AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-red-500" />
+										<div className="text-center md:text-left">
+											<p className="text-sm md:text-2xl font-bold">
 												{statusCounts.overdue}
 											</p>
-											<p className="text-xs text-muted-foreground">Overdue</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Overdue</p>
 										</div>
 									</div>
 								</CardContent>
@@ -324,7 +324,7 @@ function SchedulesIndexPage() {
 						</div>
 
 						{/* Filters and Search */}
-						<div className="flex flex-col sm:flex-row gap-4 mb-6">
+						<div className="flex flex-col sm:flex-row gap-2 md:gap-4 mb-3 md:mb-6">
 							<div className="flex-1">
 								<div className="relative">
 									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -332,7 +332,7 @@ function SchedulesIndexPage() {
 										placeholder="Search schedules..."
 										value={searchQuery}
 										onChange={(e) => setSearchQuery(e.target.value)}
-										className="pl-10"
+										className="pl-10 h-9 md:h-10"
 									/>
 								</div>
 							</div>
@@ -341,7 +341,7 @@ function SchedulesIndexPage() {
 									value={filterAgentId}
 									onValueChange={(value: string) => setFilterAgentId(value)}
 								>
-									<SelectTrigger className="w-[160px]">
+									<SelectTrigger className="w-[120px] md:w-[160px] h-9 md:h-10">
 										<Bot className="h-4 w-4 mr-2" />
 										<SelectValue placeholder="All Agents" />
 									</SelectTrigger>
@@ -360,7 +360,7 @@ function SchedulesIndexPage() {
 										setFilterStatus(value)
 									}
 								>
-									<SelectTrigger className="w-[140px]">
+									<SelectTrigger className="w-[100px] md:w-[140px] h-9 md:h-10">
 										<Filter className="h-4 w-4 mr-2" />
 										<SelectValue />
 									</SelectTrigger>
@@ -383,7 +383,7 @@ function SchedulesIndexPage() {
 									value={sortBy}
 									onValueChange={(value: SortBy) => setSortBy(value)}
 								>
-									<SelectTrigger className="w-[140px]">
+									<SelectTrigger className="w-[100px] md:w-[140px] h-9 md:h-10">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>

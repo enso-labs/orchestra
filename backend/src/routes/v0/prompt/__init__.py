@@ -71,8 +71,7 @@ async def view_public_prompt(
     revisions = await prompt_service.list_revisions(prompt_id, public=True)
     if not revisions:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prompt not found")
-    html_content = raw_html(revisions[-1].content)
-    return Response(content=html_content, media_type="text/html")
+    return Response(content=revisions[-1].content, media_type="text/plain")
 
 ################################################################################
 ### Search Prompts

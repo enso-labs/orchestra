@@ -14,8 +14,11 @@ import {
 	Users,
 	Check,
 	X,
+	Library,
+	FileText,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
+import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
 
 import {
 	Form,
@@ -36,12 +39,14 @@ import {
 import { useAgentContext } from "@/context/AgentContext";
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
 import { useNavigate } from "react-router-dom";
 import { base64Compare } from "@/lib/utils/format";
 import { useParams } from "react-router-dom";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
+import { Prompt } from "@/lib/entities/prompt";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -69,6 +74,8 @@ export function AgentCreateForm() {
 	const [isUsingUrl, setIsUsingUrl] = useState(false);
 	const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
 	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
+	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -79,11 +86,16 @@ export function AgentCreateForm() {
 	});
 
 	const onSubmit = async (values: z.infer<typeof formSchema>) => {
+		// If using saved prompt, store reference; otherwise use custom content
+		const promptContent = selectedPrompt
+			? `{{prompt:${selectedPrompt.id}:v${selectedPrompt.v}}}`
+			: values.systemMessage.trim();
+
 		const configData: Agent = {
 			name: values.name.trim(),
 			description: values.description.trim(),
 			model: values.model.trim(),
-			prompt: values.systemMessage.trim(),
+			prompt: promptContent,
 			mcp: agent.mcp,
 			a2a: agent.a2a,
 			tools: agent.tools,
@@ -293,20 +305,71 @@ export function AgentCreateForm() {
 								<FormItem>
 									<div className="flex items-center justify-between">
 										<FormLabel>System Message</FormLabel>
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={openFullscreen}
-											className="h-6 px-2"
-										>
-											<Maximize2 className="h-3 w-3" />
-										</Button>
+										<div className="flex gap-2">
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={() => setIsPromptModalOpen(true)}
+												className="h-6 px-2 text-xs"
+											>
+												<Library className="h-3 w-3 mr-1" />
+												Browse
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={openFullscreen}
+												className="h-6 px-2"
+											>
+												<Maximize2 className="h-3 w-3" />
+											</Button>
+										</div>
 									</div>
+
+									{/* Show selected prompt */}
+									{selectedPrompt && (
+										<div className="p-3 border rounded-md bg-muted/50 mb-2">
+											<div className="flex justify-between items-start">
+												<div className="flex-1">
+													<div className="flex items-center gap-2 mb-1">
+														<FileText className="h-4 w-4 text-primary" />
+														<p className="font-medium text-sm">{selectedPrompt.name}</p>
+														<Badge variant="outline" className="text-xs">
+															v{selectedPrompt.v}
+														</Badge>
+													</div>
+													<p className="text-xs text-muted-foreground line-clamp-2">
+														{selectedPrompt.content}
+													</p>
+												</div>
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													onClick={() => {
+														setSelectedPrompt(null);
+														form.setValue("systemMessage", "");
+													}}
+													className="h-6 w-6 p-0 ml-2"
+												>
+													<X className="h-3 w-3" />
+												</Button>
+											</div>
+										</div>
+									)}
+
 									<FormControl>
 										<Textarea
 											{...field}
 											required
+											disabled={!!selectedPrompt}
+											placeholder={
+												selectedPrompt
+													? "Using saved prompt..."
+													: "Enter custom system message..."
+											}
 											onChangeCapture={(e) =>
 												setAgent({ ...agent, prompt: e.currentTarget.value })
 											}
@@ -598,6 +661,16 @@ export function AgentCreateForm() {
 				onApply={(selectedTools) => {
 					setAgent({ ...agent, tools: selectedTools });
 					setIsToolModalOpen(false);
+				}}
+			/>
+
+			{/* Prompt Selection Modal */}
+			<PromptSelectionModal
+				isOpen={isPromptModalOpen}
+				onClose={() => setIsPromptModalOpen(false)}
+				onSelect={(prompt) => {
+					setSelectedPrompt(prompt);
+					form.setValue("systemMessage", prompt.content);
 				}}
 			/>
 		</Form>

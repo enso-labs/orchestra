@@ -114,7 +114,7 @@ class PromptService:
 
     async def delete(self, prompt_id: str, v: int) -> bool:
         try:
-            await self.store.adelete(self._get_namespace(prompt_id), v)
+            await self.store.adelete(self._get_namespace(prompt_id), str(v))
             return True
         except Exception as e:
             logger.exception(f"Error deleting {STORE_KEY} {prompt_id}: {e}")
