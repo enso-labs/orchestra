@@ -342,7 +342,7 @@ export default function PromptEditPage() {
 						{prompt.public && (
 							<Button variant="outline" size="sm" asChild>
 								<a
-									href={`http://localhost:8000/api/prompts/${promptId}`}
+									href={`/api/prompts/${promptId}`}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="flex items-center gap-1"
