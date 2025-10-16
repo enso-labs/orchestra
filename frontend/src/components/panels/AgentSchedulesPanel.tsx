@@ -34,8 +34,11 @@ import {
 	Clock,
 	AlertCircle,
 	Filter,
+	Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { DialogDescription } from "@/components/ui/dialog";
 
 interface AgentSchedulesPanelProps {
 	agent: Agent;
@@ -191,10 +194,16 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h2 className="text-2xl font-bold">Agent Schedules</h2>
-					<p className="text-muted-foreground">
-						Manage automated tasks for {agent.name}
-					</p>
+					<h2 className="text-2xl font-bold">Schedules</h2>
+					<div className="flex items-center gap-2 mt-1">
+						<p className="text-sm text-muted-foreground">
+							Automated tasks for
+						</p>
+						<Badge variant="secondary" className="gap-1.5">
+							<Bot className="h-3 w-3" />
+							<span className="font-medium">{agent.name}</span>
+						</Badge>
+					</div>
 				</div>
 				<Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
 					<DialogTrigger asChild>
@@ -205,7 +214,10 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 					</DialogTrigger>
 					<DialogContent className="max-h-[99vh] max-w-[99vw] overflow-y-auto">
 						<DialogHeader>
-							<DialogTitle>Create New Schedule for {agent.name}</DialogTitle>
+							<DialogTitle>Create Automated Schedule</DialogTitle>
+							<DialogDescription>
+								Configure when and what tasks should run automatically
+							</DialogDescription>
 						</DialogHeader>
 						<AgentScheduleForm
 							agent={agent}
@@ -220,7 +232,17 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 				<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
 					<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
 						<DialogHeader>
-							<DialogTitle>Edit Schedule for {agent.name}</DialogTitle>
+							<DialogTitle>Edit Schedule: {editingSchedule?.title}</DialogTitle>
+							<DialogDescription className="flex items-center gap-2 mt-2">
+								<Badge variant="secondary" className="gap-1">
+									<Bot className="h-3 w-3" />
+									{agent.name}
+								</Badge>
+								<span className="text-muted-foreground">•</span>
+								<span className="text-sm">
+									{editingSchedule?.trigger.expression}
+								</span>
+							</DialogDescription>
 						</DialogHeader>
 						{editingSchedule && (
 							<AgentScheduleForm

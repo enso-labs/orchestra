@@ -20,7 +20,8 @@ import { CronBuilder } from "./CronBuilder";
 import { Agent } from "@/lib/services/agentService";
 import { ScheduleCreate, ScheduleFormData } from "@/lib/entities/schedule";
 import { validateCronExpression } from "@/lib/utils/schedule";
-import { Bot, Clock, MessageSquare } from "lucide-react";
+import { Bot, Clock, MessageSquare, Settings, Check, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const scheduleFormSchema = z.object({
 	name: z.string().min(1, "Name is required"),
@@ -126,16 +127,97 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 
 	return (
 		<form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+			{/* Agent Context - Always Visible */}
+			<Card className="border-l-4 border-l-primary bg-primary/5">
+				<CardContent className="p-4">
+					<div className="flex items-start justify-between gap-4">
+						<div className="flex items-start gap-3 flex-1">
+							<div className="p-2 bg-primary/10 rounded-lg">
+								<Bot className="h-5 w-5 text-primary" />
+							</div>
+							<div className="flex-1 min-w-0">
+								<div className="flex items-center gap-2 mb-1">
+									<h3 className="font-semibold text-lg truncate">{agent.name}</h3>
+									<Badge variant="secondary" className="shrink-0">
+										{agent.model}
+									</Badge>
+								</div>
+								<p className="text-sm text-muted-foreground line-clamp-2">
+									{agent.prompt && agent.prompt.length > 100
+										? `${agent.prompt.substring(0, 100)}...`
+										: agent.prompt || "No prompt configured"}
+								</p>
+								{agent.tools && agent.tools.length > 0 && (
+									<div className="flex flex-wrap gap-1 mt-2">
+										<span className="text-xs text-muted-foreground mr-1">Tools:</span>
+										{agent.tools.slice(0, 4).map((tool, index) => (
+											<Badge
+												key={index}
+												variant="outline"
+												className="text-xs"
+											>
+												{tool}
+											</Badge>
+										))}
+										{agent.tools.length > 4 && (
+											<Badge variant="outline" className="text-xs">
+												+{agent.tools.length - 4} more
+											</Badge>
+										)}
+									</div>
+								)}
+							</div>
+						</div>
+					</div>
+					<div className="mt-3 pt-3 border-t">
+						<p className="text-xs text-muted-foreground">
+							This schedule will run automatically using the configuration above.
+						</p>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* Progress Indicator */}
+			<div className="flex items-center justify-center gap-2 py-2">
+				<div className="flex items-center gap-2">
+					<div className="h-8 w-8 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
+						<span className="text-xs font-semibold text-primary">1</span>
+					</div>
+					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">Details</span>
+				</div>
+				<div className="h-px w-8 bg-border" />
+				<div className="flex items-center gap-2">
+					<div className="h-8 w-8 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+						<span className="text-xs font-semibold text-muted-foreground">2</span>
+					</div>
+					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">When</span>
+				</div>
+				<div className="h-px w-8 bg-border" />
+				<div className="flex items-center gap-2">
+					<div className="h-8 w-8 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+						<span className="text-xs font-semibold text-muted-foreground">3</span>
+					</div>
+					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">What</span>
+				</div>
+			</div>
+
 			{/* Basic Information */}
 			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<MessageSquare className="h-5 w-5" />
-						Schedule Information
-					</CardTitle>
-					<CardDescription>
-						Basic details about this scheduled task
-					</CardDescription>
+				<CardHeader className="pb-3">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-3">
+							<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+								<MessageSquare className="h-4 w-4 text-primary" />
+							</div>
+							<div>
+								<CardTitle className="text-lg">Schedule Details</CardTitle>
+								<CardDescription className="text-xs mt-0.5">
+									Name and describe this scheduled task
+								</CardDescription>
+							</div>
+						</div>
+						<Badge variant="outline" className="text-xs">Step 1</Badge>
+					</div>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,14 +258,21 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 
 			{/* Schedule Timing */}
 			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Clock className="h-5 w-5" />
-						Schedule Timing
-					</CardTitle>
-					<CardDescription>
-						When should this task run? (Minimum interval: 1 hour)
-					</CardDescription>
+				<CardHeader className="pb-3">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-3">
+							<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+								<Clock className="h-4 w-4 text-primary" />
+							</div>
+							<div>
+								<CardTitle className="text-lg">When to Run</CardTitle>
+								<CardDescription className="text-xs mt-0.5">
+									Set the schedule timing (minimum: 1 hour intervals)
+								</CardDescription>
+							</div>
+						</div>
+						<Badge variant="outline" className="text-xs">Step 2</Badge>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<CronBuilder
@@ -196,73 +285,163 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 
 			{/* Task Configuration */}
 			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Bot className="h-5 w-5" />
-						Task Configuration
-					</CardTitle>
-					<CardDescription>
-						Configure what the agent should do when the schedule runs
-					</CardDescription>
+				<CardHeader className="pb-3">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-3">
+							<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+								<Bot className="h-4 w-4 text-primary" />
+							</div>
+							<div>
+								<CardTitle className="text-lg">What to Execute</CardTitle>
+								<CardDescription className="text-xs mt-0.5">
+									Define the task and configuration mode
+								</CardDescription>
+							</div>
+						</div>
+						<Badge variant="outline" className="text-xs">Step 3</Badge>
+					</div>
 				</CardHeader>
 				<CardContent className="space-y-4">
-					{/* Agent Inheritance Toggle */}
-					<div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
-						<Switch
-							id="inheritFromAgent"
-							checked={watchInheritFromAgent}
-							onCheckedChange={(checked) =>
-								setValue("inheritFromAgent", checked)
-							}
-						/>
-						<div className="flex-1">
-							<Label htmlFor="inheritFromAgent" className="font-medium">
-								Inherit from Agent
-							</Label>
-							<p className="text-sm text-muted-foreground">
-								Use the agent's current model, prompt, and tools
-							</p>
+					{/* Configuration Mode Selector */}
+					<div className="space-y-3">
+						<div className="flex items-start justify-between">
+							<div>
+								<Label className="text-base font-semibold">Configuration Mode</Label>
+								<p className="text-sm text-muted-foreground mt-1">
+									Choose how this schedule should use agent settings
+								</p>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+							{/* Use Agent Settings Option */}
+							<button
+								type="button"
+								onClick={() => setValue("inheritFromAgent", true)}
+								className={cn(
+									"relative p-4 rounded-lg border-2 text-left transition-all",
+									watchInheritFromAgent
+										? "border-primary bg-primary/5 shadow-sm"
+										: "border-border hover:border-primary/50 hover:bg-accent/50"
+								)}
+							>
+								<div className="flex items-start gap-3">
+									<div className={cn(
+										"p-2 rounded-md shrink-0",
+										watchInheritFromAgent ? "bg-primary/10" : "bg-muted"
+									)}>
+										<Bot className={cn(
+											"h-4 w-4",
+											watchInheritFromAgent ? "text-primary" : "text-muted-foreground"
+										)} />
+									</div>
+									<div className="flex-1">
+										<div className="font-medium mb-1">Use Agent Settings</div>
+										<p className="text-xs text-muted-foreground">
+											Inherit model, prompt, and tools from <span className="font-medium">{agent.name}</span>
+										</p>
+									</div>
+									{watchInheritFromAgent && (
+										<div className="absolute top-2 right-2">
+											<div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+												<Check className="h-3 w-3 text-primary-foreground" />
+											</div>
+										</div>
+									)}
+								</div>
+							</button>
+
+							{/* Custom Configuration Option */}
+							<button
+								type="button"
+								onClick={() => setValue("inheritFromAgent", false)}
+								className={cn(
+									"relative p-4 rounded-lg border-2 text-left transition-all",
+									!watchInheritFromAgent
+										? "border-primary bg-primary/5 shadow-sm"
+										: "border-border hover:border-primary/50 hover:bg-accent/50"
+								)}
+							>
+								<div className="flex items-start gap-3">
+									<div className={cn(
+										"p-2 rounded-md shrink-0",
+										!watchInheritFromAgent ? "bg-primary/10" : "bg-muted"
+									)}>
+										<Settings className={cn(
+											"h-4 w-4",
+											!watchInheritFromAgent ? "text-primary" : "text-muted-foreground"
+										)} />
+									</div>
+									<div className="flex-1">
+										<div className="font-medium mb-1">Custom Configuration</div>
+										<p className="text-xs text-muted-foreground">
+											Override with different model, prompt, or tools
+										</p>
+									</div>
+									{!watchInheritFromAgent && (
+										<div className="absolute top-2 right-2">
+											<div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+												<Check className="h-3 w-3 text-primary-foreground" />
+											</div>
+										</div>
+									)}
+								</div>
+							</button>
 						</div>
 					</div>
 
 					{/* Agent Settings Preview */}
 					{watchInheritFromAgent && (
-						<div className="p-3 border rounded-lg bg-secondary/20">
-							<h4 className="text-sm font-medium mb-2">Inherited Settings:</h4>
-							<div className="space-y-2 text-sm">
-								<div className="flex justify-between">
-									<span className="text-muted-foreground">Model:</span>
-									<Badge variant="secondary">{agent.model}</Badge>
+						<div className="rounded-lg border bg-card">
+							<div className="p-3 border-b bg-muted/50">
+								<div className="flex items-center gap-2">
+									<div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+									<span className="text-sm font-medium">Active Agent Configuration</span>
 								</div>
-								<div className="flex justify-between">
-									<span className="text-muted-foreground">System Prompt:</span>
-									<span className="text-right max-w-xs truncate">
-										{agent.prompt && agent.prompt.length > 50
-											? `${agent.prompt.substring(0, 50)}...`
-											: agent.prompt || "No prompt configured"}
-									</span>
+							</div>
+							<div className="p-4 space-y-3">
+								<div className="grid grid-cols-[100px_1fr] gap-3 items-start">
+									<span className="text-sm font-medium text-muted-foreground">Model</span>
+									<div className="flex items-center gap-2">
+										<Badge variant="secondary" className="font-mono">
+											{agent.model}
+										</Badge>
+									</div>
+								</div>
+								<Separator />
+								<div className="grid grid-cols-[100px_1fr] gap-3 items-start">
+									<span className="text-sm font-medium text-muted-foreground">System</span>
+									<p className="text-sm text-foreground">
+										{agent.prompt && agent.prompt.length > 150
+											? `${agent.prompt.substring(0, 150)}...`
+											: agent.prompt || "No system prompt configured"}
+									</p>
 								</div>
 								{agent.tools && agent.tools.length > 0 && (
-									<div className="flex justify-between">
-										<span className="text-muted-foreground">Tools:</span>
-										<div className="flex flex-wrap gap-1">
-											{agent.tools.slice(0, 3).map((tool, index) => (
-												<Badge
-													key={index}
-													variant="outline"
-													className="text-xs"
-												>
-													{tool}
-												</Badge>
-											))}
-											{agent.tools.length > 3 && (
-												<Badge variant="outline" className="text-xs">
-													+{agent.tools.length - 3}
-												</Badge>
-											)}
+									<>
+										<Separator />
+										<div className="grid grid-cols-[100px_1fr] gap-3 items-start">
+											<span className="text-sm font-medium text-muted-foreground">Tools</span>
+											<div className="flex flex-wrap gap-2">
+												{agent.tools.map((tool, index) => (
+													<Badge
+														key={index}
+														variant="outline"
+														className="text-xs font-mono"
+													>
+														{tool}
+													</Badge>
+												))}
+											</div>
 										</div>
-									</div>
+									</>
 								)}
+							</div>
+							<div className="px-4 py-3 bg-muted/30 border-t rounded-b-lg">
+								<p className="text-xs text-muted-foreground flex items-start gap-2">
+									<Info className="h-3 w-3 mt-0.5 shrink-0" />
+									Any changes to <span className="font-medium">{agent.name}</span> will automatically apply to this schedule
+								</p>
 							</div>
 						</div>
 					)}
