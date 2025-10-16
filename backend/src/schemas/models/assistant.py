@@ -42,7 +42,7 @@ class Assistant(BaseModel):
 
     def to_llm_request(
         self,
-        messages: list[BaseMessage] = None,
+        messages: list[BaseMessage],
         prompt: str = None, 
         model: str = None,
         metadata: "Config" = None,
