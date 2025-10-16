@@ -1,7 +1,12 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+from langchain_core.messages import BaseMessage
 from src.utils.format import slugify
 from pydantic import BaseModel, computed_field, field_serializer, Field
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from src.schemas.entities import Config
+    from src.schemas.entities import LLMRequest
 
 
 class AssistantSearch(BaseModel):
@@ -34,3 +39,25 @@ class Assistant(BaseModel):
     @field_serializer("created_at", "updated_at")
     def serialize_dt(self, dt: Optional[datetime], _):
         return dt.isoformat() if dt else None
+
+    def to_llm_request(
+        self,
+        messages: list[BaseMessage] = None,
+        prompt: str = None, 
+        model: str = None,
+        metadata: "Config" = None,
+    ) -> "LLMRequest":
+        from src.schemas.entities import Config
+        from src.schemas.entities import LLMRequest
+        if metadata and isinstance(metadata, Config):
+            metadata = metadata.model_dump()
+        return LLMRequest(
+            model=model or self.model,
+            system=prompt or self.prompt,
+            tools=self.tools,
+            a2a=self.a2a,
+            mcp=self.mcp,
+            subagents=self.subagents,
+            metadata=metadata or self.metadata,
+            messages=messages
+        )

@@ -2,7 +2,7 @@ from enum import Enum
 from uuid import uuid4
 from typing import Optional, List, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from langgraph.types import StreamMode
 from langchain_core.messages import (
     AnyMessage,
@@ -138,6 +138,8 @@ class StreamContext(BaseModel):
 
 
 class Config(BaseModel):
+    model_config = ConfigDict(extra="allow")  # ✅ allow arbitrary extra fields
+
     user_id: Optional[str] = Field(
         default=None, description="The user id", examples=[str(uuid4())]
     )
@@ -164,8 +166,8 @@ class ThreadSearch(BaseModel):
 
 
 class LLMRequest(BaseModel):
-    model: ChatModels = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
-    system: str = "You are a helpful assistant."
+    model: Optional[ChatModels] = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
+    system: Optional[str] = Field(default="You are a helpful assistant.")
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)

@@ -64,7 +64,11 @@ export default function useChat(): ChatContextType {
 		in_mem_messages = [...newMessages];
 		setMessagesState(newMessages);
 	};
-	const [metadata, setMetadata] = useState({});
+	const [metadata, setMetadata] = useState<any>({
+		current_time: new Date().toISOString(),
+		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		language: navigator.language,
+	});
 
 	const [controller, setController] = useState<AbortController | null>(null);
 
@@ -101,7 +105,7 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const source = streamThread({
-			system: constructSystemPrompt(agent.prompt),
+			system: agent.prompt,
 			messages: formatedMessages,
 			model: agent.model,
 			metadata: metadata,
@@ -161,12 +165,7 @@ export default function useChat(): ChatContextType {
 	};
 
 	const resetMetadata = () => {
-		setMetadata({
-			graph_id: undefined,
-			thread_id: undefined,
-			assistant_id: undefined,
-			checkpoint_id: undefined,
-		});
+		setMetadata({});
 	};
 
 	const clearMessages = (index?: number) => {
@@ -195,7 +194,7 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
-			setMetadata((prev) => ({
+			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: responseMetadata.thread_id,
 			}));
@@ -340,12 +339,12 @@ export default function useChat(): ChatContextType {
 
 	const useEffectUpdateAssistantId = () => {
 		useEffect(() => {
-			setMetadata((prev) => ({
+			setMetadata((prev: any) => ({
 				...prev,
 				assistant_id: agent.id,
 			}));
 			return () => {
-				setMetadata((prev) => ({
+				setMetadata((prev: any) => ({
 					...prev,
 					assistant_id: undefined,
 				}));

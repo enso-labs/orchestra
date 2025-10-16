@@ -437,6 +437,19 @@ class Examples:
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
+        "assistant_query": Example(
+            summary="assistant_query",
+            description="LLM with Assistant Query",
+            value={
+                "messages": [{"role": "user", "content": [{"type": "text", "text": "100 USD to CAD?"}]}],
+                "metadata": {
+                    "assistant_id": "ec8e7128-2542-43d9-a9ed-16bd5d83ad74",
+                    "current_time": "2025-10-16T03:35:22.613Z",
+                    "timezone": "America/Denver",
+                    "language": "en-US",
+                },
+            },
+        ),
     }
 
     LLM_STREAM_EXAMPLES = {
@@ -446,7 +459,6 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "stream_mode": "messages",
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
@@ -456,7 +468,6 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "stream_mode": "messages",
                 "metadata": {"thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj"},
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
@@ -467,12 +478,24 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "stream_mode": "messages",
                 "metadata": {
                     "thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj",
                     "checkpoint_id": "6fb4c17e-ff1d-46ca-af6d-ff289a019423",
                 },
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+            },
+        ),
+        "assistant_query": Example(
+            summary="assistant_query",
+            description="LLM with Assistant Query",
+            value={
+                "messages": [{"role": "user", "content": [{"type": "text", "text": "100 USD to CAD?"}]}],
+                "metadata": {
+                    "assistant_id": "ec8e7128-2542-43d9-a9ed-16bd5d83ad74",
+                    "current_time": "2025-10-16T03:35:22.613Z",
+                    "timezone": "America/Denver",
+                    "language": "en-US",
+                },
             },
         ),
     }

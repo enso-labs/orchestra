@@ -33,10 +33,10 @@ async def search_assistants(
     # If id is provided, return the assistant
     if "id" in assistant_search.filter:
         assistant = await assistant_service.get(assistant_search.filter["id"])
-        return {"assistants": [assistant]}
+        return {"assistants": [assistant.model_dump()]}
     # If id is not provided, return all assistants
     assistants = await assistant_service.search()
-    return {"assistants": assistants}
+    return {"assistants": [assistant.model_dump() for assistant in assistants]}
 
 
 @router.post("", name="Create Assistant")

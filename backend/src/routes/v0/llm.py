@@ -26,6 +26,7 @@ from src.utils.llm import audio_to_text
 from src.flows import construct_agent
 from src.services.thread import thread_service
 from src.services.checkpoint import checkpoint_service
+from src.services.assistant import assistant_service, Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
 from src.constants.llm import ChatModels
@@ -55,13 +56,25 @@ async def llm_invoke(
 ) -> dict[str, Any] | Any:
     if user:
         thread_service.store = store
+        thread_service.user_id = user.id
+        params.metadata.user_id = user.id
+        if params.metadata.assistant_id:
+            assistant_service.user_id = user.id
+            assistant_service.store = store
+            assistant: Assistant = await assistant_service.get(params.metadata.assistant_id)
+            params = assistant.to_llm_request(
+                messages=params.messages, 
+                model=params.model, 
+                prompt=params.system,
+                metadata=params.metadata,
+            )
     async with get_checkpoint_db() as checkpointer:
         checkpoint_service.checkpointer = checkpointer
         agent = await construct_agent(params, checkpointer, store)
         checkpoint_service.graph = agent.graph
-        response = await agent.ainvoke(
+        response = await agent.invoke(
             {"messages": params.to_langchain_messages()},
-            context={"user": user} if user else None,
+            context={"user_id": user.id} if user else None,
         )
         return response
 
@@ -85,13 +98,22 @@ async def llm_stream(
     Streams LLM output as server-sent events (SSE).
     """
     try:
-
-        async def event_generator():
-            ## Keeps in memory if not auth user
-            if user:
-                thread_service.store = store
-                thread_service.user_id = user.id
-                params.metadata.user_id = user.id
+        if user:
+            thread_service.store = store
+            thread_service.user_id = user.id
+            params.metadata.user_id = user.id
+            if params.metadata.assistant_id:
+                assistant_service.user_id = user.id
+                assistant_service.store = store
+                assistant: Assistant = await assistant_service.get(params.metadata.assistant_id)
+                params = assistant.to_llm_request(
+                    messages=params.messages,
+                    model=params.model,
+                    prompt=params.system,
+                    metadata=params.metadata,
+                )
+                
+        async def event_generator():                    
             async with get_checkpoint_db() as checkpointer:
                 checkpoint_service.checkpointer = checkpointer
                 agent = await construct_agent(params, checkpointer, store)
