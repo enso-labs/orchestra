@@ -18,7 +18,7 @@ from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.logger import logger
 from src.services.checkpoint import checkpoint_service
 from src.services.thread import thread_service
-from src.utils.format import get_time
+from src.utils.format import get_time, init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 
@@ -171,7 +171,7 @@ async def construct_agent(
             tools=tools,
             subagents=params.subagents,
             context_schema=ContextSchema,
-            prompt=prompt,
+            prompt=init_system_prompt(prompt, params.metadata or {}),
             checkpointer=checkpointer,
             store=store,
         )

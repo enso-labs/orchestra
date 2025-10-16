@@ -101,7 +101,7 @@ class AssistantService:
             assistant.id = item.key
             assistant.updated_at = item.updated_at
             assistant.created_at = item.created_at
-            assistants.append(assistant.model_dump())
+            assistants.append(assistant)
         return assistants
 
 
