@@ -1,13 +1,24 @@
+import ujson
+from langgraph.store.base import BaseStore
 from typing import List
 from langgraph.types import StreamMode
+
+from src.contexts.service import ServiceContext
+from src.schemas.entities import LLMRequest
+from src.schemas.models.auth import ProtectedUser
+from src.constants import APP_LOG_LEVEL
+from src.flows import construct_agent
+from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
+    AIMessage,
     AIMessageChunk,
     ToolMessage,
     BaseMessage,
     BaseMessageChunk,
 )
-from src.utils.logger import logger
+from src.utils.logger import log_to_file, logger
+from src.utils.format import get_time
 
 
 ###########################################################################
@@ -148,3 +159,58 @@ def handle_multi_mode(chunk: dict):
     except Exception as e:
         logger.error(f"Error in handle_multi_mode: {e}")
     return None
+
+async def stream_generator(
+    params: LLMRequest, 
+    service_context: ServiceContext,
+):                    
+    async with get_checkpoint_db() as checkpointer:
+        agent = await construct_agent(params, checkpointer, service_context.store)
+        try:
+            async for chunk in agent.astream(
+                {"messages": params.to_langchain_messages()},
+                stream_mode=["messages", "values"],
+                context={"user_id": service_context.user_id} if service_context.user_id else None,
+            ):
+                # Serialize and yield each chunk as SSE
+                stream_chunk = handle_multi_mode(chunk)
+                if stream_chunk:
+                    data = ujson.dumps(stream_chunk)
+                    log_to_file(
+                        str(data), params.model
+                    ) and APP_LOG_LEVEL == "DEBUG"
+                    logger.debug(f"data: {str(data)}")
+                    yield f"data: {data}\n\n"
+
+        except Exception as e:
+            # Yield error as SSE if streaming fails
+            logger.exception("Error in event_generator: %s", e)
+            # raise HTTPException(status_code=500, detail=str(e))
+            error_msg = ujson.dumps(("error", str(e)))
+            yield f"data: {error_msg}\n\n"
+        finally:
+            if checkpointer:
+                final_state = await agent.aget_state()
+                messages = final_state.values.get("messages")
+                last_message = messages[-1] if messages else None
+                if isinstance(last_message, AIMessage):
+                    last_message.model = params.model
+                    new_config = await agent.graph.aupdate_state(final_state.config, {"messages": messages})
+                    configurable = new_config.get("configurable")
+                    thread_id = configurable.get("thread_id")
+                    checkpoint_id = configurable.get("checkpoint_id")
+                    
+                    if params.metadata.assistant_id:
+                        service_context.thread_service.assistant_id = params.metadata.assistant_id
+                        
+                    await service_context.thread_service.update(
+                        thread_id=thread_id,
+                        data={
+                            "thread_id": thread_id,
+                            "checkpoint_id": checkpoint_id,
+                            "messages": [last_message.model_dump()],
+                            "updated_at": get_time(),
+                        },
+                    )
+                # Log the update for debugging
+                logger.info(f"final_state Updated: {str(new_config)}")

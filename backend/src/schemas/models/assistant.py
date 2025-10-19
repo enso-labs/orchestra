@@ -43,7 +43,6 @@ class Assistant(BaseModel):
     def to_llm_request(
         self,
         messages: list[BaseMessage],
-        prompt: str = None, 
         model: str = None,
         metadata: "Config" = None,
     ) -> "LLMRequest":
@@ -53,7 +52,6 @@ class Assistant(BaseModel):
             metadata = metadata.model_dump()
         return LLMRequest(
             model=model or self.model,
-            system=prompt or self.prompt,
             tools=self.tools,
             a2a=self.a2a,
             mcp=self.mcp,

@@ -1,5 +1,4 @@
-import ujson
-from typing import Annotated, Any
+from typing import Any
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi import (
     Body,
@@ -12,21 +11,18 @@ from fastapi import (
     Form,
     UploadFile,
 )
-from langchain.chat_models import init_chat_model
-
-from src.constants import APP_LOG_LEVEL, GROQ_API_KEY
+from src.contexts.service import ServiceContext
+from src.constants import GROQ_API_KEY
 from src.schemas.models import ProtectedUser
 from src.utils.auth import get_optional_user
-from src.utils.logger import logger, log_to_file
+from src.utils.logger import logger
 from src.constants.mock import MockResponse
 from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest
-from src.utils.stream import handle_multi_mode
+from src.utils.stream import stream_generator
 from src.utils.llm import audio_to_text
 from src.flows import construct_agent
-from src.services.thread import thread_service
-from src.services.checkpoint import checkpoint_service
-from src.services.assistant import assistant_service, Assistant
+from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
 from src.constants.llm import ChatModels
@@ -55,23 +51,16 @@ async def llm_invoke(
     store=Depends(get_store),
 ) -> dict[str, Any] | Any:
     if user:
-        thread_service.store = store
-        thread_service.user_id = user.id
-        params.metadata.user_id = user.id
+        service_context = ServiceContext(user_id=user.id, store=store)
         if params.metadata.assistant_id:
-            assistant_service.user_id = user.id
-            assistant_service.store = store
-            assistant: Assistant = await assistant_service.get(params.metadata.assistant_id)
+            assistant: Assistant = await service_context.assistant_service.get(params.metadata.assistant_id)
             params = assistant.to_llm_request(
-                messages=params.messages, 
-                model=params.model, 
-                prompt=params.system,
+                messages=params.messages,
+                model=params.model,
                 metadata=params.metadata,
             )
     async with get_checkpoint_db() as checkpointer:
-        checkpoint_service.checkpointer = checkpointer
-        agent = await construct_agent(params, checkpointer, store)
-        checkpoint_service.graph = agent.graph
+        agent = await construct_agent(params, checkpointer, service_context.store)
         response = await agent.invoke(
             {"messages": params.to_langchain_messages()},
             context={"user_id": user.id} if user else None,
@@ -99,54 +88,17 @@ async def llm_stream(
     """
     try:
         if user:
-            thread_service.store = store
-            thread_service.user_id = user.id
-            params.metadata.user_id = user.id
+            service_context = ServiceContext(user_id=user.id, store=store)
             if params.metadata.assistant_id:
-                assistant_service.user_id = user.id
-                assistant_service.store = store
-                assistant: Assistant = await assistant_service.get(params.metadata.assistant_id)
+                assistant: Assistant = await service_context.assistant_service.get(params.metadata.assistant_id)
                 params = assistant.to_llm_request(
                     messages=params.messages,
                     model=params.model,
-                    prompt=params.system,
                     metadata=params.metadata,
                 )
-                
-        async def event_generator():                    
-            async with get_checkpoint_db() as checkpointer:
-                checkpoint_service.checkpointer = checkpointer
-                agent = await construct_agent(params, checkpointer, store)
-                checkpoint_service.graph = agent.graph
-                try:
-                    async for chunk in agent.astream(
-                        {"messages": params.to_langchain_messages()},
-                        stream_mode=["messages", "values"],
-                        context={"user_id": user.id} if user else None,
-                    ):
-                        # Serialize and yield each chunk as SSE
-                        stream_chunk = handle_multi_mode(chunk)
-                        if stream_chunk:
-                            data = ujson.dumps(stream_chunk)
-                            log_to_file(
-                                str(data), params.model
-                            ) and APP_LOG_LEVEL == "DEBUG"
-                            logger.debug(f"data: {str(data)}")
-                            yield f"data: {data}\n\n"
-
-                except Exception as e:
-                    # Yield error as SSE if streaming fails
-                    logger.exception("Error in event_generator: %s", e)
-                    # raise HTTPException(status_code=500, detail=str(e))
-                    error_msg = ujson.dumps(("error", str(e)))
-                    yield f"data: {error_msg}\n\n"
-                finally:
-                    # Update model info in checkpoint after streaming
-                    await agent.add_model_to_ai_message(params.model)
-
-        # Return streaming response with appropriate headers
+        stream_gen = stream_generator(params, service_context)
         return StreamingResponse(
-            event_generator(),
+            stream_gen,
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
         )
