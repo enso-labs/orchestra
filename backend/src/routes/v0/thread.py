@@ -33,15 +33,15 @@ async def search_threads(
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
                     thread_id=filter["thread_id"]
                 )
-                if not checkpoints:
-                    raise HTTPException(status_code=404, detail="Checkpoints not found")
+                # if not checkpoints:
+                #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checkpoints not found")
                 return {"checkpoints": checkpoints}
 
             threads = await service_context.thread_service.search(filter=filter)
             return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.delete("/threads/{thread_id}", name="Delete Thread")
@@ -56,15 +56,17 @@ async def delete_thread(
             await service_context.checkpoint_service.delete_checkpoints_for_thread(thread_id)
             success = await service_context.thread_service.delete(thread_id)
             if not success:
-                raise HTTPException(status_code=404, detail="Thread not found")
+                raise ValueError("Thread not found")
             return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.delete(
-    "/assistants/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread"
+    "/a/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread"
 )
 async def delete_thread(
     assistant_id: str,
@@ -79,8 +81,10 @@ async def delete_thread(
             await service_context.checkpoint_service.delete_checkpoints_for_thread(thread_id)
             success = await service_context.thread_service.delete(thread_id)
             if not success:
-                raise HTTPException(status_code=404, detail="Thread not found")
+                raise ValueError("Thread not found")
             return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

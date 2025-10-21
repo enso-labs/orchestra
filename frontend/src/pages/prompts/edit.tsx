@@ -9,7 +9,7 @@ import {
 	Globe,
 	Lock,
 	Trash2,
-	GitBranch,
+	// GitBranch,
 	History,
 	FileText,
 } from "lucide-react";
@@ -163,38 +163,38 @@ export default function PromptEditPage() {
 		}
 	};
 
-	const onNewVersion = async (values: FormValues) => {
-		if (!promptId || !prompt) return;
+	// const onNewVersion = async (values: FormValues) => {
+	// 	if (!promptId || !prompt) return;
 
-		const confirmed = confirm(
-			"Create a new version? This will increment the version number.",
-		);
-		if (!confirmed) return;
+	// 	const confirmed = confirm(
+	// 		"Create a new version? This will increment the version number.",
+	// 	);
+	// 	if (!confirmed) return;
 
-		try {
-			setIsSaving(true);
-			await promptService.createRevision(promptId, {
-				name: values.name.trim(),
-				content: values.content.trim(),
-				public: values.public,
-			});
+	// 	try {
+	// 		setIsSaving(true);
+	// 		await promptService.createRevision(promptId, {
+	// 			name: values.name.trim(),
+	// 			content: values.content.trim(),
+	// 			public: values.public,
+	// 		});
 
-			alert("New version created successfully!");
-			await refreshPrompts();
-			// Reload revisions
-			const revisionsResponse = await promptService.listRevisions(promptId);
-			const revisionsList = revisionsResponse.data.revisions || [];
-			setRevisions(revisionsList);
-			const latestRevision = revisionsList[revisionsList.length - 1];
-			setPrompt(latestRevision);
-			setSelectedVersion(latestRevision.v || 1);
-		} catch (error) {
-			console.error("Failed to create new version:", error);
-			alert("Failed to create new version. Please try again.");
-		} finally {
-			setIsSaving(false);
-		}
-	};
+	// 		alert("New version created successfully!");
+	// 		await refreshPrompts();
+	// 		// Reload revisions
+	// 		const revisionsResponse = await promptService.listRevisions(promptId);
+	// 		const revisionsList = revisionsResponse.data.revisions || [];
+	// 		setRevisions(revisionsList);
+	// 		const latestRevision = revisionsList[revisionsList.length - 1];
+	// 		setPrompt(latestRevision);
+	// 		setSelectedVersion(latestRevision.v || 1);
+	// 	} catch (error) {
+	// 		console.error("Failed to create new version:", error);
+	// 		alert("Failed to create new version. Please try again.");
+	// 	} finally {
+	// 		setIsSaving(false);
+	// 	}
+	// };
 
 	const togglePublicVisibility = async () => {
 		if (!promptId) return;
@@ -363,7 +363,7 @@ export default function PromptEditPage() {
 								{showHistory ? "Hide" : "Show"} History
 							</span>
 						</Button>
-						<Button
+						{/* <Button
 							variant="outline"
 							size="sm"
 							onClick={form.handleSubmit(onNewVersion)}
@@ -372,7 +372,7 @@ export default function PromptEditPage() {
 						>
 							<GitBranch className="h-4 w-4" />
 							<span className="hidden sm:inline">New Version</span>
-						</Button>
+						</Button> */}
 						<Button
 							type="submit"
 							size="sm"

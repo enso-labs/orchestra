@@ -11,7 +11,6 @@ from src.constants import (
     DB_URI,
     DB_POOL_MIN_SIZE,
     DB_POOL_MAX_SIZE,
-    DB_POOL_MAX_IDLE_TIME,
     DB_POOL_MAX_LIFETIME,
 )
 from langgraph.store.postgres import AsyncPostgresStore, PoolConfig

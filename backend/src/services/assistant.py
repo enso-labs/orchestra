@@ -15,11 +15,15 @@ class AssistantService:
     def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
         self.user_id = user_id
         self.store: BaseStore = store
+        
+        
+    def _get_namespace(self):
+        return (self.user_id, STORE_KEY)
 
     async def update(self, assistant_id: str, data: dict):
         try:
             await self.store.aput(
-                namespace=(STORE_KEY, self.user_id), key=assistant_id, value=data
+                namespace=self._get_namespace(), key=assistant_id, value=data
             )
             return True
         except Exception as e:
@@ -29,14 +33,14 @@ class AssistantService:
         return True
 
     async def get(self, key: str) -> Any:
-        assistant_raw = await self.store.aget((STORE_KEY, self.user_id), key)
+        assistant_raw = await self.store.aget(self._get_namespace(), key)
         if assistant_raw:
             return self._format_assistant([assistant_raw])[0]
         return None
 
     async def delete(self, key: str) -> bool:
         try:
-            await self.store.adelete((STORE_KEY, self.user_id), key)
+            await self.store.adelete(self._get_namespace(), key)
             return True
         except Exception as e:
             logger.exception(f"Error deleting {STORE_KEY} {key}: {e}")
@@ -61,7 +65,7 @@ class AssistantService:
     ## Search
     ###########################################################################
     async def _in_memory_search(self, limit: int = 1000) -> list[dict]:
-        items = await self.store.asearch((STORE_KEY, self.user_id), limit=limit)
+        items = await self.store.asearch(self._get_namespace(), limit=limit)
         return sorted(
             [item for item in items],
             key=lambda x: x.updated_at,
@@ -75,7 +79,7 @@ class AssistantService:
         for attempt in range(max_retries):
             try:
                 async with self.store as store:
-                    items = await store.asearch((STORE_KEY, self.user_id), limit=limit)
+                    items = await store.asearch(self._get_namespace(), limit=limit)
                     return sorted(
                         [item for item in items],
                         key=lambda x: x.updated_at,
