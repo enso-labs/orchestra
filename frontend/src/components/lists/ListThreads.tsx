@@ -13,9 +13,11 @@ import { AxiosResponse } from "axios";
 function ListThreads({ threads }: { threads: any[] }) {
 	const { setIsDrawerOpen } = useAppContext();
 	const { agent } = useAgentContext();
-	const { setMessages, setMetadata, metadata, setThreads, setCheckpoints } = useChatContext();
+	const { setMessages, setMetadata, metadata, setThreads, setCheckpoints, useListThreadsEffect } = useChatContext();
 	const [, setQueryModel] = useQueryParam("model", StringParam);
 	const [copiedThreadId] = useState<string | null>(null);
+
+	useListThreadsEffect(null, { assistant_id: agent.id });
 
 	if (threads.length === 0) {
 		return (

@@ -141,7 +141,6 @@ async def construct_agent(
     store: BaseStore = None,
 ):
     try:
-        params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         # Add config if it exists
         config = init_config(params)
         # Initialize tools

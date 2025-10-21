@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import uuid4
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi import (
     Body,
@@ -50,6 +51,7 @@ async def llm_invoke(
     user: ProtectedUser = Depends(get_optional_user),
     store=Depends(get_store),
 ) -> dict[str, Any] | Any:
+    params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
     if user:
         service_context = ServiceContext(user_id=user.id, store=store)
         if params.metadata.assistant_id:
@@ -87,6 +89,7 @@ async def llm_stream(
     Streams LLM output as server-sent events (SSE).
     """
     try:
+        params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         if user:
             service_context = ServiceContext(user_id=user.id, store=store)
             if params.metadata.assistant_id:
