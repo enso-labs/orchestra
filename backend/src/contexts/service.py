@@ -5,8 +5,7 @@ from src.services.thread import ThreadService
 from src.services.assistant import AssistantService
 from src.services.prompt import PromptService
 from langgraph.store.base import BaseStore
-from src.schemas.models.assistant import Assistant
-
+from src.utils.logger import logger
 class ServiceContext:
 	
 	def __init__(self, user_id: str, store: BaseStore, checkpointer: Optional[BaseCheckpointSaver] = None):
@@ -21,3 +20,15 @@ class ServiceContext:
 		if checkpointer:
 			self.checkpoint_service = CheckpointService(user_id=user_id, checkpointer=checkpointer)
   
+	async def delete_thread(self, thread_id: str):
+		try:
+			deleted_checkpoints = await self.checkpoint_service.delete_checkpoints_for_thread(thread_id)
+			if not deleted_checkpoints:
+				raise ValueError(f"Failed to delete checkpoints for thread {thread_id}")
+			deleted_thread = await self.thread_service.delete(thread_id)
+			if not deleted_thread:
+				raise ValueError(f"Failed to delete thread {thread_id}")
+			return True
+		except Exception as e:
+			logger.error(e)
+			return e

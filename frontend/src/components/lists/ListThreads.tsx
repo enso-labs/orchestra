@@ -13,7 +13,7 @@ import { AxiosResponse } from "axios";
 function ListThreads({ threads }: { threads: any[] }) {
 	const { setIsDrawerOpen } = useAppContext();
 	const { agent } = useAgentContext();
-	const { setMessages, setMetadata, metadata, setThreads } = useChatContext();
+	const { setMessages, setMetadata, metadata, setThreads, setCheckpoints } = useChatContext();
 	const [, setQueryModel] = useQueryParam("model", StringParam);
 	const [copiedThreadId] = useState<string | null>(null);
 
@@ -57,12 +57,13 @@ function ListThreads({ threads }: { threads: any[] }) {
 			<div key={config.thread_id} className="group relative">
 				<button
 					onClick={async () => {
-						const checkpoint = await searchThreads("list_checkpoints", config);
+						const checkpoints = await searchThreads("list_checkpoints", config);
 						setQueryModel(
 							thread.value.messages[thread.value.messages.length - 1].model ||
 								DEFAULT_CHAT_MODEL,
 						);
-						setMessages(formatMessages(checkpoint[0].values.messages));
+						setCheckpoints(checkpoints);
+						setMessages(formatMessages(checkpoints[0].values.messages));
 						setMetadata(thread.value);
 						setIsDrawerOpen(false);
 					}}

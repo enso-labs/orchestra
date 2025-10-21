@@ -1,6 +1,7 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 from fastapi import APIRouter, Body, HTTPException, Depends, status
 from fastapi.responses import Response
+from langgraph.store.base import BaseStore
 from src.contexts.service import ServiceContext
 from src.schemas.entities import ThreadSearch
 from src.utils.logger import logger
@@ -11,7 +12,6 @@ from src.utils.auth import verify_credentials
 from langgraph.store.postgres import AsyncPostgresStore
 
 router = APIRouter(tags=["Thread"])
-
 
 @router.post("/threads/search", name="Query Threads in Checkpointer")
 async def search_threads(
@@ -43,7 +43,6 @@ async def search_threads(
         logger.exception(f"Error searching threads: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-
 @router.delete("/threads/{thread_id}", name="Delete Thread")
 async def delete_thread(
     thread_id: str,
@@ -53,10 +52,7 @@ async def delete_thread(
     try:
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
-            await service_context.checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            success = await service_context.thread_service.delete(thread_id)
-            if not success:
-                raise ValueError("Thread not found")
+            await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -75,16 +71,12 @@ async def delete_thread(
     store=Depends(get_store),
 ):
     try:
-      
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
-            await service_context.checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            success = await service_context.thread_service.delete(thread_id)
-            if not success:
-                raise ValueError("Thread not found")
+            await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

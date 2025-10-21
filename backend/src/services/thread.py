@@ -18,26 +18,23 @@ class ThreadService:
         self.user_id = user_id or TEST_USER_ID
         self.assistant_id = assistant_id
         self.store: BaseStore = store
+        self.thread_id = None
 
     def _get_namespace(self):
-        if self.assistant_id:
-            return ("threads", self.user_id, self.assistant_id)
-        else:
-            return ("threads", self.user_id)
+        return (self.user_id, "threads")
 
     async def update(self, thread_id: str, data: dict):
-        namespace = self._get_namespace()
-        await self.store.aput(namespace=namespace, key=thread_id, value=data)
+        if self.assistant_id:
+            data["assistant_id"] = self.assistant_id
+        await self.store.aput(namespace=self._get_namespace(), key=thread_id, value=data)
         return True
 
-    async def get(self, key: str) -> Any:
-        namespace = self._get_namespace()
-        return await self.store.aget(namespace, key)
+    async def get(self, thread_id: str) -> Any:
+        return await self.store.aget(self._get_namespace(), thread_id)
 
-    async def delete(self, key: str) -> bool:
+    async def delete(self, thread_id: str) -> bool:
         try:
-            namespace = self._get_namespace()
-            await self.store.adelete(namespace, key)
+            await self.store.adelete(self._get_namespace(), thread_id)
             return True
         except Exception as e:
             logger.exception(f"Error deleting thread: {e}")
@@ -49,17 +46,17 @@ class ThreadService:
         filter: dict = {},
     ) -> list[dict]:
         try:
-            default_namespace = ("threads", self.user_id)
-            if "assistant_id" in filter:
-                default_namespace = ("threads", self.user_id, filter["assistant_id"])
-
             max_retries = 3
             retry_delay = 1  # seconds
 
             for attempt in range(max_retries):
                 try:
                     async with self.store as store:
-                        threads = await store.asearch(default_namespace, limit=limit)
+                        threads = await store.asearch(
+                            self._get_namespace(), 
+                            limit=limit,
+                            filter=filter
+                        )
                         return sorted(
                             [thread.dict() for thread in threads],
                             key=lambda x: x.get("updated_at"),
