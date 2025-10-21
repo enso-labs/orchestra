@@ -20,7 +20,7 @@ class CheckpointService:
         graph: CompiledStateGraph = None,
     ):
         self.user_id = user_id
-        self.checkpointer = checkpointer or IN_MEMORY_CHECKPOINTER
+        self.checkpointer: BaseCheckpointSaver = checkpointer or IN_MEMORY_CHECKPOINTER
         self.graph = graph
 
     @staticmethod

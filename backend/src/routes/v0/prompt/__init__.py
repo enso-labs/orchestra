@@ -3,6 +3,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status, Path, Respo
 
 from langgraph.store.postgres import AsyncPostgresStore
 
+from src.contexts.service import ServiceContext
 from .revision import router as revision_router
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store
@@ -23,18 +24,17 @@ async def search_prompts(
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
-    prompt_service.store = store
-    prompt_service.user_id = user.id
+    service_context = ServiceContext(user_id=user.id, store=store)
     # Return single prompt revision
     if "id" in prompt_search.filter and "v" in prompt_search.filter:
-        prompt = await prompt_service.get(prompt_search.filter["id"], prompt_search.filter["v"])
+        prompt = await service_context.prompt_service.get(prompt_search.filter["id"], prompt_search.filter["v"])
         return {"prompts": [prompt]}
     ## Return single prompt
     if "id" in prompt_search.filter:
-        prompt = await prompt_service.get(prompt_search.filter["id"])
+        prompt = await service_context.prompt_service.get(prompt_search.filter["id"])
         return {"prompts": [prompt]}
     # Return all prompts
-    prompts = await prompt_service.search(prompt_search)
+    prompts = await service_context.prompt_service.search(prompt_search)
     return {"prompts": prompts}
 
 
@@ -48,10 +48,9 @@ async def create_prompt(
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
-        prompt_service.store = store
-        prompt_service.user_id = user.id
         prompt_id = str(uuid.uuid4())
-        prompt = await prompt_service.revision(prompt_id, prompt)
+        service_context = ServiceContext(user_id=user.id, store=store)
+        prompt = await service_context.prompt_service.revision(prompt_id, prompt)
         return {"prompt_id": prompt_id}
 
     except HTTPException as e:
@@ -83,9 +82,8 @@ async def toggle_prompt_public(
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
-        prompt_service.store = store
-        prompt_service.user_id = user.id
-        public = await prompt_service.toggle_public(prompt_id)
+        service_context = ServiceContext(user_id=user.id, store=store)
+        public = await service_context.prompt_service.toggle_public(prompt_id)
         return {"prompt_id": prompt_id, "public": public}
 
     except HTTPException as e:

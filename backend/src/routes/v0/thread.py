@@ -1,19 +1,14 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 from fastapi import APIRouter, Body, HTTPException, Depends, status
 from fastapi.responses import Response
+from src.contexts.service import ServiceContext
 from src.schemas.entities import ThreadSearch
 from src.utils.logger import logger
-from src.services.checkpoint import checkpoint_service
-from src.services.thread import thread_service
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.auth import verify_credentials
-from langchain_core.runnables import RunnableConfig
 from langgraph.store.postgres import AsyncPostgresStore
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from langgraph.types import StateSnapshot
-from src.utils.messages import from_message_to_dict
 
 router = APIRouter(tags=["Thread"])
 
@@ -27,21 +22,22 @@ async def search_threads(
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
-        thread_service.store = store
-        thread_service.user_id = user.id
-        checkpoint_service.user_id = user.id
+        filter = thread_search.model_dump(exclude_none=True).get("filter", {})
         async with get_checkpoint_db() as checkpointer:
-            checkpoint_service.checkpointer = checkpointer
-            filter = thread_search.model_dump(exclude_none=True).get("filter", {})
+            service_context = ServiceContext(
+                user_id=user.id, 
+                store=store, 
+                checkpointer=checkpointer
+            )
             if "thread_id" in filter and not "checkpoint_id" in filter:
-                checkpoints = await checkpoint_service.list_checkpoints(
-                    filter["thread_id"]
+                checkpoints = await service_context.checkpoint_service.list_checkpoints(
+                    thread_id=filter["thread_id"]
                 )
-                if checkpoints is None:
+                if not checkpoints:
                     raise HTTPException(status_code=404, detail="Checkpoints not found")
                 return {"checkpoints": checkpoints}
 
-            threads = await thread_service.search(filter=filter)
+            threads = await service_context.thread_service.search(filter=filter)
             return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")
@@ -55,13 +51,10 @@ async def delete_thread(
     store=Depends(get_store),
 ):
     try:
-        thread_service.store = store
-        thread_service.user_id = user.id
         async with get_checkpoint_db() as checkpointer:
-            checkpoint_service.checkpointer = checkpointer
-            checkpoint_service.user_id = user.id
-            await checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            success = await thread_service.delete(thread_id)
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            await service_context.checkpoint_service.delete_checkpoints_for_thread(thread_id)
+            success = await service_context.thread_service.delete(thread_id)
             if not success:
                 raise HTTPException(status_code=404, detail="Thread not found")
             return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -80,14 +73,11 @@ async def delete_thread(
     store=Depends(get_store),
 ):
     try:
-        thread_service.store = store
-        thread_service.user_id = user.id
-        thread_service.assistant_id = assistant_id
+      
         async with get_checkpoint_db() as checkpointer:
-            checkpoint_service.checkpointer = checkpointer
-            checkpoint_service.user_id = user.id
-            await checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            success = await thread_service.delete(thread_id)
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            await service_context.checkpoint_service.delete_checkpoints_for_thread(thread_id)
+            success = await service_context.thread_service.delete(thread_id)
             if not success:
                 raise HTTPException(status_code=404, detail="Thread not found")
             return Response(status_code=status.HTTP_204_NO_CONTENT)
