@@ -40,6 +40,7 @@ dependencies = [
     "pypdf>=6.0.0",
     "python-jose>=3.5.0",
     "python-multipart>=0.0.20",
+    "redis>=7.0.0b3",
     # "rapidocr-onnxruntime>=1.4.4", # TODO: No sure if we need this
     "slowapi>=0.1.9", # Rate Limiter
     "sqlalchemy>=2.0.43",

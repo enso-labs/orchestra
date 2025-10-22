@@ -28,6 +28,14 @@ services:
     depends_on:
       - postgres
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./docker/redis/data:/data
+
   ##############################################
   ## Minio (File Storage)
   ##############################################

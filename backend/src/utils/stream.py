@@ -1,3 +1,4 @@
+from uuid import uuid4
 import ujson
 from langgraph.store.base import BaseStore
 from typing import List
@@ -17,6 +18,7 @@ from langchain_core.messages import (
 )
 from src.utils.logger import log_to_file, logger
 from src.utils.format import get_time
+from src.services.redis import redis_client
 
 
 ###########################################################################
@@ -178,6 +180,12 @@ async def stream_generator(
                         str(data), params.model
                     ) and APP_LOG_LEVEL == "DEBUG"
                     logger.debug(f"data: {str(data)}")
+                    await redis_client.xadd(
+                        name=f"llm:stream:{params.metadata.thread_id}",
+                        fields={"data": data},
+                    )
+                    await redis_client.expire(f"llm:stream:{params.metadata.thread_id}", 120)
+                    
                     yield f"data: {data}\n\n"
 
         except Exception as e:
