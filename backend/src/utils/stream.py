@@ -180,12 +180,8 @@ async def stream_generator(
                         str(data), params.model
                     ) and APP_LOG_LEVEL == "DEBUG"
                     logger.debug(f"data: {str(data)}")
-                    await redis_client.xadd(
-                        name=f"llm:stream:{params.metadata.thread_id}",
-                        fields={"data": data},
-                    )
-                    await redis_client.expire(f"llm:stream:{params.metadata.thread_id}", 120)
                     
+                    await redis_client.increment_with_ttl(f"{service_context.user_id}:monthly_stream_count")
                     yield f"data: {data}\n\n"
 
         except Exception as e:
