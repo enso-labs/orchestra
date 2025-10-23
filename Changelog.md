@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/442-edit-memories (2025-10-22)
   - feat/431-assistant-id-optimize (2025-10-15)
   - feat/429-prompt-endpoints (2025-10-12)
   - feat/425-editor-for-system-message (2025-10-10)
