@@ -5,7 +5,10 @@ in_memory_store = InMemoryStore()
 
 
 class MemoryService:
-    def __init__(self, store: InMemoryStore = in_memory_store):
+    def __init__(
+        self, 
+        store: InMemoryStore = in_memory_store
+        ):
         self.store = store
 
     async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
