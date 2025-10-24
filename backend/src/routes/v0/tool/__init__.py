@@ -28,7 +28,7 @@ router = APIRouter(tags=["Tool"], prefix="/tools")
         }
     },
 )
-def list_tools(user: ProtectedUser = Depends(verify_credentials)):
+async def list_tools(user: ProtectedUser = Depends(verify_credentials)):
     tools_response = tool_service.tool_details()
     return JSONResponse(
         content={"tools": tools_response}, status_code=status.HTTP_200_OK
