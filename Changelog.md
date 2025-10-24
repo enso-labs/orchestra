@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2
 
 ### Fixed
+  - bug/444-anon-achat (2025-10-23)
   - bug/423-fix-checkpointer-conn-closed (2025-10-10)
   - bug/406-day-mode-theme-fix (2025-10-05)
   - bug/400-make-login-suck-less (2025-10-01)
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/442-edit-memories (2025-10-22)
   - feat/431-assistant-id-optimize (2025-10-15)
   - feat/429-prompt-endpoints (2025-10-12)
   - feat/425-editor-for-system-message (2025-10-10)

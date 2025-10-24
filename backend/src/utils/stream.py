@@ -161,14 +161,18 @@ def handle_multi_mode(chunk: dict):
 async def stream_generator(
     params: LLMRequest, 
     service_context: ServiceContext,
-):                    
+):                
     async with get_checkpoint_db() as checkpointer:
-        agent = await construct_agent(params, checkpointer, service_context.store)
         try:
+            params.metadata.user_id = service_context.user_id
+            agent = await construct_agent(
+                params=params,
+                checkpointer=checkpointer,
+                store=service_context.store,
+            )
             async for chunk in agent.astream(
                 {"messages": params.to_langchain_messages()},
                 stream_mode=["messages", "values"],
-                context={"user_id": service_context.user_id} if service_context.user_id else None,
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
@@ -187,13 +191,16 @@ async def stream_generator(
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
         finally:
-            if checkpointer:
+            if service_context.user_id and checkpointer:
                 final_state = await agent.aget_state()
                 messages = final_state.values.get("messages")
                 last_message = messages[-1] if messages else None
                 if isinstance(last_message, AIMessage):
                     last_message.model = params.model
-                    new_config = await agent.graph.aupdate_state(final_state.config, {"messages": messages})
+                    new_config = await agent.graph.aupdate_state(
+                        config=final_state.config,
+                        values={"messages": messages},
+                    )
                     configurable = new_config.get("configurable")
                     thread_id = configurable.get("thread_id")
                     checkpoint_id = configurable.get("checkpoint_id")

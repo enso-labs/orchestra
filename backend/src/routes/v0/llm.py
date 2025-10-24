@@ -65,7 +65,6 @@ async def llm_invoke(
         agent = await construct_agent(params, checkpointer, service_context.store)
         response = await agent.invoke(
             {"messages": params.to_langchain_messages()},
-            context={"user_id": user.id} if user else None,
         )
         return response
 
@@ -90,15 +89,19 @@ async def llm_stream(
     """
     try:
         params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
-        if user:
-            service_context = ServiceContext(user_id=user.id, store=store)
-            if params.metadata.assistant_id:
-                assistant: Assistant = await service_context.assistant_service.get(params.metadata.assistant_id)
-                params = assistant.to_llm_request(
-                    messages=params.messages,
-                    model=params.model,
-                    metadata=params.metadata,
-                )
+        service_context = ServiceContext(
+            user_id=user.id if user else None,
+            store=store,
+        )
+        if params.metadata.assistant_id:
+            assistant: Assistant = await service_context.assistant_service.get(
+                params.metadata.assistant_id,
+            )
+            params = assistant.to_llm_request(
+                messages=params.messages,
+                model=params.model,
+                metadata=params.metadata,
+            )
         stream_gen = stream_generator(params, service_context)
         return StreamingResponse(
             stream_gen,

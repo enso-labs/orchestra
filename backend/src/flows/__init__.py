@@ -4,7 +4,7 @@ from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langchain.agents import create_agent
 from langgraph.store.base import BaseStore
-from langchain_core.messages import BaseMessage, AIMessage
+from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -16,9 +16,7 @@ from src.services.tool import tool_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest, LLMStreamRequest
 from src.utils.logger import logger
-from src.services.checkpoint import checkpoint_service
-from src.services.thread import thread_service
-from src.utils.format import get_time, init_system_prompt
+from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 
@@ -169,7 +167,7 @@ async def construct_agent(
             model=params.model,
             tools=tools,
             subagents=params.subagents,
-            context_schema=ContextSchema,
+            # context_schema=ContextSchema,
             prompt=init_system_prompt(prompt, params.metadata or {}),
             checkpointer=checkpointer,
             store=store,
@@ -188,7 +186,7 @@ class Orchestra:
         model: str = "openai:gpt-5-nano",
         prompt: str = "You are a helpful assistant.",
         config: RunnableConfig = None,
-        context_schema: Type[Any] | None = None,
+        # context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
         graph_id: Literal["react", "deepagent"] = "react",
@@ -197,7 +195,7 @@ class Orchestra:
         self.model = model
         self.prompt = prompt
         self.config = config
-        self.context_schema = context_schema
+        # self.context_schema = context_schema
         self.store = store
         self.checkpointer = checkpointer
         self.subagents = subagents
@@ -206,7 +204,7 @@ class Orchestra:
             subagents=self.subagents,
             model=self.model,
             prompt=self.prompt,
-            context_schema=self.context_schema,
+            # context_schema=self.context_schema,
             checkpointer=self.checkpointer,
             store=self.store,
             graph_id=graph_id,
