@@ -7,6 +7,7 @@ from src.services.prompt import PromptService
 from langgraph.store.base import BaseStore
 from src.utils.logger import logger
 from langgraph.store.memory import InMemoryStore
+from src.services.memory import MemoryService
 
 IN_MEMORY_STORE = InMemoryStore()
 
@@ -20,10 +21,11 @@ class ServiceContext:
 		self.user_id = user_id
 		self.store = store or IN_MEMORY_STORE
 		self.checkpointer = checkpointer
-  
+		self.memory_service = MemoryService(user_id=user_id, store=store)
 		self.thread_service = ThreadService(user_id=user_id, store=store)
-		self.assistant_service = AssistantService(user_id=user_id, store=store)
 		self.prompt_service = PromptService(user_id=user_id, store=store)
+		self.assistant_service = AssistantService(user_id=user_id, store=store)
+  
   
 		if checkpointer:
 			self.checkpoint_service = CheckpointService(user_id=user_id, checkpointer=checkpointer)

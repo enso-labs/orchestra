@@ -512,3 +512,8 @@ class Examples:
             metadata={},
         ),
     }
+    
+    INVOKE_TOOLS_EXAMPLE = [
+        {"name": "get_stock_price", "args": {"symbol": "AAPL"}},
+        {"name": "get_weather", "args": {"location": "New York"}},
+    ]

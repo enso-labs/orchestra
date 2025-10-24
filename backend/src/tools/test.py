@@ -2,9 +2,9 @@ import random
 from langchain_core.tools import tool
 from langgraph.types import interrupt
 from src.constants import APP_ENV
-from langgraph.runtime import get_runtime
-from src.schemas.contexts import ContextSchema
+from src.utils.tools import tool_ctx
 from src.utils.logger import logger
+from langchain_core.runnables import RunnableConfig
 
 
 @tool
@@ -14,12 +14,12 @@ def get_stock_price(symbol: str) -> str:
 
 
 @tool
-def get_weather(location: str) -> str:
+def get_weather(location: str, config: RunnableConfig) -> str:
     """Get the weather in a given location"""
-    runtime = get_runtime(ContextSchema)
-    if runtime.context and runtime.context.user_id:
-        user_id = runtime.context.user_id
+    user_id = config["configurable"].get("user_id")
+    if user_id:
         logger.debug(f"user_id: {user_id}")
+        return f"The weather in {location} is sunny and {random.randint(60, 80)} degrees as seen by {user_id}"
     return f"The weather in {location} is sunny and {random.randint(60, 80)} degrees"
 
 

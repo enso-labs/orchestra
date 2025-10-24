@@ -10,8 +10,6 @@ class MemoryService:
         user_id: str = None,
         store: BaseStore = IN_MEMORY_STORE
     ):
-        if user_id is None:
-            raise ValueError("User ID is required for memory_service")
         self.user_id = user_id
         self.store: BaseStore = store
 
@@ -29,8 +27,8 @@ class MemoryService:
         await self.store.adelete(self._get_namespace(), key)
         return True
 
-    async def search(self, query: str) -> list[SearchItem]:
-        return await self.store.asearch(self._get_namespace(), query=query)
+    async def search(self, query: str = None, limit: int = 20) -> list[SearchItem]:
+        return await self.store.asearch(self._get_namespace(), query=query, limit=limit)
 
 
 memory_service = MemoryService()

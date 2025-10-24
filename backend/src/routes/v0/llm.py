@@ -65,7 +65,6 @@ async def llm_invoke(
         agent = await construct_agent(params, checkpointer, service_context.store)
         response = await agent.invoke(
             {"messages": params.to_langchain_messages()},
-            context={"user_id": user.id} if user else None,
         )
         return response
 

@@ -164,6 +164,7 @@ async def stream_generator(
 ):                
     async with get_checkpoint_db() as checkpointer:
         try:
+            params.metadata.user_id = service_context.user_id
             agent = await construct_agent(
                 params=params,
                 checkpointer=checkpointer,
@@ -172,11 +173,6 @@ async def stream_generator(
             async for chunk in agent.astream(
                 {"messages": params.to_langchain_messages()},
                 stream_mode=["messages", "values"],
-                context=(
-                    {"user_id": service_context.user_id} 
-                    if service_context and service_context.user_id 
-                    else None
-                ),
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
@@ -195,7 +191,7 @@ async def stream_generator(
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
         finally:
-            if service_context and checkpointer:
+            if service_context.user_id and checkpointer:
                 final_state = await agent.aget_state()
                 messages = final_state.values.get("messages")
                 last_message = messages[-1] if messages else None

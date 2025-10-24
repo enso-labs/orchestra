@@ -1,20 +1,13 @@
 from uuid import uuid4
 from langchain_core.tools import tool
-from langchain_core.tools import ToolException
-from langgraph.runtime import get_runtime
 from langgraph.store.base import SearchItem
+from langchain_core.runnables import RunnableConfig
 
-from src.schemas.contexts import ContextSchema
-from src.services.memory import MemoryService   
-from src.tools import RUNTIME
-
-if RUNTIME.context and RUNTIME.context.user_id:
-	memory_service = MemoryService(user_id=RUNTIME.context.user_id)
-else:
-	raise ToolException("User ID is required for memory_service")
+from src.services.memory import memory_service   
+from src.utils.tools import tool_ctx
 
 @tool
-async def upsert_memory(memory: str) -> str:
+async def upsert_memory(memory: str, config: RunnableConfig) -> str:
 	"""
 	Toolkit: Memory
 	Description: Upsert memory to vectorstore for later semantic retrieval.
@@ -26,12 +19,16 @@ async def upsert_memory(memory: str) -> str:
 		The memory ID.
 	"""
 	memory_id = f"memory_{str(uuid4())}"
+	user_id = config["configurable"].get("user_id")
+	if not user_id:
+		raise ValueError("User ID is required to upsert memory.")
+	memory_service.user_id = user_id
 	await memory_service.set(memory_id, {"memory": memory}, ttl=None)
 	return f"Memory ID {memory_id} saved."
 
 
 @tool
-async def delete_memory(memory_id: str) -> str:
+async def delete_memory(memory_id: str, config: RunnableConfig) -> str:
 	"""
 	Toolkit: Memory
 	Description: Delete memory from vectorstore.
@@ -41,6 +38,10 @@ async def delete_memory(memory_id: str) -> str:
 	Returns:
 		Deleted message.
 	"""
+	user_id = config["configurable"].get("user_id")
+	if not user_id:
+		raise ValueError("User ID is required to delete memory.")
+	memory_service.user_id = user_id
 	await memory_service.delete(memory_id)
 	return f"Memory ID {memory_id} deleted."
 
@@ -48,6 +49,7 @@ async def delete_memory(memory_id: str) -> str:
 @tool
 async def search_memory(
 	query: str,
+	config: RunnableConfig,
 ) -> list[dict]:
 	"""
 	Toolkit: Memory
@@ -58,6 +60,10 @@ async def search_memory(
 	Returns:
 		The memories (documents).
 	"""
+	user_id = config["configurable"].get("user_id")
+	if not user_id:
+		raise ValueError("User ID is required to search memory.")
+	memory_service.user_id = user_id
 	memories: list[SearchItem] = await memory_service.search(query)
 	return [memory.dict() for memory in memories]
 
