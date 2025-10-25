@@ -55,7 +55,9 @@ async def llm_invoke(
     if user:
         service_context = ServiceContext(user_id=user.id, store=store)
         if params.metadata.assistant_id:
-            assistant: Assistant = await service_context.assistant_service.get(params.metadata.assistant_id)
+            assistant: Assistant = await service_context.assistant_service.get(
+                params.metadata.assistant_id
+            )
             params = assistant.to_llm_request(
                 messages=params.messages,
                 model=params.model,

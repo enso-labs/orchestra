@@ -5,65 +5,67 @@ from langchain_core.runnables import RunnableConfig
 
 from src.services.memory import memory_service
 
+
 @tool
 async def upsert_memory(memory: str, config: RunnableConfig) -> str:
-	"""
-	Toolkit: Memory
-	Description: Upsert memory to vectorstore for later semantic retrieval.
-	Args:
-		memory: The memory to upsert.
-		ttl: The time to live for the memory.
-		config: The config for the memory.
-	Returns:
-		The memory ID.
-	"""
-	memory_id = f"memory_{str(uuid4())}"
-	user_id = config["configurable"].get("user_id")
-	if not user_id:
-		raise ValueError("User ID is required to upsert memory.")
-	memory_service.user_id = user_id
-	await memory_service.set(memory_id, {"memory": memory}, ttl=None)
-	return f"Memory ID {memory_id} saved."
+    """
+    Toolkit: Memory
+    Description: Upsert memory to vectorstore for later semantic retrieval.
+    Args:
+            memory: The memory to upsert.
+            ttl: The time to live for the memory.
+            config: The config for the memory.
+    Returns:
+            The memory ID.
+    """
+    memory_id = f"memory_{str(uuid4())}"
+    user_id = config["configurable"].get("user_id")
+    if not user_id:
+        raise ValueError("User ID is required to upsert memory.")
+    memory_service.user_id = user_id
+    await memory_service.set(memory_id, {"memory": memory}, ttl=None)
+    return f"Memory ID {memory_id} saved."
 
 
 @tool
 async def delete_memory(memory_id: str, config: RunnableConfig) -> str:
-	"""
-	Toolkit: Memory
-	Description: Delete memory from vectorstore.
-	Args:
-		memory_id: The ID of the memory to delete.
-		config: The config for the memory.
-	Returns:
-		Deleted message.
-	"""
-	user_id = config["configurable"].get("user_id")
-	if not user_id:
-		raise ValueError("User ID is required to delete memory.")
-	memory_service.user_id = user_id
-	await memory_service.delete(memory_id)
-	return f"Memory ID {memory_id} deleted."
+    """
+    Toolkit: Memory
+    Description: Delete memory from vectorstore.
+    Args:
+            memory_id: The ID of the memory to delete.
+            config: The config for the memory.
+    Returns:
+            Deleted message.
+    """
+    user_id = config["configurable"].get("user_id")
+    if not user_id:
+        raise ValueError("User ID is required to delete memory.")
+    memory_service.user_id = user_id
+    await memory_service.delete(memory_id)
+    return f"Memory ID {memory_id} deleted."
 
 
 @tool
 async def search_memory(
-	query: str,
-	config: RunnableConfig,
+    query: str,
+    config: RunnableConfig,
 ) -> list[dict]:
-	"""
-	Toolkit: Memory
-	Description: Search for memories based on a query.
-	Args:
-		query: The query to search for.
-		config: The config for the memory.
-	Returns:
-		The memories (documents).
-	"""
-	user_id = config["configurable"].get("user_id")
-	if not user_id:
-		raise ValueError("User ID is required to search memory.")
-	memory_service.user_id = user_id
-	memories: list[SearchItem] = await memory_service.search(query)
-	return [memory.dict() for memory in memories]
+    """
+    Toolkit: Memory
+    Description: Search for memories based on a query.
+    Args:
+            query: The query to search for.
+            config: The config for the memory.
+    Returns:
+            The memories (documents).
+    """
+    user_id = config["configurable"].get("user_id")
+    if not user_id:
+        raise ValueError("User ID is required to search memory.")
+    memory_service.user_id = user_id
+    memories: list[SearchItem] = await memory_service.search(query)
+    return [memory.dict() for memory in memories]
+
 
 MEMORY_TOOLS = [upsert_memory, delete_memory, search_memory]

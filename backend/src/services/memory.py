@@ -4,12 +4,9 @@ from langgraph.store.base import BaseStore, SearchItem
 
 IN_MEMORY_STORE = InMemoryStore()
 
+
 class MemoryService:
-    def __init__(
-        self, 
-        user_id: str = None,
-        store: BaseStore = IN_MEMORY_STORE
-    ):
+    def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
         self.user_id = user_id
         self.store: BaseStore = store
 
@@ -17,7 +14,9 @@ class MemoryService:
         return (self.user_id, "memories")
 
     async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
-        await self.store.aput(namespace=self._get_namespace(), key=key, value=value, ttl=ttl)
+        await self.store.aput(
+            namespace=self._get_namespace(), key=key, value=value, ttl=ttl
+        )
         return True
 
     async def get(self, key: str) -> Any:

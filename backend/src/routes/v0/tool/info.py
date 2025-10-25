@@ -21,7 +21,7 @@ router = APIRouter()
     },
 )
 async def list_mcp_info(
-    config: dict[str, McpServer] = Body(...,example=MCP_DICT_EXAMPLE),
+    config: dict[str, McpServer] = Body(..., example=MCP_DICT_EXAMPLE),
 ):
     try:
         for name, server in config.items():

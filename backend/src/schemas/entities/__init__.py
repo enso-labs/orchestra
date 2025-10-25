@@ -26,7 +26,10 @@ from src.constants.examples import (
 class InvokeTool(BaseModel):
     name: str = Field(description="The name of the tool to invoke")
     args: dict = Field(description="The arguments to pass to the tool")
-    result: Optional[Any] = Field(default=None, description="The result of the tool invocation")
+    result: Optional[Any] = Field(
+        default=None, description="The result of the tool invocation"
+    )
+
 
 class Configurable(BaseModel):
     thread_id: str

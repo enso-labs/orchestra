@@ -12,10 +12,9 @@ from src.constants import ARCADE_API_KEY
 
 
 class ToolService:
-    
     def __init__(self, user_id: str = None):
         self.user_id = user_id
-        
+
     @staticmethod
     def default_tools(tools: list[str]) -> list[BaseTool]:
         default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
@@ -68,12 +67,19 @@ class ToolService:
         manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
         tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
         return tools
-    
+
     async def invoke_tool(self, tool_name: str, tool_args: dict):
-        tool: StructuredTool = next((tool for tool in TOOL_LIBRARY if tool.name == tool_name), None)
+        tool: StructuredTool = next(
+            (tool for tool in TOOL_LIBRARY if tool.name == tool_name), None
+        )
         if not tool:
             raise ValueError(f"Tool {tool_name} not found")
-        return await tool.ainvoke(tool_args, config={"configurable": {"user_id": self.user_id}} if self.user_id else None)
+        return await tool.ainvoke(
+            tool_args,
+            config={"configurable": {"user_id": self.user_id}}
+            if self.user_id
+            else None,
+        )
 
 
 tool_service = ToolService()

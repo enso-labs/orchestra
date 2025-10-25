@@ -26,7 +26,9 @@ class ThreadService:
     async def update(self, thread_id: str, data: dict):
         if self.assistant_id:
             data["assistant_id"] = self.assistant_id
-        await self.store.aput(namespace=self._get_namespace(), key=thread_id, value=data)
+        await self.store.aput(
+            namespace=self._get_namespace(), key=thread_id, value=data
+        )
         return True
 
     async def get(self, thread_id: str) -> Any:
@@ -53,9 +55,7 @@ class ThreadService:
                 try:
                     async with self.store as store:
                         threads = await store.asearch(
-                            self._get_namespace(), 
-                            limit=limit,
-                            filter=filter
+                            self._get_namespace(), limit=limit, filter=filter
                         )
                         return sorted(
                             [thread.dict() for thread in threads],

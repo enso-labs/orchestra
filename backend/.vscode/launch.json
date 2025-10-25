@@ -16,7 +16,7 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "tests/unit/repos/test_agent_repo.py",
+                "tests/unit/services/prompt/test_optimize.py",
                 "-v"
             ],
             "console": "integratedTerminal",

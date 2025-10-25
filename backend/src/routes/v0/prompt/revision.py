@@ -10,6 +10,7 @@ from src.services.prompt import prompt_service, Prompt, PROMPT_EXAMPLES
 
 router = APIRouter()
 
+
 ################################################################################
 ### Prompt Revision
 ################################################################################
@@ -42,6 +43,7 @@ async def revise_prompt(
         logger.exception(f"Error creating prompt: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
+
 ################################################################################
 ### List Prompt Revisions
 ################################################################################
@@ -55,6 +57,7 @@ async def list_prompt_revisions(
     prompt_service.user_id = user.id
     revisions = await prompt_service.list_revisions(prompt_id)
     return {"revisions": revisions}
+
 
 ################################################################################
 ### Delete Prompt
