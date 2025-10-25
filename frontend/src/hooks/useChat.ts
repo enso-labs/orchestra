@@ -45,6 +45,11 @@ export type ChatContextType = {
 		toolkit: string[];
 	};
 	setArcade: (arcade: { tools: string[]; toolkit: string[] }) => void;
+	streamingRate: {
+		count: number;
+		startTime: number;
+		rate: number | null;
+	} | null;
 };
 
 export default function useChat(): ChatContextType {
@@ -68,6 +73,12 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [controller, setController] = useState<AbortController | null>(null);
+
+	const [streamingRate, setStreamingRate] = useState<{
+		count: number;
+		startTime: number;
+		rate: number | null;
+	} | null>(null);
 
 	const [arcade, setArcade] = useState({
 		tools: [] as string[],
@@ -255,6 +266,21 @@ export default function useChat(): ChatContextType {
 					// Always append to the related message content
 					const existingMsg = history[existingIndex];
 					const updatedContent = (existingMsg.content || "") + expectedContent;
+
+					// Track streaming rate
+					setStreamingRate((prev) => {
+						const now = Date.now();
+						const startTime = prev?.startTime || now;
+						const newCount = (prev?.count || 0) + expectedContent.length;
+						const elapsed = (now - startTime) / 1000;
+
+						return {
+							count: newCount,
+							startTime,
+							rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
+						};
+					});
+
 					history[existingIndex] = {
 						...response,
 						...existingMsg,
@@ -263,6 +289,13 @@ export default function useChat(): ChatContextType {
 					setMessagesState([...history]);
 					return;
 				} else {
+					// Initialize streaming rate for new message
+					setStreamingRate({
+						count: expectedContent.length,
+						startTime: Date.now(),
+						rate: null,
+					});
+
 					const updateMessage = {
 						...response,
 						content: expectedContent,
@@ -296,6 +329,7 @@ export default function useChat(): ChatContextType {
 			) {
 				setLoading(false);
 				setController(null);
+				// Keep streamingRate state - don't clear it so it stays displayed
 				return;
 			}
 		}
@@ -379,5 +413,6 @@ export default function useChat(): ChatContextType {
 		arcade,
 		setArcade,
 		useEffectUpdateAssistantId,
+		streamingRate,
 	};
 }

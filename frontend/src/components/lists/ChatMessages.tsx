@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Wrench, Copy, Edit } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
+import { useChatContext } from "@/context/ChatContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
@@ -47,9 +48,11 @@ function ToolAction({
 	);
 }
 
-export function Message({ message }: { message: any }) {
+export function Message({ message, isLatest = false }: { message: any; isLatest?: boolean }) {
 	const ICON_SIZE = 4;
 	const [isEditing, setIsEditing] = useState(false);
+	const { loading } = useAppContext();
+	const { streamingRate } = useChatContext();
 
 	if (["human", "user"].includes(message.role)) {
 		return (
@@ -162,9 +165,17 @@ export function Message({ message }: { message: any }) {
 							/>
 						</button>
 
-						<button className="text-sm text-muted-foreground">
-							{message.model}
-						</button>
+						<div className="flex items-center gap-2">
+							<button className="text-sm text-muted-foreground">
+								{message.model}
+							</button>
+
+							{isLatest && streamingRate?.rate && (
+								<span className={`text-sm text-muted-foreground/70 ${loading ? 'animate-pulse' : ''}`}>
+									{streamingRate.rate} tok/s
+								</span>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -206,8 +217,8 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 			<ScrollArea className="flex-1 h-0 p-1">
 				<div className="max-w-4xl mx-auto pb-4 px-5">
 					{messages.length > 0 ? (
-						messages.map((message: any) => (
-							<Message key={message.id} message={message} />
+						messages.map((message: any, index: number) => (
+							<Message key={message.id} message={message} isLatest={index === messages.length - 1} />
 						))
 					) : (
 						<div className="pt-4 text-center text-muted-foreground">
