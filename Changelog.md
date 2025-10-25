@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/164-add-langmem (2025-10-25)
   - feat/448-tokens-per-sec (2025-10-24)
   - feat/442-edit-memories (2025-10-22)
   - feat/431-assistant-id-optimize (2025-10-15)
