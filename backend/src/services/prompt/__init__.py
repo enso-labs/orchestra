@@ -25,9 +25,9 @@ class PromptSearch(BaseModel):
 
 class Prompt(BaseModel):
     id: Optional[str] = None
-    name: str
+    name: Optional[str] = None
     content: str
-    public: bool = False
+    public: Optional[bool] = False
     v: Optional[int] = None
     updated_at: Optional[datetime] = None
 
@@ -57,6 +57,19 @@ class PromptService:
         if prompt_id is None:
             return (self.user_id, STORE_KEY)
         return (self.user_id, STORE_KEY, prompt_id)
+    
+    async def _update_revision(self, prompt_id: str, data: Prompt) -> Prompt:
+        try:
+            data.updated_at = get_time()
+            await self.store.aput(
+                namespace=self._get_namespace(prompt_id),
+                key=str(data.v),
+                value=data.model_dump(),
+            )
+            return data
+        except Exception as e:
+            logger.exception(f"Error updating {STORE_KEY} {prompt_id}: {e}")
+            return None
 
     async def toggle_public(self, prompt_id: str) -> bool:
         revisions = await self.list_revisions(prompt_id)
@@ -95,19 +108,6 @@ class PromptService:
         except Exception as e:
             logger.exception(f"Error updating {STORE_KEY} {prompt_id}: {e}")
             return False
-
-    async def _update_revision(self, prompt_id: str, data: Prompt) -> Prompt:
-        try:
-            data.updated_at = get_time()
-            await self.store.aput(
-                namespace=self._get_namespace(prompt_id),
-                key=str(data.v),
-                value=data.model_dump(),
-            )
-            return data
-        except Exception as e:
-            logger.exception(f"Error updating {STORE_KEY} {prompt_id}: {e}")
-            return None
 
     async def list_revisions(
         self, prompt_id: str, limit: int = 1000, public: bool = False

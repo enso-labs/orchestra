@@ -63,8 +63,7 @@ async def create_prompt(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-# static_router = APIRouter(tags=["Static"], prefix="/static")
-@router.get("/{prompt_id}")
+@router.get("/{prompt_id}/raw")
 async def view_public_prompt(
     prompt_id: str = Path(..., description="The ID of the prompt to get"),
     store: AsyncPostgresStore = Depends(get_store),
