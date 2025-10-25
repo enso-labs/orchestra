@@ -3,6 +3,7 @@ from src.schemas.models.agent import Agent, Revision
 from src.schemas.models.setting import Settings
 from src.schemas.models.thread import Thread
 from src.schemas.models.tool import Server
+from src.schemas.models.memory import Memory, MemorySearch
 
 __all__ = [
     "User",
@@ -13,4 +14,6 @@ __all__ = [
     "Settings",
     "Thread",
     "Server",
+    "Memory",
+    "MemorySearch",
 ]

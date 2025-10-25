@@ -10,6 +10,7 @@ from .storage import router as storage
 from .assistant import router as assistant
 from .schedule import router as schedule
 from .prompt import router as prompt
+from .memory import router as memory
 
 __all__ = [
     "llm",
@@ -22,6 +23,7 @@ __all__ = [
     "assistant",
     "schedule",
     "prompt",
+    "memory",
 ]
 
 if LANGCONNECT_SERVER_URL:

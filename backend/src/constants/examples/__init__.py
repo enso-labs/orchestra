@@ -513,6 +513,19 @@ class Examples:
         ),
     }
     
+    MEMORY_EXAMPLES = {
+        "user_preference": Example(
+            key="user_theme_preference",
+            value={"theme": "dark", "language": "en"},
+            metadata={"category": "preferences", "user_id": "user_123"},
+        ),
+        "conversation_context": Example(
+            key="last_conversation_topic",
+            value="Discussed Python programming and FastAPI best practices",
+            metadata={"timestamp": "2025-10-25T10:30:00Z", "importance": "high"},
+        ),
+    }
+    
     INVOKE_TOOLS_EXAMPLE = [
         {"name": "get_stock_price", "args": {"symbol": "AAPL"}},
         {"name": "get_weather", "args": {"location": "New York"}},
