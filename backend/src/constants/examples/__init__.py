@@ -441,7 +441,12 @@ class Examples:
             summary="assistant_query",
             description="LLM with Assistant Query",
             value={
-                "messages": [{"role": "user", "content": [{"type": "text", "text": "100 USD to CAD?"}]}],
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": "100 USD to CAD?"}],
+                    }
+                ],
                 "metadata": {
                     "assistant_id": "ec8e7128-2542-43d9-a9ed-16bd5d83ad74",
                     "current_time": "2025-10-16T03:35:22.613Z",
@@ -489,7 +494,12 @@ class Examples:
             summary="assistant_query",
             description="LLM with Assistant Query",
             value={
-                "messages": [{"role": "user", "content": [{"type": "text", "text": "100 USD to CAD?"}]}],
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": "100 USD to CAD?"}],
+                    }
+                ],
                 "metadata": {
                     "assistant_id": "ec8e7128-2542-43d9-a9ed-16bd5d83ad74",
                     "current_time": "2025-10-16T03:35:22.613Z",
@@ -512,7 +522,7 @@ class Examples:
             metadata={},
         ),
     }
-    
+
     INVOKE_TOOLS_EXAMPLE = [
         {"name": "get_stock_price", "args": {"symbol": "AAPL"}},
         {"name": "get_weather", "args": {"location": "New York"}},

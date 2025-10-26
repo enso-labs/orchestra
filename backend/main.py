@@ -16,7 +16,6 @@ from src.utils.logger import logger
 from src.services.db import (
     get_checkpoint_db,
     get_store_db,
-    # get_async_db,
 )
 
 from src.routes.v0 import (
@@ -30,7 +29,6 @@ from src.routes.v0 import (
     assistant,
     schedule,
     prompt,
-    # static_prompt,
 )
 from src.constants import (
     HOST,

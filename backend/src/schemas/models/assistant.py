@@ -48,6 +48,7 @@ class Assistant(BaseModel):
     ) -> "LLMRequest":
         from src.schemas.entities import Config
         from src.schemas.entities import LLMRequest
+
         if metadata and isinstance(metadata, Config):
             metadata = metadata.model_dump()
         return LLMRequest(
@@ -57,5 +58,5 @@ class Assistant(BaseModel):
             mcp=self.mcp,
             subagents=self.subagents,
             metadata=metadata or self.metadata,
-            messages=messages
+            messages=messages,
         )

@@ -71,8 +71,10 @@ def raw_html(content: str) -> str:
 </body>
 </html>"""
 
+
 def init_system_prompt(system_prompt: str, metadata: dict) -> str:
     from src.schemas.entities import Config
+
     if isinstance(metadata, Config):
         metadata = metadata.model_dump()
     lines = [system_prompt]

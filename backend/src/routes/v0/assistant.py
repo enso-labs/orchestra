@@ -32,7 +32,9 @@ async def search_assistants(
     service_context = ServiceContext(user_id=user.id, store=store)
     # If id is provided, return the assistant
     if "id" in assistant_search.filter:
-        assistant = await service_context.assistant_service.get(assistant_search.filter["id"])
+        assistant = await service_context.assistant_service.get(
+            assistant_search.filter["id"]
+        )
         return {"assistants": [assistant.model_dump()]}
     # If id is not provided, return all assistants
     assistants: list[Assistant] = await service_context.assistant_service.search()
@@ -55,7 +57,9 @@ async def create_assistant(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="Assistant already exists"
             )
-        assistant = await service_context.assistant_service.update(assistant_id, assistant.model_dump())
+        assistant = await service_context.assistant_service.update(
+            assistant_id, assistant.model_dump()
+        )
         return {"assistant_id": assistant_id}
 
     except HTTPException as e:
@@ -76,7 +80,9 @@ async def update_assistant(
 ):
     try:
         service_context = ServiceContext(user_id=user.id, store=store)
-        await service_context.assistant_service.update(assistant_id, assistant.model_dump())
+        await service_context.assistant_service.update(
+            assistant_id, assistant.model_dump()
+        )
         return {"assistant_id": assistant_id}
 
     except HTTPException as e:

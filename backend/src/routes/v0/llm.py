@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from uuid import uuid4
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi import (
@@ -12,6 +12,13 @@ from fastapi import (
     Form,
     UploadFile,
 )
+from langmem.prompts.types import (
+    AnnotatedTrajectory,
+    MultiPromptOptimizerInput,
+    OptimizerInput,
+    Prompt,
+)
+from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.contexts.service import ServiceContext
 from src.constants import GROQ_API_KEY
 from src.schemas.models import ProtectedUser
@@ -55,7 +62,9 @@ async def llm_invoke(
     if user:
         service_context = ServiceContext(user_id=user.id, store=store)
         if params.metadata.assistant_id:
-            assistant: Assistant = await service_context.assistant_service.get(params.metadata.assistant_id)
+            assistant: Assistant = await service_context.assistant_service.get(
+                params.metadata.assistant_id
+            )
             params = assistant.to_llm_request(
                 messages=params.messages,
                 model=params.model,
@@ -151,57 +160,24 @@ async def transcribe(
 
 
 ################################################################################
-### Chat Completion
+### Optimize Prompt
 ################################################################################
-# @llm_router.post(
-#     "/chat",
-#     name="Chat Completion",
-#     responses={
-#         status.HTTP_200_OK: {
-#             "description": "Chat completion response.",
-#             "content": {
-#                 "application/json": {
-#                     "example": Answer.model_json_schema()["examples"]["new_thread"]
-#                 },
-#             },
-#         }
-#     },
-# )
-# @limiter.limit(TIME_LIMIT)
-# async def chat_completion(
-#     request: Request,
-#     body: Annotated[ChatInput, Body()],
-#     user: ProtectedUser = Depends(get_optional_user),
-#     # db: AsyncSession = Depends(get_async_db)
-# ):
-#     try:
-#         model = body.model.split(":")
-#         provider = model[0]
-#         model_name = model[1]
-#         llm = init_chat_model(
-#             model=model_name,
-#             model_provider=provider,
-#             temperature=0.9,
-#             # max_tokens=1000,
-#             max_retries=3,
-#             # timeout=1000
-#         )
-#         response = await llm.ainvoke(
-#             [
-#                 {"role": "system", "content": body.system},
-#                 {"role": "user", "content": body.query},
-#             ]
-#         )
-#         return JSONResponse(
-#             content={"answer": response.model_dump()},
-#             media_type="application/json",
-#             status_code=200,
-#         )
-#     except Exception as e:
-#         logger.exception(str(e))
-#         raise HTTPException(status_code=500, detail=str(e))
+@llm_router.post("/optimize")
+async def optimize_prompt(
+    body: PromptOptimizerRequest = Body(...),
+):
+    optimizer = PromptOptimizer(body.model)
+    optimizer_input = OptimizerInput(
+        trajectories=body.trajectories,
+        prompt=body.prompt,
+    )
+    result = await optimizer.optimize(optimizer_input, body.kind, body.config)
+    return JSONResponse(content={"result": result}, status_code=200)
 
 
+################################################################################
+### List Models
+################################################################################
 @llm_router.get(
     "/models",
     name="List Models",

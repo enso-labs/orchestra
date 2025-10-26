@@ -15,8 +15,7 @@ class AssistantService:
     def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
         self.user_id = user_id
         self.store: BaseStore = store
-        
-        
+
     def _get_namespace(self):
         return (self.user_id, STORE_KEY)
 

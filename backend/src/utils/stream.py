@@ -158,10 +158,11 @@ def handle_multi_mode(chunk: dict):
         logger.error(f"Error in handle_multi_mode: {e}")
     return None
 
+
 async def stream_generator(
-    params: LLMRequest, 
+    params: LLMRequest,
     service_context: ServiceContext,
-):                
+):
     async with get_checkpoint_db() as checkpointer:
         try:
             params.metadata.user_id = service_context.user_id
@@ -178,9 +179,7 @@ async def stream_generator(
                 stream_chunk = handle_multi_mode(chunk)
                 if stream_chunk:
                     data = ujson.dumps(stream_chunk)
-                    log_to_file(
-                        str(data), params.model
-                    ) and APP_LOG_LEVEL == "DEBUG"
+                    log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
                     logger.debug(f"data: {str(data)}")
                     yield f"data: {data}\n\n"
 
@@ -204,10 +203,12 @@ async def stream_generator(
                     configurable = new_config.get("configurable")
                     thread_id = configurable.get("thread_id")
                     checkpoint_id = configurable.get("checkpoint_id")
-                    
+
                     if params.metadata.assistant_id:
-                        service_context.thread_service.assistant_id = params.metadata.assistant_id
-                        
+                        service_context.thread_service.assistant_id = (
+                            params.metadata.assistant_id
+                        )
+
                     await service_context.thread_service.update(
                         thread_id=thread_id,
                         data={

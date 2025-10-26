@@ -13,6 +13,7 @@ from langgraph.store.postgres import AsyncPostgresStore
 
 router = APIRouter(tags=["Thread"])
 
+
 @router.post("/threads/search", name="Query Threads in Checkpointer")
 async def search_threads(
     thread_search: ThreadSearch = Body(
@@ -25,9 +26,7 @@ async def search_threads(
         filter = thread_search.model_dump(exclude_none=True).get("filter", {})
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(
-                user_id=user.id, 
-                store=store, 
-                checkpointer=checkpointer
+                user_id=user.id, store=store, checkpointer=checkpointer
             )
             if "thread_id" in filter and not "checkpoint_id" in filter:
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
@@ -41,7 +40,10 @@ async def search_threads(
             return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
 
 @router.delete("/threads/{thread_id}", name="Delete Thread")
 async def delete_thread(
@@ -51,19 +53,21 @@ async def delete_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
             await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
-@router.delete(
-    "/a/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread"
-)
+@router.delete("/a/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread")
 async def delete_thread(
     assistant_id: str,
     thread_id: str,
@@ -72,7 +76,9 @@ async def delete_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
             await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
