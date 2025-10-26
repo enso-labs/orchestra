@@ -163,8 +163,10 @@ async def transcribe(
 ### Optimize Prompt
 ################################################################################
 @llm_router.post("/optimize")
+@limiter.limit(TIME_LIMIT)
 async def optimize_prompt(
     body: PromptOptimizerRequest = Body(...),
+    user: ProtectedUser = Depends(get_optional_user),
 ):
     optimizer = PromptOptimizer(body.model)
     optimizer_input = OptimizerInput(
