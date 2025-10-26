@@ -34,9 +34,9 @@ Engines = Literal[
 async def web_search(
     query: str,
     num_results: Optional[int] = 5,
-    engines: Optional[List[Engines]] = ["google"],
-    categories: Optional[List[Categories]] = [],
-    language: Optional[str] = "en",
+    # engines: Optional[List[Engines]] = ["google"],
+    # categories: Optional[List[Categories]] = [],
+    # language: Optional[str] = "en",
 ) -> list:
     """
     Title: Web Search
@@ -71,16 +71,16 @@ async def web_search(
     searx = SearxSearchWrapper(searx_host=SEARX_SEARCH_HOST_URL)
 
     logger.info(
-        f"Searching for {query} with {engines} engines and {categories} categories and {language} language"
+        f"Searching for {query} with {num_results} results"
     )
 
     try:
         results = await searx.aresults(
             query=query,
             num_results=num_results,
-            engines=engines,
-            categories=categories,
-            language=language,
+            # engines=engines,
+            # categories=categories,
+            # language=language,
         )
         logger.info(f"Found {len(results)} results")
         return results

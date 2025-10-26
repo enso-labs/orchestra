@@ -165,6 +165,7 @@ async def transcribe(
 @llm_router.post("/optimize")
 @limiter.limit(TIME_LIMIT)
 async def optimize_prompt(
+    request: Request,
     body: PromptOptimizerRequest = Body(...),
     user: ProtectedUser = Depends(get_optional_user),
 ):
