@@ -8,6 +8,7 @@ from src.services.tool import tool_service
 from src.routes.v0.tool.info import router as info_router
 from src.schemas.entities import InvokeTool
 from src.constants.examples import Examples
+from src.utils.logger import logger
 
 
 router = APIRouter(tags=["Tool"], prefix="/tools")
@@ -52,6 +53,7 @@ async def invoke_tools(
             tool_results.append(tool_result.model_dump())
         return {"tools": tool_results}
     except Exception as e:
+        logger.exception(str(e))
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
