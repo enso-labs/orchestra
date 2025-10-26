@@ -38,8 +38,14 @@ prompts = [
 trajectories = [
     AnnotatedTrajectory(
         messages=[
-            {"role": "user", "content": "Summarize the economic impact of AI on power grids."},
-            {"role": "assistant", "content": "AI is growing. It will need more electricity..."},
+            {
+                "role": "user",
+                "content": "Summarize the economic impact of AI on power grids.",
+            },
+            {
+                "role": "assistant",
+                "content": "AI is growing. It will need more electricity...",
+            },
             {"role": "user", "content": "Where are the sources and numbers?"},
         ],
         feedback={
@@ -49,15 +55,24 @@ trajectories = [
     ),
     AnnotatedTrajectory(
         messages=[
-            {"role": "user", "content": "Compare Bloomberg vs. IEA on data center demand growth."},
+            {
+                "role": "user",
+                "content": "Compare Bloomberg vs. IEA on data center demand growth.",
+            },
             {"role": "assistant", "content": "They both say demand is increasing."},
         ],
         feedback="Synthesis lacked point-by-point comparison and uncertainty discussion.",
     ),
     AnnotatedTrajectory(
         messages=[
-            {"role": "user", "content": "Give me an exec summary with actions I can take this quarter."},
-            {"role": "assistant", "content": "Here is a long essay without headings..."},
+            {
+                "role": "user",
+                "content": "Give me an exec summary with actions I can take this quarter.",
+            },
+            {
+                "role": "assistant",
+                "content": "Here is a long essay without headings...",
+            },
         ],
         feedback="Summary needs the 5-section structure and clear next steps; too verbose.",
     ),
@@ -65,14 +80,14 @@ trajectories = [
 
 
 class TestPromptOptimizeCases(unittest.IsolatedAsyncioTestCase):
-	def setUp(self):
-		self.optimizer = PromptOptimizer(ChatModels.OPENAI_GPT_5_NANO)
-		
-	@unittest.skip("Skipping test_optimize")
-	async def test_optimize(self):
-		optimizer_input = MultiPromptOptimizerInput(
-			trajectories=trajectories,
-			prompts=prompts,
-		)
-		result = await self.optimizer.optimize(optimizer_input)
-		print(result)
+    def setUp(self):
+        self.optimizer = PromptOptimizer(ChatModels.OPENAI_GPT_5_NANO)
+
+    @unittest.skip("Skipping test_optimize")
+    async def test_optimize(self):
+        optimizer_input = MultiPromptOptimizerInput(
+            trajectories=trajectories,
+            prompts=prompts,
+        )
+        result = await self.optimizer.optimize(optimizer_input)
+        print(result)

@@ -57,7 +57,7 @@ class PromptService:
         if prompt_id is None:
             return (self.user_id, STORE_KEY)
         return (self.user_id, STORE_KEY, prompt_id)
-    
+
     async def _update_revision(self, prompt_id: str, data: Prompt) -> Prompt:
         try:
             data.updated_at = get_time()

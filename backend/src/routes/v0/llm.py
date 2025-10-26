@@ -12,7 +12,12 @@ from fastapi import (
     Form,
     UploadFile,
 )
-from langmem.prompts.types import AnnotatedTrajectory, MultiPromptOptimizerInput, OptimizerInput, Prompt
+from langmem.prompts.types import (
+    AnnotatedTrajectory,
+    MultiPromptOptimizerInput,
+    OptimizerInput,
+    Prompt,
+)
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.contexts.service import ServiceContext
 from src.constants import GROQ_API_KEY
@@ -152,6 +157,7 @@ async def transcribe(
     except Exception as e:
         logger.exception(str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
 
 ################################################################################
 ### Optimize Prompt

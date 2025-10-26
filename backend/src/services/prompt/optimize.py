@@ -1,10 +1,15 @@
 """
 Prompt Optimizer Service
 """
+
 from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 from langchain_core.runnables import Runnable
-from langmem.prompts.types import AnnotatedTrajectory, MultiPromptOptimizerInput, OptimizerInput 
+from langmem.prompts.types import (
+    AnnotatedTrajectory,
+    MultiPromptOptimizerInput,
+    OptimizerInput,
+)
 from langmem import Prompt, create_prompt_optimizer, create_multi_prompt_optimizer
 
 from src.constants.llm import ChatModels
@@ -36,7 +41,9 @@ DEFAULT_TRAJECTORIES = [
             {"role": "user", "content": "Compare Mars and Earth"},
             {"role": "assistant", "content": "Mars and Earth have many differences..."},
         ],
-        feedback={"revised": "Earth and Mars have many similarities and differences..."}
+        feedback={
+            "revised": "Earth and Mars have many similarities and differences..."
+        },
     )._asdict(),
 ]
 
@@ -52,12 +59,16 @@ DEFAULT_PROMPTS = [
     ),
 ]
 
+
 class PromptOptimizerRequest(BaseModel):
     trajectories: List[dict] = Field(default=DEFAULT_TRAJECTORIES)
     prompt: str | Prompt = Field(default=DEFAULT_PROMPTS[1])
     model: ChatModels = Field(default=ChatModels.OPENAI_GPT_5_NANO)
     kind: Optional[str] = Field(default="gradient")
-    config: Optional[dict] = Field(default={"min_reflection_steps": 1, "max_reflection_steps": 3})
+    config: Optional[dict] = Field(
+        default={"min_reflection_steps": 1, "max_reflection_steps": 3}
+    )
+
 
 class PromptOptimizer:
     def __init__(self, model: ChatModels):
@@ -74,7 +85,7 @@ class PromptOptimizer:
         )
         optimized = await optimizer.ainvoke(optimizer_input)
         return optimized
-    
+
     async def optimize_batch(
         self,
         optimizer_input: MultiPromptOptimizerInput,
