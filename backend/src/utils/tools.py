@@ -83,11 +83,14 @@ def get_thread_id(config: RunnableConfig) -> str:
 
 def attach_tool_details(tool: StructuredTool):
     from src.tools.search import SEARCH_TOOLS
+    from src.tools.prompt import PROMPT_TOOLS
     from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
     from src.tools.test import TEST_TOOLS
 
     if tool.name in [n.name for n in SEARCH_TOOLS]:
         tool.tags = ["search"]
+    if tool.name in [n.name for n in PROMPT_TOOLS]:
+        tool.tags = ["prompt"]
     if tool.name in [n.name for n in PYTHON_CODE_INTERPRETER_TOOLS]:
         tool.tags = ["python"]
     if tool.name in [n.name for n in TEST_TOOLS]:

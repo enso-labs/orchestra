@@ -7,7 +7,7 @@ from langchain_core.messages import (
 )
 
 
-def from_message_to_dict(messages) -> list[BaseMessage]:
+def from_langchain_messages_to_dict(messages: list[BaseMessage]) -> list[dict]:
     # Convert API messages to LangChain message objects
     converted: list[dict] = []
     for message in messages:
@@ -15,20 +15,19 @@ def from_message_to_dict(messages) -> list[BaseMessage]:
     return converted
 
 
-def from_dict_to_message(messages) -> list[BaseMessage]:
+def from_dict_to_langchain_messages(messages: list[dict]) -> list[BaseMessage]:
     # Convert API messages to LangChain message objects
     converted: list[BaseMessage] = []
     for message in messages:
-        role = message.role
-        content = message.content
+        role = message.get("role")
         if role == "user":
-            converted.append(HumanMessage(content=content))
+            converted.append(HumanMessage(**message))
         elif role == "assistant":
-            converted.append(AIMessage(content=content))
+            converted.append(AIMessage(**message))
         elif role == "system":
-            converted.append(SystemMessage(content=content))
+            converted.append(SystemMessage(**message))
         elif role == "tool":
-            converted.append(ToolMessage(content=content))
+            converted.append(ToolMessage(**message))
         else:
             raise ValueError(f"Unsupported role: {role}")
     return converted

@@ -117,7 +117,7 @@ export default function useChat(): ChatContextType {
 			messages: formatedMessages,
 			model: agent.model,
 			metadata: metadata,
-			tools: agent.tools,
+			tools: ["prompt_optimize"],
 			a2a: agent.a2a,
 			mcp: agent.mcp,
 			subagents: agent.subagents,

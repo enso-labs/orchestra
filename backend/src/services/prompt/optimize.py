@@ -77,7 +77,7 @@ class PromptOptimizer:
     async def optimize(
         self,
         optimizer_input: OptimizerInput,
-        kind: str = "gradient",
+        kind: str = "prompt_memory",
         config: dict = {"min_reflection_steps": 2, "max_reflection_steps": 3},
     ) -> Any:
         optimizer: Runnable = create_prompt_optimizer(

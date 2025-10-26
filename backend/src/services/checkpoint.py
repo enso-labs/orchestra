@@ -5,7 +5,7 @@ from langgraph.checkpoint.base import Checkpoint, BaseCheckpointSaver, Checkpoin
 from langgraph.types import StateSnapshot
 from langchain_core.messages import BaseMessage
 from src.utils.logger import logger
-from src.utils.messages import from_message_to_dict
+from src.utils.messages import from_langchain_messages_to_dict
 from src.utils.retry import retry_db_operation
 
 
@@ -51,7 +51,7 @@ class CheckpointService:
             async for checkpoint in self.checkpointer.alist(config):
                 messages = self._collect_messages(checkpoint)
                 snapshot = StateSnapshot(
-                    values={"messages": from_message_to_dict(messages)},
+                    values={"messages": from_langchain_messages_to_dict(messages)},
                     config=checkpoint.config,
                     parent_config=checkpoint.parent_config,
                     metadata=checkpoint.metadata,

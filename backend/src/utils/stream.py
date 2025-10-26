@@ -1,15 +1,13 @@
 import ujson
-from langgraph.store.base import BaseStore
 from typing import List
 from langgraph.types import StreamMode
 
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
-from src.schemas.models.auth import ProtectedUser
 from src.constants import APP_LOG_LEVEL
 from src.flows import construct_agent
 from src.services.db import get_checkpoint_db
-from src.utils.messages import from_message_to_dict
+from src.utils.messages import from_langchain_messages_to_dict
 from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
@@ -131,7 +129,7 @@ def convert_messages(payload: dict, stream_mode: StreamMode):
 def handle_multi_mode(chunk: dict):
     try:
         if "values" in chunk:
-            chunk[1]["messages"] = from_message_to_dict(chunk[1]["messages"])
+            chunk[1]["messages"] = from_langchain_messages_to_dict(chunk[1]["messages"])
             return chunk
 
         if "messages" in chunk:
