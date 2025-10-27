@@ -190,7 +190,16 @@ export default function useChat(): ChatContextType {
 		setMessages(in_mem_messages);
 	};
 
+	const formatContent = (content: any) => {
+		if (typeof content === "string") {
+			return content;
+		}
+		return content[0]?.text ?? "";
+	};
+
 	const handleMessages = (payload: any, history: any[]) => {
+		console.log(payload);
+		
 		const streamMode = payload[0];
 		if (streamMode === "error") {
 			alert("Error on stream: " + payload[1]);
@@ -206,11 +215,7 @@ export default function useChat(): ChatContextType {
 				...prev,
 				thread_id: responseMetadata.thread_id,
 			}));
-			const expectedContent =
-				typeof response.content === "string"
-					? response.content
-					: (response.content[0]?.text ?? "");
-			console.log(payload);
+			const expectedContent = formatContent(response.content);
 			// Handle Tool Input
 			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
 				// Only set tool name if we don't have one yet or if the new name is truthy
@@ -254,6 +259,19 @@ export default function useChat(): ChatContextType {
 				setMessagesState([...history]);
 			}
 
+			if (
+				["stop", "end_turn", "STOP"].includes(
+					response.response_metadata?.finish_reason ||
+						response.response_metadata.stop_reason,
+				) &&
+				response.tool_calls?.length === 0
+			) {
+				setLoading(false);
+				setController(null);
+				// Keep streamingRate state - don't clear it so it stays displayed
+				return;
+			}
+
 			// Handle Final Response & Tool Response
 			if (
 				expectedContent &&
@@ -265,7 +283,7 @@ export default function useChat(): ChatContextType {
 				if (existingIndex !== -1) {
 					// Always append to the related message content
 					const existingMsg = history[existingIndex];
-					const updatedContent = (existingMsg.content || "") + expectedContent;
+					const updatedContent = formatContent(existingMsg.content) + expectedContent;
 
 					// Track streaming rate
 					setStreamingRate((prev) => {
@@ -325,7 +343,7 @@ export default function useChat(): ChatContextType {
 				["stop", "end_turn", "STOP"].includes(
 					response.response_metadata?.finish_reason ||
 						response.response_metadata.stop_reason,
-				)
+				) && response.tool_calls?.length === 0
 			) {
 				setLoading(false);
 				setController(null);
