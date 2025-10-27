@@ -176,5 +176,12 @@ async def serve_static_or_index(filename: str, request: Request):
 ### Run Server
 if __name__ == "__main__":
     import uvicorn
+    import multiprocessing
 
-    uvicorn.run(app, host=HOST, port=PORT, log_level=LOG_LEVEL)
+    def get_cpu_count():
+        try:
+            return multiprocessing.cpu_count()
+        except NotImplementedError:
+            return 1
+
+    uvicorn.run(app, host=HOST, port=PORT, log_level=LOG_LEVEL, workers=get_cpu_count())
