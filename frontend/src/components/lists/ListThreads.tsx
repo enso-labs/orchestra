@@ -6,7 +6,6 @@ import { formatMessages, truncateFrom } from "@/lib/utils/format";
 import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
 import { StringParam, useQueryParam } from "use-query-params";
-import { useAppContext } from "@/context/AppContext";
 import { useAgentContext } from "@/context/AgentContext";
 import { AxiosResponse } from "axios";
 import {
@@ -18,7 +17,6 @@ import {
 } from "@/components/ui/select";
 
 function ListThreads({ threads }: { threads: any[] }) {
-	const { setIsDrawerOpen } = useAppContext();
 	const { agent } = useAgentContext();
 	const {
 		setMessages,
@@ -59,10 +57,10 @@ function ListThreads({ threads }: { threads: any[] }) {
 					selectedThread.value,
 				);
 				// Filter only input checkpoints as shown in the example
-				const inputCheckpoints = checkpoints.filter(
-					(checkpoint: any) => checkpoint.metadata.source === "input",
-				);
-				setCurrentThreadCheckpoints(inputCheckpoints);
+				// const inputCheckpoints = checkpoints.filter(
+				// 	(checkpoint: any) => checkpoint.metadata.source === "input",
+				// );
+				setCurrentThreadCheckpoints(checkpoints);
 			} catch (error) {
 				console.error(
 					`Failed to fetch checkpoints for thread ${metadata.thread_id}:`,
@@ -125,7 +123,7 @@ function ListThreads({ threads }: { threads: any[] }) {
 			setCheckpoints(checkpoints);
 			setMessages(formatMessages(checkpoints[0].values.messages));
 			setMetadata(thread.value);
-			setIsDrawerOpen(false);
+			// setIsDrawerOpen(false);
 		};
 
 		const handleCheckpointSelect = (checkpointId: string) => {
@@ -133,6 +131,9 @@ function ListThreads({ threads }: { threads: any[] }) {
 				(cp: any) => cp.config.configurable.checkpoint_id === checkpointId,
 			);
 			console.log("Selected checkpoint:", selectedCheckpoint);
+			setMessages(formatMessages(selectedCheckpoint.values.messages));
+			setMetadata(selectedCheckpoint.config.configurable);
+			// setIsDrawerOpen(false);
 		};
 
 		return (
@@ -194,13 +195,22 @@ function ListThreads({ threads }: { threads: any[] }) {
 													typeof firstMessage.content === "string"
 														? firstMessage.content
 														: (firstMessage.content[0]?.text ?? "");
+												const isInput = checkpoint.metadata.source === "input";
 
 												return (
 													<SelectItem key={checkpointId} value={checkpointId}>
-														<div className="flex flex-col">
-															<span className="text-xs font-medium">
-																Checkpoint {checkpointsForThread.length - index}
-															</span>
+														<div className="flex flex-col gap-1">
+															<div className="flex items-center gap-2">
+																<span className="text-xs font-medium">
+																	Checkpoint{" "}
+																	{checkpointsForThread.length - index}
+																</span>
+																{isInput && (
+																	<span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-500 font-medium">
+																		input
+																	</span>
+																)}
+															</div>
 															<span className="text-xs text-muted-foreground truncate max-w-[200px]">
 																{truncateFrom(messageContent, "end", "...", 40)}
 															</span>
