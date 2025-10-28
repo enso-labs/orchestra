@@ -13,10 +13,7 @@ from fastapi import (
     UploadFile,
 )
 from langmem.prompts.types import (
-    AnnotatedTrajectory,
-    MultiPromptOptimizerInput,
     OptimizerInput,
-    Prompt,
 )
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.contexts.service import ServiceContext

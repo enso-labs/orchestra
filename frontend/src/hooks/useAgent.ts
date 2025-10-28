@@ -11,7 +11,7 @@ export const INIT_AGENT_STATE: AgentState = {
 	agent: {
 		name: "",
 		description: "",
-		prompt: "You are a helpful assistant.",
+		prompt: "",
 		tools: [],
 		model: "",
 		mcp: {},

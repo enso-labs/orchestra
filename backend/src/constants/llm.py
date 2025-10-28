@@ -1,4 +1,5 @@
 from enum import Enum
+import os
 from src.constants import (
     OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
@@ -34,3 +35,10 @@ class ChatModels(str, Enum):
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
     if OLLAMA_BASE_URL:
         OLLAMA_QWEN3 = "ollama:qwen3"
+
+def get_system_prompt():
+    path = 'src/static/prompts/md'
+    with open(os.path.join(path, 'default.md'), "r") as file:
+        return file.read()
+    
+DEFAULT_SYSTEM_PROMPT = get_system_prompt()
