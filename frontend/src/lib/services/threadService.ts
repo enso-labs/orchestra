@@ -5,6 +5,7 @@ import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
 import { SSE } from "sse.js";
 import { Agent } from "./agentService";
+import { DEFAULT_SYSTEM_PROMPT } from "../config/instruction";
 
 const SYSTEM_PROMPT = `GOAL:
 Generate a system prompt for an AI Agent.
@@ -86,7 +87,7 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
 type MessageContent = string | Array<{ type: string; [key: string]: any }>;
 
 interface StreamThreadPayload {
-	system: string;
+	system?: string;
 	messages: { role: string; content: MessageContent; [key: string]: any }[];
 	model: string;
 	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
@@ -105,6 +106,9 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 		const token = getAuthToken();
 		if (token) headers.Authorization = `Bearer ${token}`;
 
+		if (payload.system?.trim() === "") {
+			delete payload.system;
+		}
 		const source = new SSE(`${VITE_API_URL}/llm/stream`, {
 			headers: headers,
 			payload: JSON.stringify(payload),

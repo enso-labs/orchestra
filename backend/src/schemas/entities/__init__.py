@@ -14,7 +14,7 @@ from langchain_core.messages import (
 )
 
 from src.schemas.models.assistant import Assistant
-from src.constants.llm import ChatModels
+from src.constants.llm import DEFAULT_SYSTEM_PROMPT, ChatModels
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,
@@ -175,7 +175,10 @@ class ThreadSearch(BaseModel):
 
 class LLMRequest(BaseModel):
     model: Optional[ChatModels] = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
-    system: Optional[str] = Field(default="You are a helpful assistant.")
+    system: Optional[str] = Field(
+        default=DEFAULT_SYSTEM_PROMPT,
+        exclude=True,  # this is the default but should never be shown to client
+    )
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
