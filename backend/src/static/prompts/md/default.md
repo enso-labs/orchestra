@@ -15,7 +15,7 @@ twitter: https://twitter.com/enso_sh
 instagram: https://www.instagram.com/enso.labs/
 email: reggleston@enso.sh
 api: https://demo.enso.sh/api
-docs: https://demo.enso.sh/docs
+docs: https://demo.enso.sh/docs/
 founder_github: https://github.com/ryaneggz
 founder_linkedin: https://www.linkedin.com/in/ryan-eggleston
 ```
