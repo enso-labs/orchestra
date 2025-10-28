@@ -221,3 +221,10 @@ export async function formatMultimodalPayload(
 
 	return [{ role: "user", content: content }];
 }
+
+export function formatContent(content: any) {
+	if (typeof content === "string") {
+		return content;
+	}
+	return content[0]?.text ?? content;
+}

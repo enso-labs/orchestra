@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Wrench, Copy, Edit, Check, X } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
-import { truncateFrom } from "@/lib/utils/format";
+import { formatContent, truncateFrom } from "@/lib/utils/format";
 import SearchEngineTool from "../tools/SearchEngine";
 
 const MAX_LENGTH = 1000;
@@ -63,19 +63,6 @@ export function Message({
 	const { loading } = useAppContext();
 	const { streamingRate, handleSubmit } = useChatContext();
 
-	const content = useMemo(() => {
-
-		if (message.content[0]?.text) {
-			return message.content[0].text;
-		}
-
-		if (message.content) {
-			return message.content;
-		}
-		
-		return "";
-	}, [message.content]);
-
 	// Auto-resize textarea
 	const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		setEditedContent(e.target.value);
@@ -88,7 +75,7 @@ export function Message({
 	const handleEditClick = (e: React.MouseEvent) => {
 		e.stopPropagation();
 		setIsEditingText(true);
-		setEditedContent(content || "");
+		setEditedContent(formatContent(message.content));
 		// Focus textarea after state update
 		setTimeout(() => {
 			if (textareaRef.current) {
@@ -149,7 +136,7 @@ export function Message({
 							/>
 						) : (
 							<MarkdownCard
-								content={content}
+								content={formatContent(message.content)}
 							/>
 						)}
 						{isEditing && !isEditingText && (
@@ -158,7 +145,7 @@ export function Message({
 									className="p-1 rounded hover:bg-muted transition-colors"
 									onClick={(e) => {
 										e.stopPropagation();
-										navigator.clipboard.writeText(content);
+										navigator.clipboard.writeText(formatContent(message.content));
 										console.log(message);
 										alert("Copied to clipboard (User Message)");
 									}}
@@ -251,7 +238,7 @@ export function Message({
 					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard
 							content={
-								content || "Invalid message"
+								formatContent(message.content) || "Invalid message"
 							}
 						/>
 					</div>
@@ -263,7 +250,7 @@ export function Message({
 								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
 								onClick={() => {
 									navigator.clipboard.writeText(
-										content,
+										formatContent(message.content),
 									);
 									alert("Copied to clipboard (AI Message)");
 								}}
@@ -299,7 +286,7 @@ export function Message({
 		);
 	}
 
-	return <p>{message.content || JSON.stringify(message.input)}</p>;
+	return <p>{formatContent(message.content) || JSON.stringify(message.input)}</p>;
 }
 
 const ChatMessages = ({ messages }: { messages: any[] }) => {
