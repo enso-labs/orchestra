@@ -5,7 +5,6 @@ import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
 import { SSE } from "sse.js";
 import { Agent } from "./agentService";
-import { DEFAULT_SYSTEM_PROMPT } from "../config/instruction";
 
 const SYSTEM_PROMPT = `GOAL:
 Generate a system prompt for an AI Agent.
