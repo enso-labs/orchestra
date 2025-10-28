@@ -61,7 +61,7 @@ export function Message({
 	const [editedContent, setEditedContent] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const { loading } = useAppContext();
-	const { streamingRate } = useChatContext();
+	const { streamingRate, handleSubmit } = useChatContext();
 
 	const content = useMemo(() => {
 
@@ -100,10 +100,11 @@ export function Message({
 	};
 
 	// Handle save
-	const handleSave = (e: React.MouseEvent) => {
+	const handleSave = async (e: React.MouseEvent) => {
 		e.stopPropagation();
 		// TODO: Implement save functionality to persist edited message
 		console.log("Saving edited message:", editedContent);
+		await handleSubmit(editedContent);
 		setIsEditingText(false);
 		setIsEditing(false);
 	};
