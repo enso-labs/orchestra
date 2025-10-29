@@ -16,12 +16,12 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "tests/unit/services/prompt/test_optimize.py",
+                "tests/unit/services/test_project_service.py",
                 "-v"
             ],
             "console": "integratedTerminal",
             "justMyCode": true,
-            "envFile": "${workspaceFolder}/.env.test"
+            "envFile": "${workspaceFolder}/.env"
         },
         {
             "name": "Python: Run Tests",

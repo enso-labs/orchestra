@@ -2,6 +2,8 @@ import json
 
 from main import app
 from starlette.testclient import TestClient
+from src.services.db import get_async_db
+from src.repos.user_repo import UserRepo
 
 client = TestClient(app)
 
@@ -21,3 +23,9 @@ def get_test_token():
     response = client.post("/auth/login", json=data, headers=headers)
     json_str = json.loads(response.content)
     return json_str["token"]
+
+async def get_test_user():
+    async for db in get_async_db():
+        user_repo = UserRepo(db=db)
+        user = await user_repo.get_by_email("admin@example.com")
+        return user.protected()

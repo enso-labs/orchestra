@@ -1,6 +1,7 @@
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from fastapi import Request
 from typing import AsyncGenerator, Generator, AsyncIterator
+from langgraph.store.memory import InMemoryStore
 from langgraph.store.postgres.base import PostgresIndexConfig
 from langchain.embeddings import init_embeddings
 from sqlalchemy import create_engine
@@ -49,17 +50,19 @@ def load_models():
 
     return _Base
 
+DEFAULT_EMBED = "openai:text-embedding-3-small"
+DEFAULT_FIELDS = ["page_content", "metadata"]
 
 def get_store(req: Request) -> AsyncPostgresStore:
     return req.app.state.store
 
-
 def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
     return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
 
-
 def get_store_db(
-    embed: str = "openai:text-embedding-3-small",
+    embed: str = DEFAULT_EMBED,
+    dims: int = 1536,
+    fields: list[str] = DEFAULT_FIELDS,
 ) -> AsyncIterator[AsyncPostgresStore]:
     return AsyncPostgresStore.from_conn_string(
         conn_string=DB_URI,
@@ -70,8 +73,22 @@ def get_store_db(
         ),
         index=PostgresIndexConfig(
             embed=init_embeddings(embed),
-            dims=1536,
+            dims=dims,
+            fields=fields,
         ),
+    )
+    
+def get_in_memory_store(
+    embed: str = DEFAULT_EMBED,
+    dims: int = 1536,
+    fields: list[str] = DEFAULT_FIELDS,
+) -> InMemoryStore:
+    return InMemoryStore(
+        index={
+            "embed": init_embeddings(embed),
+            "dims": dims,
+            "fields": fields,
+        }
     )
 
 
