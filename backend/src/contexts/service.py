@@ -1,6 +1,6 @@
 from typing import Optional
 from langgraph.pregel.main import BaseCheckpointSaver
-from services.project import ProjectService
+from src.services.project import ProjectService
 from src.services.checkpoint import CheckpointService
 from src.services.thread import ThreadService
 from src.services.assistant import AssistantService

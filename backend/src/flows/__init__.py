@@ -8,7 +8,7 @@ from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from deepagents import async_create_deep_agent, SubAgent
+from deepagents import create_deep_agent, SubAgent
 
 
 from src.services.memory import memory_service
@@ -19,6 +19,7 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
+from langchain.agents.middleware import TodoListMiddleware
 
 
 async def add_memories_to_system():
@@ -52,29 +53,34 @@ def graph_builder(
     context_schema: Type[Any] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
-    graph_id: Literal[
-        "react", "deepagents", "deepagent", "create_react_agent", "create_deep_agent"
-    ] = "react",
+    graph_id: Literal['deepagent', 'react'] = "deepagent",
 ) -> CompiledStateGraph:
     if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
         return create_agent(
             model=model,
             tools=tools,
-            prompt=prompt,
+            system_prompt=prompt,
             checkpointer=checkpointer,
             context_schema=context_schema,
             store=store,
         )
 
-    deep_agent = async_create_deep_agent(
+    deep_agent = create_deep_agent(
         model=model,
         tools=tools,
         subagents=subagents,
-        instructions=prompt,
+        system_prompt=prompt,
         checkpointer=checkpointer,
+        store=store,
+        context_schema=context_schema,
+        # middleware=[
+        #     TodoListMiddleware(
+        #         system_prompt=(
+        #             "Use the write_todos tool a plan for completing tasks."
+        #         )
+        #     ),
+        # ],
     )
-    deep_agent.context_schema = context_schema
-    deep_agent.store = store
     return deep_agent
 
 
@@ -158,11 +164,6 @@ async def construct_agent(
 
         # Asynchronous LLM call
         agent = Orchestra(
-            graph_id=(
-                params.metadata.graph_id
-                if params.metadata and params.metadata.graph_id
-                else "react"
-            ),
             config=config,
             model=params.model,
             tools=tools,
@@ -189,7 +190,7 @@ class Orchestra:
         # context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
-        graph_id: Literal["react", "deepagent"] = "react",
+        graph_id: Literal["react", "deepagent"] = "deepagent",
     ):
         self.tools = tools
         self.model = model

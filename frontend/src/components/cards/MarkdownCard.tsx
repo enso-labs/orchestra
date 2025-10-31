@@ -179,13 +179,13 @@ const BaseCard = ({ content }: { content: string }) => {
 					<ul className="list-disc pl-5 my-2" {...props} />
 				),
 				ol: ({ ...props }) => (
-					<ol className="list-decimal list-inside mb-2 space-y-1" {...props} />
+					<ol className="list-decimal mb-2 space-y-1" {...props} />
 				),
 				li: ({ node: _node, ...props }) => <li className="ml-2" {...props} />,
 				a: ({ node, ...props }) => (
 					<a
 						target="_blank"
-						className="text-primary underline hover:text-primary/80"
+						className="text-blue-300 underline hover:text-blue-300/80"
 						{...props}
 					/>
 				),

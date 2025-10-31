@@ -12,9 +12,7 @@ from fastapi import (
     Form,
     UploadFile,
 )
-from langmem.prompts.types import (
-    OptimizerInput,
-)
+from langmem.prompts.types import OptimizerInput
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.contexts.service import ServiceContext
 from src.constants import GROQ_API_KEY

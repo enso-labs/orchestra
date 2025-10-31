@@ -1,6 +1,5 @@
 from langchain_core.tools import StructuredTool, BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_arcade import ArcadeToolManager
 
 from src.schemas.entities.a2a import A2AServer, McpServer
 from src.tools import TOOL_LIBRARY
@@ -64,6 +63,7 @@ class ToolService:
     def arcade_tools(
         arcade: ArcadeConfig,
     ) -> list[StructuredTool]:
+        from langchain_arcade import ArcadeToolManager
         manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
         tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
         return tools
