@@ -135,9 +135,7 @@ export function Message({
 								rows={1}
 							/>
 						) : (
-							<MarkdownCard
-								content={formatContent(message.content)}
-							/>
+							<MarkdownCard content={formatContent(message.content)} />
 						)}
 						{isEditing && !isEditingText && (
 							<div className="flex absolute bottom-1 right-1">
@@ -145,7 +143,9 @@ export function Message({
 									className="p-1 rounded hover:bg-muted transition-colors"
 									onClick={(e) => {
 										e.stopPropagation();
-										navigator.clipboard.writeText(formatContent(message.content));
+										navigator.clipboard.writeText(
+											formatContent(message.content),
+										);
 										console.log(message);
 										alert("Copied to clipboard (User Message)");
 									}}
@@ -237,9 +237,7 @@ export function Message({
 				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
 					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard
-							content={
-								formatContent(message.content) || "Invalid message"
-							}
+							content={formatContent(message.content) || "Invalid message"}
 						/>
 					</div>
 				</div>
@@ -249,9 +247,7 @@ export function Message({
 							<Copy
 								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
 								onClick={() => {
-									navigator.clipboard.writeText(
-										formatContent(message.content),
-									);
+									navigator.clipboard.writeText(formatContent(message.content));
 									alert("Copied to clipboard (AI Message)");
 								}}
 							/>
@@ -286,7 +282,9 @@ export function Message({
 		);
 	}
 
-	return <p>{formatContent(message.content) || JSON.stringify(message.input)}</p>;
+	return (
+		<p>{formatContent(message.content) || JSON.stringify(message.input)}</p>
+	);
 }
 
 const ChatMessages = ({ messages }: { messages: any[] }) => {

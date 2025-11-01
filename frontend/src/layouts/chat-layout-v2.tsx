@@ -1,6 +1,5 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/drawers/app-sidebar";
-
 
 export function ChatLayout({ children }: { children: React.ReactNode }) {
 	const defaultOpen = true;
@@ -9,7 +8,7 @@ export function ChatLayout({ children }: { children: React.ReactNode }) {
 		<SidebarProvider defaultOpen={defaultOpen}>
 			<AppSidebar />
 			<main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-				<SidebarTrigger className="m-2" />
+				{/* <SidebarTrigger className="m-2" /> */}
 				{children}
 			</main>
 		</SidebarProvider>

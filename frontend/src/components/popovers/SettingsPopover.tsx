@@ -5,7 +5,13 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { logout } from "@/lib/utils/auth";
-import { Settings, LayoutDashboard, Cog, Calendar, FileText } from "lucide-react";
+import {
+	Settings,
+	LayoutDashboard,
+	Cog,
+	Calendar,
+	FileText,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import { useAuth } from "@/hooks/useAuth";

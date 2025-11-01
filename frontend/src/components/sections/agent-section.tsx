@@ -2,7 +2,6 @@ import ChatInput from "@/components/inputs/ChatInput";
 import { Agent } from "@/lib/services/agentService";
 
 export function AgentSection({ agent }: { agent: Agent }) {
-
 	return (
 		<>
 			<img

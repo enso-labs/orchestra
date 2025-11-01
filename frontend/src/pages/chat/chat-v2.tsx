@@ -4,17 +4,19 @@ import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
 import { useAppContext } from "@/context/AppContext";
 import { Agent } from "@/lib/services/agentService";
+import { ChatNav } from "@/components/nav/ChatNav";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function ChatV2Page() {
 	const { loading } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
-	const { 
+	const {
 		useEffectUpdateAssistantId,
 		useListThreadsEffect,
 		useListCheckpointsEffect,
 		metadata,
 	} = useChatContext();
-	
+
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
 
@@ -32,9 +34,14 @@ export function ChatV2Page() {
 
 	return (
 		<ChatLayout>
-			<ChatPanel agent={defaultAgent} />
+			<ChatPanel
+				agent={defaultAgent}
+				chatNav={
+					<ChatNav sidebarTrigger={<SidebarTrigger />} />
+				}
+			/>
 		</ChatLayout>
-	)
+	);
 }
 
 export default ChatV2Page;

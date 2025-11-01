@@ -67,9 +67,9 @@ export default function useChat(): ChatContextType {
 		setMessagesState(newMessages);
 	};
 	const [metadata, setMetadata] = useState<any>({
-		current_time: new Date().toISOString(),
 		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 		language: navigator.language,
+		current_time: undefined,
 	});
 
 	const [controller, setController] = useState<AbortController | null>(null);
@@ -112,6 +112,7 @@ export default function useChat(): ChatContextType {
 		clearContent();
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
+		metadata.current_time = new Date().toISOString();
 		const source = streamThread({
 			system: agent.prompt,
 			messages: formatedMessages,
@@ -199,7 +200,7 @@ export default function useChat(): ChatContextType {
 
 	const handleMessages = (payload: any, history: any[]) => {
 		console.log(payload);
-		
+
 		const streamMode = payload[0];
 		if (streamMode === "error") {
 			alert("Error on stream: " + payload[1]);
@@ -283,7 +284,8 @@ export default function useChat(): ChatContextType {
 				if (existingIndex !== -1) {
 					// Always append to the related message content
 					const existingMsg = history[existingIndex];
-					const updatedContent = formatContent(existingMsg.content) + expectedContent;
+					const updatedContent =
+						formatContent(existingMsg.content) + expectedContent;
 
 					// Track streaming rate
 					setStreamingRate((prev) => {
@@ -343,7 +345,8 @@ export default function useChat(): ChatContextType {
 				["stop", "end_turn", "STOP"].includes(
 					response.response_metadata?.finish_reason ||
 						response.response_metadata.stop_reason,
-				) && response.tool_calls?.length === 0
+				) &&
+				response.tool_calls?.length === 0
 			) {
 				setLoading(false);
 				setController(null);

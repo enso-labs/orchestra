@@ -164,7 +164,10 @@ export default function PromptCreatePage() {
 									<FormItem>
 										<FormLabel>Name</FormLabel>
 										<FormControl>
-											<Input placeholder="E.g., Customer Support Expert" {...field} />
+											<Input
+												placeholder="E.g., Customer Support Expert"
+												{...field}
+											/>
 										</FormControl>
 										<FormDescription>
 											A descriptive name for this prompt

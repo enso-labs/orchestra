@@ -37,7 +37,6 @@ export default function Home() {
 			>
 				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					<ChatPanel
-						showAgentMenu={false}
 						chatNav={<ChatNav onMenuClick={() => {}} />}
 					/>
 				</div>
