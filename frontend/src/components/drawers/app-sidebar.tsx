@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Bot, Layers, Wrench, MessageSquare } from "lucide-react";
 
 import { SearchForm } from "@/components/forms/search-form";
 import { VersionSwitcher } from "@/components/menus/version-switcher";
@@ -25,43 +25,238 @@ import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
 import { formatContent, truncateFrom } from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
+import { Agent } from "@/lib/services/agentService";
+import { formatDistanceToNow } from "date-fns";
 
-function CollapsibleGroup(item: { title: string, items: any[] }) {
+interface AssistantItemProps {
+	agent: Agent;
+	url: string;
+}
+
+function AssistantItem({ agent, url }: AssistantItemProps) {
+	const { agent: currentAgent } = useAgentContext();
+	const toolsCount = agent.tools?.length || 0;
+	const subagentsCount = agent.subagents?.length || 0;
+	const modelDisplay = agent.model?.split(":")[1] || agent.model || "N/A";
+	const isSelected = currentAgent?.id === agent.id;
+
+	return (
+		<SidebarMenuItem className="mb-1">
+			<SidebarMenuButton
+				asChild
+				isActive={isSelected}
+				className={`h-auto px-3 py-3 rounded-lg border transition-all ${
+					isSelected
+						? "bg-sidebar-accent border-sidebar-accent shadow-sm"
+						: "bg-transparent border-sidebar-border hover:bg-sidebar-accent/50 hover:border-sidebar-accent/50"
+				}`}
+			>
+				<a
+					href={url}
+					className="flex flex-col items-start gap-1.5 w-full group"
+				>
+					<div className="flex items-center gap-2.5 w-full">
+						{/* <div
+							className={`flex items-center justify-center w-8 h-8 rounded-md shrink-0 transition-colors ${
+								isSelected
+									? "bg-sidebar-accent-foreground/10"
+									: "bg-sidebar-accent/30 group-hover:bg-sidebar-accent/40"
+							}`}
+						>
+							<Bot
+								className={`w-4 h-4 ${
+									isSelected
+										? "text-sidebar-accent-foreground"
+										: "text-sidebar-foreground/70"
+								}`}
+							/>
+						</div> */}
+						<div className="flex flex-col min-w-0 flex-1">
+							<span
+								className={`text-sm truncate ${
+									isSelected
+										? "font-semibold text-sidebar-accent-foreground"
+										: "font-medium text-sidebar-foreground"
+								}`}
+							>
+								{agent.name}
+							</span>
+							<span className="text-xs text-sidebar-foreground/60 truncate">
+								{agent.description || "No description"}
+							</span>
+						</div>
+					</div>
+					{/* TODO: Needs to be left aligned */}
+					{/* <div className="flex items-center gap-2.5 text-[11px] text-sidebar-foreground/50">
+						<div className="flex items-center gap-1">
+							<Bot className="w-3 h-3" />
+							<span>{modelDisplay}</span>
+						</div>
+						{toolsCount > 0 && (
+							<>
+								<span className="text-sidebar-foreground/30">•</span>
+								<div className="flex items-center gap-1">
+									<Wrench className="w-3 h-3" />
+									<span>
+										{toolsCount} tool{toolsCount !== 1 ? "s" : ""}
+									</span>
+								</div>
+							</>
+						)}
+						{subagentsCount > 0 && (
+							<>
+								<span className="text-sidebar-foreground/30">•</span>
+								<div className="flex items-center gap-1">
+									<Layers className="w-3 h-3" />
+									<span>{subagentsCount} sub</span>
+								</div>
+							</>
+						)}
+					</div> */}
+				</a>
+			</SidebarMenuButton>
+		</SidebarMenuItem>
+	);
+}
+
+interface ThreadItemProps {
+	thread: any;
+	url: string;
+}
+
+function ThreadItem({ thread, url }: ThreadItemProps) {
+	const { metadata } = useChatContext();
+	const messages = thread.value?.messages || [];
+	const messageCount = messages.length;
+	const lastMessage = messages[messages.length - 1];
+	const isSelected = metadata?.thread_id === thread.value?.thread_id;
+
+	// Extract a meaningful title from the content
+	const getThreadTitle = () => {
+		if (!lastMessage) return "Empty thread";
+		const content =
+			typeof lastMessage.content === "string"
+				? lastMessage.content
+				: formatContent(lastMessage.content);
+		// Try to extract first line or sentence as title
+		const firstLine = content.split("\n")[0];
+		return truncateFrom(firstLine, "end", "...", 50);
+	};
+
+	const threadTitle = getThreadTitle();
+
+	// Get the model from the last message
+	const model =
+		lastMessage?.model?.split(":")[1] || lastMessage?.model || "N/A";
+
+	// Format relative time using date-fns
+	const relativeTime = thread.updated_at
+		? formatDistanceToNow(new Date(thread.updated_at), { addSuffix: true })
+		: "";
+
+	return (
+		<SidebarMenuItem className="mb-1">
+			<SidebarMenuButton
+				asChild
+				isActive={isSelected}
+				className={`h-auto px-3 py-3 rounded-lg border transition-all ${
+					isSelected
+						? "bg-sidebar-accent border-sidebar-accent shadow-sm"
+						: "bg-transparent border-sidebar-border hover:bg-sidebar-accent/50 hover:border-sidebar-accent/50"
+				}`}
+			>
+				<a href={url} className="flex items-start gap-2.5 w-full group">
+					{/* <div
+						className={`flex items-center justify-center w-8 h-8 rounded-md shrink-0 transition-colors ${
+							isSelected
+								? "bg-sidebar-accent-foreground/10"
+								: "bg-sidebar-accent/20 group-hover:bg-sidebar-accent/30"
+						}`}
+					>
+						<MessageSquare
+							className={`w-4 h-4 ${
+								isSelected
+									? "text-sidebar-accent-foreground"
+									: "text-sidebar-foreground/60"
+							}`}
+						/>
+					</div> */}
+					<div className="flex flex-col min-w-0 flex-1 gap-1.5">
+						<div className="flex items-start justify-between gap-2 w-full">
+							<span
+								className={`text-sm leading-tight line-clamp-2 ${
+									isSelected
+										? "font-semibold text-sidebar-accent-foreground"
+										: "font-medium text-sidebar-foreground"
+								}`}
+							>
+								{threadTitle}
+							</span>
+							{relativeTime && (
+								<span className="text-[10px] text-sidebar-foreground/40 shrink-0 font-normal mt-0.5 whitespace-nowrap">
+									{relativeTime}
+								</span>
+							)}
+						</div>
+						<div className="flex items-center gap-2.5 text-[11px] text-sidebar-foreground/50">
+							<div className="flex items-center gap-1">
+								<span className="font-medium">{messageCount}</span>
+								<span>msg{messageCount !== 1 ? "s" : ""}</span>
+							</div>
+							<span className="text-sidebar-foreground/30">•</span>
+							<div className="flex items-center gap-1 truncate">
+								<span className="truncate">{model}</span>
+							</div>
+						</div>
+					</div>
+				</a>
+			</SidebarMenuButton>
+		</SidebarMenuItem>
+	);
+}
+
+interface CollapsibleGroupProps {
+	title: string;
+	items: any[];
+	type: "assistants" | "threads";
+}
+
+function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 	return (
 		<Collapsible
-			key={item.title}
-			title={item.title + " (" + item.items.length + " items)"}
-			// defaultOpen
+			key={title}
+			title={`${title} (${items.length} items)`}
+			// defaultOpen={type === "assistants"}
 			className="group/collapsible"
 		>
-			<SidebarGroup className="border-b border-border">
+			<SidebarGroup className="border-b border-sidebar-border">
 				<SidebarGroupLabel
 					asChild
-					className={`
-						"group/label text-sidebar-foreground 
-						hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm"	
-					`}
+					className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm"
 				>
 					<CollapsibleTrigger>
-						{item.title}{" "}
-						<ChevronRight
-							className={`
-								ml-auto transition-transform 
-								group-data-[state=open]/collapsible:rotate-90
-							`}
-						/>
+						{title}
+						<ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
 					</CollapsibleTrigger>
 				</SidebarGroupLabel>
 				<CollapsibleContent>
-					<SidebarGroupContent>
-						<SidebarMenu>
-							{item.items.map((subItem) => (
-								<SidebarMenuItem key={subItem.title} className="text-gray-400 rounded-md border">
-									<SidebarMenuButton asChild>
-										<a href={subItem.url}>{subItem.title}</a>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
+					<SidebarGroupContent className="px-1 pt-2">
+						<SidebarMenu className="gap-0">
+							{type === "assistants"
+								? items.map((item) => (
+										<AssistantItem
+											key={item.agent.id || item.agent.name}
+											agent={item.agent}
+											url={item.url}
+										/>
+									))
+								: items.map((item) => (
+										<ThreadItem
+											key={item.thread.value?.thread_id || item.url}
+											thread={item.thread}
+											url={item.url}
+										/>
+									))}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</CollapsibleContent>
@@ -77,17 +272,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { agents } = useAgentContext();
 
 	const threadsList = threads.map((thread: any) => {
-		const lastMessage = thread.value.messages[thread.value.messages.length - 1];
-		const lastMessageContent = truncateFrom(formatContent(lastMessage.content), "end", "...", 70);
 		return {
-			title: lastMessageContent,
+			thread: thread,
 			url: `/t/${thread.value.thread_id}`,
 		};
 	});
 
-	const assistantsList = agents.map((agent: any) => {
+	const assistantsList = agents.map((agent: Agent) => {
 		return {
-			title: agent.name,
+			agent: agent,
 			url: `/a/${agent.id}`,
 		};
 	});
@@ -100,8 +293,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			</SidebarHeader>
 			<SidebarContent className="gap-0">
 				{/* We create a collapsible SidebarGroup for each parent. */}
-				<CollapsibleGroup title="Assistants" items={assistantsList} />
-				<CollapsibleGroup title="Threads" items={threadsList} />
+				<CollapsibleGroup
+					title="Assistants"
+					items={assistantsList}
+					type="assistants"
+				/>
+				<CollapsibleGroup title="Threads" items={threadsList} type="threads" />
 			</SidebarContent>
 			<SidebarFooter>
 				<SettingsPopover />
