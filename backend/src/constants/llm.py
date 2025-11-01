@@ -36,9 +36,11 @@ class ChatModels(str, Enum):
     if OLLAMA_BASE_URL:
         OLLAMA_QWEN3 = "ollama:qwen3"
 
+
 def get_system_prompt():
-    path = 'src/static/prompts/md'
-    with open(os.path.join(path, 'default.md'), "r") as file:
+    path = "src/static/prompts/md"
+    with open(os.path.join(path, "default.md"), "r") as file:
         return file.read()
-    
+
+
 DEFAULT_SYSTEM_PROMPT = get_system_prompt()

@@ -25,7 +25,11 @@ export default function useThread(): ThreadContextType {
 	const [checkpoint, setCheckpoint] = useState<any>(null);
 
 	useEffect(() => {
-		console.log(checkpoints?.filter((checkpoint: any) => checkpoint.metadata.source === "input"));
+		console.log(
+			checkpoints?.filter(
+				(checkpoint: any) => checkpoint.metadata.source === "input",
+			),
+		);
 	}, [checkpoints]);
 
 	const fetchThreads = async (

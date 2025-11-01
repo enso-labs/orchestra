@@ -1,6 +1,7 @@
 import agentService, { Agent } from "@/lib/services/agentService";
 import { useEffect, useState } from "react";
 import ToolConfig from "@/lib/config/tool";
+import useModel from "./useModel";
 
 export type AgentState = {
 	agent: Agent;
@@ -22,8 +23,15 @@ export const INIT_AGENT_STATE: AgentState = {
 };
 
 export function useAgent() {
+	const { model } = useModel();
 	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
 	const [agents, setAgents] = useState<Agent[]>([]);
+
+	useEffect(() => {
+		if (model && agent.model !== model) {
+			setAgent({ ...agent, model: model });
+		}
+	}, [model]);
 
 	const setAgentSystemMessage = (system: string) => {
 		setAgent({ ...agent, prompt: system });

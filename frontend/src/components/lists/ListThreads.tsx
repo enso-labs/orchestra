@@ -5,7 +5,6 @@ import { deleteThread, searchThreads } from "@/lib/services/threadService";
 import { formatMessages, truncateFrom } from "@/lib/utils/format";
 import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
-import { StringParam, useQueryParam } from "use-query-params";
 import { useAgentContext } from "@/context/AgentContext";
 import { AxiosResponse } from "axios";
 import {
@@ -15,6 +14,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import useModel from "@/hooks/useModel";
 
 function ListThreads({ threads }: { threads: any[] }) {
 	const { agent } = useAgentContext();
@@ -26,7 +26,7 @@ function ListThreads({ threads }: { threads: any[] }) {
 		setCheckpoints,
 		useListThreadsEffect,
 	} = useChatContext();
-	const [, setQueryModel] = useQueryParam("model", StringParam);
+	const { setModel } = useModel();
 	const [copiedThreadId] = useState<string | null>(null);
 	const [currentThreadCheckpoints, setCurrentThreadCheckpoints] = useState<
 		any[]
@@ -116,7 +116,7 @@ function ListThreads({ threads }: { threads: any[] }) {
 
 		const handleThreadClick = async () => {
 			const checkpoints = await searchThreads("list_checkpoints", config);
-			setQueryModel(
+			setModel(
 				thread.value.messages[thread.value.messages.length - 1].model ||
 					DEFAULT_CHAT_MODEL,
 			);

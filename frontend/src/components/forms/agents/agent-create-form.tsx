@@ -335,7 +335,9 @@ export function AgentCreateForm() {
 												<div className="flex-1">
 													<div className="flex items-center gap-2 mb-1">
 														<FileText className="h-4 w-4 text-primary" />
-														<p className="font-medium text-sm">{selectedPrompt.name}</p>
+														<p className="font-medium text-sm">
+															{selectedPrompt.name}
+														</p>
 														<Badge variant="outline" className="text-xs">
 															v{selectedPrompt.v}
 														</Badge>

@@ -1,4 +1,3 @@
-import { StringParam, useQueryParam } from "use-query-params";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChatPanel from "@/pages/chat/ChatPanel";
 import NewThreadButton from "@/components/buttons/NewThreadButton";
@@ -14,6 +13,7 @@ import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
+import { useQueryState } from "nuqs";
 
 function AgentEditPage() {
 	const { agentId } = useParams();
@@ -28,7 +28,7 @@ function AgentEditPage() {
 		messages,
 		useEffectUpdateAssistantId,
 	} = useChatContext();
-	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
+	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
 
@@ -98,7 +98,7 @@ function AgentEditPage() {
 				</div>
 				<TabsContent value="chat" className="flex-1 h-0">
 					<div className="h-full">
-						<ChatPanel agent={agent} showAgentMenu={false} />
+						<ChatPanel agent={agent} />
 					</div>
 				</TabsContent>
 				<TabsContent value="threads" className="flex-1 p-4 h-0">

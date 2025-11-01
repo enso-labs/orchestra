@@ -176,4 +176,5 @@ async def serve_static_or_index(filename: str, request: Request):
 ### Run Server
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host=HOST, port=PORT, log_level=LOG_LEVEL)

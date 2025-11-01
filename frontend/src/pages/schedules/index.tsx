@@ -276,8 +276,12 @@ function SchedulesIndexPage() {
 									<div className="flex flex-col md:flex-row items-center gap-1 md:gap-2">
 										<Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
 										<div className="text-center md:text-left">
-											<p className="text-sm md:text-2xl font-bold">{statusCounts.all}</p>
-											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Total</p>
+											<p className="text-sm md:text-2xl font-bold">
+												{statusCounts.all}
+											</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">
+												Total
+											</p>
 										</div>
 									</div>
 								</CardContent>
@@ -290,7 +294,9 @@ function SchedulesIndexPage() {
 											<p className="text-sm md:text-2xl font-bold">
 												{statusCounts.active}
 											</p>
-											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Active</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">
+												Active
+											</p>
 										</div>
 									</div>
 								</CardContent>
@@ -303,7 +309,9 @@ function SchedulesIndexPage() {
 											<p className="text-sm md:text-2xl font-bold">
 												{statusCounts.upcoming}
 											</p>
-											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Upcoming</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">
+												Upcoming
+											</p>
 										</div>
 									</div>
 								</CardContent>
@@ -316,7 +324,9 @@ function SchedulesIndexPage() {
 											<p className="text-sm md:text-2xl font-bold">
 												{statusCounts.overdue}
 											</p>
-											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">Overdue</p>
+											<p className="text-[9px] md:text-xs text-muted-foreground whitespace-nowrap">
+												Overdue
+											</p>
 										</div>
 									</div>
 								</CardContent>
