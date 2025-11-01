@@ -7,7 +7,7 @@ import {
 	MessageSquare 
 } from "lucide-react";
 import { SearchForm } from "@/components/forms/search-form";
-import { VersionSwitcher } from "@/components/menus/version-switcher";
+// import { VersionSwitcher } from "@/components/menus/version-switcher";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -35,6 +35,8 @@ import { formatDistanceToNow } from "date-fns";
 import { searchThreads } from "@/lib/services";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import useModel from "@/hooks/useModel";
+import { Link } from "react-router-dom";
+import useLinkClick from "@/hooks/useLinkClick";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -262,7 +264,7 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 	);
 }
 
-const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
+// const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { threads } = useChatContext();
@@ -277,8 +279,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	return (
 		<Sidebar {...props}>
-			<SidebarHeader>
-				<VersionSwitcher versions={versions} defaultVersion={versions[0]} />
+			<SidebarHeader >
+				{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
+				<Link
+					to="/"
+					onClick={(e) => {
+						const handleLinkClick = useLinkClick("/");
+						handleLinkClick(
+							e as React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
+						);
+					}}
+					className="flex items-center gap-2 m-2"
+				>
+					<img
+						src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+						alt="Logo"
+						className="w-8 h-8 rounded-full"
+					/>
+					<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+				</Link>
 				<SearchForm />
 			</SidebarHeader>
 			<SidebarContent className="gap-0">
