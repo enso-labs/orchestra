@@ -28,8 +28,8 @@ import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
 import { formatDistanceToNow } from "date-fns";
 import { searchThreads } from "@/lib/services";
-import { StringParam, useQueryParam } from "use-query-params";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
+import useModel from "@/hooks/useModel";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -133,7 +133,7 @@ function ThreadItem({ thread }: ThreadItemProps) {
 	const messageCount = messages.length;
 	const lastMessage = messages[messages.length - 1];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
-	const [, setQueryModel] = useQueryParam("model", StringParam);
+	const { setModel } = useModel();
 
 	// Extract a meaningful title from the content
 	const getThreadTitle = () => {
@@ -149,7 +149,7 @@ function ThreadItem({ thread }: ThreadItemProps) {
 
 	const handleThreadClick = async () => {
 		const checkpoints = await searchThreads("list_checkpoints", thread.value);
-		setQueryModel(
+		setModel(
 			thread.value.messages[thread.value.messages.length - 1].model ||
 				DEFAULT_CHAT_MODEL,
 		);

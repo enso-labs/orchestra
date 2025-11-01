@@ -8,12 +8,11 @@ import {
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
 import GroqIcon from "@/components/icons/GroqIcon";
 import XAIIcon from "../icons/XAIIcon";
-import { useModel } from "@/hooks/useModel";
-import { StringParam, useQueryParam } from "use-query-params";
+import useModel from "@/hooks/useModel";
 import { useState, useEffect } from "react";
-// Import getAuthToken from your auth utility
 import { getAuthToken } from "@/lib/utils/auth";
 import { listModels } from "@/lib/services/modelService";
+import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 
 export class ChatModels {
 	public static readonly OPENAI_GPT_5_NANO = "openai:gpt-5-nano";
@@ -47,12 +46,11 @@ export class ChatModels {
 }
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
-	const model = useModel();
-	const [, setQueryModel] = useQueryParam("model", StringParam);
+	const { model, setModel } = useModel();
 	const [modelValues, setModelValues] = useState<string[]>([]);
 
 	const handleModelChange = (value: string) => {
-		setQueryModel(value);
+		setModel(value);
 		onModelSelected?.();
 	};
 
@@ -102,7 +100,7 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 	];
 
 	return (
-		<Select value={model} onValueChange={handleModelChange}>
+		<Select value={model ?? DEFAULT_CHAT_MODEL} onValueChange={handleModelChange}>
 			<SelectTrigger>
 				<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
