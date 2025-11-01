@@ -8,7 +8,6 @@ export function ChatLayout({ children }: { children: React.ReactNode }) {
 		<SidebarProvider defaultOpen={defaultOpen}>
 			<AppSidebar />
 			<main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-				{/* <SidebarTrigger className="m-2" /> */}
 				{children}
 			</main>
 		</SidebarProvider>

@@ -36,9 +36,7 @@ export function ChatV2Page() {
 		<ChatLayout>
 			<ChatPanel
 				agent={defaultAgent}
-				chatNav={
-					<ChatNav sidebarTrigger={<SidebarTrigger />} />
-				}
+				chatNav={<ChatNav sidebarTrigger={<SidebarTrigger />} />}
 			/>
 		</ChatLayout>
 	);

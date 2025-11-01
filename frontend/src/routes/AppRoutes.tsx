@@ -65,6 +65,7 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<ChatV2Page />
+								{/* <Chat /> */}
 							</PrivateRoute>
 						}
 					/>

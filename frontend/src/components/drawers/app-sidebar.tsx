@@ -23,10 +23,13 @@ import {
 } from "@/components/ui/sidebar";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
-import { formatContent, truncateFrom } from "@/lib/utils/format";
+import { formatContent, formatMessages, truncateFrom } from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
 import { formatDistanceToNow } from "date-fns";
+import { searchThreads } from "@/lib/services";
+import { StringParam, useQueryParam } from "use-query-params";
+import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -121,15 +124,16 @@ function AssistantItem({ agent, url }: AssistantItemProps) {
 
 interface ThreadItemProps {
 	thread: any;
-	url: string;
+	// url: string;
 }
 
-function ThreadItem({ thread, url }: ThreadItemProps) {
-	const { metadata } = useChatContext();
+function ThreadItem({ thread }: ThreadItemProps) {
+	const { metadata, setMessages, setMetadata } = useChatContext();
 	const messages = thread.value?.messages || [];
 	const messageCount = messages.length;
 	const lastMessage = messages[messages.length - 1];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
+	const [, setQueryModel] = useQueryParam("model", StringParam);
 
 	// Extract a meaningful title from the content
 	const getThreadTitle = () => {
@@ -141,6 +145,17 @@ function ThreadItem({ thread, url }: ThreadItemProps) {
 		// Try to extract first line or sentence as title
 		const firstLine = content.split("\n")[0];
 		return truncateFrom(firstLine, "end", "...", 50);
+	};
+
+	const handleThreadClick = async () => {
+		const checkpoints = await searchThreads("list_checkpoints", thread.value);
+		setQueryModel(
+			thread.value.messages[thread.value.messages.length - 1].model ||
+				DEFAULT_CHAT_MODEL,
+		);
+		setMessages(formatMessages(checkpoints[0].values.messages));
+		setMetadata(thread.value);
+		// setIsDrawerOpen(false);
 	};
 
 	const threadTitle = getThreadTitle();
@@ -165,22 +180,7 @@ function ThreadItem({ thread, url }: ThreadItemProps) {
 						: "bg-transparent border-sidebar-border hover:bg-sidebar-accent/50 hover:border-sidebar-accent/50"
 				}`}
 			>
-				<a href={url} className="flex items-start gap-2.5 w-full group">
-					{/* <div
-						className={`flex items-center justify-center w-8 h-8 rounded-md shrink-0 transition-colors ${
-							isSelected
-								? "bg-sidebar-accent-foreground/10"
-								: "bg-sidebar-accent/20 group-hover:bg-sidebar-accent/30"
-						}`}
-					>
-						<MessageSquare
-							className={`w-4 h-4 ${
-								isSelected
-									? "text-sidebar-accent-foreground"
-									: "text-sidebar-foreground/60"
-							}`}
-						/>
-					</div> */}
+				<button onClick={handleThreadClick} className="flex items-start gap-2.5 w-full group">
 					<div className="flex flex-col min-w-0 flex-1 gap-1.5">
 						<div className="flex items-start justify-between gap-2 w-full">
 							<span
@@ -209,7 +209,7 @@ function ThreadItem({ thread, url }: ThreadItemProps) {
 							</div>
 						</div>
 					</div>
-				</a>
+				</button>
 			</SidebarMenuButton>
 		</SidebarMenuItem>
 	);
@@ -222,6 +222,14 @@ interface CollapsibleGroupProps {
 }
 
 function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
+
+	const titleIcon =
+		type === "assistants" ? (
+			<Bot className="w-4 h-4 mr-2" />
+		) : (
+			<MessageSquare className="w-4 h-4 mr-2" />
+		);
+	
 	return (
 		<Collapsible
 			key={title}
@@ -232,9 +240,13 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 			<SidebarGroup className="border-b border-sidebar-border">
 				<SidebarGroupLabel
 					asChild
-					className="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm"
+					className={`
+						group/label text-sidebar-foreground hover:bg-sidebar-accent 
+						hover:text-sidebar-accent-foreground text-sm
+					`}
 				>
 					<CollapsibleTrigger>
+						{titleIcon}
 						{title}
 						<ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
 					</CollapsibleTrigger>
@@ -251,11 +263,7 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 										/>
 									))
 								: items.map((item) => (
-										<ThreadItem
-											key={item.thread.value?.thread_id || item.url}
-											thread={item.thread}
-											url={item.url}
-										/>
+										<ThreadItem thread={item} />
 									))}
 						</SidebarMenu>
 					</SidebarGroupContent>
@@ -270,13 +278,6 @@ const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { threads } = useChatContext();
 	const { agents } = useAgentContext();
-
-	const threadsList = threads.map((thread: any) => {
-		return {
-			thread: thread,
-			url: `/t/${thread.value.thread_id}`,
-		};
-	});
 
 	const assistantsList = agents.map((agent: Agent) => {
 		return {
@@ -298,7 +299,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					items={assistantsList}
 					type="assistants"
 				/>
-				<CollapsibleGroup title="Threads" items={threadsList} type="threads" />
+				<CollapsibleGroup title="Threads" items={threads} type="threads" />
 			</SidebarContent>
 			<SidebarFooter>
 				<SettingsPopover />
