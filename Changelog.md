@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/463-move-website-to-repo (2025-10-31)
   - feat/457-checkpoint-stream (2025-10-26)
   - feat/448-tokens-per-sec (2025-10-24)
   - feat/442-edit-memories (2025-10-22)
