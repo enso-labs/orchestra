@@ -7,7 +7,7 @@ import { Agent } from "@/lib/services/agentService";
 
 interface ChatPanelProps {
 	agent?: Agent;
-	showAgentMenu: boolean;
+	// showAgentMenu: boolean;
 	chatNav?: React.ReactNode | undefined;
 }
 
@@ -18,7 +18,7 @@ function ChatPanel({ agent, chatNav }: ChatPanelProps) {
 		return (
 			<ChatLayout>
 				<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
-					<AgentSection />
+					<AgentSection agent={agent} />
 				</div>
 			</ChatLayout>
 		);

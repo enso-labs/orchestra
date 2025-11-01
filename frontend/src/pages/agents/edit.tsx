@@ -98,7 +98,7 @@ function AgentEditPage() {
 				</div>
 				<TabsContent value="chat" className="flex-1 h-0">
 					<div className="h-full">
-						<ChatPanel agent={agent} showAgentMenu={false} />
+						<ChatPanel agent={agent} />
 					</div>
 				</TabsContent>
 				<TabsContent value="threads" className="flex-1 p-4 h-0">

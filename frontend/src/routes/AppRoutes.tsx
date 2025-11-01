@@ -22,7 +22,7 @@ import SchedulesIndexPage from "@/pages/schedules";
 import PromptsIndexPage from "@/pages/prompts";
 import PromptCreatePage from "@/pages/prompts/create";
 import PromptEditPage from "@/pages/prompts/edit";
-import Chatv2 from "@/pages/chat/Chatv2";
+import ChatV2Page from "@/pages/chat/chat-v2";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -64,7 +64,7 @@ const AppRoutes: React.FC = () => {
 						path="/chat"
 						element={
 							<PrivateRoute>
-								<Chatv2 />
+								<ChatV2Page />
 							</PrivateRoute>
 						}
 					/>

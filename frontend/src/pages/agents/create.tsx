@@ -93,7 +93,7 @@ function AgentCreatePage() {
 				</TabsContent>
 				<TabsContent value="preview" className="flex-1 h-0">
 					<div className="h-full">
-						<ChatPanel showAgentMenu={false} />
+						<ChatPanel />
 					</div>
 				</TabsContent>
 				<TabsContent value="threads" className="flex-1 p-4 h-0">

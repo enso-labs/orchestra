@@ -3,8 +3,9 @@ import ChatPanel from "./ChatPanel";
 import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
 import { useAppContext } from "@/context/AppContext";
+import { Agent } from "@/lib/services/agentService";
 
-export function Chatv2() {
+export function ChatV2Page() {
 	const { loading } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
 	const { 
@@ -19,11 +20,21 @@ export function Chatv2() {
 
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);
+
+	const defaultAgent: Agent = {
+		name: "Ensō Orchestra",
+		description: "Ensō is an AI assistant built by Ensō Labs.",
+		model: "",
+		prompt: "",
+		tools: [],
+		subagents: [],
+	};
+
 	return (
 		<ChatLayout>
-			<ChatPanel showAgentMenu={false} />
+			<ChatPanel agent={defaultAgent} />
 		</ChatLayout>
 	)
 }
 
-export default Chatv2;
+export default ChatV2Page;

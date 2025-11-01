@@ -1,8 +1,8 @@
 import ChatInput from "@/components/inputs/ChatInput";
-import { useAgentContext } from "@/context/AgentContext";
+import { Agent } from "@/lib/services/agentService";
 
-export function AgentSection() {
-	const { agent } = useAgentContext();
+export function AgentSection({ agent }: { agent: Agent }) {
+
 	return (
 		<>
 			<img
