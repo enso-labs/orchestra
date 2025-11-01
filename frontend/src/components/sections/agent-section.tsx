@@ -12,7 +12,7 @@ export function AgentSection({ agent }: { agent: Agent }) {
 			/>
 			<h1 className="text-4xl font-bold mt-2">{agent.name}</h1>
 			<p className="text-lg mb-2">{agent.description}</p>
-			<div className="flex flex-row gap-2 mb-2">
+			{/* <div className="flex flex-row gap-2 mb-2">
 				{agent.mcp && (
 					<a href={agent.mcp.url}>
 						<img src="https://img.shields.io/badge/View-MCP-blue" />
@@ -23,7 +23,7 @@ export function AgentSection({ agent }: { agent: Agent }) {
 						<img src="https://img.shields.io/badge/View-A2A-blue" />
 					</a>
 				)}
-			</div>
+			</div> */}
 			<div className="flex flex-col w-full lg:w-[600px]">
 				<ChatInput />
 			</div>
