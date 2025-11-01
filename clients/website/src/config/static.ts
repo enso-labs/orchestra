@@ -1,0 +1,1 @@
+export const HERO_GIF = "https://adaptive.biz/blur.gif";

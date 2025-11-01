@@ -1,0 +1,21 @@
+
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+}
+
+.fade-in-1 {
+    animation: fadeIn 1s ease-out forwards;
+  }
+  
+  .fade-in-2 {
+    animation: fadeIn 1s 1s ease-out forwards; /* 1s delay */
+  }
+  
+  .fade-in-3 {
+    animation: fadeIn 1s 2s ease-out forwards; /* 2s delay */
+  }

@@ -18,7 +18,7 @@ steps:
         ${{ runner.os }}-node-
 
   - name: Install dependencies
-    working-directory: ./frontend
+    working-directory: ./clients/frontend
     if: steps.cache-node.outputs.cache-hit != 'true'
     run: npm ci
 

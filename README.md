@@ -40,7 +40,7 @@ This project includes tools for running shell commands and Docker container oper
 	cp .example.env .env
 
 	# Frontend
-	cd <project-root>/frontend
+	cd <project-root>/clients/frontend
 	cp .example.env .env
 	```
 
@@ -80,7 +80,7 @@ This project includes tools for running shell commands and Docker container oper
 
 	```bash
 	# Change Directory
-	cd <project-root>/frontend
+	cd <project-root>/clients/frontend
 
 	# Install
 	npm install

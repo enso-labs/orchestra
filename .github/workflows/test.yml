@@ -48,7 +48,7 @@ jobs:
           ${{ runner.os }}-node-
 
     - name: Install dependencies
-      working-directory: ./frontend
+      working-directory: ./clients/frontend
       if: steps.cache-node.outputs.cache-hit != 'true'
       run: npm ci
 
@@ -62,11 +62,11 @@ jobs:
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }} 
 
     - name: Run tests
-      working-directory: ./frontend
+      working-directory: ./clients/frontend
       run: npm test
 
     - name: Build frontend
-      working-directory: ./frontend
+      working-directory: ./clients/frontend
       run: npm run build
       
   ###############################################################

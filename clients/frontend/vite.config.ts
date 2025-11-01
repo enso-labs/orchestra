@@ -46,7 +46,7 @@ const MANIFEST: Partial<VitePWAOptions> = {
 export default defineConfig({
 	plugins: [react(), VitePWA(MANIFEST)],
 	build: {
-		outDir: "../backend/src/public",
+		outDir: "../../backend/src/public",
 		emptyOutDir: true,
 		sourcemap: process.env.NODE_ENV === "development",
 		rollupOptions: {

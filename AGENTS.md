@@ -3,11 +3,11 @@
 ## Project Structure & Module Organization
 - `backend/src` contains the FastAPI stack, with domain logic split into `controllers`, `routes`, `services`, and `repos`, plus shared helpers in `common` and `utils`.
 - Database assets live in `backend/migrations` and `backend/seeds`; reusable automation sits under `backend/scripts`.
-- `frontend/src` hosts the Vite/React client (`components`, `pages`, `routes`, `tests`), while `docs/`, `deployment/`, and `docker/` hold reference material and ops tooling.
+- `clients/frontend/src` hosts the Vite/React client (`components`, `pages`, `routes`, `tests`), while `docs/`, `deployment/`, and `docker/` hold reference material and ops tooling.
 
 ## Build, Test, and Development Commands
 - Backend: `uv venv && source .venv/bin/activate && uv sync` installs dependencies, `bash backend/scripts/dev.sh` runs the API with reload, and `uv run pytest` (or `bash backend/scripts/test.sh`) executes the suite.
-- Frontend: `cd frontend && npm install`, `npm run dev` for local dev, `npm run build` for production bundles, and `npm run docs` regenerates MkDocs API docs.
+- Frontend: `cd clients/frontend && npm install`, `npm run dev` for local dev, `npm run build` for production bundles, and `npm run docs` regenerates MkDocs API docs.
 - Infrastructure: `docker compose up postgres pgadmin` provisions Postgres + PgAdmin; stop with `docker compose down`.
 
 ## Coding Style & Naming Conventions
