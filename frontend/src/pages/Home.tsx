@@ -29,16 +29,7 @@ export default function Home() {
 
 	return (
 		<div className="h-full flex flex-col bg-background overflow-hidden">
-			<div
-				className={`
-          flex h-full relative
-          transition-all duration-200 ease-in-out
-      `}
-			>
-				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-					<ChatPanel chatNav={<ChatNav />} />
-				</div>
-			</div>
+			<ChatPanel chatNav={<ChatNav />} />
 		</div>
 	);
 }
