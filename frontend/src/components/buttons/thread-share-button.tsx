@@ -4,7 +4,7 @@ import { Share } from "lucide-react";
 
 function ShareButton() {
 	const { payload } = useChatContext();
-	
+
 	return (
 		<Button
 			variant="outline"

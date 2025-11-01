@@ -1,10 +1,10 @@
 import * as React from "react";
-import { 
-	ChevronRight, 
+import {
+	ChevronRight,
 	Bot,
-	// Layers, 
-	// Wrench, 
-	MessageSquare 
+	// Layers,
+	// Wrench,
+	MessageSquare,
 } from "lucide-react";
 import { SearchForm } from "@/components/forms/search-form";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
@@ -28,7 +28,11 @@ import {
 } from "@/components/ui/sidebar";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
-import { formatContent, formatMessages, truncateFrom } from "@/lib/utils/format";
+import {
+	formatContent,
+	formatMessages,
+	truncateFrom,
+} from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
 import { formatDistanceToNow } from "date-fns";
@@ -171,7 +175,10 @@ function ThreadItem({ thread }: ThreadItemProps) {
 						: "bg-transparent border-sidebar-border hover:bg-sidebar-accent/50 hover:border-sidebar-accent/50"
 				}`}
 			>
-				<button onClick={handleThreadClick} className="flex items-start gap-2.5 w-full group">
+				<button
+					onClick={handleThreadClick}
+					className="flex items-start gap-2.5 w-full group"
+				>
 					<div className="flex flex-col min-w-0 flex-1 gap-1.5">
 						<div className="flex items-start justify-between gap-2 w-full">
 							<span
@@ -213,14 +220,13 @@ interface CollapsibleGroupProps {
 }
 
 function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
-
 	const titleIcon =
 		type === "assistants" ? (
 			<Bot className="w-4 h-4 mr-2" />
 		) : (
 			<MessageSquare className="w-4 h-4 mr-2" />
 		);
-	
+
 	return (
 		<Collapsible
 			key={title}
@@ -253,9 +259,7 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 											url={item.url}
 										/>
 									))
-								: items.map((item) => (
-										<ThreadItem thread={item} />
-									))}
+								: items.map((item) => <ThreadItem thread={item} />)}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</CollapsibleContent>
@@ -279,16 +283,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	return (
 		<Sidebar {...props}>
-			<SidebarHeader >
+			<SidebarHeader>
 				{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
 				<Link
 					to="/"
-					onClick={(e) => {
-						const handleLinkClick = useLinkClick("/");
-						handleLinkClick(
-							e as React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
-						);
-					}}
+					onClick={useLinkClick("/")}
 					className="flex items-center gap-2 m-2"
 				>
 					<img

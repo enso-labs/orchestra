@@ -36,12 +36,7 @@ export function ThreadHistoryDrawer({
 				<div className="p-4 border-b border-border">
 					<Link
 						to="/"
-						onClick={(e) => {
-							const handleLinkClick = useLinkClick("/");
-							handleLinkClick(
-								e as React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
-							);
-						}}
+						onClick={useLinkClick("/")}
 						className="flex items-center gap-2"
 					>
 						<img

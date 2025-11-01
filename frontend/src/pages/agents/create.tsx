@@ -15,7 +15,6 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
 import { useQueryState } from "nuqs";
 
-
 function AgentCreatePage() {
 	const { agent, setAgent, useEffectGetAgents } = useAgentContext();
 	const { threads, useListThreadsEffect, messages } = useChatContext();

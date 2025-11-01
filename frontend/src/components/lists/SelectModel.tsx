@@ -100,7 +100,10 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 	];
 
 	return (
-		<Select value={model ?? DEFAULT_CHAT_MODEL} onValueChange={handleModelChange}>
+		<Select
+			value={model ?? DEFAULT_CHAT_MODEL}
+			onValueChange={handleModelChange}
+		>
 			<SelectTrigger>
 				<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
