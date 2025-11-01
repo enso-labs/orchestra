@@ -1,6 +1,11 @@
 import * as React from "react";
-import { ChevronRight, Bot, Layers, Wrench, MessageSquare } from "lucide-react";
-
+import { 
+	ChevronRight, 
+	Bot,
+	// Layers, 
+	// Wrench, 
+	MessageSquare 
+} from "lucide-react";
 import { SearchForm } from "@/components/forms/search-form";
 import { VersionSwitcher } from "@/components/menus/version-switcher";
 import {
@@ -38,9 +43,9 @@ interface AssistantItemProps {
 
 function AssistantItem({ agent, url }: AssistantItemProps) {
 	const { agent: currentAgent } = useAgentContext();
-	const toolsCount = agent.tools?.length || 0;
-	const subagentsCount = agent.subagents?.length || 0;
-	const modelDisplay = agent.model?.split(":")[1] || agent.model || "N/A";
+	// const toolsCount = agent.tools?.length || 0;
+	// const subagentsCount = agent.subagents?.length || 0;
+	// const modelDisplay = agent.model?.split(":")[1] || agent.model || "N/A";
 	const isSelected = currentAgent?.id === agent.id;
 
 	return (
@@ -59,21 +64,6 @@ function AssistantItem({ agent, url }: AssistantItemProps) {
 					className="flex flex-col items-start gap-1.5 w-full group"
 				>
 					<div className="flex items-center gap-2.5 w-full">
-						{/* <div
-							className={`flex items-center justify-center w-8 h-8 rounded-md shrink-0 transition-colors ${
-								isSelected
-									? "bg-sidebar-accent-foreground/10"
-									: "bg-sidebar-accent/30 group-hover:bg-sidebar-accent/40"
-							}`}
-						>
-							<Bot
-								className={`w-4 h-4 ${
-									isSelected
-										? "text-sidebar-accent-foreground"
-										: "text-sidebar-foreground/70"
-								}`}
-							/>
-						</div> */}
 						<div className="flex flex-col min-w-0 flex-1">
 							<span
 								className={`text-sm truncate ${
@@ -89,7 +79,6 @@ function AssistantItem({ agent, url }: AssistantItemProps) {
 							</span>
 						</div>
 					</div>
-					{/* TODO: Needs to be left aligned */}
 					{/* <div className="flex items-center gap-2.5 text-[11px] text-sidebar-foreground/50">
 						<div className="flex items-center gap-1">
 							<Bot className="w-3 h-3" />
