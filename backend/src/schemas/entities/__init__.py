@@ -205,18 +205,16 @@ class LLMRequest(BaseModel):
         # Convert API messages to LangChain message objects
         converted: List[BaseMessage] = []
         for message in self.messages:
-            role = message.role
-            content = message.content
-            if role == "user":
-                converted.append(HumanMessage(content=content))
-            elif role == "assistant":
-                converted.append(AIMessage(content=content))
-            elif role == "system":
-                converted.append(SystemMessage(content=content))
-            elif role == "tool":
-                converted.append(ToolMessage(content=content))
+            if message.role == "user":
+                converted.append(HumanMessage(**message))
+            elif message.role == "assistant":
+                converted.append(AIMessage(**message))
+            elif message.role == "system":
+                converted.append(SystemMessage(**message))
+            elif message.role == "tool":
+                converted.append(ToolMessage(**message))
             else:
-                raise ValueError(f"Unsupported role: {role}")
+                raise ValueError(f"Unsupported role: {message.role}")
         return converted
 
 
