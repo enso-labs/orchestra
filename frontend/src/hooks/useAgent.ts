@@ -30,8 +30,6 @@ export const INIT_AGENT_STATE: AgentState = {
 	agents: [],
 };
 
-
-
 export function useAgent() {
 	const { model } = useModel();
 	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
@@ -54,7 +52,6 @@ export function useAgent() {
 			setAgent({ ...agent, model: model });
 		}
 	}, [model]);
-
 
 	useEffect(() => {
 		setAgent({

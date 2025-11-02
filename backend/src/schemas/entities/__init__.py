@@ -22,6 +22,7 @@ from src.constants.examples import (
     EXISTING_THREAD_ANSWER_EXAMPLE,
 )
 
+
 class InvokeTool(BaseModel):
     name: str = Field(description="The name of the tool to invoke")
     args: dict = Field(description="The arguments to pass to the tool")
@@ -171,6 +172,7 @@ class ThreadSearch(BaseModel):
         default_factory=Config, description="The filter of threads to search"
     )
 
+
 class PresidioRequest(BaseModel):
     analyze: Optional[bool] = Field(
         default=False, description="Whether to analyze the text"
@@ -178,6 +180,7 @@ class PresidioRequest(BaseModel):
     anonymize: Optional[bool] = Field(
         default=False, description="Whether to anonymize the text"
     )
+
 
 class LLMRequest(BaseModel):
     model: Optional[ChatModels] = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)

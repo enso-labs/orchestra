@@ -12,6 +12,7 @@ from src.utils.logger import logger
 from src.constants import PRESIDIO_ANALYZE_HOST, PRESIDIO_ANONYMIZE_HOST
 from src.utils.format import format_content
 
+
 class PresidioConfig(BaseModel):
     analyze_host: str = Field(
         default=PRESIDIO_ANALYZE_HOST, description="Presidio analyze service host URL"
@@ -95,6 +96,7 @@ class PresidioService:
 
 async def process_presidio(params: dict, presidio_service: PresidioService):
     from src.schemas.entities import LLMRequest
+
     if not isinstance(params, LLMRequest):
         params = LLMRequest(**params)
     query = format_content(params.messages[-1].content)
