@@ -16,7 +16,7 @@ export const INIT_AGENT_STATE: AgentState = {
 		name: "",
 		description: "",
 		prompt: "",
-		tools: [],
+		tools: ["get_stock_price_history"],
 		model: "",
 		mcp: {},
 		a2a: {},

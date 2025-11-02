@@ -85,6 +85,7 @@ def attach_tool_details(tool: StructuredTool):
     from src.tools.search import SEARCH_TOOLS
     from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
     from src.tools.test import TEST_TOOLS
+    from src.tools.finance import FINANCE_TOOLS
 
     if tool.name in [n.name for n in SEARCH_TOOLS]:
         tool.tags = ["search"]
@@ -92,4 +93,6 @@ def attach_tool_details(tool: StructuredTool):
         tool.tags = ["python"]
     if tool.name in [n.name for n in TEST_TOOLS]:
         tool.tags = ["test"]
+    if tool.name in [n.name for n in FINANCE_TOOLS]:
+        tool.tags = ["finance"]
     return tool
