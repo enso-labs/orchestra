@@ -122,7 +122,13 @@ export default function useChat(): ChatContextType {
 			a2a: agent.a2a,
 			mcp: agent.mcp,
 			subagents: agent.subagents,
+			presidio: {
+				analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
+				anonymize: localStorage.getItem("enso:tool:pii_anonymize") === "true",
+				// redact: false,
+			},
 		});
+		source.stream();
 
 		source.addEventListener("message", function (e: any) {
 			// Assuming we receive JSON-encoded data payloads:
@@ -145,6 +151,10 @@ export default function useChat(): ChatContextType {
 			source.close();
 			setController(null);
 			setLoading(false);
+			const lastMessageIndex = in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
+			if (lastMessageIndex >= 0) {
+				clearMessages(lastMessageIndex);
+			}
 		});
 
 		controller.signal.addEventListener("abort", () => {

@@ -2,11 +2,17 @@ import agentService, { Agent } from "@/lib/services/agentService";
 import { useEffect, useState } from "react";
 import ToolConfig from "@/lib/config/tool";
 import useModel from "./useModel";
+import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu";
+
+type Checked = DropdownMenuCheckboxItemProps["checked"];
 
 export type AgentState = {
 	agent: Agent;
 	agents: Agent[];
 };
+
+const piiAnalyze = localStorage.getItem("enso:tool:pii_analyze") === "true";
+const piiAnonymize = localStorage.getItem("enso:tool:pii_anonymize") === "true";
 
 export const INIT_AGENT_STATE: AgentState = {
 	agent: {
@@ -18,20 +24,51 @@ export const INIT_AGENT_STATE: AgentState = {
 		mcp: {},
 		a2a: {},
 		subagents: [],
+		presidio: {
+			analyze: true,
+			anonymize: true,
+			redact: false,
+		},
 	},
 	agents: [],
 };
+
+
 
 export function useAgent() {
 	const { model } = useModel();
 	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
 	const [agents, setAgents] = useState<Agent[]>([]);
+	const [webSearchCheck, setWebSearchCheck] = useState<Checked>(() => {
+		const saved = localStorage.getItem("enso:tool:search");
+		return saved !== null ? JSON.parse(saved) : true;
+	});
+	const [piiAnalyzeCheck, setPiiAnalyzeCheck] = useState<Checked>(() => {
+		const saved = localStorage.getItem("enso:tool:pii_analyze");
+		return saved !== null ? JSON.parse(saved) : true;
+	});
+	const [piiAnonymizeCheck, setPiiAnonymizeCheck] = useState<Checked>(() => {
+		const saved = localStorage.getItem("enso:tool:pii_anonymize");
+		return saved !== null ? JSON.parse(saved) : true;
+	});
 
 	useEffect(() => {
 		if (model && agent.model !== model) {
 			setAgent({ ...agent, model: model });
 		}
 	}, [model]);
+
+
+	useEffect(() => {
+		setAgent({
+			...agent,
+			presidio: {
+				analyze: piiAnalyzeCheck ? true : false,
+				anonymize: piiAnonymizeCheck ? true : false,
+				redact: false,
+			},
+		});
+	}, [piiAnalyzeCheck, piiAnonymizeCheck]);
 
 	const setAgentSystemMessage = (system: string) => {
 		setAgent({ ...agent, prompt: system });
@@ -139,6 +176,12 @@ export function useAgent() {
 		removeAgentFromSubagents,
 		toggleSubagent,
 		isAgentSelected,
+		webSearchCheck,
+		setWebSearchCheck,
+		piiAnalyzeCheck,
+		setPiiAnalyzeCheck,
+		piiAnonymizeCheck,
+		setPiiAnonymizeCheck,
 	};
 }
 

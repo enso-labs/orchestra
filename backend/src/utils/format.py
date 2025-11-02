@@ -2,7 +2,7 @@ import base64
 import requests
 import re
 import unicodedata
-from typing import Optional
+from typing import Optional, Any
 from loguru import logger
 from datetime import datetime, timezone
 
@@ -92,3 +92,8 @@ def init_system_prompt(system_prompt: str, metadata: dict) -> str:
     if "language" in metadata:
         lines.append(f"LANGUAGE: {metadata['language']}")
     return "\n".join(lines) + "\n"
+
+def format_content(content: str | list[Any]) -> str:
+    if isinstance(content, str):
+        return content
+    return content[0].get("text", "")
