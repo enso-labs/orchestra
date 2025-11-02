@@ -25,6 +25,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
@@ -124,6 +125,7 @@ interface ThreadItemProps {
 
 function ThreadItem({ thread }: ThreadItemProps) {
 	const { metadata, setMessages, setMetadata } = useChatContext();
+	const { isMobile, setOpenMobile } = useSidebar();
 	const messages = thread.value?.messages || [];
 	const messageCount = messages.length;
 	const lastMessage = messages[messages.length - 1];
@@ -150,7 +152,10 @@ function ThreadItem({ thread }: ThreadItemProps) {
 		);
 		setMessages(formatMessages(checkpoints[0].values.messages));
 		setMetadata(thread.value);
-		// setIsDrawerOpen(false);
+		// Close sidebar on mobile
+		if (isMobile) {
+			setOpenMobile(false);
+		}
 	};
 
 	const threadTitle = getThreadTitle();
