@@ -6,7 +6,6 @@ import {
 	// Wrench,
 	MessageSquare,
 } from "lucide-react";
-import { SearchForm } from "@/components/forms/search-form";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
 import {
 	Collapsible,
@@ -25,6 +24,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
@@ -124,6 +124,7 @@ interface ThreadItemProps {
 
 function ThreadItem({ thread }: ThreadItemProps) {
 	const { metadata, setMessages, setMetadata } = useChatContext();
+	const { isMobile, setOpenMobile } = useSidebar();
 	const messages = thread.value?.messages || [];
 	const messageCount = messages.length;
 	const lastMessage = messages[messages.length - 1];
@@ -150,7 +151,10 @@ function ThreadItem({ thread }: ThreadItemProps) {
 		);
 		setMessages(formatMessages(checkpoints[0].values.messages));
 		setMetadata(thread.value);
-		// setIsDrawerOpen(false);
+		// Close sidebar on mobile
+		if (isMobile) {
+			setOpenMobile(false);
+		}
 	};
 
 	const threadTitle = getThreadTitle();
@@ -231,7 +235,7 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 		<Collapsible
 			key={title}
 			title={`${title} (${items.length} items)`}
-			// defaultOpen={type === "assistants"}
+			defaultOpen={type === "threads"}
 			className="group/collapsible"
 		>
 			<SidebarGroup className="border-b border-sidebar-border">
@@ -282,7 +286,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	});
 
 	return (
-		<Sidebar {...props}>
+		<Sidebar {...props} autoFocus={false}>
 			<SidebarHeader>
 				{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
 				<Link
@@ -297,7 +301,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					/>
 					<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
 				</Link>
-				<SearchForm />
+				{/* <SearchForm /> */}
 			</SidebarHeader>
 			<SidebarContent className="gap-0">
 				{/* We create a collapsible SidebarGroup for each parent. */}
