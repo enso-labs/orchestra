@@ -8,8 +8,10 @@ from httpx import AsyncClient
 from typing import Optional
 from pydantic import BaseModel, Field
 
+from src.schemas.entities import LLMRequest
 from src.utils.logger import logger
 from src.constants import PRESIDIO_ANALYZE_HOST, PRESIDIO_ANONYMIZE_HOST
+from utils.format import format_content
 
 
 class PresidioRequest(BaseModel):
@@ -85,8 +87,37 @@ class PresidioService:
             logger.error(f"Error analyzing text: {e}")
             return e
     
-    def redact_text(self, text: str):
-        # Placeholder for text redaction logic
-        pass
-    
-    
+async def process_presidio(params: LLMRequest, presidio_service: PresidioService):
+    query = format_content(params.messages[-1].content)
+    if params.presidio and params.presidio.analyze:
+        if not PRESIDIO_ANALYZE_HOST:
+            raise PresidioException(
+                message="Please add environment variable PRESIDIO_ANALYZE_HOST",
+                results=None,
+            )
+        analyze_results = await presidio_service.analyze_text(query)
+        if analyze_results:
+            logger.warning(f"Sensitive data detected in the query: {analyze_results}")
+            raise PresidioException(
+                message=(
+                    "Query was NOT processed. Sensitive data detected in the query. "
+                    "Please review the results and try again."
+                ),
+                results=analyze_results,
+            )
+
+    if params.presidio and params.presidio.anonymize:
+        if not PRESIDIO_ANONYMIZE_HOST:
+            raise PresidioException(
+                message="Please add environment variable PRESIDIO_ANONYMIZE_HOST",
+                results=None,
+            )
+        anonymized_query = await presidio_service.anonymize_text(query)
+        if not anonymized_query:
+            logger.warning(f"Error anonymizing the query: {anonymized_query}")
+            raise PresidioException(
+                message="Error anonymizing the query. Please review the results and try again.",
+                results=None,
+            )
+        params.messages[-1].content = [{"type": "text","text": anonymized_query["text"]}]
+    return params

@@ -15,7 +15,7 @@ from fastapi import (
 from langmem.prompts.types import (
     OptimizerInput,
 )
-from src.services.presidio import PresidioException
+from src.services.presidio import PresidioException, process_presidio
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.contexts.service import ServiceContext
 from src.constants import GROQ_API_KEY
@@ -102,44 +102,7 @@ async def llm_stream(
             store=store,
         )
         
-        if params.presidio and params.presidio.analyze:
-            if not PRESIDIO_ANALYZE_HOST:
-                raise PresidioException(
-                    message="Please add environment variable PRESIDIO_ANALYZE_HOST",
-                    results=None,
-                )
-            analyze_query = format_content(params.messages[-1].content)
-            analyze_results = await service_context.presidio_service.anonymize_text(analyze_query)
-            if analyze_results:
-                logger.warning(f"Sensitive data detected in the query: {analyze_results}")
-                raise PresidioException(
-                    message=(
-                        "Query was NOT processed. Sensitive data detected in the query. "
-                        "Please review the results and try again."
-                    ),
-                    results=analyze_results,
-                )
-        
-        if params.presidio and params.presidio.anonymize:
-            if not PRESIDIO_ANONYMIZE_HOST:
-                raise PresidioException(
-                    message="Please add environment variable PRESIDIO_ANONYMIZE_HOST",
-                    results=None,
-                )
-            anonymize_query = format_content(params.messages[-1].content)
-            anonymized_query = await service_context.presidio_service.anonymize_text(anonymize_query)
-            if not anonymized_query:
-                logger.warning(f"Error anonymizing the query: {anonymized_query}")
-                raise PresidioException(
-                    message="Error anonymizing the query. Please review the results and try again.",
-                    results=None,
-                )
-            params.messages[-1].content = [
-                {
-                    "type": "text",
-                    "text": anonymized_query["text"],
-                }
-            ]
+        params = await process_presidio(params, service_context.presidio_service)
         
         if params.metadata.assistant_id:
             assistant: Assistant = await service_context.assistant_service.get(
