@@ -15,10 +15,15 @@ import ImageUpload from "../inputs/ImageUpload";
 const DEFAULT_AGENT_TOOLS = ["web_search", "web_scrape"];
 
 export function BaseToolMenu() {
-	const { 
-		agent, setAgent, webSearchCheck, 
-		setWebSearchCheck, piiAnalyzeCheck, 
-		setPiiAnalyzeCheck, piiAnonymizeCheck, setPiiAnonymizeCheck 
+	const {
+		agent,
+		setAgent,
+		webSearchCheck,
+		setWebSearchCheck,
+		piiAnalyzeCheck,
+		setPiiAnalyzeCheck,
+		piiAnonymizeCheck,
+		setPiiAnonymizeCheck,
 	} = useAgentContext();
 	const [open, setOpen] = useState<boolean>(false);
 

@@ -9,6 +9,7 @@ import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
 import { formatContent, truncateFrom } from "@/lib/utils/format";
 import SearchEngineTool from "../tools/SearchEngine";
+import ChartRenderWidget from "../tools/ChartRenderWidget";
 
 const MAX_LENGTH = 1000;
 
@@ -30,6 +31,10 @@ function ToolAction({
 }) {
 	if (["search_engine", "web_search"].includes(message.name)) {
 		return <SearchEngineTool selectedToolMessage={message} />;
+	}
+
+	if (["get_stock_price_history"].includes(message.name)) {
+		return <ChartRenderWidget content={message.content} />;
 	}
 
 	// Check if message.content is valid JSON
@@ -218,7 +223,7 @@ export function Message({
 							</div>
 						</div>
 						<div className="overflow-y-auto mt-2">
-							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
+							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[600px] overflow-y-auto">
 								<ToolAction
 									message={message}
 									// maxLength={maxLength}

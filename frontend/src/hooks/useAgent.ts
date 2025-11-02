@@ -16,7 +16,7 @@ export const INIT_AGENT_STATE: AgentState = {
 		name: "",
 		description: "",
 		prompt: "",
-		tools: [],
+		tools: ["get_stock_price_history"],
 		model: "",
 		mcp: {},
 		a2a: {},
@@ -29,8 +29,6 @@ export const INIT_AGENT_STATE: AgentState = {
 	},
 	agents: [],
 };
-
-
 
 export function useAgent() {
 	const { model } = useModel();
@@ -54,7 +52,6 @@ export function useAgent() {
 			setAgent({ ...agent, model: model });
 		}
 	}, [model]);
-
 
 	useEffect(() => {
 		setAgent({

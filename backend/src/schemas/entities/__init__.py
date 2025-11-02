@@ -21,7 +21,6 @@ from src.constants.examples import (
     NEW_THREAD_ANSWER_EXAMPLE,
     EXISTING_THREAD_ANSWER_EXAMPLE,
 )
-from src.services.presidio import PresidioRequest
 
 
 class InvokeTool(BaseModel):
@@ -171,6 +170,15 @@ class ThreadSearch(BaseModel):
     offset: int = Field(default=0, description="The offset of threads to search")
     filter: Optional[Config] = Field(
         default_factory=Config, description="The filter of threads to search"
+    )
+
+
+class PresidioRequest(BaseModel):
+    analyze: Optional[bool] = Field(
+        default=False, description="Whether to analyze the text"
+    )
+    anonymize: Optional[bool] = Field(
+        default=False, description="Whether to anonymize the text"
     )
 
 
