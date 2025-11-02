@@ -3,7 +3,7 @@ import { ThreadPayload } from "@/lib/entities";
 import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
-import { SSE } from "sse.js";
+import { SSE, SSEOptions } from "sse.js";
 import { Agent } from "./agentService";
 
 const SYSTEM_PROMPT = `GOAL:
@@ -94,6 +94,11 @@ interface StreamThreadPayload {
 	mcp?: object;
 	tools?: string[];
 	subagents?: Agent[];
+	presidio?: {
+		analyze?: boolean;
+		anonymize?: boolean;
+		redact?: boolean;
+	};
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
@@ -108,11 +113,13 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 		if (payload.system?.trim() === "") {
 			delete payload.system;
 		}
-		const source = new SSE(`${VITE_API_URL}/llm/stream`, {
+		const newConfig: SSEOptions = {
 			headers: headers,
 			payload: JSON.stringify(payload),
 			method: "POST",
-		});
+			start: false,
+		};
+		const source = new SSE(`${VITE_API_URL}/llm/stream`, newConfig);
 		return source;
 	} catch (error: unknown) {
 		console.error("Error streaming thread:", error);

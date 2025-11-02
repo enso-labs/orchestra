@@ -15,6 +15,7 @@ from fastapi import (
 from langmem.prompts.types import (
     OptimizerInput,
 )
+from src.services.presidio import PresidioException, process_presidio
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.contexts.service import ServiceContext
 from src.constants import GROQ_API_KEY
@@ -31,7 +32,8 @@ from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
 from src.constants.llm import ChatModels
-
+from src.utils.format import format_content
+from src.constants import PRESIDIO_ANALYZE_HOST, PRESIDIO_ANONYMIZE_HOST
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -99,6 +101,9 @@ async def llm_stream(
             user_id=user.id if user else None,
             store=store,
         )
+
+        params = await process_presidio(params, service_context.presidio_service)
+
         if params.metadata.assistant_id:
             assistant: Assistant = await service_context.assistant_service.get(
                 params.metadata.assistant_id,
@@ -114,8 +119,16 @@ async def llm_stream(
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
         )
+    except PresidioException as e:
+        logger.warning(f"Sensitive data detected in the query: {e.results}")
+        return JSONResponse(
+            content={"error": e.message, "results": e.results},
+            media_type="application/json",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+        )
     except Exception as e:
-        logger.exception("Error in llm_stream: %s", e)
+        logger.exception(f"Error in llm_stream: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
