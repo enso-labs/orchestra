@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/468-support-ms-presidio-analyzer (2025-11-02)
   - feat/465-update-sidebar (2025-10-31)
   - feat/457-checkpoint-stream (2025-10-26)
   - feat/448-tokens-per-sec (2025-10-24)

@@ -23,6 +23,11 @@ export type Agent = {
 		};
 	};
 	metadata?: object;
+	presidio?: {
+		analyze?: boolean;
+		anonymize?: boolean;
+		redact?: boolean;
+	};
 	schedules?: Schedule[]; // Agent's associated schedules
 	created_at?: string;
 	updated_at?: string;

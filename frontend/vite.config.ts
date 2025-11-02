@@ -64,7 +64,7 @@ export default defineConfig({
 		},
 	},
 	server: {
-		allowedHosts: ["palace-expiration-que-rebound.trycloudflare.com"],
+		allowedHosts: ["frontend.enso.sh"],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",

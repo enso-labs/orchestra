@@ -21,6 +21,7 @@ from src.constants.examples import (
     NEW_THREAD_ANSWER_EXAMPLE,
     EXISTING_THREAD_ANSWER_EXAMPLE,
 )
+from src.services.presidio import PresidioRequest
 
 
 class InvokeTool(BaseModel):
@@ -183,6 +184,7 @@ class LLMRequest(BaseModel):
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
+    presidio: Optional[PresidioRequest] = Field(default_factory=PresidioRequest)
 
     metadata: Optional[Config] = Field(
         default={}, description="LangGraph configuration"
