@@ -8,22 +8,9 @@ from httpx import AsyncClient
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from src.schemas.entities import LLMRequest
 from src.utils.logger import logger
 from src.constants import PRESIDIO_ANALYZE_HOST, PRESIDIO_ANONYMIZE_HOST
-from utils.format import format_content
-
-
-class PresidioRequest(BaseModel):
-    analyze: Optional[bool] = Field(
-        default=False, description="Whether to analyze the text"
-    )
-    anonymize: Optional[bool] = Field(
-        default=False, description="Whether to anonymize the text"
-    )
-    redact: Optional[bool] = Field(
-        default=False, description="Whether to redact the text"
-    )
+from src.utils.format import format_content
 
 
 class PresidioConfig(BaseModel):
@@ -107,7 +94,11 @@ class PresidioService:
             return e
 
 
-async def process_presidio(params: LLMRequest, presidio_service: PresidioService):
+async def process_presidio(params: dict, presidio_service: PresidioService):
+    from src.schemas.entities import LLMRequest
+
+    if not isinstance(params, LLMRequest):
+        params = LLMRequest(**params)
     query = format_content(params.messages[-1].content)
     if params.presidio and params.presidio.analyze:
         if not PRESIDIO_ANALYZE_HOST:

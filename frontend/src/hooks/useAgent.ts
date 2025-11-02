@@ -11,15 +11,12 @@ export type AgentState = {
 	agents: Agent[];
 };
 
-const piiAnalyze = localStorage.getItem("enso:tool:pii_analyze") === "true";
-const piiAnonymize = localStorage.getItem("enso:tool:pii_anonymize") === "true";
-
 export const INIT_AGENT_STATE: AgentState = {
 	agent: {
 		name: "",
 		description: "",
 		prompt: "",
-		tools: [],
+		tools: ["get_stock_price_history"],
 		model: "",
 		mcp: {},
 		a2a: {},
@@ -32,8 +29,6 @@ export const INIT_AGENT_STATE: AgentState = {
 	},
 	agents: [],
 };
-
-
 
 export function useAgent() {
 	const { model } = useModel();
@@ -57,7 +52,6 @@ export function useAgent() {
 			setAgent({ ...agent, model: model });
 		}
 	}, [model]);
-
 
 	useEffect(() => {
 		setAgent({

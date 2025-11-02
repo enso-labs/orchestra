@@ -51,9 +51,13 @@ export default defineConfig({
 		sourcemap: process.env.NODE_ENV === "development",
 		rollupOptions: {
 			output: {
-				manualChunks: {
-					vendor: ["react", "react-dom"],
-					router: ["react-router-dom"],
+				manualChunks(id) {
+					if (id.includes("node_modules")) {
+						if (id.includes("react")) return "vendor-react";
+						if (id.includes("monaco-editor")) return "monaco";
+						if (id.includes("plotly")) return "plotly";
+						return "vendor";
+					}
 				},
 			},
 		},

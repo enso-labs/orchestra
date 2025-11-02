@@ -35,6 +35,7 @@ dependencies = [
     "mkdocstrings[python]>=0.30.0",
     "nest-asyncio>=1.6.0",
     "passlib[argon2]>=1.7.4",
+    "plotly>=6.3.1",
     "psycopg2-binary>=2.9.10",
     "psycopg[binary,pool]>=3.2.9",
     "pydantic[email]>=2.11.7",
@@ -46,6 +47,7 @@ dependencies = [
     "sqlalchemy>=2.0.43",
     "ujson>=5.11.0",
     "uvicorn>=0.35.0",
+    "yfinance>=0.2.66",
 ]
 
 [dependency-groups]
