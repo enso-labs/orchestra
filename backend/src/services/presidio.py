@@ -12,19 +12,6 @@ from src.utils.logger import logger
 from src.constants import PRESIDIO_ANALYZE_HOST, PRESIDIO_ANONYMIZE_HOST
 from src.utils.format import format_content
 
-
-class PresidioRequest(BaseModel):
-    analyze: Optional[bool] = Field(
-        default=False, description="Whether to analyze the text"
-    )
-    anonymize: Optional[bool] = Field(
-        default=False, description="Whether to anonymize the text"
-    )
-    redact: Optional[bool] = Field(
-        default=False, description="Whether to redact the text"
-    )
-
-
 class PresidioConfig(BaseModel):
     analyze_host: str = Field(
         default=PRESIDIO_ANALYZE_HOST, description="Presidio analyze service host URL"

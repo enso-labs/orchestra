@@ -21,8 +21,6 @@ from src.constants.examples import (
     NEW_THREAD_ANSWER_EXAMPLE,
     EXISTING_THREAD_ANSWER_EXAMPLE,
 )
-from src.services.presidio import PresidioRequest
-
 
 class InvokeTool(BaseModel):
     name: str = Field(description="The name of the tool to invoke")
@@ -173,6 +171,13 @@ class ThreadSearch(BaseModel):
         default_factory=Config, description="The filter of threads to search"
     )
 
+class PresidioRequest(BaseModel):
+    analyze: Optional[bool] = Field(
+        default=False, description="Whether to analyze the text"
+    )
+    anonymize: Optional[bool] = Field(
+        default=False, description="Whether to anonymize the text"
+    )
 
 class LLMRequest(BaseModel):
     model: Optional[ChatModels] = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
