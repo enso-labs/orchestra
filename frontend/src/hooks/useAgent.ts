@@ -11,9 +11,6 @@ export type AgentState = {
 	agents: Agent[];
 };
 
-const piiAnalyze = localStorage.getItem("enso:tool:pii_analyze") === "true";
-const piiAnonymize = localStorage.getItem("enso:tool:pii_anonymize") === "true";
-
 export const INIT_AGENT_STATE: AgentState = {
 	agent: {
 		name: "",
