@@ -6,7 +6,6 @@ import {
 	// Wrench,
 	MessageSquare,
 } from "lucide-react";
-import { SearchForm } from "@/components/forms/search-form";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
 import {
 	Collapsible,
@@ -236,7 +235,7 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 		<Collapsible
 			key={title}
 			title={`${title} (${items.length} items)`}
-			// defaultOpen={type === "assistants"}
+			defaultOpen={type === "threads"}
 			className="group/collapsible"
 		>
 			<SidebarGroup className="border-b border-sidebar-border">
@@ -287,7 +286,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	});
 
 	return (
-		<Sidebar {...props}>
+		<Sidebar {...props} autoFocus={false}>
 			<SidebarHeader>
 				{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
 				<Link
@@ -302,7 +301,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					/>
 					<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
 				</Link>
-				<SearchForm />
+				{/* <SearchForm /> */}
 			</SidebarHeader>
 			<SidebarContent className="gap-0">
 				{/* We create a collapsible SidebarGroup for each parent. */}

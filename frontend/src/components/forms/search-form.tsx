@@ -19,10 +19,15 @@ export function SearchForm({ ...props }: React.ComponentProps<"form">) {
 						id="search"
 						placeholder="Search threads..."
 						className="pl-8 placeholder:text-muted-foreground"
-						/>
+						onFocus={(e) => e.preventDefault()}
+						
+					/>
 					<Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground select-none" />
 				</SidebarGroupContent>
 			</SidebarGroup>
 		</form>
 	);
 }
+
+
+export default SearchForm;
