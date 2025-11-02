@@ -15,14 +15,31 @@ from utils.format import format_content
 
 
 class PresidioRequest(BaseModel):
-    analyze: Optional[bool] = Field(default=False, description="Whether to analyze the text")
-    anonymize: Optional[bool] = Field(default=False, description="Whether to anonymize the text")
-    redact: Optional[bool] = Field(default=False, description="Whether to redact the text")
+    analyze: Optional[bool] = Field(
+        default=False, description="Whether to analyze the text"
+    )
+    anonymize: Optional[bool] = Field(
+        default=False, description="Whether to anonymize the text"
+    )
+    redact: Optional[bool] = Field(
+        default=False, description="Whether to redact the text"
+    )
+
 
 class PresidioConfig(BaseModel):
-    analyze_host: str = Field(default=PRESIDIO_ANALYZE_HOST, description="Presidio analyze service host URL")
-    anonymize_host: str = Field(default=PRESIDIO_ANONYMIZE_HOST, description="Presidio anonymize service host URL")
-    api_key: Optional[str] = Field(None, description="API key for authenticating with the Presidio service", example="your_api_key_here")
+    analyze_host: str = Field(
+        default=PRESIDIO_ANALYZE_HOST, description="Presidio analyze service host URL"
+    )
+    anonymize_host: str = Field(
+        default=PRESIDIO_ANONYMIZE_HOST,
+        description="Presidio anonymize service host URL",
+    )
+    api_key: Optional[str] = Field(
+        None,
+        description="API key for authenticating with the Presidio service",
+        example="your_api_key_here",
+    )
+
 
 class PresidioException(Exception):
     def __init__(self, message: str, results: list):
@@ -30,29 +47,31 @@ class PresidioException(Exception):
         self.results = results
         super().__init__(self.message)
 
+
 class PresidioService:
-    
     def __init__(
-        self, 
-        presidio_config: Optional[PresidioConfig] = None, 
-        api_key: Optional[str] = None
+        self,
+        presidio_config: Optional[PresidioConfig] = None,
+        api_key: Optional[str] = None,
     ):
         self.presidio_config = presidio_config or PresidioConfig(api_key=api_key)
         self.api_key = api_key
         self.client = AsyncClient()
-        
+
     def _get_headers(self) -> dict:
         # return {"Authorization": f"Bearer {self.api_key}"}
         return {}
-    
+
     def _analyze_client(self, headers: dict = None) -> AsyncClient:
         headers = headers or self._get_headers()
         return AsyncClient(base_url=self.presidio_config.analyze_host, headers=headers)
-    
+
     def _anonymize_client(self, headers: dict = None) -> AsyncClient:
         headers = headers or self._get_headers()
-        return AsyncClient(base_url=self.presidio_config.anonymize_host, headers=headers)
-    
+        return AsyncClient(
+            base_url=self.presidio_config.anonymize_host, headers=headers
+        )
+
     async def analyze_text(self, text: str):
         try:
             client = self._analyze_client()
@@ -64,7 +83,7 @@ class PresidioService:
         except Exception as e:
             logger.error(f"Error analyzing text: {e}")
             return e
-    
+
     async def anonymize_text(self, text: str):
         try:
             analyze_results = await self.analyze_text(text)
@@ -72,21 +91,22 @@ class PresidioService:
             response = await client.post(
                 "/anonymize",
                 json={
-                    "text": text, 
+                    "text": text,
                     "analyzer_results": analyze_results,
                     "anonymizers": {
                         "DEFAULT": {
                             "type": "replace",
                             "new_value": "[REDACTED]",
                         }
-                    }
+                    },
                 },
             )
             return response.json()
         except Exception as e:
             logger.error(f"Error analyzing text: {e}")
             return e
-    
+
+
 async def process_presidio(params: LLMRequest, presidio_service: PresidioService):
     query = format_content(params.messages[-1].content)
     if params.presidio and params.presidio.analyze:
@@ -119,5 +139,7 @@ async def process_presidio(params: LLMRequest, presidio_service: PresidioService
                 message="Error anonymizing the query. Please review the results and try again.",
                 results=None,
             )
-        params.messages[-1].content = [{"type": "text","text": anonymized_query["text"]}]
+        params.messages[-1].content = [
+            {"type": "text", "text": anonymized_query["text"]}
+        ]
     return params

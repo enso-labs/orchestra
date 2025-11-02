@@ -127,7 +127,7 @@ async def read_user_details(user: User = Depends(verify_credentials)):
         "env": {
             "PRESIDIO_ANALYZE_HOST": bool(PRESIDIO_ANALYZE_HOST),
             "PRESIDIO_ANONYMIZE_HOST": bool(PRESIDIO_ANONYMIZE_HOST),
-        }
+        },
     }
 
 

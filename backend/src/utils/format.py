@@ -93,6 +93,7 @@ def init_system_prompt(system_prompt: str, metadata: dict) -> str:
         lines.append(f"LANGUAGE: {metadata['language']}")
     return "\n".join(lines) + "\n"
 
+
 def format_content(content: str | list[Any]) -> str:
     if isinstance(content, str):
         return content

@@ -101,9 +101,9 @@ async def llm_stream(
             user_id=user.id if user else None,
             store=store,
         )
-        
+
         params = await process_presidio(params, service_context.presidio_service)
-        
+
         if params.metadata.assistant_id:
             assistant: Assistant = await service_context.assistant_service.get(
                 params.metadata.assistant_id,

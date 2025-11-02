@@ -28,7 +28,7 @@ class ServiceContext:
         self.prompt_service = PromptService(user_id=user_id, store=store)
         self.assistant_service = AssistantService(user_id=user_id, store=store)
         self.presidio_service = PresidioService()
-        
+
         if checkpointer:
             self.checkpoint_service = CheckpointService(
                 user_id=user_id, checkpointer=checkpointer
