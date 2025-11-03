@@ -60,17 +60,6 @@ export default defineConfig({
 
 		rollupOptions: {
 			output: {
-				// Keep react/router split but also isolate monaco/plotly.
-				// This function is conservative and avoids over-splitting.
-				// manualChunks(id) {
-				// 	if (id.includes("node_modules")) {
-				// 		if (id.includes("react")) return "vendor-react";
-				// 		if (id.includes("react-router")) return "vendor-router";
-				// 		if (id.includes("monaco-editor")) return "monaco";
-				// 		if (id.includes("plotly")) return "plotly";
-				// 		return "vendor";
-				// 	}
-				// },
 				manualChunks: {
 					vendor: ["react", "react-dom"],
 					router: ["react-router-dom"],

@@ -154,6 +154,7 @@ export default function useChat(): ChatContextType {
 			const lastMessageIndex =
 				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
 			if (lastMessageIndex >= 0) {
+				setQuery(in_mem_messages[lastMessageIndex].content);
 				clearMessages(lastMessageIndex);
 			}
 		});

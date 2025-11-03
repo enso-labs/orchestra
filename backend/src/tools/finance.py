@@ -1,3 +1,4 @@
+import yaml
 import yfinance as yf
 from typing import Literal
 from pydantic import BaseModel, Field
@@ -17,7 +18,7 @@ class GetStockPriceSchema(BaseModel):
     )
 
 
-@tool(args_schema=GetStockPriceSchema)
+@tool(args_schema=GetStockPriceSchema, response_format="content_and_artifact")
 def get_stock_price_history(ticker: str, period: str = "1mo") -> str:
     """Get the stock price history of a given ticker and return a Plotly chart as JSON."""
     # Fetch historical data
@@ -26,7 +27,6 @@ def get_stock_price_history(ticker: str, period: str = "1mo") -> str:
 
     # Reset index so 'Date' is a column
     hist = hist.reset_index()
-
     # Create interactive Plotly chart
     fig = px.line(
         hist,
@@ -37,7 +37,7 @@ def get_stock_price_history(ticker: str, period: str = "1mo") -> str:
     )
 
     # Return Plotly figure as JSON
-    return fig.to_json()
+    return hist.to_csv(index=False), fig.to_json()
 
 
 FINANCE_TOOLS = [get_stock_price_history]
