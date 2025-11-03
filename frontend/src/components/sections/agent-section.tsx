@@ -24,7 +24,7 @@ export function AgentSection({ agent }: { agent: Agent }) {
 				)}
 			</div> */}
 			<div className="flex flex-col w-full lg:w-[600px]">
-				<ChatInput />
+				<ChatInput showAgentMenu={true} />
 			</div>
 		</>
 	);
