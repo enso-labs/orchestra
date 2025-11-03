@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useAgentContext } from "@/context/AgentContext";
 
 export function useToolSelection(initialTools: string[] = []) {
+	const { setAgentTools } = useAgentContext();
 	const [selectedTools, setSelectedTools] = useState<Set<string>>(
 		new Set(initialTools),
 	);
@@ -13,6 +15,7 @@ export function useToolSelection(initialTools: string[] = []) {
 			} else {
 				next.add(toolName);
 			}
+			setAgentTools(Array.from(next));
 			return next;
 		});
 	};
@@ -21,6 +24,7 @@ export function useToolSelection(initialTools: string[] = []) {
 
 	const selectMultiple = (tools: string[]) => {
 		setSelectedTools(new Set([...selectedTools, ...tools]));
+		setAgentTools([...selectedTools, ...tools]);
 	};
 
 	const isSelected = (toolName: string) => selectedTools.has(toolName);

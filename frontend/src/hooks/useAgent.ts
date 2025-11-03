@@ -152,6 +152,10 @@ export function useAgent() {
 		setAgent({ ...agent, a2a: ToolConfig.DEFAULT_A2A_CONFIG });
 	};
 
+	const setAgentTools = (tools: string[]) => {
+		setAgent({ ...agent, tools: tools });
+	};
+
 	return {
 		agent,
 		setAgent,
@@ -176,6 +180,7 @@ export function useAgent() {
 		setPiiAnalyzeCheck,
 		piiAnonymizeCheck,
 		setPiiAnonymizeCheck,
+		setAgentTools,
 	};
 }
 
