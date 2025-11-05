@@ -1,47 +1,20 @@
-# Build stage
-FROM python:3.12-alpine AS builder
+FROM python:3.12-slim
 
-# Install build dependencies
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    postgresql-dev \
-    libffi-dev \
-    openssl-dev \
-    cargo \
-    rust
+# uv CLI
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml uv.lock* ./
+# Copy only dep files first for better caching
+COPY pyproject.toml uv.lock* /app/
 
-# Install dependencies
-RUN uv sync --frozen --no-dev
+# Use psycopg[binary] in pyproject (and remove psycopg2-binary)
+# Then install deps
+RUN uv sync --frozen --no-cache --no-dev
 
-# Runtime stage
-FROM python:3.12-alpine
-
-# Install runtime dependencies
-RUN apk add --no-cache \
-    libpq \
-    libffi \
-    openssl
-
-WORKDIR /app
-
-# Copy uv and installed packages from builder
-COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/pyproject.toml /app/
-
-# Copy application code
-COPY . .
-
-# Use the virtual environment
-ENV PATH="/app/.venv/bin:$PATH"
+# App code
+COPY . /app
 
 CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
