@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/482-teams-webhook (2025-11-05)
   - feat/476-html-chart-construct-tool (2025-11-02)
   - feat/468-support-ms-presidio-analyzer (2025-11-02)
   - feat/465-update-sidebar (2025-10-31)
