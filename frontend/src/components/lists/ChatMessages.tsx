@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Wrench, Copy, Edit, Check, X } from "lucide-react";
+import { Loader2, Wrench, Edit, Check, X } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
 import { useChatContext } from "@/context/ChatContext";
