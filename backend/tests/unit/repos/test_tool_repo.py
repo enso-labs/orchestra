@@ -16,7 +16,9 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
             type="default",
             args={},
             config={},
-            env={},
+            env={
+                "TEST_API_KEY": "test-api-key",
+            },
             metadata={},
             tags=[],
             verbose=False,
@@ -35,6 +37,14 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.tool.name, "test_tool")
         self.assertEqual(self.tool.description, "This is a test tool")
         self.assertEqual(self.tool.type, "default")
+        
+    async def test_tool_is_searched(self):
+        """Test that the tool is searched correctly"""
+        tools = await self.tool_repo.search(query="test_tool")
+        self.assertEqual(len(tools), 1)
+        self.assertEqual(tools[0].name, "test_tool")
+        self.assertEqual(tools[0].description, "This is a test tool")
+        self.assertEqual(tools[0].type, "default")
 
 
 if __name__ == '__main__':
