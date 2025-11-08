@@ -1,5 +1,4 @@
 import unittest
-import asyncio
 
 from src.repos.tool_repo import ToolRepo
 from src.constants import TEST_USER_ID
