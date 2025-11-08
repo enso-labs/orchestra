@@ -1,9 +1,13 @@
-from src.constants import LANGCONNECT_SERVER_URL
+import os
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
+from src.constants import LANGCONNECT_SERVER_URL
 from .llm import llm_router as llm
 from .thread import router as thread
 from .tool import router as tool
-from .health import router as health
+from .info import router as info
 from .auth import router as auth
 from .token import router as token
 from .storage import router as storage
@@ -11,20 +15,50 @@ from .assistant import router as assistant
 from .schedule import router as schedule
 from .prompt import router as prompt
 
-__all__ = [
-    "llm",
-    "thread",
-    "tool",
-    "health",
-    "auth",
-    "token",
-    "storage",
-    "assistant",
-    "schedule",
-    "prompt",
-]
 
-if LANGCONNECT_SERVER_URL:
-    from .rag import gateway as rag
+def create_api_router(app: FastAPI, prefix: str = "/api"):
+    app.include_router(auth, prefix=prefix)
+    app.include_router(info, prefix=prefix)
+    app.include_router(llm, prefix=prefix)
+    app.include_router(thread, prefix=prefix)
+    app.include_router(tool, prefix=prefix)
+    app.include_router(prompt, prefix=prefix)
+    app.include_router(assistant, prefix=prefix)
+    app.include_router(schedule, prefix=prefix)
+    if LANGCONNECT_SERVER_URL:
+        from .rag import gateway as rag
+        app.include_router(rag, prefix=prefix)
+    app.include_router(storage, prefix=prefix)
+    return app
 
-    __all__.append("rag")
+
+def mount_static_router(app: FastAPI):
+    app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
+    app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
+    if os.path.exists("src/public/icons"):
+        app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
+
+    @app.get("/{filename:path}", include_in_schema=False)
+    async def serve_static_or_index(filename: str, request: Request):
+        # List of static files to check for at the root
+        static_files = [
+            "manifest.json",
+            "sw.js",
+            "favicon.ico",
+            "robots.txt",
+            "manifest.webmanifest",
+        ]
+
+        # If the request is for a known static file and it exists, serve it
+        if filename in static_files and os.path.exists(f"src/public/{filename}"):
+            return FileResponse(f"src/public/{filename}")
+
+        # For /icons/* paths, check if the file exists
+        if filename.startswith("icons/") and os.path.exists(f"src/public/{filename}"):
+            return FileResponse(f"src/public/{filename}")
+
+        # For all other routes, serve the index.html for SPA routing
+        return FileResponse("src/public/index.html")
+    
+    return app
+

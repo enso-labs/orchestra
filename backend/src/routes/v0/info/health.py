@@ -6,10 +6,10 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from src.utils.logger import logger
 import asyncio
 
-router = APIRouter(tags=["Health"])
+router = APIRouter(prefix="/health")
 
 
-@router.get("/health", name="Overall Health Check")
+@router.get("", name="Overall Health Check")
 async def health_check():
     """Simple health check endpoint"""
     return {
@@ -19,7 +19,7 @@ async def health_check():
     }
 
 
-@router.get("/health/store", name="Store Health Check")
+@router.get("/store", name="Store Health Check")
 async def check_store_health(
     store: AsyncPostgresStore = Depends(get_store),
 ):
@@ -56,7 +56,7 @@ async def check_store_health(
         )
 
 
-@router.get("/health/checkpointer", name="Checkpointer Health Check")
+@router.get("/checkpointer", name="Checkpointer Health Check")
 async def check_checkpointer_health():
     """Check if the AsyncPostgresSaver connection is healthy"""
     try:
