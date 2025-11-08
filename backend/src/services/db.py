@@ -2,6 +2,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from fastapi import Request
 from typing import AsyncGenerator, Generator, AsyncIterator
 from langgraph.store.memory import InMemoryStore
+from langgraph.store.base import IndexConfig
 from langgraph.store.postgres.base import PostgresIndexConfig
 from langchain.embeddings import init_embeddings
 from sqlalchemy import create_engine
@@ -79,8 +80,17 @@ def get_store(req: Request) -> AsyncPostgresStore:
     return req.app.state.store
 
 
-def get_store_in_memory() -> InMemoryStore:
-    return InMemoryStore()
+def get_store_in_memory(
+    embed: str = "openai:text-embedding-3-small",
+    fields: list[str] = [],
+    dims: int = 1536,
+) -> InMemoryStore:
+    index: IndexConfig = {}
+    if fields:
+        index.dims = dims
+        index.fields = fields
+        index.embed = init_embeddings(embed)
+    return InMemoryStore(index=index)
 
 
 def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:

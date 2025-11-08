@@ -25,7 +25,9 @@ class SavedTool(BaseModel):
 	updated_at: datetime = Field(default_factory=datetime.now)
 
 class ToolRepo:
-	_instance = None
+	_instance: "ToolRepo" = None
+	user_id: str = None
+	store: BaseStore = None
 
 	def __new__(
 		cls, 
@@ -50,7 +52,7 @@ class ToolRepo:
 		await self.store.aput(
 			namespace=self._get_namespace(), 
 			key=tool.name, 
-			value=tool.model_dump_json(), 
+			value=tool.model_dump(), 
 			ttl=ttl
 		)
 		return True
@@ -59,9 +61,8 @@ class ToolRepo:
 		decrypted_tools = []
 		logger.info(f"Formatting {len(tools)} tools")
 		for tool in tools:
-			tool_dict = ujson.loads(tool.value)
-			tool_dict["env"] = decrypt_value(tool_dict.get("env", {}))
-			saved_tool = SavedTool.model_validate(tool_dict)
+			tool.value["env"] = decrypt_value(tool.value["env"])
+			saved_tool = SavedTool.model_validate(tool.value)
 			decrypted_tools.append(saved_tool)
 		return decrypted_tools
 
@@ -72,12 +73,15 @@ class ToolRepo:
 		limit: int = 100,
 		offset: int = 0,
 	) -> list[SavedTool]:
-		results = await self.store.asearch( 
-			self._get_namespace(), 
-			query=query,
-			filter=filter,
-			limit=limit,
-			offset=offset,
-		)
-		return self._format_tools(results)
-
+		try:
+			results = await self.store.asearch( 
+				self._get_namespace(), 
+				query=query,
+				filter=filter,
+				limit=limit,
+				offset=offset,
+			)
+			return self._format_tools(results)
+		except Exception as e:
+			logger.exception(f"Error searching tools: {e}")
+			return []

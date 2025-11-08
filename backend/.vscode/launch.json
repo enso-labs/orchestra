@@ -20,7 +20,7 @@
                 "-v"
             ],
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "envFile": "${workspaceFolder}/.env.test"
         },
         {

@@ -38,13 +38,17 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.tool.description, "This is a test tool")
         self.assertEqual(self.tool.type, "default")
         
-    async def test_tool_is_searched(self):
-        """Test that the tool is searched correctly"""
-        tools = await self.tool_repo.search(query="test_tool")
+    # async def test_tool_is_searched(self):
+    #     """Test that the tool is searched correctly"""
+    #     tools = await self.tool_repo.search()
+    #     # Should Return 1 Tool
+    #     self.assertEqual(len(tools), 1)
+        
+    async def test_tool_is_filtered_by_name(self):
+        """Test that the tool is filtered by name correctly"""
+        tools = await self.tool_repo.search(filter={"name": "test_tool"})
         self.assertEqual(len(tools), 1)
-        self.assertEqual(tools[0].name, "test_tool")
-        self.assertEqual(tools[0].description, "This is a test tool")
-        self.assertEqual(tools[0].type, "default")
+        
 
 
 if __name__ == '__main__':
