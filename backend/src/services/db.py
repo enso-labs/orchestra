@@ -1,6 +1,7 @@
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from fastapi import Request
 from typing import AsyncGenerator, Generator, AsyncIterator
+from langgraph.store.memory import InMemoryStore
 from langgraph.store.postgres.base import PostgresIndexConfig
 from langchain.embeddings import init_embeddings
 from sqlalchemy import create_engine
@@ -31,6 +32,9 @@ AsyncSessionLocal = async_sessionmaker(
 _Base = declarative_base()
 
 
+########################################################
+## SQLAlchemy
+########################################################
 def get_db_base():
     return _Base
 
@@ -49,9 +53,34 @@ def load_models():
 
     return _Base
 
+# Session context managers
+def get_db() -> Generator[SessionLocal, None, None]:  # type: ignore
+    """Get a SQLAlchemy database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
+
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    """Get an async SQLAlchemy database session."""
+    db = AsyncSessionLocal()
+    try:
+        yield db
+    finally:
+        await db.close()
+
+
+########################################################
+## Langgraph Stores (Memory, Postgres)
+########################################################
 def get_store(req: Request) -> AsyncPostgresStore:
     return req.app.state.store
+
+
+def get_store_in_memory() -> InMemoryStore:
+    return InMemoryStore()
 
 
 def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
@@ -73,22 +102,3 @@ def get_store_db(
             dims=1536,
         ),
     )
-
-
-# Session context managers
-def get_db() -> Generator[SessionLocal, None, None]:  # type: ignore
-    """Get a SQLAlchemy database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
-    """Get an async SQLAlchemy database session."""
-    db = AsyncSessionLocal()
-    try:
-        yield db
-    finally:
-        await db.close()

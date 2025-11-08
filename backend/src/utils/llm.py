@@ -1,6 +1,3 @@
-from langchain.chat_models import init_chat_model
-from langchain_core.language_models import BaseChatModel
-
 from src.constants import (
     OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
@@ -22,23 +19,6 @@ def get_api_key(model_name: str):
         return GEMINI_API_KEY
     else:
         raise ValueError(f"Provider {model_name} not supported")
-
-
-def load_chat_model(fully_specified_name: str, delimiter: str = ":") -> BaseChatModel:
-    """Load a chat model from a fully specified name.
-
-    Args:
-        fully_specified_name (str): String in the format 'provider/model'.
-    """
-    provider, model = fully_specified_name.split(delimiter, maxsplit=1)
-    api_key = get_api_key(provider)
-    return init_chat_model(model, model_provider=provider, api_key=api_key)
-
-
-def get_provider(model_name: str):
-    provider, model = model_name.split(":", maxsplit=1)
-    return provider, model
-
 
 def audio_to_text(
     filename: str,

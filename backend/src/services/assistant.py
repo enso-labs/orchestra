@@ -6,18 +6,17 @@ from src.utils.logger import logger
 from src.schemas.models.assistant import *
 from langgraph.store.base import SearchItem
 from src.constants.examples import Examples
+from src.services.db import get_store_in_memory
 
-IN_MEMORY_STORE = InMemoryStore()
 STORE_KEY = "assistants"
-
-
 class AssistantService:
-    def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
+    def __init__(self, user_id: str = None, store: BaseStore = get_store_in_memory()):
+        
         self.user_id = user_id
         self.store: BaseStore = store
 
     def _get_namespace(self):
-        return (self.user_id, STORE_KEY)
+        return (self.user_id, "assistants")
 
     async def update(self, assistant_id: str, data: dict):
         try:
