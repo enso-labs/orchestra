@@ -85,3 +85,13 @@ class ToolRepo:
 		except Exception as e:
 			logger.exception(f"Error searching tools: {e}")
 			return []
+
+	async def delete(
+		self,
+		name: str,
+	) -> bool:
+		await self.store.adelete(
+			namespace=self._get_namespace(),
+			key=name,
+		)
+		return True

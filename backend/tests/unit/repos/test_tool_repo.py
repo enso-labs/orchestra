@@ -15,9 +15,7 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
             type="default",
             args={},
             config={},
-            env={
-                "TEST_API_KEY": "test-api-key",
-            },
+            env={"TEST_API_KEY": "test-api-key"},
             metadata={},
             tags=[],
             verbose=False,
@@ -41,7 +39,12 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         """Test that the tool is filtered by name correctly"""
         tools = await self.tool_repo.search(filter={"name": "test_tool"})
         self.assertEqual(len(tools), 1)
-        
+    
+    async def test_tool_is_deleted(self):
+        """Test that the tool is deleted correctly"""
+        await self.tool_repo.delete(self.tool.name)
+        tools = await self.tool_repo.search(filter={"name": "test_tool"})
+        self.assertEqual(len(tools), 0)
 
 if __name__ == '__main__':
     unittest.main()
