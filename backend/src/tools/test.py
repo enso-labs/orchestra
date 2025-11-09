@@ -5,6 +5,8 @@ from src.constants import APP_ENV
 from src.utils.logger import logger
 from langchain_core.runnables import RunnableConfig
 
+from src.utils.format import format_tool_env
+
 
 @tool
 def get_stock_price(symbol: str) -> str:
@@ -28,6 +30,17 @@ def human_assistance(query: str) -> str:
     return human_response["data"]
 
 
-TEST_TOOLS = (
-    [get_stock_price, get_weather, human_assistance] if APP_ENV == "test" else []
-)
+@tool
+def send_webhook_to_channel(text: str, config: RunnableConfig) -> str:
+    """Title: Webhook Tool
+    Description: Test the webhook tool
+    Args:
+        text (str): The text to send to the webhook
+    Returns:
+        bool: True if the webhook tool is working, False otherwise
+    """
+    if not format_tool_env(config).get("TEST_WEBHOOK_URL"):
+        raise ValueError("TEST_WEBHOOK_URL is not set")
+    return True
+
+TEST_TOOLS = [get_stock_price, get_weather, human_assistance, send_webhook_to_channel]

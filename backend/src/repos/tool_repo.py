@@ -1,4 +1,4 @@
-import ujson
+
 from typing import Any, Literal
 from langgraph.store.base import BaseStore, SearchItem
 from pydantic import BaseModel, Field
@@ -11,11 +11,10 @@ from src.utils.security import encrypt_value, decrypt_value
 
 class SavedTool(BaseModel):
 	name: str
+	base_tool: str
 	description: str = Field(default="")
 	type: Literal["default", "mcp", "a2a", "api"]
 	args: dict = Field(default_factory=dict)
-	config: dict = Field(default_factory=dict)
-	env: dict = Field(default_factory=dict)
 	metadata: dict = Field(default_factory=dict)
 	tags: list[str] = Field(default_factory=list)
 	verbose: bool = Field(default=False)
@@ -48,7 +47,8 @@ class ToolRepo:
 		tool: SavedTool, 
 		ttl: int | None = None
 	) -> bool:
-		tool.env = encrypt_value(tool.env)
+		if "env" in tool.metadata:
+			tool.metadata["env"] = encrypt_value(tool.metadata["env"])
 		await self.store.aput(
 			namespace=self._get_namespace(), 
 			key=tool.name, 
@@ -61,7 +61,8 @@ class ToolRepo:
 		decrypted_tools = []
 		logger.info(f"Formatting {len(tools)} tools")
 		for tool in tools:
-			tool.value["env"] = decrypt_value(tool.value["env"])
+			if "env" in tool.value["metadata"]:
+				tool.value["metadata"]["env"] = decrypt_value(tool.value["metadata"]["env"])
 			saved_tool = SavedTool.model_validate(tool.value)
 			decrypted_tools.append(saved_tool)
 		return decrypted_tools

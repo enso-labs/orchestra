@@ -1,10 +1,10 @@
 from langchain_core.tools import tool
 from httpx import AsyncClient
 from langchain_core.tools import ToolException
-from src.constants import MICROSOFT_TEAMS_WEBHOOK_URL
+from langchain_core.runnables import RunnableConfig
 
-@tool()
-async def webhook_teams(text: str) -> str:
+@tool
+async def webhook_teams(text: str, config: RunnableConfig) -> str:
     """Title: Webhook Teams
     Description: Send a message to the GridSite Microsoft Teams channel.
     IMPORTANT: Standard Markdown headers like #, ##, etc., are not supported in Microsoft Teams messages sent via webhook and will not render as headers. Avoid using Markdown header syntax.
@@ -22,12 +22,17 @@ async def webhook_teams(text: str) -> str:
     Returns:
         str: A confirmation message.
     """
+    MS_TEAMS_WEBHOOK_URL = config["metadata"].get("env").get("MICROSOFT_TEAMS_WEBHOOK_URL")
+    if not MS_TEAMS_WEBHOOK_URL:
+        raise ValueError(
+            "Variable MICROSOFT_TEAMS_WEBHOOK_URL is required to send message to Microsoft Teams channel."
+        )
     async with AsyncClient() as client:
         try:
             from src.utils.logger import logger
             logger.info(f"Sending message to Microsoft Teams: {text!r}")
             response = await client.post(
-                MICROSOFT_TEAMS_WEBHOOK_URL,
+                MS_TEAMS_WEBHOOK_URL,
                 json={"text": text},
             )
             response.raise_for_status()
@@ -36,4 +41,4 @@ async def webhook_teams(text: str) -> str:
             raise ToolException(f"Error sending message to Microsoft Teams channel: {e}")
 
 
-GRIDSIDE_TOOLS = [webhook_teams]
+MICROSOFT_TEAMS_TOOLS = [webhook_teams]

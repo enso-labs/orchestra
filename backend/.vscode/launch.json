@@ -16,7 +16,7 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "tests/unit/repos/test_tool_repo.py",
+                "tests/unit/services/test_tool.py",
                 "-v"
             ],
             "console": "integratedTerminal",

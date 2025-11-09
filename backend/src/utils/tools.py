@@ -80,14 +80,14 @@ def attach_tool_details(tool: StructuredTool):
     from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
     from src.tools.test import TEST_TOOLS
     from src.tools.finance import FINANCE_TOOLS
-    from src.tools.gridsite import GRIDSIDE_TOOLS
+    from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
 
     if tool.name in [n.name for n in SEARCH_TOOLS]:
         tool.tags = ["search"]
     if tool.name in [n.name for n in PYTHON_CODE_INTERPRETER_TOOLS]:
         tool.tags = ["python"]
-    if tool.name in [n.name for n in GRIDSIDE_TOOLS]:
-        tool.tags = ["gridsite"]
+    if tool.name in [n.name for n in MICROSOFT_TEAMS_TOOLS]:
+        tool.tags = ["ms_teams"]
     if tool.name in [n.name for n in TEST_TOOLS]:
         tool.tags = ["test"]
     if tool.name in [n.name for n in FINANCE_TOOLS]:

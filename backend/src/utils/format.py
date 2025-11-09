@@ -1,4 +1,5 @@
 import base64
+from langchain_core.runnables import RunnableConfig
 import requests
 import re
 import unicodedata
@@ -98,3 +99,13 @@ def format_content(content: str | list[Any]) -> str:
     if isinstance(content, str):
         return content
     return content[0].get("text", "")
+
+
+def format_tool_env(config: dict | RunnableConfig) -> dict:
+    # Check configurable env
+    if config.get("configurable", {}).get("env"):
+        return config.get("configurable").get("env")
+    # Check metadata env
+    if config.get("metadata", {}).get("env"):
+        return config.get("metadata").get("env")
+    return None

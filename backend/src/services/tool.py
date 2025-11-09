@@ -68,15 +68,15 @@ class ToolService:
         tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
         return tools
 
-    async def invoke_tool(self, tool_name: str, tool_args: dict):
+    async def invoke_tool(self, name: str, args: dict, env: dict = None):
         tool: StructuredTool = next(
-            (tool for tool in TOOL_LIBRARY if tool.name == tool_name), None
+            (tool for tool in TOOL_LIBRARY if tool.name == name), None
         )
         if not tool:
-            raise ValueError(f"Tool {tool_name} not found")
+            raise ValueError(f"Tool {name} not found")
         return await tool.ainvoke(
-            tool_args,
-            config={"configurable": {"user_id": self.user_id}}
+            args,
+            config={"configurable": {"user_id": self.user_id, "env": env}}
             if self.user_id
             else None,
         )
