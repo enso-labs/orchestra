@@ -15,7 +15,6 @@ class SavedTool(BaseModel):
 	base_tool: str
 	description: str = Field(default="")
 	type: Literal["default", "mcp", "a2a", "api"]
-	args: dict = Field(default_factory=dict)
 	metadata: dict = Field(default_factory=dict)
 	env: Optional[dict] = None
 	verbose: bool = Field(default=False)
@@ -28,22 +27,12 @@ class SavedTool(BaseModel):
 		found_tool = next((tool for tool in TOOL_LIBRARY if tool.name == self.base_tool), None)
 		if not found_tool:
 			raise ValueError(f"Tool {self.base_tool} not found")
-		if found_tool.coroutine:
-			structured_tool = StructuredTool.from_coroutine(
-				coroutine=found_tool.coroutine,
-			)
-		else:
-			structured_tool = StructuredTool.from_function(
-				func=found_tool.func,
-			)
-		structured_tool.name = self.name
-		structured_tool.description = self.description
-		structured_tool.args_schema = found_tool.args_schema
+		tool_data = {**found_tool.model_dump(), **self.model_dump()}
+		structured_tool = StructuredTool.from_function(**tool_data)
 		structured_tool.metadata = {
       		**self.metadata,
 			"env": self.env,
 		}
-		structured_tool.verbose = self.verbose
 		return structured_tool
 
 class ToolRepo:
