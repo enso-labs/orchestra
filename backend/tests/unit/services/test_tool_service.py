@@ -40,4 +40,4 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         """Test that the saved tool is converted to a structured tool correctly"""
         tool: SavedTool = self.tools[0]
         structured_tool = await self.tool_service.invoke_saved_tool(tool, input={"text": "Hello, world!"})
-        print(structured_tool)
+        self.assertEqual(structured_tool, True)
