@@ -14,10 +14,10 @@ def disabled(f):
 
 
 def get_test_token():
-    data = {"email": "test@example.com", "password": "test1234"}
+    data = {"email": "admin@example.com", "password": "test1234"}
     headers = {
         "Content-Type": "application/json",
     }
-    response = client.post("/auth/login", json=data, headers=headers)
+    response = client.post("/api/auth/login", json=data, headers=headers)
     json_str = json.loads(response.content)
-    return json_str["token"]
+    return json_str["access_token"]

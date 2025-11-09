@@ -1,14 +1,15 @@
-from typing import Optional, List
-from fastapi import Body, HTTPException, status, Depends, APIRouter, Request
+
+from fastapi import Body, HTTPException, Response, status, Depends, APIRouter
 from fastapi.responses import JSONResponse
+from langgraph.store.base import BaseStore
 
 from src.schemas.models import ProtectedUser
 from src.utils.auth import verify_credentials
-from src.services.tool import tool_service
-from src.routes.v0.tool.info import router as info_router
-from src.schemas.entities import InvokeTool
-from src.constants.examples import Examples
-
+from src.services.tool import ToolService
+from src.routes.v0.tool.info import info_router
+from src.routes.v0.tool.invoke import invoke_router
+from src.repos.tool_repo import SavedTool, ToolExamples
+from src.services.db import get_store
 
 router = APIRouter(tags=["Tool"], prefix="/tools")
 
@@ -23,36 +24,73 @@ router = APIRouter(tags=["Tool"], prefix="/tools")
         status.HTTP_200_OK: {
             "description": "All tools.",
             "content": {
-                "application/json": {"example": {"tools": tool_service.tool_details()}}
+                "application/json": {"example": {"tools": []}}
             },
         }
     },
 )
-async def list_tools(user: ProtectedUser = Depends(verify_credentials)):
-    tools_response = tool_service.tool_details()
+async def list_tools(
+    user: ProtectedUser = Depends(verify_credentials),
+    store: BaseStore = Depends(get_store),
+):
+    tool_service = ToolService(user_id=user.id, store=store)
+    tools_response = await tool_service.tool_details()
     return JSONResponse(
         content={"tools": tools_response}, status_code=status.HTTP_200_OK
     )
-
-
-@router.post("/invoke", name="Invoke Tools")
-async def invoke_tools(
-    request: Request,
-    tools: List[InvokeTool] = Body(..., example=Examples.INVOKE_TOOLS_EXAMPLE),
-    user: Optional[ProtectedUser] = Depends(verify_credentials),
+    
+################################################################################
+### Create Tool
+################################################################################
+@router.post(
+    "",
+    name="Create Tool",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Tool created successfully.",
+            "content": {
+                "application/json": {"example": {"tool": {}}}
+            },
+        }
+    },
+)
+async def create_tool(
+    tool: SavedTool = Body(..., example=ToolExamples.CREATE_EXAMPLE),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: BaseStore = Depends(get_store),
 ):
     try:
-        tool_service.user_id = user.id if user else None
-        tool_results: List[InvokeTool] = []
-        for tool in tools:
-            result = await tool_service.invoke_tool(tool.name, tool.args)
-            tool_result: InvokeTool = InvokeTool(
-                name=tool.name, args=tool.args, result=result
-            )
-            tool_results.append(tool_result.model_dump())
-        return {"tools": tool_results}
+        tool_service = ToolService(user_id=user.id, store=store)
+        created_tool = await tool_service.tool_repo.create(tool)
+        if not created_tool:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create tool")
+        return Response(status_code=status.HTTP_201_CREATED)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+################################################################################
+### Delete Tool
+################################################################################
+@router.delete(
+    "/{tool_name}",
+    name="Delete Tool",
+    responses={
+        status.HTTP_204_NO_CONTENT: {
+            "description": "Tool deleted successfully.",
+        }
+    },
+)
+async def delete_tool(
+    tool_name: str,
+    user: ProtectedUser = Depends(verify_credentials),
+    store: BaseStore = Depends(get_store),
+):
+    try:
+        tool_service = ToolService(user_id=user.id, store=store)
+        await tool_service.tool_repo.delete(tool_name)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-
 router.include_router(info_router)
+router.include_router(invoke_router)

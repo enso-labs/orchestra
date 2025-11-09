@@ -1,4 +1,6 @@
 from typing import Literal, Optional
+from dataclasses import dataclass
+from fastapi.openapi.models import Example
 from langgraph.store.base import BaseStore, SearchItem
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
@@ -9,6 +11,22 @@ from src.utils.logger import logger
 from src.utils.security import encrypt_value, decrypt_value
 from src.tools import TOOL_LIBRARY
 
+@dataclass
+class ToolExamples:
+    CREATE_EXAMPLE = Example(
+		name="webhook_marketing_channel",
+		base_tool="send_webhook_to_channel",
+		description="Send a message to the GridSite Microsoft Teams channel.",
+		type="default",
+		metadata={},
+		env={
+			"TEST_WEBHOOK_URL": "https://example.com/webhook"
+		},
+		tags=["example"],
+		verbose=False,
+		disabled=False,
+		public=False,
+	)
 
 class SavedTool(BaseModel):
 	name: str
@@ -16,6 +34,7 @@ class SavedTool(BaseModel):
 	description: str = Field(default="")
 	type: Literal["default", "mcp", "a2a", "api"]
 	metadata: dict = Field(default_factory=dict)
+	tags: list[str] = Field(default_factory=list)
 	env: Optional[dict] = None
 	verbose: bool = Field(default=False)
 	disabled: bool = Field(default=False)
@@ -36,20 +55,14 @@ class SavedTool(BaseModel):
 		return structured_tool
 
 class ToolRepo:
-	_instance: "ToolRepo" = None
-	user_id: str = None
-	store: BaseStore = None
 
-	def __new__(
-		cls, 
+	def __init__(
+		self, 
 		user_id: str = None, 
 		store: BaseStore = get_store_in_memory()
-	) -> "ToolRepo":
-		if cls._instance is None:
-			cls._instance = super(ToolRepo, cls).__new__(cls)
-			cls._instance.user_id = user_id
-			cls._instance.store: BaseStore = store
-		return cls._instance
+	):
+		self.user_id = user_id
+		self.store: BaseStore = store
 
 	def _get_namespace(self):
 		return (self.user_id, "tools")
@@ -59,24 +72,29 @@ class ToolRepo:
 		tool: SavedTool, 
 		ttl: int | None = None
 	) -> bool:
-		if tool.env:
-			tool.env = encrypt_value(tool.env)
+		tool_data = tool.model_dump()
+		if "env" in tool_data:
+			tool_data["env"] = encrypt_value(tool_data["env"])
+		if "created_at" in tool_data:
+			tool_data["created_at"] = tool_data["created_at"].isoformat()
+		if "updated_at" in tool_data:
+			tool_data["updated_at"] = tool_data["updated_at"].isoformat()
 		await self.store.aput(
 			namespace=self._get_namespace(), 
 			key=tool.name, 
-			value=tool.model_dump(), 
+			value=tool_data, 
 			ttl=ttl
 		)
 		return True
 
-	def _format_tools(self, tools: list[SearchItem]) -> list[SavedTool]:
+	def _format_tools(self, tools: list[SearchItem]) -> list[StructuredTool]:
 		decrypted_tools = []
 		logger.info(f"Formatting {len(tools)} tools")
 		for tool in tools:
 			if "env" in tool.value:
 				tool.value["env"] = decrypt_value(tool.value["env"])
 			saved_tool = SavedTool.model_validate(tool.value)
-			decrypted_tools.append(saved_tool)
+			decrypted_tools.append(saved_tool.to_structured_tool())
 		return decrypted_tools
 
 	async def search(
@@ -85,7 +103,7 @@ class ToolRepo:
 		filter: dict = {},
 		limit: int = 100,
 		offset: int = 0,
-	) -> list[SavedTool]:
+	) -> list[StructuredTool]:
 		try:
 			results = await self.store.asearch( 
 				self._get_namespace(), 

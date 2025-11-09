@@ -3,6 +3,8 @@ from httpx import AsyncClient
 from langchain_core.tools import ToolException
 from langchain_core.runnables import RunnableConfig
 
+from src.utils.format import format_tool_env
+
 @tool
 async def webhook_teams(text: str, config: RunnableConfig) -> str:
     """Title: Webhook Teams
@@ -22,7 +24,7 @@ async def webhook_teams(text: str, config: RunnableConfig) -> str:
     Returns:
         str: A confirmation message.
     """
-    MS_TEAMS_WEBHOOK_URL = config["metadata"].get("env").get("MICROSOFT_TEAMS_WEBHOOK_URL")
+    MS_TEAMS_WEBHOOK_URL = format_tool_env(config).get("MICROSOFT_TEAMS_WEBHOOK_URL")
     if not MS_TEAMS_WEBHOOK_URL:
         raise ValueError(
             "Variable MICROSOFT_TEAMS_WEBHOOK_URL is required to send message to Microsoft Teams channel."

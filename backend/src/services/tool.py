@@ -1,6 +1,8 @@
+import asyncio
 from langchain_core.tools import StructuredTool, BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_arcade import ArcadeToolManager
+from langgraph.store.base import BaseStore
 
 from src.repos.tool_repo import SavedTool
 from src.schemas.entities.a2a import A2AServer, McpServer
@@ -10,21 +12,31 @@ from src.schemas.entities import ArcadeConfig
 from src.utils.logger import logger
 from src.utils.tools import attach_tool_details
 from src.constants import ARCADE_API_KEY
+from src.services.db import get_store_in_memory
+from src.repos.tool_repo import ToolRepo
 
 
 class ToolService:
-    def __init__(self, user_id: str = None):
+    def __init__(
+        self, 
+        user_id: str = None,
+        store: BaseStore = get_store_in_memory()
+    ):
         self.user_id = user_id
+        self.store = store
+        self.tool_repo = ToolRepo(user_id=user_id, store=store)
 
     @staticmethod
     def default_tools(tools: list[str]) -> list[BaseTool]:
         default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
         return default_tools
 
-    @staticmethod
-    def tool_details():
+
+    async def tool_details(self):
         tool_details = []
-        for tool in TOOL_LIBRARY:
+        user_tools = await self.tool_repo.search()
+        tool_lib = TOOL_LIBRARY + user_tools
+        for tool in tool_lib:
             updated_tool = attach_tool_details(tool)
             tool_details.append(
                 {
@@ -32,7 +44,7 @@ class ToolService:
                     "description": updated_tool.description,
                     "args": updated_tool.args,
                     "tags": updated_tool.tags,
-                    "metadata": updated_tool.metadata,
+                    # "metadata": updated_tool.metadata,
                 }
             )
         return tool_details
