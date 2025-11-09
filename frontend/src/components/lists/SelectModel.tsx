@@ -12,7 +12,6 @@ import useModel from "@/hooks/useModel";
 import { useState, useEffect } from "react";
 import { getAuthToken } from "@/lib/utils/auth";
 import { listModels } from "@/lib/services/modelService";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 	const { model, setModel } = useModel();
