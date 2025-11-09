@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Wrench, Copy, Edit, Check, X } from "lucide-react";
+import { Loader2, Wrench, Edit, Check, X } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
 import { useChatContext } from "@/context/ChatContext";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatContent, truncateFrom } from "@/lib/utils/format";
 import SearchEngineTool from "../tools/SearchEngine";
 import ChartRenderWidget from "../tools/ChartRenderWidget";
+import CopyTextButton from "../buttons/CopyTextButton";
 
 const MAX_LENGTH = 1000;
 
@@ -144,21 +145,7 @@ export function Message({
 						)}
 						{isEditing && !isEditingText && (
 							<div className="flex absolute bottom-1 right-1">
-								<button
-									className="p-1 rounded hover:bg-muted transition-colors"
-									onClick={(e) => {
-										e.stopPropagation();
-										navigator.clipboard.writeText(
-											formatContent(message.content),
-										);
-										console.log(message);
-										alert("Copied to clipboard (User Message)");
-									}}
-								>
-									<Copy
-										className={`h-${ICON_SIZE} w-${ICON_SIZE} hover:text-foreground`}
-									/>
-								</button>
+								<CopyTextButton text={formatContent(message.content)} />
 								<button
 									className="p-1 rounded hover:bg-muted transition-colors"
 									onClick={handleEditClick}
@@ -248,15 +235,7 @@ export function Message({
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
 					<div className="flex gap-1">
-						<button className="p-1 rounded hover:bg-muted transition-colors">
-							<Copy
-								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
-								onClick={() => {
-									navigator.clipboard.writeText(formatContent(message.content));
-									alert("Copied to clipboard (AI Message)");
-								}}
-							/>
-						</button>
+						<CopyTextButton text={formatContent(message.content)} />
 
 						<div className="flex items-center gap-2">
 							<button className="text-sm text-muted-foreground">

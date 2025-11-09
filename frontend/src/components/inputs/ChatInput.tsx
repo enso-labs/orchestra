@@ -100,7 +100,7 @@ export default function ChatInput({
 						<BaseToolMenu />
 					</div>
 					{showAgentMenu && (
-						<div className="maxw-62">
+						<div className="max-w-62">
 							<AgentMenu />
 						</div>
 					)}

@@ -16,11 +16,11 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "tests/unit/services/prompt/test_optimize.py",
+                "tests/unit/repos/test_tool_repo.py",
                 "-v"
             ],
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "envFile": "${workspaceFolder}/.env.test"
         },
         {

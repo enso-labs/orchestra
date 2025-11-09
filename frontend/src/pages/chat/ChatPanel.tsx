@@ -9,9 +9,10 @@ interface ChatPanelProps {
 	agent?: Agent;
 	chatNav?: React.ReactNode | undefined;
 	sidebarTrigger?: React.ReactNode | undefined;
+	showAgentMenu?: boolean;
 }
 
-function ChatPanel({ agent, chatNav }: ChatPanelProps) {
+function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 	const { messages } = useChatContext();
 
 	if (agent && messages.length === 0) {
@@ -19,7 +20,7 @@ function ChatPanel({ agent, chatNav }: ChatPanelProps) {
 			<ChatLayout>
 				{chatNav}
 				<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
-					<AgentSection agent={agent} />
+					<AgentSection agent={agent} showAgentMenu={showAgentMenu} />
 				</div>
 				<footer className="mt-auto bg-card">
 					<div className="px-4 sm:px-6 lg:px-8 py-4">

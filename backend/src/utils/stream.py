@@ -1,7 +1,11 @@
+from langchain_core.language_models import BaseChatModel
+from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import BaseTool
 import ujson
 from langgraph.store.base import BaseStore
 from typing import List
 from langgraph.types import StreamMode
+from deepagents import SubAgent
 
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
@@ -13,6 +17,7 @@ from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
+    BaseMessage,
     ToolMessage,
 )
 from src.utils.logger import log_to_file, logger
@@ -160,26 +165,36 @@ def handle_multi_mode(chunk: dict):
 
 
 async def stream_generator(
-    params: LLMRequest,
+    messages: list[BaseMessage],
+    model: BaseChatModel,
+    system_prompt: str,
+    tools: list[BaseTool],
+    subagents: list[SubAgent],
+    config: RunnableConfig,
     service_context: ServiceContext,
 ):
     async with get_checkpoint_db() as checkpointer:
         try:
-            params.metadata.user_id = service_context.user_id
+            service_context.config["configurable"]["user_id"] = service_context.user_id
             agent = await construct_agent(
-                params=params,
+                system_prompt=system_prompt,
+                model=model,
+                tools=tools,
+                subagents=subagents,
+                config=service_context.config,
                 checkpointer=checkpointer,
-                store=service_context.store,
+                store=service_context.store
             )
             async for chunk in agent.astream(
-                {"messages": params.to_langchain_messages()},
+                {"messages": messages},
                 stream_mode=["messages", "values"],
+                config=config,
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
                 if stream_chunk:
                     data = ujson.dumps(stream_chunk)
-                    log_to_file(str(data), params.model) and APP_LOG_LEVEL == "DEBUG"
+                    log_to_file(str(data), agent.model) and APP_LOG_LEVEL == "DEBUG"
                     logger.debug(f"data: {str(data)}")
                     yield f"data: {data}\n\n"
 
@@ -191,11 +206,11 @@ async def stream_generator(
             yield f"data: {error_msg}\n\n"
         finally:
             if service_context.user_id and checkpointer:
-                final_state = await agent.aget_state()
+                final_state = await agent.aget_state(config)
                 messages = final_state.values.get("messages")
                 last_message = messages[-1] if messages else None
                 if isinstance(last_message, AIMessage):
-                    last_message.model = params.model
+                    last_message.model = agent.model
                     new_config = await agent.graph.aupdate_state(
                         config=final_state.config,
                         values={"messages": messages},
@@ -204,9 +219,9 @@ async def stream_generator(
                     thread_id = configurable.get("thread_id")
                     checkpoint_id = configurable.get("checkpoint_id")
 
-                    if params.metadata.assistant_id:
+                    if service_context.config["configurable"].get("assistant_id"):
                         service_context.thread_service.assistant_id = (
-                            params.metadata.assistant_id
+                            config["configurable"].get("assistant_id")
                         )
 
                     await service_context.thread_service.update(

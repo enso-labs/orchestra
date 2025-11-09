@@ -4,10 +4,8 @@ from fastapi import Request, status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from datetime import datetime
-from pydantic import EmailStr
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.constants.llm import ChatModels
+from src.constants.llm import get_free_models
 from src.repos.user_repo import UserRepo
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
 from src.schemas.entities import LLMRequest, LLMStreamRequest
@@ -42,10 +40,7 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
 
 
 def is_authorized_model(model: str) -> bool:
-    return model in [
-        ChatModels.OPENAI_GPT_5_NANO.value,
-        ChatModels.GOOGLE_GEMINI_2_5_FLASH_LITE.value,
-    ]
+    return model in get_free_models()
 
 
 async def get_optional_user(

@@ -221,6 +221,12 @@ export default function useChat(): ChatContextType {
 			return;
 		}
 
+		// if (streamMode === "values") {
+		// 	console.log(payload[1]);
+		// 	setMessagesState(payload[1].messages);
+		// 	return;
+		// }
+
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];

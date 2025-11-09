@@ -1,7 +1,12 @@
 import ChatInput from "@/components/inputs/ChatInput";
 import { Agent } from "@/lib/services/agentService";
 
-export function AgentSection({ agent }: { agent: Agent }) {
+interface AgentSectionProps {
+	agent: Agent;
+	showAgentMenu?: boolean;
+}
+
+export function AgentSection({ agent, showAgentMenu = false }: AgentSectionProps) {
 	return (
 		<>
 			<img
@@ -24,7 +29,7 @@ export function AgentSection({ agent }: { agent: Agent }) {
 				)}
 			</div> */}
 			<div className="flex flex-col w-full lg:w-[600px]">
-				<ChatInput showAgentMenu={true} />
+				<ChatInput showAgentMenu={showAgentMenu} />
 			</div>
 		</>
 	);

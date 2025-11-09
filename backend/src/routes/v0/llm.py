@@ -12,9 +12,12 @@ from fastapi import (
     Form,
     UploadFile,
 )
+from langchain_core.runnables import RunnableConfig
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from langmem.prompts.types import (
     OptimizerInput,
 )
+from src.schemas.entities.a2a import A2AServers
 from src.services.presidio import PresidioException, process_presidio
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.contexts.service import ServiceContext
@@ -27,13 +30,11 @@ from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest
 from src.utils.stream import stream_generator
 from src.utils.llm import audio_to_text
-from src.flows import construct_agent
+from src.flows import construct_agent, init_config
 from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
-from src.constants.llm import ChatModels
-from src.utils.format import format_content
-from src.constants import PRESIDIO_ANALYZE_HOST, PRESIDIO_ANONYMIZE_HOST
+from src.constants.llm import ChatModels, get_free_models
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -97,13 +98,30 @@ async def llm_stream(
     """
     try:
         params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
-        service_context = ServiceContext(
-            user_id=user.id if user else None,
-            store=store,
+        config = RunnableConfig(
+            configurable={
+                "user_id": user.id if user else None,
+                "thread_id": params.metadata.thread_id or str(uuid4()),
+                "assistant_id": params.metadata.assistant_id or None,
+            },
+            max_concurrency=4,
+            recursion_limit=100,
+            metadata={**params.metadata.model_dump()},
         )
-
+        service_context = ServiceContext(config=config, store=store)
         params = await process_presidio(params, service_context.presidio_service)
-
+        ### Collect all tools
+        tools = []
+        for tool in params.tools:
+            items = await service_context.tool_service.tool_repo.search(filter={"name": tool})
+            structured_tool = items[0]
+            tool_metadata = {structured_tool.name: structured_tool.metadata}
+            config['metadata'] = {**tool_metadata, **config['metadata']}
+            tools.append(structured_tool)
+        a2a = A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(params.metadata.thread_id)
+        mcp = await service_context.tool_service.mcp_tools(params.mcp)
+        tools = tools + a2a + mcp
+        
         if params.metadata.assistant_id:
             assistant: Assistant = await service_context.assistant_service.get(
                 params.metadata.assistant_id,
@@ -113,9 +131,16 @@ async def llm_stream(
                 model=params.model,
                 metadata=params.metadata,
             )
-        stream_gen = stream_generator(params, service_context)
         return StreamingResponse(
-            stream_gen,
+            stream_generator(
+                params.to_langchain_messages(),
+                params.model,
+                params.system,
+                tools,
+                params.subagents,
+                service_context.config,
+                service_context,
+            ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
         )
@@ -197,4 +222,11 @@ async def optimize_prompt(
 )
 async def list_models():
     chat_models = sorted({model.value for model in ChatModels})
-    return JSONResponse(content={"models": chat_models}, status_code=200)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "default": ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value,
+            "free": sorted(get_free_models()),
+            "models": chat_models,
+        }
+    )
