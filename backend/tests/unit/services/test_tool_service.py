@@ -18,7 +18,6 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
             base_tool="send_webhook_to_channel",
             description="Send a message to the GridSite Microsoft Teams channel.",
             type="default",
-            args={'text': 'Hello, world!'},
             metadata={},
             env={"TEST_WEBHOOK_URL": os.getenv("TEST_WEBHOOK_URL")},
             tags=["test"],
