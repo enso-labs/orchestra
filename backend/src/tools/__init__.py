@@ -7,15 +7,31 @@ from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
 from src.tools.finance import FINANCE_TOOLS
 from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
 
-def init_tool_library():
-    tool_lib = [
+
+def default_tools() -> list[BaseTool]:
+    default_tools = [
         *SEARCH_TOOLS,
         *PYTHON_CODE_INTERPRETER_TOOLS,
         *FINANCE_TOOLS,
-        *MICROSOFT_TEAMS_TOOLS,
     ]
     if APP_ENV == "test":
-        tool_lib.extend(TEST_TOOLS)
+        default_tools.extend(TEST_TOOLS)
+    return default_tools
+
+
+def auth_tools(user_id: str) -> list[BaseTool]:
+    auth_tools = [
+        *MICROSOFT_TEAMS_TOOLS,
+    ]
+    for tool in auth_tools:
+        tool.metadata = {"user_id": user_id}
+    return auth_tools
+
+def init_tool_library(user_id: str = None) -> list[BaseTool]:
+    tool_lib = default_tools()
+    if user_id:
+        tool_lib.extend(auth_tools(user_id))
+    
     return tool_lib
 
 TOOL_LIBRARY: List[BaseTool] = init_tool_library()
