@@ -45,11 +45,7 @@ async def list_tools(
 @router.post(
     "",
     name="Create Tool",
-    responses={
-        status.HTTP_201_CREATED: {
-            "description": "Tool created successfully.",
-        }
-    },
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_tool(
     tool: SavedTool = Body(..., example=ToolExamples.CREATE_EXAMPLE),
@@ -61,7 +57,10 @@ async def create_tool(
         created_tool = await tool_service.tool_repo.create(tool)
         if not created_tool:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create tool")
+        # If you truly want no body, this is fine:
         return Response(status_code=status.HTTP_201_CREATED)
+        # Or, if you want to return the created resource:
+        # return JSONResponse(status_code=status.HTTP_201_CREATED, content={"id": created_tool.id})
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     
@@ -71,11 +70,7 @@ async def create_tool(
 @router.delete(
     "/{tool_name}",
     name="Delete Tool",
-    responses={
-        status.HTTP_204_NO_CONTENT: {
-            "description": "Tool deleted successfully.",
-        }
-    },
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_tool(
     tool_name: str,
