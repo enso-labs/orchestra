@@ -1,17 +1,14 @@
 import random
-from dataclasses import dataclass
-from typing import Annotated, Any
-from langchain_core.messages import BaseMessage
+from typing import Any
 from langchain_core.tools import tool
 from langgraph.types import interrupt
-from src.constants import APP_ENV
-from pydantic import BaseModel, Field
-from src.utils.logger import logger
+from pydantic import BaseModel, Field, ConfigDict
+
 from langchain_core.runnables import RunnableConfig
-from langchain.tools import tool, ToolRuntime 
+from langgraph.prebuilt import ToolRuntime 
 
 from src.utils.format import get_tool_call_env
-
+from src.utils.logger import logger
 
 @tool
 def get_stock_price(symbol: str) -> str:
@@ -35,10 +32,16 @@ def human_assistance(query: str) -> str:
     return human_response["data"]
 
 
-@tool
+class SendWebhookArgs(BaseModel):
+    # prevent pydantic from inspecting ToolRuntime/BaseStore
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    text: str = Field(description="The text to send to the webhook")
+    runtime: Any = None
+
+@tool(args_schema=SendWebhookArgs)
 def send_webhook_to_channel(
-    text: str = Field(description="The text to send to the webhook"),
-    runtime: ToolRuntime = None,
+    text: str,
+    runtime: ToolRuntime | None = None,   # keep real type at runtime
 ) -> bool:
     """Title: Webhook Tool
     Description: Test the webhook tool
