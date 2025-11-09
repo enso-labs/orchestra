@@ -35,12 +35,11 @@ def human_assistance(query: str) -> str:
     return human_response["data"]
 
 
-class SendWebhookArgs(BaseModel):
-    text: str = Field(description="The text to send to the webhook")
-    runtime: Any
-
-@tool(args_schema=SendWebhookArgs)
-def send_webhook_to_channel(text: str, runtime: ToolRuntime) -> str:
+@tool
+def send_webhook_to_channel(
+    text: str = Field(description="The text to send to the webhook"),
+    runtime: ToolRuntime = None,
+) -> bool:
     """Title: Webhook Tool
     Description: Test the webhook tool
     Args:
@@ -48,9 +47,12 @@ def send_webhook_to_channel(text: str, runtime: ToolRuntime) -> str:
     Returns:
         bool: True if the webhook tool is working, False otherwise
     """
-    TEST_WEBHOOK_URL, tool_call = get_tool_call_env(runtime).get('TEST_WEBHOOK_URL')
+    env, tool_call = get_tool_call_env(runtime)
+    TEST_WEBHOOK_URL = (env or {}).get("TEST_WEBHOOK_URL")
     if not TEST_WEBHOOK_URL:
-        raise ValueError(f"TEST_WEBHOOK_URL not found in metadata for tool call {tool_call.get('name')}")
+        raise ValueError(
+            f"TEST_WEBHOOK_URL not found in metadata for tool call {(tool_call or {}).get('name')}"
+        )
     return True
 
 TEST_TOOLS = [get_stock_price, get_weather, human_assistance, send_webhook_to_channel]

@@ -51,6 +51,7 @@ class SavedTool(BaseModel):
 		structured_tool = StructuredTool.from_function(**tool_data)
 		structured_tool.metadata = {
       		**self.metadata,
+			"base_tool": self.base_tool,
 			"env": self.env,
 		}
 		return structured_tool

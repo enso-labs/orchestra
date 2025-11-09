@@ -112,13 +112,16 @@ def get_tool_call_from_runtime_state(runtime: ToolRuntime) -> dict:
                         return call
     raise ValueError("Tool call not found in runtime state")
 
-def get_tool_call_env(runtime: ToolRuntime) -> dict:
-    messages: list[BaseMessage] = runtime.state.get("messages", [])
-    metadata = runtime.config.get("metadata", {})
+def get_tool_call_env(runtime: ToolRuntime) -> tuple[dict, dict]:
+    """Return (env_dict, tool_call_dict) for the current tool_call_id."""
+    messages: list[BaseMessage] = runtime.state.get("messages", []) or []
+    metadata = runtime.config.get("metadata") or {}
     if messages:
         for msg in reversed(messages):
-            if hasattr(msg, "tool_calls"):
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
                 for call in msg.tool_calls:
                     if call.get("id") == runtime.tool_call_id:
-                        return metadata[call.get('name')].get('env', {}), call
+                        tool_name = call.get("name")
+                        env = ((metadata.get(tool_name) or {}).get("env") or {})
+                        return env, call
     raise ValueError("Tool call not found in runtime state")
