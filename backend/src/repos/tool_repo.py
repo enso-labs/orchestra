@@ -1,6 +1,7 @@
 from typing import Literal, Optional
 from dataclasses import dataclass
 from fastapi.openapi.models import Example
+from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore, SearchItem
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
@@ -59,7 +60,8 @@ class ToolRepo:
 	def __init__(
 		self, 
 		user_id: str = None, 
-		store: BaseStore = get_store_in_memory()
+		store: BaseStore = get_store_in_memory(),
+		config: RunnableConfig = None,
 	):
 		self.user_id = user_id
 		self.store: BaseStore = store

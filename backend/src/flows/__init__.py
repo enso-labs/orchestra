@@ -1,5 +1,6 @@
 from typing import Type, Literal, Any, AsyncGenerator, Optional
 from uuid import uuid4
+from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langchain.agents import create_agent
@@ -113,9 +114,9 @@ async def init_subagents(params: LLMRequest | LLMStreamRequest) -> list[SubAgent
     return result
 
 
-async def init_memories(params: LLMRequest | LLMStreamRequest, tools: list[BaseTool]):
+async def init_memories(system_prompt: str, tools: list[BaseTool]):
     memory_prompt = await add_memories_to_system()
-    prompt = params.system + "\n" + memory_prompt if memory_prompt else params.system
+    prompt = system_prompt + "\n" + memory_prompt if memory_prompt else system_prompt
     return tools + MEMORY_TOOLS, prompt
 
 
@@ -134,41 +135,31 @@ def init_config(params: LLMRequest | LLMStreamRequest):
 ### Construct Agent
 ################################################################################
 async def construct_agent(
-    params: LLMRequest | LLMStreamRequest,
+    # params: LLMRequest | LLMStreamRequest,
+    system_prompt: str,
+    tools: list[BaseTool],
+    model: BaseChatModel,
+    subagents: list[SubAgent] = [],
+    config: RunnableConfig = None,
     checkpointer: BaseCheckpointSaver = None,
     store: BaseStore = None,
 ):
     try:
-        # Add config if it exists
-        config = init_config(params)
-        # Initialize tools
-        tools = await init_tools(
-            tools=params.tools,
-            a2a=params.a2a,
-            mcp=params.mcp,
-            thread_id=params.metadata.thread_id,
-        )
-        prompt = params.system
-        if config:
-            tools, prompt = await init_memories(params, tools)
 
-        if params.subagents:
-            sub_agents = await init_subagents(params)
-            params.subagents = sub_agents
+        if config:
+            tools, prompt = await init_memories(system_prompt, tools)
+
+        if subagents:
+            subagents = await init_subagents(subagents)
 
         # Asynchronous LLM call
         agent = Orchestra(
-            graph_id=(
-                params.metadata.graph_id
-                if params.metadata and params.metadata.graph_id
-                else "react"
-            ),
-            config=config,
-            model=params.model,
+            graph_id='deepagent',
+            # config=config,
+            model=model,
             tools=tools,
-            subagents=params.subagents,
-            # context_schema=ContextSchema,
-            prompt=init_system_prompt(prompt, params.metadata or {}),
+            subagents=subagents,
+            prompt=init_system_prompt(prompt, config or {}),
             checkpointer=checkpointer,
             store=store,
         )
@@ -185,7 +176,7 @@ class Orchestra:
         subagents: Optional[list[SubAgent]] = None,
         model: str = "openai:gpt-5-nano",
         prompt: str = "You are a helpful assistant.",
-        config: RunnableConfig = None,
+        # config: RunnableConfig = None,
         # context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
@@ -194,7 +185,7 @@ class Orchestra:
         self.tools = tools
         self.model = model
         self.prompt = prompt
-        self.config = config
+        # self.config = config
         # self.context_schema = context_schema
         self.store = store
         self.checkpointer = checkpointer
@@ -213,22 +204,24 @@ class Orchestra:
     async def invoke(
         self,
         messages: list[BaseMessage],
+        config: RunnableConfig = None,
         context: dict[str, Any] = None,
     ) -> BaseMessage:
-        return await self.graph.ainvoke(messages, self.config, context=context)
+        return await self.graph.ainvoke(messages, config=config, context=context)
 
     def astream(
         self,
         messages: list[BaseMessage],
         stream_mode: str = "messages",
+        config: RunnableConfig = None,
         context: dict[str, Any] = None,
     ) -> AsyncGenerator[BaseMessage, None]:
         return self.graph.astream(
-            messages, self.config, stream_mode=stream_mode, context=context
+            messages, config=config, stream_mode=stream_mode, context=context
         )
 
     async def aget_state(self, config: RunnableConfig = None):
-        if config is None:
-            config = self.config
+        # if config is None:
+        #     config = self.config
         state = await self.graph.aget_state(config)
         return state

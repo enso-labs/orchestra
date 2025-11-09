@@ -1,4 +1,5 @@
 from typing import Optional
+from langchain_core.runnables import RunnableConfig
 from langgraph.pregel.main import BaseCheckpointSaver
 from src.services.checkpoint import CheckpointService
 from src.services.thread import ThreadService
@@ -7,26 +8,28 @@ from src.services.prompt import PromptService
 from langgraph.store.base import BaseStore
 from src.services.presidio import PresidioService
 from src.utils.logger import logger
-from langgraph.store.memory import InMemoryStore
 from src.services.memory import MemoryService
-
-IN_MEMORY_STORE = InMemoryStore()
-
+from src.services.tool import ToolService
+from src.services.db import get_store_in_memory
+from src.utils.tools import get_user_id
 
 class ServiceContext:
     def __init__(
         self,
         user_id: str = None,
+        config: RunnableConfig = None,
         store: BaseStore = None,
         checkpointer: Optional[BaseCheckpointSaver] = None,
     ):
-        self.user_id = user_id
-        self.store = store or IN_MEMORY_STORE
+        self.config = config
+        self.store = store or get_store_in_memory()
         self.checkpointer = checkpointer
-        self.memory_service = MemoryService(user_id=user_id, store=store)
-        self.thread_service = ThreadService(user_id=user_id, store=store)
-        self.prompt_service = PromptService(user_id=user_id, store=store)
-        self.assistant_service = AssistantService(user_id=user_id, store=store)
+        self.user_id = user_id or get_user_id(config)
+        self.tool_service = ToolService(user_id=self.user_id, store=store)
+        self.memory_service = MemoryService(user_id=self.user_id, store=store)
+        self.thread_service = ThreadService(user_id=self.user_id, store=store)
+        self.prompt_service = PromptService(user_id=self.user_id, store=store)
+        self.assistant_service = AssistantService(user_id=self.user_id, store=store)
         self.presidio_service = PresidioService()
 
         if checkpointer:

@@ -1,4 +1,5 @@
 import asyncio
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool, BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_arcade import ArcadeToolManager
@@ -6,7 +7,7 @@ from langgraph.store.base import BaseStore
 
 from src.repos.tool_repo import SavedTool
 from src.schemas.entities.a2a import A2AServer, McpServer
-from src.tools import TOOL_LIBRARY
+from src.tools import TOOL_LIBRARY, init_tool_library
 from src.utils.a2a import A2ACardResolver
 from src.schemas.entities import ArcadeConfig
 from src.utils.logger import logger
@@ -20,17 +21,22 @@ class ToolService:
     def __init__(
         self, 
         user_id: str = None,
-        store: BaseStore = get_store_in_memory()
+        store: BaseStore = get_store_in_memory(),
+        config: RunnableConfig = None,
     ):
         self.user_id = user_id
         self.store = store
-        self.tool_repo = ToolRepo(user_id=user_id, store=store)
-
+        self.tool_repo = ToolRepo(user_id=user_id, store=store, config=config)
+        
     @staticmethod
     def default_tools(tools: list[str]) -> list[BaseTool]:
         default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
         return default_tools
-
+    
+    
+    def library(self) -> list[BaseTool]:
+        tool_lib = init_tool_library(self.user_id)
+        return tool_lib
 
     async def tool_details(self):
         tool_details = []
