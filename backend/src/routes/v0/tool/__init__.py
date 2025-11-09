@@ -46,11 +46,8 @@ async def list_tools(
     "",
     name="Create Tool",
     responses={
-        status.HTTP_200_OK: {
+        status.HTTP_201_CREATED: {
             "description": "Tool created successfully.",
-            "content": {
-                "application/json": {"example": {"tool": {}}}
-            },
         }
     },
 )
