@@ -106,14 +106,18 @@ async def llm_stream(
             },
             max_concurrency=4,
             recursion_limit=100,
+            metadata={**params.metadata.model_dump()},
         )
         service_context = ServiceContext(config=config, store=store)
         params = await process_presidio(params, service_context.presidio_service)
         ### Collect all tools
         tools = []
         for tool in params.tools:
-            struct_tools = await service_context.tool_service.tool_repo.search(filter={"name": tool})
-            tools.append(struct_tools[0])
+            items = await service_context.tool_service.tool_repo.search(filter={"name": tool})
+            structured_tool = items[0]
+            tool_metadata = {structured_tool.name: structured_tool.metadata}
+            config['metadata'] = {**tool_metadata, **config['metadata']}
+            tools.append(structured_tool)
         a2a = A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(params.metadata.thread_id)
         mcp = await service_context.tool_service.mcp_tools(params.mcp)
         tools = tools + a2a + mcp
@@ -134,13 +138,7 @@ async def llm_stream(
                 params.system,
                 tools,
                 params.subagents,
-                {
-                    'configurable': {
-                        'user_id': user.id if user else None,
-                        'thread_id': params.metadata.thread_id or str(uuid4()),
-                        'assistant_id': params.metadata.assistant_id or None,
-                    }
-                },
+                service_context.config,
                 service_context,
             ),
             media_type="text/event-stream",

@@ -2,7 +2,7 @@ import asyncio
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool, BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_arcade import ArcadeToolManager
+
 from langgraph.store.base import BaseStore
 
 from src.repos.tool_repo import SavedTool
@@ -40,16 +40,15 @@ class ToolService:
 
     async def tool_details(self):
         tool_details = []
-        user_tools = await self.tool_repo.search()
-        tool_lib = TOOL_LIBRARY + user_tools
-        for tool in tool_lib:
+        user_tools: list[StructuredTool] = await self.tool_repo.search()
+        for tool in user_tools:
             updated_tool = attach_tool_details(tool)
             tool_details.append(
                 {
                     "name": updated_tool.name,
                     "description": updated_tool.description,
-                    "args": updated_tool.args,
-                    "tags": updated_tool.tags,
+                    "args": tool.args,
+                    "tags": tool.tags,
                     # "metadata": updated_tool.metadata,
                 }
             )
@@ -83,6 +82,7 @@ class ToolService:
     def arcade_tools(
         arcade: ArcadeConfig,
     ) -> list[StructuredTool]:
+        from langchain_arcade import ArcadeToolManager
         manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
         tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
         return tools

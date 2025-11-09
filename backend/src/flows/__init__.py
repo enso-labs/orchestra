@@ -9,7 +9,7 @@ from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from deepagents import async_create_deep_agent, SubAgent
+from deepagents import SubAgent, create_deep_agent
 
 
 from src.services.memory import memory_service
@@ -67,15 +67,15 @@ def graph_builder(
             store=store,
         )
 
-    deep_agent = async_create_deep_agent(
+    deep_agent = create_deep_agent(
         model=model,
         tools=tools,
         subagents=subagents,
-        instructions=prompt,
+        system_prompt=prompt,
         checkpointer=checkpointer,
+        context_schema=context_schema,
+        store=store,
     )
-    deep_agent.context_schema = context_schema
-    deep_agent.store = store
     return deep_agent
 
 
