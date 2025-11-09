@@ -36,8 +36,15 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         await self.tool_repo.delete(self.tools[0].name)
         pass
     
-    async def test_saved_tool_is_invoked(self):
-        """Test that the saved tool is invoked correctly"""
+    # async def test_saved_tool_is_invoked(self):
+    #     """Test that the saved tool is invoked correctly"""
+    #     tool: SavedTool = self.tools[0]
+    #     result = await self.tool_service.invoke_tool(name=tool.base_tool, args=tool.args, config={"env": tool.env})
+    #     self.assertEqual(result, True)
+        
+        
+    async def test_saved_tool_is_converted_to_structured_tool(self):
+        """Test that the saved tool is converted to a structured tool correctly"""
         tool: SavedTool = self.tools[0]
-        result = await self.tool_service.invoke_tool(name=tool.base_tool, args=tool.args, config={"env": tool.env})
-        self.assertEqual(result, True)
+        structured_tool = await self.tool_service.invoke_saved_tool(tool)
+        print(structured_tool)

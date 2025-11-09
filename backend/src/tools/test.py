@@ -39,7 +39,7 @@ def send_webhook_to_channel(text: str, config: RunnableConfig) -> str:
     Returns:
         bool: True if the webhook tool is working, False otherwise
     """
-    TEST_WEBHOOK_URL = config["configurable"].get("env").get("TEST_WEBHOOK_URL")
+    TEST_WEBHOOK_URL = format_tool_env(config).get("TEST_WEBHOOK_URL")
     if not TEST_WEBHOOK_URL:
         raise ValueError("TEST_WEBHOOK_URL is not set")
     return True

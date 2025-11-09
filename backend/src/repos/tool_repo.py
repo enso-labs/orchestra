@@ -1,12 +1,13 @@
-
-from typing import Any, Literal
+from typing import Literal, Optional
 from langgraph.store.base import BaseStore, SearchItem
+from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 from datetime import datetime
 
 from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 from src.utils.security import encrypt_value, decrypt_value
+from src.tools import TOOL_LIBRARY
 
 
 class SavedTool(BaseModel):
@@ -16,13 +17,34 @@ class SavedTool(BaseModel):
 	type: Literal["default", "mcp", "a2a", "api"]
 	args: dict = Field(default_factory=dict)
 	metadata: dict = Field(default_factory=dict)
-	tags: list[str] = Field(default_factory=list)
-	env: dict = Field(default_factory=dict)
+	env: Optional[dict] = None
 	verbose: bool = Field(default=False)
 	disabled: bool = Field(default=False)
 	public: bool = Field(default=False)
 	created_at: datetime = Field(default_factory=datetime.now)
 	updated_at: datetime = Field(default_factory=datetime.now)
+ 
+	def to_structured_tool(self) -> StructuredTool:
+		found_tool = next((tool for tool in TOOL_LIBRARY if tool.name == self.base_tool), None)
+		if not found_tool:
+			raise ValueError(f"Tool {self.base_tool} not found")
+		if found_tool.coroutine:
+			structured_tool = StructuredTool.from_coroutine(
+				coroutine=found_tool.coroutine,
+			)
+		else:
+			structured_tool = StructuredTool.from_function(
+				func=found_tool.func,
+			)
+		structured_tool.name = self.name
+		structured_tool.description = self.description
+		structured_tool.args_schema = found_tool.args_schema
+		structured_tool.metadata = {
+      		**self.metadata,
+			"env": self.env,
+		}
+		structured_tool.verbose = self.verbose
+		return structured_tool
 
 class ToolRepo:
 	_instance: "ToolRepo" = None

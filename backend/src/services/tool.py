@@ -2,6 +2,7 @@ from langchain_core.tools import StructuredTool, BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_arcade import ArcadeToolManager
 
+from src.repos.tool_repo import SavedTool
 from src.schemas.entities.a2a import A2AServer, McpServer
 from src.tools import TOOL_LIBRARY
 from src.utils.a2a import A2ACardResolver
@@ -80,6 +81,11 @@ class ToolService:
             if self.user_id
             else None,
         )
+        
+    async def invoke_saved_tool(self, saved_tool: SavedTool):
+        structured_tool = saved_tool.to_structured_tool()
+        return await structured_tool.ainvoke(input=saved_tool.args,
+                                             config={"metadata": structured_tool.metadata})
 
 
 tool_service = ToolService()
