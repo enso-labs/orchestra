@@ -108,4 +108,4 @@ def format_tool_env(config: dict | RunnableConfig) -> dict:
     # Check metadata env
     if config.get("metadata", {}).get("env"):
         return config.get("metadata").get("env")
-    return None
+    raise ValueError("No environment variables found in config.")

@@ -17,6 +17,7 @@ class SavedTool(BaseModel):
 	args: dict = Field(default_factory=dict)
 	metadata: dict = Field(default_factory=dict)
 	tags: list[str] = Field(default_factory=list)
+	env: dict = Field(default_factory=dict)
 	verbose: bool = Field(default=False)
 	disabled: bool = Field(default=False)
 	public: bool = Field(default=False)
@@ -47,8 +48,8 @@ class ToolRepo:
 		tool: SavedTool, 
 		ttl: int | None = None
 	) -> bool:
-		if "env" in tool.metadata:
-			tool.metadata["env"] = encrypt_value(tool.metadata["env"])
+		if tool.env:
+			tool.env = encrypt_value(tool.env)
 		await self.store.aput(
 			namespace=self._get_namespace(), 
 			key=tool.name, 
@@ -61,8 +62,8 @@ class ToolRepo:
 		decrypted_tools = []
 		logger.info(f"Formatting {len(tools)} tools")
 		for tool in tools:
-			if "env" in tool.value["metadata"]:
-				tool.value["metadata"]["env"] = decrypt_value(tool.value["metadata"]["env"])
+			if "env" in tool.value:
+				tool.value["env"] = decrypt_value(tool.value["env"])
 			saved_tool = SavedTool.model_validate(tool.value)
 			decrypted_tools.append(saved_tool)
 		return decrypted_tools

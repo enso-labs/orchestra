@@ -19,11 +19,8 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
             description="Send a message to the GridSite Microsoft Teams channel.",
             type="default",
             args={'text': 'Hello, world!'},
-            metadata={
-                "env": {
-                    "TEST_WEBHOOK_URL": os.getenv("TEST_WEBHOOK_URL")
-                }
-            },
+            metadata={},
+            env={"TEST_WEBHOOK_URL": os.getenv("TEST_WEBHOOK_URL")},
             tags=["test"],
             verbose=False,
             disabled=False,
@@ -41,10 +38,6 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
     
     async def test_saved_tool_is_invoked(self):
         """Test that the saved tool is invoked correctly"""
-        tool = self.tools[0]
-        result = await self.tool_service.invoke_tool(
-            name=tool.base_tool, 
-            args=tool.args,
-            env=tool.metadata["env"],
-        )
+        tool: SavedTool = self.tools[0]
+        result = await self.tool_service.invoke_tool(name=tool.base_tool, args=tool.args, config={"env": tool.env})
         self.assertEqual(result, True)

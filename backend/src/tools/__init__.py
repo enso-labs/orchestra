@@ -1,3 +1,5 @@
+from typing import List
+from langchain_core.tools import BaseTool
 from src.constants import APP_ENV
 from src.tools.search import SEARCH_TOOLS
 from src.tools.test import TEST_TOOLS
@@ -16,4 +18,4 @@ def init_tool_library():
         tool_lib.extend(TEST_TOOLS)
     return tool_lib
 
-TOOL_LIBRARY = init_tool_library()
+TOOL_LIBRARY: List[BaseTool] = init_tool_library()
