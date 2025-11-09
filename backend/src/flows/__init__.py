@@ -146,8 +146,8 @@ async def construct_agent(
 ):
     try:
 
-        if config:
-            tools, prompt = await init_memories(system_prompt, tools)
+        if config.get('metadata', {}).get('user_id'):
+            tools, system_prompt = await init_memories(system_prompt, tools)
 
         if subagents:
             subagents = await init_subagents(subagents)
@@ -159,7 +159,7 @@ async def construct_agent(
             model=model,
             tools=tools,
             subagents=subagents,
-            prompt=init_system_prompt(prompt, config or {}),
+            prompt=init_system_prompt(system_prompt, config or {}),
             checkpointer=checkpointer,
             store=store,
         )

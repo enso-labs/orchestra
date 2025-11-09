@@ -37,6 +37,15 @@ class ChatModels(str, Enum):
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
     if OLLAMA_BASE_URL:
         OLLAMA_QWEN3 = "ollama:qwen3"
+        
+def get_free_models():
+    return [
+        ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value,
+        ChatModels.OPENAI_GPT_5_NANO.value,
+        ChatModels.GOOGLE_GEMINI_2_5_FLASH_LITE.value,
+        ChatModels.GROQ_OPENAI_GPT_OSS_120B.value,
+        ChatModels.GROQ_LLAMA_3_3_70B_VERSATILE.value,
+    ]
 
 
 def get_system_prompt():

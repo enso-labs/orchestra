@@ -34,7 +34,7 @@ from src.flows import construct_agent, init_config
 from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
-from src.constants.llm import ChatModels
+from src.constants.llm import ChatModels, get_free_models
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -222,4 +222,11 @@ async def optimize_prompt(
 )
 async def list_models():
     chat_models = sorted({model.value for model in ChatModels})
-    return JSONResponse(content={"models": chat_models}, status_code=200)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "default": ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value,
+            "free": sorted(get_free_models()),
+            "models": chat_models,
+        }
+    )
