@@ -56,6 +56,6 @@ def send_webhook_to_channel(
         raise ValueError(
             f"TEST_WEBHOOK_URL not found in metadata for tool call {(tool_call or {}).get('name')}"
         )
-    return True
+    return text
 
 TEST_TOOLS = [get_stock_price, get_weather, human_assistance, send_webhook_to_channel]

@@ -99,12 +99,15 @@ class ToolService:
             else None,
         )
         
-    async def invoke_saved_tool(self, saved_tool: SavedTool, input: dict):
-        structured_tool = saved_tool.to_structured_tool()
-        return await structured_tool.ainvoke(
-            input=input,
-            config={"metadata": structured_tool.metadata}
-        )
+    async def invoke_structured_tool(self, structured_tool: StructuredTool, input: dict):
+        try:
+            return await structured_tool.ainvoke(
+                input=input,
+                config={"metadata": structured_tool.metadata}
+            )
+        except Exception as e:
+            logger.exception(f"Error invoking structured tool {structured_tool.name}: {e}")
+            return {"error": str(e)}
 
 
 tool_service = ToolService()

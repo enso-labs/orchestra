@@ -22,7 +22,7 @@ class ServiceContext:
         self.config = config
         self.store = store or get_store_in_memory()
         self.checkpointer = checkpointer
-        self.user_id = user_id
+        self.user_id = config['configurable'].get('user_id') or config['metadata'].get('user_id')
         self.tool_service = ToolService(user_id=self.user_id, store=store)
         self.memory_service = MemoryService(user_id=self.user_id, store=store)
         self.thread_service = ThreadService(user_id=self.user_id, store=store)
