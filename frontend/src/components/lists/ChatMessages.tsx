@@ -35,7 +35,11 @@ function ToolAction({
 	}
 
 	if (["get_stock_price_history"].includes(message.name)) {
-		return <ChartRenderWidget content={message.artifact} />;
+		return (
+			<div className="w-full overflow-hidden rounded-lg border border-border">
+				<ChartRenderWidget content={message.artifact} />
+			</div>
+		);
 	}
 
 	// Check if message.content is valid JSON
