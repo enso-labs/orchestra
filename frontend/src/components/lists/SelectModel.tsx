@@ -9,13 +9,12 @@ import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
 import GroqIcon from "@/components/icons/GroqIcon";
 import XAIIcon from "../icons/XAIIcon";
 import useModel from "@/hooks/useModel";
-import { useState, useEffect } from "react";
 import { getAuthToken } from "@/lib/utils/auth";
-import { listModels } from "@/lib/services/modelService";
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
-	const { model, setModel } = useModel();
-	const [modelValues, setModelValues] = useState<string[]>([]);
+	const { model, setModel, useModelsEffect, models } = useModel();
+
+	useModelsEffect();
 
 	const handleModelChange = (value: string) => {
 		setModel(value);
@@ -52,36 +51,20 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 		return modelValue.split(":")[1] || modelValue;
 	};
 
-	useEffect(() => {
-		const fetchModels = async () => {
-			const response = await listModels();
-			setModelValues(response.data.models);
-		};
-		fetchModels();
-	}, []);
-
 	const authToken = getAuthToken?.();
-
-	const allowedModelsIfNoAuth = [
-		"anthropic:claude-haiku-4-5",
-		"google_genai:gemini-2.5-flash-lite",
-		"groq:openai/gpt-oss-120b",
-		"openai:gpt-5-nano",
-		"xai:grok-4-fast",
-	];
 
 	return (
 		<Select
-			value={model ?? allowedModelsIfNoAuth[0] as string}
+			value={model ?? models.default}
 			onValueChange={handleModelChange}
 		>
 			<SelectTrigger>
 				<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
 			<SelectContent>
-				{modelValues.map((modelValue: string) => {
+				{models.models.map((modelValue: string) => {
 					const disabled =
-						!authToken && !allowedModelsIfNoAuth.includes(modelValue as string);
+						!authToken && !models.free.includes(modelValue as string);
 					return (
 						<SelectItem key={modelValue} value={modelValue} disabled={disabled}>
 							<div className="flex items-center gap-2">
