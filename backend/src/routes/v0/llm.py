@@ -30,11 +30,12 @@ from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest
 from src.utils.stream import stream_generator
 from src.utils.llm import audio_to_text
-from src.flows import construct_agent, init_config
+from src.flows import construct_agent
 from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
 from src.constants.llm import ChatModels, get_free_models
+from src.tools import default_tools
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -111,17 +112,22 @@ async def llm_stream(
         service_context = ServiceContext(config=config, store=store)
         params = await process_presidio(params, service_context.presidio_service)
         ### Collect all tools
-        tools = []
-        for tool in params.tools:
-            items = await service_context.tool_service.tool_repo.search(filter={"name": tool})
-            structured_tool = items[0]
-            tool_metadata = {structured_tool.name: structured_tool.metadata}
-            config['metadata'] = {**tool_metadata, **config['metadata']}
-            tools.append(structured_tool)
-        a2a = A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(params.metadata.thread_id)
-        mcp = await service_context.tool_service.mcp_tools(params.mcp)
-        tools = tools + a2a + mcp
+        tool_map = {t.name: t for t in default_tools()}  # O(n) index
+        TOOLS = (
+            A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(params.metadata.thread_id)
+            + await service_context.tool_service.mcp_tools(params.mcp)
+            + [tool_map[name] for name in (params.tools or ()) if name in tool_map]
+        )
         
+        if user:
+            for tool in params.tools:
+                items = await service_context.tool_service.tool_repo.search(filter={"name": tool})
+                if items:
+                    structured_tool = items[0]
+                    tool_metadata = {structured_tool.name: structured_tool.metadata}
+                    config['metadata'] = {**tool_metadata, **config['metadata']}
+                    TOOLS.append(structured_tool)
+
         if params.metadata.assistant_id:
             assistant: Assistant = await service_context.assistant_service.get(
                 params.metadata.assistant_id,
@@ -136,7 +142,7 @@ async def llm_stream(
                 params.to_langchain_messages(),
                 params.model,
                 params.system,
-                tools,
+                TOOLS,
                 params.subagents,
                 service_context.config,
                 service_context,
