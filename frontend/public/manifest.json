@@ -1,14 +1,15 @@
 {
-	"name": "Ensō",
-	"short_name": "Ensō",
-	"description": "Ensō",
+	"name": "Ensō Labs - Orchestra 🪶",
+	"short_name": "Ensō Labs - Orchestra 🪶",
+	"description": "Multi-Agent AI Orchestrator",
 	"theme_color": "#000000",
 	"background_color": "#000000",
 	"display": "standalone",
 	"scope": "/",
 	"start_url": "/",
 	"orientation": "portrait",
-	"categories": ["education", "productivity"],
+	"categories": ["education", "productivity", "ai", "technology", "orchestrator"],
+	"lang": "en-US",
 	"icons": [
 		{
 			"src": "/icons/icon-192.png",
