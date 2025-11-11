@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
-import { FileText, Download, Check, Copy } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { FileText, Download, Check, Copy, Eye } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
+import MarkdownCard from "@/components/cards/MarkdownCard";
 import JSZip from "jszip";
 
 interface FileEditorPanelProps {
@@ -11,6 +12,7 @@ interface FileEditorPanelProps {
 
 export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	const [copied, setCopied] = useState(false);
+	const [showPreview, setShowPreview] = useState(false);
 
 	// Flatten all files from all messages
 	const allFiles = useMemo(() => {
@@ -23,6 +25,17 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	const fileNames = Object.keys(allFiles);
 	const [selectedFile, setSelectedFile] = useState(fileNames[0]);
+
+	// Reset selected file when filesMap changes (new thread loaded)
+	useEffect(() => {
+		if (fileNames.length > 0) {
+			// If current selected file doesn't exist in new files, select first file
+			if (!fileNames.includes(selectedFile)) {
+				setSelectedFile(fileNames[0]);
+				setShowPreview(false);
+			}
+		}
+	}, [fileNames, selectedFile]);
 
 	const getLanguage = (filename: string): string => {
 		const ext = filename.split(".").pop()?.toLowerCase();
@@ -59,6 +72,10 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	const getFileContent = (filename: string): string => {
 		const file = allFiles[filename];
 		return Array.isArray(file.content) ? file.content.join("\n") : file.content;
+	};
+
+	const isMarkdownFile = (filename: string): boolean => {
+		return filename.toLowerCase().endsWith('.md');
 	};
 
 	// Copy current file content
@@ -116,22 +133,22 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		<div className="h-full flex flex-col bg-background">
 			{/* File Tabs (VSCode-like) */}
 			<div className="flex items-center border-b border-border bg-muted/30">
-				<ScrollArea className="flex-1" orientation="horizontal">
+				<ScrollArea className="flex-1">
 					<div className="flex">
 						{fileNames.map((filename) => (
 							<button
 								key={filename}
 								onClick={() => setSelectedFile(filename)}
 								className={`
-                                    px-4 py-2 text-sm border-r border-border
-                                    flex items-center gap-2 min-w-fit whitespace-nowrap
-                                    hover:bg-accent transition-colors
-                                    ${
-																			selectedFile === filename
-																				? "bg-background text-foreground border-b-2 border-b-primary"
-																				: "text-muted-foreground"
-																		}
-                                `}
+										px-4 py-2 text-sm border-r border-border
+										flex items-center gap-2 min-w-fit whitespace-nowrap
+										hover:bg-accent transition-colors
+										${
+											selectedFile === filename
+												? "bg-background text-foreground border-b-2 border-b-primary"
+												: "text-muted-foreground"
+										}
+								`}
 							>
 								<FileText className="h-3 w-3" />
 								{filename.split("/").pop()}
@@ -142,6 +159,19 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 				{/* Actions */}
 				<div className="flex items-center gap-1 px-2 border-l border-border">
+					{/* Markdown Preview Toggle (only for .md files) */}
+					{selectedFile && isMarkdownFile(selectedFile) && (
+						<Button
+							variant={showPreview ? "secondary" : "ghost"}
+							size="sm"
+							onClick={() => setShowPreview(!showPreview)}
+							className="h-8 gap-2"
+							title={showPreview ? "Show code" : "Preview markdown"}
+						>
+							<Eye className="h-4 w-4" />
+						</Button>
+					)}
+
 					{/* Copy current file */}
 					<Button
 						variant="ghost"
@@ -187,18 +217,28 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 			{/* Editor Area */}
 			<div className="flex-1 overflow-hidden">
 				{selectedFile && allFiles[selectedFile] && (
-					<MonacoEditor
-						value={getFileContent(selectedFile)}
-						language={getLanguage(selectedFile)}
-						readOnly
-						height="100%"
-						options={{
-							minimap: { enabled: true },
-							lineNumbers: true,
-							wordWrap: "on",
-							fontSize: 13,
-						}}
-					/>
+					<>
+						{showPreview && isMarkdownFile(selectedFile) ? (
+							<ScrollArea className="h-full">
+								<div className="p-6 max-w-4xl mx-auto">
+									<MarkdownCard content={getFileContent(selectedFile)} />
+								</div>
+							</ScrollArea>
+						) : (
+							<MonacoEditor
+								value={getFileContent(selectedFile)}
+								language={getLanguage(selectedFile)}
+								readOnly
+								height="100%"
+								options={{
+									minimap: true,
+									lineNumbers: true,
+									wordWrap: "on",
+									fontSize: 13,
+								}}
+							/>
+						)}
+					</>
 				)}
 			</div>
 		</div>

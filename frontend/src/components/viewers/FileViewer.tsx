@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Copy } from "lucide-react";
+import { FileText } from "lucide-react";
 import {
 	Accordion,
 	AccordionContent,
@@ -7,8 +7,8 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
+import CopyTextButton from "@/components/buttons/CopyTextButton";
 
 interface FileViewerProps {
 	files: Record<
@@ -72,15 +72,6 @@ export default function FileViewer({ files }: FileViewerProps) {
 		return filename.split("/").pop() || filename;
 	};
 
-	// Copy to clipboard
-	const handleCopy = async (content: string) => {
-		try {
-			await navigator.clipboard.writeText(content);
-		} catch (error) {
-			console.error("Failed to copy:", error);
-		}
-	};
-
 	if (!files || fileNames.length === 0) {
 		return null;
 	}
@@ -104,17 +95,7 @@ export default function FileViewer({ files }: FileViewerProps) {
 								<span className="text-xs text-muted-foreground font-mono">
 									{fileNames[0]}
 								</span>
-								<Button
-									size="sm"
-									variant="outline"
-									onClick={() =>
-										handleCopy(getFileContent(files[fileNames[0]]))
-									}
-									className="h-7 text-xs"
-								>
-									<Copy className="h-3 w-3 mr-1" />
-									Copy
-								</Button>
+								<CopyTextButton text={getFileContent(files[fileNames[0]])} />
 							</div>
 
 							<div className="border border-border rounded-md overflow-hidden">
@@ -133,7 +114,8 @@ export default function FileViewer({ files }: FileViewerProps) {
 							</div>
 
 							<div className="text-xs text-muted-foreground px-2">
-								Created: {new Date(files[fileNames[0]].created_at).toLocaleString()}
+								Created:{" "}
+								{new Date(files[fileNames[0]].created_at).toLocaleString()}
 							</div>
 						</div>
 					) : (
@@ -158,15 +140,7 @@ export default function FileViewer({ files }: FileViewerProps) {
 											<span className="text-xs text-muted-foreground font-mono">
 												{filename}
 											</span>
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() => handleCopy(getFileContent(files[filename]))}
-												className="h-7 text-xs"
-											>
-												<Copy className="h-3 w-3 mr-1" />
-												Copy
-											</Button>
+											<CopyTextButton text={getFileContent(files[filename])} />
 										</div>
 
 										<div className="border border-border rounded-md overflow-hidden">
@@ -185,7 +159,8 @@ export default function FileViewer({ files }: FileViewerProps) {
 										</div>
 
 										<div className="text-xs text-muted-foreground px-2">
-											Created: {new Date(files[filename].created_at).toLocaleString()}
+											Created:{" "}
+											{new Date(files[filename].created_at).toLocaleString()}
 										</div>
 									</div>
 								</TabsContent>
@@ -197,4 +172,3 @@ export default function FileViewer({ files }: FileViewerProps) {
 		</Accordion>
 	);
 }
-
