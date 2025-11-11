@@ -172,7 +172,8 @@ async def stream_generator(
     subagents: list[SubAgent],
     config: RunnableConfig,
     service_context: ServiceContext,
-):
+):  
+    files_map = {}
     async with get_checkpoint_db() as checkpointer:
         try:
             service_context.config["configurable"]["user_id"] = service_context.user_id
@@ -193,6 +194,10 @@ async def stream_generator(
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
                 if stream_chunk:
+                    stream_type = stream_chunk[0]
+                    chunk_data = stream_chunk[1]
+                    if stream_type == "values" and "files" in chunk_data:
+                        files_map = {**files_map, **chunk_data["files"]}
                     data = ujson.dumps(stream_chunk)
                     log_to_file(str(data), agent.model) and APP_LOG_LEVEL == "DEBUG"
                     logger.debug(f"data: {str(data)}")
@@ -230,6 +235,7 @@ async def stream_generator(
                             "thread_id": thread_id,
                             "checkpoint_id": checkpoint_id,
                             "messages": [last_message.model_dump()],
+                            "files": files_map,
                             "updated_at": get_time(),
                         },
                     )
