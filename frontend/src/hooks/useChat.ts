@@ -52,6 +52,8 @@ export type ChatContextType = {
 	} | null;
 	filesMap: Map<string, any>;
 	setFilesMap: (map: Map<string, any>) => void;
+	viewMode: "chat" | "editor";
+	setViewMode: (mode: "chat" | "editor") => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -88,6 +90,7 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 
 	const abortQuery = () => {
 		if (controller) {
@@ -477,5 +480,7 @@ export default function useChat(): ChatContextType {
 		streamingRate,
 		filesMap,
 		setFilesMap,
+		viewMode,
+		setViewMode,
 	};
 }

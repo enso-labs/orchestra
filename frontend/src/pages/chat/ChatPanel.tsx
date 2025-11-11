@@ -4,6 +4,12 @@ import AgentSection from "@/components/sections/agent-section";
 import { useChatContext } from "@/context/ChatContext";
 import ChatLayout from "@/layouts/ChatLayout";
 import { Agent } from "@/lib/services/agentService";
+import {
+	ResizablePanelGroup,
+	ResizablePanel,
+	ResizableHandle,
+} from "@/components/ui/resizable";
+import FileEditorPanel from "@/components/panels/FileEditorPanel";
 
 interface ChatPanelProps {
 	agent?: Agent;
@@ -13,7 +19,7 @@ interface ChatPanelProps {
 }
 
 function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
-	const { messages } = useChatContext();
+	const { messages, viewMode, filesMap } = useChatContext();
 
 	if (agent && messages.length === 0) {
 		return (
@@ -34,26 +40,55 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 	}
 
 	return (
-		<div
-			className={`
-				flex h-full relative
-				transition-all duration-200 ease-in-out
-			`}
-		>
-			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-				{chatNav}
-				<div className="flex-1 min-h-0">
-					<ChatMessages messages={messages} />
-				</div>
-
-				<div className="sticky bottom-0 bg-background border-border">
-					<div className="max-w-4xl mx-auto">
-						<div className="flex flex-col gap-2 px-4 pb-4">
-							<ChatInput />
+		<div className="flex h-full relative">
+			{viewMode === "chat" ? (
+				// CHAT MODE (Default) - Full-width chat
+				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+					{chatNav}
+					<div className="flex-1 min-h-0">
+						<ChatMessages messages={messages} />
+					</div>
+					<div className="sticky bottom-0 bg-background border-border">
+						<div className="max-w-4xl mx-auto">
+							<div className="flex flex-col gap-2 px-4 pb-4">
+								<ChatInput />
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			) : (
+				// EDITOR MODE - Split view (files left, chat right)
+				<ResizablePanelGroup direction="horizontal" className="flex-1">
+					{/* LEFT: File Editor Panel */}
+					<ResizablePanel
+						defaultSize={60}
+						minSize={50}
+						maxSize={80}
+						className="hidden md:block"
+					>
+						<FileEditorPanel filesMap={filesMap} />
+					</ResizablePanel>
+
+					<ResizableHandle withHandle className="hidden md:flex" />
+
+					{/* RIGHT: Chat Panel */}
+					<ResizablePanel defaultSize={40} minSize={20} maxSize={50}>
+						<div className="flex flex-col h-full min-h-0 overflow-hidden">
+							{chatNav}
+							<div className="flex-1 min-h-0">
+								<ChatMessages messages={messages} />
+							</div>
+							<div className="sticky bottom-0 bg-background border-border">
+								<div className="max-w-4xl mx-auto">
+									<div className="flex flex-col gap-2 px-4 pb-4">
+										<ChatInput />
+									</div>
+								</div>
+							</div>
+						</div>
+					</ResizablePanel>
+				</ResizablePanelGroup>
+			)}
 		</div>
 	);
 }

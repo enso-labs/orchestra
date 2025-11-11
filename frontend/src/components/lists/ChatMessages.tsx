@@ -229,7 +229,7 @@ export function Message({
 	}
 
 	if (["ai", "assistant"].includes(message.role)) {
-		const { filesMap } = useChatContext();
+		const { filesMap, viewMode } = useChatContext();
 		const messageFiles = filesMap.get(message.id);
 
 		return (
@@ -241,12 +241,14 @@ export function Message({
 						/>
 					</div>
 
-					{/* Add file viewer if files exist */}
-					{messageFiles && Object.keys(messageFiles).length > 0 && (
-						<div className="mt-2 px-3">
-							<FileViewer files={messageFiles} />
-						</div>
-					)}
+					{/* Add file viewer if files exist - only show in chat mode */}
+					{viewMode === "chat" &&
+						messageFiles &&
+						Object.keys(messageFiles).length > 0 && (
+							<div className="mt-2 px-3">
+								<FileViewer files={messageFiles} />
+							</div>
+						)}
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
 					<div className="flex gap-1">
