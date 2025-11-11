@@ -6,6 +6,7 @@ from src.constants import (
     OLLAMA_BASE_URL,
     GROQ_API_KEY,
     GOOGLE_API_KEY,
+    XAI_API_KEY,
 )
 
 
@@ -23,7 +24,7 @@ class ChatModels(str, Enum):
         ANTHROPIC_CLAUDE_4_OPUS = "anthropic:claude-opus-4-1"
         ANTHROPIC_CLAUDE_4_5_HAIKU = "anthropic:claude-haiku-4-5"
         ANTHROPIC_CLAUDE_4_5_SONNET = "anthropic:claude-sonnet-4-5"
-    if GOOGLE_API_KEY:
+    if XAI_API_KEY:
         XAI_GROK_4 = "xai:grok-4"
         XAI_GROK_4_FAST = "xai:grok-4-fast"
         XAI_GROK_4_FAST_NON_REASONING = "xai:grok-4-fast-non-reasoning"
