@@ -11,6 +11,7 @@ import { formatContent, truncateFrom } from "@/lib/utils/format";
 import SearchEngineTool from "../tools/SearchEngine";
 import ChartRenderWidget from "../tools/ChartRenderWidget";
 import CopyTextButton from "../buttons/CopyTextButton";
+import FileViewer from "../viewers/FileViewer";
 
 const MAX_LENGTH = 1000;
 
@@ -228,6 +229,9 @@ export function Message({
 	}
 
 	if (["ai", "assistant"].includes(message.role)) {
+		const { filesMap } = useChatContext();
+		const messageFiles = filesMap.get(message.id);
+
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
@@ -236,6 +240,13 @@ export function Message({
 							content={formatContent(message.content) || "Invalid message"}
 						/>
 					</div>
+
+					{/* Add file viewer if files exist */}
+					{messageFiles && Object.keys(messageFiles).length > 0 && (
+						<div className="mt-2 px-3">
+							<FileViewer files={messageFiles} />
+						</div>
+					)}
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
 					<div className="flex gap-1">
