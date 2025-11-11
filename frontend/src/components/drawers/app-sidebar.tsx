@@ -123,7 +123,7 @@ interface ThreadItemProps {
 }
 
 function ThreadItem({ thread }: ThreadItemProps) {
-	const { metadata, setMessages, setMetadata } = useChatContext();
+	const { metadata, setMessages, setMetadata, setFilesMap } = useChatContext();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const messages = thread.value?.messages || [];
 	const messageCount = messages.length;
@@ -145,6 +145,24 @@ function ThreadItem({ thread }: ThreadItemProps) {
 
 	const handleThreadClick = async () => {
 		const checkpoints = await searchThreads("list_checkpoints", thread.value);
+
+		// Set filesMap by associating files with the last AI message
+		if (thread.value.files && Object.keys(thread.value.files).length > 0) {
+			const messages = formatMessages(checkpoints[0].values.messages);
+			const latestAiMessage = messages
+				.slice()
+				.reverse()
+				.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+
+			if (latestAiMessage) {
+				const newFilesMap = new Map();
+				newFilesMap.set(latestAiMessage.id, thread.value.files);
+				setFilesMap(newFilesMap);
+			}
+		} else {
+			setFilesMap(new Map());
+		}
+
 		setModel(
 			thread.value.messages[thread.value.messages.length - 1].model ||
 				DEFAULT_CHAT_MODEL,

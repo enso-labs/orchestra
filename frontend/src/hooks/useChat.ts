@@ -50,6 +50,10 @@ export type ChatContextType = {
 		startTime: number;
 		rate: number | null;
 	} | null;
+	filesMap: Map<string, any>;
+	setFilesMap: (map: Map<string, any>) => void;
+	viewMode: "chat" | "editor";
+	setViewMode: (mode: "chat" | "editor") => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -84,6 +88,9 @@ export default function useChat(): ChatContextType {
 		tools: [] as string[],
 		toolkit: [] as string[],
 	});
+
+	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 
 	const abortQuery = () => {
 		if (controller) {
@@ -221,11 +228,29 @@ export default function useChat(): ChatContextType {
 			return;
 		}
 
-		// if (streamMode === "values") {
-		// 	console.log(payload[1]);
-		// 	setMessagesState(payload[1].messages);
-		// 	return;
-		// }
+		if (streamMode === "values") {
+			console.log(payload[1]);
+			const valuesData = payload[1];
+
+			// Store files with message association
+			if (valuesData.files && Object.keys(valuesData.files).length > 0) {
+				// Associate files with the latest AI message
+				const latestAiMessage = history
+					.slice()
+					.reverse()
+					.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+
+				if (latestAiMessage) {
+					setFilesMap((prev) => {
+						const newMap = new Map(prev);
+						newMap.set(latestAiMessage.id, valuesData.files);
+						return newMap;
+					});
+				}
+			}
+
+			return;
+		}
 
 		if (streamMode === "messages") {
 			const response = payload[1][0];
@@ -453,5 +478,9 @@ export default function useChat(): ChatContextType {
 		setArcade,
 		useEffectUpdateAssistantId,
 		streamingRate,
+		filesMap,
+		setFilesMap,
+		viewMode,
+		setViewMode,
 	};
 }

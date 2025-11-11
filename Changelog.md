@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/490-can-read-deepagents-agent-files (2025-11-10)
   - feat/485-user-env (2025-11-08)
   - feat/482-teams-webhook (2025-11-05)
   - feat/476-html-chart-construct-tool (2025-11-02)
