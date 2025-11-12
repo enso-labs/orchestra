@@ -14,6 +14,7 @@ from fastapi import (
 )
 from langchain_core.runnables import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.store.base import BaseStore
 from langmem.prompts.types import (
     OptimizerInput,
 )
@@ -30,7 +31,7 @@ from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest
 from src.utils.stream import stream_generator
 from src.utils.llm import audio_to_text
-from src.flows import construct_agent
+from src.flows import construct_agent, init_config
 from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
@@ -59,6 +60,7 @@ async def llm_invoke(
     user: ProtectedUser = Depends(get_optional_user),
     store=Depends(get_store),
 ) -> dict[str, Any] | Any:
+    params.input.to_langchain_messages()
     params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
     if user:
         service_context = ServiceContext(user_id=user.id, store=store)
@@ -67,15 +69,13 @@ async def llm_invoke(
                 params.metadata.assistant_id
             )
             params = assistant.to_llm_request(
-                messages=params.messages,
+                input=params.input,
                 model=params.model,
                 metadata=params.metadata,
             )
     async with get_checkpoint_db() as checkpointer:
         agent = await construct_agent(params, checkpointer, service_context.store)
-        response = await agent.invoke(
-            {"messages": params.to_langchain_messages()},
-        )
+        response = await agent.invoke(params.input)
         return response
 
 
@@ -92,29 +92,24 @@ async def llm_stream(
     request: Request,
     params: LLMRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
-    store=Depends(get_store),
+    store: BaseStore  = Depends(get_store),
 ) -> StreamingResponse:
     """
     Streams LLM output as server-sent events (SSE).
     """
     try:
+        # Convert API messages to LangChain message objects
+        params.input.to_langchain_messages()
+        # Initialize thread id
         params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
-        config = RunnableConfig(
-            configurable={
-                "user_id": user.id if user else None,
-                "thread_id": params.metadata.thread_id or str(uuid4()),
-                "assistant_id": params.metadata.assistant_id or None,
-            },
-            max_concurrency=4,
-            recursion_limit=100,
-            metadata={**params.metadata.model_dump()},
-        )
+        # Initialize config
+        config = init_config(params, user)
         service_context = ServiceContext(config=config, store=store)
         params = await process_presidio(params, service_context.presidio_service)
         ### Collect all tools
         tool_map = {t.name: t for t in default_tools()}  # O(n) index
         TOOLS = (
-            A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(params.metadata.thread_id)
+            A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(config["configurable"].get("thread_id"))
             + await service_context.tool_service.mcp_tools(params.mcp)
             + [tool_map[name] for name in (params.tools or ()) if name in tool_map]
         )
@@ -125,21 +120,21 @@ async def llm_stream(
                 if items:
                     structured_tool = items[0]
                     tool_metadata = {structured_tool.name: structured_tool.metadata}
-                    config['metadata'] = {**tool_metadata, **config['metadata']}
+                    config["metadata"] = {**tool_metadata, **config["metadata"]}
                     TOOLS.append(structured_tool)
 
-        if params.metadata.assistant_id:
+        if config["configurable"].get("assistant_id"):
             assistant: Assistant = await service_context.assistant_service.get(
-                params.metadata.assistant_id,
+                config["configurable"].get("assistant_id"),
             )
             params = assistant.to_llm_request(
-                messages=params.messages,
+                input=params.input,
                 model=params.model,
-                metadata=params.metadata,
+                metadata=config["metadata"],
             )
         return StreamingResponse(
             stream_generator(
-                params.to_langchain_messages(),
+                params.input,
                 params.model,
                 params.system,
                 TOOLS,

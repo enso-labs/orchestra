@@ -12,10 +12,11 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import SubAgent, create_deep_agent
 
 
+from src.schemas.models.auth import ProtectedUser
 from src.services.memory import memory_service
 from src.services.tool import tool_service
 from src.tools.memory import MEMORY_TOOLS
-from src.schemas.entities import LLMRequest, LLMStreamRequest
+from src.schemas.entities import LLMRequest
 from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
@@ -96,7 +97,7 @@ async def init_tools(
     return tools
 
 
-async def init_subagents(params: LLMRequest | LLMStreamRequest) -> list[SubAgent]:
+async def init_subagents(params: LLMRequest) -> list[SubAgent]:
     result = []
     for subagent in params.subagents:
         subagent_dict = {
@@ -120,22 +121,28 @@ async def init_memories(system_prompt: str, tools: list[BaseTool]):
     return tools + MEMORY_TOOLS, prompt
 
 
-def init_config(params: LLMRequest | LLMStreamRequest):
-    if params.metadata:
-        return RunnableConfig(
-            configurable=params.metadata.model_dump(),
-            max_concurrency=10,
-            recursion_limit=100,
-        )
-    else:
-        return None
+def init_config(
+    params: LLMRequest,
+    user: ProtectedUser | None = None,
+    max_concurrency: int = 4,
+    recursion_limit: int = 100,
+) -> RunnableConfig:
+    return RunnableConfig(
+        configurable={
+            "user_id": user.id if user else None,
+            "thread_id": params.metadata.thread_id or str(uuid4()),
+            "assistant_id": params.metadata.assistant_id or None,
+        },
+        max_concurrency=max_concurrency,
+        recursion_limit=recursion_limit,
+        metadata={**params.metadata.model_dump()},
+    )
 
 
 ################################################################################
 ### Construct Agent
 ################################################################################
 async def construct_agent(
-    # params: LLMRequest | LLMStreamRequest,
     system_prompt: str,
     tools: list[BaseTool],
     model: BaseChatModel,
@@ -219,9 +226,3 @@ class Orchestra:
         return self.graph.astream(
             messages, config=config, stream_mode=stream_mode, context=context
         )
-
-    async def aget_state(self, config: RunnableConfig = None):
-        # if config is None:
-        #     config = self.config
-        state = await self.graph.aget_state(config)
-        return state
