@@ -2,7 +2,6 @@ import agentService, { Agent } from "@/lib/services/agentService";
 import { useEffect, useState } from "react";
 import ToolConfig from "@/lib/config/tool";
 import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu";
-import { useChatContext } from "@/context/ChatContext";
 import useModel from "./useModel";
 
 type Checked = DropdownMenuCheckboxItemProps["checked"];

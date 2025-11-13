@@ -33,8 +33,6 @@ export default function ChatInput({
 		handleSubmit,
 	} = useChatContext();
 
-	const { isMobile } = useAppHook();
-
 	// Initialize the recorder controls using the hook
 	const recorderControls = useVoiceVisualizer();
 
