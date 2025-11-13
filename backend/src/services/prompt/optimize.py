@@ -63,7 +63,7 @@ DEFAULT_PROMPTS = [
 class PromptOptimizerRequest(BaseModel):
     trajectories: List[dict] = Field(default=DEFAULT_TRAJECTORIES)
     prompt: str | Prompt = Field(default=DEFAULT_PROMPTS[1])
-    model: ChatModels = Field(default=ChatModels.OPENAI_GPT_5_NANO)
+    model: str = Field(default=ChatModels.OPENAI_GPT_5_NANO)
     kind: Optional[str] = Field(default="gradient")
     config: Optional[dict] = Field(
         default={"min_reflection_steps": 1, "max_reflection_steps": 3}

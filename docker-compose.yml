@@ -88,11 +88,11 @@ services:
       - ollama:/root/.ollama
     ports:
       - "11434:11434"
-    command: >
-      sh -c "
-        ollama pull llama3.2-vision &&
-        tail -f /dev/null
-      "
+    # command: >
+    #   sh -c "
+    #     ollama pull qwen3-vl gemma3 &&
+    #     tail -f /dev/null
+    #   "
 
   ##############################################
   ## Exec Server

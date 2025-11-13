@@ -2,21 +2,24 @@ import asyncio
 from typing import Any
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
-from src.utils.logger import logger
-from src.schemas.models.assistant import *
 from langgraph.store.base import SearchItem
+
+from src.schemas.entities.llm import *
+from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.services.db import get_store_in_memory
 
-STORE_KEY = "assistants"
 class AssistantService:
     def __init__(self, user_id: str = None, store: BaseStore = get_store_in_memory()):
         
         self.user_id = user_id
         self.store: BaseStore = store
+        
+    def _get_store_key(self):
+        return "assistants"
 
     def _get_namespace(self):
-        return (self.user_id, "assistants")
+        return (self.user_id, self._get_store_key())
 
     async def update(self, assistant_id: str, data: dict):
         try:
@@ -25,7 +28,7 @@ class AssistantService:
             )
             return True
         except Exception as e:
-            logger.exception(f"Error updating {STORE_KEY} {assistant_id}: {e}")
+            logger.exception(f"Error updating {self._get_store_key()} {assistant_id}: {e}")
             return False
 
         return True
@@ -41,7 +44,7 @@ class AssistantService:
             await self.store.adelete(self._get_namespace(), key)
             return True
         except Exception as e:
-            logger.exception(f"Error deleting {STORE_KEY} {key}: {e}")
+            logger.exception(f"Error deleting {self._get_store_key()} {key}: {e}")
             return False
 
     async def search(
@@ -56,7 +59,7 @@ class AssistantService:
                 assistants = await self._postgres_search(limit)
             return self._format_assistant(assistants)
         except Exception as e:
-            logger.error(f"Error searching {STORE_KEY}: {e}")
+            logger.error(f"Error searching {self._get_store_key()}: {e}")
             return []
 
     ###########################################################################

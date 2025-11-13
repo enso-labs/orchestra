@@ -122,7 +122,7 @@ export default function useChat(): ChatContextType {
 		metadata.current_time = new Date().toISOString();
 		const source = streamThread({
 			system: agent.prompt,
-			messages: formatedMessages,
+			input: { messages: formatedMessages },
 			model: agent.model,
 			metadata: metadata,
 			tools: agent.tools,
