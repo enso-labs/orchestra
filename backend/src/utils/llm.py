@@ -46,3 +46,29 @@ def audio_to_text(
         return translation
     except Exception as e:
         raise e
+
+
+def filter_models(models: dict, **props):
+    """
+    Filter model dict by internal flags/properties.
+    
+    Example:
+        filter_models(models, tool_call=True)
+        filter_models(models, attachment=True, reasoning=False)
+    """
+    filtered = {}
+
+    for name, data in models.items():
+        # each model entry looks like {"id": "...", "attachment": True, ...}
+        if all(data.get(k) == v for k, v in props.items()):
+            filtered[name] = data
+
+    return list(filtered.keys())
+
+def filter_tool_call_models(provider_models: dict[str, dict]) -> list[str]:
+    """Return all model IDs for this provider that support tool calling."""
+    return [
+        model_id
+        for model_id, meta in provider_models.items()
+        if meta.get("tool_call")
+    ]

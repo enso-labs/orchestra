@@ -10,6 +10,7 @@ import {
 	ResizableHandle,
 } from "@/components/ui/resizable";
 import FileEditorPanel from "@/components/panels/FileEditorPanel";
+import { useAppContext } from "@/context/AppContext";
 
 interface ChatPanelProps {
 	agent?: Agent;
@@ -19,6 +20,7 @@ interface ChatPanelProps {
 }
 
 function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
+	const { appVersion } = useAppContext();
 	const { messages, viewMode, filesMap } = useChatContext();
 
 	if (agent && messages.length === 0) {
@@ -31,7 +33,7 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 				<footer className="mt-auto bg-card">
 					<div className="px-4 sm:px-6 lg:px-8 py-4">
 						<p className="text-center text-muted-foreground text-xs">
-							&copy; 2025 Ensō Labs. All rights reserved. v0.1.1
+							&copy; 2025 Ensō Labs. All rights reserved. v{appVersion}
 						</p>
 					</div>
 				</footer>

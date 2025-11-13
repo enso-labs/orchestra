@@ -4,7 +4,7 @@ from typing import List, Any, Literal, Optional
 from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage, ToolMessage
 
-from src.constants.llm import ChatModels, DEFAULT_SYSTEM_PROMPT
+from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.utils.format import slugify
 
 
@@ -115,7 +115,7 @@ class Assistant(BaseModel):
     
 class LLMRequest(BaseModel):
     input: LLMInput
-    model: Optional[ChatModels] = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
+    model: Optional[str] = Field(default="openai:gpt-5-nano")
     system: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)

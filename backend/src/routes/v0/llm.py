@@ -12,8 +12,6 @@ from fastapi import (
     Form,
     UploadFile,
 )
-from langchain_core.runnables import RunnableConfig
-from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.store.base import BaseStore
 from langmem.prompts.types import (
     OptimizerInput,
@@ -35,7 +33,7 @@ from src.flows import construct_agent, init_config
 from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
-from src.constants.llm import ChatModels, get_free_models
+from src.constants.llm import get_all_models, get_free_models
 from src.tools import default_tools
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
@@ -155,7 +153,7 @@ async def llm_stream(
         )
     except Exception as e:
         logger.exception(f"Error in llm_stream: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -188,11 +186,11 @@ async def transcribe(
         return JSONResponse(
             content={"transcript": transcript.model_dump()},
             media_type="application/json",
-            status_code=200,
+            status_code=status.HTTP_200_OK,
         )
     except Exception as e:
         logger.exception(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -222,12 +220,11 @@ async def optimize_prompt(
     name="List Models",
 )
 async def list_models():
-    chat_models = sorted({model.value for model in ChatModels})
     return JSONResponse(
-        status_code=200,
+        status_code=status.HTTP_200_OK,
         content={
-            "default": ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value,
-            "free": sorted(get_free_models()),
-            "models": chat_models,
+            "default": "anthropic:claude-haiku-4-5",
+            "free": get_free_models(),
+            "models": get_all_models(),
         }
     )

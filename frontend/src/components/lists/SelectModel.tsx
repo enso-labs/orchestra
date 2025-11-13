@@ -10,6 +10,8 @@ import GroqIcon from "@/components/icons/GroqIcon";
 import XAIIcon from "../icons/XAIIcon";
 import useModel from "@/hooks/useModel";
 import { getAuthToken } from "@/lib/utils/auth";
+import { MainToolTip } from "@/components/tooltips/MainToolTip";
+import { truncateFrom } from "@/lib/utils/format";
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 	const { model, setModel, useModelsEffect, models } = useModel();
@@ -51,13 +53,15 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 		return modelValue.split(":")[1] || modelValue;
 	};
 
+	const getTruncatedLabel = (label: string) => {
+		if (label.length <= 20) return label;
+		return truncateFrom(label, "end", "...", 30);
+	};
+
 	const authToken = getAuthToken?.();
 
 	return (
-		<Select
-			value={model ?? models.default}
-			onValueChange={handleModelChange}
-		>
+		<Select value={model ?? models.default} onValueChange={handleModelChange}>
 			<SelectTrigger>
 				<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
@@ -65,12 +69,25 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 				{models.models.map((modelValue: string) => {
 					const disabled =
 						!authToken && !models.free.includes(modelValue as string);
+					const fullLabel = getModelLabel(modelValue);
+					const truncatedLabel = getTruncatedLabel(fullLabel);
+					const needsTooltip = fullLabel.length > 20;
+
 					return (
 						<SelectItem key={modelValue} value={modelValue} disabled={disabled}>
-							<div className="flex items-center gap-2">
-								{getModelIcon(modelValue)}
-								{getModelLabel(modelValue)}
-							</div>
+							{needsTooltip ? (
+								<MainToolTip content={fullLabel} delayDuration={300}>
+									<div className="flex items-center gap-2">
+										{getModelIcon(modelValue)}
+										{truncatedLabel}
+									</div>
+								</MainToolTip>
+							) : (
+								<div className="flex items-center gap-2">
+									{getModelIcon(modelValue)}
+									{truncatedLabel}
+								</div>
+							)}
 						</SelectItem>
 					);
 				})}
