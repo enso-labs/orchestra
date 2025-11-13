@@ -17,6 +17,7 @@ export default function ChatInput({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
 	const { loading } = useAppContext();
+	const { isLikelyMobile } = useAppHook();
 	const {
 		query,
 		abortQuery,
@@ -89,7 +90,8 @@ export default function ChatInput({
 						query.length > 0
 					) {
 						e.preventDefault();
-						if (!loading && !isMobile()) handleSubmit(query, images);
+						if (!loading && !isLikelyMobile())
+							handleSubmit(query, images);
 					}
 				}}
 			/>

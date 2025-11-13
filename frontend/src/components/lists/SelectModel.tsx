@@ -8,15 +8,13 @@ import {
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
 import GroqIcon from "@/components/icons/GroqIcon";
 import XAIIcon from "../icons/XAIIcon";
-import useModel from "@/hooks/useModel";
 import { getAuthToken } from "@/lib/utils/auth";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { truncateFrom } from "@/lib/utils/format";
+import { useChatContext } from "@/context/ChatContext";
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
-	const { model, setModel, useModelsEffect, models } = useModel();
-
-	useModelsEffect();
+	const { model, setModel, models } = useChatContext();
 
 	const handleModelChange = (value: string) => {
 		setModel(value);

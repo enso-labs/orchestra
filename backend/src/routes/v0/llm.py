@@ -16,6 +16,7 @@ from langgraph.store.base import BaseStore
 from langmem.prompts.types import (
     OptimizerInput,
 )
+from src.services.llm import llm_service
 from src.schemas.entities.a2a import A2AServers
 from src.services.presidio import PresidioException, process_presidio
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
@@ -33,7 +34,7 @@ from src.flows import construct_agent, init_config
 from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
-from src.constants.llm import get_all_models, get_free_models
+from src.constants.llm import ChatModels, get_all_models, get_free_models
 from src.tools import default_tools
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
@@ -223,8 +224,22 @@ async def list_models():
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "default": "anthropic:claude-haiku-4-5",
+            "default": ChatModels.XAI_GROK_4_FAST.value,
             "free": get_free_models(),
             "models": get_all_models(),
         }
+    )
+
+################################################################################
+### Reset Models
+################################################################################
+@llm_router.get(
+    "/models/reset",
+    name="Reset Models",
+)
+async def reset_models():
+    llm_service._reset_cache()
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Models reset successfully"}
     )

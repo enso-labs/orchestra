@@ -91,9 +91,22 @@ export default function useAppHook() {
 		return null;
 	};
 
+	function isLikelyMobile() {
+		const uaData = (navigator as any).userAgentData;
+		if (uaData && uaData.mobile) return true; // #1 Most factual
+
+		if ((navigator as any).connection?.type === "cellular") return true; // #2 Good indicator
+
+		const coarse = window.matchMedia("(pointer: coarse)").matches;
+		const touch = navigator.maxTouchPoints > 1;
+
+		return coarse && touch; // #3 + #4 combined = best factual proxy
+	}
+
 	return {
 		appVersion,
 		isMobile,
+		isLikelyMobile,
 		useFetchAppVersionEffect,
 		loading,
 		setLoading,

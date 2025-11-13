@@ -67,6 +67,8 @@ def get_all_models():
 		models.extend(llm_service.model_by_provider(provider="google"))
 	if GROQ_API_KEY:
 		models.extend(llm_service.model_by_provider(provider="groq"))
+	if XAI_API_KEY:
+		models.extend(llm_service.model_by_provider(provider="xai"))
 	if OLLAMA_BASE_URL:
 		models.extend(get_ollama_models())
 	return sorted(models)
@@ -81,8 +83,6 @@ def get_free_models():
 		models.append(ChatModels.GOOGLE_GEMINI_2_5_FLASH_LITE.value)
 	if GROQ_API_KEY:
 		models.append(ChatModels.GROQ_OPENAI_GPT_OSS_120B.value)
-	if GROQ_API_KEY:
-		models.append(ChatModels.GROQ_LLAMA_3_3_70B_VERSATILE.value)
 	if OLLAMA_BASE_URL:
 		models.extend(get_ollama_models())
 	return sorted(models)
