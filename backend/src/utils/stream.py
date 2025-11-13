@@ -1,3 +1,4 @@
+from langchain.agents.middleware import PIIDetectionError
 import ujson
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
@@ -7,16 +8,16 @@ from typing import List
 from langgraph.types import StreamMode
 from deepagents import SubAgent
 
+from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
-from src.schemas.entities import LLMInput, LLMRequest
+from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
 from src.flows import construct_agent
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
-    AIMessage,
     AIMessageChunk,
-    BaseMessage,
+    HumanMessage,
     ToolMessage,
 )
 from src.utils.logger import log_to_file, logger
@@ -189,9 +190,9 @@ async def stream_generator(
                 {"messages": input.messages}, 
                 stream_mode=["messages", "values"], 
                 config=config,
-                context=None
+                context=ContextSchema(model=agent.model)
             ):
-                # Serialize and yield each chunk as SSEq
+                # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
                 if stream_chunk:
                     stream_type = stream_chunk[0]
@@ -202,10 +203,16 @@ async def stream_generator(
                     log_to_file(str(data), agent.model) and APP_LOG_LEVEL == "DEBUG"
                     logger.debug(f"data: {str(data)}")
                     yield f"data: {data}\n\n"
+        except PIIDetectionError as e:
+            # Yield error as SSE if streaming fails
+            logger.warning(f"Sensitive data detected in the query: {e}")
+            # raise HTTPException(status_code=500, detail=str(e))
+            error_msg = ujson.dumps(("error", str(e)))
+            yield f"data: {error_msg}\n\n"
 
         except Exception as e:
             # Yield error as SSE if streaming fails
-            logger.exception("Error in event_generator: %s", e)
+            logger.exception("Error in stream_generator: %s", e)
             # raise HTTPException(status_code=500, detail=str(e))
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
@@ -214,12 +221,20 @@ async def stream_generator(
                 final_state = await agent.graph.aget_state(config)
                 configurable = final_state.config.get("configurable", {})
                 messages = final_state.values.get('messages', [])
+                
+                # Get the last HumanMessage
+                last_human_message = None
+                for message in reversed(messages):
+                    if isinstance(message, HumanMessage):
+                        last_human_message = message
+                        break
+                
                 await service_context.thread_service.update(
                     thread_id=configurable.get("thread_id"),
                     data={
                         "thread_id": configurable.get("thread_id"),
                         "checkpoint_id": configurable.get("checkpoint_id"),
-                        "messages": [messages[-1].model_dump()],
+                        "messages": [last_human_message.model_dump()] if last_human_message else [],
                         "files": files_map,
                         "updated_at": get_time(),
                     }

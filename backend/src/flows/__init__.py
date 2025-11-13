@@ -21,6 +21,7 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
+from src.utils.middleware import add_ai_message_metadata, pii_middleware
 
 
 async def add_memories_to_system():
@@ -51,7 +52,7 @@ def graph_builder(
     subagents: list[SubAgent] = [],
     prompt: str = "You are a helpful assistant.",
     model: str = "openai:gpt-5-nano",
-    context_schema: Type[Any] | None = None,
+    context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
     graph_id: Literal[
@@ -75,6 +76,7 @@ def graph_builder(
         system_prompt=prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
+        middleware=[add_ai_message_metadata] + pii_middleware(),
         store=store,
     )
     return deep_agent
