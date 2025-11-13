@@ -244,7 +244,6 @@ export function Message({
 						/>
 					</div>
 
-					{/* Add file viewer if files exist - only show in chat mode */}
 					{viewMode === "chat" &&
 						messageFiles &&
 						Object.keys(messageFiles).length > 0 && (
@@ -259,7 +258,9 @@ export function Message({
 
 						<div className="flex items-center gap-2">
 							<button className="text-sm text-muted-foreground">
-								{message.model || latestHumanMessage(messages)?.model || "Unknown model"}
+								{message.model ||
+									latestHumanMessage(messages)?.model ||
+									"Unknown model"}
 							</button>
 
 							{isLatest && streamingRate?.rate && (
