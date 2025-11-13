@@ -1,20 +1,10 @@
 from enum import Enum
 from uuid import uuid4
-from typing import Optional, List, Any, Literal
+from typing import Optional, List, Any
 
-from pydantic import BaseModel, Field, ConfigDict
-from langgraph.types import StreamMode
-from langchain_core.messages import (
-    AnyMessage,
-    BaseMessage,
-    HumanMessage,
-    AIMessage,
-    SystemMessage,
-    ToolMessage,
-)
+from pydantic import BaseModel, Field
 
-from src.schemas.models.assistant import Assistant
-from src.constants.llm import DEFAULT_SYSTEM_PROMPT, ChatModels
+from src.schemas.entities.llm import *
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,
@@ -29,22 +19,6 @@ class InvokeTool(BaseModel):
     result: Optional[Any] = Field(
         default=None, description="The result of the tool invocation"
     )
-
-
-class Configurable(BaseModel):
-    thread_id: str
-
-
-class StreamInput(BaseModel):
-    messages: list
-    configurable: Configurable
-
-
-class ChatInput(BaseModel):
-    system: Optional[str] = Field(default="You are a helpful assistant.")
-    query: str = Field(default="What is the capital of France?")
-    images: Optional[List[str]] = Field(default=[])
-    model: Optional[str] = Field(default="openai:gpt-4o-mini")
 
 
 class ArcadeConfig(BaseModel):
@@ -62,7 +36,7 @@ class Thread(BaseModel):
     thread_id: str = Field(...)
     checkpoint_ns: Optional[str] = Field(default="")
     checkpoint_id: Optional[str] = Field(default=None)
-    messages: list[AnyMessage] = Field(default_factory=list)
+    messages: list[BaseMessage] = Field(default_factory=list)
     v: Optional[int] = Field(default=1)
     ts: Optional[str] = Field(default=None)
 
@@ -83,7 +57,7 @@ class Threads(BaseModel):
 
 class Answer(BaseModel):
     thread_id: str = Field(...)
-    answer: AnyMessage = Field(...)
+    answer: BaseMessage = Field(...)
 
     model_config = {
         "json_schema_extra": {
@@ -139,89 +113,9 @@ class SearchKwargs(dict):
     filter: str = None
 
 
-class StreamContext(BaseModel):
-    msg: AnyMessage | None = None
-    metadata: dict = {}
-    event: str = ""
-
-
-class Config(BaseModel):
-    model_config = ConfigDict(extra="allow")  # ✅ allow arbitrary extra fields
-
-    user_id: Optional[str] = Field(
-        default=None, description="The user id", examples=[str(uuid4())]
-    )
-    thread_id: Optional[str] = Field(
-        default=None, description="The thread id", examples=[str(uuid4())]
-    )
-    checkpoint_id: Optional[str] = Field(
-        default=None, description="The checkpoint id", examples=[str(uuid4())]
-    )
-    assistant_id: Optional[str] = Field(
-        default=None, description="The assistant id", examples=[str(uuid4())]
-    )
-    graph_id: Optional[Literal["react", "deepagent"]] = Field(
-        default=None, description="The graph id", examples=["react", "deepagent"]
-    )
-
-
 class ThreadSearch(BaseModel):
     limit: int = Field(default=100, description="The limit of threads to search")
     offset: int = Field(default=0, description="The offset of threads to search")
     filter: Optional[Config] = Field(
         default_factory=Config, description="The filter of threads to search"
     )
-
-
-class PresidioRequest(BaseModel):
-    analyze: Optional[bool] = Field(
-        default=False, description="Whether to analyze the text"
-    )
-    anonymize: Optional[bool] = Field(
-        default=False, description="Whether to anonymize the text"
-    )
-
-
-class LLMRequest(BaseModel):
-    model: Optional[ChatModels] = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
-    system: Optional[str] = Field(
-        default=DEFAULT_SYSTEM_PROMPT,
-        exclude=True,  # this is the default but should never be shown to client
-    )
-    tools: Optional[List[str]] = Field(default_factory=list)
-    a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
-    mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
-    subagents: Optional[List[Assistant]] = Field(default_factory=list)
-    presidio: Optional[PresidioRequest] = Field(default_factory=PresidioRequest)
-
-    metadata: Optional[Config] = Field(
-        default={}, description="LangGraph configuration"
-    )
-
-    class ChatMessage(BaseModel):
-        role: Literal["user", "assistant", "system", "tool"] = Field(examples=["user"])
-        content: str | List[Any] = Field(examples=["Weather in Dallas?"])
-
-    messages: List[ChatMessage]
-
-    def to_langchain_messages(self) -> List[BaseMessage]:
-        # Convert API messages to LangChain message objects
-        converted: List[BaseMessage] = []
-        for message in self.messages:
-            role = message.role
-            content = message.content
-            if role == "user":
-                converted.append(HumanMessage(content=content))
-            elif role == "assistant":
-                converted.append(AIMessage(content=content))
-            elif role == "system":
-                converted.append(SystemMessage(content=content))
-            elif role == "tool":
-                converted.append(ToolMessage(content=content))
-            else:
-                raise ValueError(f"Unsupported role: {role}")
-        return converted
-
-
-class LLMStreamRequest(LLMRequest):
-    stream_mode: StreamMode | list[StreamMode] = "values"
