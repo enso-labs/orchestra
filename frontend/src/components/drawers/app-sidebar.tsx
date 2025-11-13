@@ -126,7 +126,7 @@ function ThreadItem({ thread }: ThreadItemProps) {
 	const { metadata, setMessages, setMetadata, setFilesMap } = useChatContext();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const messages = thread.value?.messages || [];
-	const messageCount = messages.length;
+	const fileCount = Object.keys(thread.value?.files || {}).length;
 	const lastMessage = messages[messages.length - 1];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
 	const { setModel } = useModel();
@@ -220,8 +220,8 @@ function ThreadItem({ thread }: ThreadItemProps) {
 						</div>
 						<div className="flex items-center gap-2.5 text-[11px] text-sidebar-foreground/50">
 							<div className="flex items-center gap-1">
-								<span className="font-medium">{messageCount}</span>
-								<span>msg{messageCount !== 1 ? "s" : ""}</span>
+								<span className="font-medium">{fileCount}</span>
+								<span>file{fileCount !== 1 ? "s" : ""}</span>
 							</div>
 							<span className="text-sidebar-foreground/30">•</span>
 							<div className="flex items-center gap-1 truncate">
