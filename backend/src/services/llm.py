@@ -1,6 +1,7 @@
 import requests
 
 from src.utils.llm import filter_tool_call_models
+from src.utils.logger import logger
 
 class LLMService:
 
@@ -15,6 +16,9 @@ class LLMService:
 		models = self._all_models()
 		provider_models = models.get(provider, []).get("models", [])
 		tool_models = filter_tool_call_models(provider_models)
+		logger.info(f"Found {len(tool_models)} tool calling models for {provider}")
+		if provider == "google":
+			provider = "google_genai"
 		return [f"{provider}:{model}" for model in tool_models]
 
 
