@@ -208,6 +208,8 @@ export default function useChat(): ChatContextType {
 			resetMetadata();
 		}
 		setMessages(in_mem_messages);
+		setFilesMap(new Map());
+		setViewMode("chat");
 	};
 
 	const formatContent = (content: any) => {
