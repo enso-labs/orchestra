@@ -5,13 +5,13 @@ from src.services.tool import tool_service
 from src.schemas.entities.a2a import A2AServer, McpServer, A2A_DICT_EXAMPLE
 from src.constants.examples import A2A_GET_AGENT_CARD_EXAMPLE
 
-router = APIRouter()
+info_router = APIRouter()
 
 
 ################################################################################
 ### List MCP Info
 ################################################################################
-@router.post(
+@info_router.post(
     "/mcp/info",
     responses={
         status.HTTP_200_OK: {
@@ -53,7 +53,7 @@ async def list_mcp_info(
 ################################################################################
 ### List A2A Info
 ################################################################################
-@router.post(
+@info_router.post(
     "/a2a/info",
     responses={
         status.HTTP_200_OK: {

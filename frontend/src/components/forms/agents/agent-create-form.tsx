@@ -52,12 +52,8 @@ const formSchema = z.object({
 	name: z.string().min(2, {
 		message: "Name must be at least 2 characters.",
 	}),
-	description: z.string().min(2, {
-		message: "Description must be at least 2 characters.",
-	}),
-	systemMessage: z.string().min(1, {
-		message: "System message is required.",
-	}),
+	description: z.string(),
+	systemMessage: z.string(),
 	model: z.string().min(2, {
 		message: "Model must be at least 2 characters.",
 	}),
@@ -335,7 +331,9 @@ export function AgentCreateForm() {
 												<div className="flex-1">
 													<div className="flex items-center gap-2 mb-1">
 														<FileText className="h-4 w-4 text-primary" />
-														<p className="font-medium text-sm">{selectedPrompt.name}</p>
+														<p className="font-medium text-sm">
+															{selectedPrompt.name}
+														</p>
 														<Badge variant="outline" className="text-xs">
 															v{selectedPrompt.v}
 														</Badge>
@@ -363,7 +361,7 @@ export function AgentCreateForm() {
 									<FormControl>
 										<Textarea
 											{...field}
-											required
+											// required
 											disabled={!!selectedPrompt}
 											placeholder={
 												selectedPrompt

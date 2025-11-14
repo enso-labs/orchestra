@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from src.routes.v0 import create_api_router, mount_static_router
 from src.utils.logger import logger
 from src.routes.v0 import add_mounts, add_api_routes
 from src.services.db import (
@@ -114,36 +115,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-add_api_routes(app)
-add_mounts(app)
-
-
-# Function to serve static files with fallback
-@app.get("/{filename:path}", include_in_schema=False)
-async def serve_static_or_index(filename: str, request: Request):
-    # List of static files to check for at the root
-    static_files = [
-        "manifest.json",
-        "sw.js",
-        "favicon.ico",
-        "robots.txt",
-        "manifest.webmanifest",
-    ]
-
-    # If the request is for a known static file and it exists, serve it
-    if filename in static_files and os.path.exists(f"src/public/{filename}"):
-        return FileResponse(f"src/public/{filename}")
-
-    # For /icons/* paths, check if the file exists
-    if filename.startswith("icons/") and os.path.exists(f"src/public/{filename}"):
-        return FileResponse(f"src/public/{filename}")
-
-    # For all other routes, serve the index.html for SPA routing
-    return FileResponse("src/public/index.html")
-
+# Include routers
+app = create_api_router(app)
+# Mount specific directories only if they exist
+app = mount_static_router(app)
 
 ### Run Server
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host=HOST, port=PORT, log_level=LOG_LEVEL)

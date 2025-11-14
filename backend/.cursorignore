@@ -17,9 +17,9 @@
 **/src/public/*
 **/src/templates
 **/src/templates/*
-**/src/static
-**/src/static/*
-**/src/static/css
-**/src/static/css/*
-**/src/static/js
-**/src/static/js/*
+# **/src/static
+# **/src/static/*
+# **/src/static/css
+# **/src/static/css/*
+# **/src/static/js
+# **/src/static/js/*

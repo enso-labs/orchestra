@@ -1,10 +1,13 @@
 import base64
+from langchain_core.runnables import RunnableConfig
 import requests
 import re
 import unicodedata
-from typing import Optional
+from typing import Optional, Any
 from loguru import logger
 from datetime import datetime, timezone
+from langchain_core.messages import BaseMessage
+from langgraph.prebuilt import ToolRuntime
 
 
 def get_base64_image(image_url: str) -> Optional[str]:
@@ -92,3 +95,36 @@ def init_system_prompt(system_prompt: str, metadata: dict) -> str:
     if "language" in metadata:
         lines.append(f"LANGUAGE: {metadata['language']}")
     return "\n".join(lines) + "\n"
+
+
+def format_content(content: str | list[Any]) -> str:
+    if isinstance(content, str):
+        return content
+    return content[0].get("text", "")
+
+def get_tool_call_from_runtime_state(runtime: ToolRuntime) -> dict:
+    messages: list[BaseMessage] = runtime.state.get("messages", [])
+    if messages:
+        for msg in reversed(messages):
+            if hasattr(msg, "tool_calls"):
+                for call in msg.tool_calls:
+                    if call.get("id") == runtime.tool_call_id:
+                        return call
+    raise ValueError("Tool call not found in runtime state")
+
+def get_tool_call_env(runtime: ToolRuntime) -> tuple[dict, dict]:
+    """Return (env_dict, tool_call_dict) for the current tool_call_id."""
+    try:
+        messages: list[BaseMessage] = runtime.state.get("messages", []) or []
+        metadata = runtime.config.get("metadata") or {}
+        if messages:
+            for msg in reversed(messages):
+                if hasattr(msg, "tool_calls") and msg.tool_calls:
+                    for call in msg.tool_calls:
+                        if call.get("id") == runtime.tool_call_id:
+                            tool_name = call.get("name")
+                            env = ((metadata.get(tool_name) or {}).get("env") or {})
+                            return env, call
+    except Exception as e:
+        logger.error(f"Error getting tool call env: {e}")
+        raise ValueError(f"Error getting tool call env: {e}")

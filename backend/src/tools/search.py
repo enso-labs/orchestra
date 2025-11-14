@@ -70,9 +70,7 @@ async def web_search(
     # Create a SearxSearchWrapper instance.
     searx = SearxSearchWrapper(searx_host=SEARX_SEARCH_HOST_URL)
 
-    logger.info(
-        f"Searching for {query} with {num_results} results"
-    )
+    logger.info(f"Searching for {query} with {num_results} results")
 
     try:
         results = await searx.aresults(

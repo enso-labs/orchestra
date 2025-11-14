@@ -28,6 +28,7 @@ jobs:
   ###############################################################
   test-frontend:
     runs-on: ubuntu-latest
+    environment: Test
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -78,6 +79,7 @@ jobs:
     env:
       APP_ENV: test
       APP_LOG_LEVEL: debug
+      APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
       POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

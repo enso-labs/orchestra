@@ -40,7 +40,7 @@ export function HomeSection() {
 					<img src="https://img.shields.io/badge/View-Docs-blue" />
 				</a>
 			</div>
-			<div className="flex flex-col w-full lg:w-[600px]">
+			<div className="flex flex-col w-full max-w-2xl mx-auto">
 				<ChatInput />
 			</div>
 		</>

@@ -3,6 +3,7 @@ import useConfigHook from "@/hooks/useConfigHook";
 import useImageHook from "@/hooks/useImageHook";
 import useChat from "@/hooks/useChat";
 import useThread from "@/hooks/useThread";
+import useModel from "@/hooks/useModel";
 
 export const ChatContext = createContext({});
 export default function ChatProvider({
@@ -10,10 +11,12 @@ export default function ChatProvider({
 }: {
 	children: React.ReactNode;
 }) {
+	const modelsHooks = useModel();
 	const chatHooks = useChat();
 	const imageHooks = useImageHook();
 	const configHooks = useConfigHook();
 	const threadHooks = useThread();
+	
 
 	return (
 		<ChatContext.Provider
@@ -22,6 +25,7 @@ export default function ChatProvider({
 				...configHooks,
 				...imageHooks,
 				...threadHooks,
+				...modelsHooks,
 			}}
 		>
 			{children}

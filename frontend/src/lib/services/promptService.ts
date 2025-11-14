@@ -39,10 +39,7 @@ export default class PromptService {
 	/**
 	 * Create a new revision of an existing prompt
 	 */
-	static async createRevision(
-		promptId: string,
-		prompt: Partial<Prompt>,
-	) {
+	static async createRevision(promptId: string, prompt: Partial<Prompt>) {
 		try {
 			const response = await apiClient.post(
 				`${this.BASE_URL}/${promptId}/v`,
@@ -60,9 +57,7 @@ export default class PromptService {
 	 */
 	static async listRevisions(promptId: string) {
 		try {
-			const response = await apiClient.get(
-				`${this.BASE_URL}/${promptId}/v`,
-			);
+			const response = await apiClient.get(`${this.BASE_URL}/${promptId}/v`);
 			return response;
 		} catch (error) {
 			console.error("Failed to list prompt revisions:", error);

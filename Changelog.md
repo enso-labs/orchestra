@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2
 
 ### Fixed
+  - bug/456-select-tools (2025-11-02)
   - bug/444-anon-achat (2025-10-23)
   - bug/423-fix-checkpointer-conn-closed (2025-10-10)
   - bug/406-day-mode-theme-fix (2025-10-05)
@@ -19,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - feat/420-project-endpoints (2025-10-28)
+  - feat/464-update-input-support-multiple-keys (2025-11-11)
+  - feat/490-can-read-deepagents-agent-files (2025-11-10)
+  - feat/485-user-env (2025-11-08)
+  - feat/482-teams-webhook (2025-11-05)
+  - feat/476-html-chart-construct-tool (2025-11-02)
+  - feat/468-support-ms-presidio-analyzer (2025-11-02)
+  - feat/465-update-sidebar (2025-10-31)
   - feat/457-checkpoint-stream (2025-10-26)
   - feat/448-tokens-per-sec (2025-10-24)
   - feat/442-edit-memories (2025-10-22)

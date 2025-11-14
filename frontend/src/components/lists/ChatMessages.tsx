@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Wrench, Copy, Edit, Check, X } from "lucide-react";
+import { Loader2, Wrench, Edit, Check, X } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
 import { useChatContext } from "@/context/ChatContext";
@@ -9,6 +9,10 @@ import DefaultTool from "../tools/Default";
 import { cn } from "@/lib/utils";
 import { formatContent, truncateFrom } from "@/lib/utils/format";
 import SearchEngineTool from "../tools/SearchEngine";
+import ChartRenderWidget from "../tools/ChartRenderWidget";
+import CopyTextButton from "../buttons/CopyTextButton";
+import FileViewer from "../viewers/FileViewer";
+import { latestHumanMessage } from "@/lib/utils/message";
 
 const MAX_LENGTH = 1000;
 
@@ -32,6 +36,14 @@ function ToolAction({
 		return <SearchEngineTool selectedToolMessage={message} />;
 	}
 
+	if (["get_stock_price_history"].includes(message.name)) {
+		return (
+			<div className="w-full overflow-hidden rounded-lg border border-border">
+				<ChartRenderWidget content={message.artifact} />
+			</div>
+		);
+	}
+
 	// Check if message.content is valid JSON
 	if (
 		message.content &&
@@ -51,9 +63,11 @@ function ToolAction({
 export function Message({
 	message,
 	isLatest = false,
+	messages,
 }: {
 	message: any;
 	isLatest?: boolean;
+	messages: any[];
 }) {
 	const ICON_SIZE = 4;
 	const [isEditing, setIsEditing] = useState(false);
@@ -135,25 +149,11 @@ export function Message({
 								rows={1}
 							/>
 						) : (
-							<MarkdownCard
-								content={formatContent(message.content)}
-							/>
+							<MarkdownCard content={formatContent(message.content)} />
 						)}
 						{isEditing && !isEditingText && (
 							<div className="flex absolute bottom-1 right-1">
-								<button
-									className="p-1 rounded hover:bg-muted transition-colors"
-									onClick={(e) => {
-										e.stopPropagation();
-										navigator.clipboard.writeText(formatContent(message.content));
-										console.log(message);
-										alert("Copied to clipboard (User Message)");
-									}}
-								>
-									<Copy
-										className={`h-${ICON_SIZE} w-${ICON_SIZE} hover:text-foreground`}
-									/>
-								</button>
+								<CopyTextButton text={formatContent(message.content)} />
 								<button
 									className="p-1 rounded hover:bg-muted transition-colors"
 									onClick={handleEditClick}
@@ -218,7 +218,7 @@ export function Message({
 							</div>
 						</div>
 						<div className="overflow-y-auto mt-2">
-							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[200px] overflow-y-auto">
+							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[600px] overflow-y-auto">
 								<ToolAction
 									message={message}
 									// maxLength={maxLength}
@@ -232,41 +232,42 @@ export function Message({
 	}
 
 	if (["ai", "assistant"].includes(message.role)) {
+		const { filesMap, viewMode } = useChatContext();
+		const messageFiles = filesMap.get(message.id);
+
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
 					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard
-							content={
-								formatContent(message.content) || "Invalid message"
-							}
+							content={formatContent(message.content) || "Invalid message"}
 						/>
 					</div>
+
+					{viewMode === "chat" &&
+						messageFiles &&
+						Object.keys(messageFiles).length > 0 && (
+							<div className="mt-2 px-3">
+								<FileViewer files={messageFiles} />
+							</div>
+						)}
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
 					<div className="flex gap-1">
-						<button className="p-1 rounded hover:bg-muted transition-colors">
-							<Copy
-								className={`h-${ICON_SIZE} w-${ICON_SIZE} text-muted-foreground hover:text-foreground`}
-								onClick={() => {
-									navigator.clipboard.writeText(
-										formatContent(message.content),
-									);
-									alert("Copied to clipboard (AI Message)");
-								}}
-							/>
-						</button>
+						<CopyTextButton text={formatContent(message.content)} />
 
 						<div className="flex items-center gap-2">
 							<button className="text-sm text-muted-foreground">
-								{message.model}
+								{message.model ||
+									latestHumanMessage(messages)?.model ||
+									"Unknown model"}
 							</button>
 
 							{isLatest && streamingRate?.rate && (
 								<span
 									className={`text-sm text-muted-foreground/70 ${loading ? "animate-pulse" : ""}`}
 								>
-									{streamingRate.rate} tok/s
+									{streamingRate.rate} tok/s • {streamingRate.count} tokens
 								</span>
 							)}
 						</div>
@@ -286,7 +287,9 @@ export function Message({
 		);
 	}
 
-	return <p>{formatContent(message.content) || JSON.stringify(message.input)}</p>;
+	return (
+		<p>{formatContent(message.content) || JSON.stringify(message.input)}</p>
+	);
 }
 
 const ChatMessages = ({ messages }: { messages: any[] }) => {
@@ -316,6 +319,7 @@ const ChatMessages = ({ messages }: { messages: any[] }) => {
 								key={message.id}
 								message={message}
 								isLatest={index === messages.length - 1}
+								messages={messages}
 							/>
 						))
 					) : (

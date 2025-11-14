@@ -3,7 +3,7 @@ import { ThreadPayload } from "@/lib/entities";
 import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
-import { SSE } from "sse.js";
+import { SSE, SSEOptions } from "sse.js";
 import { Agent } from "./agentService";
 
 const SYSTEM_PROMPT = `GOAL:
@@ -84,16 +84,28 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
 };
 
 type MessageContent = string | Array<{ type: string; [key: string]: any }>;
-
+type Messages = { role: string; content: MessageContent; [key: string]: any }[];
+type Input = { messages: Messages };
+type Metadata = { thread_id?: string; checkpoint_id?: string; [key: string]: any };
+type A2A = { [key: string]: any };
+type MCP = { [key: string]: any };
+type Tools = string[];
+type Subagents = Agent[];
+type Presidio = {
+	analyze?: boolean;
+	anonymize?: boolean;
+	redact?: boolean;
+};
 interface StreamThreadPayload {
 	system?: string;
-	messages: { role: string; content: MessageContent; [key: string]: any }[];
+	input: Input;
 	model: string;
-	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
-	a2a?: object;
-	mcp?: object;
-	tools?: string[];
-	subagents?: Agent[];
+	metadata: Metadata;
+	a2a?: A2A;
+	mcp?: MCP;
+	tools?: Tools;
+	subagents?: Subagents;
+	presidio?: Presidio;
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
@@ -108,11 +120,13 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 		if (payload.system?.trim() === "") {
 			delete payload.system;
 		}
-		const source = new SSE(`${VITE_API_URL}/llm/stream`, {
+		const newConfig: SSEOptions = {
 			headers: headers,
 			payload: JSON.stringify(payload),
 			method: "POST",
-		});
+			start: false,
+		};
+		const source = new SSE(`${VITE_API_URL}/llm/stream`, newConfig);
 		return source;
 	} catch (error: unknown) {
 		console.error("Error streaming thread:", error);

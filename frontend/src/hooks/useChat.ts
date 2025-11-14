@@ -50,6 +50,10 @@ export type ChatContextType = {
 		startTime: number;
 		rate: number | null;
 	} | null;
+	filesMap: Map<string, any>;
+	setFilesMap: (map: Map<string, any>) => void;
+	viewMode: "chat" | "editor";
+	setViewMode: (mode: "chat" | "editor") => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -67,9 +71,9 @@ export default function useChat(): ChatContextType {
 		setMessagesState(newMessages);
 	};
 	const [metadata, setMetadata] = useState<any>({
-		current_time: new Date().toISOString(),
 		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 		language: navigator.language,
+		current_time: undefined,
 	});
 
 	const [controller, setController] = useState<AbortController | null>(null);
@@ -84,6 +88,9 @@ export default function useChat(): ChatContextType {
 		tools: [] as string[],
 		toolkit: [] as string[],
 	});
+
+	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 
 	const abortQuery = () => {
 		if (controller) {
@@ -112,16 +119,23 @@ export default function useChat(): ChatContextType {
 		clearContent();
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
+		metadata.current_time = new Date().toISOString();
 		const source = streamThread({
 			system: agent.prompt,
-			messages: formatedMessages,
+			input: { messages: formatedMessages },
 			model: agent.model,
 			metadata: metadata,
 			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,
 			subagents: agent.subagents,
+			presidio: {
+				analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
+				anonymize: localStorage.getItem("enso:tool:pii_anonymize") === "true",
+				// redact: false,
+			},
 		});
+		source.stream();
 
 		source.addEventListener("message", function (e: any) {
 			// Assuming we receive JSON-encoded data payloads:
@@ -144,6 +158,12 @@ export default function useChat(): ChatContextType {
 			source.close();
 			setController(null);
 			setLoading(false);
+			const lastMessageIndex =
+				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
+			if (lastMessageIndex >= 0) {
+				setQuery(in_mem_messages[lastMessageIndex].content);
+				clearMessages(lastMessageIndex);
+			}
 		});
 
 		controller.signal.addEventListener("abort", () => {
@@ -188,6 +208,8 @@ export default function useChat(): ChatContextType {
 			resetMetadata();
 		}
 		setMessages(in_mem_messages);
+		setFilesMap(new Map());
+		setViewMode("chat");
 	};
 
 	const formatContent = (content: any) => {
@@ -199,12 +221,36 @@ export default function useChat(): ChatContextType {
 
 	const handleMessages = (payload: any, history: any[]) => {
 		console.log(payload);
-		
+
 		const streamMode = payload[0];
 		if (streamMode === "error") {
 			alert("Error on stream: " + payload[1]);
 			setLoading(false);
 			setController(null);
+			return;
+		}
+
+		if (streamMode === "values") {
+			console.log(payload[1]);
+			const valuesData = payload[1];
+
+			// Store files with message association
+			if (valuesData.files && Object.keys(valuesData.files).length > 0) {
+				// Associate files with the latest AI message
+				const latestAiMessage = history
+					.slice()
+					.reverse()
+					.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+
+				if (latestAiMessage) {
+					setFilesMap((prev) => {
+						const newMap = new Map(prev);
+						newMap.set(latestAiMessage.id, valuesData.files);
+						return newMap;
+					});
+				}
+			}
+
 			return;
 		}
 
@@ -283,7 +329,8 @@ export default function useChat(): ChatContextType {
 				if (existingIndex !== -1) {
 					// Always append to the related message content
 					const existingMsg = history[existingIndex];
-					const updatedContent = formatContent(existingMsg.content) + expectedContent;
+					const updatedContent =
+						formatContent(existingMsg.content) + expectedContent;
 
 					// Track streaming rate
 					setStreamingRate((prev) => {
@@ -343,7 +390,8 @@ export default function useChat(): ChatContextType {
 				["stop", "end_turn", "STOP"].includes(
 					response.response_metadata?.finish_reason ||
 						response.response_metadata.stop_reason,
-				) && response.tool_calls?.length === 0
+				) &&
+				response.tool_calls?.length === 0
 			) {
 				setLoading(false);
 				setController(null);
@@ -432,5 +480,9 @@ export default function useChat(): ChatContextType {
 		setArcade,
 		useEffectUpdateAssistantId,
 		streamingRate,
+		filesMap,
+		setFilesMap,
+		viewMode,
+		setViewMode,
 	};
 }

@@ -16,12 +16,6 @@ def tool_ctx() -> ContextSchema:
         return runtime.context
 
 
-def attach_tool_details(tool: StructuredTool):
-    if tool.name in ["search_engine", "web_search", "web_scrape"]:
-        tool.tags = ["search"]
-    return tool
-
-
 def add_human_in_the_loop(
     tool: Callable | BaseTool,
     *,
@@ -85,11 +79,17 @@ def attach_tool_details(tool: StructuredTool):
     from src.tools.search import SEARCH_TOOLS
     from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
     from src.tools.test import TEST_TOOLS
+    from src.tools.finance import FINANCE_TOOLS
+    from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
 
     if tool.name in [n.name for n in SEARCH_TOOLS]:
         tool.tags = ["search"]
     if tool.name in [n.name for n in PYTHON_CODE_INTERPRETER_TOOLS]:
         tool.tags = ["python"]
+    if tool.name in [n.name for n in MICROSOFT_TEAMS_TOOLS]:
+        tool.tags = ["ms_teams"]
     if tool.name in [n.name for n in TEST_TOOLS]:
         tool.tags = ["test"]
+    if tool.name in [n.name for n in FINANCE_TOOLS]:
+        tool.tags = ["finance"]
     return tool

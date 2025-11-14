@@ -11,7 +11,7 @@ import PublicRoute from "./PublicRoute";
 // Pages
 import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
-import Chat from "@/pages/Chat";
+// import Chat from "@/pages/Chat";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import OAuthCallback from "@/pages/OAuthCallback";
@@ -22,6 +22,7 @@ import SchedulesIndexPage from "@/pages/schedules";
 import PromptsIndexPage from "@/pages/prompts";
 import PromptCreatePage from "@/pages/prompts/create";
 import PromptEditPage from "@/pages/prompts/edit";
+import ChatV2Page from "@/pages/chat/chat-v2";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -63,7 +64,8 @@ const AppRoutes: React.FC = () => {
 						path="/chat"
 						element={
 							<PrivateRoute>
-								<Chat />
+								<ChatV2Page />
+								{/* <Chat /> */}
 							</PrivateRoute>
 						}
 					/>

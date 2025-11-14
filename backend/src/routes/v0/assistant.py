@@ -10,7 +10,6 @@ from src.services.db import get_store
 from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 from src.services.assistant import (
-    assistant_service,
     AssistantSearch,
     Assistant,
     ASSISTANT_EXAMPLES,

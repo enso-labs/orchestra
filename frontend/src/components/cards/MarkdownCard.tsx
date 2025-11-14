@@ -7,7 +7,9 @@ import {
 	oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import ReactMarkdown from "react-markdown";
-import rehypeSanitize from "rehype-sanitize";
+
+// Use to create links in markdown
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize"; 
 import remarkGfm from "remark-gfm";
 import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
 import useImageHook from "@/hooks/useImageHook";
@@ -160,6 +162,30 @@ const ExpandableCell: React.FC<{ children: React.ReactNode }> = ({
 	);
 };
 
+const footnoteSchema = {
+	...defaultSchema,
+	tagNames: [...(defaultSchema.tagNames || []), "section", "sup"],
+	attributes: {
+		...defaultSchema.attributes,
+		section: [
+			...(defaultSchema.attributes?.section || []),
+			["data-footnotes", true],
+		],
+		sup: [
+			...(defaultSchema.attributes?.sup || []),
+			["data-footnote-ref", true],
+			"id",
+		],
+		a: [
+			...(defaultSchema.attributes?.a || []),
+			["data-footnote-backref", true],
+			"href",
+			"id",
+			"aria-describedby",
+		],
+	},
+};
+
 const BaseCard = ({ content }: { content: string }) => {
 	return (
 		<ReactMarkdown
@@ -232,11 +258,7 @@ const BaseCard = ({ content }: { content: string }) => {
 				remarkGfm,
 				// remarkMath,
 			]}
-			rehypePlugins={[
-				// rehypeRaw,
-				// rehypeKatex,
-				rehypeSanitize,
-			]}
+			rehypePlugins={[[rehypeSanitize, footnoteSchema]]}
 			remarkRehypeOptions={{ passThrough: ["link"] }}
 		>
 			{content}

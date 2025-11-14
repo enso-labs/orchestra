@@ -43,6 +43,7 @@ export default function DefaultTool({
 								await navigator.clipboard.writeText(text);
 								alert("Copied to clipboard (Tool Input)");
 							}}
+							shortenTextAfterLength={200}
 							style={{ ...getJsonTheme(), fontSize: "10px", padding: "5px" }}
 						/>
 					);

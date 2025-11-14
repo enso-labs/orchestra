@@ -8,51 +8,16 @@ import {
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
 import GroqIcon from "@/components/icons/GroqIcon";
 import XAIIcon from "../icons/XAIIcon";
-import { useModel } from "@/hooks/useModel";
-import { StringParam, useQueryParam } from "use-query-params";
-import { useState, useEffect } from "react";
-// Import getAuthToken from your auth utility
 import { getAuthToken } from "@/lib/utils/auth";
-import { listModels } from "@/lib/services/modelService";
-
-export class ChatModels {
-	public static readonly OPENAI_GPT_5_NANO = "openai:gpt-5-nano";
-	public static readonly OPENAI_GPT_5_MINI = "openai:gpt-5-mini";
-	public static readonly OPENAI_GPT_5 = "openai:gpt-5";
-	public static readonly OPENAI_GPT_5_CODEX = "openai:gpt-5-codex";
-	public static readonly ANTHROPIC_CLAUDE_3_7_SONNET =
-		"anthropic:claude-3-7-sonnet-20250219";
-	public static readonly ANTHROPIC_CLAUDE_4_SONNET =
-		"anthropic:claude-sonnet-4-20250514";
-	public static readonly ANTHROPIC_CLAUDE_4_OPUS =
-		"anthropic:claude-opus-4-20250514";
-	public static readonly ANTHROPIC_CLAUDE_4_1_OPUS =
-		"anthropic:claude-sonnet-4-5-20250929";
-	public static readonly ANTHROPIC_CLAUDE_4_5_SONNET =
-		"anthropic:claude-sonnet-4-5-20250929";
-	public static readonly XAI_GROK_4 = "xai:grok-4";
-	public static readonly XAI_GROK_4_FAST = "xai:grok-4-fast";
-	public static readonly XAI_GROK_4_FAST_NON_REASONING =
-		"xai:grok-4-fast-non-reasoning";
-	public static readonly XAI_GROK_CODE_FAST_1 = "xai:grok-code-fast-1";
-	public static readonly GOOGLE_GEMINI_2_5_FLASH_LITE =
-		"google_genai:gemini-2.5-flash-lite";
-	public static readonly GOOGLE_GEMINI_2_5_FLASH =
-		"google_genai:gemini-2.5-flash";
-	public static readonly GOOGLE_GEMINI_2_5_PRO = "google_genai:gemini-2.5-pro";
-	public static readonly GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b";
-	public static readonly GROQ_LLAMA_3_3_70B_VERSATILE =
-		"groq:llama-3.3-70b-versatile";
-	// public static readonly OLLAMA_QWEN3 = "ollama:qwen3";
-}
+import { MainToolTip } from "@/components/tooltips/MainToolTip";
+import { truncateFrom } from "@/lib/utils/format";
+import { useChatContext } from "@/context/ChatContext";
 
 function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
-	const model = useModel();
-	const [, setQueryModel] = useQueryParam("model", StringParam);
-	const [modelValues, setModelValues] = useState<string[]>([]);
+	const { model, setModel, models } = useChatContext();
 
 	const handleModelChange = (value: string) => {
-		setQueryModel(value);
+		setModel(value);
 		onModelSelected?.();
 	};
 
@@ -86,36 +51,41 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
 		return modelValue.split(":")[1] || modelValue;
 	};
 
-	useEffect(() => {
-		const fetchModels = async () => {
-			const response = await listModels();
-			setModelValues(response.data.models);
-		};
-		fetchModels();
-	}, []);
+	const getTruncatedLabel = (label: string) => {
+		if (label.length <= 20) return label;
+		return truncateFrom(label, "end", "...", 30);
+	};
 
 	const authToken = getAuthToken?.();
 
-	const allowedModelsIfNoAuth = [
-		ChatModels.OPENAI_GPT_5_NANO,
-		ChatModels.GOOGLE_GEMINI_2_5_FLASH_LITE,
-	];
-
 	return (
-		<Select value={model} onValueChange={handleModelChange}>
+		<Select value={model ?? models.default} onValueChange={handleModelChange}>
 			<SelectTrigger>
 				<SelectValue placeholder="Select Model" />
 			</SelectTrigger>
 			<SelectContent>
-				{modelValues.map((modelValue: string) => {
+				{models.models.map((modelValue: string) => {
 					const disabled =
-						!authToken && !allowedModelsIfNoAuth.includes(modelValue as string);
+						!authToken && !models.free.includes(modelValue as string);
+					const fullLabel = getModelLabel(modelValue);
+					const truncatedLabel = getTruncatedLabel(fullLabel);
+					const needsTooltip = fullLabel.length > 20;
+
 					return (
 						<SelectItem key={modelValue} value={modelValue} disabled={disabled}>
-							<div className="flex items-center gap-2">
-								{getModelIcon(modelValue)}
-								{getModelLabel(modelValue)}
-							</div>
+							{needsTooltip ? (
+								<MainToolTip content={fullLabel} delayDuration={300}>
+									<div className="flex items-center gap-2">
+										{getModelIcon(modelValue)}
+										{truncatedLabel}
+									</div>
+								</MainToolTip>
+							) : (
+								<div className="flex items-center gap-2">
+									{getModelIcon(modelValue)}
+									{truncatedLabel}
+								</div>
+							)}
 						</SelectItem>
 					);
 				})}

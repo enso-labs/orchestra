@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 interface Props {
 	value: string;
-	handleChange: (val: string) => void;
+	handleChange?: (val: string) => void;
 	language?: string;
 	readOnly?: boolean;
 	height?: string;
@@ -69,8 +69,8 @@ function MonacoEditor({
 			setError("");
 		}
 
-		// Always call handleChange to update the parent
-		handleChange(val);
+		// Call handleChange if provided
+		handleChange?.(val);
 	};
 
 	return (
