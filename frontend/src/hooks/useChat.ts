@@ -119,12 +119,12 @@ export default function useChat(): ChatContextType {
 		clearContent();
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
-		metadata.current_time = new Date().toISOString();
+		const enrichedMetadata = getMetadata();
 		const source = streamThread({
 			system: agent.prompt,
 			input: { messages: formatedMessages },
 			model: agent.model,
-			metadata: metadata,
+			metadata: enrichedMetadata,
 			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,
@@ -190,6 +190,13 @@ export default function useChat(): ChatContextType {
 		if (toolCallChunkRef.current) {
 			toolCallChunkRef.current = "";
 		}
+	};
+
+	const getMetadata = () => {
+		return {
+			...metadata,
+			current_time: new Date().toISOString(),
+		};
 	};
 
 	const resetMetadata = () => {

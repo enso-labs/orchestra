@@ -86,7 +86,7 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
 type MessageContent = string | Array<{ type: string; [key: string]: any }>;
 type Messages = { role: string; content: MessageContent; [key: string]: any }[];
 type Input = { messages: Messages };
-type Metadata = { thread_id?: string; checkpoint_id?: string; [key: string]: any };
+// type Metadata = { thread_id?: string; checkpoint_id?: string; [key: string]: any };
 type A2A = { [key: string]: any };
 type MCP = { [key: string]: any };
 type Tools = string[];
@@ -100,7 +100,7 @@ interface StreamThreadPayload {
 	system?: string;
 	input: Input;
 	model: string;
-	metadata: Metadata;
+	metadata: any;
 	a2a?: A2A;
 	mcp?: MCP;
 	tools?: Tools;
