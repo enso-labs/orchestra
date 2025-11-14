@@ -54,6 +54,9 @@ def load_models():
 
     return _Base
 
+DEFAULT_EMBED = "openai:text-embedding-3-small"
+DEFAULT_FIELDS = ["page_content", "metadata"]
+
 # Session context managers
 def get_db() -> Generator[SessionLocal, None, None]:  # type: ignore
     """Get a SQLAlchemy database session."""
@@ -96,9 +99,10 @@ def get_store_in_memory(
 def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
     return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
 
-
 def get_store_db(
-    embed: str = "openai:text-embedding-3-small",
+    embed: str = DEFAULT_EMBED,
+    dims: int = 1536,
+    fields: list[str] = DEFAULT_FIELDS,
 ) -> AsyncIterator[AsyncPostgresStore]:
     return AsyncPostgresStore.from_conn_string(
         conn_string=DB_URI,
@@ -109,6 +113,7 @@ def get_store_db(
         ),
         index=PostgresIndexConfig(
             embed=init_embeddings(embed),
-            dims=1536,
+            dims=dims,
+            fields=fields,
         ),
     )

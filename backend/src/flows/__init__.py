@@ -55,15 +55,13 @@ def graph_builder(
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
-    graph_id: Literal[
-        "react", "deepagents", "deepagent", "create_react_agent", "create_deep_agent"
-    ] = "react",
+    graph_id: Literal['deepagent', 'react'] = "deepagent",
 ) -> CompiledStateGraph:
     if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
         return create_agent(
             model=model,
             tools=tools,
-            prompt=prompt,
+            system_prompt=prompt,
             checkpointer=checkpointer,
             context_schema=context_schema,
             store=store,
@@ -189,7 +187,7 @@ class Orchestra:
         # context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
-        graph_id: Literal["react", "deepagent"] = "react",
+        graph_id: Literal["react", "deepagent"] = "deepagent",
     ):
         self.tools = tools
         self.model = model

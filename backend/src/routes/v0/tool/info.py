@@ -21,7 +21,7 @@ info_router = APIRouter()
     },
 )
 async def list_mcp_info(
-    config: dict[str, McpServer] = Body(..., example=MCP_DICT_EXAMPLE),
+    config: dict[str, McpServer] = Body(..., examples=MCP_DICT_EXAMPLE),
 ):
     try:
         for name, server in config.items():
@@ -63,7 +63,7 @@ async def list_mcp_info(
     },
 )
 async def get_a2a_agent_card(
-    config: dict[str, A2AServer] = Body(..., example=A2A_DICT_EXAMPLE),
+    config: dict[str, A2AServer] = Body(..., examples=A2A_DICT_EXAMPLE),
 ):
     try:
         agent_cards = tool_service.agent_cards(config)

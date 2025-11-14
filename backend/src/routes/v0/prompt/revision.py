@@ -17,7 +17,7 @@ router = APIRouter()
 @router.post("/{prompt_id}/v", name="Prompt Revision")
 async def revise_prompt(
     prompt_id: str = Path(..., description="The ID of the prompt to update"),
-    prompt: Prompt = Body(..., example=PROMPT_EXAMPLES["pirate_prompt"]),
+    prompt: Prompt = Body(..., examples=PROMPT_EXAMPLES["pirate_prompt"]),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):

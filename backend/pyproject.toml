@@ -61,6 +61,3 @@ pythonpath = ["."]
 filterwarnings = [
     "ignore::DeprecationWarning:passlib.*"
 ]
-
-[tool.uv]
-prerelease = "allow"

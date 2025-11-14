@@ -14,6 +14,7 @@ from .storage import router as storage
 from .assistant import router as assistant
 from .schedule import router as schedule
 from .prompt import router as prompt
+from .project import router as project
 
 
 def create_api_router(app: FastAPI, prefix: str = "/api"):
@@ -22,8 +23,9 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
     app.include_router(llm, prefix=prefix)
     app.include_router(thread, prefix=prefix)
     app.include_router(tool, prefix=prefix)
-    app.include_router(prompt, prefix=prefix)
     app.include_router(assistant, prefix=prefix)
+    app.include_router(prompt, prefix=prefix)
+    app.include_router(project, prefix=prefix)
     app.include_router(schedule, prefix=prefix)
     if LANGCONNECT_SERVER_URL:
         from .rag import gateway as rag

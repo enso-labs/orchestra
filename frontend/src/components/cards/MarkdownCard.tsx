@@ -211,7 +211,7 @@ const BaseCard = ({ content }: { content: string }) => {
 				a: ({ node, ...props }) => (
 					<a
 						target="_blank"
-						className="text-primary underline hover:text-primary/80"
+						className="text-blue-300 underline hover:text-blue-300/80"
 						{...props}
 					/>
 				),

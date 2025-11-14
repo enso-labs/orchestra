@@ -216,15 +216,13 @@ export function Message({
 									{message.tool_call_id}
 								</p>
 							</div>
-						</div>
-						<div className="overflow-y-auto mt-2">
-							<div className="bg-transparent text-foreground px-2 rounded-lg rounded-bl-sm max-h-[600px] overflow-y-auto">
-								<ToolAction
-									message={message}
-									// maxLength={maxLength}
-								/>
-							</div>
-						</div>
+					</div>
+					<div className="mt-2">
+						<ToolAction
+							message={message}
+							// maxLength={maxLength}
+						/>
+					</div>
 					</div>
 				</div>
 			</div>

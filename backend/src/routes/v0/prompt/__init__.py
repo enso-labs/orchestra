@@ -10,7 +10,6 @@ from src.services.db import get_store
 from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 from src.services.prompt import prompt_service, PromptSearch, Prompt, PROMPT_EXAMPLES
-from src.utils.format import raw_html
 
 
 router = APIRouter(tags=["Prompt"], prefix="/prompts")
@@ -46,7 +45,7 @@ async def search_prompts(
 ################################################################################
 @router.post("", name="Create Prompt")
 async def create_prompt(
-    prompt: Prompt = Body(..., example=PROMPT_EXAMPLES["default_prompt"]),
+    prompt: Prompt = Body(..., examples=PROMPT_EXAMPLES["default_prompt"]),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):

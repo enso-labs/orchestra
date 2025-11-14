@@ -75,16 +75,13 @@ def raw_html(content: str) -> str:
 </html>"""
 
 
-def init_system_prompt(system_prompt: str, metadata: dict) -> str:
-    from src.schemas.entities import Config
-
-    if isinstance(metadata, Config):
-        metadata = metadata.model_dump()
+def init_system_prompt(system_prompt: str, config: RunnableConfig) -> str:
     lines = [system_prompt]
     lines.append("---")
-    # current_time: use if present, else fill if timezone given
+    metadata = config.get("metadata", {})
     current_time = metadata.get("current_time")
     timezone_val = metadata.get("timezone")
+    lang = metadata.get("language", 'en-US')
     if current_time:
         lines.append(f"CURRENT_TIME: {current_time}")
     elif timezone_val:
@@ -92,8 +89,8 @@ def init_system_prompt(system_prompt: str, metadata: dict) -> str:
         lines.append(f"CURRENT_TIME: {now_iso}")
     if timezone_val:
         lines.append(f"TIMEZONE: {timezone_val}")
-    if "language" in metadata:
-        lines.append(f"LANGUAGE: {metadata['language']}")
+    if lang:
+        lines.append(f"LANGUAGE: {lang}")
     return "\n".join(lines) + "\n"
 
 

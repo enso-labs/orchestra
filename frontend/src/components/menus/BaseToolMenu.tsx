@@ -12,7 +12,7 @@ import {
 import { useAgentContext } from "@/context/AgentContext";
 import ImageUpload from "../inputs/ImageUpload";
 
-const DEFAULT_AGENT_TOOLS = ["web_search", "web_scrape"];
+const DEFAULT_AGENT_TOOLS = ["web_search", "web_scrape", "math_calculator"];
 
 export function BaseToolMenu() {
 	const {

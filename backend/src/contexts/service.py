@@ -1,6 +1,7 @@
 from typing import Optional
 from langchain_core.runnables import RunnableConfig
 from langgraph.pregel.main import BaseCheckpointSaver
+from src.services.project import ProjectService
 from src.services.checkpoint import CheckpointService
 from src.services.thread import ThreadService
 from src.services.assistant import AssistantService
@@ -31,6 +32,7 @@ class ServiceContext:
         self.memory_service = MemoryService(user_id=self.user_id, store=store)
         self.thread_service = ThreadService(user_id=self.user_id, store=store)
         self.prompt_service = PromptService(user_id=self.user_id, store=store)
+        self.project_service = ProjectService(user_id=self.user_id, store=store)
         self.assistant_service = AssistantService(user_id=self.user_id, store=store)
         self.presidio_service = PresidioService()
 

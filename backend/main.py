@@ -1,10 +1,7 @@
-import os
 import json
 from typing import Callable
 from time import perf_counter
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -63,7 +60,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Enso 🤖",
+    title="Enso Labs - Orchestra 🪶",
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. "

@@ -10,7 +10,7 @@ export function ChatSection() {
 			/>
 			<h1 className="text-4xl font-bold mt-2">Ensō Orchestra</h1>
 			<p className="text-lg mb-2">
-				Powered by{" "}
+				AI Orchestrator powered by{" "}
 				<a
 					href="https://github.com/enso-labs/mcp-sse"
 					target="_blank"
