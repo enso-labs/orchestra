@@ -42,6 +42,7 @@ class UserTokenKey(Enum):
     GROQ_API_KEY = "GROQ_API_KEY"
     GEMINI_API_KEY = "GEMINI_API_KEY"
     GOOGLE_API_KEY = "GOOGLE_API_KEY"
+    XAI_API_KEY = "XAI_API_KEY"
     OLLAMA_BASE_URL = "OLLAMA_BASE_URL"
     ## TOOLS
     SHELL_EXEC_SERVER_URL = "SHELL_EXEC_SERVER_URL"
@@ -61,6 +62,7 @@ OLLAMA_BASE_URL = os.getenv(UserTokenKey.OLLAMA_BASE_URL.value)
 GROQ_API_KEY = os.getenv(UserTokenKey.GROQ_API_KEY.value)
 GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
 GOOGLE_API_KEY = os.getenv(UserTokenKey.GOOGLE_API_KEY.value)
+XAI_API_KEY = os.getenv(UserTokenKey.XAI_API_KEY.value)
 ARCADE_API_KEY = os.getenv(UserTokenKey.ARCADE_API_KEY.value)
 # Tools
 SHELL_EXEC_SERVER_URL = os.getenv(

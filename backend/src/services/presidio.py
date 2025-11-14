@@ -99,7 +99,7 @@ async def process_presidio(params: dict, presidio_service: PresidioService):
 
     if not isinstance(params, LLMRequest):
         params = LLMRequest(**params)
-    query = format_content(params.messages[-1].content)
+    query = format_content(params.input.messages[-1].content)
     if params.presidio and params.presidio.analyze:
         if not PRESIDIO_ANALYZE_HOST:
             raise PresidioException(
@@ -130,7 +130,7 @@ async def process_presidio(params: dict, presidio_service: PresidioService):
                 message="Error anonymizing the query. Please review the results and try again.",
                 results=None,
             )
-        params.messages[-1].content = [
+        params.input.messages[-1].content = [
             {"type": "text", "text": anonymized_query["text"]}
         ]
     return params

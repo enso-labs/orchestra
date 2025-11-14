@@ -15,8 +15,10 @@ export function ChatV2Page() {
 		useListThreadsEffect,
 		useListCheckpointsEffect,
 		metadata,
+		useModelsEffect,
 	} = useChatContext();
 
+	useModelsEffect();
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
 

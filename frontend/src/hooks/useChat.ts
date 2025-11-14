@@ -50,6 +50,10 @@ export type ChatContextType = {
 		startTime: number;
 		rate: number | null;
 	} | null;
+	filesMap: Map<string, any>;
+	setFilesMap: (map: Map<string, any>) => void;
+	viewMode: "chat" | "editor";
+	setViewMode: (mode: "chat" | "editor") => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -85,6 +89,9 @@ export default function useChat(): ChatContextType {
 		toolkit: [] as string[],
 	});
 
+	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
+
 	const abortQuery = () => {
 		if (controller) {
 			controller.abort();
@@ -115,7 +122,7 @@ export default function useChat(): ChatContextType {
 		metadata.current_time = new Date().toISOString();
 		const source = streamThread({
 			system: agent.prompt,
-			messages: formatedMessages,
+			input: { messages: formatedMessages },
 			model: agent.model,
 			metadata: metadata,
 			tools: agent.tools,
@@ -201,6 +208,8 @@ export default function useChat(): ChatContextType {
 			resetMetadata();
 		}
 		setMessages(in_mem_messages);
+		setFilesMap(new Map());
+		setViewMode("chat");
 	};
 
 	const formatContent = (content: any) => {
@@ -218,6 +227,30 @@ export default function useChat(): ChatContextType {
 			alert("Error on stream: " + payload[1]);
 			setLoading(false);
 			setController(null);
+			return;
+		}
+
+		if (streamMode === "values") {
+			console.log(payload[1]);
+			const valuesData = payload[1];
+
+			// Store files with message association
+			if (valuesData.files && Object.keys(valuesData.files).length > 0) {
+				// Associate files with the latest AI message
+				const latestAiMessage = history
+					.slice()
+					.reverse()
+					.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+
+				if (latestAiMessage) {
+					setFilesMap((prev) => {
+						const newMap = new Map(prev);
+						newMap.set(latestAiMessage.id, valuesData.files);
+						return newMap;
+					});
+				}
+			}
+
 			return;
 		}
 
@@ -447,5 +480,9 @@ export default function useChat(): ChatContextType {
 		setArcade,
 		useEffectUpdateAssistantId,
 		streamingRate,
+		filesMap,
+		setFilesMap,
+		viewMode,
+		setViewMode,
 	};
 }

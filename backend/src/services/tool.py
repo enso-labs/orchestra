@@ -1,17 +1,18 @@
 import asyncio
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool, BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_arcade import ArcadeToolManager
+
 from langgraph.store.base import BaseStore
 
 from src.repos.tool_repo import SavedTool
 from src.schemas.entities.a2a import A2AServer, McpServer
-from src.tools import TOOL_LIBRARY
+from src.tools import TOOL_LIBRARY, default_tools, init_tool_library
 from src.utils.a2a import A2ACardResolver
 from src.schemas.entities import ArcadeConfig
 from src.utils.logger import logger
-from src.utils.tools import attach_tool_details
 from src.constants import ARCADE_API_KEY
+from src.utils.tools import attach_tool_details
 from src.services.db import get_store_in_memory
 from src.repos.tool_repo import ToolRepo
 
@@ -20,34 +21,37 @@ class ToolService:
     def __init__(
         self, 
         user_id: str = None,
-        store: BaseStore = get_store_in_memory()
+        store: BaseStore = get_store_in_memory(),
+        config: RunnableConfig = None,
     ):
         self.user_id = user_id
         self.store = store
-        self.tool_repo = ToolRepo(user_id=user_id, store=store)
-
-    @staticmethod
-    def default_tools(tools: list[str]) -> list[BaseTool]:
-        default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
-        return default_tools
-
+        self.tool_repo = ToolRepo(user_id=user_id, store=store, config=config)
 
     async def tool_details(self):
-        tool_details = []
-        user_tools = await self.tool_repo.search()
-        tool_lib = TOOL_LIBRARY + user_tools
-        for tool in tool_lib:
-            updated_tool = attach_tool_details(tool)
-            tool_details.append(
-                {
-                    "name": updated_tool.name,
-                    "description": updated_tool.description,
-                    "args": updated_tool.args,
-                    "tags": updated_tool.tags,
-                    # "metadata": updated_tool.metadata,
-                }
-            )
-        return tool_details
+        try:
+            tool_details = []
+            tool_library = init_tool_library() # TODO: This may change in future to user_id specific
+            user_tools: list[StructuredTool] = await self.tool_repo.search()
+            base_tools = set[str]()
+            for tool in user_tools + tool_library:
+                tool: StructuredTool = attach_tool_details(tool)
+                tool_dict = tool.model_dump()
+                tool_dict['args_schema'] = tool_dict['args_schema'].model_json_schema()
+                metadata = tool_dict['metadata']
+                if metadata and metadata.get('base_tool'):
+                    base_tools.add(metadata.get('base_tool'))
+           
+                if tool.name not in base_tools:
+                    ## Does NOT indicate whether async or sync, so we remove
+                    # tool_dict['coroutine'] = tool_dict['coroutine'] is not None
+                    del tool_dict['func']
+                    del tool_dict['coroutine']
+                    tool_details.append(tool_dict)
+            return tool_details
+        except Exception as e:
+            logger.exception(f"Error fetching tool details: {e}")
+            return []
 
     @staticmethod
     async def mcp_tools(mcp: dict[str, McpServer]):
@@ -77,6 +81,7 @@ class ToolService:
     def arcade_tools(
         arcade: ArcadeConfig,
     ) -> list[StructuredTool]:
+        from langchain_arcade import ArcadeToolManager
         manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
         tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
         return tools
@@ -94,12 +99,15 @@ class ToolService:
             else None,
         )
         
-    async def invoke_saved_tool(self, saved_tool: SavedTool, input: dict):
-        structured_tool = saved_tool.to_structured_tool()
-        return await structured_tool.ainvoke(
-            input=input,
-            config={"metadata": structured_tool.metadata}
-        )
+    async def invoke_structured_tool(self, structured_tool: StructuredTool, input: dict):
+        try:
+            return await structured_tool.ainvoke(
+                input=input,
+                config={"metadata": structured_tool.metadata}
+            )
+        except Exception as e:
+            logger.exception(f"Error invoking structured tool {structured_tool.name}: {e}")
+            return {"error": str(e)}
 
 
 tool_service = ToolService()

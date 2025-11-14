@@ -7,7 +7,7 @@ export function ChatLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<SidebarProvider defaultOpen={defaultOpen}>
 			<AppSidebar />
-			<main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+			<main className="flex-1 flex flex-col max-h-screen overflow-hidden">
 				{children}
 			</main>
 		</SidebarProvider>

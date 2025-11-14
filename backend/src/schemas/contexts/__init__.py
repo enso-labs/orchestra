@@ -3,4 +3,5 @@ from dataclasses import dataclass
 
 @dataclass
 class ContextSchema:
-    user_id: str
+    model: str = None
+    user_id: str = None

@@ -5,6 +5,8 @@ import {
 	// Layers,
 	// Wrench,
 	MessageSquare,
+	MoreHorizontal,
+	Trash2,
 } from "lucide-react";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
 import {
@@ -26,6 +28,13 @@ import {
 	SidebarRail,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
 import {
@@ -36,11 +45,12 @@ import {
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
 import { formatDistanceToNow } from "date-fns";
-import { searchThreads } from "@/lib/services";
+import { searchThreads, deleteThread } from "@/lib/services";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import useModel from "@/hooks/useModel";
 import { Link } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
+import { AxiosResponse } from "axios";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -123,10 +133,19 @@ interface ThreadItemProps {
 }
 
 function ThreadItem({ thread }: ThreadItemProps) {
-	const { metadata, setMessages, setMetadata } = useChatContext();
+	const {
+		metadata,
+		setMessages,
+		setMetadata,
+		setFilesMap,
+		threads,
+		setThreads,
+		clearMessages,
+	} = useChatContext();
+	const { agent } = useAgentContext();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const messages = thread.value?.messages || [];
-	const messageCount = messages.length;
+	const fileCount = Object.keys(thread.value?.files || {}).length;
 	const lastMessage = messages[messages.length - 1];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
 	const { setModel } = useModel();
@@ -145,6 +164,24 @@ function ThreadItem({ thread }: ThreadItemProps) {
 
 	const handleThreadClick = async () => {
 		const checkpoints = await searchThreads("list_checkpoints", thread.value);
+
+		// Set filesMap by associating files with the last AI message
+		if (thread.value.files && Object.keys(thread.value.files).length > 0) {
+			const messages = formatMessages(checkpoints[0].values.messages);
+			const latestAiMessage = messages
+				.slice()
+				.reverse()
+				.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+
+			if (latestAiMessage) {
+				const newFilesMap = new Map();
+				newFilesMap.set(latestAiMessage.id, thread.value.files);
+				setFilesMap(newFilesMap);
+			}
+		} else {
+			setFilesMap(new Map());
+		}
+
 		setModel(
 			thread.value.messages[thread.value.messages.length - 1].model ||
 				DEFAULT_CHAT_MODEL,
@@ -154,6 +191,27 @@ function ThreadItem({ thread }: ThreadItemProps) {
 		// Close sidebar on mobile
 		if (isMobile) {
 			setOpenMobile(false);
+		}
+	};
+
+	const handleDeleteClick = async () => {
+		if (window.confirm("Are you sure you want to delete this thread?")) {
+			try {
+				let deleted: boolean | AxiosResponse<any, any> = false;
+				if (agent.id) {
+					deleted = await deleteThread(thread.key, agent.id);
+				} else {
+					deleted = await deleteThread(thread.key);
+				}
+				if (deleted) {
+					setThreads(threads.filter((t: any) => t.key !== thread.key));
+				}
+				if (isSelected) {
+					clearMessages();
+				}
+			} catch (error) {
+				alert("Failed to delete thread");
+			}
 		}
 	};
 
@@ -169,7 +227,7 @@ function ThreadItem({ thread }: ThreadItemProps) {
 		: "";
 
 	return (
-		<SidebarMenuItem className="mb-1">
+		<SidebarMenuItem className="mb-1 group/thread relative">
 			<SidebarMenuButton
 				asChild
 				isActive={isSelected}
@@ -181,7 +239,7 @@ function ThreadItem({ thread }: ThreadItemProps) {
 			>
 				<button
 					onClick={handleThreadClick}
-					className="flex items-start gap-2.5 w-full group"
+					className="flex items-start gap-2.5 w-full"
 				>
 					<div className="flex flex-col min-w-0 flex-1 gap-1.5">
 						<div className="flex items-start justify-between gap-2 w-full">
@@ -202,8 +260,8 @@ function ThreadItem({ thread }: ThreadItemProps) {
 						</div>
 						<div className="flex items-center gap-2.5 text-[11px] text-sidebar-foreground/50">
 							<div className="flex items-center gap-1">
-								<span className="font-medium">{messageCount}</span>
-								<span>msg{messageCount !== 1 ? "s" : ""}</span>
+								<span className="font-medium">{fileCount}</span>
+								<span>file{fileCount !== 1 ? "s" : ""}</span>
 							</div>
 							<span className="text-sidebar-foreground/30">•</span>
 							<div className="flex items-center gap-1 truncate">
@@ -213,6 +271,27 @@ function ThreadItem({ thread }: ThreadItemProps) {
 					</div>
 				</button>
 			</SidebarMenuButton>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="absolute right-2 bottom-2 opacity-0 group-hover/thread:opacity-100 transition-opacity h-6 w-6"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<MoreHorizontal className="h-3.5 w-3.5 text-sidebar-foreground/60" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-48">
+					<DropdownMenuItem
+						onClick={handleDeleteClick}
+						className="text-red-300 focus:text-red-400 hover:text-red-300 cursor-pointer"
+					>
+						<Trash2 className="mr-2 h-4 w-4" />
+						Delete
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</SidebarMenuItem>
 	);
 }
