@@ -2,7 +2,7 @@ from typing import Any, Optional
 from uuid import uuid4
 from langgraph.store.base import BaseStore, SearchItem
 from langchain_core.documents import Document
-from src.services.db import get_in_memory_store
+from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 from pydantic import BaseModel
 from datetime import datetime
@@ -24,7 +24,7 @@ class ProjectSearch(BaseModel):
 class ProjectService:
     def __init__(self, 
         user_id: str, 
-        store: BaseStore = get_in_memory_store()
+        store: BaseStore = get_store_in_memory()
     ):
         self.user_id = user_id
         self.store: BaseStore = store

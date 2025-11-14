@@ -1,10 +1,7 @@
-import os
 import json
 from typing import Callable
 from time import perf_counter
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -14,7 +11,6 @@ load_dotenv()
 
 from src.routes.v0 import create_api_router, mount_static_router
 from src.utils.logger import logger
-from src.routes.v0 import add_mounts, add_api_routes
 from src.services.db import (
     get_checkpoint_db,
     get_store_db,
@@ -64,7 +60,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Enso 🤖",
+    title="Enso Labs - Orchestra 🪶",
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. "

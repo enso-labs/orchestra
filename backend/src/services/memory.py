@@ -1,9 +1,9 @@
 from typing import Any
 from langgraph.store.base import BaseStore, SearchItem
-from src.services.db import get_in_memory_store
+from src.services.db import get_store_in_memory
 
 class MemoryService:
-    def __init__(self, user_id: str = None, store: BaseStore = get_in_memory_store()):
+    def __init__(self, user_id: str = None, store: BaseStore = get_store_in_memory()):
         self.user_id = user_id
         self.store: BaseStore = store
 

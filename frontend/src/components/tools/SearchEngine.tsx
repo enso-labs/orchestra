@@ -6,7 +6,7 @@ export default function SearchEngineTool({
 	selectedToolMessage: any;
 }) {
 	return (
-		<div className="max-h-[600px] mt-2 p-2rounded-lg overflow-y-auto">
+		<div className="max-h-[600px] mt-2 p-2 rounded-lg overflow-y-auto">
 			<div className="space-y-4">
 				{selectedToolMessage.content &&
 				typeof selectedToolMessage.content === "string" ? (
