@@ -1,11 +1,11 @@
 from typing import Any, Optional
 from uuid import uuid4
-from langgraph.store.base import BaseStore, SearchItem
-from langchain_core.documents import Document
-from src.services.db import get_store_in_memory
-from src.utils.logger import logger
 from pydantic import BaseModel
 from datetime import datetime
+from langgraph.store.base import BaseStore, SearchItem
+from src.services.db import get_store_in_memory
+from src.utils.logger import logger
+
 
 class Source(BaseModel):
     id: Optional[str] = None
