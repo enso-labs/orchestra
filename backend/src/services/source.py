@@ -1,0 +1,75 @@
+from typing import Any, Optional
+from uuid import uuid4
+from langgraph.store.base import BaseStore, SearchItem
+from langchain_core.documents import Document
+from src.services.db import get_store_in_memory
+from src.utils.logger import logger
+from pydantic import BaseModel
+from datetime import datetime
+
+class Source(BaseModel):
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    type: str
+    metadata: dict = {}
+    updated_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+class SourceSearch(BaseModel):
+    query: str
+    limit: int = 20
+    offset: int = 0
+    filter: dict = {}
+
+class SourceService:
+    def __init__(self, 
+        user_id: str, 
+        store: BaseStore = get_store_in_memory()
+    ):
+        self.user_id = user_id
+        self.store: BaseStore = store
+
+    def _get_namespace(self):
+        return (self.user_id, "sources")
+
+    async def _set(self, key: str, value: Source) -> bool:
+        await self.store.aput(
+            namespace=self._get_namespace(), key=key, value=value
+        )
+        return True
+    
+    async def create(self, project_id: str, source: Source) -> bool:
+        try:
+            source.id = str(uuid4())
+            source.metadata["project_id"] = project_id
+            source.created_at = datetime.now()
+            source.updated_at = datetime.now()
+            await self._set(source.id, source)
+        except Exception as e:
+            logger.error(f"Error adding source: {e}")
+            raise e
+        return True
+
+    async def get(self, source_id: str) -> Any:
+        return await self.store.aget(self._get_namespace(), source_id)
+
+    async def delete(self, source_id: str) -> bool:
+        await self.store.adelete(self._get_namespace(), source_id)
+        return True
+
+    async def search(
+        self, 
+        query: str = None, 
+        filter: dict = {},
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[SearchItem]:
+        results = await self.store.asearch(
+            self._get_namespace(), 
+            query=query, 
+            limit=limit, 
+            filter=filter, 
+            offset=offset
+        )
+        return results

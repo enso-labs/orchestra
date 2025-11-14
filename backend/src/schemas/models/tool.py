@@ -37,8 +37,8 @@ class Server(get_db_base()):
         nullable=False,
     )
 
-    # User relationship
-    user = relationship("User", backref="servers")
+    # NOTE: relationship removed - servers table no longer uses SQLAlchemy
+    # user = relationship("User", backref="servers")
 
     def to_dict(self, include_config: bool = True) -> dict:
         result = {

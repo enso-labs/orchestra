@@ -48,7 +48,7 @@ async def list_tools(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_tool(
-    tool: SavedTool = Body(..., example=ToolExamples.CREATE_EXAMPLE),
+    tool: SavedTool = Body(..., examples=[ToolExamples.CREATE_EXAMPLE]),
     user: ProtectedUser = Depends(verify_credentials),
     store: BaseStore = Depends(get_store),
 ):

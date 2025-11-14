@@ -27,9 +27,9 @@ class Thread(get_db_base()):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    # Add relationships
-    user_relation = relationship("User", back_populates="threads")
-    agent_relation = relationship("Agent", backref="agent_threads")
+    # NOTE: relationships removed - threads table no longer uses SQLAlchemy
+    # user_relation = relationship("User", back_populates="threads")
+    # agent_relation = relationship("Agent", backref="agent_threads")
 
     def to_dict(self) -> dict:
         return {

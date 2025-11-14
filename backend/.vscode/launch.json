@@ -16,11 +16,11 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "tests/unit/services/test_tool_service.py",
+                "tests/unit/services/test_source_service.py",
                 "-v"
             ],
             "console": "integratedTerminal",
-            "justMyCode": false,
+            "justMyCode": true,
             "envFile": "${workspaceFolder}/.env.test"
         },
         {
