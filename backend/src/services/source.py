@@ -1,8 +1,10 @@
 from typing import Any, Optional
 from uuid import uuid4
+from langchain_core.documents import Document
 from pydantic import BaseModel
 from datetime import datetime
 from langgraph.store.base import BaseStore, SearchItem
+from src.loaders import Loader
 from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 
@@ -12,6 +14,7 @@ class Source(BaseModel):
     name: str
     description: Optional[str] = None
     type: str
+    docs: Optional[list[Document]] = None
     metadata: dict = {}
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
@@ -35,7 +38,7 @@ class SourceService:
 
     async def _set(self, key: str, value: Source) -> bool:
         await self.store.aput(
-            namespace=self._get_namespace(), key=key, value=value
+            namespace=self._get_namespace(), key=key, value=value.model_dump()
         )
         return True
     
@@ -45,11 +48,15 @@ class SourceService:
             source.metadata["project_id"] = project_id
             source.created_at = datetime.now()
             source.updated_at = datetime.now()
-            await self._set(source.id, source)
+            created = await self._set(key=source.id, value=source)
+            if created:
+                source.docs = await self._load_source_to_docs(source, lazy=True)
+                return source
+            else:
+                raise Exception("Failed to create source")
         except Exception as e:
             logger.error(f"Error adding source: {e}")
             raise e
-        return True
 
     async def get(self, source_id: str) -> Any:
         return await self.store.aget(self._get_namespace(), source_id)
@@ -73,3 +80,15 @@ class SourceService:
             offset=offset
         )
         return results
+    
+    async def _load_source_to_docs(self, source: Source, lazy: bool = False) -> list[Document]:
+        loader = Loader.create(source.type, source.metadata)
+        docs = []
+        if lazy:
+            async for doc in loader.alazy_load():
+                doc.metadata['source_id'] = source.id
+                doc.metadata['project_id'] = source.metadata['project_id']
+                docs.append(doc)
+        else:
+            docs.extend(await loader.aload())
+        return docs

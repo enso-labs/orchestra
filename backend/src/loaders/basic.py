@@ -2,8 +2,8 @@ import os
 import tempfile
 import base64
 from pypdf import PdfReader
-from langchain.document_loaders.base import BaseLoader
-from langchain.docstore.document import Document
+from langchain_core.document_loaders.base import BaseLoader
+from langchain_core.documents import Document
 
 
 class CopyPasteLoader(BaseLoader):

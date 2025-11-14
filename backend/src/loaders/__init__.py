@@ -27,8 +27,8 @@ nest_asyncio.apply()
 class Loader:
     LOADER_CLASSES = {
         "gitbook": GitbookLoader,
-        "web_base": WebBaseLoader,
-        "website": RecursiveUrlLoader,  # Alias for 'web_base
+        "web_scrape": WebBaseLoader,
+        "web_scrape_recursive": RecursiveUrlLoader,  # Alias for 'web_base
         "youtube": YoutubeLoader,
         "polygon": BlockchainDocumentLoader,
         "ethereum": BlockchainDocumentLoader,
@@ -93,12 +93,12 @@ class Loader:
             return loader_class(web_page=urls[0], load_all_paths=True)
 
         # Handling for loaders that require URLs or file paths
-        if loader_type == "web_base":
+        if loader_type == "web_scrape":
             urls = loader_config.get("urls", [])
             return loader_class(web_paths=set(urls))
 
         # Handling for loaders that require URLs or file paths
-        if loader_type in {"sitemap", "website"}:
+        if loader_type in {"sitemap", "web_scrape_recursive"}:
             urls = loader_config.get("urls", [])
             return loader_class(urls[0])
 

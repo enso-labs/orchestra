@@ -6,6 +6,7 @@ from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 from pydantic import BaseModel
 from datetime import datetime
+from src.services.source import SourceService, Source
 
 class Project(BaseModel):
     id: str
@@ -28,6 +29,7 @@ class ProjectService:
     ):
         self.user_id = user_id
         self.store: BaseStore = store
+        self.source_service = SourceService(user_id=user_id)
 
     def _get_namespace(self, project_id: str):
         return (self.user_id, "projects", project_id)
@@ -53,16 +55,29 @@ class ProjectService:
     async def delete_doc(self, project_id: str, doc_id: str) -> bool:
         await self.store.adelete(self._get_namespace(project_id), doc_id)
         return True
-
+    
+    async def add_sources(self, project_id: str, sources: list[Source]) -> list[Document]:
+        added_sources: list[Source] = []
+        for source in sources:
+            source: Source = await self.source_service.create(
+                project_id=project_id, source=source
+            )
+            if source.docs:
+                added = await self.add_docs(project_id, source.docs)
+                if added:
+                    added_sources.append(source)
+        return added_sources
+    
     async def search_docs(
         self, 
+        project_id: str,
         query: str = None, 
         filter: dict = {},
         limit: int = 20,
         offset: int = 0,
     ) -> list[SearchItem]:
         results = await self.store.asearch(
-            self._get_namespace(), 
+            self._get_namespace(project_id), 
             query=query, 
             limit=limit, 
             filter=filter, 
