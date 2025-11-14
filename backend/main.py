@@ -13,26 +13,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.utils.logger import logger
+from src.routes.v0 import add_mounts, add_api_routes
 from src.services.db import (
     get_checkpoint_db,
     get_store_db,
 )
-
-from src.routes.v0 import (
-    tool,
-    llm,
-    thread,
-    health,
-    auth,
-    storage,
-    rag,
-    assistant,
-    schedule,
-    prompt,
-)
 from src.constants import (
     HOST,
-    LANGCONNECT_SERVER_URL,
     PORT,
     LOG_LEVEL,
     APP_VERSION,
@@ -127,26 +114,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-PREFIX = "/api"
-app.include_router(auth, prefix=PREFIX)
-app.include_router(health, prefix=PREFIX)
-app.include_router(llm, prefix=PREFIX)
-app.include_router(thread, prefix=PREFIX)
-app.include_router(assistant, prefix=PREFIX)
-app.include_router(tool, prefix=PREFIX)
-app.include_router(prompt, prefix=PREFIX)
-app.include_router(schedule, prefix=PREFIX)
-if LANGCONNECT_SERVER_URL:
-    app.include_router(rag, prefix=PREFIX)
-app.include_router(storage, prefix=PREFIX)
-# Mount specific directories only if they exist
-app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
-app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
 
-# Check if icons directory exists before mounting
-if os.path.exists("src/public/icons"):
-    app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
+add_api_routes(app)
+add_mounts(app)
 
 
 # Function to serve static files with fallback
