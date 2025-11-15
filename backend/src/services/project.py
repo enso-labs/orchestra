@@ -31,12 +31,12 @@ class ProjectService:
         self.store: BaseStore = store
         self.source_service = SourceService(user_id=user_id, store=store)
 
-    def _get_namespace(self, project_id: str):
-        return (self.user_id, "projects", project_id)
+    def _get_namespace(self):
+        return (self.user_id, "projects")
 
-    async def _set_doc(self, project_id: str, key: str, value: Document) -> bool:
+    async def _set_doc(self, doc_id: str, doc: Document) -> bool:
         await self.store.aput(
-            namespace=self._get_namespace(project_id), key=key, value=value.model_dump()
+            namespace=self._get_namespace(), key=doc_id, value=doc.model_dump()
         )
         return True
     
@@ -95,17 +95,33 @@ class ProjectService:
                 metadata={**doc.value["metadata"], "score": doc.score}
             ) for doc in docs
         ]
-    
+
+
+    async def search(
+        self,
+        query: str = None,
+        filter: dict = {},
+        limit: int = 20,
+        offset: int = 0,
+    ) -> list[Project]:
+        results = await self.store.asearch(
+            self._get_namespace(),
+            query=query,
+            filter=filter,
+            limit=limit,
+            offset=offset
+        )
+        return results
+
     async def search_docs(
         self, 
-        project_id: str,
         query: str = None, 
         filter: dict = {},
         limit: int = 20,
         offset: int = 0,
     ) -> list[SearchItem]:
         results = await self.store.asearch(
-            self._get_namespace(project_id), 
+            self._get_namespace(), 
             query=query, 
             limit=limit, 
             filter=filter, 
