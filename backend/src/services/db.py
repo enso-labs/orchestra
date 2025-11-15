@@ -88,12 +88,14 @@ def get_store_in_memory(
     fields: list[str] = [],
     dims: int = 1536,
 ) -> InMemoryStore:
-    index: IndexConfig = {}
     if fields:
-        index.dims = dims
-        index.fields = fields
-        index.embed = init_embeddings(embed)
-    return InMemoryStore(index=index)
+        index = IndexConfig(
+            dims=dims,
+            embed=init_embeddings(embed),
+            fields=fields,
+        )
+        return InMemoryStore(index=index)
+    return InMemoryStore()
 
 
 def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:

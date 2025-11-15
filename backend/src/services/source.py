@@ -11,8 +11,6 @@ from src.utils.logger import logger
 
 class Source(BaseModel):
     id: Optional[str] = None
-    name: str
-    description: Optional[str] = None
     type: str
     docs: Optional[list[Document]] = None
     metadata: dict = {}
@@ -21,14 +19,14 @@ class Source(BaseModel):
 
 class SourceSearch(BaseModel):
     query: str
-    limit: int = 20
+    limit: int = 100
     offset: int = 0
     filter: dict = {}
 
 class SourceService:
     def __init__(self, 
         user_id: str, 
-        store: BaseStore = get_store_in_memory()
+        store: BaseStore = get_store_in_memory(fields=["page_content", "metadata"])
     ):
         self.user_id = user_id
         self.store: BaseStore = store
@@ -36,9 +34,9 @@ class SourceService:
     def _get_namespace(self):
         return (self.user_id, "sources")
 
-    async def _set(self, key: str, value: Source) -> bool:
+    async def _set(self, source_id: str, source: Source) -> bool:
         await self.store.aput(
-            namespace=self._get_namespace(), key=key, value=value.model_dump()
+            namespace=self._get_namespace(), key=source_id, value=source.model_dump()
         )
         return True
     
@@ -46,11 +44,11 @@ class SourceService:
         try:
             source.id = str(uuid4())
             source.metadata["project_id"] = project_id
+            source.docs = await self._load_source_to_docs(source, lazy=True)
             source.created_at = datetime.now()
             source.updated_at = datetime.now()
-            created = await self._set(key=source.id, value=source)
+            created = await self._set(source_id=source.id, source=source)
             if created:
-                source.docs = await self._load_source_to_docs(source, lazy=True)
                 return source
             else:
                 raise Exception("Failed to create source")
@@ -59,7 +57,7 @@ class SourceService:
             raise e
 
     async def get(self, source_id: str) -> Any:
-        return await self.store.aget(self._get_namespace(), source_id)
+        return await self.store.asearch(self._get_namespace(), filter={"id": source_id})
 
     async def delete(self, source_id: str) -> bool:
         await self.store.adelete(self._get_namespace(), source_id)
@@ -79,7 +77,13 @@ class SourceService:
             filter=filter, 
             offset=offset
         )
-        return results
+        return self._format_sources(results)
+    
+    def _format_sources(self, sources: list[SearchItem]) -> list[Source]:
+        return [self._format_source(source) for source in sources]
+    
+    def _format_source(self, item: SearchItem) -> Source:
+        return Source.model_validate(item.value)
     
     async def _load_source_to_docs(self, source: Source, lazy: bool = False) -> list[Document]:
         loader = Loader.create(source.type, source.metadata)

@@ -25,11 +25,11 @@ class ProjectSearch(BaseModel):
 class ProjectService:
     def __init__(self, 
         user_id: str, 
-        store: BaseStore = get_store_in_memory()
+        store: BaseStore = get_store_in_memory(fields=["page_content", "metadata"])
     ):
         self.user_id = user_id
         self.store: BaseStore = store
-        self.source_service = SourceService(user_id=user_id)
+        self.source_service = SourceService(user_id=user_id, store=store)
 
     def _get_namespace(self, project_id: str):
         return (self.user_id, "projects", project_id)
@@ -43,7 +43,8 @@ class ProjectService:
     async def add_docs(self, project_id: str, docs: list[Document]) -> bool:
         for doc in docs:    
             try:
-                await self._set_doc(project_id, str(uuid4()), doc)
+                doc.id = str(uuid4())
+                await self._set_doc(project_id, doc.id, doc)
             except Exception as e:
                 logger.error(f"Error adding doc: {e}")
                 raise e
@@ -66,7 +67,34 @@ class ProjectService:
                 added = await self.add_docs(project_id, source.docs)
                 if added:
                     added_sources.append(source)
-        return added_sources
+            return added_sources
+    
+    async def delete_source(self, project_id: str, source_id: str) -> bool:
+        docs: list[Document] = await self.search_docs(project_id=project_id, filter={
+            "metadata": {
+                "source_id": source_id,
+            },
+        })
+        for doc in docs:
+            await self.delete_doc(project_id, doc.id)
+        return await self.source_service.delete(source_id)
+    
+    async def get_sources(self, project_id: str) -> list[Source]:
+        sources: list[SearchItem] = await self.source_service.search(filter={
+            "metadata": {
+                "project_id": project_id,
+            },
+        })
+        return sources
+    
+    
+    def _format_docs(self, docs: list[SearchItem]) -> list[Document]:
+        return [
+            Document(
+                page_content=doc.value["page_content"],
+                metadata={**doc.value["metadata"], "score": doc.score}
+            ) for doc in docs
+        ]
     
     async def search_docs(
         self, 
@@ -83,4 +111,4 @@ class ProjectService:
             filter=filter, 
             offset=offset
         )
-        return results
+        return self._format_docs(results)
