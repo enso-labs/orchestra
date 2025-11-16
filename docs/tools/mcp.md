@@ -4,6 +4,9 @@
 <a href="https://orchestra.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
 <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
 
+!!! info "Actively Evolving"
+    MCP integration is actively being enhanced with new features and capabilities. This documentation reflects the current implementation and is updated regularly.
+
 [MCP](https://modelcontextprotocol.io/introduction) is an open protocol that standardizes how applications provide context to LLMs. Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect your devices to various peripherals and accessories, MCP provides a standardized way to connect AI models to different data sources and tools.
 
 ![Landing Page](https://github.com/ryaneggz/static/blob/main/enso/mcp-enable.gif?raw=true)
