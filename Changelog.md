@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/501-update-stale-docs-with-placeholder (2025-11-16)
   - feat/420-project-endpoints (2025-10-28)
   - feat/464-update-input-support-multiple-keys (2025-11-11)
   - feat/490-can-read-deepagents-agent-files (2025-11-10)
