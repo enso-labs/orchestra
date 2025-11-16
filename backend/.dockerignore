@@ -11,6 +11,7 @@
 **Dockerfile
 **/requirements-dev.txt
 .example.env
+**/.plans/
 **/.venv/
 Makefile
 **/.vscode
