@@ -3,13 +3,14 @@ from fastapi.responses import Response
 from fastapi import status
 from langgraph.store.postgres import AsyncPostgresStore
 
+from src.schemas.examples import Examples
 from src.schemas.entities import SearchFilter
 from src.services.source import Source
 from src.contexts.service import ServiceContext
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store
 from src.utils.auth import verify_credentials
-from src.repos.project_repo import EXAMPLE_PROJECT, Project
+from src.repos.project_repo import Project
 
 
 
@@ -41,7 +42,7 @@ async def search_projects(
 ################################################################################
 @router.post("", name="Create Project")
 async def create_project(
-	project: Project = Body(..., examples=[EXAMPLE_PROJECT]),
+	project: Project = Body(openapi_examples=Examples.PROJECT_EXAMPLES),
 	user: ProtectedUser = Depends(verify_credentials),
 	store: AsyncPostgresStore = Depends(get_store),
 ):
@@ -83,10 +84,10 @@ async def delete_project(
 @router.post("/{project_id}/sources", name="Add Project Sources")
 async def add_project_sources(
 	project_id: str,
-	sources: list[Source] = Body(...),
+	sources: list[Source] = Body(openapi_examples=Examples.SOURCE_EXAMPLES),
 	user: ProtectedUser = Depends(verify_credentials),
 	store: AsyncPostgresStore = Depends(get_store),
 ):
 	service_context = ServiceContext(user_id=user.id, store=store)
 	sources: list[Source] = await service_context.project_service.add_sources(project_id, sources)
-	return {"source_ids": [source.id for source in sources]}
+	return {"sources": [source.model_dump() for source in sources]}

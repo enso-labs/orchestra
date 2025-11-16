@@ -5,6 +5,7 @@ from langchain_core.documents import Document
 from src.schemas.entities import SearchFilter
 from src.services.db import get_store_in_memory
 from src.schemas.entities.store import Source, Project, Document
+from src.utils.logger import logger
 
 class BaseRepo:
 	def __init__(self, 
@@ -27,24 +28,17 @@ class BaseRepo:
 
 	async def _set(self, key: str, value: Source | Project | Document, ttl: int | None = None) -> bool:
 		await self.store.aput(
-			namespace=self._get_namespace(), key=key, value=value.model_dump(), ttl=ttl
+			namespace=self._get_namespace(), key=key, value=value.model_dump(exclude_none=True), ttl=ttl
 		)
+		logger.info(f"Set {self.entity_type} {key} successfully")
 		return True
 
 	async def _delete(self, key: str) -> bool:
 		await self.store.adelete(self._get_namespace(), key)
 		return True
 
- 
-	##################################################################
-	## Source CRUD Methods
-	##################################################################
 	async def _get(self, key: str) -> Any:
 		return await self.store.aget(self._get_namespace(), key)
-
-	async def _delete(self, key: str) -> bool:
-		await self.store.adelete(self._get_namespace(), key)
-		return True
 
 	async def _search(
 		self, 

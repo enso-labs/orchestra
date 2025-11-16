@@ -16,6 +16,7 @@ from langchain_community.document_loaders import (
     SitemapLoader,
     BlockchainDocumentLoader,
 )
+from langchain_core.document_loaders import BaseLoader
 
 from .basic import Base64Loader, CopyPasteLoader
 
@@ -88,7 +89,7 @@ class Loader:
             "readthedocs",
         ),  # type: ignore
         loader_config,
-    ):
+    ) -> BaseLoader:
         loader_class = Loader.LOADER_CLASSES.get(loader_type)
         if not loader_class:
             raise ValueError(f"Unsupported document loader type: {loader_type}")

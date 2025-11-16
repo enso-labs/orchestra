@@ -1,18 +1,17 @@
 from langgraph.store.base import BaseStore, SearchItem
+from src.schemas.entities.store import Source
 from src.services.db import get_store_in_memory
 from langchain_core.documents import Document
-from datetime import datetime
 from uuid import uuid4
 from src.utils.logger import logger
 from src.repos.base_repo import BaseRepo
+from src.loaders import Loader
 
 class DocRepo(BaseRepo):
 	def __init__(self, 
 		user_id: str, 
-		store: BaseStore = get_store_in_memory()
+		store: BaseStore = get_store_in_memory(fields=["page_content", "metadata"])
 	):
-		self.user_id = user_id
-		self.store: BaseStore = store
 		super().__init__(user_id=user_id, store=store, entity_type="documents")
 
 	def _format_docs(self, docs: list[SearchItem]) -> list[Document]:
@@ -22,24 +21,32 @@ class DocRepo(BaseRepo):
 				metadata={**doc.value["metadata"], "score": doc.score}
 			) for doc in docs
 		]
+  
+	async def _load_source_to_docs(self, source: Source, lazy: bool = True) -> list[Document]:
+		loader = Loader.create(source.type, source.metadata)
+		doc_ids = []
+		if lazy:
+			async for doc in loader.alazy_load():
+				doc.id = str(uuid4())
+				doc.metadata = self._filter({
+					"project_id": source.metadata['project_id'],
+					"source_id": source.id,
+				})
+				await self._set(key=doc.id, value=doc)
+				doc_ids.append(doc.id)
+		else:
+			doc_ids.extend(await loader.aload())
+		return doc_ids
 
 	##################################################################
 	## Document CRUD Methods
 	##################################################################		
-	async def create(self, project_id: str, source_id: str, doc: Document) -> bool:
+	async def docs_from_sources(self, source: Source) -> Source:
 		try:
-			doc.id = str(uuid4())
-			doc.metadata = self._filter({
-				"project_id": project_id,
-				"source_id": source_id,
-			})
-			doc.created_at = datetime.now()
-			doc.updated_at = datetime.now()
-			created = await self._set(doc_id=doc.id, doc=doc)
-			if created:
-				return doc.id
-			else:
-				raise Exception("Failed to create document")
+			doc_ids = await self._load_source_to_docs(source, lazy=True)
+			logger.info(f"Loaded {len(doc_ids)} documents from source {source.id}")
+			source.documents = doc_ids
+			return source
 		except Exception as e:
 			logger.error(f"Error adding document: {e}")
 			raise e

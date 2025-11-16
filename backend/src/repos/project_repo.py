@@ -7,16 +7,7 @@ from src.repos.source_repo import Source, SourceRepo
 from src.repos.doc_repo import DocRepo
 from src.services.db import get_store_in_memory
 from src.utils.logger import logger
-from fastapi.openapi.models import Example
-from langchain_core.documents import Document
 from src.schemas.entities.store import Project
-
-
-EXAMPLE_PROJECT = Example(
-	name="Information about A2A LangGraph",
-	description="This is a project example for the A2A LangGraph project",
-	
-)
 
 class ProjectRepo(BaseRepo):
 	def __init__(self, 
@@ -63,14 +54,4 @@ class ProjectRepo(BaseRepo):
 	
 	async def delete_source(self, project_id: str, source_id: str) -> bool:
 		return await self.source_repo.delete(project_id, source_id)
-
-	##################################################################
-	## Document Repo Methods
-	##################################################################
-	async def add_document(self, project_id: str, source_id: str, document: Document) -> bool:
-		return await self.doc_repo.create(project_id, source_id, document)
-	
-	async def list_documents(self, project_id: str, source_id: str) -> list[Document]:
-		return await self.doc_repo.list(project_id, source_id)
-	
 
