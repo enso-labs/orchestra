@@ -1,39 +1,76 @@
-from typing import Any
+from datetime import datetime
+from uuid import uuid4
 from langgraph.store.base import BaseStore, SearchItem
-from src.services.db import get_in_memory_store
-
-class ProjectRepo:
-    def __init__(self, 
-        user_id: str, 
-        store: BaseStore = get_in_memory_store()
-    ):
-        self.user_id = user_id
-        self.store: BaseStore = store
-
-    def _get_namespace(self):
-        return (self.user_id, "projects")
-
-    async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
-        await self.store.aput(
-            namespace=self._get_namespace(), key=key, value=value, ttl=ttl
-        )
-        return True
-
-    async def get(self, key: str) -> Any:
-        return await self.store.aget(self._get_namespace(), key)
-
-    async def delete(self, key: str) -> bool:
-        await self.store.adelete(self._get_namespace(), key)
-        return True
-
-    async def search(
-        self, 
-        query: str = None, 
-        limit: int = 20,
-    ) -> list[SearchItem]:
-        return await self.store.asearch(
-            self._get_namespace(), query=query, limit=limit
-        )
+from src.repos.base_repo import BaseRepo
+from src.schemas.entities import SearchFilter
+from src.repos.source_repo import Source, SourceRepo
+from src.repos.doc_repo import DocRepo
+from src.services.db import get_store_in_memory
+from src.utils.logger import logger
+from fastapi.openapi.models import Example
+from langchain_core.documents import Document
+from src.schemas.entities.store import Project
 
 
-project_repo = ProjectRepo()
+EXAMPLE_PROJECT = Example(
+	name="Information about A2A LangGraph",
+	description="This is a project example for the A2A LangGraph project",
+	
+)
+
+class ProjectRepo(BaseRepo):
+	def __init__(self, 
+		user_id: str, 
+		store: BaseStore = get_store_in_memory()
+	):
+		self.user_id = user_id
+		self.store: BaseStore = store
+		self.source_repo = SourceRepo(user_id=user_id, store=store)
+		self.doc_repo = DocRepo(user_id=user_id, store=store)
+		super().__init__(user_id=user_id, store=store, entity_type="projects")
+  
+	
+	##################################################################
+	## Project Repo Methods
+	##################################################################
+	async def search(self, search_filter: SearchFilter) -> list[Project]:
+		projects: list[SearchItem] = await self._search(search_filter)
+		return [Project.model_validate(project.value) for project in projects]
+ 
+ 
+	async def create(self, project: Project) -> Project:
+		try:
+			project.id = str(uuid4())
+			project.created_at = datetime.now()
+			project.updated_at = datetime.now()
+			created = await self._set(key=project.id, value=project)
+			if created:
+				return project
+			else:
+				raise Exception("Failed to create source")
+		except Exception as e:
+			logger.error(f"Error adding source: {e}")
+			raise e
+		
+	##################################################################
+	## Source Repo Methods
+	##################################################################
+	async def add_source(self, project_id: str, source: Source) -> bool:
+		return await self.source_repo.create(project_id, source)
+
+	async def list_sources(self, project_id: str) -> list[Source]:
+		return await self.source_repo.list(project_id)
+	
+	async def delete_source(self, project_id: str, source_id: str) -> bool:
+		return await self.source_repo.delete(project_id, source_id)
+
+	##################################################################
+	## Document Repo Methods
+	##################################################################
+	async def add_document(self, project_id: str, source_id: str, document: Document) -> bool:
+		return await self.doc_repo.create(project_id, source_id, document)
+	
+	async def list_documents(self, project_id: str, source_id: str) -> list[Document]:
+		return await self.doc_repo.list(project_id, source_id)
+	
+

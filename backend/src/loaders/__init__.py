@@ -20,8 +20,26 @@ from langchain_community.document_loaders import (
 from .basic import Base64Loader, CopyPasteLoader
 
 import nest_asyncio
+from contextlib import contextmanager
+from functools import wraps
 
-nest_asyncio.apply()
+# Don't apply nest_asyncio globally as it conflicts with uvicorn's loop_factory parameter
+# Instead, apply it conditionally only when needed for specific loaders
+
+@contextmanager
+def allow_nested_event_loop():
+    """
+    Context manager to temporarily enable nested event loops.
+    Use this for loaders that may be called from within an existing event loop.
+    """
+    nest_asyncio.apply()
+    try:
+        yield
+    finally:
+        # Note: nest_asyncio doesn't provide an unapply(), so this remains applied
+        # for the duration of the process. This is acceptable since we only use
+        # this context when we know we need nested loops.
+        pass
 
 
 class Loader:

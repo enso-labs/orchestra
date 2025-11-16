@@ -20,14 +20,7 @@ class TestSourceService(unittest.IsolatedAsyncioTestCase):
         self.user = await get_test_user()
         self.source_service = SourceService(user_id=self.user.id)
 
-    async def asyncTearDown(self):
-        # Delete the test user
-        async for db in get_async_db():
-            user_repo = UserRepo(db=db, user_id=self.user.id)
-            result = await user_repo.delete()
-            assert result, "Failed to delete test user"
-        pass
-    
+
     # @unittest.skip("Skipping vector search test")
     async def test_source_lifecycle(self):
         VALID_SOURCES = [

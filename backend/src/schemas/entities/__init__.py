@@ -119,3 +119,20 @@ class ThreadSearch(BaseModel):
     filter: Optional[Config] = Field(
         default_factory=Config, description="The filter of threads to search"
     )
+    
+class SearchFilter(BaseModel):
+    query: Optional[str] = Field(default=None, description="The query to search")
+    filter: Optional[dict] = Field(default={}, description="The filter of results to search")
+    limit: int = Field(default=20, description="The limit of results to search")
+    offset: int = Field(default=0, description="The offset of results to search")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "query": "test",
+                "filter": {},
+                "limit": 20,
+                "offset": 0
+            }
+        }
+    }

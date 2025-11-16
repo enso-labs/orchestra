@@ -1,27 +1,12 @@
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 from langchain_core.documents import Document
-from pydantic import BaseModel
 from datetime import datetime
 from langgraph.store.base import BaseStore, SearchItem
 from src.loaders import Loader
 from src.services.db import get_store_in_memory
 from src.utils.logger import logger
-
-
-class Source(BaseModel):
-    id: Optional[str] = None
-    type: str
-    docs: Optional[list[Document]] = None
-    metadata: dict = {}
-    updated_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-
-class SourceSearch(BaseModel):
-    query: str
-    limit: int = 100
-    offset: int = 0
-    filter: dict = {}
+from src.repos.source_repo import Source
 
 class SourceService:
     def __init__(self, 
