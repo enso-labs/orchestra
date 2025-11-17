@@ -80,7 +80,7 @@ async def delete_project(
 
 
 ################################################################################
-### Add Project Sources
+### Get Project Sources
 ################################################################################
 @router.get("/{project_id}/sources", name="Get Project Sources")
 async def get_project_sources(
@@ -97,6 +97,9 @@ async def get_project_sources(
 		logger.exception(f"Error getting sources for project {project_id}: {e}")
 		raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+################################################################################
+### Add Project Sources
+################################################################################
 @router.post("/{project_id}/sources", name="Add Project Sources")
 async def add_project_sources(
 	project_id: str,
