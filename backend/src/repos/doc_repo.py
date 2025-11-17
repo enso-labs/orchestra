@@ -23,7 +23,7 @@ class DocRepo(BaseRepo):
 		]
   
 	async def _load_source_to_docs(self, source: Source, lazy: bool = True) -> list[Document]:
-		loader = Loader.create(source.type, source.metadata)
+		loader = Loader.create(source.type, source.content)
 		doc_ids = []
 		if lazy:
 			async for doc in loader.alazy_load():

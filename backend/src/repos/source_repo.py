@@ -28,7 +28,13 @@ class SourceRepo(BaseRepo):
 	##################################################################
 	async def search(self, search_filter: SearchFilter) -> list[Source]:
 		sources: list[SearchItem] = await self._search(search_filter)
-		return [Source.model_validate(source.value) for source in sources]
+		result = []
+		for source in sources:
+			# Create a copy of the value without metadata
+			source_data = dict(source.value)
+			del source_data["metadata"]
+			result.append(Source.model_validate(source_data))
+		return result
 
 	async def create(self, project_id: str, sources: list[Source]) -> list[str]:
 		try:
@@ -38,10 +44,11 @@ class SourceRepo(BaseRepo):
 				source.metadata["project_id"] = project_id
 				source.created_at = datetime.now()
 				source.updated_at = datetime.now()
+				source =await self.doc_repo.docs_from_sources(source)
 				created = await self._set(key=source.id, value=source)
 				if not created:
 					raise Exception("Failed to create source")
-				await self.doc_repo.docs_from_sources(source)
+				
 				created_sources.append(source)
 			return created_sources
 		except Exception as e:

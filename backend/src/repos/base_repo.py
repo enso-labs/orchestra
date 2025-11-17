@@ -1,8 +1,7 @@
 from typing import Any
-from langgraph.store.base import BaseStore, SearchItem
+from langgraph.store.base import BaseStore, SearchItem, SearchOp
 from langchain_core.documents import Document
 
-from src.schemas.entities import SearchFilter
 from src.services.db import get_store_in_memory
 from src.schemas.entities.store import Source, Project, Document
 from src.utils.logger import logger
@@ -42,12 +41,12 @@ class BaseRepo:
 
 	async def _search(
 		self, 
-		search_filter: SearchFilter,
+		search_filter: SearchOp,
 	) -> list[SearchItem]:
 		return await self.store.asearch(
-			self._get_namespace(), 
-   			query=search_filter.query, 
-      		limit=search_filter.limit, 
-        	offset=search_filter.offset, 
-        	filter=search_filter.filter,
+			self._get_namespace(),
+      		query=search_filter.query,
+			filter=search_filter.filter,
+			limit=search_filter.limit,
+			offset=search_filter.offset
 		)

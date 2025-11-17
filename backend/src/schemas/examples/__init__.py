@@ -13,23 +13,23 @@ class Examples:
         ),
     }
     SOURCE_EXAMPLES = {
-        "gitbook": Example(
-            summary="Gitbook Source",
-            description="This is a source example for the Gitbook project",
-            value=[{
-                "type": "gitbook",
-                "metadata": {
-                    "urls": ["https://github.com/enso-labs/a2a-langgraph"],
-                    "load_all_paths": True,
-                },
-            }],
-        ),
+        # "gitbook": Example(
+        #     summary="Gitbook Source",
+        #     description="This is a source example for the Gitbook project",
+        #     value=[{
+        #         "type": "gitbook",
+        #         "metadata": {
+        #             "urls": ["https://github.com/enso-labs/a2a-langgraph"],
+        #             "load_all_paths": True,
+        #         },
+        #     }],
+        # ),
         "web_scrape": Example(
             summary="A2A LangGraph Source",
             description="This is a source example for the A2A LangGraph project",
             value=[{
                 "type": "web_scrape",
-                "metadata": {
+                "content": {
                     "urls": ["https://github.com/enso-labs/a2a-langgraph"],
                 },
             }],
@@ -39,7 +39,7 @@ class Examples:
             description="This is a source example for the Base64 project",
             value=[{
                 "type": "base64",
-                "metadata": {
+                "content": {
                     "data": ["data:text/plain;base64,SGVsbG8sIFdvcmxkIQ=="],
                 },
             }],

@@ -1,4 +1,4 @@
-from langgraph.store.base import BaseStore
+from langgraph.store.base import BaseStore, SearchOp
 from src.services.db import get_store_in_memory
 from src.repos.project_repo import Project, ProjectRepo
 from src.schemas.entities import SearchFilter
@@ -48,4 +48,26 @@ class ProjectService:
         return await self.project_repo.source_repo.create(project_id, sources)
     
     async def get_sources(self, project_id: str) -> list[Source]:
-        return await self.project_repo.source_repo.search(SearchFilter(filter={"project_id": project_id}))
+        all_sources = await self.project_repo.source_repo.search(
+            SearchFilter(
+                filter={
+                    "metadata": {
+                        "$eq": {"project_id": project_id}
+                    }
+                },
+                limit=200,
+                offset=0
+            ))
+        return all_sources
+
+    async def delete_source(self, source_id: str) -> bool:
+        result: SearchItem = await self.project_repo.source_repo._get(source_id)
+        if not result:
+            raise ValueError(f"Source {source_id} not found")
+        source: Source = Source.model_validate(result.value)
+
+        if source.documents:
+            for doc in source.documents:
+                await self.project_repo.source_repo.doc_repo._delete(doc)
+                logger.info(f"Deleted document {doc} for source {source_id}")
+        return await self.project_repo.source_repo._delete(source_id)

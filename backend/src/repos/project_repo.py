@@ -17,7 +17,6 @@ class ProjectRepo(BaseRepo):
 		self.user_id = user_id
 		self.store: BaseStore = store
 		self.source_repo = SourceRepo(user_id=user_id, store=store)
-		self.doc_repo = DocRepo(user_id=user_id, store=store)
 		super().__init__(user_id=user_id, store=store, entity_type="projects")
   
 	

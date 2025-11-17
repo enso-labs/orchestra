@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import Response
 from fastapi import status
 from langgraph.store.postgres import AsyncPostgresStore
@@ -11,6 +11,7 @@ from src.schemas.models import ProtectedUser
 from src.services.db import get_store
 from src.utils.auth import verify_credentials
 from src.repos.project_repo import Project
+from src.utils.logger import logger
 
 
 
@@ -81,6 +82,21 @@ async def delete_project(
 ################################################################################
 ### Add Project Sources
 ################################################################################
+@router.get("/{project_id}/sources", name="Get Project Sources")
+async def get_project_sources(
+	project_id: str,
+	user: ProtectedUser = Depends(verify_credentials),
+	store: AsyncPostgresStore = Depends(get_store),
+):
+	
+	try:
+		service_context = ServiceContext(user_id=user.id, store=store)
+		sources: list[Source] = await service_context.project_service.get_sources(project_id)
+		return {"sources": [source.model_dump(exclude_none=True) for source in sources]}
+	except Exception as e:
+		logger.exception(f"Error getting sources for project {project_id}: {e}")
+		raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 @router.post("/{project_id}/sources", name="Add Project Sources")
 async def add_project_sources(
 	project_id: str,
@@ -88,6 +104,28 @@ async def add_project_sources(
 	user: ProtectedUser = Depends(verify_credentials),
 	store: AsyncPostgresStore = Depends(get_store),
 ):
-	service_context = ServiceContext(user_id=user.id, store=store)
-	sources: list[Source] = await service_context.project_service.add_sources(project_id, sources)
-	return {"sources": [source.model_dump() for source in sources]}
+	try:
+		service_context = ServiceContext(user_id=user.id, store=store)
+		sources: list[Source] = await service_context.project_service.add_sources(project_id, sources)
+		return {"sources": [source.model_dump(exclude_none=True) for source in sources]}
+	except Exception as e:
+		logger.exception(f"Error adding sources to project {project_id}: {e}")
+		raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+################################################################################
+### Delete Project Sources
+################################################################################
+@router.delete("/{project_id}/sources/{source_id}", name="Delete Project Source")
+async def delete_project_source(
+	project_id: str,
+	source_id: str,
+	user: ProtectedUser = Depends(verify_credentials),
+	store: AsyncPostgresStore = Depends(get_store),
+):
+	try:
+		service_context = ServiceContext(user_id=user.id, store=store)
+		await service_context.project_service.delete_source(source_id)
+		return Response(status_code=status.HTTP_204_NO_CONTENT)
+	except Exception as e:
+		logger.exception(f"Error deleting source {source_id} from project {project_id}: {e}")
+		raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
