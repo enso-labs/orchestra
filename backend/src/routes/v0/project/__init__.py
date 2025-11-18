@@ -83,18 +83,18 @@ async def create_project(
 ################################################################################
 ### Get Project
 ################################################################################
-@router.get("/{project_id}", name="Get Project")
-async def get_project(
-    project_id: str,
-    user: ProtectedUser = Depends(verify_credentials),
-    store: AsyncPostgresStore = Depends(get_store),
-):
-    service_context = ServiceContext(user_id=user.id, store=store)
-    try:
-        project: Project = await service_context.project_service.get(project_id)
-        return {"project": project.model_dump(exclude_none=True)}
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+# @router.get("/{project_id}", name="Get Project")
+# async def get_project(
+#     project_id: str,
+#     user: ProtectedUser = Depends(verify_credentials),
+#     store: AsyncPostgresStore = Depends(get_store),
+# ):
+#     service_context = ServiceContext(user_id=user.id, store=store)
+#     try:
+#         project: Project = await service_context.project_service.get(project_id)
+#         return {"project": project.model_dump(exclude_none=True)}
+#     except ValueError as e:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 ################################################################################
