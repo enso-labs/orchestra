@@ -8,10 +8,12 @@ from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 from src.repos.source_repo import Source
 
+
 class SourceService:
-    def __init__(self, 
-        user_id: str, 
-        store: BaseStore = get_store_in_memory(fields=["page_content", "metadata"])
+    def __init__(
+        self,
+        user_id: str,
+        store: BaseStore = get_store_in_memory(fields=["page_content", "metadata"]),
     ):
         self.user_id = user_id
         self.store: BaseStore = store
@@ -24,7 +26,7 @@ class SourceService:
             namespace=self._get_namespace(), key=source_id, value=source.model_dump()
         )
         return True
-    
+
     async def create(self, project_id: str, source: Source) -> bool:
         try:
             source.id = str(uuid4())
@@ -49,34 +51,36 @@ class SourceService:
         return True
 
     async def search(
-        self, 
-        query: str = None, 
+        self,
+        query: str = None,
         filter: dict = {},
         limit: int = 20,
         offset: int = 0,
     ) -> list[SearchItem]:
         results = await self.store.asearch(
-            self._get_namespace(), 
-            query=query, 
-            limit=limit, 
-            filter=filter, 
-            offset=offset
+            self._get_namespace(),
+            query=query,
+            limit=limit,
+            filter=filter,
+            offset=offset,
         )
         return self._format_sources(results)
-    
+
     def _format_sources(self, sources: list[SearchItem]) -> list[Source]:
         return [self._format_source(source) for source in sources]
-    
+
     def _format_source(self, item: SearchItem) -> Source:
         return Source.model_validate(item.value)
-    
-    async def _load_source_to_docs(self, source: Source, lazy: bool = False) -> list[Document]:
+
+    async def _load_source_to_docs(
+        self, source: Source, lazy: bool = False
+    ) -> list[Document]:
         loader = Loader.create(source.type, source.metadata)
         docs = []
         if lazy:
             async for doc in loader.alazy_load():
-                doc.metadata['source_id'] = source.id
-                doc.metadata['project_id'] = source.metadata['project_id']
+                doc.metadata["source_id"] = source.id
+                doc.metadata["project_id"] = source.metadata["project_id"]
                 docs.append(doc)
         else:
             docs.extend(await loader.aload())

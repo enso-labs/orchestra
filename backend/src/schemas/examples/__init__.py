@@ -1,5 +1,6 @@
 from fastapi.openapi.models import Example
 
+
 class Examples:
     PROJECT_EXAMPLES = {
         "enso_labs": Example(
@@ -27,21 +28,25 @@ class Examples:
         "web_scrape": Example(
             summary="A2A LangGraph Source",
             description="This is a source example for the A2A LangGraph project",
-            value=[{
-                "type": "web_scrape",
-                "content": {
-                    "urls": ["https://github.com/enso-labs/a2a-langgraph"],
-                },
-            }],
+            value=[
+                {
+                    "type": "web_scrape",
+                    "content": {
+                        "urls": ["https://github.com/enso-labs/a2a-langgraph"],
+                    },
+                }
+            ],
         ),
         "base64": Example(
             summary="Base64 Source",
             description="This is a source example for the Base64 project",
-            value=[{
-                "type": "base64",
-                "content": {
-                    "data": ["data:text/plain;base64,SGVsbG8sIFdvcmxkIQ=="],
-                },
-            }],
+            value=[
+                {
+                    "type": "base64",
+                    "content": {
+                        "data": ["data:text/plain;base64,SGVsbG8sIFdvcmxkIQ=="],
+                    },
+                }
+            ],
         ),
     }

@@ -91,7 +91,7 @@ async def llm_stream(
     request: Request,
     params: LLMRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
-    store: BaseStore  = Depends(get_store),
+    store: BaseStore = Depends(get_store),
 ) -> StreamingResponse:
     """
     Streams LLM output as server-sent events (SSE).
@@ -108,14 +108,18 @@ async def llm_stream(
         ### Collect all tools
         tool_map = {t.name: t for t in default_tools()}  # O(n) index
         TOOLS = (
-            A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(config["configurable"].get("thread_id"))
+            A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(
+                config["configurable"].get("thread_id")
+            )
             + await service_context.tool_service.mcp_tools(params.mcp)
             + [tool_map[name] for name in (params.tools or ()) if name in tool_map]
         )
-        
+
         if user:
             for tool in params.tools:
-                items = await service_context.tool_service.tool_repo.search(filter={"name": tool})
+                items = await service_context.tool_service.tool_repo.search(
+                    filter={"name": tool}
+                )
                 if items:
                     structured_tool = items[0]
                     tool_metadata = {structured_tool.name: structured_tool.metadata}
@@ -154,7 +158,9 @@ async def llm_stream(
         )
     except Exception as e:
         logger.exception(f"Error in llm_stream: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 ################################################################################
@@ -191,7 +197,9 @@ async def transcribe(
         )
     except Exception as e:
         logger.exception(str(e))
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 ################################################################################
@@ -227,8 +235,9 @@ async def list_models():
             "default": ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value,
             "free": get_free_models(),
             "models": get_all_models(),
-        }
+        },
     )
+
 
 ################################################################################
 ### Reset Models
@@ -240,6 +249,5 @@ async def list_models():
 async def reset_models():
     llm_service._reset_cache()
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"message": "Models reset successfully"}
+        status_code=status.HTTP_200_OK, content={"message": "Models reset successfully"}
     )

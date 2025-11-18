@@ -24,7 +24,7 @@ class PresidioConfig(BaseModel):
     api_key: Optional[str] = Field(
         ...,
         description="API key for authenticating with the Presidio service",
-        examples=['your_api_key_here'],
+        examples=["your_api_key_here"],
     )
 
 

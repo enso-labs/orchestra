@@ -13,12 +13,11 @@ from langchain_core.documents import Document
 
 
 class TestProjectService(unittest.IsolatedAsyncioTestCase):
-    
     async def asyncSetUp(self):
         os.environ["APP_ENV"] = "test"
         run_migrations()
         seed_admin()
-        self.project_id = 'test-project-id'
+        self.project_id = "test-project-id"
         self.user = await get_test_user()
         self.project_service = ProjectService(
             user_id=self.user.id,
@@ -32,7 +31,7 @@ class TestProjectService(unittest.IsolatedAsyncioTestCase):
                 },
             ),
         ]
-    
+
     @unittest.skip("Skipping vector search test")
     async def test_vector_search(self):
         VALID_DOCS = [
@@ -55,10 +54,12 @@ class TestProjectService(unittest.IsolatedAsyncioTestCase):
         results: list[SearchItem] = await self.project_service.search_docs(
             project_id=self.project_id, query="python programming"
         )
-        assert results[0].value["page_content"] == VALID_DOCS[0].model_dump()["page_content"]
+        assert (
+            results[0].value["page_content"]
+            == VALID_DOCS[0].model_dump()["page_content"]
+        )
         assert results[0].value["metadata"] == VALID_DOCS[0].model_dump()["metadata"]
-        
-        
+
     async def test_source_lifecycle(self):
         # Craate and get sources
         await self.project_service.add_sources(
@@ -66,13 +67,13 @@ class TestProjectService(unittest.IsolatedAsyncioTestCase):
         )
         sources: list[Source] = await self.project_service.get_sources(self.project_id)
         assert len(sources) == 1
-        
+
         # Search sources
         results: list[Document] = await self.project_service.search_docs(
             project_id=self.project_id, query="A2A LangGraph"
         )
-        assert len(results) == 1 and  isinstance(results[0], Document)
-        
+        assert len(results) == 1 and isinstance(results[0], Document)
+
         # Delete source
         await self.project_service.delete_source(
             project_id=self.project_id, source_id=self.VALID_SOURCES[0].id

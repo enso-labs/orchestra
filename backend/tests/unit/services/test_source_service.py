@@ -1,4 +1,5 @@
 """test example module."""
+
 import os
 import unittest
 import asyncio
@@ -11,15 +12,14 @@ from src.services.source import SourceService, Source
 from src.services.db import get_async_db
 from src.repos.user_repo import UserRepo
 
+
 class TestSourceService(unittest.IsolatedAsyncioTestCase):
-    
     async def asyncSetUp(self):
         os.environ["APP_ENV"] = "test"
         run_migrations()
         seed_admin()
         self.user = await get_test_user()
         self.source_service = SourceService(user_id=self.user.id)
-
 
     # @unittest.skip("Skipping vector search test")
     async def test_source_lifecycle(self):
@@ -33,8 +33,12 @@ class TestSourceService(unittest.IsolatedAsyncioTestCase):
                 },
             ),
         ]
-        await self.source_service.create(project_id="test-project", source=VALID_SOURCES[0])
-        results: list[SearchItem] = await self.source_service.search(query="test source")
+        await self.source_service.create(
+            project_id="test-project", source=VALID_SOURCES[0]
+        )
+        results: list[SearchItem] = await self.source_service.search(
+            query="test source"
+        )
         result_source = results[0].value
         assert result_source.name == VALID_SOURCES[0].name
         assert result_source.description == VALID_SOURCES[0].description

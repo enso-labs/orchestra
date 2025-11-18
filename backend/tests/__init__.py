@@ -24,6 +24,7 @@ def get_test_token():
     json_str = json.loads(response.content)
     return json_str["token"]
 
+
 async def get_test_user():
     async for db in get_async_db():
         user_repo = UserRepo(db=db)

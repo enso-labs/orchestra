@@ -9,6 +9,7 @@ from src.constants.examples import Examples
 
 invoke_router = APIRouter()
 
+
 @invoke_router.post("/invoke", name="Invoke Tools")
 async def invoke_tools(
     request: Request,

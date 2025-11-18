@@ -19,7 +19,7 @@ from src.repos.tool_repo import ToolRepo
 
 class ToolService:
     def __init__(
-        self, 
+        self,
         user_id: str = None,
         store: BaseStore = get_store_in_memory(),
         config: RunnableConfig = None,
@@ -31,22 +31,24 @@ class ToolService:
     async def tool_details(self):
         try:
             tool_details = []
-            tool_library = init_tool_library() # TODO: This may change in future to user_id specific
+            tool_library = (
+                init_tool_library()
+            )  # TODO: This may change in future to user_id specific
             user_tools: list[StructuredTool] = await self.tool_repo.search()
             base_tools = set[str]()
             for tool in user_tools + tool_library:
                 tool: StructuredTool = attach_tool_details(tool)
                 tool_dict = tool.model_dump()
-                tool_dict['args_schema'] = tool_dict['args_schema'].model_json_schema()
-                metadata = tool_dict['metadata']
-                if metadata and metadata.get('base_tool'):
-                    base_tools.add(metadata.get('base_tool'))
-           
+                tool_dict["args_schema"] = tool_dict["args_schema"].model_json_schema()
+                metadata = tool_dict["metadata"]
+                if metadata and metadata.get("base_tool"):
+                    base_tools.add(metadata.get("base_tool"))
+
                 if tool.name not in base_tools:
                     ## Does NOT indicate whether async or sync, so we remove
                     # tool_dict['coroutine'] = tool_dict['coroutine'] is not None
-                    del tool_dict['func']
-                    del tool_dict['coroutine']
+                    del tool_dict["func"]
+                    del tool_dict["coroutine"]
                     tool_details.append(tool_dict)
             return tool_details
         except Exception as e:
@@ -82,6 +84,7 @@ class ToolService:
         arcade: ArcadeConfig,
     ) -> list[StructuredTool]:
         from langchain_arcade import ArcadeToolManager
+
         manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
         tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
         return tools
@@ -98,15 +101,18 @@ class ToolService:
             if self.user_id
             else None,
         )
-        
-    async def invoke_structured_tool(self, structured_tool: StructuredTool, input: dict):
+
+    async def invoke_structured_tool(
+        self, structured_tool: StructuredTool, input: dict
+    ):
         try:
             return await structured_tool.ainvoke(
-                input=input,
-                config={"metadata": structured_tool.metadata}
+                input=input, config={"metadata": structured_tool.metadata}
             )
         except Exception as e:
-            logger.exception(f"Error invoking structured tool {structured_tool.name}: {e}")
+            logger.exception(
+                f"Error invoking structured tool {structured_tool.name}: {e}"
+            )
             return {"error": str(e)}
 
 

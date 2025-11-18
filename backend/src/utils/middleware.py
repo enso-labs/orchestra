@@ -5,8 +5,11 @@ from langgraph.runtime import Runtime
 from src.schemas.contexts import ContextSchema
 from langchain.agents.middleware import PIIMiddleware
 
+
 @after_model
-def add_ai_message_metadata(state: AgentState, runtime: Runtime[ContextSchema]) -> dict | None:
+def add_ai_message_metadata(
+    state: AgentState, runtime: Runtime[ContextSchema]
+) -> dict | None:
     """Attach AI message metadata to final response."""
     if state["messages"]:
         last_msg = state["messages"][-1]
@@ -14,25 +17,26 @@ def add_ai_message_metadata(state: AgentState, runtime: Runtime[ContextSchema]) 
             last_msg.model = runtime.context.model
     return None
 
+
 def pii_middleware() -> dict | None:
-     return [
-		# Redact email addresses
-		# PIIMiddleware(
+    return [
+        # Redact email addresses
+        # PIIMiddleware(
         #     "email",
         #     strategy="redact",
         #     apply_to_input=True,
         # ),
-		# Mask credit card numbers
-   		PIIMiddleware(
+        # Mask credit card numbers
+        PIIMiddleware(
             "credit_card",
             strategy="mask",
             apply_to_input=True,
         ),
-     	# Block API keys - raise error if detected
+        # Block API keys - raise error if detected
         PIIMiddleware(
-			"api_key",
-			detector=r"sk-[A-Za-z0-9]+",
-			strategy="block",
-			apply_to_input=True,
-		),
-	 ]
+            "api_key",
+            detector=r"sk-[A-Za-z0-9]+",
+            strategy="block",
+            apply_to_input=True,
+        ),
+    ]

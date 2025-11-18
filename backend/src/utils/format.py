@@ -81,7 +81,7 @@ def init_system_prompt(system_prompt: str, config: RunnableConfig) -> str:
     metadata = config.get("metadata", {})
     current_time = metadata.get("current_time")
     timezone_val = metadata.get("timezone")
-    lang = metadata.get("language", 'en-US')
+    lang = metadata.get("language", "en-US")
     if current_time:
         lines.append(f"CURRENT_TIME: {current_time}")
     elif timezone_val:
@@ -99,6 +99,7 @@ def format_content(content: str | list[Any]) -> str:
         return content
     return content[0].get("text", "")
 
+
 def get_tool_call_from_runtime_state(runtime: ToolRuntime) -> dict:
     messages: list[BaseMessage] = runtime.state.get("messages", [])
     if messages:
@@ -108,6 +109,7 @@ def get_tool_call_from_runtime_state(runtime: ToolRuntime) -> dict:
                     if call.get("id") == runtime.tool_call_id:
                         return call
     raise ValueError("Tool call not found in runtime state")
+
 
 def get_tool_call_env(runtime: ToolRuntime) -> tuple[dict, dict]:
     """Return (env_dict, tool_call_dict) for the current tool_call_id."""
@@ -120,7 +122,7 @@ def get_tool_call_env(runtime: ToolRuntime) -> tuple[dict, dict]:
                     for call in msg.tool_calls:
                         if call.get("id") == runtime.tool_call_id:
                             tool_name = call.get("name")
-                            env = ((metadata.get(tool_name) or {}).get("env") or {})
+                            env = (metadata.get(tool_name) or {}).get("env") or {}
                             return env, call
     except Exception as e:
         logger.error(f"Error getting tool call env: {e}")

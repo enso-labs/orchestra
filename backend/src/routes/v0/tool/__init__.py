@@ -1,4 +1,3 @@
-
 from fastapi import Body, HTTPException, Response, status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from langgraph.store.base import BaseStore
@@ -23,9 +22,7 @@ router = APIRouter(tags=["Tool"], prefix="/tools")
     responses={
         status.HTTP_200_OK: {
             "description": "All tools.",
-            "content": {
-                "application/json": {"example": {"tools": []}}
-            },
+            "content": {"application/json": {"example": {"tools": []}}},
         }
     },
 )
@@ -38,7 +35,8 @@ async def list_tools(
     return JSONResponse(
         content={"tools": tools_response}, status_code=status.HTTP_200_OK
     )
-    
+
+
 ################################################################################
 ### Create Tool
 ################################################################################
@@ -56,14 +54,17 @@ async def create_tool(
         tool_service = ToolService(user_id=user.id, store=store)
         created_tool = await tool_service.tool_repo.create(tool)
         if not created_tool:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create tool")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create tool"
+            )
         # If you truly want no body, this is fine:
         return Response(status_code=status.HTTP_201_CREATED)
         # Or, if you want to return the created resource:
         # return JSONResponse(status_code=status.HTTP_201_CREATED, content={"id": created_tool.id})
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    
+
+
 ################################################################################
 ### Delete Tool
 ################################################################################
@@ -83,6 +84,7 @@ async def delete_tool(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
 router.include_router(info_router)
 router.include_router(invoke_router)

@@ -1,5 +1,6 @@
 from tests import client, disabled, get_test_token
 
+
 @disabled
 def test_list_tools():
     token = get_test_token()

@@ -27,6 +27,7 @@ from functools import wraps
 # Don't apply nest_asyncio globally as it conflicts with uvicorn's loop_factory parameter
 # Instead, apply it conditionally only when needed for specific loaders
 
+
 @contextmanager
 def allow_nested_event_loop():
     """

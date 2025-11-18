@@ -29,6 +29,7 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
     app.include_router(schedule, prefix=prefix)
     if LANGCONNECT_SERVER_URL:
         from .rag import gateway as rag
+
         app.include_router(rag, prefix=prefix)
     app.include_router(storage, prefix=prefix)
     return app
@@ -61,6 +62,5 @@ def mount_static_router(app: FastAPI):
 
         # For all other routes, serve the index.html for SPA routing
         return FileResponse("src/public/index.html")
-    
-    return app
 
+    return app

@@ -54,8 +54,10 @@ def load_models():
 
     return _Base
 
+
 DEFAULT_EMBED = "openai:text-embedding-3-small"
 DEFAULT_FIELDS = ["page_content", "metadata"]
+
 
 # Session context managers
 def get_db() -> Generator[SessionLocal, None, None]:  # type: ignore
@@ -100,6 +102,7 @@ def get_store_in_memory(
 
 def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
     return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
+
 
 def get_store_db(
     embed: str = DEFAULT_EMBED,
