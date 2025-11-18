@@ -3,27 +3,28 @@ site_dir: src/public/docs
 docs_dir: ../docs
 use_directory_urls: false
 nav:
-  - Home: /docs/
-  # - Agents:
-  #   - Overview: agents/index.md
-  #   - API: /api#/Agent
-  # - Settings:
-  #   - Overview: settings/index.md
-  #   - API: /api#/Settings
-  # - Storage:
-  #   - Overview: storage/index.md
-  #   - API: /api#/Storage
-  # - Threads:
-  #   - Overview: threads/index.md
-  #   - API: /api#/Thread
-  - Tools:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Core Features:
+    - Assistants:
+      - Overview: assistants/index.md
+      - API Reference: /api#/Assistant
+    - Threads:
+      - Overview: threads/index.md
+      - API Reference: /api#/Thread
+    - Storage:
+      - Overview: storage/index.md
+      - API Reference: /api#/Storage
+    - Projects:
+      - API Reference: /api#/Project
+    - Prompts:
+      - API Reference: /api#/Prompt
+  - Tools & Integrations:
     - Overview: tools/tools.md
     - Search: tools/search.md
-    - Shell: tools/shell_exec.md
     - MCP: tools/mcp.md
     - A2A: tools/a2a.md
-    
-  - API: /api
+  - API Documentation: /api
 theme:
   name: material
   features:
@@ -56,6 +57,33 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+# Site metadata
+site_url: https://orchestra.enso.sh
+site_description: Composable AI Agent Infrastructure built on LangGraph with MCP & A2A protocol support
+site_author: Enso Labs
+
+# Copyright
+copyright: Copyright &copy; 2025 Enso Labs. All rights reserved.
+
 extra:
   base_url: '/docs/'
   homepage: /
+  social:
+    - icon: fontawesome/brands/discord
+      link: https://discord.com/invite/QRfjg4YNzU
+      name: Join our Discord
+    - icon: fontawesome/brands/github
+      link: https://github.com/enso-labs
+      name: Enso Labs on GitHub
+    - icon: fontawesome/solid/link
+      link: https://enso.sh/socials
+      name: Follow us on social media

@@ -1,8 +1,11 @@
 # Model Context Protocol [(MCP)](https://modelcontextprotocol.io/introduction)
 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
-<a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
+<a href="https://orchestra.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
 <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
+
+!!! info "Actively Evolving"
+    MCP integration is actively being enhanced with new features and capabilities. This documentation reflects the current implementation and is updated regularly.
 
 [MCP](https://modelcontextprotocol.io/introduction) is an open protocol that standardizes how applications provide context to LLMs. Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect your devices to various peripherals and accessories, MCP provides a standardized way to connect AI models to different data sources and tools.
 
@@ -36,15 +39,98 @@ See this [permalink](https://github.com/enso-labs/mcp-sse/blob/caa79bee4af4914d7
 
 5. Click on the ToolMessage to view its execution details.
 
-    ![MCP Tool Execution](https://github.com/ryaneggz/static/blob/main/enso/mcp-toolcall.png?raw=true)  
+    ![MCP Tool Execution](https://github.com/ryaneggz/static/blob/main/enso/mcp-toolcall.png?raw=true)
 
-## Example [API Usage](https://demo.enso.sh/api#/Thread/Create_New_Thread_api_threads_post):
+## How MCP Configuration Works
+
+The `mcp` property accepts a **dictionary of server names** mapped to their configurations. This allows you to connect multiple MCP servers simultaneously:
+
+```json
+{
+  "mcp": {
+    "server_name_1": {
+      "transport": "sse",
+      "url": "https://mcp-server1.example.com",
+      "headers": {
+        "x-mcp-key": "your_key_1"
+      }
+    },
+    "server_name_2": {
+      "transport": "sse",
+      "url": "https://mcp-server2.example.com",
+      "headers": {
+        "x-mcp-key": "your_key_2"
+      }
+    }
+  }
+}
+```
+
+Each key in the `mcp` dictionary is a unique server name you choose (e.g., `"weather_server"`, `"database_server"`, `"enso_mcp"`).
+
+### Granular Tool Selection
+
+Once MCP servers are configured, you can selectively enable specific tools from those servers using the `tools` property:
+
+```json
+{
+  "query": "Get the weather in Denver",
+  "model": "anthropic:claude-sonnet-4-5",
+  "mcp": {
+    "weather_server": {
+      "transport": "sse",
+      "url": "https://weather-mcp.example.com"
+    },
+    "database_server": {
+      "transport": "sse",
+      "url": "https://db-mcp.example.com"
+    }
+  },
+  "tools": [
+    "get_weather",           // From weather_server
+    "get_forecast",          // From weather_server
+    "query_database",        // From database_server
+    "search"                 // Built-in platform tool
+  ]
+}
+```
+
+**Benefits of Granular Tool Selection:**
+
+- **Load multiple MCP servers** at once without enabling all their tools
+- **Restrict assistants** to specific tools from those servers for better security
+- **Mix MCP tools** with built-in platform tools like `search`
+- **Better performance** through selective tool access - fewer tools means faster inference
+
+**Example with Assistants:**
+
+```bash
+curl -X 'POST' \
+  'https://orchestra.enso.sh/api/assistant' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "name": "Weather Assistant",
+  "instructions": "You are a weather information assistant.",
+  "model": "anthropic:claude-sonnet-4-5",
+  "mcp": {
+    "weather_server": {
+      "transport": "sse",
+      "url": "https://weather-mcp.example.com"
+    }
+  },
+  "tools": ["get_weather", "search"]
+}'
+```
+
+This assistant has access to the `get_weather` tool from the MCP server and the built-in `search` tool, but NOT other tools the weather server might expose.
+
+## Example [API Usage](https://orchestra.enso.sh/api#/Thread/Create_New_Thread_api_threads_post):
 
 #### GET MCP server information
 
 ```bash
 curl -X 'POST' \
-  'https://demo.enso.sh/api/tools/mcp/info' \
+  'https://orchestra.enso.sh/api/tools/mcp/info' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -64,7 +150,7 @@ curl -X 'POST' \
 
 ```bash
 curl -X 'POST' \
-  'https://demo.enso.sh/api/llm/thread' \
+  'https://orchestra.enso.sh/api/llm/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
