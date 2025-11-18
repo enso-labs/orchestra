@@ -78,8 +78,11 @@ async def get_project(
 	store: AsyncPostgresStore = Depends(get_store),
 ):
 	service_context = ServiceContext(user_id=user.id, store=store)
-	project: Project = await service_context.project_service.get(project_id)
-	return {"project": project.model_dump(exclude_none=True)}
+	try:
+		project: Project = await service_context.project_service.get(project_id)
+		return {"project": project.model_dump(exclude_none=True)}
+	except ValueError as e:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 ################################################################################
 ### Delete Project

@@ -38,6 +38,9 @@ class SourceRepo(BaseRepo):
             created_sources = []
             for source in sources:
                 source.id = str(uuid4())
+                # Initialize metadata if None
+                if source.metadata is None:
+                    source.metadata = {}
                 source.metadata["project_id"] = project_id
                 source.created_at = datetime.now()
                 source.updated_at = datetime.now()

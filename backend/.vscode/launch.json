@@ -16,7 +16,7 @@
             "request": "launch",
             "module": "pytest",
             "args": [
-                "tests/integration/test_tool_routes.py",
+                "tests/integration/test_project_routes.py",
                 "-v"
             ],
             "console": "integratedTerminal",
