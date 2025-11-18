@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import uuid4
 from langgraph.store.base import BaseStore, SearchItem
 from src.repos.base_repo import BaseRepo
-from src.schemas.entities import SearchFilter
+from src.schemas.entities import Document, SearchFilter
 from src.repos.source_repo import Source, SourceRepo
 from src.repos.doc_repo import DocRepo
 from src.services.db import get_store_in_memory
@@ -52,3 +52,28 @@ class ProjectRepo(BaseRepo):
 
     async def delete_source(self, project_id: str, source_id: str) -> bool:
         return await self.source_repo.delete(project_id, source_id)
+
+
+    ##################################################################
+    ## Document Repo Methods
+    ##################################################################
+    async def query_documents(self, project_id: str, query: str) -> list[Document]:
+        doc_repo = self.source_repo.doc_repo
+        return await doc_repo._search(
+            SearchFilter(
+                query=query,
+                filter={"metadata": {"$eq": {"project_id": project_id}}},
+                limit=10,
+                offset=0,
+            )
+        )
+    
+    async def list_documents(self, source_id: str) -> list[Document]:
+        item: SearchItem = await self.source_repo._get(source_id)
+        source: Source = Source.model_validate(item.value)
+        documents: list[Document] = []
+        for doc_id in source.documents:
+            doc: SearchItem = await self.source_repo.doc_repo._get(doc_id)
+            doc: Document = Document.model_validate(doc.value)
+            documents.append(doc)
+        return documents

@@ -4,7 +4,7 @@ from fastapi import status
 from langgraph.store.postgres import AsyncPostgresStore
 
 from src.schemas.examples import Examples
-from src.schemas.entities import SearchFilter
+from src.schemas.entities import Document, SearchFilter
 from src.services.source import Source
 from src.contexts.service import ServiceContext
 from src.schemas.models import ProtectedUser
@@ -41,18 +41,29 @@ async def search_projects(
                 query=project_search.query,
             )
         )
+        result_documents = []
+        for document in documents:
+            doc_dict = Document.model_validate(document.value).model_dump()
+            doc_dict["score"] = document.score
+            result_documents.append(doc_dict)
+        return {"documents": result_documents}
+    
+    if "source_id" in project_search.filter:
+        documents = await service_context.project_service.project_repo.list_documents(
+            project_search.filter["source_id"],
+        )
         return {"documents": [document.model_dump() for document in documents]}
 
     # If id is provided, return the project
     if "id" in project_search.filter and project_search.filter:
         project = await service_context.project_service.get(project_search.filter["id"])
-        return {"projects": [project.model_dump(exclude_none=True)]}
+        return {"project": project.model_dump(exclude_none=True)}
 
     # If id is not provided, return all projects
     projects: list[Project] = await service_context.project_service.search(
         project_search
     )
-    return {"projects": [project.model_dump() for project in projects]}
+    return {"projects": [project.model_dump(exclude_none=True) for project in projects]}
 
 
 ################################################################################

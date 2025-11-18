@@ -33,12 +33,9 @@ class DocRepo(BaseRepo):
         if lazy:
             async for doc in loader.alazy_load():
                 doc.id = str(uuid4())
-                doc.metadata = self._filter(
-                    {
-                        "project_id": source.metadata["project_id"],
-                        "source_id": source.id,
-                    }
-                )
+                doc.metadata = {
+                    "project_id": source.metadata["project_id"],
+                }
                 await self._set(key=doc.id, value=doc)
                 doc_ids.append(doc.id)
         else:

@@ -4,6 +4,7 @@ import unittest
 import os
 from uuid import uuid4
 from langgraph.store.base import SearchItem
+from src.schemas.entities import SearchFilter
 from src.services.source import Source
 from src.utils.migrations import run_migrations
 from seeds.user_seeder import seed_admin
@@ -51,8 +52,8 @@ class TestProjectService(unittest.IsolatedAsyncioTestCase):
             ),
         ]
         await self.project_service.add_docs(project_id=self.project_id, docs=VALID_DOCS)
-        results: list[SearchItem] = await self.project_service.search_docs(
-            project_id=self.project_id, query="python programming"
+        results: list[SearchItem] = await self.project_service.search(
+            SearchFilter(filter={"project_id": self.project_id}, query="python programming")
         )
         assert (
             results[0].value["page_content"]
