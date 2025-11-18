@@ -16,7 +16,7 @@ class ProjectService:
     # Project Service Methods
     ##########################################################################
     async def search(self, search_filter: SearchFilter) -> list[Project]:
-        return await self.project_repo._search(search_filter)
+        return [Project.model_validate(project.value) for project in await self.project_repo._search(search_filter)]
 
     async def create(self, project: Project) -> Project:
         return await self.project_repo.create(project)
