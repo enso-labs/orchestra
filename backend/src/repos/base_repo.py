@@ -23,11 +23,6 @@ class BaseRepo:
     def _get_namespace(self):
         return (self.user_id, self.entity_type)
 
-    def _filter(self, metadata: dict) -> dict:
-        return {
-            "metadata": metadata,
-        }
-
     async def _set(
         self, key: str, value: Source | Project | Document, ttl: int | None = None
     ) -> bool:
@@ -39,6 +34,16 @@ class BaseRepo:
         )
         logger.info(f"Set {self.entity_type} {key} successfully")
         return True
+    
+    def _format(self, item: SearchItem) -> Any:
+        if self.entity_type == "documents":
+            return Document.model_validate(item.value)
+        elif self.entity_type == "sources":
+            return Source.model_validate(item.value)
+        elif self.entity_type == "projects":
+            return Project.model_validate(item.value)
+        else:
+            raise ValueError(f"Invalid entity type: {self.entity_type}")
 
     async def _delete(self, key: str) -> bool:
         await self.store.adelete(self._get_namespace(), key)
