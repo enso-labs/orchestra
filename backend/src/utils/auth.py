@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import Request, status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
@@ -20,9 +20,9 @@ security = HTTPBearer(
 
 def create_access_token(user: User, expires_delta: timedelta | None = None):
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
 
     # Create JWT payload with user data
     to_encode = {
@@ -95,7 +95,7 @@ async def verify_credentials(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        if datetime.utcnow().timestamp() > exp:
+        if datetime.now(timezone.utc).timestamp() > exp:
             logger.warning(f"Token has expired: {credentials.credentials}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
