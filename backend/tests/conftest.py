@@ -11,6 +11,7 @@ from langgraph.store.memory import InMemoryStore
 
 class TestInMemoryStore(InMemoryStore):
     """Wrapper around InMemoryStore that allows setting fields attribute."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields = ["page_content", "metadata"]
@@ -42,9 +43,7 @@ async def test_engine():
 async def test_db(test_engine):
     """Provide a test database session."""
     async_session_maker = async_sessionmaker(
-        test_engine,
-        class_=AsyncSession,
-        expire_on_commit=False
+        test_engine, class_=AsyncSession, expire_on_commit=False
     )
     async with async_session_maker() as session:
         yield session
@@ -61,22 +60,22 @@ async def test_store():
 async def async_client(test_store, test_db):
     """Async HTTP client for testing with store and db overrides."""
     from fastapi import Request
-    
+
     # Override dependencies
     async def override_get_async_db():
         yield test_db
-    
+
     def override_get_store(req: Request):
         return test_store
-    
+
     app.dependency_overrides[get_async_db] = override_get_async_db
     app.dependency_overrides[get_store] = override_get_store
     app.state.store = test_store
-    
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
-    
+
     # Clean up
     app.dependency_overrides.clear()
 
@@ -88,7 +87,4 @@ async def auth_headers(async_client):
     response = await async_client.post("/api/auth/login", json=data)
     assert response.status_code == 200, f"Login failed: {response.text}"
     token = response.json()["access_token"]
-    return {
-        "Authorization": f"Bearer {token}",
-        "accept": "application/json"
-    }
+    return {"Authorization": f"Bearer {token}", "accept": "application/json"}

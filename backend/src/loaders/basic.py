@@ -46,7 +46,11 @@ class Base64Loader(BaseLoader):
                 if "base64," in file:
                     base64_string = file.split("base64,")[-1]
                     # Extract MIME type from data URI
-                    mime_type = file.split(":")[1].split(";")[0] if ":" in file else "text/plain"
+                    mime_type = (
+                        file.split(":")[1].split(";")[0]
+                        if ":" in file
+                        else "text/plain"
+                    )
                     file_name = "uploaded_file"
                 else:
                     raise ValueError(f"Invalid base64 data format: {file}")

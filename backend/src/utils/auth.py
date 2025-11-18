@@ -22,7 +22,9 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=JWT_TOKEN_EXPIRE_MINUTES
+        )
 
     # Create JWT payload with user data
     to_encode = {
