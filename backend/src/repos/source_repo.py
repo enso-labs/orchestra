@@ -13,8 +13,13 @@ from src.repos.doc_repo import DocRepo
 
 class SourceRepo(BaseRepo):
     def __init__(self, user_id: str, store: BaseStore = get_store_in_memory()):
-        ## Add fields to the store
-        store.fields = ["page_content", "metadata"]
+        ## Add fields to the store (if supported)
+        try:
+            store.fields = ["page_content", "metadata"]
+        except AttributeError:
+            # InMemoryStore uses __slots__ and doesn't allow setting arbitrary attributes
+            # This is okay - the fields are only needed for certain store implementations
+            pass
         self.user_id = user_id
         self.store: BaseStore = store
         self.doc_repo = DocRepo(user_id=user_id, store=store)

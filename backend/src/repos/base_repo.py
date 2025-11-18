@@ -15,7 +15,8 @@ class BaseRepo:
         store: BaseStore,
         entity_type: str,
     ):
-        self.user_id = user_id
+        # Ensure user_id is always a string (convert UUID if needed)
+        self.user_id = str(user_id)
         self.entity_type = entity_type
         self.store: BaseStore = store or get_store_in_memory()
 

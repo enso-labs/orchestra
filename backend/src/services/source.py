@@ -15,7 +15,8 @@ class SourceService:
         user_id: str,
         store: BaseStore = get_store_in_memory(fields=["page_content", "metadata"]),
     ):
-        self.user_id = user_id
+        # Ensure user_id is always a string (convert UUID if needed)
+        self.user_id = str(user_id)
         self.store: BaseStore = store
 
     def _get_namespace(self):
@@ -30,8 +31,12 @@ class SourceService:
     async def create(self, project_id: str, source: Source) -> bool:
         try:
             source.id = str(uuid4())
+            # Initialize metadata if None
+            if source.metadata is None:
+                source.metadata = {}
             source.metadata["project_id"] = project_id
-            source.docs = await self._load_source_to_docs(source, lazy=True)
+            # Load documents (but don't set on source as it doesn't have a docs field)
+            docs = await self._load_source_to_docs(source, lazy=True)
             source.created_at = datetime.now()
             source.updated_at = datetime.now()
             created = await self._set(source_id=source.id, source=source)
@@ -75,7 +80,7 @@ class SourceService:
     async def _load_source_to_docs(
         self, source: Source, lazy: bool = False
     ) -> list[Document]:
-        loader = Loader.create(source.type, source.metadata)
+        loader = Loader.create(source.type, source.content)
         docs = []
         if lazy:
             async for doc in loader.alazy_load():
