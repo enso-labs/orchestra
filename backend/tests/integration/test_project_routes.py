@@ -98,9 +98,10 @@ async def test_search_projects_by_id(async_client, auth_headers):
 
     assert response.status_code == 200
     data = response.json()
-    assert "projects" in data
-    assert len(data["projects"]) == 1
-    assert data["projects"][0]["id"] == project_id
+    assert "project" in data
+    assert data["project"]["id"] == project_id
+    assert data["project"]["name"] == project_data["name"]
+    assert data["project"]["description"] == project_data["description"]
 
 
 @pytest.mark.asyncio
