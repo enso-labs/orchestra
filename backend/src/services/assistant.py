@@ -9,12 +9,12 @@ from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.services.db import get_store_in_memory
 
+
 class AssistantService:
     def __init__(self, user_id: str = None, store: BaseStore = get_store_in_memory()):
-        
         self.user_id = user_id
         self.store: BaseStore = store
-        
+
     def _get_store_key(self):
         return "assistants"
 
@@ -28,7 +28,9 @@ class AssistantService:
             )
             return True
         except Exception as e:
-            logger.exception(f"Error updating {self._get_store_key()} {assistant_id}: {e}")
+            logger.exception(
+                f"Error updating {self._get_store_key()} {assistant_id}: {e}"
+            )
             return False
 
         return True

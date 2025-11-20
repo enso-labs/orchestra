@@ -20,6 +20,7 @@ def get_api_key(model_name: str):
     else:
         raise ValueError(f"Provider {model_name} not supported")
 
+
 def audio_to_text(
     filename: str,
     file_bytes: bytes,
@@ -51,7 +52,7 @@ def audio_to_text(
 def filter_models(models: dict, **props):
     """
     Filter model dict by internal flags/properties.
-    
+
     Example:
         filter_models(models, tool_call=True)
         filter_models(models, attachment=True, reasoning=False)
@@ -65,10 +66,9 @@ def filter_models(models: dict, **props):
 
     return list(filtered.keys())
 
+
 def filter_tool_call_models(provider_models: dict[str, dict]) -> list[str]:
     """Return all model IDs for this provider that support tool calling."""
     return [
-        model_id
-        for model_id, meta in provider_models.items()
-        if meta.get("tool_call")
+        model_id for model_id, meta in provider_models.items() if meta.get("tool_call")
     ]

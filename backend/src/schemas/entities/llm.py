@@ -2,7 +2,13 @@ from uuid import uuid4
 from datetime import datetime
 from typing import List, Any, Literal, Optional
 from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    BaseMessage,
+    HumanMessage,
+    AIMessage,
+    SystemMessage,
+    ToolMessage,
+)
 
 from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.utils.format import slugify
@@ -15,7 +21,8 @@ class PresidioRequest(BaseModel):
     anonymize: Optional[bool] = Field(
         default=False, description="Whether to anonymize the text"
     )
-    
+
+
 class Config(BaseModel):
     model_config = ConfigDict(extra="allow")  # ✅ allow arbitrary extra fields
 
@@ -34,6 +41,7 @@ class Config(BaseModel):
     graph_id: Optional[Literal["react", "deepagent"]] = Field(
         default=None, description="The graph id", examples=["react", "deepagent"]
     )
+
 
 class LLMInput(BaseModel):
     model_config = ConfigDict(extra="allow")  # Allow additional properties
@@ -62,13 +70,15 @@ class LLMInput(BaseModel):
                 raise ValueError(f"Unsupported role: {role}")
         self.messages = converted
 
+
 class AssistantSearch(BaseModel):
     limit: int = 200
     offset: int = 0
     sort: str = "updated_at"
     sort_order: str = "desc"
-    filter: dict = {}  
-    
+    filter: dict = {}
+
+
 class Assistant(BaseModel):
     id: Optional[str] = None
     name: str
@@ -112,7 +122,8 @@ class Assistant(BaseModel):
             metadata=metadata or self.metadata,
             input=input,
         )
-    
+
+
 class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default="openai:gpt-5-nano")
@@ -122,4 +133,6 @@ class LLMRequest(BaseModel):
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
     presidio: Optional[PresidioRequest] = Field(default_factory=PresidioRequest)
-    metadata: Optional[Config] = Field(default={}, description="LangGraph configuration")
+    metadata: Optional[Config] = Field(
+        default={}, description="LangGraph configuration"
+    )

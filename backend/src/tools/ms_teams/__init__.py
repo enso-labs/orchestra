@@ -13,6 +13,7 @@ class SendWebhookArgs(BaseModel):
     text: str = Field(description="The text to send to the webhook")
     runtime: Any
 
+
 @tool(args_schema=SendWebhookArgs)
 async def webhook_teams(text: str, runtime: ToolRuntime) -> str:
     """Title: Webhook Teams
@@ -40,6 +41,7 @@ async def webhook_teams(text: str, runtime: ToolRuntime) -> str:
     async with AsyncClient() as client:
         try:
             from src.utils.logger import logger
+
             logger.info(f"Sending message to Microsoft Teams: {text!r}")
             response = await client.post(
                 MS_TEAMS_WEBHOOK_URL,
@@ -48,7 +50,9 @@ async def webhook_teams(text: str, runtime: ToolRuntime) -> str:
             response.raise_for_status()
             return f"Message sent to Microsoft Teams channel"
         except Exception as e:
-            raise ToolException(f"Error sending message to Microsoft Teams channel: {e}")
+            raise ToolException(
+                f"Error sending message to Microsoft Teams channel: {e}"
+            )
 
 
 MICROSOFT_TEAMS_TOOLS = [webhook_teams]

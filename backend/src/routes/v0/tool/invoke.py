@@ -9,10 +9,11 @@ from src.constants.examples import Examples
 
 invoke_router = APIRouter()
 
+
 @invoke_router.post("/invoke", name="Invoke Tools")
 async def invoke_tools(
     request: Request,
-    tools: List[InvokeTool] = Body(..., example=Examples.INVOKE_TOOLS_EXAMPLE),
+    tools: List[InvokeTool] = Body(..., examples=[Examples.INVOKE_TOOLS_EXAMPLE]),
     user: Optional[ProtectedUser] = Depends(verify_credentials),
 ):
     try:

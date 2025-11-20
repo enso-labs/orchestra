@@ -55,7 +55,7 @@ def graph_builder(
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
-    graph_id: Literal['deepagent', 'react'] = "deepagent",
+    graph_id: Literal["deepagent", "react"] = "deepagent",
 ) -> CompiledStateGraph:
     if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
         return create_agent(
@@ -152,8 +152,7 @@ async def construct_agent(
     store: BaseStore = None,
 ):
     try:
-
-        if config.get('metadata', {}).get('user_id'):
+        if config.get("metadata", {}).get("user_id"):
             tools, system_prompt = await init_memories(system_prompt, tools)
 
         if subagents:
@@ -161,7 +160,7 @@ async def construct_agent(
 
         # Asynchronous LLM call
         agent = Orchestra(
-            graph_id='deepagent',
+            graph_id="deepagent",
             # config=config,
             model=model,
             tools=tools,

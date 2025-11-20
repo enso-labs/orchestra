@@ -13,6 +13,7 @@ from src.services.memory import MemoryService
 from src.services.tool import ToolService
 from src.services.db import get_store_in_memory
 
+
 class ServiceContext:
     def __init__(
         self,
@@ -25,9 +26,9 @@ class ServiceContext:
         self.store = store or get_store_in_memory()
         self.checkpointer = checkpointer
         self.user_id = user_id or (
-            config['configurable'].get('user_id', None) 
-            or config['metadata'].get('user_id', None)
-        ) 
+            config["configurable"].get("user_id", None)
+            or config["metadata"].get("user_id", None)
+        )
         self.tool_service = ToolService(user_id=self.user_id, store=store)
         self.memory_service = MemoryService(user_id=self.user_id, store=store)
         self.thread_service = ThreadService(user_id=self.user_id, store=store)

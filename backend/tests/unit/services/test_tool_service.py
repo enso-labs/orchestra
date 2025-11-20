@@ -9,10 +9,10 @@ from tests.mock.tool import fake_tool_runtime, MockToolVars
 class TestToolRepo(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         """Set up test fixtures before each test method"""
-        
+
         os.environ["APP_ENV"] = "test"
         os.environ["TEST_WEBHOOK_URL"] = "https://example.com/webhook"
-        
+
         self.tool_service = ToolService(user_id=TEST_USER_ID)
         created_tool = SavedTool(
             name=MockToolVars.TEST_TOOL_NAME,
@@ -30,13 +30,13 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         await self.tool_repo.create(created_tool)
         self.tools = await self.tool_repo.search(filter={"name": created_tool.name})
         self.tool = self.tools[0]
-        
+
     async def asyncTearDown(self):
         """Clean up after each test method"""
         # Optionally, teardown steps here (e.g., deleting the tool)
         await self.tool_repo.delete(self.tool.name)
-        pass  
-        
+        pass
+
     async def test_invoke_saved_tool(self):
         """Test that the saved tool is converted to a structured tool correctly"""
         TEXT_TO_COMPARE = "Hello, world!"
@@ -45,6 +45,6 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
             input={
                 "text": TEXT_TO_COMPARE,
                 "runtime": fake_tool_runtime(),
-            }
+            },
         )
         self.assertEqual(result, TEXT_TO_COMPARE)

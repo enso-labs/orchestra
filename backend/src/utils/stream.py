@@ -172,7 +172,7 @@ async def stream_generator(
     subagents: list[SubAgent],
     config: RunnableConfig,
     service_context: ServiceContext,
-):  
+):
     files_map = {}
     async with get_checkpoint_db() as checkpointer:
         try:
@@ -183,14 +183,14 @@ async def stream_generator(
                 subagents=subagents,
                 config=service_context.config,
                 checkpointer=checkpointer,
-                store=service_context.store
+                store=service_context.store,
             )
             input.messages[-1].model = agent.model
             async for chunk in agent.astream(
-                {"messages": input.messages}, 
-                stream_mode=["messages", "values"], 
+                {"messages": input.messages},
+                stream_mode=["messages", "values"],
                 config=config,
-                context=ContextSchema(model=agent.model)
+                context=ContextSchema(model=agent.model),
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
@@ -220,24 +220,26 @@ async def stream_generator(
             if service_context.user_id and checkpointer:
                 final_state = await agent.graph.aget_state(config)
                 configurable = final_state.config.get("configurable", {})
-                messages = final_state.values.get('messages', [])
-                
+                messages = final_state.values.get("messages", [])
+
                 # Get the last HumanMessage
                 last_human_message = None
                 for message in reversed(messages):
                     if isinstance(message, HumanMessage):
                         last_human_message = message
                         break
-                
+
                 await service_context.thread_service.update(
                     thread_id=configurable.get("thread_id"),
                     data={
                         "thread_id": configurable.get("thread_id"),
                         "checkpoint_id": configurable.get("checkpoint_id"),
-                        "messages": [last_human_message.model_dump()] if last_human_message else [],
+                        "messages": [last_human_message.model_dump()]
+                        if last_human_message
+                        else [],
                         "files": files_map,
                         "updated_at": get_time(),
-                    }
+                    },
                 )
                 # Log the update for debugging
                 logger.info(f"checkpoint: {ujson.dumps(configurable)}")

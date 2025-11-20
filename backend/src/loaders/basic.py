@@ -2,8 +2,8 @@ import os
 import tempfile
 import base64
 from pypdf import PdfReader
-from langchain.document_loaders.base import BaseLoader
-from langchain.docstore.document import Document
+from langchain_core.document_loaders.base import BaseLoader
+from langchain_core.documents import Document
 
 
 class CopyPasteLoader(BaseLoader):
@@ -39,19 +39,39 @@ class Base64Loader(BaseLoader):
     def load(self):
         documents = []
         for file in self.files:
-            base64_string = file["src"].split("base64,")[-1]
+            # Handle both string format (e.g., "data:text/plain;base64,SGVsbG8=")
+            # and dict format (e.g., {"src": "data:...", "type": "...", "name": "..."})
+            if isinstance(file, str):
+                # Parse the data URI string
+                if "base64," in file:
+                    base64_string = file.split("base64,")[-1]
+                    # Extract MIME type from data URI
+                    mime_type = (
+                        file.split(":")[1].split(";")[0]
+                        if ":" in file
+                        else "text/plain"
+                    )
+                    file_name = "uploaded_file"
+                else:
+                    raise ValueError(f"Invalid base64 data format: {file}")
+            else:
+                # Dictionary format
+                base64_string = file["src"].split("base64,")[-1]
+                mime_type = file.get("type", "text/plain")
+                file_name = file.get("name", "uploaded_file")
+
             content_bytes = base64.b64decode(base64_string)
 
-            if file["type"] == "application/pdf":
+            if mime_type == "application/pdf":
                 # Process PDF using a temporary file
-                document = self._process_pdf(content_bytes, file["name"])
+                document = self._process_pdf(content_bytes, file_name)
             else:
                 try:
                     content = content_bytes.decode("utf-8")
                 except UnicodeDecodeError:
                     content = "Error decoding data: Data is not valid UTF-8."
                 document = Document(
-                    page_content=content, metadata={"source": file["name"]}
+                    page_content=content, metadata={"source": file_name}
                 )
 
             documents.append(document)

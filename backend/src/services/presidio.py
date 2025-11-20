@@ -22,9 +22,9 @@ class PresidioConfig(BaseModel):
         description="Presidio anonymize service host URL",
     )
     api_key: Optional[str] = Field(
-        None,
+        ...,
         description="API key for authenticating with the Presidio service",
-        example="your_api_key_here",
+        examples=["your_api_key_here"],
     )
 
 
