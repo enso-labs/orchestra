@@ -4,6 +4,7 @@ import respx
 from httpx import AsyncClient, ASGITransport
 from main import app
 from sqlalchemy import text
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from src.constants import DB_URI
@@ -33,12 +34,18 @@ def event_loop():
 @pytest.fixture
 async def test_engine():
     """Create a fresh async engine for each test."""
-    # Convert to asyncpg format and remove sslmode (asyncpg doesn't support it in URL)
-    ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://").replace("?sslmode=disable", "")
+    # Convert to asyncpg format and remove sslmode (asyncpg doesn't support it)
+    url = make_url(DB_URI)
+    url = url.set(drivername="postgresql+asyncpg")
+    
+    # Remove sslmode from query parameters
+    query_params = dict(url.query)
+    query_params.pop("sslmode", None)
+    url = url.update_query_dict(query_params)
     
     try:
         engine = create_async_engine(
-            ASYNC_DB_URI,
+            url,
             echo=False,
             poolclass=NullPool,  # No connection pooling for tests
             connect_args={"ssl": False}  # asyncpg SSL configuration
@@ -53,7 +60,7 @@ async def test_engine():
     except Exception as e:
         pytest.fail(
             f"Failed to connect to test database.\n"
-            f"Connection string: {ASYNC_DB_URI}\n"
+            f"Connection string: {url}\n"
             f"Error: {e}\n\n"
             f"Make sure PostgreSQL is running and accessible.\n"
             f"For CI: Ensure PostgreSQL service is configured in workflow.\n"
