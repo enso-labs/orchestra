@@ -80,7 +80,7 @@ jobs:
             APP_ENV: test
             APP_LOG_LEVEL: debug
             APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
-            POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@localhost:5432/lg_template_test?sslmode=disable
+            POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@localhost:5432/lg_template_test
             OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         services:
