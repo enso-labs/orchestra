@@ -198,33 +198,33 @@ async def mock_external_services():
         yield
 
 
-@pytest.fixture
-async def test_user(test_db):
-    """Ensure test user exists in database."""
-    user_repo = UserRepo(test_db)
-    user = await user_repo.get_by_email("admin@example.com")
+# @pytest.fixture
+# async def test_user(test_db):
+#     """Ensure test user exists in database."""
+#     user_repo = UserRepo(test_db)
+#     user = await user_repo.get_by_email("admin@example.com")
     
-    if not user:
-        # Create test user if not exists
-        user = User(
-            email="admin@example.com",
-            username="admin",
-            full_name="Test Admin",
-            hashed_password=User.hash_password("test1234"),
-            access=1,
-        )
-        test_db.add(user)
-        await test_db.commit()
-        await test_db.refresh(user)
+#     if not user:
+#         # Create test user if not exists
+#         user = User(
+#             email="admin@example.com",
+#             username="admin",
+#             full_name="Test Admin",
+#             hashed_password=User.hash_password("test1234"),
+#             access=1,
+#         )
+#         test_db.add(user)
+#         await test_db.commit()
+#         await test_db.refresh(user)
     
-    return user
+#     return user
 
 
-@pytest.fixture
-async def auth_headers(async_client, test_user):
-    """Get authentication headers for testing."""
-    data = {"email": "admin@example.com", "password": "test1234"}
-    response = await async_client.post("/api/auth/login", json=data)
-    assert response.status_code == 200, f"Login failed: {response.text}"
-    token = response.json()["access_token"]
-    return {"Authorization": f"Bearer {token}", "accept": "application/json"}
+# @pytest.fixture
+# async def auth_headers(async_client, test_user):
+#     """Get authentication headers for testing."""
+#     data = {"email": "admin@example.com", "password": "test1234"}
+#     response = await async_client.post("/api/auth/login", json=data)
+#     assert response.status_code == 200, f"Login failed: {response.text}"
+#     token = response.json()["access_token"]
+#     return {"Authorization": f"Bearer {token}", "accept": "application/json"}
