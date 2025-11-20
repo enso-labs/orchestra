@@ -44,8 +44,9 @@ async def search_projects(
         result_documents = []
         for document in documents:
             doc_dict = Document.model_validate(document.value).model_dump()
-            doc_dict["score"] = document.score
-            result_documents.append(doc_dict)
+            if document.score >= project_search.score_threshold:
+                doc_dict["score"] = document.score
+                result_documents.append(doc_dict)
         return {"documents": result_documents}
     
     if "source_id" in project_search.filter:

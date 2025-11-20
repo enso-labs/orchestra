@@ -128,7 +128,7 @@ class SearchFilter(BaseModel):
     )
     limit: int = Field(default=20, description="The limit of results to search")
     offset: int = Field(default=0, description="The offset of results to search")
-
+    score_threshold: float = Field(default=0.3, description="The score threshold of results to search")
     model_config = {
         "json_schema_extra": {
             "example": {"query": "", "filter": {}, "limit": 20, "offset": 0}
