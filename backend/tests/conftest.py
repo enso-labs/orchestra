@@ -33,13 +33,15 @@ def event_loop():
 @pytest.fixture
 async def test_engine():
     """Create a fresh async engine for each test."""
-    ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
+    # Convert to asyncpg format and remove sslmode (asyncpg doesn't support it in URL)
+    ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://").replace("?sslmode=disable", "")
     
     try:
         engine = create_async_engine(
             ASYNC_DB_URI,
             echo=False,
             poolclass=NullPool,  # No connection pooling for tests
+            connect_args={"ssl": False}  # asyncpg SSL configuration
         )
         
         # Test connection
