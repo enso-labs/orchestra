@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { formatMultimodalPayload } from "@/lib/utils/format";
+import { formatContent, formatMultimodalPayload } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
 import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
@@ -218,13 +218,117 @@ export default function useChat(): ChatContextType {
 		setFilesMap(new Map());
 		setViewMode("chat");
 	};
-
-	const formatContent = (content: any) => {
-		if (typeof content === "string") {
-			return content;
+	
+	function streamStop(response: any) {
+		if (
+			["stop", "end_turn", "STOP"].includes(
+				response.response_metadata?.finish_reason ||
+					response.response_metadata.stop_reason,
+			) &&
+			response.tool_calls?.length === 0
+		) {
+			setLoading(false);
+			setController(null);
+			// Keep streamingRate state - don't clear it so it stays displayed
+			return;
 		}
-		return content[0]?.text ?? "";
-	};
+	}
+
+	function streamToolCall(response: any, history: any[], existingIndex: number): any[] {
+		// Only set tool name if we don't have one yet or if the new name is truthy
+		if (!toolNameRef.current || response.tool_call_chunks[0].name) {
+			toolNameRef.current = response.tool_call_chunks[0].name;
+		}
+		setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
+		toolCallChunkRef.current += response.tool_call_chunks[0].args;
+		// If the message already exists, update it
+		if (existingIndex !== -1) {
+			// Consolidate tool_call_chunks for the message with matching id
+			const existingMsg = history[existingIndex];
+			if (toolCallChunkRef.current) {
+				try {
+					existingMsg.input = JSON.parse(toolCallChunkRef.current);
+				} catch {
+					try {
+						const autoAddCommas =
+							"[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
+						existingMsg.input = JSON.parse(autoAddCommas);
+					} catch {
+						existingMsg.input = toolCallChunkRef.current;
+					}
+				}
+			}
+			history[existingIndex] = {
+				...existingMsg,
+				...response,
+			};
+		} else {
+			history.push({
+				...response,
+				input: toolCallChunkRef.current,
+				name: toolNameRef.current,
+			});
+		}
+		return history;
+	}
+
+	function streamMessageUpdates(response: any, history: any[]): any[] {
+		const expectedContent = formatContent(response.content);
+		const responseMetadata = response.response_metadata;
+		// Initialize streaming rate for new message
+		setStreamingRate({
+			count: expectedContent.length,
+			startTime: Date.now(),
+			rate: null,
+		});
+
+		const updateMessage = {
+			...response,
+			content: expectedContent,
+			role: response.type === "tool" ? "tool" : "assistant",
+		};
+		if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
+			updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
+		}
+		if (responseMetadata.ls_temperature) {
+			updateMessage.temperature = responseMetadata.ls_temperature;
+		}
+		if (responseMetadata.thread_id) {
+			updateMessage.thread_id = responseMetadata.thread_id;
+		}
+		if (responseMetadata.checkpoint_ns && responseMetadata.checkpoint_node) {
+			updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
+		}
+		history.push(updateMessage);
+		return history;
+	}
+
+	function streamMessageCreate(response: any, history: any[], existingIndex: number, expectedContent: string): any[] {
+		// Always append to the related message content
+		const existingMsg = history[existingIndex];
+		const updatedContent = formatContent(existingMsg.content) + expectedContent;
+
+		// Track streaming rate
+		setStreamingRate((prev) => {
+			const now = Date.now();
+			const startTime = prev?.startTime || now;
+			const newCount = (prev?.count || 0) + expectedContent.length;
+			const elapsed = (now - startTime) / 1000;
+
+			return {
+				count: newCount,
+				startTime,
+				rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
+			};
+		});
+
+		history[existingIndex] = {
+			...response,
+			...existingMsg,
+			content: updatedContent,
+		};
+		return history;
+	}
 
 	const handleMessages = (payload: any, history: any[]) => {
 		console.log(payload);
@@ -238,7 +342,6 @@ export default function useChat(): ChatContextType {
 		}
 
 		if (streamMode === "values") {
-			console.log(payload[1]);
 			const valuesData = payload[1];
 
 			// Store files with message association
@@ -264,147 +367,36 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
+			const existingIndex = history.findIndex((msg: any) => msg.id === response.id);
+			const expectedContent = formatContent(response.content);
 			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: responseMetadata.thread_id,
 			}));
-			const expectedContent = formatContent(response.content);
 			// Handle Tool Input
 			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
-				// Only set tool name if we don't have one yet or if the new name is truthy
-				if (!toolNameRef.current || response.tool_call_chunks[0].name) {
-					toolNameRef.current = response.tool_call_chunks[0].name;
-				}
-				setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
-				toolCallChunkRef.current += response.tool_call_chunks[0].args;
-				const existingIndex = history.findIndex(
-					(msg: any) => msg.id === response.id,
-				);
-
-				// If the message already exists, update it
-				if (existingIndex !== -1) {
-					// Consolidate tool_call_chunks for the message with matching id
-					const existingMsg = history[existingIndex];
-					if (toolCallChunkRef.current) {
-						try {
-							existingMsg.input = JSON.parse(toolCallChunkRef.current);
-						} catch {
-							try {
-								const autoAddCommas =
-									"[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
-								existingMsg.input = JSON.parse(autoAddCommas);
-							} catch {
-								existingMsg.input = toolCallChunkRef.current;
-							}
-						}
-					}
-					history[existingIndex] = {
-						...existingMsg,
-						...response,
-					};
-				} else {
-					history.push({
-						...response,
-						input: toolCallChunkRef.current,
-						name: toolNameRef.current,
-					});
-				}
+				history = streamToolCall(response, history, existingIndex);
 				setMessagesState([...history]);
 			}
 
-			if (
-				["stop", "end_turn", "STOP"].includes(
-					response.response_metadata?.finish_reason ||
-						response.response_metadata.stop_reason,
-				) &&
-				response.tool_calls?.length === 0
-			) {
-				setLoading(false);
-				setController(null);
-				// Keep streamingRate state - don't clear it so it stays displayed
-				return;
-			}
+			streamStop(response);
 
 			// Handle Final Response & Tool Response
 			if (
-				expectedContent &&
-				(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
+				expectedContent 
+				&& (!response.tool_call_chunks || response.tool_call_chunks.length === 0)
 			) {
-				const existingIndex = history.findIndex(
-					(msg: any) => msg.id === response.id,
-				);
 				if (existingIndex !== -1) {
-					// Always append to the related message content
-					const existingMsg = history[existingIndex];
-					const updatedContent =
-						formatContent(existingMsg.content) + expectedContent;
-
-					// Track streaming rate
-					setStreamingRate((prev) => {
-						const now = Date.now();
-						const startTime = prev?.startTime || now;
-						const newCount = (prev?.count || 0) + expectedContent.length;
-						const elapsed = (now - startTime) / 1000;
-
-						return {
-							count: newCount,
-							startTime,
-							rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
-						};
-					});
-
-					history[existingIndex] = {
-						...response,
-						...existingMsg,
-						content: updatedContent,
-					};
+					history = streamMessageCreate(response, history, existingIndex, expectedContent);
 					setMessagesState([...history]);
 					return;
 				} else {
-					// Initialize streaming rate for new message
-					setStreamingRate({
-						count: expectedContent.length,
-						startTime: Date.now(),
-						rate: null,
-					});
-
-					const updateMessage = {
-						...response,
-						content: expectedContent,
-						role: response.type === "tool" ? "tool" : "assistant",
-					};
-					if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
-						updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
-					}
-					if (responseMetadata.ls_temperature) {
-						updateMessage.temperature = responseMetadata.ls_temperature;
-					}
-					if (responseMetadata.thread_id) {
-						updateMessage.thread_id = responseMetadata.thread_id;
-					}
-					if (
-						responseMetadata.checkpoint_ns &&
-						responseMetadata.checkpoint_node
-					) {
-						updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
-					}
-					history.push(updateMessage);
+					history = streamMessageUpdates(response, history);
 					setMessagesState([...history]);
 				}
 			}
 
-			if (
-				["stop", "end_turn", "STOP"].includes(
-					response.response_metadata?.finish_reason ||
-						response.response_metadata.stop_reason,
-				) &&
-				response.tool_calls?.length === 0
-			) {
-				setLoading(false);
-				setController(null);
-				// Keep streamingRate state - don't clear it so it stays displayed
-				return;
-			}
+			streamStop(response);
 		}
 	};
 
