@@ -21,7 +21,7 @@ export default function ChatInput({
 	const [isRecording, setIsRecording] = useState(false);
 	const { loading } = useAppContext();
 	const { isLikelyMobile } = useAppHook();
-	const { selectedProject, setSelectedProject } = useProjectContext();
+	const { selectedProject, selectProject } = useProjectContext();
 	const {
 		query,
 		abortQuery,
@@ -40,11 +40,7 @@ export default function ChatInput({
 	} = useChatContext();
 
 	const handleResetProject = () => {
-		setMetadata((prev: any) => {
-			const { project_id, ...rest } = prev;
-			return rest;
-		});
-		setSelectedProject(null);
+		selectProject(null);
 	};
 
 	// Initialize the recorder controls using the hook

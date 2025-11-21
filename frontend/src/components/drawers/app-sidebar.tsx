@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	ChevronRight,
 	Bot,
@@ -550,9 +550,9 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 // const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { threads } = useChatContext();
+	const { threads, setMetadata } = useChatContext();
 	const { agents } = useAgentContext();
-	const { projects, useEffectGetProjects } = useProjectContext();
+	const { projects, selectedProject, useEffectGetProjects } = useProjectContext();
 
 	// Modal state
 	const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
@@ -563,6 +563,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	// Fetch projects on mount
 	useEffectGetProjects();
+
+	// Sync selectedProject to chat metadata (handles page refresh with URL params)
+	useEffect(() => {
+		if (selectedProject) {
+			setMetadata((prev: any) => ({
+				...prev,
+				project_id: selectedProject.id,
+			}));
+		} else {
+			setMetadata((prev: any) => {
+				const { project_id, ...rest } = prev;
+				return rest;
+			});
+		}
+	}, [selectedProject]);
 
 	const assistantsList = agents.map((agent: Agent) => {
 		return {
