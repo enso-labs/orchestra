@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { AppRoutes } from "./routes";
 import ChatProvider from "./context/ChatContext";
 import AgentProvider from "./context/AgentContext";
+import ProjectProvider from "./context/ProjectContext";
 import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
 import { PromptProvider } from "./context/PromptContext";
@@ -30,11 +31,13 @@ createRoot(document.getElementById("root")!).render(
 			<NuqsAdapter>
 				<AppProvider>
 					<AgentProvider>
-						<PromptProvider>
-							<ChatProvider>
-								<AppRoutes />
-							</ChatProvider>
-						</PromptProvider>
+						<ProjectProvider>
+							<PromptProvider>
+								<ChatProvider>
+									<AppRoutes />
+								</ChatProvider>
+							</PromptProvider>
+						</ProjectProvider>
 					</AgentProvider>
 				</AppProvider>
 			</NuqsAdapter>

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useState } from "react";
 import {
 	ChevronRight,
 	Bot,
@@ -7,6 +8,9 @@ import {
 	MessageSquare,
 	MoreHorizontal,
 	Trash2,
+	FolderKanban,
+	Plus,
+	FileText,
 } from "lucide-react";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
 import {
@@ -43,7 +47,11 @@ import {
 	truncateFrom,
 } from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
+import { useProjectContext } from "@/context/ProjectContext";
 import { Agent } from "@/lib/services/agentService";
+import { Project } from "@/lib/entities/project";
+import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
+import { AddSourceModal } from "@/components/modals/AddSourceModal";
 import { formatDistanceToNow } from "date-fns";
 import { searchThreads, deleteThread } from "@/lib/services";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
@@ -296,6 +304,194 @@ function ThreadItem({ thread }: ThreadItemProps) {
 	);
 }
 
+interface ProjectItemProps {
+	project: Project;
+	onAddSource: (project: Project) => void;
+}
+
+function ProjectItem({ project, onAddSource }: ProjectItemProps) {
+	const { selectedProject, selectProject, handleDeleteProject } =
+		useProjectContext();
+	const { setMetadata } = useChatContext();
+	const { isMobile, setOpenMobile } = useSidebar();
+
+	const isSelected = selectedProject?.id === project.id;
+	const sourceCount = project.sources?.length || 0;
+
+	const handleProjectClick = () => {
+		selectProject(project);
+		setMetadata((prev: any) => ({
+			...prev,
+			project_id: project.id,
+		}));
+		if (isMobile) {
+			setOpenMobile(false);
+		}
+	};
+
+	const handleDeleteClick = async () => {
+		if (window.confirm("Are you sure you want to delete this project?")) {
+			const deleted = await handleDeleteProject(project.id!);
+			if (deleted) {
+				setMetadata((prev: any) => {
+					const { project_id, ...rest } = prev;
+					return rest;
+				});
+			}
+		}
+	};
+
+	const relativeTime = project.updated_at
+		? formatDistanceToNow(new Date(project.updated_at), { addSuffix: true })
+		: "";
+
+	return (
+		<SidebarMenuItem className="mb-1 group/project relative">
+			<SidebarMenuButton
+				asChild
+				isActive={isSelected}
+				className={`h-auto px-3 py-3 rounded-lg border transition-all ${
+					isSelected
+						? "bg-sidebar-accent border-sidebar-accent shadow-sm"
+						: "bg-transparent border-sidebar-border hover:bg-sidebar-accent/50 hover:border-sidebar-accent/50"
+				}`}
+			>
+				<button
+					onClick={handleProjectClick}
+					className="flex items-start gap-2.5 w-full"
+				>
+					<div className="flex flex-col min-w-0 flex-1 gap-1.5">
+						<div className="flex items-start justify-between gap-2 w-full">
+							<span
+								className={`text-sm leading-tight line-clamp-2 ${
+									isSelected
+										? "font-semibold text-sidebar-accent-foreground"
+										: "font-medium text-sidebar-foreground"
+								}`}
+							>
+								{project.name}
+							</span>
+							{relativeTime && (
+								<span className="text-[10px] text-sidebar-foreground/40 shrink-0 font-normal mt-0.5 whitespace-nowrap">
+									{relativeTime}
+								</span>
+							)}
+						</div>
+						{project.description && (
+							<span className="text-xs text-sidebar-foreground/60 truncate">
+								{project.description}
+							</span>
+						)}
+						<div className="flex items-center gap-2.5 text-[11px] text-sidebar-foreground/50">
+							<div className="flex items-center gap-1">
+								<FileText className="w-3 h-3" />
+								<span>
+									{sourceCount} source{sourceCount !== 1 ? "s" : ""}
+								</span>
+							</div>
+						</div>
+					</div>
+				</button>
+			</SidebarMenuButton>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="absolute right-2 bottom-2 opacity-0 group-hover/project:opacity-100 transition-opacity h-6 w-6"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<MoreHorizontal className="h-3.5 w-3.5 text-sidebar-foreground/60" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-48">
+					<DropdownMenuItem
+						onClick={() => onAddSource(project)}
+						className="cursor-pointer"
+					>
+						<Plus className="mr-2 h-4 w-4" />
+						Add Source
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={handleDeleteClick}
+						className="text-red-300 focus:text-red-400 hover:text-red-300 cursor-pointer"
+					>
+						<Trash2 className="mr-2 h-4 w-4" />
+						Delete
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</SidebarMenuItem>
+	);
+}
+
+interface ProjectsCollapsibleGroupProps {
+	projects: Project[];
+	onCreateProject: () => void;
+	onAddSource: (project: Project) => void;
+}
+
+function ProjectsCollapsibleGroup({
+	projects,
+	onCreateProject,
+	onAddSource,
+}: ProjectsCollapsibleGroupProps) {
+	return (
+		<Collapsible
+			key="projects"
+			title={`Projects (${projects.length} items)`}
+			defaultOpen={false}
+			className="group/collapsible"
+		>
+			<SidebarGroup className="border-b border-sidebar-border">
+				<SidebarGroupLabel
+					asChild
+					className={`
+						group/label text-sidebar-foreground hover:bg-sidebar-accent
+						hover:text-sidebar-accent-foreground text-sm
+					`}
+				>
+					<CollapsibleTrigger>
+						<FolderKanban className="w-4 h-4 mr-2" />
+						Projects
+						<ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+					</CollapsibleTrigger>
+				</SidebarGroupLabel>
+				<CollapsibleContent>
+					<SidebarGroupContent className="px-1 pt-2">
+						<div className="px-2 pb-2">
+							<Button
+								variant="outline"
+								size="sm"
+								className="w-full justify-start gap-2"
+								onClick={onCreateProject}
+							>
+								<Plus className="h-4 w-4" />
+								Create Project
+							</Button>
+						</div>
+						<SidebarMenu className="gap-0">
+							{projects.length > 0 ? (
+								projects.map((project) => (
+									<ProjectItem
+										key={project.id}
+										project={project}
+										onAddSource={onAddSource}
+									/>
+								))
+							) : (
+								<div className="px-3 py-4 text-center text-sm text-sidebar-foreground/50">
+									No projects yet
+								</div>
+							)}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</CollapsibleContent>
+			</SidebarGroup>
+		</Collapsible>
+	);
+}
+
 interface CollapsibleGroupProps {
 	title: string;
 	items: any[];
@@ -356,6 +552,17 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { threads } = useChatContext();
 	const { agents } = useAgentContext();
+	const { projects, useEffectGetProjects } = useProjectContext();
+
+	// Modal state
+	const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
+		useState(false);
+	const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
+	const [selectedProjectForSource, setSelectedProjectForSource] =
+		useState<Project | null>(null);
+
+	// Fetch projects on mount
+	useEffectGetProjects();
 
 	const assistantsList = agents.map((agent: Agent) => {
 		return {
@@ -364,37 +571,63 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		};
 	});
 
+	const handleAddSource = (project: Project) => {
+		setSelectedProjectForSource(project);
+		setIsAddSourceModalOpen(true);
+	};
+
 	return (
-		<Sidebar {...props} autoFocus={false}>
-			<SidebarHeader>
-				{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
-				<Link
-					to="/"
-					onClick={useLinkClick("/")}
-					className="flex items-center gap-2 m-2"
-				>
-					<img
-						src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
-						alt="Logo"
-						className="w-8 h-8 rounded-full"
+		<>
+			<Sidebar {...props} autoFocus={false}>
+				<SidebarHeader>
+					{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
+					<Link
+						to="/"
+						onClick={useLinkClick("/")}
+						className="flex items-center gap-2 m-2"
+					>
+						<img
+							src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+							alt="Logo"
+							className="w-8 h-8 rounded-full"
+						/>
+						<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+					</Link>
+					{/* <SearchForm /> */}
+				</SidebarHeader>
+				<SidebarContent className="gap-0">
+					{/* We create a collapsible SidebarGroup for each parent. */}
+					<CollapsibleGroup
+						title="Assistants"
+						items={assistantsList}
+						type="assistants"
 					/>
-					<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
-				</Link>
-				{/* <SearchForm /> */}
-			</SidebarHeader>
-			<SidebarContent className="gap-0">
-				{/* We create a collapsible SidebarGroup for each parent. */}
-				<CollapsibleGroup
-					title="Assistants"
-					items={assistantsList}
-					type="assistants"
-				/>
-				<CollapsibleGroup title="Threads" items={threads} type="threads" />
-			</SidebarContent>
-			<SidebarFooter>
-				<SettingsPopover />
-			</SidebarFooter>
-			<SidebarRail />
-		</Sidebar>
+					<ProjectsCollapsibleGroup
+						projects={projects}
+						onCreateProject={() => setIsCreateProjectModalOpen(true)}
+						onAddSource={handleAddSource}
+					/>
+					<CollapsibleGroup title="Threads" items={threads} type="threads" />
+				</SidebarContent>
+				<SidebarFooter>
+					<SettingsPopover />
+				</SidebarFooter>
+				<SidebarRail />
+			</Sidebar>
+
+			<CreateProjectModal
+				isOpen={isCreateProjectModalOpen}
+				onClose={() => setIsCreateProjectModalOpen(false)}
+			/>
+
+			<AddSourceModal
+				isOpen={isAddSourceModalOpen}
+				onClose={() => {
+					setIsAddSourceModalOpen(false);
+					setSelectedProjectForSource(null);
+				}}
+				project={selectedProjectForSource}
+			/>
+		</>
 	);
 }

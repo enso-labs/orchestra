@@ -8,6 +8,9 @@ import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { useAppContext } from "@/context/AppContext";
 import BaseToolMenu from "../menus/BaseToolMenu";
 import AgentMenu from "../menus/AgentMenu";
+import { useProjectContext } from "@/context/ProjectContext";
+import { X, Folder } from "lucide-react";
+import { Button } from "../ui/button";
 
 export default function ChatInput({
 	showAgentMenu = false,
@@ -18,6 +21,7 @@ export default function ChatInput({
 	const [isRecording, setIsRecording] = useState(false);
 	const { loading } = useAppContext();
 	const { isLikelyMobile } = useAppHook();
+	const { selectedProject, setSelectedProject } = useProjectContext();
 	const {
 		query,
 		abortQuery,
@@ -31,7 +35,17 @@ export default function ChatInput({
 		handleDrop,
 		setPreviewImage,
 		handleSubmit,
+		metadata,
+		setMetadata,
 	} = useChatContext();
+
+	const handleResetProject = () => {
+		setMetadata((prev: any) => {
+			const { project_id, ...rest } = prev;
+			return rest;
+		});
+		setSelectedProject(null);
+	};
 
 	// Initialize the recorder controls using the hook
 	const recorderControls = useVoiceVisualizer();
@@ -103,6 +117,18 @@ export default function ChatInput({
 						<div className="max-w-62">
 							<AgentMenu />
 						</div>
+					)}
+					{metadata?.project_id && selectedProject && (
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+							onClick={handleResetProject}
+						>
+							<Folder className="h-3 w-3" />
+							<span className="max-w-24 truncate">{selectedProject.name}</span>
+							<X className="h-3 w-3" />
+						</Button>
 					)}
 				</div>
 				<div className="flex items-center gap-2">
