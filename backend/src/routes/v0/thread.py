@@ -86,3 +86,35 @@ async def delete_thread(
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/threads/{thread_id}", name="Update Thread")
+async def update_thread(
+    thread_id: str,
+    updates: dict = Body(...),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+            # Get existing thread data
+            existing = await service_context.thread_service.get(thread_id)
+            if not existing:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found"
+                )
+
+            # Merge updates with existing data
+            updated_data = {**existing.value, **updates}
+            await service_context.thread_service.update(thread_id, updated_data)
+            return {"success": True, "thread_id": thread_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error updating thread: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )

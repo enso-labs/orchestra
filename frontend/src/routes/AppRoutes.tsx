@@ -23,6 +23,7 @@ import PromptsIndexPage from "@/pages/prompts";
 import PromptCreatePage from "@/pages/prompts/create";
 import PromptEditPage from "@/pages/prompts/edit";
 import ChatV2Page from "@/pages/chat/chat-v2";
+import ProjectPage from "@/pages/projects/ProjectPage";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -122,6 +123,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<PromptEditPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/p/:projectId"
+						element={
+							<PrivateRoute>
+								<ProjectPage />
 							</PrivateRoute>
 						}
 					/>

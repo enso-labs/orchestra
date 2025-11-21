@@ -198,3 +198,52 @@ export const deleteThread = async (threadId: string, assistantId?: string) => {
 		throw new Error(error.response?.data?.detail || "Failed to delete thread");
 	}
 };
+
+export const searchThreadsByProject = async (
+	projectId: string,
+	limit: number = 100,
+	offset: number = 0,
+) => {
+	try {
+		const payload = {
+			limit: limit,
+			offset: offset,
+			filter: { project_id: projectId },
+		};
+		const response = await apiClient.post(`/threads/search`, payload, {
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		return response.data.threads || [];
+	} catch (error: any) {
+		console.error("Error searching threads by project:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to search threads by project",
+		);
+	}
+};
+
+export const updateThreadProject = async (
+	threadId: string,
+	projectId: string | null,
+) => {
+	try {
+		const response = await apiClient.patch(
+			`/threads/${threadId}`,
+			{ project_id: projectId },
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			},
+		);
+		return response.data;
+	} catch (error: any) {
+		console.error("Error updating thread project:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to update thread project",
+		);
+	}
+};

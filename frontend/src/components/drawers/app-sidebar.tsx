@@ -37,6 +37,11 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
+	DropdownMenuSub,
+	DropdownMenuSubTrigger,
+	DropdownMenuSubContent,
+	DropdownMenuPortal,
+	DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { SettingsPopover } from "../popovers/SettingsPopover";
@@ -53,10 +58,14 @@ import { Project } from "@/lib/entities/project";
 import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
 import { AddSourceModal } from "@/components/modals/AddSourceModal";
 import { formatDistanceToNow } from "date-fns";
-import { searchThreads, deleteThread } from "@/lib/services";
+import {
+	searchThreads,
+	deleteThread,
+	updateThreadProject,
+} from "@/lib/services";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import useModel from "@/hooks/useModel";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
 
@@ -137,10 +146,10 @@ function AssistantItem({ agent, url }: AssistantItemProps) {
 
 interface ThreadItemProps {
 	thread: any;
-	// url: string;
+	projects: Project[];
 }
 
-function ThreadItem({ thread }: ThreadItemProps) {
+function ThreadItem({ thread, projects }: ThreadItemProps) {
 	const {
 		metadata,
 		setMessages,
@@ -157,6 +166,7 @@ function ThreadItem({ thread }: ThreadItemProps) {
 	const lastMessage = messages[messages.length - 1];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
 	const { setModel } = useModel();
+	const currentProjectId = thread.value?.project_id;
 
 	// Extract a meaningful title from the content
 	const getThreadTitle = () => {
@@ -220,6 +230,21 @@ function ThreadItem({ thread }: ThreadItemProps) {
 			} catch (error) {
 				alert("Failed to delete thread");
 			}
+		}
+	};
+
+	const handleAddToProject = async (projectId: string | null) => {
+		try {
+			await updateThreadProject(thread.key, projectId);
+			// Update local thread state
+			const updatedThreads = threads.map((t: any) =>
+				t.key === thread.key
+					? { ...t, value: { ...t.value, project_id: projectId } }
+					: t,
+			);
+			setThreads(updatedThreads);
+		} catch (error) {
+			alert("Failed to add thread to project");
 		}
 	};
 
@@ -291,6 +316,54 @@ function ThreadItem({ thread }: ThreadItemProps) {
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-48">
+					<DropdownMenuSub>
+						<DropdownMenuSubTrigger className="cursor-pointer">
+							<FolderKanban className="mr-2 h-4 w-4" />
+							{currentProjectId ? "Move to Project" : "Add to Project"}
+						</DropdownMenuSubTrigger>
+						<DropdownMenuPortal>
+							<DropdownMenuSubContent className="w-48">
+								{currentProjectId && (
+									<>
+										<DropdownMenuItem
+											onClick={() => handleAddToProject(null)}
+											className="cursor-pointer"
+										>
+											<span className="text-muted-foreground">
+												Remove from project
+											</span>
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+									</>
+								)}
+								{projects.length > 0 ? (
+									projects.map((project) => (
+										<DropdownMenuItem
+											key={project.id}
+											onClick={() => handleAddToProject(project.id!)}
+											className={`cursor-pointer ${
+												currentProjectId === project.id
+													? "bg-accent"
+													: ""
+											}`}
+										>
+											{project.name}
+											{currentProjectId === project.id && (
+												<span className="ml-auto text-xs text-muted-foreground">
+													Current
+												</span>
+											)}
+										</DropdownMenuItem>
+									))
+								) : (
+									<DropdownMenuItem disabled>
+										No projects available
+									</DropdownMenuItem>
+								)}
+							</DropdownMenuSubContent>
+						</DropdownMenuPortal>
+					</DropdownMenuSub>
+					<DropdownMenuSeparator />
 					<DropdownMenuItem
 						onClick={handleDeleteClick}
 						className="text-red-300 focus:text-red-400 hover:text-red-300 cursor-pointer"
@@ -314,6 +387,7 @@ function ProjectItem({ project, onAddSource }: ProjectItemProps) {
 		useProjectContext();
 	const { setMetadata } = useChatContext();
 	const { isMobile, setOpenMobile } = useSidebar();
+	const navigate = useNavigate();
 
 	const isSelected = selectedProject?.id === project.id;
 	const sourceCount = project.sources?.length || 0;
@@ -327,6 +401,8 @@ function ProjectItem({ project, onAddSource }: ProjectItemProps) {
 		if (isMobile) {
 			setOpenMobile(false);
 		}
+		// Navigate to project page
+		navigate(`/p/${project.id}`);
 	};
 
 	const handleDeleteClick = async () => {
@@ -496,9 +572,15 @@ interface CollapsibleGroupProps {
 	title: string;
 	items: any[];
 	type: "assistants" | "threads";
+	projects?: Project[];
 }
 
-function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
+function CollapsibleGroup({
+	title,
+	items,
+	type,
+	projects = [],
+}: CollapsibleGroupProps) {
 	const titleIcon =
 		type === "assistants" ? (
 			<Bot className="w-4 h-4 mr-2" />
@@ -517,7 +599,7 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 				<SidebarGroupLabel
 					asChild
 					className={`
-						group/label text-sidebar-foreground hover:bg-sidebar-accent 
+						group/label text-sidebar-foreground hover:bg-sidebar-accent
 						hover:text-sidebar-accent-foreground text-sm
 					`}
 				>
@@ -538,7 +620,13 @@ function CollapsibleGroup({ title, items, type }: CollapsibleGroupProps) {
 											url={item.url}
 										/>
 									))
-								: items.map((item) => <ThreadItem thread={item} />)}
+								: items.map((item) => (
+										<ThreadItem
+											key={item.key}
+											thread={item}
+											projects={projects}
+										/>
+									))}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</CollapsibleContent>
@@ -622,7 +710,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						onCreateProject={() => setIsCreateProjectModalOpen(true)}
 						onAddSource={handleAddSource}
 					/>
-					<CollapsibleGroup title="Threads" items={threads} type="threads" />
+					<CollapsibleGroup
+					title="Threads"
+					items={threads}
+					type="threads"
+					projects={projects}
+				/>
 				</SidebarContent>
 				<SidebarFooter>
 					<SettingsPopover />
