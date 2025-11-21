@@ -43,7 +43,7 @@ export default function ToolTimeline({
 
 				{/* Timeline items */}
 				<div className="space-y-2">
-					{messages.map((message, index) => (
+					{messages.map((message) => (
 						<div key={message.id} className="relative">
 							{/* Timeline dot */}
 							<div
