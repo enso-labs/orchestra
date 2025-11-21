@@ -20,7 +20,7 @@ interface AddSourceModalProps {
 	project: Project | null;
 }
 
-type SourceType = "text" | "url";
+type SourceType = "copy" | "web_scrape";
 
 export function AddSourceModal({
 	isOpen,
@@ -28,7 +28,7 @@ export function AddSourceModal({
 	project,
 }: AddSourceModalProps) {
 	const { handleAddSource, loading } = useProjectContext();
-	const [sourceType, setSourceType] = useState<SourceType>("text");
+	const [sourceType, setSourceType] = useState<SourceType>("copy");
 	const [content, setContent] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
@@ -41,11 +41,11 @@ export function AddSourceModal({
 		}
 
 		if (!content.trim()) {
-			setError(sourceType === "text" ? "Text content is required" : "URL is required");
+			setError(sourceType === "copy" ? "Text content is required" : "URL is required");
 			return;
 		}
 
-		if (sourceType === "url") {
+		if (sourceType === "web_scrape") {
 			try {
 				new URL(content.trim());
 			} catch {
@@ -57,9 +57,9 @@ export function AddSourceModal({
 		const source: Source = {
 			type: sourceType,
 			content:
-				sourceType === "text"
+				sourceType === "copy"
 					? { text: content.trim() }
-					: { url: content.trim() },
+					: { urls: [content.trim()] },
 		};
 
 		const addedSource = await handleAddSource(project.id, source);
@@ -72,7 +72,7 @@ export function AddSourceModal({
 	};
 
 	const handleClose = () => {
-		setSourceType("text");
+		setSourceType("copy");
 		setContent("");
 		setError(null);
 		onClose();
@@ -94,9 +94,9 @@ export function AddSourceModal({
 						<div className="flex gap-2">
 							<Button
 								type="button"
-								variant={sourceType === "text" ? "default" : "outline"}
+								variant={sourceType === "copy" ? "default" : "outline"}
 								size="sm"
-								onClick={() => setSourceType("text")}
+								onClick={() => setSourceType("copy")}
 								className="flex items-center gap-1"
 							>
 								<FileText className="h-4 w-4" />
@@ -104,9 +104,9 @@ export function AddSourceModal({
 							</Button>
 							<Button
 								type="button"
-								variant={sourceType === "url" ? "default" : "outline"}
+								variant={sourceType === "web_scrape" ? "default" : "outline"}
 								size="sm"
-								onClick={() => setSourceType("url")}
+								onClick={() => setSourceType("web_scrape")}
 								className="flex items-center gap-1"
 							>
 								<LinkIcon className="h-4 w-4" />
@@ -117,10 +117,10 @@ export function AddSourceModal({
 
 					<div className="space-y-2">
 						<Label htmlFor="source-content">
-							{sourceType === "text" ? "Content" : "URL"}{" "}
+							{sourceType === "copy" ? "Content" : "URL"}{" "}
 							<span className="text-red-500">*</span>
 						</Label>
-						{sourceType === "text" ? (
+						{sourceType === "copy" ? (
 							<Textarea
 								id="source-content"
 								placeholder="Enter text content..."
