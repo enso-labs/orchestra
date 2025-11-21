@@ -37,6 +37,13 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		}
 	}, [fileNames, selectedFile]);
 
+	// Handle file selection change
+	const handleFileSelect = (filename: string) => {
+		setSelectedFile(filename);
+		// Reset preview when switching to a file of different type
+		setShowPreview(false);
+	};
+
 	const getLanguage = (filename: string): string => {
 		const ext = filename.split(".").pop()?.toLowerCase();
 		const langMap: Record<string, string> = {
@@ -76,6 +83,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	const isMarkdownFile = (filename: string): boolean => {
 		return filename.toLowerCase().endsWith('.md');
+	};
+
+	const isHtmlFile = (filename: string): boolean => {
+		const lower = filename.toLowerCase();
+		return lower.endsWith('.html') || lower.endsWith('.htm');
 	};
 
 	// Copy current file content
@@ -138,7 +150,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 						{fileNames.map((filename) => (
 							<button
 								key={filename}
-								onClick={() => setSelectedFile(filename)}
+								onClick={() => handleFileSelect(filename)}
 								className={`
 										px-4 py-2 text-sm border-r border-border
 										flex items-center gap-2 min-w-fit whitespace-nowrap
@@ -159,14 +171,14 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 				{/* Actions */}
 				<div className="flex items-center gap-1 px-2 border-l border-border">
-					{/* Markdown Preview Toggle (only for .md files) */}
-					{selectedFile && isMarkdownFile(selectedFile) && (
+					{/* Preview Toggle (for .md and .html/.htm files) */}
+					{selectedFile && (isMarkdownFile(selectedFile) || isHtmlFile(selectedFile)) && (
 						<Button
 							variant={showPreview ? "secondary" : "ghost"}
 							size="sm"
 							onClick={() => setShowPreview(!showPreview)}
 							className="h-8 gap-2"
-							title={showPreview ? "Show code" : "Preview markdown"}
+							title={showPreview ? "Show code" : `Preview ${isHtmlFile(selectedFile) ? "HTML" : "markdown"}`}
 						>
 							<Eye className="h-4 w-4" />
 						</Button>
@@ -224,6 +236,13 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 									<MarkdownCard content={getFileContent(selectedFile)} />
 								</div>
 							</ScrollArea>
+						) : showPreview && isHtmlFile(selectedFile) ? (
+							<iframe
+								srcDoc={getFileContent(selectedFile)}
+								sandbox="allow-same-origin"
+								className="w-full h-full border-0 bg-white"
+								title={`Preview of ${selectedFile}`}
+							/>
 						) : (
 							<MonacoEditor
 								value={getFileContent(selectedFile)}
