@@ -36,7 +36,6 @@ export default function ChatInput({
 		setPreviewImage,
 		handleSubmit,
 		metadata,
-		setMetadata,
 	} = useChatContext();
 
 	const handleResetProject = () => {
