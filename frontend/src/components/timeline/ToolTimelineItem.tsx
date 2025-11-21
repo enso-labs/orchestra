@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { ChevronDown, ChevronUp, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { truncateFrom } from "@/lib/utils/format";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import SearchEngineTool from "../tools/SearchEngine";
-import ChartRenderWidget from "../tools/ChartRenderWidget";
+
+// Lazy load heavy Plotly-based component
+const ChartRenderWidget = lazy(() => import("../tools/ChartRenderWidget"));
 
 const MAX_LENGTH = 1000;
 
@@ -52,7 +54,9 @@ function ToolContent({
 		return {
 			element: (
 				<div className="w-full overflow-hidden rounded-lg border border-border">
-					<ChartRenderWidget content={message.artifact} />
+					<Suspense fallback={<div className="h-[400px] flex items-center justify-center text-muted-foreground">Loading chart...</div>}>
+						<ChartRenderWidget content={message.artifact} />
+					</Suspense>
 				</div>
 			),
 			hasOwnScroll: false,
