@@ -52,7 +52,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 		}
 	};
 
-	if (!language) {
+	// Check if this is inline code (no newlines) or a code block (has newlines)
+	const isInlineCode = inline || !code.includes('\n');
+
+	if (!language && isInlineCode) {
 		return (
 			<code
 				className="rounded text-green-400 bg-green-400/10 px-1 py-0.5 text-sm font-mono"
@@ -60,6 +63,19 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 			>
 				{children}
 			</code>
+		);
+	}
+
+	// For code blocks without a language, render with wrapping
+	if (!language) {
+		return (
+			<div className="relative group my-2">
+				<pre className="bg-muted/50 rounded-lg p-3 overflow-x-auto">
+					<code className="text-sm font-mono whitespace-pre-wrap break-words" {...props}>
+						{children}
+					</code>
+				</pre>
+			</div>
 		);
 	}
 
@@ -87,6 +103,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 				language={language}
 				PreTag="div"
 				className="!mt-0 !rounded-t-none"
+				wrapLongLines={true}
 				customStyle={{
 					margin: 0,
 					borderTopLeftRadius: 0,

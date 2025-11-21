@@ -1,64 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Wrench, Edit, Check, X } from "lucide-react";
+import { Loader2, Edit, Check, X } from "lucide-react";
 
 import { useAppContext } from "@/context/AppContext";
 import { useChatContext } from "@/context/ChatContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
-import { cn } from "@/lib/utils";
-import { formatContent, truncateFrom } from "@/lib/utils/format";
-import SearchEngineTool from "../tools/SearchEngine";
-import ChartRenderWidget from "../tools/ChartRenderWidget";
+import { formatContent } from "@/lib/utils/format";
 import CopyTextButton from "../buttons/CopyTextButton";
 import FileViewer from "../viewers/FileViewer";
 import { latestHumanMessage } from "@/lib/utils/message";
+import ToolTimeline from "../timeline/ToolTimeline";
 
-const MAX_LENGTH = 1000;
-
-function isValidJSON(str: string): boolean {
-	try {
-		JSON.parse(str);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-function ToolAction({
-	message,
-	maxLength = MAX_LENGTH,
-}: {
-	message: any;
-	maxLength?: number;
-}) {
-	if (["search_engine", "web_search"].includes(message.name)) {
-		return <SearchEngineTool selectedToolMessage={message} />;
-	}
-
-	if (["get_stock_price_history"].includes(message.name)) {
-		return (
-			<div className="w-full overflow-hidden rounded-lg border border-border">
-				<ChartRenderWidget content={message.artifact} />
-			</div>
-		);
-	}
-
-	// Check if message.content is valid JSON
-	if (
-		message.content &&
-		typeof message.content === "string" &&
-		isValidJSON(message.content)
-	) {
-		return <DefaultTool selectedToolMessage={message} collapsed={true} />;
-	}
-
-	return (
-		<MarkdownCard
-			content={truncateFrom(message.content, "end", "...", maxLength)}
-		/>
-	);
-}
 
 export function Message({
 	message,
@@ -195,35 +148,8 @@ export function Message({
 	if (["tool"].includes(message.role || message.type)) {
 		return (
 			<div className="group">
-				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
-					<div key={message.id} className="p-2 rounded bg-muted m-2">
-						<div className="flex items-center justify-between">
-							<div className="flex items-center space-x-2">
-								<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-									<Wrench className="h-4 w-4 text-primary" />
-								</div>
-								<h3
-									className={cn(
-										"text-xs px-2 py-0.5 rounded-full",
-										message.status === "success"
-											? "bg-green-500/20 text-green-500"
-											: "bg-red-500/20 text-red-500",
-									)}
-								>
-									{message.name}
-								</h3>
-								<p className="text-xs text-muted-foreground">
-									{message.tool_call_id}
-								</p>
-							</div>
-					</div>
-					<div className="mt-2">
-						<ToolAction
-							message={message}
-							// maxLength={maxLength}
-						/>
-					</div>
-					</div>
+				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm m-2">
+					<ToolTimeline messages={[message]} />
 				</div>
 			</div>
 		);
@@ -279,7 +205,7 @@ export function Message({
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
-					<DefaultTool selectedToolMessage={message} collapsed={false} />
+					<DefaultTool selectedToolMessage={message} collapsed={true} />
 				</div>
 			</div>
 		);
