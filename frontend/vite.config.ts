@@ -60,11 +60,35 @@ export default defineConfig({
 
 		rollupOptions: {
 			output: {
-				manualChunks: {
-					vendor: ["react", "react-dom"],
-					router: ["react-router-dom"],
-					monaco: ["@monaco-editor/react"],
-					plotly: ["plotly.js"],
+				manualChunks(id) {
+					// Core vendor chunk
+					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+						return 'vendor';
+					}
+					// Router chunk
+					if (id.includes('node_modules/react-router')) {
+						return 'router';
+					}
+					// Monaco editor chunk
+					if (id.includes('node_modules/@monaco-editor') || id.includes('node_modules/monaco-editor')) {
+						return 'monaco';
+					}
+					// Plotly chunk (now using plotly.js-dist-min)
+					if (id.includes('node_modules/plotly.js') || id.includes('node_modules/react-plotly.js')) {
+						return 'plotly';
+					}
+					// UI components chunk
+					if (id.includes('node_modules/@radix-ui')) {
+						return 'ui';
+					}
+					// Markdown/syntax highlighting chunk
+					if (id.includes('node_modules/react-markdown') ||
+						id.includes('node_modules/react-syntax-highlighter') ||
+						id.includes('node_modules/prismjs') ||
+						id.includes('node_modules/rehype') ||
+						id.includes('node_modules/remark')) {
+						return 'markdown';
+					}
 				},
 			},
 		},

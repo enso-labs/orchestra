@@ -7,3 +7,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
 	readonly env: ImportMetaEnv;
 }
+
+// Type declaration for plotly.js-dist-min
+declare module "plotly.js-dist-min" {
+	import Plotly from "plotly.js";
+	export default Plotly;
+}
