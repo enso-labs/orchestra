@@ -132,6 +132,7 @@ def init_config(
             "user_id": user.id if user else None,
             "thread_id": params.metadata.thread_id or str(uuid4()),
             "assistant_id": params.metadata.assistant_id or None,
+            "project_id": params.metadata.project_id or None,
         },
         max_concurrency=max_concurrency,
         recursion_limit=recursion_limit,

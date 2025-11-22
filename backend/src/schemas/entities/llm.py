@@ -38,6 +38,9 @@ class Config(BaseModel):
     assistant_id: Optional[str] = Field(
         default=None, description="The assistant id", examples=[str(uuid4())]
     )
+    project_id: Optional[str] = Field(
+        default=None, description="The project id", examples=[str(uuid4())]
+    )
     graph_id: Optional[Literal["react", "deepagent"]] = Field(
         default=None, description="The graph id", examples=["react", "deepagent"]
     )

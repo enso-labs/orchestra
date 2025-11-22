@@ -234,6 +234,7 @@ async def stream_generator(
                     data={
                         "thread_id": configurable.get("thread_id"),
                         "checkpoint_id": configurable.get("checkpoint_id"),
+                        "project_id": configurable.get("project_id"),
                         "messages": [last_human_message.model_dump()]
                         if last_human_message
                         else [],
