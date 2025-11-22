@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - feat/507-add-projects-ui (2025-11-20)
+  - feat/503-add-bettter-tool-ui (2025-11-20)
+  - feat/494-can-render-html-files (2025-11-20)
+  - feat/509-search-model (2025-11-20)
   - feat/498-data-model-for-prorject-sources (2025-11-14)
   - feat/501-update-stale-docs-with-placeholder (2025-11-16)
   - feat/420-project-endpoints (2025-10-28)
