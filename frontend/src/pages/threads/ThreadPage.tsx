@@ -5,14 +5,9 @@ import { useChatContext } from "@/context/ChatContext";
 import { ChatNav } from "@/components/nav/ChatNav";
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
-import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import { useAgentContext } from "@/context/AgentContext";
 import { useProjectContext } from "@/context/ProjectContext";
-import ProjectSection from "@/components/sections/project-section";
-import ListProjectThreads from "@/components/lists/ListProjectThreads";
-import ProjectService from "@/lib/services/projectService";
-import { Project } from "@/lib/entities/project";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
 	ResizablePanelGroup,
@@ -20,17 +15,28 @@ import {
 	ResizableHandle,
 } from "@/components/ui/resizable";
 import FileEditorPanel from "@/components/panels/FileEditorPanel";
+import { searchThreads } from "@/lib/services/threadService";
+import { formatMessages } from "@/lib/utils/format";
+import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
+import useModel from "@/hooks/useModel";
 
-export default function ProjectPage() {
-	const { projectId } = useParams<{ projectId: string }>();
+export default function ThreadPage() {
+	const { threadId, projectId } = useParams<{
+		threadId: string;
+		projectId?: string;
+	}>();
 	const navigate = useNavigate();
-	const { loading, appVersion } = useAppContext();
+	const { loading } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
-	const { selectProject } = useProjectContext();
+	const { selectProject, projects } = useProjectContext();
+	const { setModel } = useModel();
 	const {
 		messages,
+		setMessages,
 		metadata,
 		setMetadata,
+		setFilesMap,
+		setCheckpoints,
 		useEffectUpdateAssistantId,
 		useListThreadsEffect,
 		useListCheckpointsEffect,
@@ -39,8 +45,7 @@ export default function ProjectPage() {
 		filesMap,
 	} = useChatContext();
 
-	const [project, setProject] = useState<Project | null>(null);
-	const [projectLoading, setProjectLoading] = useState(true);
+	const [threadLoading, setThreadLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	useModelsEffect();
@@ -49,31 +54,77 @@ export default function ProjectPage() {
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);
 
-	// Fetch project data
+	// Load thread data
 	useEffect(() => {
-		const fetchProject = async () => {
-			if (!projectId) return;
-			setProjectLoading(true);
+		const loadThread = async () => {
+			if (!threadId) return;
+			setThreadLoading(true);
 			setError(null);
+
 			try {
-				const response = await ProjectService.get(projectId);
-				const fetchedProject = response.data.project;
-				setProject(fetchedProject);
-				// Set selectedProject in context so ChatInput can access it
-				selectProject(fetchedProject);
+				// Search for the thread to get its data
+				const threads = await searchThreads("list_threads", {});
+				const thread = threads.find(
+					(t: any) => t.value?.thread_id === threadId || t.key === threadId,
+				);
+
+				if (!thread) {
+					setError("Thread not found");
+					return;
+				}
+
+				// Load checkpoints for this thread
+				const checkpoints = await searchThreads(
+					"list_checkpoints",
+					thread.value,
+				);
+
+				if (!checkpoints || checkpoints.length === 0) {
+					setError("No checkpoints found for thread");
+					return;
+				}
+
+				// Set filesMap
+				if (thread.value.files && Object.keys(thread.value.files).length > 0) {
+					const formattedMessages = formatMessages(
+						checkpoints[0].values.messages,
+					);
+					const latestAiMessage = formattedMessages
+						.slice()
+						.reverse()
+						.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+
+					if (latestAiMessage) {
+						const newFilesMap = new Map();
+						newFilesMap.set(latestAiMessage.id, thread.value.files);
+						setFilesMap(newFilesMap);
+					}
+				} else {
+					setFilesMap(new Map());
+				}
+
+				// Set model from last message
+				const lastMessage =
+					thread.value.messages[thread.value.messages.length - 1];
+				setModel(lastMessage?.model || DEFAULT_CHAT_MODEL);
+
+				// Set checkpoints, messages, and metadata
+				setCheckpoints(checkpoints);
+				setMessages(formatMessages(checkpoints[0].values.messages));
+				setMetadata(thread.value);
 			} catch (err) {
-				console.error("Failed to fetch project:", err);
-				setError("Project not found");
+				console.error("Failed to load thread:", err);
+				setError("Failed to load thread");
 			} finally {
-				setProjectLoading(false);
+				setThreadLoading(false);
 			}
 		};
 
-		fetchProject();
+		loadThread();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [projectId]);
+	}, [threadId]);
 
-	// Set project_id in metadata when page mounts and persist to localStorage
+	// Handle project context if on /p/:projectId/t/:threadId
 	useEffect(() => {
 		if (projectId) {
 			setMetadata((prev: any) => ({
@@ -81,83 +132,53 @@ export default function ProjectPage() {
 				project_id: projectId,
 			}));
 			localStorage.setItem("current_project_id", projectId);
+
+			// Set selectedProject
+			const project = projects.find((p) => p.id === projectId);
+			if (project) {
+				selectProject(project);
+			}
 		}
 
 		return () => {
-			setMetadata((prev: any) => {
-				const { project_id, ...rest } = prev;
-				return rest;
-			});
-			localStorage.removeItem("current_project_id");
-			selectProject(null);
+			if (projectId) {
+				setMetadata((prev: any) => {
+					const { project_id, ...rest } = prev;
+					return rest;
+				});
+				localStorage.removeItem("current_project_id");
+				selectProject(null);
+			}
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [projectId]);
+	}, [projectId, projects]);
 
-	if (projectLoading) {
+	if (threadLoading) {
 		return (
 			<ChatLayout>
 				<div className="flex h-full items-center justify-center">
-					<p className="text-muted-foreground">Loading project...</p>
+					<p className="text-muted-foreground">Loading thread...</p>
 				</div>
 			</ChatLayout>
 		);
 	}
 
-	if (error || !project) {
+	if (error) {
 		return (
 			<ChatLayout>
 				<div className="flex h-full flex-col items-center justify-center gap-4">
-					<p className="text-muted-foreground">{error || "Project not found"}</p>
-					<Button onClick={() => navigate("/chat")}>Go to Chat</Button>
+					<p className="text-muted-foreground">{error}</p>
+					<button
+						onClick={() => navigate("/chat")}
+						className="text-primary hover:underline"
+					>
+						Go to Chat
+					</button>
 				</div>
 			</ChatLayout>
 		);
 	}
 
-	// Show project view when no messages
-	if (messages.length === 0) {
-		return (
-			<ChatLayout>
-				<ChatNav sidebarTrigger={<SidebarTrigger />} />
-				<div className="flex-1 flex flex-col bg-background overflow-hidden">
-					{/* Centered Project Section */}
-					<div className="flex flex-col items-center justify-center p-6 flex-1">
-						<ProjectSection project={project} showAgentMenu={true} />
-					</div>
-
-					{/* Project Threads Section */}
-					<div className="flex-shrink-0 px-6">
-						<div className="w-full max-w-2xl mx-auto">
-							<div className="flex items-center gap-4 mb-4">
-								<div className="h-px flex-1 bg-border" />
-								<span className="text-xs font-medium tracking-widest uppercase text-muted-foreground">
-									Threads
-								</span>
-								<div className="h-px flex-1 bg-border" />
-							</div>
-						</div>
-					</div>
-
-					{/* Scrollable Thread List */}
-					<div className="max-h-[35vh] overflow-y-auto px-6 pb-6 flex-shrink-0">
-						<div className="w-full max-w-2xl mx-auto">
-							<ListProjectThreads projectId={projectId!} />
-						</div>
-					</div>
-				</div>
-				<footer className="flex-shrink-0 bg-card">
-					<div className="px-4 sm:px-6 lg:px-8 py-4">
-						<p className="text-center text-muted-foreground text-xs">
-							&copy; 2025 Ensō Labs. All rights reserved. v{appVersion}
-						</p>
-					</div>
-				</footer>
-			</ChatLayout>
-		);
-	}
-
-	// Show chat view when there are messages
 	return (
 		<ChatLayout>
 			<div className="flex h-full relative">

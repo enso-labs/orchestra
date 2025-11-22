@@ -48,7 +48,6 @@ import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
 import {
 	formatContent,
-	formatMessages,
 	truncateFrom,
 } from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
@@ -59,12 +58,9 @@ import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
 import { AddSourceModal } from "@/components/modals/AddSourceModal";
 import { formatDistanceToNow } from "date-fns";
 import {
-	searchThreads,
 	deleteThread,
 	updateThreadProject,
 } from "@/lib/services";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
-import useModel from "@/hooks/useModel";
 import { Link, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
@@ -152,20 +148,17 @@ interface ThreadItemProps {
 function ThreadItem({ thread, projects }: ThreadItemProps) {
 	const {
 		metadata,
-		setMessages,
-		setMetadata,
-		setFilesMap,
 		threads,
 		setThreads,
 		clearMessages,
 	} = useChatContext();
 	const { agent } = useAgentContext();
 	const { isMobile, setOpenMobile } = useSidebar();
+	const navigate = useNavigate();
 	const messages = thread.value?.messages || [];
 	const fileCount = Object.keys(thread.value?.files || {}).length;
 	const lastMessage = messages[messages.length - 1];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
-	const { setModel } = useModel();
 	const currentProjectId = thread.value?.project_id;
 
 	// Extract a meaningful title from the content
@@ -180,32 +173,9 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 		return truncateFrom(firstLine, "end", "...", 50);
 	};
 
-	const handleThreadClick = async () => {
-		const checkpoints = await searchThreads("list_checkpoints", thread.value);
-
-		// Set filesMap by associating files with the last AI message
-		if (thread.value.files && Object.keys(thread.value.files).length > 0) {
-			const messages = formatMessages(checkpoints[0].values.messages);
-			const latestAiMessage = messages
-				.slice()
-				.reverse()
-				.find((msg: any) => ["ai", "assistant"].includes(msg.role));
-
-			if (latestAiMessage) {
-				const newFilesMap = new Map();
-				newFilesMap.set(latestAiMessage.id, thread.value.files);
-				setFilesMap(newFilesMap);
-			}
-		} else {
-			setFilesMap(new Map());
-		}
-
-		setModel(
-			thread.value.messages[thread.value.messages.length - 1].model ||
-				DEFAULT_CHAT_MODEL,
-		);
-		setMessages(formatMessages(checkpoints[0].values.messages));
-		setMetadata(thread.value);
+	const handleThreadClick = () => {
+		// Navigate to thread route
+		navigate(`/t/${thread.value?.thread_id || thread.key}`);
 		// Close sidebar on mobile
 		if (isMobile) {
 			setOpenMobile(false);
@@ -638,9 +608,9 @@ function CollapsibleGroup({
 // const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { threads, setMetadata } = useChatContext();
+	const { threads } = useChatContext();
 	const { agents } = useAgentContext();
-	const { projects, selectedProject, useEffectGetProjects } = useProjectContext();
+	const { projects, useEffectGetProjects } = useProjectContext();
 
 	// Modal state
 	const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
@@ -652,27 +622,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	// Fetch projects on mount
 	useEffectGetProjects();
 
-	// Sync selectedProject to chat metadata (handles page refresh with URL params)
-	useEffect(() => {
-		if (selectedProject) {
-			setMetadata((prev: any) => ({
-				...prev,
-				project_id: selectedProject.id,
-			}));
-		} else {
-			setMetadata((prev: any) => {
-				const { project_id, ...rest } = prev;
-				return rest;
-			});
-		}
-	}, [selectedProject]);
-
 	const assistantsList = agents.map((agent: Agent) => {
 		return {
 			agent: agent,
 			url: `/a/${agent.id}`,
 		};
 	});
+
+	// Filter out threads that are associated with a project
+	const unassociatedThreads = threads.filter(
+		(thread: any) => !thread.value?.project_id,
+	);
 
 	const handleAddSource = (project: Project) => {
 		setSelectedProjectForSource(project);
@@ -712,7 +672,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					/>
 					<CollapsibleGroup
 					title="Threads"
-					items={threads}
+					items={unassociatedThreads}
 					type="threads"
 					projects={projects}
 				/>

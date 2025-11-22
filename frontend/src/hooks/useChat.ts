@@ -70,10 +70,14 @@ export default function useChat(): ChatContextType {
 		in_mem_messages = [...newMessages];
 		setMessagesState(newMessages);
 	};
-	const [metadata, setMetadata] = useState<any>({
-		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-		language: navigator.language,
-		current_time: undefined,
+	const [metadata, setMetadata] = useState<any>(() => {
+		const storedProjectId = localStorage.getItem("current_project_id");
+		return {
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			language: navigator.language,
+			current_time: undefined,
+			...(storedProjectId ? { project_id: storedProjectId } : {}),
+		};
 	});
 
 	const [controller, setController] = useState<AbortController | null>(null);

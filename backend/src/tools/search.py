@@ -109,6 +109,36 @@ def web_scrape(urls: List[str]) -> str:
         docs.append(formatted_output)
     return "\n\n---\n\n".join(docs)
 
+#########################################################################################################
+## THINK TOOL
+## https://github.com/langchain-ai/deepagents-quickstarts/blob/main/deep_research/research_agent/tools.py
+#########################################################################################################
+@tool(parse_docstring=True)
+def think_tool(reflection: str) -> str:
+    """Tool for strategic reflection on research progress and decision-making.
+
+    Use this tool after each search to analyze results and plan next steps systematically.
+    This creates a deliberate pause in the research workflow for quality decision-making.
+
+    When to use:
+    - After receiving search results: What key information did I find?
+    - Before deciding next steps: Do I have enough to answer comprehensively?
+    - When assessing research gaps: What specific information am I still missing?
+    - Before concluding research: Can I provide a complete answer now?
+
+    Reflection should address:
+    1. Analysis of current findings - What concrete information have I gathered?
+    2. Gap assessment - What crucial information is still missing?
+    3. Quality evaluation - Do I have sufficient evidence/examples for a good answer?
+    4. Strategic decision - Should I continue searching or provide my answer?
+
+    Args:
+        reflection: Your detailed reflection on research progress, findings, gaps, and next steps
+
+    Returns:
+        Confirmation that reflection was recorded for decision-making
+    """
+    return f"Reflection recorded: {reflection}"
 
 class MathCalculatorInput(BaseModel):
     expression: str = Field(
@@ -148,4 +178,9 @@ def math_calculator(expression: str) -> str:
         return f"Error: Invalid math expression - {expression}"
 
 
-SEARCH_TOOLS = [web_search, web_scrape, math_calculator]
+SEARCH_TOOLS = [
+    web_search, 
+    web_scrape, 
+    math_calculator, 
+    # think_tool,
+]

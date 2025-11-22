@@ -24,6 +24,7 @@ import PromptCreatePage from "@/pages/prompts/create";
 import PromptEditPage from "@/pages/prompts/edit";
 import ChatV2Page from "@/pages/chat/chat-v2";
 import ProjectPage from "@/pages/projects/ProjectPage";
+import ThreadPage from "@/pages/threads/ThreadPage";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -131,6 +132,22 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<ProjectPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/p/:projectId/t/:threadId"
+						element={
+							<PrivateRoute>
+								<ThreadPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/t/:threadId"
+						element={
+							<PrivateRoute>
+								<ThreadPage />
 							</PrivateRoute>
 						}
 					/>
