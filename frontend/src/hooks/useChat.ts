@@ -53,6 +53,8 @@ export type ChatContextType = {
 	} | null;
 	filesMap: Map<string, any>;
 	setFilesMap: (map: Map<string, any>) => void;
+	todos: any[];
+	setTodos: (todos: any[]) => void;
 	viewMode: "chat" | "editor";
 	setViewMode: (mode: "chat" | "editor") => void;
 };
@@ -95,6 +97,7 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [todos, setTodos] = useState<any[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 
 	const abortQuery = () => {
@@ -226,13 +229,14 @@ export default function useChat(): ChatContextType {
 		}
 		setMessages(in_mem_messages);
 		setFilesMap(new Map());
+		setTodos([]);
 		setViewMode("chat");
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
 		console.log(payload);
-
 		const streamMode = payload[0];
+
 		if (streamMode === "error") {
 			alert("Error on stream: " + payload[1]);
 			setLoading(false);
@@ -245,11 +249,13 @@ export default function useChat(): ChatContextType {
 
 			// Store files with message association
 			if (valuesData.files && Object.keys(valuesData.files).length > 0) {
-				// Associate files with the latest AI message
+				// Associate files with the latest AI or tool message
 				const latestAiMessage = history
 					.slice()
 					.reverse()
-					.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+					.find((msg: any) =>
+						["ai", "assistant", "tool"].includes(msg.type ?? msg.role),
+					);
 
 				if (latestAiMessage) {
 					setFilesMap((prev) => {
@@ -258,6 +264,12 @@ export default function useChat(): ChatContextType {
 						return newMap;
 					});
 				}
+			}
+
+			// Store todos with message association
+			if (valuesData.todos && Object.keys(valuesData.todos).length > 0) {
+				// Associate todos with the latest AI or tool message
+				setTodos(valuesData.todos);
 			}
 
 			return;
@@ -396,6 +408,8 @@ export default function useChat(): ChatContextType {
 		streamingRate,
 		filesMap,
 		setFilesMap,
+		todos,
+		setTodos,
 		viewMode,
 		setViewMode,
 	};

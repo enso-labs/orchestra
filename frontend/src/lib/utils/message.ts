@@ -1,4 +1,4 @@
-import { formatContent, isEmpty } from "./format";
+import { formatContent } from "./format";
 
 export function latestHumanMessage(messages: any[] | undefined | null) {
 	if (!Array.isArray(messages) || messages.length === 0) {

@@ -43,6 +43,7 @@ export default function ThreadPage() {
 		useModelsEffect,
 		viewMode,
 		filesMap,
+		setTodos,
 	} = useChatContext();
 
 	const [threadLoading, setThreadLoading] = useState(true);
@@ -83,6 +84,11 @@ export default function ThreadPage() {
 					setError("No checkpoints found for thread");
 					return;
 				}
+
+				if (thread.value.todos && Object.keys(thread.value.todos).length > 0) {
+					setTodos(thread.value.todos);
+				}
+				
 
 				// Set filesMap
 				if (thread.value.files && Object.keys(thread.value.files).length > 0) {
@@ -134,7 +140,7 @@ export default function ThreadPage() {
 			localStorage.setItem("current_project_id", projectId);
 
 			// Set selectedProject
-			const project = projects.find((p) => p.id === projectId);
+			const project = projects.find((p: any) => p.id === projectId);
 			if (project) {
 				selectProject(project);
 			}
