@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, memo, useMemo } from "react";
+import { useEffect, useRef, useState, useCallback, memo } from "react";
 import { Loader2, Edit, Check, X } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
