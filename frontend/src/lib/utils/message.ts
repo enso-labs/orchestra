@@ -75,8 +75,6 @@ export class StreamMessageHandler {
 
 	public messageCreate(response: any, setStreamingRate: any) {
 		const expectedContent = formatContent(response.content);
-		// const responseMetadata = response.response_metadata;
-		// Initialize streaming rate for new message
 		setStreamingRate({
 			count: expectedContent.length,
 			startTime: Date.now(),
@@ -86,20 +84,7 @@ export class StreamMessageHandler {
 		const updateMessage = {
 			...response,
 			content: expectedContent,
-			// role: response.type === "tool" ? "tool" : "assistant",
 		};
-		// if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
-		// 	updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
-		// }
-		// if (responseMetadata.ls_temperature) {
-		// 	updateMessage.temperature = responseMetadata.ls_temperature;
-		// }
-		// if (responseMetadata.thread_id) {
-		// 	updateMessage.thread_id = responseMetadata.thread_id;
-		// }
-		// if (responseMetadata.checkpoint_ns && responseMetadata.checkpoint_node) {
-		// 	updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
-		// }
 		this.history.push(updateMessage);
 	}
 
