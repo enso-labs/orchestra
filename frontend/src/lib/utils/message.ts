@@ -1,6 +1,5 @@
 import { formatContent, isEmpty } from "./format";
 
-
 export function latestHumanMessage(messages: any[] | undefined | null) {
 	if (!Array.isArray(messages) || messages.length === 0) {
 		return null;
@@ -69,14 +68,7 @@ export class StreamMessageHandler {
 		}
 	}
 
-	public messageCreate(response: any, setStreamingRate: any) {
-		const expectedContent = formatContent(response.content);
-		setStreamingRate({
-			count: expectedContent.length,
-			startTime: Date.now(),
-			rate: null,
-		});
-
+	public messageCreate(response: any, expectedContent: string) {
 		const updateMessage = {
 			...response,
 			content: expectedContent,
@@ -84,28 +76,14 @@ export class StreamMessageHandler {
 		this.history.push(updateMessage);
 	}
 
-	public messageUpdate(response: any, setStreamingRate: any) {
+	public messageUpdate(
+		response: any,
+		expectedContent: string,
+		existingIndex: number,
+	) {
 		// Always append to the related message content
-		const existingIndex = this.history.findIndex(
-			(msg: any) => msg.id === response.id,
-		);
 		const existingMsg = this.history[existingIndex];
-		const newContent = formatContent(response.content);
-		const updatedContent = formatContent(existingMsg.content) + newContent;
-
-		// Track streaming rate
-		setStreamingRate((prev: any) => {
-			const now = Date.now();
-			const startTime = prev?.startTime || now;
-			const newCount = (prev?.count || 0) + newContent.length;
-			const elapsed = (now - startTime) / 1000;
-
-			return {
-				count: newCount,
-				startTime,
-				rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
-			};
-		});
+		const updatedContent = formatContent(existingMsg.content) + expectedContent;
 
 		this.history[existingIndex] = {
 			...response,
@@ -123,12 +101,11 @@ export class StreamMessageHandler {
 		);
 	}
 
-	public processResponse(response: any, setStreamingRate: any) {
-		const expectedContent = formatContent(response.content);
-		const existingIndex = this.history.findIndex(
-			(msg: any) => msg.id === response.id,
-		);
-
+	public processResponse(
+		response: any,
+		expectedContent: string,
+		existingIndex: number,
+	) {
 		// Handle Tool Input
 		if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
 			this.toolCall(response);
@@ -139,9 +116,9 @@ export class StreamMessageHandler {
 			(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
 		) {
 			if (existingIndex === -1) {
-				this.messageCreate(response, setStreamingRate);
+				this.messageCreate(response, expectedContent);
 			} else {
-				this.messageUpdate(response, setStreamingRate);
+				this.messageUpdate(response, expectedContent, existingIndex);
 			}
 		}
 	}

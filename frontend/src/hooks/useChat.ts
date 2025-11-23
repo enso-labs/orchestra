@@ -266,20 +266,59 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
-			setMetadata((prev: any) => ({...prev, thread_id: responseMetadata.thread_id}));
-			const streamHandler = new StreamMessageHandler(toolNameRef, toolCallChunkRef, history);
-			
+			setMetadata((prev: any) => ({
+				...prev,
+				thread_id: responseMetadata.thread_id,
+			}));
+
+			const expectedContent = formatContent(response.content);
+			const existingIndex = history.findIndex(
+				(msg: any) => msg.id === response.id,
+			);
+
+			// Update streaming rate
+			if (
+				expectedContent &&
+				(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
+			) {
+				if (existingIndex === -1) {
+					setStreamingRate({
+						count: expectedContent.length,
+						startTime: Date.now(),
+						rate: null,
+					});
+				} else {
+					setStreamingRate((prev: any) => {
+						const now = Date.now();
+						const startTime = prev?.startTime || now;
+						const newCount = (prev?.count || 0) + expectedContent.length;
+						const elapsed = (now - startTime) / 1000;
+
+						return {
+							count: newCount,
+							startTime,
+							rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
+						};
+					});
+				}
+			}
+
+			const streamHandler = new StreamMessageHandler(
+				toolNameRef,
+				toolCallChunkRef,
+				history,
+			);
+
 			// Handle Final Response & Tool Response
-			streamHandler.processResponse(response, setStreamingRate);
+			streamHandler.processResponse(response, expectedContent, existingIndex);
 			setLoadingMessage(`Calling ${streamHandler.toolNameRef.current} tool...`);
 			setMessagesState(streamHandler.history);
-			if(streamHandler.streamStop(response)) {
+			if (streamHandler.streamStop(response)) {
 				setLoading(false);
 				setController(null);
-			};
+			}
 		}
 	};
-
 
 	const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const textarea = e.target;
