@@ -402,6 +402,16 @@ export default function useChat(): ChatContextType {
 
 			streamStop(response);
 		}
+		// if (streamMode === "messages") {
+		// 	const response = payload[1][0];
+		// 	const responseMetadata = payload[1][1];
+		// 	setMetadata((prev: any) => ({...prev, thread_id: responseMetadata.thread_id}));
+		// 	const streamHandler = new StreamMessageHandler(history, toolNameRef, toolCallChunkRef);
+		// 	const processStream = streamHandler.process(response);
+		// 	setLoadingMessage(processStream.toolMessage);
+		// 	setMessages(processStream.messages);
+		// 	streamStop(response);
+		// }
 	};
 
 	const sseHandler = (payload: any, messages: any[]) => {
