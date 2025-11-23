@@ -234,7 +234,7 @@ export default function useChat(): ChatContextType {
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
-		console.log(payload);
+		// console.log(payload);
 		const streamMode = payload[0];
 
 		if (streamMode === "error") {
