@@ -8,9 +8,10 @@ import apiClient from "../../lib/utils/apiClient";
 
 interface ChatSubmitButtonProps {
 	abortQuery: () => void;
-	handleSubmit: (query: string, images: File[]) => void;
+	handleSubmit: (query: string, images: File[], clearImages?: () => void) => void;
 	onRecordingChange?: (isRecording: boolean) => void;
 	recorderControls?: any;
+	clearImages?: () => void;
 }
 
 function ChatSubmitButton({
@@ -18,6 +19,7 @@ function ChatSubmitButton({
 	handleSubmit,
 	onRecordingChange,
 	recorderControls,
+	clearImages,
 }: ChatSubmitButtonProps) {
 	const { controller, query, images, setQuery } = useChatContext();
 
@@ -151,7 +153,7 @@ function ChatSubmitButton({
 			<Button
 				onClick={(e) => {
 					e.stopPropagation();
-					handleSubmit(query, images);
+					handleSubmit(query, images, clearImages);
 				}}
 				disabled={false}
 				size="icon"

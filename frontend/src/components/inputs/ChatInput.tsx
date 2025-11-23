@@ -5,12 +5,12 @@ import { useRef, useEffect, useState } from "react";
 import useAppHook from "@/hooks/useAppHook";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
-import { useAppContext } from "@/context/AppContext";
 import BaseToolMenu from "../menus/BaseToolMenu";
 import AgentMenu from "../menus/AgentMenu";
 import { useProjectContext } from "@/context/ProjectContext";
 import { X, Folder } from "lucide-react";
 import { Button } from "../ui/button";
+import MessageQueue from "../lists/MessageQueue";
 
 export default function ChatInput({
 	showAgentMenu = false,
@@ -19,13 +19,13 @@ export default function ChatInput({
 }) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
-	const { loading } = useAppContext();
 	const { isLikelyMobile } = useAppHook();
 	const { selectedProject, selectProject } = useProjectContext();
 	const {
 		query,
 		abortQuery,
 		images,
+		setImages,
 		previewImage,
 		previewImageIndex,
 		removeImage,
@@ -38,6 +38,8 @@ export default function ChatInput({
 		metadata,
 		setMetadata,
 	} = useChatContext();
+
+	const clearImages = () => setImages([]);
 
 	const handleResetProject = () => {
 		selectProject(null);
@@ -59,6 +61,7 @@ export default function ChatInput({
 
 	return (
 		<div className="flex flex-col w-full">
+			<MessageQueue />
 			{images.length > 0 && (
 				<div className="px-4 py-2">
 					<ImagePreview
@@ -103,8 +106,8 @@ export default function ChatInput({
 						query.length > 0
 					) {
 						e.preventDefault();
-						if (!loading && !isLikelyMobile())
-							handleSubmit(query, images);
+						if (!isLikelyMobile())
+							handleSubmit(query, images, clearImages);
 					}
 				}}
 			/>
@@ -138,6 +141,7 @@ export default function ChatInput({
 						handleSubmit={handleSubmit}
 						onRecordingChange={setIsRecording}
 						recorderControls={recorderControls}
+						clearImages={clearImages}
 					/>
 				</div>
 			</div>

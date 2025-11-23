@@ -9,6 +9,12 @@ import { StreamMessageHandler } from "@/lib/utils/message";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
+export interface QueuedMessage {
+	id: string;
+	content: string;
+	images: File[];
+}
+
 let in_mem_messages: any[] = [];
 
 export type ChatContextType = {
@@ -16,7 +22,11 @@ export type ChatContextType = {
 	toolCallChunkRef: React.RefObject<string>;
 	query: string;
 	setQuery: (query: string) => void;
-	handleSubmit: (query: string) => void;
+	handleSubmit: (
+		query: string,
+		images?: File[],
+		clearImages?: () => void,
+	) => void;
 	sseHandler: (
 		payload: any,
 		messages: any[],
@@ -57,6 +67,11 @@ export type ChatContextType = {
 	setTodos: (todos: any[]) => void;
 	viewMode: "chat" | "editor";
 	setViewMode: (mode: "chat" | "editor") => void;
+	// Queue
+	messageQueue: QueuedMessage[];
+	addToQueue: (content: string, images: File[]) => void;
+	removeFromQueue: (id: string) => void;
+	clearQueue: () => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -84,6 +99,7 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [controller, setController] = useState<AbortController | null>(null);
+	const controllerRef = useRef<AbortController | null>(null);
 
 	const [streamingRate, setStreamingRate] = useState<{
 		count: number;
@@ -99,17 +115,65 @@ export default function useChat(): ChatContextType {
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
 	const [todos, setTodos] = useState<any[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
+	const [messageQueue, setMessageQueue] = useState<QueuedMessage[]>([]);
+	const messageQueueRef = useRef<QueuedMessage[]>([]);
+
+	const addToQueue = (content: string, images: File[]) => {
+		const queuedMessage: QueuedMessage = {
+			id: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			content,
+			images: [...images],
+		};
+		const newQueue = [...messageQueueRef.current, queuedMessage];
+		messageQueueRef.current = newQueue;
+		setMessageQueue(newQueue);
+	};
+
+	const removeFromQueue = (id: string) => {
+		const newQueue = messageQueueRef.current.filter((msg) => msg.id !== id);
+		messageQueueRef.current = newQueue;
+		setMessageQueue(newQueue);
+	};
+
+	const clearQueue = () => {
+		messageQueueRef.current = [];
+		setMessageQueue([]);
+	};
 
 	const abortQuery = () => {
-		if (controller) {
-			controller.abort();
+		if (controllerRef.current) {
+			controllerRef.current.abort();
+			controllerRef.current = null;
 			setController(null);
 		}
 	};
 
-	const sseHandler = (payload: any, messages: any[]) => {
-		handleMessages(payload, messages);
+	const sseHandler = (payload: any, messages: any[], source: any) => {
+		handleMessages(payload, messages, source);
 		return true;
+	};
+
+	const processQueue = async () => {
+		const currentQueue = messageQueueRef.current;
+
+		if (currentQueue.length === 0) {
+			setLoading(false);
+			return;
+		}
+
+		const [nextMessage, ...remainingQueue] = currentQueue;
+		messageQueueRef.current = remainingQueue;
+		setMessageQueue(remainingQueue);
+
+		// Process the next message
+		setLoadingMessage("Processing queued message...");
+		setLoading(true);
+		const { controller: newController } = await handleSSE(
+			nextMessage.content,
+			nextMessage.images,
+		);
+		controllerRef.current = newController;
+		setController(newController);
 	};
 
 	const handleSSE = async (
@@ -153,15 +217,17 @@ export default function useChat(): ChatContextType {
 		source.addEventListener("message", function (e: any) {
 			// Assuming we receive JSON-encoded data payloads:
 			const payload = JSON.parse(e.data);
-			sseHandler(payload, in_mem_messages);
+			sseHandler(payload, in_mem_messages, source);
 		});
 
 		// Close handling
 		source.addEventListener("close", () => {
 			console.log("Connection closed");
 			source.close();
+			controllerRef.current = null;
 			setController(null);
-			setLoading(false);
+			// Process next queued message if any
+			processQueue();
 		});
 
 		source.addEventListener("error", (e: any) => {
@@ -169,6 +235,7 @@ export default function useChat(): ChatContextType {
 			const error = JSON.parse(e.data);
 			alert(error.detail || error.error);
 			source.close();
+			controllerRef.current = null;
 			setController(null);
 			setLoading(false);
 			const lastMessageIndex =
@@ -188,12 +255,31 @@ export default function useChat(): ChatContextType {
 		return { controller, source };
 	};
 
-	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
+	const handleSubmit = async (
+		argQuery?: string,
+		images: File[] = [],
+		clearImages?: () => void,
+	) => {
+		const messageContent = argQuery || query;
+
+		// If controller is active (LLM is processing), queue the message
+		if (controllerRef.current) {
+			addToQueue(messageContent, images);
+			setQuery("");
+			clearImages?.();
+			return;
+		}
+
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
-		const { controller } = await handleSSE(argQuery || query, images);
-		setController(controller);
+		const { controller: newController } = await handleSSE(
+			messageContent,
+			images,
+		);
+		controllerRef.current = newController;
+		setController(newController);
 		setQuery("");
+		clearImages?.();
 	};
 
 	const clearContent = () => {
@@ -233,7 +319,7 @@ export default function useChat(): ChatContextType {
 		setViewMode("chat");
 	};
 
-	const handleMessages = (payload: any, history: any[]) => {
+	const handleMessages = (payload: any, history: any[], source: any) => {
 		// console.log(payload);
 		const streamMode = payload[0];
 
@@ -241,6 +327,7 @@ export default function useChat(): ChatContextType {
 			alert("Error on stream: " + payload[1]);
 			setLoading(false);
 			setController(null);
+			source.close();
 			return;
 		}
 
@@ -327,7 +414,10 @@ export default function useChat(): ChatContextType {
 			setMessagesState(streamHandler.history);
 			if (streamHandler.streamStop(response)) {
 				setLoading(false);
+				controllerRef.current = null;
 				setController(null);
+				source.close();
+				processQueue();
 			}
 		}
 	};
@@ -412,5 +502,10 @@ export default function useChat(): ChatContextType {
 		setTodos,
 		viewMode,
 		setViewMode,
+		// Queue
+		messageQueue,
+		addToQueue,
+		removeFromQueue,
+		clearQueue,
 	};
 }

@@ -38,6 +38,7 @@ class ChatModels(str, Enum):
         GOOGLE_GEMINI_2_5_FLASH_LITE = "google_genai:gemini-2.5-flash-lite"
         GOOGLE_GEMINI_2_5_FLASH = "google_genai:gemini-2.5-flash"
         GOOGLE_GEMINI_2_5_PRO = "google_genai:gemini-2.5-pro"
+        GOOGLE_GEMINI_LITE_LATEST = "google_genai:gemini-flash-lite-latest"
     if GROQ_API_KEY:
         GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b"
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
@@ -86,7 +87,7 @@ def get_free_models():
     if ANTHROPIC_API_KEY:
         models.append(ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value)
     if GOOGLE_API_KEY:
-        models.append(ChatModels.GOOGLE_GEMINI_2_5_FLASH_LITE.value)
+        models.append(ChatModels.GOOGLE_GEMINI_LITE_LATEST.value)
     if GROQ_API_KEY:
         models.append(ChatModels.GROQ_OPENAI_GPT_OSS_120B.value)
     if XAI_API_KEY:
