@@ -25,7 +25,7 @@ export class StreamMessageHandler {
 	public toolNameRef: React.MutableRefObject<string>;
 	public toolCallChunkRef: React.MutableRefObject<string>;
 	public history: any;
-	
+
 	constructor(
 		toolNameRef: React.MutableRefObject<string>,
 		toolCallChunkRef: React.MutableRefObject<string>,
@@ -106,7 +106,6 @@ export class StreamMessageHandler {
 			updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
 		}
 		this.history.push(updateMessage);
-		return this.history;
 	}
 
 	public messageUpdate(
@@ -138,21 +137,14 @@ export class StreamMessageHandler {
 			...existingMsg,
 			content: updatedContent,
 		};
-		return this.history;
 	}
 
-	public streamStop(response: any, setLoading: any, setController: any) {
-		if (
+	public streamStop(response: any) {
+		return (
 			["stop", "end_turn", "STOP"].includes(
 				response.response_metadata?.finish_reason ||
 					response.response_metadata.stop_reason,
-			) &&
-			response.tool_calls?.length === 0
-		) {
-			setLoading(false);
-			setController(null);
-			// Keep streamingRate state - don't clear it so it stays displayed
-			return;
-		}
+			) && response.tool_calls?.length === 0
+		);
 	}
 }
