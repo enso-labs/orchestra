@@ -174,6 +174,7 @@ async def stream_generator(
     service_context: ServiceContext,
 ):
     files_map = {}
+    todos_list = []
     async with get_checkpoint_db() as checkpointer:
         try:
             agent = await construct_agent(

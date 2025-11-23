@@ -232,7 +232,7 @@ async def list_models():
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "default": ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value,
+            "default": ChatModels.OPENAI_GPT_4_1_NANO.value,
             "free": get_free_models(),
             "models": get_all_models(),
         },
