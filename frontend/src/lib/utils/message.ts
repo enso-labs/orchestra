@@ -67,10 +67,6 @@ export class StreamMessageHandler {
 				name: this.toolNameRef.current,
 			});
 		}
-		return {
-			history: this.history,
-			toolMessage: `Calling ${this.toolNameRef.current} tool...`,
-		};
 	}
 
 	public messageCreate(response: any, setStreamingRate: any) {

@@ -271,8 +271,8 @@ export default function useChat(): ChatContextType {
 
 			// Handle Tool Input
 			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
-				const toolCall = streamHandler.toolCall(response);
-				setLoadingMessage(toolCall.toolMessage);
+				streamHandler.toolCall(response);
+				setLoadingMessage(`Calling ${streamHandler.toolNameRef.current} tool...`);
 			}
 			
 			// Handle Final Response & Tool Response
