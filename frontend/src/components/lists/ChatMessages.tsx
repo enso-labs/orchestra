@@ -159,7 +159,7 @@ export function Message({
 		);
 	}
 
-	if (["tool"].includes(message.role || message.type)) {
+	if (["tool"].includes(message.type ?? message.role)) {
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm m-2">
