@@ -7,20 +7,12 @@ export function latestHumanMessage(messages: any[] | undefined | null) {
 	}
 	for (let i = messages.length - 1; i >= 0; i--) {
 		const msg = messages[i];
-		if (msg && msg.type === "human") {
+		if (msg && ["user", "human"].includes(msg.type)) {
 			return msg;
 		}
 	}
 	return null;
 }
-
-
-interface Metric {
-	count: number;
-	startTime: number;
-	rate: number | null;
-}
-
 export class StreamMessageHandler {
 	public toolNameRef: React.MutableRefObject<string>;
 	public toolCallChunkRef: React.MutableRefObject<string>;
@@ -83,7 +75,7 @@ export class StreamMessageHandler {
 
 	public messageCreate(response: any, setStreamingRate: any) {
 		const expectedContent = formatContent(response.content);
-		const responseMetadata = response.response_metadata;
+		// const responseMetadata = response.response_metadata;
 		// Initialize streaming rate for new message
 		setStreamingRate({
 			count: expectedContent.length,
@@ -94,20 +86,20 @@ export class StreamMessageHandler {
 		const updateMessage = {
 			...response,
 			content: expectedContent,
-			role: response.type === "tool" ? "tool" : "assistant",
+			// role: response.type === "tool" ? "tool" : "assistant",
 		};
-		if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
-			updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
-		}
-		if (responseMetadata.ls_temperature) {
-			updateMessage.temperature = responseMetadata.ls_temperature;
-		}
-		if (responseMetadata.thread_id) {
-			updateMessage.thread_id = responseMetadata.thread_id;
-		}
-		if (responseMetadata.checkpoint_ns && responseMetadata.checkpoint_node) {
-			updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
-		}
+		// if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
+		// 	updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
+		// }
+		// if (responseMetadata.ls_temperature) {
+		// 	updateMessage.temperature = responseMetadata.ls_temperature;
+		// }
+		// if (responseMetadata.thread_id) {
+		// 	updateMessage.thread_id = responseMetadata.thread_id;
+		// }
+		// if (responseMetadata.checkpoint_ns && responseMetadata.checkpoint_node) {
+		// 	updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
+		// }
 		this.history.push(updateMessage);
 	}
 
