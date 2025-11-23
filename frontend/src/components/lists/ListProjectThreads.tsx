@@ -1,24 +1,21 @@
 import { useChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import {
 	deleteThread,
-	searchThreads,
 	searchThreadsByProject,
 } from "@/lib/services/threadService";
-import { formatMessages, truncateFrom } from "@/lib/utils/format";
+import { truncateFrom } from "@/lib/utils/format";
 import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
-import useModel from "@/hooks/useModel";
+import { useNavigate } from "react-router-dom";
 
 interface ListProjectThreadsProps {
 	projectId: string;
 }
 
 function ListProjectThreads({ projectId }: ListProjectThreadsProps) {
-	const { setMessages, setMetadata, metadata, setCheckpoints } =
-		useChatContext();
-	const { setModel } = useModel();
+	const { metadata } = useChatContext();
+	const navigate = useNavigate();
 	const [threads, setThreads] = useState<any[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -83,15 +80,8 @@ function ListProjectThreads({ projectId }: ListProjectThreadsProps) {
 						? lastMessage.content
 						: (lastMessage?.content?.[0]?.text ?? "");
 
-				const handleThreadClick = async () => {
-					const checkpoints = await searchThreads("list_checkpoints", config);
-					setModel(
-						thread.value.messages[thread.value.messages.length - 1]?.model ||
-							DEFAULT_CHAT_MODEL,
-					);
-					setCheckpoints(checkpoints);
-					setMessages(formatMessages(checkpoints[0].values.messages));
-					setMetadata(thread.value);
+				const handleThreadClick = () => {
+					navigate(`/p/${projectId}/t/${config.thread_id}`);
 				};
 
 				return (

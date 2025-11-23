@@ -1,7 +1,6 @@
 import ProjectService from "@/lib/services/projectService";
 import { Project, Source } from "@/lib/entities/project";
 import { useEffect, useState } from "react";
-import { useQueryState } from "nuqs";
 
 export interface ProjectState {
 	projects: Project[];
@@ -20,21 +19,8 @@ export const INIT_PROJECT_STATE: ProjectState = {
 export function useProject() {
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-	const [projectId, setProjectId] = useQueryState("project");
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	// Sync selectedProject with projectId from URL
-	useEffect(() => {
-		if (projectId && projects.length > 0) {
-			const project = projects.find((p) => p.id === projectId);
-			if (project && selectedProject?.id !== project.id) {
-				setSelectedProject(project);
-			}
-		} else if (!projectId && selectedProject) {
-			setSelectedProject(null);
-		}
-	}, [projectId, projects]);
 
 	const handleGetProjects = async () => {
 		setLoading(true);
@@ -124,7 +110,6 @@ export function useProject() {
 
 	const selectProject = (project: Project | null) => {
 		setSelectedProject(project);
-		setProjectId(project?.id || null);
 	};
 
 	const useEffectGetProjects = () => {

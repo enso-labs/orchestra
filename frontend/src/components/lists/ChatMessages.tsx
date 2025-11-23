@@ -81,7 +81,7 @@ export function Message({
 		}
 	};
 
-	if (["human", "user"].includes(message.role)) {
+	if (["human", "user"].includes(message.type ?? message.role)) {
 		return (
 			<div key={message.id} className="p-2 rounded-md justify-end">
 				<div className="flex justify-end">
@@ -145,63 +145,7 @@ export function Message({
 		);
 	}
 
-	if (["tool"].includes(message.role || message.type)) {
-		return (
-			<div className="group">
-				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm m-2">
-					<ToolTimeline messages={[message]} />
-				</div>
-			</div>
-		);
-	}
-
-	if (["ai", "assistant"].includes(message.role)) {
-		const { filesMap, viewMode } = useChatContext();
-		const messageFiles = filesMap.get(message.id);
-
-		return (
-			<div className="group">
-				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
-					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
-						<MarkdownCard
-							content={formatContent(message.content) || "Invalid message"}
-						/>
-					</div>
-
-					{viewMode === "chat" &&
-						messageFiles &&
-						Object.keys(messageFiles).length > 0 && (
-							<div className="mt-2 px-3">
-								<FileViewer files={messageFiles} />
-							</div>
-						)}
-				</div>
-				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
-					<div className="flex gap-1">
-						<CopyTextButton text={formatContent(message.content)} />
-
-						<div className="flex items-center gap-2">
-							<button className="text-sm text-muted-foreground">
-								{message.model ||
-									latestHumanMessage(messages)?.model ||
-									"Unknown model"}
-							</button>
-
-							{isLatest && streamingRate?.rate && (
-								<span
-									className={`text-sm text-muted-foreground/70 ${loading ? "animate-pulse" : ""}`}
-								>
-									{streamingRate.rate} tok/s • {streamingRate.count} tokens
-								</span>
-							)}
-						</div>
-					</div>
-				</div>
-			</div>
-		);
-	}
-
-	if (["AIMessageChunk"].includes(message.role || message.type)) {
+	if ('input' in message) {
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
@@ -211,8 +155,58 @@ export function Message({
 		);
 	}
 
+	if (["tool"].includes(message.type ?? message.role)) {
+		return (
+			<div className="group">
+				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm m-2">
+					<ToolTimeline messages={[message]} />
+				</div>
+			</div>
+		);
+	}
+
+	const { filesMap, viewMode } = useChatContext();
+	const messageFiles = filesMap.get(message.id);
+
 	return (
-		<p>{formatContent(message.content) || JSON.stringify(message.input)}</p>
+		<div className="group">
+			<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
+				<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
+					<MarkdownCard
+						content={formatContent(message.content) || "Invalid message"}
+					/>
+				</div>
+
+				{viewMode === "chat" &&
+					messageFiles &&
+					Object.keys(messageFiles).length > 0 && (
+						<div className="mt-2 px-3">
+							<FileViewer files={messageFiles} />
+						</div>
+					)}
+			</div>
+			<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
+				<div className="flex gap-1">
+					<CopyTextButton text={formatContent(message.content)} />
+
+					<div className="flex items-center gap-2">
+						<button className="text-sm text-muted-foreground">
+							{message.model ||
+								latestHumanMessage(messages)?.model ||
+								"Unknown model"}
+						</button>
+
+						{isLatest && streamingRate?.rate && (
+							<span
+								className={`text-sm text-muted-foreground/70 ${loading ? "animate-pulse" : ""}`}
+							>
+								{streamingRate.rate} tok/s • {streamingRate.count} tokens
+							</span>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
 	);
 }
 

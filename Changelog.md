@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2
 
 ### Fixed
+  - bug/516-fix-google-stop-reason-stream (2025-11-21)
   - bug/505-claude-stream-response (2025-11-19)
   - bug/456-select-tools (2025-11-02)
   - bug/444-anon-achat (2025-10-23)

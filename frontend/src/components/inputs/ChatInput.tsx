@@ -36,10 +36,16 @@ export default function ChatInput({
 		setPreviewImage,
 		handleSubmit,
 		metadata,
+		setMetadata,
 	} = useChatContext();
 
 	const handleResetProject = () => {
 		selectProject(null);
+		setMetadata((prev: any) => {
+			const { project_id, ...rest } = prev;
+			return rest;
+		});
+		localStorage.removeItem("current_project_id");
 	};
 
 	// Initialize the recorder controls using the hook
