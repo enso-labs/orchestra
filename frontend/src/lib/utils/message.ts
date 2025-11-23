@@ -110,19 +110,21 @@ export class StreamMessageHandler {
 
 	public messageUpdate(
 		response: any,
-		existingIndex: number,
-		expectedContent: string,
 		setStreamingRate: any,
 	) {
 		// Always append to the related message content
+		const existingIndex = this.history.findIndex(
+			(msg: any) => msg.id === response.id,
+		);
 		const existingMsg = this.history[existingIndex];
-		const updatedContent = formatContent(existingMsg.content) + expectedContent;
+		const newContent = formatContent(response.content);
+		const updatedContent = formatContent(existingMsg.content) + newContent;
 
 		// Track streaming rate
 		setStreamingRate((prev: any) => {
 			const now = Date.now();
 			const startTime = prev?.startTime || now;
-			const newCount = (prev?.count || 0) + expectedContent.length;
+			const newCount = (prev?.count || 0) + newContent.length;
 			const elapsed = (now - startTime) / 1000;
 
 			return {

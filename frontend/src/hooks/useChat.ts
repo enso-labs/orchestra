@@ -288,12 +288,7 @@ export default function useChat(): ChatContextType {
 				if (existingIndex === -1) {
 					streamHandler.messageCreate(response, setStreamingRate);
 				} else {
-					streamHandler.messageUpdate(
-						response,
-						existingIndex,
-						expectedContent,
-						setStreamingRate,
-					);
+					streamHandler.messageUpdate(response, setStreamingRate);
 				}
 			}
 			setMessagesState(streamHandler.history);
