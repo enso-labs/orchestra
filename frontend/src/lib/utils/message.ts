@@ -123,11 +123,16 @@ export class StreamMessageHandler {
 		);
 	}
 
-	public processFinalResponse(response: any, setStreamingRate: any) {
+	public processResponse(response: any, setStreamingRate: any) {
 		const expectedContent = formatContent(response.content);
 		const existingIndex = this.history.findIndex(
 			(msg: any) => msg.id === response.id,
 		);
+
+		// Handle Tool Input
+		if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
+			this.toolCall(response);
+		}
 
 		if (
 			expectedContent &&
