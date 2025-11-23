@@ -16,85 +16,142 @@ export function latestHumanMessage(messages: any[] | undefined | null) {
 
 
 export class StreamMessageHandler {
-	private messages: any[];
 	private toolNameRef: React.MutableRefObject<string>;
 	private toolCallChunkRef: React.MutableRefObject<string>;
 
 	constructor(
-		messages: any[],
 		toolNameRef: React.MutableRefObject<string>,
 		toolCallChunkRef: React.MutableRefObject<string>,
 	) {
-		this.messages = messages;
 		this.toolNameRef = toolNameRef;
 		this.toolCallChunkRef = toolCallChunkRef;
 	}
 
-	private messageIndex(response: any) {
-		return this.messages.findIndex(
-			(msg: any) => msg.id === response.id,
-		);
-	}
-
-	private constructInput(index: any) {
-		if (this.toolCallChunkRef.current) {
-			try {
-				this.messages[index].input = JSON.parse(this.toolCallChunkRef.current);
-			} catch {
-				try {
-					const autoAddCommas =
-						"[" + this.toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
-					this.messages[index].input = JSON.parse(autoAddCommas);
-				} catch {
-					this.messages[index].input = this.toolCallChunkRef.current;
-				}
-			}
-		}
-	}
-
-	private toolCall(response: any) {
-		// Set Tool Name
+	public toolCall(
+		response: any,
+		history: any[],
+		existingIndex: number,
+		setLoadingMessage: any,
+	) {
+		// Only set tool name if we don't have one yet or if the new name is truthy
 		if (!this.toolNameRef.current || response.tool_call_chunks[0].name) {
 			this.toolNameRef.current = response.tool_call_chunks[0].name;
 		}
+		setLoadingMessage(`Calling ${this.toolNameRef.current} tool...`);
 		this.toolCallChunkRef.current += response.tool_call_chunks[0].args;
-		this.constructInput(this.messageIndex(response));
-	}
-
-	private updateMessages(response: any) {
-		const existingIndex = this.messages.findIndex(
-			(msg: any) => msg.id === response.id,
-		);
-		const content = formatContent(response.content);
-		// Message does not exist, add it
-		if (existingIndex === -1) {
-			const message = {
-				...response,
-				content,
-				name: isEmpty(this.toolNameRef.current) && undefined,
-				input: isEmpty(this.toolCallChunkRef.current) && undefined,
-			};
-			this.messages.push(message);
-		} else {
-			// Message exists, update it
-			const existingMsg = this.messages[existingIndex];
-			this.messages[existingIndex] = {
+		// If the message already exists, update it
+		if (existingIndex !== -1) {
+			// Consolidate tool_call_chunks for the message with matching id
+			const existingMsg = history[existingIndex];
+			if (this.toolCallChunkRef.current) {
+				try {
+					existingMsg.input = JSON.parse(this.toolCallChunkRef.current);
+				} catch {
+					try {
+						const autoAddCommas =
+							"[" +
+							this.toolCallChunkRef.current.replace(/}\s*{/g, "},{") +
+							"]";
+						existingMsg.input = JSON.parse(autoAddCommas);
+					} catch {
+						existingMsg.input = this.toolCallChunkRef.current;
+					}
+				}
+			}
+			history[existingIndex] = {
 				...existingMsg,
 				...response,
-				content: formatContent(existingMsg.content) + content,
 			};
+		} else {
+			history.push({
+				...response,
+				input: this.toolCallChunkRef.current,
+				name: this.toolNameRef.current,
+			});
 		}
+		return history;
 	}
 
-	public process(response: any) {
-		// Does the message already exist?
-		const toolCallChunks = response.tool_call_chunks;
-		if (toolCallChunks && toolCallChunks.length > 0) {this.toolCall(response);}
-		this.updateMessages(response);
+	public messageCreate(
+		response: any, 
+		history: any[], 
+		setStreamingRate: any
+	) {
+		const expectedContent = formatContent(response.content);
+		const responseMetadata = response.response_metadata;
+		// Initialize streaming rate for new message
+		setStreamingRate({
+			count: expectedContent.length,
+			startTime: Date.now(),
+			rate: null,
+		});
 
-		return {
-			messages: this.messages,
-			toolMessage: this.toolNameRef.current ? `Calling ${this.toolNameRef.current} tool...`: null,
+		const updateMessage = {
+			...response,
+			content: expectedContent,
+			role: response.type === "tool" ? "tool" : "assistant",
 		};
+		if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
+			updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
+		}
+		if (responseMetadata.ls_temperature) {
+			updateMessage.temperature = responseMetadata.ls_temperature;
+		}
+		if (responseMetadata.thread_id) {
+			updateMessage.thread_id = responseMetadata.thread_id;
+		}
+		if (responseMetadata.checkpoint_ns && responseMetadata.checkpoint_node) {
+			updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
+		}
+		history.push(updateMessage);
+		return history;
+	}
+
+	public messageUpdate(
+		response: any,
+		history: any[],
+		existingIndex: number,
+		expectedContent: string,
+		setStreamingRate: any,
+	) {
+		// Always append to the related message content
+		const existingMsg = history[existingIndex];
+		const updatedContent = formatContent(existingMsg.content) + expectedContent;
+
+		// Track streaming rate
+		setStreamingRate((prev: any) => {
+			const now = Date.now();
+			const startTime = prev?.startTime || now;
+			const newCount = (prev?.count || 0) + expectedContent.length;
+			const elapsed = (now - startTime) / 1000;
+
+			return {
+				count: newCount,
+				startTime,
+				rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
+			};
+		});
+
+		history[existingIndex] = {
+			...response,
+			...existingMsg,
+			content: updatedContent,
+		};
+		return history;
+	}
+
+	public streamStop(response: any, setLoading: any, setController: any) {
+		if (
+			["stop", "end_turn", "STOP"].includes(
+				response.response_metadata?.finish_reason ||
+					response.response_metadata.stop_reason,
+			) &&
+			response.tool_calls?.length === 0
+		) {
+			setLoading(false);
+			setController(null);
+			// Keep streamingRate state - don't clear it so it stays displayed
+			return;
+		}
 	}
 }
