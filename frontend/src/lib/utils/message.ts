@@ -15,34 +15,37 @@ export function latestHumanMessage(messages: any[] | undefined | null) {
 }
 
 
-export class StreamMessageHandler {
-	private toolNameRef: React.MutableRefObject<string>;
-	private toolCallChunkRef: React.MutableRefObject<string>;
+interface Metric {
+	count: number;
+	startTime: number;
+	rate: number | null;
+}
 
+export class StreamMessageHandler {
+	public toolNameRef: React.MutableRefObject<string>;
+	public toolCallChunkRef: React.MutableRefObject<string>;
+	public history: any;
+	
 	constructor(
 		toolNameRef: React.MutableRefObject<string>,
 		toolCallChunkRef: React.MutableRefObject<string>,
+		history: any,
 	) {
 		this.toolNameRef = toolNameRef;
 		this.toolCallChunkRef = toolCallChunkRef;
+		this.history = history;
 	}
 
-	public toolCall(
-		response: any,
-		history: any[],
-		existingIndex: number,
-		setLoadingMessage: any,
-	) {
+	public toolCall(response: any, existingIndex: number) {
 		// Only set tool name if we don't have one yet or if the new name is truthy
 		if (!this.toolNameRef.current || response.tool_call_chunks[0].name) {
 			this.toolNameRef.current = response.tool_call_chunks[0].name;
 		}
-		setLoadingMessage(`Calling ${this.toolNameRef.current} tool...`);
 		this.toolCallChunkRef.current += response.tool_call_chunks[0].args;
 		// If the message already exists, update it
 		if (existingIndex !== -1) {
 			// Consolidate tool_call_chunks for the message with matching id
-			const existingMsg = history[existingIndex];
+			const existingMsg = this.history[existingIndex];
 			if (this.toolCallChunkRef.current) {
 				try {
 					existingMsg.input = JSON.parse(this.toolCallChunkRef.current);
@@ -58,25 +61,24 @@ export class StreamMessageHandler {
 					}
 				}
 			}
-			history[existingIndex] = {
+			this.history[existingIndex] = {
 				...existingMsg,
 				...response,
 			};
 		} else {
-			history.push({
+			this.history.push({
 				...response,
 				input: this.toolCallChunkRef.current,
 				name: this.toolNameRef.current,
 			});
 		}
-		return history;
+		return {
+			history: this.history,
+			toolMessage: `Calling ${this.toolNameRef.current} tool...`,
+		};
 	}
 
-	public messageCreate(
-		response: any, 
-		history: any[], 
-		setStreamingRate: any
-	) {
+	public messageCreate(response: any, setStreamingRate: any) {
 		const expectedContent = formatContent(response.content);
 		const responseMetadata = response.response_metadata;
 		// Initialize streaming rate for new message
@@ -103,19 +105,18 @@ export class StreamMessageHandler {
 		if (responseMetadata.checkpoint_ns && responseMetadata.checkpoint_node) {
 			updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
 		}
-		history.push(updateMessage);
-		return history;
+		this.history.push(updateMessage);
+		return this.history;
 	}
 
 	public messageUpdate(
 		response: any,
-		history: any[],
 		existingIndex: number,
 		expectedContent: string,
 		setStreamingRate: any,
 	) {
 		// Always append to the related message content
-		const existingMsg = history[existingIndex];
+		const existingMsg = this.history[existingIndex];
 		const updatedContent = formatContent(existingMsg.content) + expectedContent;
 
 		// Track streaming rate
@@ -132,12 +133,12 @@ export class StreamMessageHandler {
 			};
 		});
 
-		history[existingIndex] = {
+		this.history[existingIndex] = {
 			...response,
 			...existingMsg,
 			content: updatedContent,
 		};
-		return history;
+		return this.history;
 	}
 
 	public streamStop(response: any, setLoading: any, setController: any) {

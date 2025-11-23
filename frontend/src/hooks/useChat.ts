@@ -272,12 +272,13 @@ export default function useChat(): ChatContextType {
 				...prev,
 				thread_id: responseMetadata.thread_id,
 			}));
-			const streamHandler = new StreamMessageHandler(toolNameRef, toolCallChunkRef);
+			const streamHandler = new StreamMessageHandler(toolNameRef, toolCallChunkRef, history);
 
 			// Handle Tool Input
 			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
-				history = streamHandler.toolCall(response, history, existingIndex, setLoadingMessage);
-				setMessagesState([...history]);
+				const toolCall = streamHandler.toolCall(response, existingIndex);
+
+				setLoadingMessage(toolCall.toolMessage);
 			}
 			
 			// Handle Final Response & Tool Response
@@ -288,23 +289,18 @@ export default function useChat(): ChatContextType {
 				if (existingIndex === -1) {
 					history = streamHandler.messageCreate(
 						response,
-						history,
 						setStreamingRate,
 					);
-					setMessagesState([...history]);
-					return;
 				} else {
 					history = streamHandler.messageUpdate(
 						response,
-						history,
 						existingIndex,
 						expectedContent,
 						setStreamingRate,
 					);
-					setMessagesState([...history]);
 				}
 			}
-
+			setMessagesState(streamHandler.history);
 			streamHandler.streamStop(response, setLoading, setController);
 		}
 	};
