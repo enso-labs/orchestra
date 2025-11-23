@@ -79,14 +79,27 @@ def init_system_prompt(system_prompt: str, config: RunnableConfig) -> str:
     lines = [system_prompt]
     lines.append("---")
     metadata = config.get("metadata", {})
-    current_time = metadata.get("current_time")
+    current_utc = metadata.get("current_utc")
     timezone_val = metadata.get("timezone")
     lang = metadata.get("language", "en-US")
-    if current_time:
-        lines.append(f"CURRENT_TIME: {current_time}")
+    if current_utc:
+        # Attempt to localize UTC datetime based on the provided timezone, if available
+        try:
+            import pytz
+            from dateutil.parser import isoparse
+            dt_utc = isoparse(current_utc)
+            if timezone_val:
+                tz = pytz.timezone(timezone_val)
+                dt_local = dt_utc.astimezone(tz)
+                lines.append(f"LOCAL_TIME: {dt_local.isoformat()}")
+                lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
+            else:
+                lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
+        except Exception as e:
+            lines.append(f"CURRENT_UTC: {current_utc}")
     elif timezone_val:
         now_iso = datetime.now(timezone.utc).isoformat()
-        lines.append(f"CURRENT_TIME: {now_iso}")
+        lines.append(f"CURRENT_UTC: {now_iso}")
     if timezone_val:
         lines.append(f"TIMEZONE: {timezone_val}")
     if lang:

@@ -1,4 +1,6 @@
 import httpx
+from uuid import uuid4
+from datetime import datetime, timezone
 from fastapi.openapi.models import Example
 
 MCP_SERVER_EXAMPLE = {
@@ -23,6 +25,26 @@ ARCADE_RESPONSE_EXAMPLE = httpx.get(
     "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json"
 ).json()
 
+def get_example_metadata(
+    project_id: bool = False,
+    assistant_id: bool = False,
+    thread_id: bool = False,
+    checkpoint_id: bool = False,    
+):
+    metadata = {
+        "language": "en-US",
+        "timezone": "America/Denver",
+        "current_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    if project_id:
+        metadata["project_id"] = str(uuid4())
+    if assistant_id:
+        metadata["assistant_id"] = str(uuid4())
+    if thread_id:
+        metadata["thread_id"] = str(uuid4())
+    if checkpoint_id:
+        metadata["checkpoint_id"] = str(uuid4())
+    return metadata
 
 NEW_THREAD_API_TOOLS = {
     "system": "You are",
@@ -408,7 +430,7 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "metadata": {"thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj"},
+                "metadata": {"thread_id": str(uuid4())},
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
@@ -419,8 +441,8 @@ class Examples:
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
                 "metadata": {
-                    "thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj",
-                    "checkpoint_id": "6fb4c17e-ff1d-46ca-af6d-ff289a019423",
+                    "thread_id": str(uuid4()),
+                    "checkpoint_id": str(uuid4()),
                 },
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
@@ -447,12 +469,7 @@ class Examples:
                         "content": [{"type": "text", "text": "100 USD to CAD?"}],
                     }
                 ],
-                "metadata": {
-                    "assistant_id": "ec8e7128-2542-43d9-a9ed-16bd5d83ad74",
-                    "current_time": "2025-10-16T03:35:22.613Z",
-                    "timezone": "America/Denver",
-                    "language": "en-US",
-                },
+                "metadata": get_example_metadata(assistant_id=True),
             },
         ),
     }
@@ -473,7 +490,7 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "metadata": {"thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj"},
+                "metadata": get_example_metadata(thread_id=True),
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
@@ -483,10 +500,7 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "metadata": {
-                    "thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj",
-                    "checkpoint_id": "6fb4c17e-ff1d-46ca-af6d-ff289a019423",
-                },
+                "metadata": get_example_metadata(thread_id=True, checkpoint_id=True),
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
@@ -500,12 +514,20 @@ class Examples:
                         "content": [{"type": "text", "text": "100 USD to CAD?"}],
                     }
                 ],
-                "metadata": {
-                    "assistant_id": "ec8e7128-2542-43d9-a9ed-16bd5d83ad74",
-                    "current_time": "2025-10-16T03:35:22.613Z",
-                    "timezone": "America/Denver",
-                    "language": "en-US",
-                },
+                "metadata": get_example_metadata(assistant_id=True),
+            },
+        ),
+        "assistant_query_project": Example(
+            summary="assistant_query_project",
+            description="LLM with Assistant Query",
+            value={
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": ""}],
+                    }
+                ],
+                "metadata": get_example_metadata(assistant_id=True, project_id=True),
             },
         ),
     }

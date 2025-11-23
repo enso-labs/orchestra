@@ -75,7 +75,7 @@ export default function useChat(): ChatContextType {
 		return {
 			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 			language: navigator.language,
-			current_time: undefined,
+			current_utc: undefined,
 			...(storedProjectId ? { project_id: storedProjectId } : {}),
 		};
 	});
@@ -199,7 +199,7 @@ export default function useChat(): ChatContextType {
 	const getMetadata = () => {
 		return {
 			...metadata,
-			current_time: new Date().toISOString(),
+			current_utc: new Date().toISOString(),
 		};
 	};
 

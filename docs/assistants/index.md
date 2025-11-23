@@ -116,7 +116,7 @@ curl -X 'POST' \
   "assistant_id": "asst_abc123",
   "query": "Explain how list comprehensions work in Python",
   "metadata": {
-    "current_time": "2025-01-16T14:30:00Z",
+    "current_utc": "2025-01-16T14:30:00Z",
     "timezone": "America/New_York",
     "language": "en-US"
   }
@@ -208,7 +208,7 @@ The `metadata` property supports three fields that are automatically appended to
   "instructions": "You are a professional copywriter...",
   "model": "anthropic:claude-sonnet-4-5",
   "metadata": {
-    "current_time": "2025-01-16T10:00:00Z",
+    "current_utc": "2025-01-16T10:00:00Z",
     "timezone": "America/Los_Angeles",
     "language": "en-US"
   }
@@ -217,7 +217,7 @@ The `metadata` property supports three fields that are automatically appended to
 
 **Supported metadata fields:**
 
-- **`current_time`**: Current timestamp (ISO 8601 format) - useful for time-aware responses
+- **`current_utc`**: Current timestamp (ISO 8601 format) - useful for time-aware responses
 - **`timezone`**: User's timezone (e.g., "America/Denver", "Europe/London")
 - **`language`**: User's language preference (e.g., "en-US", "es-ES", "fr-FR")
 

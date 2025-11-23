@@ -113,7 +113,7 @@ curl -X 'POST' \
   "model": "openai:gpt-4o",
   "tools": ["search"],
   "metadata": {
-    "current_time": "2025-01-16T15:30:00Z",
+    "current_utc": "2025-01-16T15:30:00Z",
     "timezone": "America/Denver",
     "language": "en-US"
   }
@@ -335,7 +335,7 @@ Thread metadata provides context to the AI model through system prompts. The fol
 {
   "query": "Help me debug this code",
   "metadata": {
-    "current_time": "2025-01-16T18:45:00Z",
+    "current_utc": "2025-01-16T18:45:00Z",
     "timezone": "Europe/London",
     "language": "en-GB"
   }
@@ -344,7 +344,7 @@ Thread metadata provides context to the AI model through system prompts. The fol
 
 **Supported metadata fields:**
 
-- **`current_time`**: Current timestamp (ISO 8601) - provides temporal context for time-aware responses
+- **`current_utc`**: Current timestamp (ISO 8601) - provides temporal context for time-aware responses
 - **`timezone`**: User's timezone (e.g., "America/Denver", "Asia/Tokyo") - helps with scheduling and time references
 - **`language`**: User's language (e.g., "en-US", "ja-JP") - guides response language and localization
 
