@@ -266,31 +266,17 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
-			const existingIndex = history.findIndex((msg: any) => msg.id === response.id);
-			const expectedContent = formatContent(response.content);
-			setMetadata((prev: any) => ({
-				...prev,
-				thread_id: responseMetadata.thread_id,
-			}));
+			setMetadata((prev: any) => ({...prev, thread_id: responseMetadata.thread_id}));
 			const streamHandler = new StreamMessageHandler(toolNameRef, toolCallChunkRef, history);
 
 			// Handle Tool Input
 			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
-				const toolCall = streamHandler.toolCall(response, existingIndex);
+				const toolCall = streamHandler.toolCall(response);
 				setLoadingMessage(toolCall.toolMessage);
 			}
 			
 			// Handle Final Response & Tool Response
-			if (
-				expectedContent 
-				&& (!response.tool_call_chunks || response.tool_call_chunks.length === 0)
-			) {
-				if (existingIndex === -1) {
-					streamHandler.messageCreate(response, setStreamingRate);
-				} else {
-					streamHandler.messageUpdate(response, setStreamingRate);
-				}
-			}
+			streamHandler.processFinalResponse(response, setStreamingRate)
 			setMessagesState(streamHandler.history);
 			if(streamHandler.streamStop(response)) {
 				setLoading(false);

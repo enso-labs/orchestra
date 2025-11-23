@@ -36,7 +36,10 @@ export class StreamMessageHandler {
 		this.history = history;
 	}
 
-	public toolCall(response: any, existingIndex: number) {
+	public toolCall(response: any) {
+		const existingIndex = this.history.findIndex(
+			(msg: any) => msg.id === response.id,
+		);
 		// Only set tool name if we don't have one yet or if the new name is truthy
 		if (!this.toolNameRef.current || response.tool_call_chunks[0].name) {
 			this.toolNameRef.current = response.tool_call_chunks[0].name;
@@ -108,10 +111,7 @@ export class StreamMessageHandler {
 		this.history.push(updateMessage);
 	}
 
-	public messageUpdate(
-		response: any,
-		setStreamingRate: any,
-	) {
+	public messageUpdate(response: any, setStreamingRate: any) {
 		// Always append to the related message content
 		const existingIndex = this.history.findIndex(
 			(msg: any) => msg.id === response.id,
@@ -148,5 +148,23 @@ export class StreamMessageHandler {
 					response.response_metadata.stop_reason,
 			) && response.tool_calls?.length === 0
 		);
+	}
+
+	public processFinalResponse(response: any, setStreamingRate: any) {
+		const expectedContent = formatContent(response.content);
+		const existingIndex = this.history.findIndex(
+			(msg: any) => msg.id === response.id,
+		);
+
+		if (
+			expectedContent &&
+			(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
+		) {
+			if (existingIndex === -1) {
+				this.messageCreate(response, setStreamingRate);
+			} else {
+				this.messageUpdate(response, setStreamingRate);
+			}
+		}
 	}
 }
