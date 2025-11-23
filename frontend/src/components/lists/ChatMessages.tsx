@@ -145,11 +145,7 @@ export function Message({
 		);
 	}
 
-	if (
-		message.type === "AIMessageChunk" &&
-		Array.isArray(message.tool_call_chunks) &&
-		message.tool_call_chunks.length > 0
-	) {
+	if ('input' in message) {
 		return (
 			<div className="group">
 				<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
