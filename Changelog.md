@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/519-react-window (2025-11-23)
   - feat/507-add-projects-ui (2025-11-20)
   - feat/503-add-bettter-tool-ui (2025-11-20)
   - feat/494-can-render-html-files (2025-11-20)
