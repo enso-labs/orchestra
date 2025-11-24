@@ -5,7 +5,6 @@ import { useRef, useEffect, useState } from "react";
 import useAppHook from "@/hooks/useAppHook";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
-import { useAppContext } from "@/context/AppContext";
 import BaseToolMenu from "../menus/BaseToolMenu";
 import AgentMenu from "../menus/AgentMenu";
 import { useProjectContext } from "@/context/ProjectContext";
@@ -19,7 +18,6 @@ export default function ChatInput({
 }) {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
-	const { loading } = useAppContext();
 	const { isLikelyMobile } = useAppHook();
 	const { selectedProject, selectProject } = useProjectContext();
 	const {
@@ -103,7 +101,7 @@ export default function ChatInput({
 						query.length > 0
 					) {
 						e.preventDefault();
-						if (!loading && !isLikelyMobile())
+						if (!isLikelyMobile())
 							handleSubmit(query, images);
 					}
 				}}

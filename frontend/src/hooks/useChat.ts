@@ -6,8 +6,16 @@ import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
 import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
+import { useMessageQueue } from "./useMessageQueue";
+import { SourceStream } from "@/lib/utils/stream";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
+
+export interface QueuedMessage {
+	id: string;
+	content: string;
+	images: File[];
+}
 
 let in_mem_messages: any[] = [];
 
@@ -16,7 +24,11 @@ export type ChatContextType = {
 	toolCallChunkRef: React.RefObject<string>;
 	query: string;
 	setQuery: (query: string) => void;
-	handleSubmit: (query: string) => void;
+	handleSubmit: (
+		query: string,
+		images?: File[],
+		clearImages?: () => void,
+	) => void;
 	sseHandler: (
 		payload: any,
 		messages: any[],
@@ -32,7 +44,6 @@ export type ChatContextType = {
 	};
 	setMetadata: (metadata: { [key: string]: any }) => void;
 	abortQuery: () => void;
-	deleteThread: (threadId: string) => void;
 	// NEW
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
@@ -57,6 +68,11 @@ export type ChatContextType = {
 	setTodos: (todos: any[]) => void;
 	viewMode: "chat" | "editor";
 	setViewMode: (mode: "chat" | "editor") => void;
+	// Queue
+	messageQueue: QueuedMessage[];
+	addToQueue: (content: string, images: File[]) => void;
+	removeFromQueue: (id: string) => void;
+	clearQueue: () => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -64,10 +80,23 @@ export default function useChat(): ChatContextType {
 	const { agent } = useAgentContext();
 	const responseRef = useRef("");
 	const toolNameRef = useRef("");
+	const threadIdRef = useRef<string>("");
 	const toolCallChunkRef = useRef("");
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
 	const [state, setState] = useState<any[]>([]);
+	const {
+		messageQueue,
+		addToQueue,
+		removeFromQueue,
+		clearQueue,
+		nextQueueMessage,
+		controller,
+		setController,
+		controllerRef,
+		abortQuery,
+		resetController,
+	} = useMessageQueue();
 
 	const setMessages = (newMessages: any[]) => {
 		in_mem_messages = [...newMessages];
@@ -82,8 +111,6 @@ export default function useChat(): ChatContextType {
 			...(storedProjectId ? { project_id: storedProjectId } : {}),
 		};
 	});
-
-	const [controller, setController] = useState<AbortController | null>(null);
 
 	const [streamingRate, setStreamingRate] = useState<{
 		count: number;
@@ -100,22 +127,14 @@ export default function useChat(): ChatContextType {
 	const [todos, setTodos] = useState<any[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 
-	const abortQuery = () => {
-		if (controller) {
-			controller.abort();
-			setController(null);
-		}
-	};
-
-	const sseHandler = (payload: any, messages: any[]) => {
-		handleMessages(payload, messages);
+	const sseHandler = (payload: any, messages: any[], source: any) => {
+		handleMessages(payload, messages, source);
 		return true;
 	};
 
 	const handleSSE = async (
 		query: string,
 		images: File[],
-		abortController: AbortController | null = null,
 	) => {
 		// Add user message to the existing messages state
 		const userMessage = {
@@ -126,14 +145,15 @@ export default function useChat(): ChatContextType {
 			type: "user",
 		};
 
-		const updatedMessages = [...messages, userMessage];
+		const updatedMessages = [...in_mem_messages, userMessage];
 		setMessages(updatedMessages);
 
 		clearContent();
-		const controller = abortController || new AbortController();
+
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
-		const source = streamThread({
+		const sourceStream = new SourceStream();
+		const source = sourceStream.createSource({
 			system: agent.prompt,
 			input: { messages: formatedMessages },
 			model: agent.model,
@@ -148,28 +168,19 @@ export default function useChat(): ChatContextType {
 				// redact: false,
 			},
 		});
-		source.stream();
-
-		source.addEventListener("message", function (e: any) {
-			// Assuming we receive JSON-encoded data payloads:
+		sourceStream.source.stream();
+		// Message handling
+		sourceStream.onMessage(function (e: any) {
 			const payload = JSON.parse(e.data);
-			sseHandler(payload, in_mem_messages);
+			sseHandler(payload, in_mem_messages, source);
 		});
-
-		// Close handling
-		source.addEventListener("close", () => {
-			console.log("Connection closed");
-			source.close();
-			setController(null);
-			setLoading(false);
-		});
-
-		source.addEventListener("error", (e: any) => {
+		// Error handling
+		sourceStream.onError(function (e: any) {
 			console.error("Error on stream:", e);
 			const error = JSON.parse(e.data);
 			alert(error.detail || error.error);
 			source.close();
-			setController(null);
+			resetController();
 			setLoading(false);
 			const lastMessageIndex =
 				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
@@ -178,22 +189,41 @@ export default function useChat(): ChatContextType {
 				clearMessages(lastMessageIndex);
 			}
 		});
-
-		controller.signal.addEventListener("abort", () => {
+		// Abort handling
+		sourceStream.onAbort(function () {
 			console.log("Aborting stream connection");
 			source.close();
 			setLoading(false);
 		});
 
-		return { controller, source };
+		return sourceStream;
 	};
 
-	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
+	const handleSubmit = async (
+		argQuery?: string,
+		images: File[] = [],
+		clearImages?: () => void,
+	) => {
+		const messageContent = argQuery || query;
+
+		// If controller is active (LLM is processing), queue the message
+		if (controllerRef.current) {
+			addToQueue(messageContent, images);
+			setQuery("");
+			clearImages?.();
+			return;
+		}
+
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
-		const { controller } = await handleSSE(argQuery || query, images);
-		setController(controller);
+		const { controller: newController } = await handleSSE(
+			messageContent,
+			images,
+		);
+		controllerRef.current = newController;
+		setController(newController);
 		setQuery("");
+		clearImages?.();
 	};
 
 	const clearContent = () => {
@@ -208,7 +238,10 @@ export default function useChat(): ChatContextType {
 	const getMetadata = () => {
 		return {
 			...metadata,
+			thread_id: threadIdRef.current,
 			current_utc: new Date().toISOString(),
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			language: navigator.language,
 		};
 	};
 
@@ -233,7 +266,7 @@ export default function useChat(): ChatContextType {
 		setViewMode("chat");
 	};
 
-	const handleMessages = (payload: any, history: any[]) => {
+	const handleMessages = (payload: any, history: any[], source: any) => {
 		// console.log(payload);
 		const streamMode = payload[0];
 
@@ -241,11 +274,14 @@ export default function useChat(): ChatContextType {
 			alert("Error on stream: " + payload[1]);
 			setLoading(false);
 			setController(null);
+			source.close();
 			return;
 		}
 
 		if (streamMode === "values") {
 			const valuesData = payload[1];
+
+			// setMessagesState((prev) => [...prev, ...valuesData.messages]);
 
 			// Store files with message association
 			if (valuesData.files && Object.keys(valuesData.files).length > 0) {
@@ -278,10 +314,7 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
-			setMetadata((prev: any) => ({
-				...prev,
-				thread_id: responseMetadata.thread_id,
-			}));
+			threadIdRef.current = responseMetadata.thread_id;
 
 			const expectedContent = formatContent(response.content);
 			const existingIndex = history.findIndex(
@@ -327,7 +360,15 @@ export default function useChat(): ChatContextType {
 			setMessagesState(streamHandler.history);
 			if (streamHandler.streamStop(response)) {
 				setLoading(false);
+				controllerRef.current = null;
 				setController(null);
+				source.close();
+				const nextMessage = nextQueueMessage();
+				if (nextMessage) {
+					handleSubmit(nextMessage.content, nextMessage.images);
+					return;
+				}
+				threadIdRef.current = "";
 			}
 		}
 	};
@@ -337,27 +378,6 @@ export default function useChat(): ChatContextType {
 		textarea.style.height = "auto";
 		textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
 		setQuery(e.target.value);
-	};
-
-	const deleteThread = async (threadId: string) => {
-		try {
-			const response = await apiClient.delete(`/threads/${threadId}`, {
-				headers: {
-					"Content-Type": "application/json",
-					Accept: "application/json",
-					Authorization: `Bearer ${getAuthToken()}`,
-				},
-			});
-			if (response.status >= 200 && response.status < 300) {
-				return true;
-			}
-			return false;
-		} catch (error: any) {
-			console.error("Error deleting thread:", error);
-			throw new Error(
-				error.response?.data?.detail || "Failed to delete thread",
-			);
-		}
 	};
 
 	const useEffectUpdateAssistantId = () => {
@@ -389,19 +409,13 @@ export default function useChat(): ChatContextType {
 		setMetadata,
 		controller,
 		setController,
-		// model,
-		// setModel,
 		state,
 		setState,
-		// systemMessage,
-		// setSystemMessage,
-		// NEW
 		handleTextareaResize,
 		clearMessages,
 		resetMetadata,
 		abortQuery,
-		deleteThread,
-		// tools
+		// TOOLS
 		arcade,
 		setArcade,
 		useEffectUpdateAssistantId,
@@ -412,5 +426,10 @@ export default function useChat(): ChatContextType {
 		setTodos,
 		viewMode,
 		setViewMode,
+		// QUEUE
+		messageQueue,
+		addToQueue,
+		removeFromQueue,
+		clearQueue,
 	};
 }
