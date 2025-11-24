@@ -32,7 +32,7 @@ export default function ChatInput({
 		handlePaste,
 		handleDrop,
 		setPreviewImage,
-		handleSubmit,
+		hanleLLMStream,
 		metadata,
 		setMetadata,
 	} = useChatContext();
@@ -101,8 +101,7 @@ export default function ChatInput({
 						query.length > 0
 					) {
 						e.preventDefault();
-						if (!isLikelyMobile())
-							handleSubmit(query, images);
+						if (!isLikelyMobile()) hanleLLMStream(query, images);
 					}
 				}}
 			/>
@@ -133,7 +132,7 @@ export default function ChatInput({
 				<div className="flex items-center gap-2">
 					<ChatSubmitButton
 						abortQuery={abortQuery}
-						handleSubmit={handleSubmit}
+						hanleLLMStream={hanleLLMStream}
 						onRecordingChange={setIsRecording}
 						recorderControls={recorderControls}
 					/>

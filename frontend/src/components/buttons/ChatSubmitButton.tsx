@@ -8,14 +8,14 @@ import apiClient from "../../lib/utils/apiClient";
 
 interface ChatSubmitButtonProps {
 	abortQuery: () => void;
-	handleSubmit: (query: string, images: File[]) => void;
+	hanleLLMStream: (query: string, images: File[]) => void;
 	onRecordingChange?: (isRecording: boolean) => void;
 	recorderControls?: any;
 }
 
 function ChatSubmitButton({
 	abortQuery,
-	handleSubmit,
+	hanleLLMStream,
 	onRecordingChange,
 	recorderControls,
 }: ChatSubmitButtonProps) {
@@ -151,7 +151,7 @@ function ChatSubmitButton({
 			<Button
 				onClick={(e) => {
 					e.stopPropagation();
-					handleSubmit(query, images);
+					hanleLLMStream(query, images);
 				}}
 				disabled={false}
 				size="icon"

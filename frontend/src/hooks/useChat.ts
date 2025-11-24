@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { formatContent, formatMultimodalPayload } from "@/lib/utils/format";
-import { streamThread } from "@/lib/services";
-import apiClient from "@/lib/utils/apiClient";
-import { getAuthToken } from "@/lib/utils/auth";
 import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
 import { useMessageQueue } from "./useMessageQueue";
 import { SourceStream } from "@/lib/utils/stream";
+import useThread from "./useThread";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -24,15 +22,10 @@ export type ChatContextType = {
 	toolCallChunkRef: React.RefObject<string>;
 	query: string;
 	setQuery: (query: string) => void;
-	handleSubmit: (
+	hanleLLMStream: (
 		query: string,
 		images?: File[],
 		clearImages?: () => void,
-	) => void;
-	sseHandler: (
-		payload: any,
-		messages: any[],
-		stream_mode: StreamMode | Array<StreamMode>,
 	) => void;
 	clearContent: () => void;
 	messages: any[];
@@ -85,6 +78,7 @@ export default function useChat(): ChatContextType {
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
 	const [state, setState] = useState<any[]>([]);
+	const { useListThreadsEffect } = useThread();
 	const {
 		messageQueue,
 		addToQueue,
@@ -127,11 +121,6 @@ export default function useChat(): ChatContextType {
 	const [todos, setTodos] = useState<any[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 
-	const sseHandler = (payload: any, messages: any[], source: any) => {
-		handleMessages(payload, messages, source);
-		return true;
-	};
-
 	const handleSSE = async (
 		query: string,
 		images: File[],
@@ -172,7 +161,7 @@ export default function useChat(): ChatContextType {
 		// Message handling
 		sourceStream.onMessage(function (e: any) {
 			const payload = JSON.parse(e.data);
-			sseHandler(payload, in_mem_messages, source);
+			handleMessages(payload, in_mem_messages, source);
 		});
 		// Error handling
 		sourceStream.onError(function (e: any) {
@@ -199,7 +188,7 @@ export default function useChat(): ChatContextType {
 		return sourceStream;
 	};
 
-	const handleSubmit = async (
+	const hanleLLMStream = async (
 		argQuery?: string,
 		images: File[] = [],
 		clearImages?: () => void,
@@ -365,9 +354,10 @@ export default function useChat(): ChatContextType {
 				source.close();
 				const nextMessage = nextQueueMessage();
 				if (nextMessage) {
-					handleSubmit(nextMessage.content, nextMessage.images);
+					hanleLLMStream(nextMessage.content, nextMessage.images);
 					return;
 				}
+				useListThreadsEffect();
 				threadIdRef.current = "";
 			}
 		}
@@ -398,8 +388,7 @@ export default function useChat(): ChatContextType {
 	return {
 		responseRef,
 		toolCallChunkRef,
-		handleSubmit,
-		sseHandler,
+		hanleLLMStream,
 		clearContent,
 		query,
 		setQuery,
