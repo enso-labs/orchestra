@@ -8,6 +8,10 @@ export type ThreadContextType = {
 	setCheckpoints: (checkpoints: any[]) => void;
 	checkpoint: any;
 	setCheckpoint: (checkpoint: any) => void;
+	fetchThreads: (
+		action: "list_threads" | "list_checkpoints" | "get_checkpoint",
+		metadata: { thread_id?: string; checkpoint_id?: string },
+	) => void;
 	searchThreads: (
 		action: "list_threads" | "list_checkpoints" | "get_checkpoint",
 		metadata: { thread_id?: string; checkpoint_id?: string },
@@ -69,6 +73,7 @@ export default function useThread(): ThreadContextType {
 		checkpoint,
 		setCheckpoint,
 		searchThreads,
+		fetchThreads,
 		useListThreadsEffect,
 		useListCheckpointsEffect,
 	};

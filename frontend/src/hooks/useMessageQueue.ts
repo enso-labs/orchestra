@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-interface QueuedMessage {
+export interface QueuedMessage {
 	id: string;
 	content: string;
 	images: File[];

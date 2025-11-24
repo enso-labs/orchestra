@@ -9,6 +9,7 @@ import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
 import { PromptProvider } from "./context/PromptContext";
 import { NuqsAdapter } from "nuqs/adapters/react";
+import ThreadProvider from "./context/ThreadContext";
 
 // Register service worker
 if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
@@ -33,9 +34,11 @@ createRoot(document.getElementById("root")!).render(
 					<AgentProvider>
 						<ProjectProvider>
 							<PromptProvider>
-								<ChatProvider>
-									<AppRoutes />
-								</ChatProvider>
+								<ThreadProvider>
+									<ChatProvider>
+										<AppRoutes />
+									</ChatProvider>
+								</ThreadProvider>
 							</PromptProvider>
 						</ProjectProvider>
 					</AgentProvider>

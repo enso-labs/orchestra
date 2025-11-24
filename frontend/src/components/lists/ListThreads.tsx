@@ -15,16 +15,16 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import useModel from "@/hooks/useModel";
+import { useThreadContext } from "@/context/ThreadContext";
 
 function ListThreads({ threads }: { threads: any[] }) {
 	const { agent } = useAgentContext();
+	const { setThreads, setCheckpoints, useListThreadsEffect } =
+		useThreadContext();
 	const {
 		setMessages,
 		setMetadata,
 		metadata,
-		setThreads,
-		setCheckpoints,
-		useListThreadsEffect,
 	} = useChatContext();
 	const { setModel } = useModel();
 	const [copiedThreadId] = useState<string | null>(null);

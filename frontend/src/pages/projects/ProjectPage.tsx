@@ -20,6 +20,7 @@ import {
 	ResizableHandle,
 } from "@/components/ui/resizable";
 import FileEditorPanel from "@/components/panels/FileEditorPanel";
+import { useThreadContext } from "@/context/ThreadContext";
 
 export default function ProjectPage() {
 	const { projectId } = useParams<{ projectId: string }>();
@@ -27,13 +28,12 @@ export default function ProjectPage() {
 	const { loading, appVersion } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
 	const { selectProject } = useProjectContext();
+	const { useListThreadsEffect, useListCheckpointsEffect } = useThreadContext();
 	const {
 		messages,
 		metadata,
 		setMetadata,
 		useEffectUpdateAssistantId,
-		useListThreadsEffect,
-		useListCheckpointsEffect,
 		useModelsEffect,
 		viewMode,
 		filesMap,

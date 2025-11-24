@@ -1,6 +1,7 @@
 import { SSE, SSEOptions } from "sse.js";
 import { Agent } from "../services/agentService";
 import { VITE_API_URL } from "../config";
+import { getAuthToken } from "./auth";
 
 type MessageContent = string | Array<{ type: string; [key: string]: any }>;
 type Messages = { role: string; content: MessageContent; [key: string]: any }[];
@@ -38,7 +39,7 @@ export class SourceStream {
 
 	public createSource(payload: StreamThreadPayload) {
 		try {
-			const newConfig: SSEOptions = {
+			const options: SSEOptions = {
 				start: false,
 				method: "POST",
 				payload: JSON.stringify(payload),
@@ -47,7 +48,14 @@ export class SourceStream {
 					Accept: "text/event-stream",
 				},
 			};
-			this.source = new SSE(`${VITE_API_URL}/llm/stream`, newConfig);
+			const token = getAuthToken();
+			if (token) {
+				options.headers = {
+					...options.headers,
+					Authorization: `Bearer ${token}`,
+				};
+			}
+			this.source = new SSE(`${VITE_API_URL}/llm/stream`, options);
 			return this.source;
 		} catch (error: unknown) {
 			console.error("Error streaming thread:", error);

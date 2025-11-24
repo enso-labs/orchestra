@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ChevronRight,
 	Bot,
@@ -64,6 +64,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
+import { useThreadContext } from "@/context/ThreadContext";
+import { StreamStatusType } from "@/hooks/useChat";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -146,12 +148,8 @@ interface ThreadItemProps {
 }
 
 function ThreadItem({ thread, projects }: ThreadItemProps) {
-	const {
-		metadata,
-		threads,
-		setThreads,
-		clearMessages,
-	} = useChatContext();
+	const { threads, setThreads } = useThreadContext();
+	const { metadata, clearMessages } = useChatContext();
 	const { agent } = useAgentContext();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const navigate = useNavigate();
@@ -610,7 +608,8 @@ function CollapsibleGroup({
 // const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { threads, useListThreadsEffect } = useChatContext();
+	// const { streamStatus, setStreamStatus } = useChatContext();
+	const { threads, useListThreadsEffect } = useThreadContext();
 	const { agents } = useAgentContext();
 	const { projects, useEffectGetProjects } = useProjectContext();
 
@@ -624,6 +623,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	// Fetch projects on mount
 	useEffectGetProjects();
 	useListThreadsEffect();
+
+	// useEffect(() => {
+	// 	if (streamStatus === StreamStatusType.STOPPED) {
+	// 		fetchThreads("list_threads", {});
+	// 		setStreamStatus(StreamStatusType.IDLE);
+	// 	}
+	// }, [streamStatus]);
 
 	const assistantsList = agents.map((agent: Agent) => {
 		return {

@@ -19,6 +19,7 @@ import { searchThreads } from "@/lib/services/threadService";
 import { formatMessages } from "@/lib/utils/format";
 import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import useModel from "@/hooks/useModel";
+import { useThreadContext } from "@/context/ThreadContext";
 
 export default function ThreadPage() {
 	const { threadId, projectId } = useParams<{
@@ -29,6 +30,7 @@ export default function ThreadPage() {
 	const { loading } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
 	const { selectProject, projects } = useProjectContext();
+	const { useListThreadsEffect, useListCheckpointsEffect, setCheckpoints } = useThreadContext();
 	const { setModel } = useModel();
 	const {
 		messages,
@@ -36,10 +38,7 @@ export default function ThreadPage() {
 		metadata,
 		setMetadata,
 		setFilesMap,
-		setCheckpoints,
 		useEffectUpdateAssistantId,
-		useListThreadsEffect,
-		useListCheckpointsEffect,
 		useModelsEffect,
 		viewMode,
 		filesMap,

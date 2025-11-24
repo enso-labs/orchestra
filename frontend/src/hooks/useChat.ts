@@ -3,19 +3,17 @@ import { useAppContext } from "@/context/AppContext";
 import { formatContent, formatMultimodalPayload } from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
-import { useMessageQueue } from "./useMessageQueue";
+import { useMessageQueue, QueuedMessage } from "./useMessageQueue";
 import { SourceStream } from "@/lib/utils/stream";
-import useThread from "./useThread";
-
-type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
-
-export interface QueuedMessage {
-	id: string;
-	content: string;
-	images: File[];
-}
 
 let in_mem_messages: any[] = [];
+
+export enum StreamStatusType {
+	IDLE = "idle",
+	STREAMING = "streaming",
+	STOPPED = "stopped",
+}
+export type LayoutMode = "chat" | "editor";
 
 export type ChatContextType = {
 	responseRef: React.RefObject<string>;
@@ -27,6 +25,8 @@ export type ChatContextType = {
 		images?: File[],
 		clearImages?: () => void,
 	) => void;
+	streamStatus: StreamStatusType;
+	setStreamStatus: (status: StreamStatusType) => void;
 	clearContent: () => void;
 	messages: any[];
 	setMessages: (messages: any[]) => void;
@@ -59,8 +59,8 @@ export type ChatContextType = {
 	setFilesMap: (map: Map<string, any>) => void;
 	todos: any[];
 	setTodos: (todos: any[]) => void;
-	viewMode: "chat" | "editor";
-	setViewMode: (mode: "chat" | "editor") => void;
+	viewMode: LayoutMode;
+	setViewMode: (mode: LayoutMode) => void;
 	// Queue
 	messageQueue: QueuedMessage[];
 	addToQueue: (content: string, images: File[]) => void;
@@ -75,10 +75,10 @@ export default function useChat(): ChatContextType {
 	const toolNameRef = useRef("");
 	const threadIdRef = useRef<string>("");
 	const toolCallChunkRef = useRef("");
+	const [streamStatus, setStreamStatus] = useState<StreamStatusType>(StreamStatusType.IDLE);
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
 	const [state, setState] = useState<any[]>([]);
-	const { useListThreadsEffect } = useThread();
 	const {
 		messageQueue,
 		addToQueue,
@@ -119,7 +119,7 @@ export default function useChat(): ChatContextType {
 
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
 	const [todos, setTodos] = useState<any[]>([]);
-	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
+	const [viewMode, setViewMode] = useState<LayoutMode>("chat");
 
 	const handleSSE = async (
 		query: string,
@@ -159,12 +159,12 @@ export default function useChat(): ChatContextType {
 		});
 		sourceStream.source.stream();
 		// Message handling
-		sourceStream.onMessage(function (e: any) {
+		sourceStream.onMessage(async (e: any) => {
 			const payload = JSON.parse(e.data);
-			handleMessages(payload, in_mem_messages, source);
+			await handleMessages(payload, in_mem_messages, source);
 		});
 		// Error handling
-		sourceStream.onError(function (e: any) {
+		sourceStream.onError(async (e: any) => {
 			console.error("Error on stream:", e);
 			const error = JSON.parse(e.data);
 			alert(error.detail || error.error);
@@ -255,8 +255,9 @@ export default function useChat(): ChatContextType {
 		setViewMode("chat");
 	};
 
-	const handleMessages = (payload: any, history: any[], source: any) => {
+	const handleMessages = async (payload: any, history: any[], source: any) => {
 		// console.log(payload);
+		setStreamStatus(StreamStatusType.STREAMING);
 		const streamMode = payload[0];
 
 		if (streamMode === "error") {
@@ -304,6 +305,7 @@ export default function useChat(): ChatContextType {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
 			threadIdRef.current = responseMetadata.thread_id;
+			setMetadata((prev: any ) => ({...prev, thread_id: responseMetadata.thread_id}));
 
 			const expectedContent = formatContent(response.content);
 			const existingIndex = history.findIndex(
@@ -352,12 +354,13 @@ export default function useChat(): ChatContextType {
 				controllerRef.current = null;
 				setController(null);
 				source.close();
+				
 				const nextMessage = nextQueueMessage();
 				if (nextMessage) {
 					hanleLLMStream(nextMessage.content, nextMessage.images);
 					return;
 				}
-				useListThreadsEffect();
+				setStreamStatus(StreamStatusType.STOPPED);
 				threadIdRef.current = "";
 			}
 		}
@@ -394,6 +397,8 @@ export default function useChat(): ChatContextType {
 		setQuery,
 		messages,
 		setMessages,
+		streamStatus,
+		setStreamStatus,
 		metadata,
 		setMetadata,
 		controller,

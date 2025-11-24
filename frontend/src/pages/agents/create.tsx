@@ -14,10 +14,12 @@ import { Button } from "@/components/ui/button";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
 import { useQueryState } from "nuqs";
+import { useThreadContext } from "@/context/ThreadContext";
 
 function AgentCreatePage() {
+	const { threads, useListThreadsEffect } = useThreadContext();
 	const { agent, setAgent, useEffectGetAgents } = useAgentContext();
-	const { threads, useListThreadsEffect, messages } = useChatContext();
+	const { messages } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
 	const navigate = useNavigate();
