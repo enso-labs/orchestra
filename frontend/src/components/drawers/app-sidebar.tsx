@@ -46,10 +46,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
-import {
-	formatContent,
-	truncateFrom,
-} from "@/lib/utils/format";
+import { formatContent, truncateFrom } from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
 import { useProjectContext } from "@/context/ProjectContext";
 import { Agent } from "@/lib/services/agentService";
@@ -57,15 +54,11 @@ import { Project } from "@/lib/entities/project";
 import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
 import { AddSourceModal } from "@/components/modals/AddSourceModal";
 import { formatDistanceToNow } from "date-fns";
-import {
-	deleteThread,
-	updateThreadProject,
-} from "@/lib/services";
+import { deleteThread, updateThreadProject } from "@/lib/services";
 import { Link, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
 import { useThreadContext } from "@/context/ThreadContext";
-import { StreamStatusType } from "@/hooks/useChat";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -312,9 +305,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 											key={project.id}
 											onClick={() => handleAddToProject(project.id!)}
 											className={`cursor-pointer ${
-												currentProjectId === project.id
-													? "bg-accent"
-													: ""
+												currentProjectId === project.id ? "bg-accent" : ""
 											}`}
 										>
 											{project.name}
@@ -680,11 +671,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						onAddSource={handleAddSource}
 					/>
 					<CollapsibleGroup
-					title="Threads"
-					items={unassociatedThreads}
-					type="threads"
-					projects={projects}
-				/>
+						title="Threads"
+						items={unassociatedThreads}
+						type="threads"
+						projects={projects}
+					/>
 				</SidebarContent>
 				<SidebarFooter>
 					<SettingsPopover />

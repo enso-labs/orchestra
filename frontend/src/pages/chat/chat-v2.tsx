@@ -5,15 +5,10 @@ import { useChatContext } from "@/context/ChatContext";
 import { Agent } from "@/lib/services/agentService";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useThreadContext } from "@/context/ThreadContext";
-import { StreamStatusType } from "@/hooks/useChat";
 
 export function ChatV2Page() {
 	const { useEffectGetAgents } = useAgentContext();
-	const { useListThreadsEffect } = useThreadContext();	
 	const {
-		setStreamStatus,
-		streamStatus,
 		useEffectUpdateAssistantId,
 		useModelsEffect,
 	} = useChatContext();
@@ -21,10 +16,6 @@ export function ChatV2Page() {
 	useModelsEffect();
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
-	if (streamStatus === StreamStatusType.STOPPED) {
-		useListThreadsEffect();
-		setStreamStatus(StreamStatusType.IDLE);
-	}
 
 	const defaultAgent: Agent = {
 		name: "Ensō Orchestra",
