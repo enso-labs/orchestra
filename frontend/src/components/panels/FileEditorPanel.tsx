@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { FileText, Download, Check, Copy, Eye } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import MarkdownCard from "@/components/cards/MarkdownCard";
@@ -167,6 +167,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 							</button>
 						))}
 					</div>
+					<ScrollBar orientation="horizontal" />
 				</ScrollArea>
 
 				{/* Actions */}
