@@ -1,17 +1,15 @@
-import useAppHook from "@/hooks/useAppHook";
 import { Link, useLocation } from "react-router-dom";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import SelectModel from "@/components/lists/SelectModel";
+import { useAppContext } from "@/context/AppContext";
 
 export default function NoAuthLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
-	const { appVersion, useFetchAppVersionEffect } = useAppHook();
+	const { appVersion } = useAppContext();
 	const location = useLocation();
-
-	useFetchAppVersionEffect();
 
 	return (
 		<div className="h-full flex flex-col bg-background">
