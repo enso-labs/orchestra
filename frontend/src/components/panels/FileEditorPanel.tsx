@@ -31,8 +31,12 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		if (fileNames.length > 0) {
 			// If current selected file doesn't exist in new files, select first file
 			if (!fileNames.includes(selectedFile)) {
-				setSelectedFile(fileNames[0]);
-				setShowPreview(false);
+				const firstFile = fileNames[0];
+				setSelectedFile(firstFile);
+				// Only disable preview if the new first file doesn't support preview
+				if (!isMarkdownFile(firstFile) && !isHtmlFile(firstFile)) {
+					setShowPreview(false);
+				}
 			}
 		}
 	}, [fileNames, selectedFile]);
@@ -40,8 +44,10 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	// Handle file selection change
 	const handleFileSelect = (filename: string) => {
 		setSelectedFile(filename);
-		// Reset preview when switching to a file of different type
-		setShowPreview(false);
+		// Disable preview if switching to a file that doesn't support preview
+		if (!isMarkdownFile(filename) && !isHtmlFile(filename)) {
+			setShowPreview(false);
+		}
 	};
 
 	const getLanguage = (filename: string): string => {
