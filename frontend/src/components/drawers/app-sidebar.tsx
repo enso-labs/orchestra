@@ -168,6 +168,8 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 			typeof lastMessage.content === "string"
 				? lastMessage.content
 				: formatContent(lastMessage.content);
+		// Handle case where content is undefined or empty
+		if (!content) return "Empty thread";
 		// Try to extract first line or sentence as title
 		const firstLine = content.split("\n")[0];
 		return truncateFrom(firstLine, "end", "...", 50);
