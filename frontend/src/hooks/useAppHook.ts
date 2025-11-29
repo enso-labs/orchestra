@@ -43,16 +43,6 @@ export default function useAppHook() {
 		setAppVersion(response.data.version);
 	};
 
-	const useFetchAppVersionEffect = () => {
-		useEffect(() => {
-			fetchAppVersion();
-
-			return () => {
-				// Cleanup logic if needed
-			};
-		}, []);
-	};
-
 	const handleMenuOpen = () => {
 		setIsMenuOpen(!isMenuOpen);
 	};
@@ -105,9 +95,9 @@ export default function useAppHook() {
 
 	return {
 		appVersion,
+		fetchAppVersion,
 		isMobile,
 		isLikelyMobile,
-		useFetchAppVersionEffect,
 		loading,
 		setLoading,
 		loadingMessage,

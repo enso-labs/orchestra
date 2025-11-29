@@ -1,4 +1,4 @@
-import { useContext, createContext } from "react";
+import { useContext, createContext, useEffect } from "react";
 import useAppHook from "@/hooks/useAppHook";
 
 export const AppContext = createContext({});
@@ -9,6 +9,10 @@ export default function AppProvider({
 	children: React.ReactNode;
 }) {
 	const appHooks = useAppHook();
+
+	useEffect(() => {
+		appHooks.fetchAppVersion();
+	}, []);
 
 	return (
 		<AppContext.Provider
