@@ -1,7 +1,7 @@
 import ChatLayout from "../layouts/ChatLayout";
 import { useChatContext } from "../context/ChatContext";
 import { ThreadHistoryDrawer } from "@/components/drawers/ThreadHistoryDrawer";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { ChatNav } from "@/components/nav/ChatNav";
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
@@ -33,19 +33,13 @@ export default function Chat() {
 		filesMap,
 	} = useChatContext();
 	const [, setSearchParams] = useSearchParams();
-	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const isAssistantOpen = false;
 
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
 
-	const scrollToBottom = () => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	};
-
-	useEffect(() => {
-		scrollToBottom();
-	}, [messages]); // Scroll when messages change
+	// Scroll behavior is now handled entirely by ChatMessages component
+	// to prevent conflicting scroll mechanisms and twitchy behavior
 
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);

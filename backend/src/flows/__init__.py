@@ -125,7 +125,7 @@ def init_config(
     params: LLMRequest,
     user: ProtectedUser | None = None,
     max_concurrency: int = 4,
-    recursion_limit: int = 100,
+    recursion_limit: int = 500,
 ) -> RunnableConfig:
     return RunnableConfig(
         configurable={

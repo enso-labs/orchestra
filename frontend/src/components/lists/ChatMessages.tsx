@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, memo } from "react";
+import { useEffect, useRef, useCallback, memo, useState } from "react";
 import { Loader2, Edit, Check, X } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -236,7 +236,9 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 	const { loading, loadingMessage } = useAppContext();
 	const { streamingRate, handleSubmit, filesMap, viewMode } = useChatContext();
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const [isAtBottom, setIsAtBottom] = useState(true);
+	const isAtBottomRef = useRef(true);
+	const rafIdRef = useRef<number | null>(null);
+	const lastScrollHeightRef = useRef(0);
 
 	// Memoize virtualizer options to prevent recreation
 	const getScrollElement = useCallback(() => scrollRef.current, []);
@@ -250,34 +252,81 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 		overscan: 5,
 	});
 
-	// Check if user is at bottom of scroll
+	// Check if user is at bottom of scroll (uses ref to avoid state updates during scroll)
 	const checkIsAtBottom = useCallback(() => {
 		const el = scrollRef.current;
 		if (!el) return true;
-		return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+		// Use a threshold of 100px to account for dynamic content loading
+		return el.scrollHeight - el.scrollTop - el.clientHeight < 100;
 	}, []);
 
-	// Handle scroll events to track position
+	// Scroll to bottom instantly (no smooth behavior to avoid jitter)
+	const scrollToBottom = useCallback(() => {
+		const el = scrollRef.current;
+		if (!el) return;
+		el.scrollTo({
+			top: el.scrollHeight,
+			behavior: "instant" as ScrollBehavior,
+		});
+	}, []);
+
+	// Handle scroll events - update ref directly, debounce state if needed
 	const handleScroll = useCallback(() => {
-		setIsAtBottom(checkIsAtBottom());
+		isAtBottomRef.current = checkIsAtBottom();
 	}, [checkIsAtBottom]);
 
 	// Scroll to bottom when new messages arrive (if user was at bottom)
 	useEffect(() => {
-		if (isAtBottom && messages.length > 0) {
-			virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+		if (isAtBottomRef.current && messages.length > 0) {
+			// Use RAF for smoother initial scroll
+			requestAnimationFrame(() => {
+				scrollToBottom();
+			});
 		}
-	}, [messages.length, isAtBottom, virtualizer]);
+	}, [messages.length, scrollToBottom]);
 
-	// Auto-scroll during streaming (when loading and at bottom)
+	// RAF-based auto-scroll during streaming (replaces interval-based approach)
 	useEffect(() => {
-		if (loading && isAtBottom && messages.length > 0) {
-			const interval = setInterval(() => {
-				virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
-			}, 100);
-			return () => clearInterval(interval);
+		if (!loading || messages.length === 0) {
+			// Clean up any pending RAF when not loading
+			if (rafIdRef.current) {
+				cancelAnimationFrame(rafIdRef.current);
+				rafIdRef.current = null;
+			}
+			return;
 		}
-	}, [loading, isAtBottom, messages.length, virtualizer]);
+
+		const scrollLoop = () => {
+			const el = scrollRef.current;
+			if (!el || !loading) return;
+
+			// Only scroll if user is at bottom and content height changed
+			const currentScrollHeight = el.scrollHeight;
+			if (
+				isAtBottomRef.current &&
+				currentScrollHeight !== lastScrollHeightRef.current
+			) {
+				lastScrollHeightRef.current = currentScrollHeight;
+				el.scrollTo({
+					top: currentScrollHeight,
+					behavior: "instant" as ScrollBehavior,
+				});
+			}
+
+			// Continue the loop while loading
+			rafIdRef.current = requestAnimationFrame(scrollLoop);
+		};
+
+		// Start the RAF loop
+		rafIdRef.current = requestAnimationFrame(scrollLoop);
+
+		return () => {
+			if (rafIdRef.current) {
+				cancelAnimationFrame(rafIdRef.current);
+				rafIdRef.current = null;
+			}
+		};
+	}, [loading, messages.length]);
 
 	if (messages.length === 0) {
 		return (
