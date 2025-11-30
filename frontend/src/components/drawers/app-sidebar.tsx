@@ -12,6 +12,7 @@ import {
 	Plus,
 	FileText,
 	Loader2,
+	Search,
 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
@@ -58,6 +59,7 @@ import { Agent } from "@/lib/services/agentService";
 import { Project } from "@/lib/entities/project";
 import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
 import { AddSourceModal } from "@/components/modals/AddSourceModal";
+import { ThreadSearchModal } from "@/components/modals/ThreadSearchModal";
 import { formatDistanceToNow } from "date-fns";
 import {
 	deleteThread,
@@ -550,6 +552,7 @@ interface CollapsibleGroupProps {
 	loadMore?: (filter?: any) => Promise<void>;
 	hasMore?: boolean;
 	isLoadingMore?: boolean;
+	onSearchClick?: () => void;
 }
 
 function CollapsibleGroup({
@@ -560,6 +563,7 @@ function CollapsibleGroup({
 	loadMore,
 	hasMore = false,
 	isLoadingMore = false,
+	onSearchClick,
 }: CollapsibleGroupProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const titleIcon =
@@ -609,11 +613,25 @@ function CollapsibleGroup({
 						hover:text-sidebar-accent-foreground text-sm
 					`}
 				>
-					<CollapsibleTrigger>
-						{titleIcon}
-						{title}
-						<ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
-					</CollapsibleTrigger>
+					<div className="flex items-center w-full">
+						<CollapsibleTrigger className="flex items-center flex-1">
+							{titleIcon}
+							{title}
+							<ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+						</CollapsibleTrigger>
+						{type === "threads" && onSearchClick && (
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									onSearchClick();
+								}}
+								className="p-1 hover:bg-sidebar-accent rounded ml-1"
+								title="Search threads"
+							>
+								<Search className="h-4 w-4" />
+							</button>
+						)}
+					</div>
 				</SidebarGroupLabel>
 				<CollapsibleContent>
 					<SidebarGroupContent className="px-1 pt-2">
@@ -693,6 +711,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
 	const [selectedProjectForSource, setSelectedProjectForSource] =
 		useState<Project | null>(null);
+	const [isThreadSearchOpen, setIsThreadSearchOpen] = useState(false);
 
 	// Fetch projects on mount
 	useEffectGetProjects();
@@ -753,6 +772,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					loadMore={loadMoreThreads}
 					hasMore={hasMoreThreads}
 					isLoadingMore={isLoadingMoreThreads}
+					onSearchClick={() => setIsThreadSearchOpen(true)}
 				/>
 				</SidebarContent>
 				<SidebarFooter>
@@ -773,6 +793,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					setSelectedProjectForSource(null);
 				}}
 				project={selectedProjectForSource}
+			/>
+
+			<ThreadSearchModal
+				isOpen={isThreadSearchOpen}
+				onClose={() => setIsThreadSearchOpen(false)}
 			/>
 		</>
 	);

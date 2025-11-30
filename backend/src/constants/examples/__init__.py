@@ -411,6 +411,26 @@ class Examples:
             },
         ),
     }
+    THREAD_SEMANTIC_SEARCH_EXAMPLES = {
+        "semantic_search": Example(
+            summary="semantic_search",
+            description="Search threads using natural language",
+            value={
+                "query": "threads about database optimization",
+                "limit": 10,
+                "assistant_id": None,
+            },
+        ),
+        "semantic_search_with_assistant": Example(
+            summary="semantic_search_with_assistant",
+            description="Search threads for a specific assistant",
+            value={
+                "query": "conversations about authentication",
+                "limit": 5,
+                "assistant_id": "assistant-uuid-here",
+            },
+        ),
+    }
 
     LLM_INVOKE_EXAMPLES = {
         "stateless_invoke": Example(

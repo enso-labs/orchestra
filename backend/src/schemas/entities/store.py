@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from datetime import datetime
 from langchain_core.documents import Document
 from pydantic import field_serializer
@@ -31,3 +31,9 @@ class Project(BaseEntity):
     name: str
     description: Optional[str] = None
     sources: Optional[list[Source]] = None
+
+
+class ThreadSnapshot(BaseModel):
+    thread_id: str
+    page_content: str
+    metadata: dict[str, Any]

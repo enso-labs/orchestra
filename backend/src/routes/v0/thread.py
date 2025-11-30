@@ -3,7 +3,7 @@ from fastapi import APIRouter, Body, HTTPException, Depends, status
 from fastapi.responses import Response
 from langgraph.store.base import BaseStore
 from src.contexts.service import ServiceContext
-from src.schemas.entities import ThreadSearch
+from src.schemas.entities import ThreadSearch, ThreadSemanticSearchRequest
 from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
@@ -117,4 +117,64 @@ async def update_thread(
         logger.exception(f"Error updating thread: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.post("/threads/search/semantic", name="Semantic Search Over Threads")
+async def semantic_search_threads(
+    request: ThreadSemanticSearchRequest = Body(
+        openapi_examples=Examples.THREAD_SEMANTIC_SEARCH_EXAMPLES
+    ),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    try:
+        # Validate query is not empty
+        if not request.query or request.query.strip() == "":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="query field is required and must not be empty"
+            )
+
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+
+            # Perform semantic search
+            search_results = await service_context.thread_service.thread_snapshot_repo.search(
+                query=request.query,
+                limit=request.limit,
+                assistant_id=request.assistant_id
+            )
+
+            # Enrich results with thread titles
+            enriched_results = []
+            for result in search_results:
+                thread_id = result.get("thread_id")
+                if thread_id:
+                    # Fetch thread data to get title
+                    thread_data = await service_context.thread_service.get(thread_id)
+                    title = "Untitled Thread"
+                    if thread_data and thread_data.value:
+                        # Try to get title from thread data, fallback to first message
+                        title = thread_data.value.get("title", title)
+
+                    enriched_results.append({
+                        "thread_id": thread_id,
+                        "title": title,
+                        "excerpt": result.get("excerpt", ""),
+                        "score": result.get("score", 0.0),
+                        "updated_at": result.get("updated_at"),
+                    })
+
+            return {"results": enriched_results}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error performing semantic search: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )

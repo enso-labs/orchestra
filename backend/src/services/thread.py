@@ -4,6 +4,7 @@ from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 from src.utils.logger import logger
 from src.constants import TEST_USER_ID
+from src.repos.thread_snapshot_repo import ThreadSnapshotRepo
 
 IN_MEMORY_STORE = InMemoryStore()
 
@@ -14,11 +15,15 @@ class ThreadService:
         user_id: str = None,
         assistant_id: str = None,
         store: BaseStore = IN_MEMORY_STORE,
+        thread_snapshot_repo: ThreadSnapshotRepo = None,
     ):
         self.user_id = user_id or TEST_USER_ID
         self.assistant_id = assistant_id
         self.store: BaseStore = store
         self.thread_id = None
+        self.thread_snapshot_repo = thread_snapshot_repo or ThreadSnapshotRepo(
+            self.user_id, store
+        )
 
     def _get_namespace(self):
         return (self.user_id, "threads")
@@ -29,6 +34,15 @@ class ThreadService:
         await self.store.aput(
             namespace=self._get_namespace(), key=thread_id, value=data
         )
+
+        # Update thread snapshot for search (non-blocking)
+        try:
+            messages = data.get("messages", [])
+            if messages:
+                await self.thread_snapshot_repo.upsert_snapshot(thread_id, messages)
+        except Exception as e:
+            logger.error(f"Failed to update thread snapshot for {thread_id}: {e}")
+
         return True
 
     async def get(self, thread_id: str) -> Any:
