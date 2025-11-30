@@ -87,7 +87,9 @@ class Assistant(BaseModel):
     name: str
     description: str = Field(default="Helpful AI Assistant.")
     model: Optional[str] = None
-    prompt: str = Field(default="You are a helpful assistant.")
+    prompt: str = Field(default="You are a helpful assistant.")  # Legacy field, treated as instructions
+    instructions: Optional[str] = Field(default=None, description="Custom instructions injected into the default system prompt")
+    system_prompt: Optional[str] = Field(default=None, description="Complete system prompt override (replaces default template)")
     tools: list[str]
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
@@ -124,13 +126,17 @@ class Assistant(BaseModel):
             subagents=self.subagents,
             metadata=metadata or self.metadata,
             input=input,
+            instructions=self.instructions,
+            system_prompt=self.system_prompt,
         )
 
 
 class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default="openai:gpt-5-nano")
-    system: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
+    system: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)  # Internal use only
+    system_prompt: Optional[str] = Field(default=None, description="Complete system prompt override (replaces default template)")
+    instructions: Optional[str] = Field(default=None, description="Custom instructions injected into the default system prompt")
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)

@@ -151,22 +151,48 @@ async def construct_agent(
     config: RunnableConfig = None,
     checkpointer: BaseCheckpointSaver = None,
     store: BaseStore = None,
+    instructions: Optional[str] = None,
 ):
+    """
+    Construct an agent with the given configuration.
+
+    Precedence for system prompt:
+    1. system_prompt parameter (if provided, it's a complete override)
+    2. instructions parameter (if provided, injected into DEFAULT_SYSTEM_PROMPT)
+    3. DEFAULT_SYSTEM_PROMPT (fallback)
+
+    Args:
+        system_prompt: Complete system prompt (overrides default template)
+        tools: List of tools available to the agent
+        model: LLM model to use
+        subagents: List of subagents for delegation
+        config: Runtime configuration
+        checkpointer: Checkpoint saver for state persistence
+        store: LangGraph store for memory
+        instructions: Custom instructions to inject into default template
+    """
     try:
+        # Apply precedence logic for system prompt
+        # Note: system_prompt parameter already contains the correct value based on precedence
+        # (determined in routes layer), so we just use it as-is.
+        # instructions is only provided when we want to extend the default template
+
         if config.get("metadata", {}).get("user_id"):
             tools, system_prompt = await init_memories(system_prompt, tools)
 
         if subagents:
             subagents = await init_subagents(subagents)
 
+        # Build final prompt with instructions (if provided) and metadata
+        final_prompt = init_system_prompt(system_prompt, config or {}, instructions)
+
         # Asynchronous LLM call
         agent = Orchestra(
             graph_id="deepagent",
-            # config=config,
             model=model,
             tools=tools,
             subagents=subagents,
-            prompt=init_system_prompt(system_prompt, config or {}),
+            prompt=final_prompt,
             checkpointer=checkpointer,
             store=store,
         )

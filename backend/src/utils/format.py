@@ -75,8 +75,30 @@ def raw_html(content: str) -> str:
 </html>"""
 
 
-def init_system_prompt(system_prompt: str, config: RunnableConfig) -> str:
+def init_system_prompt(
+    system_prompt: str,
+    config: RunnableConfig,
+    instructions: Optional[str] = None
+) -> str:
+    """
+    Initialize system prompt with optional custom instructions and metadata.
+
+    Args:
+        system_prompt: Base system prompt (default template or custom override)
+        config: RunnableConfig with metadata
+        instructions: Optional custom instructions to inject before metadata
+
+    Returns:
+        Complete system prompt with instructions (if provided) and metadata
+    """
     lines = [system_prompt]
+
+    # Inject custom instructions before metadata separator if provided
+    if instructions:
+        lines.append("")  # Blank line for spacing
+        lines.append("## Custom Instructions")
+        lines.append(instructions)
+
     lines.append("---")
     metadata = config.get("metadata", {})
     current_utc = metadata.get("current_utc")

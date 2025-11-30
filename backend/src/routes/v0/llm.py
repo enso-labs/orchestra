@@ -43,6 +43,49 @@ llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 TIME_LIMIT = "200/day"
 
 
+def validate_system_prompt_fields(params: LLMRequest, assistant: Assistant = None) -> None:
+    """
+    Validate that system_prompt and instructions are not both provided.
+
+    Precedence logic:
+    1. LLMRequest.system_prompt (complete override)
+    2. Assistant.system_prompt (complete override)
+    3. Assistant.instructions (or legacy prompt) (injected into default)
+    4. Default system prompt
+
+    Raises HTTPException if both system_prompt and instructions are provided.
+    """
+    has_request_system_prompt = params.system_prompt is not None
+    has_request_instructions = params.instructions is not None
+    has_assistant_system_prompt = assistant and assistant.system_prompt is not None
+    has_assistant_instructions = assistant and (assistant.instructions is not None or assistant.prompt)
+
+    # Check for conflict at request level
+    if has_request_system_prompt and has_request_instructions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot provide both 'system_prompt' and 'instructions'. "
+                   "Use 'system_prompt' for complete override or 'instructions' to extend the default template."
+        )
+
+    # Check for conflict when mixing request and assistant fields
+    if has_request_system_prompt and has_assistant_instructions:
+        # This is OK - request system_prompt overrides everything
+        pass
+
+    if has_request_instructions and has_assistant_system_prompt:
+        # This is OK - request instructions will be ignored in favor of assistant system_prompt
+        pass
+
+    # Check for conflict at assistant level
+    if assistant and has_assistant_system_prompt and has_assistant_instructions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assistant cannot have both 'system_prompt' and 'instructions'. "
+                   "Use 'system_prompt' for complete override or 'instructions' to extend the default template."
+        )
+
+
 ################################################################################
 ### Invoke Graph
 ################################################################################
@@ -61,17 +104,24 @@ async def llm_invoke(
 ) -> dict[str, Any] | Any:
     params.input.to_langchain_messages()
     params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
+    assistant = None
     if user:
         service_context = ServiceContext(user_id=user.id, store=store)
         if params.metadata.assistant_id:
             assistant: Assistant = await service_context.assistant_service.get(
                 params.metadata.assistant_id
             )
+            # Validate before converting to avoid conflicts
+            validate_system_prompt_fields(params, assistant)
             params = assistant.to_llm_request(
                 input=params.input,
                 model=params.model,
                 metadata=params.metadata,
             )
+    else:
+        # Validate request-level fields even without assistant
+        validate_system_prompt_fields(params, assistant)
+
     async with get_checkpoint_db() as checkpointer:
         agent = await construct_agent(params, checkpointer, service_context.store)
         response = await agent.invoke(params.input)
@@ -126,24 +176,47 @@ async def llm_stream(
                     config["metadata"] = {**tool_metadata, **config["metadata"]}
                     TOOLS.append(structured_tool)
 
+        assistant = None
         if config["configurable"].get("assistant_id"):
             assistant: Assistant = await service_context.assistant_service.get(
                 config["configurable"].get("assistant_id"),
             )
+            # Validate before converting to avoid conflicts
+            validate_system_prompt_fields(params, assistant)
             params = assistant.to_llm_request(
                 input=params.input,
                 model=params.model,
                 metadata=config["metadata"],
             )
+        else:
+            # Validate request-level fields even without assistant
+            validate_system_prompt_fields(params, assistant)
+
+        # Determine system_prompt and instructions based on precedence
+        # Precedence: LLMRequest.system_prompt > Assistant.system_prompt > Assistant.instructions > default
+        final_system_prompt = params.system  # Default (DEFAULT_SYSTEM_PROMPT)
+        final_instructions = None
+
+        if params.system_prompt:
+            # Request-level system_prompt overrides everything
+            final_system_prompt = params.system_prompt
+            final_instructions = None
+        elif params.instructions:
+            # Request-level instructions extend the default
+            final_system_prompt = params.system
+            final_instructions = params.instructions
+        # else: use default system prompt (already set)
+
         return StreamingResponse(
             stream_generator(
                 params.input,
                 params.model,
-                params.system,
+                final_system_prompt,
                 TOOLS,
                 params.subagents,
                 service_context.config,
                 service_context,
+                final_instructions,
             ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},

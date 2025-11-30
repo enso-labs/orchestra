@@ -4,7 +4,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 import ujson
-from typing import List
+from typing import List, Optional
 from langgraph.types import StreamMode
 from deepagents import SubAgent
 
@@ -172,7 +172,21 @@ async def stream_generator(
     subagents: list[SubAgent],
     config: RunnableConfig,
     service_context: ServiceContext,
+    instructions: Optional[str] = None,
 ):
+    """
+    Stream agent responses with SSE.
+
+    Args:
+        input: LLM input with messages
+        model: LLM model to use
+        system_prompt: Base system prompt (default or custom override)
+        tools: List of available tools
+        subagents: List of subagents
+        config: Runtime configuration
+        service_context: Service context with user_id and store
+        instructions: Optional custom instructions to inject into system prompt
+    """
     files_map = {}
     todos_list = []
     async with get_checkpoint_db() as checkpointer:
@@ -185,6 +199,7 @@ async def stream_generator(
                 config=service_context.config,
                 checkpointer=checkpointer,
                 store=service_context.store,
+                instructions=instructions,
             )
             input.messages[-1].model = agent.model
             async for chunk in agent.astream(
