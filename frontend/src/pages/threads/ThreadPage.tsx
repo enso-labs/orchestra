@@ -63,21 +63,11 @@ export default function ThreadPage() {
 			setError(null);
 
 			try {
-				// Search for the thread to get its data
-				const threads = await searchThreads("list_threads", {});
-				const thread = threads.find(
-					(t: any) => t.value?.thread_id === threadId || t.key === threadId,
-				);
-
-				if (!thread) {
-					setError("Thread not found");
-					return;
-				}
-
-				// Load checkpoints for this thread
+				// Load checkpoints directly for this specific thread
+				// Backend returns checkpoints when thread_id is passed
 				const checkpoints = await searchThreads(
 					"list_checkpoints",
-					thread.value,
+					{ thread_id: threadId },
 				);
 
 				if (!checkpoints || checkpoints.length === 0) {
@@ -85,13 +75,17 @@ export default function ThreadPage() {
 					return;
 				}
 
-				if (thread.value.todos && Object.keys(thread.value.todos).length > 0) {
-					setTodos(thread.value.todos);
+				// Get thread data from the first checkpoint
+				const latestCheckpoint = checkpoints[0];
+				const threadData = latestCheckpoint.metadata || {};
+
+				if (threadData.todos && Object.keys(threadData.todos).length > 0) {
+					setTodos(threadData.todos);
 				}
-				
+
 
 				// Set filesMap
-				if (thread.value.files && Object.keys(thread.value.files).length > 0) {
+				if (threadData.files && Object.keys(threadData.files).length > 0) {
 					const formattedMessages = formatMessages(
 						checkpoints[0].values.messages,
 					);
@@ -102,7 +96,7 @@ export default function ThreadPage() {
 
 					if (latestAiMessage) {
 						const newFilesMap = new Map();
-						newFilesMap.set(latestAiMessage.id, thread.value.files);
+						newFilesMap.set(latestAiMessage.id, threadData.files);
 						setFilesMap(newFilesMap);
 					}
 				} else {
@@ -111,13 +105,14 @@ export default function ThreadPage() {
 
 				// Set model from last message
 				const lastMessage =
-					thread.value.messages[thread.value.messages.length - 1];
+					threadData.messages?.[threadData.messages.length - 1];
 				setModel(lastMessage?.model || DEFAULT_CHAT_MODEL);
 
 				// Set checkpoints, messages, and metadata
 				setCheckpoints(checkpoints);
 				setMessages(formatMessages(checkpoints[0].values.messages));
-				setMetadata(thread.value);
+				// Use checkpoint metadata for thread data, including thread_id
+				setMetadata({ ...threadData, thread_id: threadId });
 			} catch (err) {
 				console.error("Failed to load thread:", err);
 				setError("Failed to load thread");
