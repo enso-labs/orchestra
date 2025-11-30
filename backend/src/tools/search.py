@@ -116,20 +116,20 @@ def web_scrape(urls: List[str]) -> str:
 @tool(parse_docstring=True)
 def think_tool(reflection: str) -> str:
     """
-    Provide a concise (≤10 words) reflection on your research step.
+    Provide a concise (≤20 words) reflection on your research step.
 
     You may use this tool multiple times to iteratively reflect
     after each search or research action. Keep each reflection short—
-    no more than 10 words.
+    no more than 20 words.
 
     Args:
-        reflection: Concise summary (max 10 words) of your thought.
+        reflection: Concise summary (max 20 words) of your thought.
 
     Returns:
         Confirmation message with recorded reflection.
     """
-    if len(reflection.split()) > 10:
-        return "Error: Reflection must be 10 words or fewer"
+    if len(reflection.split()) > 20:
+        raise ToolException("Reflection must be 20 words or fewer")
     return reflection
 
 class MathCalculatorInput(BaseModel):

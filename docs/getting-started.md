@@ -45,7 +45,7 @@ The interface automatically creates a new thread when you send your first messag
 At the top of the chat interface, you'll see a model dropdown. Ensō Orchestra supports multiple AI providers:
 
 - **Anthropic**: Claude models (Haiku, Sonnet, Opus)
-- **OpenAI**: GPT models (GPT-4, GPT-4o, etc.)
+- **OpenAI**: GPT models (GPT-5, GPT-4o, etc.)
 - **Google**: Gemini models
 - **xAI**: Grok models
 - **Groq**: Fast inference models

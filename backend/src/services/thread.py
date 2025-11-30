@@ -44,7 +44,7 @@ class ThreadService:
 
     async def search(
         self,
-        limit: int = 1000,
+        limit: int = 20,
         filter: dict = {},
     ) -> list[dict]:
         try:

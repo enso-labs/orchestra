@@ -137,7 +137,7 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 export const searchThreads = async (
 	action: "list_threads" | "list_checkpoints" | "get_checkpoint",
 	filter: { thread_id?: string; checkpoint_id?: string } = {},
-	limit: number = 100,
+	limit: number = 20,
 	offset: number = 0,
 ) => {
 	let payload;
@@ -201,7 +201,7 @@ export const deleteThread = async (threadId: string, assistantId?: string) => {
 
 export const searchThreadsByProject = async (
 	projectId: string,
-	limit: number = 100,
+	limit: number = 20,
 	offset: number = 0,
 ) => {
 	try {

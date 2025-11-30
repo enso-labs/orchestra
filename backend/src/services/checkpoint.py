@@ -44,11 +44,11 @@ class CheckpointService:
         return checkpoints
 
     @retry_db_operation(tries=3, delay=1, backoff=2, exceptions=(Exception,))
-    async def list_checkpoints(self, thread_id: str) -> list[StateSnapshot]:
+    async def list_checkpoints(self, thread_id: str, limit: int = 20) -> list[StateSnapshot]:
         try:
             config = RunnableConfig(configurable={"thread_id": thread_id})
             checkpoints = []
-            async for checkpoint in self.checkpointer.alist(config):
+            async for checkpoint in self.checkpointer.alist(config, limit=limit):
                 messages = self._collect_messages(checkpoint)
                 snapshot = StateSnapshot(
                     values={"messages": from_message_to_dict(messages)},

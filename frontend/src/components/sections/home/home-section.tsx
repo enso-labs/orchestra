@@ -36,7 +36,7 @@ export function HomeSection() {
 				<a href="https://enso.sh/socials">
 					<img src="https://img.shields.io/badge/Follow-Social-black" />
 				</a>
-				<a href="https://demo.enso.sh/docs/">
+				<a href="https://chat.enso.sh/docs/">
 					<img src="https://img.shields.io/badge/View-Docs-blue" />
 				</a>
 			</div>
