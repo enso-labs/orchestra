@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/530-semantic-search-over-threads (2025-11-30)
   - feat/528-pagination-for-threads (2025-11-30)
   - feat/519-react-window (2025-11-23)
   - feat/507-add-projects-ui (2025-11-20)
