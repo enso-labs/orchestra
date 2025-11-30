@@ -1,3 +1,5 @@
+import { PromptMode } from "@/lib/utils/prompt";
+
 export interface ScheduleCreate {
 	title: string;
 	trigger: {
@@ -6,7 +8,9 @@ export interface ScheduleCreate {
 	};
 	task: {
 		model: string;
-		system: string;
+		system?: string; // legacy
+		instructions?: string;
+		system_prompt?: string;
 		messages: Array<{
 			role: "user" | "assistant" | "system" | "tool";
 			content: string;
@@ -28,7 +32,9 @@ export interface Schedule {
 	};
 	task: {
 		model: string;
-		system: string;
+		system?: string; // legacy
+		instructions?: string;
+		system_prompt?: string;
 		messages: Array<{
 			role: "user" | "assistant" | "system" | "tool";
 			content: string;
@@ -51,6 +57,8 @@ export interface ScheduleFormData {
 	message: string;
 	inheritFromAgent: boolean;
 	customModel?: string;
-	customSystem?: string;
+	customSystemPrompt?: string;
+	customInstructions?: string;
 	customTools?: string[];
+	promptMode?: PromptMode;
 }

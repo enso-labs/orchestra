@@ -2,6 +2,7 @@ export type Prompt = {
 	id?: string;
 	name: string;
 	content: string;
+	type?: "system" | "instructions" | "user";
 	public: boolean;
 	v?: number;
 	slug?: string;
@@ -18,6 +19,7 @@ export type PromptSearch = {
 		id?: string;
 		v?: number;
 		public?: boolean;
+		type?: Prompt["type"];
 	};
 };
 

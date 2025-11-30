@@ -16,6 +16,8 @@ export const INIT_AGENT_STATE: AgentState = {
 		name: "",
 		description: "",
 		prompt: "",
+		instructions: "",
+		system_prompt: "",
 		tools: [],
 		model: "",
 		mcp: {},
@@ -68,7 +70,7 @@ export function useAgent() {
 	}, [piiAnalyzeCheck, piiAnonymizeCheck, model]);
 
 	const setAgentSystemMessage = (system: string) => {
-		setAgent({ ...agent, prompt: system });
+		setAgent({ ...agent, prompt: system, instructions: system });
 	};
 
 	const addAgentToSubagents = (newAgent: Agent) => {
@@ -119,7 +121,11 @@ export function useAgent() {
 		});
 		setAgent({
 			...response.data.assistants[0],
-			system: response.data.assistants[0].prompt,
+			prompt: response.data.assistants[0].prompt,
+			instructions:
+				response.data.assistants[0].instructions ??
+				response.data.assistants[0].prompt,
+			system_prompt: response.data.assistants[0].system_prompt,
 		});
 	};
 

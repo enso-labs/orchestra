@@ -55,6 +55,7 @@ const formSchema = z.object({
 		message: "Content must be at least 10 characters.",
 	}),
 	public: z.boolean(),
+	type: z.enum(["system", "instructions", "user"]).default("instructions"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -80,6 +81,7 @@ export default function PromptEditPage() {
 			name: "",
 			content: "",
 			public: false,
+			type: "instructions",
 		},
 	});
 
@@ -104,6 +106,7 @@ export default function PromptEditPage() {
 						name: latestRevision.name,
 						content: latestRevision.content,
 						public: latestRevision.public,
+						type: latestRevision.type || "instructions",
 					});
 				}
 			} catch (error) {
@@ -130,6 +133,7 @@ export default function PromptEditPage() {
 					name: versionPrompt.name,
 					content: versionPrompt.content,
 					public: versionPrompt.public,
+					type: versionPrompt.type || "instructions",
 				});
 			}
 		} catch (error) {
@@ -148,6 +152,7 @@ export default function PromptEditPage() {
 				content: values.content.trim(),
 				public: values.public,
 				v: prompt.v,
+				type: values.type,
 			});
 
 			alert("Prompt updated successfully!");
@@ -212,6 +217,7 @@ export default function PromptEditPage() {
 			if (currentRevision) {
 				setPrompt(currentRevision);
 				form.setValue("public", currentRevision.public);
+				form.setValue("type", currentRevision.type || "instructions");
 			}
 		} catch (error) {
 			console.error("Failed to toggle visibility:", error);
@@ -319,6 +325,18 @@ export default function PromptEditPage() {
 									{prompt.name}
 								</h1>
 								<Badge variant="outline">v{prompt.v}</Badge>
+								<Badge
+									variant={
+										(prompt.type || "instructions") === "system"
+											? "destructive"
+											: (prompt.type || "instructions") === "user"
+												? "secondary"
+												: "default"
+									}
+									className="capitalize"
+								>
+									{prompt.type || "instructions"}
+								</Badge>
 								<Badge variant={prompt.public ? "default" : "secondary"}>
 									{prompt.public ? (
 										<>
@@ -434,6 +452,39 @@ export default function PromptEditPage() {
 														{...field}
 													/>
 												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+
+									{/* Type */}
+									<FormField
+										control={form.control}
+										name="type"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Prompt Type</FormLabel>
+												<Select
+													value={field.value}
+													onValueChange={field.onChange}
+													defaultValue={field.value}
+												>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder="Select prompt type" />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value="instructions">
+															Instructions (extends default)
+														</SelectItem>
+														<SelectItem value="system">
+															System Prompt (override)
+														</SelectItem>
+														<SelectItem value="user">User Message</SelectItem>
+													</SelectContent>
+												</Select>
+												<FormDescription>
+													Choose how this prompt should be applied.
+												</FormDescription>
 												<FormMessage />
 											</FormItem>
 										)}

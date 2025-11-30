@@ -14,6 +14,7 @@ import { usePromptContext } from "@/context/PromptContext";
 import { Prompt } from "@/lib/entities/prompt";
 
 type FilterType = "all" | "mine" | "public";
+type PromptTypeFilter = "system" | "instructions" | "user";
 
 interface PromptSelectionModalProps {
 	isOpen: boolean;
@@ -30,6 +31,11 @@ export function PromptSelectionModal({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filter, setFilter] = useState<FilterType>("all");
 	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+	const [typeFilters, setTypeFilters] = useState<PromptTypeFilter[]>([
+		"system",
+		"instructions",
+		"user",
+	]);
 
 	const filteredPrompts = useMemo(() => {
 		let filtered = prompts;
@@ -51,8 +57,23 @@ export function PromptSelectionModal({
 			filtered = filtered.filter((prompt: Prompt) => !prompt.public);
 		}
 
+		// Apply type filters
+		filtered = filtered.filter((prompt: Prompt) => {
+			const type = prompt.type || "instructions";
+			return typeFilters.includes(type as PromptTypeFilter);
+		});
+
 		return filtered;
-	}, [prompts, searchQuery, filter]);
+	}, [prompts, searchQuery, filter, typeFilters]);
+
+	const toggleTypeFilter = (type: PromptTypeFilter) => {
+		setTypeFilters((prev) => {
+			const next = prev.includes(type)
+				? prev.filter((t) => t !== type)
+				: [...prev, type];
+			return next.length === 0 ? [type] : next;
+		});
+	};
 
 	const handleSelect = () => {
 		if (selectedPrompt) {
@@ -125,6 +146,23 @@ export function PromptSelectionModal({
 						</Button>
 					</div>
 
+					{/* Type filters */}
+					<div className="flex flex-wrap gap-2">
+						{(["instructions", "system", "user"] as PromptTypeFilter[]).map(
+							(type) => (
+								<Button
+									key={type}
+									variant={typeFilters.includes(type) ? "default" : "outline"}
+									size="sm"
+									onClick={() => toggleTypeFilter(type)}
+									className="capitalize"
+								>
+									{type}
+								</Button>
+							),
+						)}
+					</div>
+
 					{/* Results count */}
 					<p className="text-sm text-muted-foreground">
 						{filteredPrompts.length} prompts found
@@ -156,6 +194,18 @@ export function PromptSelectionModal({
 													</h4>
 													<Badge variant="outline" className="text-xs">
 														v{prompt.v}
+													</Badge>
+													<Badge
+														variant={
+															(prompt.type || "instructions") === "system"
+																? "destructive"
+																: (prompt.type || "instructions") === "user"
+																	? "secondary"
+																	: "default"
+														}
+														className="text-xs capitalize"
+													>
+														{prompt.type || "instructions"}
 													</Badge>
 												</div>
 												<p className="text-sm text-muted-foreground line-clamp-2">

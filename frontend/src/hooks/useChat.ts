@@ -6,6 +6,7 @@ import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
 import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
+import { buildPromptPayload, getPromptConfig } from "@/lib/utils/prompt";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -133,8 +134,13 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
+		const promptConfig = getPromptConfig(agent);
+		const promptPayload = buildPromptPayload(
+			promptConfig.mode,
+			promptConfig.content,
+		);
 		const source = streamThread({
-			system: agent.prompt,
+			...promptPayload,
 			input: { messages: formatedMessages },
 			model: agent.model,
 			metadata: enrichedMetadata,

@@ -21,6 +21,8 @@ import { Agent } from "@/lib/services/agentService";
 import { ScheduleCreate, ScheduleFormData } from "@/lib/entities/schedule";
 import { validateCronExpression } from "@/lib/utils/schedule";
 import { Bot, Clock, MessageSquare } from "lucide-react";
+import { PromptModeSelector } from "@/components/forms/PromptModeSelector";
+import { PromptMode, buildPromptPayload, getPromptConfig } from "@/lib/utils/prompt";
 
 const scheduleFormSchema = z.object({
 	name: z.string().min(1, "Name is required"),
@@ -30,8 +32,34 @@ const scheduleFormSchema = z.object({
 	message: z.string().min(1, "Message is required"),
 	inheritFromAgent: z.boolean().default(true),
 	customModel: z.string().optional(),
-	customSystem: z.string().optional(),
+	customSystemPrompt: z.string().optional(),
+	customInstructions: z.string().optional(),
+	promptMode: z.enum(["instructions", "system_prompt"]).default("instructions"),
 	customTools: z.array(z.string()).optional(),
+}).superRefine((data, ctx) => {
+	if (!data.inheritFromAgent) {
+		if (data.promptMode === "instructions" && !data.customInstructions?.trim()) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Instructions are required when instructions mode is selected.",
+				path: ["customInstructions"],
+			});
+		}
+		if (data.promptMode === "system_prompt" && !data.customSystemPrompt?.trim()) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "System prompt is required when override mode is selected.",
+				path: ["customSystemPrompt"],
+			});
+		}
+		if (data.customInstructions?.trim() && data.customSystemPrompt?.trim()) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Provide either instructions or a system prompt, not both.",
+				path: ["customInstructions"],
+			});
+		}
+	}
 });
 
 interface AgentScheduleFormProps {
@@ -50,6 +78,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 	isLoading = false,
 }) => {
 	const [cronError, setCronError] = useState<string>("");
+	const agentPromptConfig = getPromptConfig(agent);
 
 	const form = useForm({
 		resolver: zodResolver(scheduleFormSchema),
@@ -61,7 +90,21 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 			message: initialData?.message || "",
 			inheritFromAgent: initialData?.inheritFromAgent ?? true,
 			customModel: initialData?.customModel || agent.model,
-			customSystem: initialData?.customSystem || agent.prompt,
+			customSystemPrompt:
+				initialData?.customSystemPrompt ||
+				(agentPromptConfig.mode === "system_prompt"
+					? agentPromptConfig.content
+					: ""),
+			customInstructions:
+				initialData?.customInstructions ||
+				(agentPromptConfig.mode === "instructions"
+					? agentPromptConfig.content
+					: ""),
+			promptMode:
+				initialData?.promptMode ||
+				(initialData?.customSystemPrompt
+					? "system_prompt"
+					: agentPromptConfig.mode),
 			customTools: initialData?.customTools || agent.tools,
 		},
 	});
@@ -75,6 +118,43 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 	} = form;
 	const watchInheritFromAgent = watch("inheritFromAgent");
 	const watchCronExpression = watch("cronExpression");
+	const watchPromptMode = watch("promptMode");
+	const watchCustomInstructions = watch("customInstructions");
+	const watchCustomSystemPrompt = watch("customSystemPrompt");
+	const promptContent =
+		watchPromptMode === "instructions"
+			? watchCustomInstructions || ""
+			: watchCustomSystemPrompt || "";
+
+	const handlePromptContentChange = (value: string) => {
+		if (watchPromptMode === "instructions") {
+			setValue("customInstructions", value, { shouldValidate: true });
+			if (value && watchCustomSystemPrompt) {
+				setValue("customSystemPrompt", "");
+			}
+		} else {
+			setValue("customSystemPrompt", value, { shouldValidate: true });
+			if (value && watchCustomInstructions) {
+				setValue("customInstructions", "");
+			}
+		}
+	};
+
+	const handlePromptModeChange = (mode: PromptMode) => {
+		setValue("promptMode", mode);
+		if (mode === "instructions" && watchCustomSystemPrompt) {
+			setValue("customInstructions", watchCustomSystemPrompt, {
+				shouldValidate: true,
+			});
+			setValue("customSystemPrompt", "");
+		}
+		if (mode === "system_prompt" && watchCustomInstructions) {
+			setValue("customSystemPrompt", watchCustomInstructions, {
+				shouldValidate: true,
+			});
+			setValue("customInstructions", "");
+		}
+	};
 
 	const handleCronChange = (expression: string) => {
 		setValue("cronExpression", expression);
@@ -89,6 +169,14 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 			return;
 		}
 
+		const customPromptContent =
+			data.promptMode === "instructions"
+				? data.customInstructions || ""
+				: data.customSystemPrompt || "";
+		const promptPayload = data.inheritFromAgent
+			? buildPromptPayload(agentPromptConfig.mode, agentPromptConfig.content)
+			: buildPromptPayload(data.promptMode as PromptMode, customPromptContent);
+
 		const scheduleData: ScheduleCreate = {
 			title: data.name,
 			trigger: {
@@ -99,9 +187,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 				model: data.inheritFromAgent
 					? agent.model
 					: data.customModel || agent.model,
-				system: data.inheritFromAgent
-					? agent.prompt
-					: data.customSystem || agent.prompt,
+				...promptPayload,
 				messages: [
 					{
 						role: "user",
@@ -117,6 +203,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 					schedule_description: data.description,
 					inherited_from_agent: data.inheritFromAgent,
 					enabled: data.enabled,
+					prompt_mode: data.inheritFromAgent
+						? agentPromptConfig.mode
+						: data.promptMode,
 				},
 			},
 		};
@@ -220,7 +309,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								Inherit from Agent
 							</Label>
 							<p className="text-sm text-muted-foreground">
-								Use the agent's current model, prompt, and tools
+								Use the agent's current model, prompt configuration, and tools
 							</p>
 						</div>
 					</div>
@@ -235,11 +324,25 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 									<Badge variant="secondary">{agent.model}</Badge>
 								</div>
 								<div className="flex justify-between">
-									<span className="text-muted-foreground">System Prompt:</span>
+									<span className="text-muted-foreground">Prompt Mode:</span>
+									<Badge
+										variant={
+											agentPromptConfig.mode === "system_prompt"
+												? "destructive"
+												: "secondary"
+										}
+									>
+										{agentPromptConfig.mode === "system_prompt"
+											? "System Prompt Override"
+											: "Instructions"}
+									</Badge>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Prompt:</span>
 									<span className="text-right max-w-xs truncate">
-										{agent.prompt && agent.prompt.length > 50
-											? `${agent.prompt.substring(0, 50)}...`
-											: agent.prompt || "No prompt configured"}
+										{agentPromptConfig.content && agentPromptConfig.content.length > 50
+											? `${agentPromptConfig.content.substring(0, 50)}...`
+											: agentPromptConfig.content || "No prompt configured"}
 									</span>
 								</div>
 								{agent.tools && agent.tools.length > 0 && (
@@ -295,14 +398,40 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 									/>
 								</div>
 							</div>
-							<div>
-								<Label htmlFor="customSystem">System Prompt</Label>
-								<Textarea
-									id="customSystem"
-									{...register("customSystem")}
-									placeholder={agent.prompt}
-									rows={4}
+							<div className="space-y-2">
+								<PromptModeSelector
+									mode={watchPromptMode || "instructions"}
+									content={promptContent}
+									onModeChange={handlePromptModeChange}
+									onContentChange={handlePromptContentChange}
+									description="Choose how this schedule configures the agent prompt."
+									showPreviewHint
 								/>
+								<input
+									type="hidden"
+									{...register("promptMode")}
+									value={watchPromptMode}
+								/>
+								<input
+									type="hidden"
+									{...register("customInstructions")}
+									value={watchCustomInstructions || ""}
+								/>
+								<input
+									type="hidden"
+									{...register("customSystemPrompt")}
+									value={watchCustomSystemPrompt || ""}
+								/>
+								{errors.customInstructions?.message && (
+									<p className="text-sm text-destructive">
+										{errors.customInstructions.message as string}
+									</p>
+								)}
+								{errors.customSystemPrompt?.message && (
+									<p className="text-sm text-destructive">
+										{errors.customSystemPrompt.message as string}
+									</p>
+								)}
 							</div>
 						</div>
 					)}

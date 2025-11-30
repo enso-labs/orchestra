@@ -98,6 +98,8 @@ type Presidio = {
 };
 interface StreamThreadPayload {
 	system?: string;
+	system_prompt?: string;
+	instructions?: string;
 	input: Input;
 	model: string;
 	metadata: any;
@@ -115,15 +117,21 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 			Accept: "text/event-stream",
 		};
 		const token = getAuthToken();
-		if (token) headers.Authorization = `Bearer ${token}`;
+	if (token) headers.Authorization = `Bearer ${token}`;
 
-		if (payload.system?.trim() === "") {
-			delete payload.system;
-		}
-		const newConfig: SSEOptions = {
-			headers: headers,
-			payload: JSON.stringify(payload),
-			method: "POST",
+	if (payload.system?.trim() === "") {
+		delete payload.system;
+	}
+	if (payload.system_prompt?.trim() === "") {
+		delete payload.system_prompt;
+	}
+	if (payload.instructions?.trim() === "") {
+		delete payload.instructions;
+	}
+	const newConfig: SSEOptions = {
+		headers: headers,
+		payload: JSON.stringify(payload),
+		method: "POST",
 			start: false,
 		};
 		const source = new SSE(`${VITE_API_URL}/llm/stream`, newConfig);

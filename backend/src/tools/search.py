@@ -129,7 +129,7 @@ def think_tool(reflection: str) -> str:
         Confirmation message with recorded reflection.
     """
     if len(reflection.split()) > 20:
-        raise ToolException("Reflection must be 20 words or fewer")
+        return "Error: Reflection must be 20 words or fewer"
     return reflection
 
 class MathCalculatorInput(BaseModel):

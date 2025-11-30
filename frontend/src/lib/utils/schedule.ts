@@ -1,5 +1,6 @@
 import { Agent } from "@/lib/services/agentService";
 import { ScheduleCreate } from "@/lib/entities/schedule";
+import { buildPromptPayload, getPromptConfig } from "@/lib/utils/prompt";
 
 /**
  * Helper function to create a schedule from agent configuration
@@ -10,6 +11,7 @@ export const createScheduleFromAgent = (
 	cronExpression: string,
 	message: string,
 ): ScheduleCreate => {
+	const promptConfig = getPromptConfig(agent);
 	return {
 		title,
 		trigger: {
@@ -18,7 +20,7 @@ export const createScheduleFromAgent = (
 		},
 		task: {
 			model: agent.model,
-			system: agent.prompt,
+			...buildPromptPayload(promptConfig.mode, promptConfig.content),
 			messages: [{ role: "user", content: message }],
 			tools: agent.tools,
 			a2a: agent.a2a,
@@ -28,6 +30,7 @@ export const createScheduleFromAgent = (
 				...agent.metadata,
 				agent_id: agent.id,
 				inherited_from_agent: true,
+				prompt_mode: promptConfig.mode,
 			},
 		},
 	};

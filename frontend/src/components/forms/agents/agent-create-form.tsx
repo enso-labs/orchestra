@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
+import { PromptModeSelector } from "@/components/forms/PromptModeSelector";
 
 import {
 	Form,
@@ -47,16 +48,26 @@ import { base64Compare } from "@/lib/utils/format";
 import { useParams } from "react-router-dom";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Prompt } from "@/lib/entities/prompt";
+import { PromptMode, buildPromptPayload, getPromptConfig } from "@/lib/utils/prompt";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
 		message: "Name must be at least 2 characters.",
 	}),
 	description: z.string(),
-	systemMessage: z.string(),
+	promptContent: z.string().optional(),
+	promptMode: z.enum(["instructions", "system_prompt"]),
 	model: z.string().min(2, {
 		message: "Model must be at least 2 characters.",
 	}),
+}).superRefine((data, ctx) => {
+	if (!data.promptContent?.trim()) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			message: "Prompt content is required.",
+			path: ["promptContent"],
+		});
+	}
 });
 
 export function AgentCreateForm() {
@@ -66,32 +77,42 @@ export function AgentCreateForm() {
 		useAgentContext();
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 	const [fullscreenSystemMessage, setFullscreenSystemMessage] = useState("");
-	const [systemMessageUrl, setSystemMessageUrl] = useState("");
+	const [promptContentUrl, setPromptContentUrl] = useState("");
 	const [isUsingUrl, setIsUsingUrl] = useState(false);
 	const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
 	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
 	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+	const promptDefaults = getPromptConfig(agent);
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: "",
 			description: "",
-			systemMessage: "",
+			promptContent: promptDefaults.content,
+			promptMode: promptDefaults.mode,
+			model: "",
 		},
 	});
+	const watchPromptMode = (form.watch("promptMode") ||
+		promptDefaults.mode) as PromptMode;
+	const watchPromptContent = form.watch("promptContent") || "";
 
 	const onSubmit = async (values: z.infer<typeof formSchema>) => {
+		const selectedMode: PromptMode =
+			selectedPrompt?.type === "system" ? "system_prompt" : values.promptMode;
 		// If using saved prompt, store reference; otherwise use custom content
 		const promptContent = selectedPrompt
 			? `{{prompt:${selectedPrompt.id}:v${selectedPrompt.v}}}`
-			: values.systemMessage.trim();
-
+			: values.promptContent?.trim() || "";
+		const promptPayload = buildPromptPayload(selectedMode, promptContent);
 		const configData: Agent = {
 			name: values.name.trim(),
 			description: values.description.trim(),
 			model: values.model.trim(),
-			prompt: promptContent,
+			...promptPayload,
+			// Keep legacy prompt for backward compatibility when using instructions
+			prompt: selectedMode === "instructions" ? promptContent : undefined,
 			mcp: agent.mcp,
 			a2a: agent.a2a,
 			tools: agent.tools,
@@ -134,13 +155,12 @@ export function AgentCreateForm() {
 	};
 
 	const openFullscreen = () => {
-		setFullscreenSystemMessage(agent.prompt || "");
+		setFullscreenSystemMessage(watchPromptContent || "");
 		setIsFullscreenOpen(true);
 	};
 
 	const saveFullscreenSystemMessage = () => {
-		setAgent({ ...agent, system: fullscreenSystemMessage });
-		form.setValue("systemMessage", fullscreenSystemMessage);
+		handlePromptContentChange(fullscreenSystemMessage);
 		setIsFullscreenOpen(false);
 	};
 
@@ -149,14 +169,14 @@ export function AgentCreateForm() {
 	};
 
 	const fetchSystemMessageFromUrl = async () => {
-		if (!systemMessageUrl.trim()) {
+		if (!promptContentUrl.trim()) {
 			alert("Please enter a valid URL");
 			return;
 		}
 
 		setIsLoadingFromUrl(true);
 		try {
-			const response = await fetch(systemMessageUrl);
+			const response = await fetch(promptContentUrl);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -182,18 +202,71 @@ export function AgentCreateForm() {
 	};
 
 	useEffect(() => {
-		form.setValue("name", agent.name);
-		form.setValue("description", agent.description);
-		form.setValue("systemMessage", agent.prompt);
-		form.setValue("model", agent.model);
-	}, [agent]);
+		const promptConfig = getPromptConfig(agent);
+		form.reset({
+			name: agent.name,
+			description: agent.description,
+			promptContent: promptConfig.content,
+			promptMode: promptConfig.mode,
+			model: agent.model,
+		});
+		setSelectedPrompt(null);
+	}, [agent, form]);
+
+	useEffect(() => {
+		if (!selectedPrompt) return;
+		const nextMode: PromptMode =
+			selectedPrompt.type === "system" ? "system_prompt" : "instructions";
+		form.setValue("promptMode", nextMode);
+		form.setValue("promptContent", selectedPrompt.content);
+	}, [selectedPrompt, form]);
 
 	const agentHasChanged = useMemo(() => {
 		const prevAssistant = agents.find((a: Agent) => a.id === agent.id);
 		if (!prevAssistant) return true;
-		delete agent.system;
-		return !base64Compare(JSON.stringify(prevAssistant), JSON.stringify(agent));
+		const { system: _legacySystem, ...rest } = agent as any;
+		return !base64Compare(JSON.stringify(prevAssistant), JSON.stringify(rest));
 	}, [agents, agent]);
+
+	const promptModeBadge =
+		watchPromptMode === "system_prompt" ? (
+			<Badge variant="destructive">System Prompt Override</Badge>
+		) : (
+			<Badge variant="secondary">Instructions</Badge>
+		);
+
+	const currentPromptHelper =
+		watchPromptMode === "system_prompt"
+			? "Replace the default Ensō system prompt entirely."
+			: "Extend the default Ensō prompt with your own guidance.";
+
+	const handlePromptContentChange = (
+		value: string,
+		modeOverride?: PromptMode,
+	) => {
+		form.setValue("promptContent", value);
+		const targetMode = modeOverride || watchPromptMode;
+		if (targetMode === "system_prompt") {
+			setAgent({
+				...agent,
+				system_prompt: value,
+				instructions: undefined,
+				prompt: undefined,
+			});
+		} else {
+			setAgent({
+				...agent,
+				instructions: value,
+				system_prompt: undefined,
+				prompt: value,
+			});
+		}
+	};
+
+	const handlePromptModeChange = (mode: PromptMode) => {
+		form.setValue("promptMode", mode);
+		handlePromptContentChange(watchPromptContent, mode);
+	};
 
 	const filteredSubagents = agents.filter((a: Agent) => a.id !== agentId);
 
@@ -296,11 +369,19 @@ export function AgentCreateForm() {
 						/>
 						<FormField
 							control={form.control}
-							name="systemMessage"
+							name="promptContent"
 							render={({ field }) => (
 								<FormItem>
 									<div className="flex items-center justify-between">
-										<FormLabel>System Message</FormLabel>
+										<div className="space-y-1">
+											<div className="flex items-center gap-2">
+												<FormLabel>Prompt Configuration</FormLabel>
+												{promptModeBadge}
+											</div>
+											<p className="text-xs text-muted-foreground">
+												{currentPromptHelper}
+											</p>
+										</div>
 										<div className="flex gap-2">
 											<Button
 												type="button"
@@ -337,6 +418,18 @@ export function AgentCreateForm() {
 														<Badge variant="outline" className="text-xs">
 															v{selectedPrompt.v}
 														</Badge>
+														{selectedPrompt.type && (
+															<Badge
+																variant={
+																	selectedPrompt.type === "system"
+																		? "destructive"
+																		: "secondary"
+																}
+																className="text-xs"
+															>
+																{selectedPrompt.type}
+															</Badge>
+														)}
 													</div>
 													<p className="text-xs text-muted-foreground line-clamp-2">
 														{selectedPrompt.content}
@@ -348,7 +441,7 @@ export function AgentCreateForm() {
 													size="sm"
 													onClick={() => {
 														setSelectedPrompt(null);
-														form.setValue("systemMessage", "");
+														form.setValue("promptContent", "");
 													}}
 													className="h-6 w-6 p-0 ml-2"
 												>
@@ -358,22 +451,17 @@ export function AgentCreateForm() {
 										</div>
 									)}
 
-									<FormControl>
-										<Textarea
-											{...field}
-											// required
-											disabled={!!selectedPrompt}
-											placeholder={
-												selectedPrompt
-													? "Using saved prompt..."
-													: "Enter custom system message..."
-											}
-											onChangeCapture={(e) =>
-												setAgent({ ...agent, prompt: e.currentTarget.value })
-											}
-										/>
-									</FormControl>
-									{/* <FormDescription>This is your system message.</FormDescription> */}
+									<PromptModeSelector
+										mode={watchPromptMode}
+										content={field.value || ""}
+										onModeChange={handlePromptModeChange}
+										onContentChange={(value) => {
+											field.onChange(value);
+											handlePromptContentChange(value);
+										}}
+										contentDisabled={!!selectedPrompt}
+										showPreviewHint
+									/>
 									<FormMessage />
 								</FormItem>
 							)}
@@ -580,8 +668,8 @@ export function AgentCreateForm() {
 							<div className="flex gap-2 flex-shrink-0">
 								<div className="flex-1">
 									<Input
-										value={systemMessageUrl}
-										onChange={(e) => setSystemMessageUrl(e.target.value)}
+										value={promptContentUrl}
+										onChange={(e) => setPromptContentUrl(e.target.value)}
 										placeholder="Enter URL (e.g., GitHub Gist raw URL, text file URL...)"
 										className="w-full"
 									/>
@@ -589,7 +677,7 @@ export function AgentCreateForm() {
 								<Button
 									type="button"
 									onClick={fetchSystemMessageFromUrl}
-									disabled={isLoadingFromUrl || !systemMessageUrl.trim()}
+									disabled={isLoadingFromUrl || !promptContentUrl.trim()}
 									className="flex items-center gap-2"
 								>
 									{isLoadingFromUrl ? (
@@ -665,12 +753,30 @@ export function AgentCreateForm() {
 			{/* Prompt Selection Modal */}
 			<PromptSelectionModal
 				isOpen={isPromptModalOpen}
-				onClose={() => setIsPromptModalOpen(false)}
-				onSelect={(prompt) => {
-					setSelectedPrompt(prompt);
-					form.setValue("systemMessage", prompt.content);
-				}}
-			/>
-		</Form>
-	);
+			onClose={() => setIsPromptModalOpen(false)}
+			onSelect={(prompt) => {
+				setSelectedPrompt(prompt);
+				const nextMode: PromptMode =
+					prompt.type === "system" ? "system_prompt" : "instructions";
+				form.setValue("promptMode", nextMode);
+				form.setValue("promptContent", prompt.content);
+				if (nextMode === "system_prompt") {
+					setAgent({
+						...agent,
+						system_prompt: prompt.content,
+						instructions: undefined,
+						prompt: undefined,
+					});
+				} else {
+					setAgent({
+						...agent,
+						instructions: prompt.content,
+						system_prompt: undefined,
+						prompt: prompt.content,
+					});
+				}
+			}}
+		/>
+	</Form>
+);
 }

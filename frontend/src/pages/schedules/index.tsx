@@ -541,8 +541,14 @@ function SchedulesIndexPage() {
 								inheritFromAgent:
 									editingSchedule.task.metadata?.inherited_from_agent || true,
 								customModel: editingSchedule.task.model,
-								customSystem: editingSchedule.task.system,
+								customInstructions:
+									editingSchedule.task.instructions ||
+									editingSchedule.task.system,
+								customSystemPrompt: editingSchedule.task.system_prompt,
 								customTools: editingSchedule.task.tools || [],
+								promptMode: editingSchedule.task.system_prompt
+									? "system_prompt"
+									: "instructions",
 							}}
 							isLoading={loading}
 						/>

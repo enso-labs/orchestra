@@ -38,6 +38,18 @@ export function PromptCard({ prompt, onClick }: PromptCardProps) {
 				<div className="flex items-start justify-between">
 					<FileText className="h-5 w-5 text-primary flex-shrink-0" />
 					<div className="flex items-center gap-2">
+						<Badge
+							variant={
+								prompt.type === "system"
+									? "destructive"
+									: prompt.type === "user"
+										? "secondary"
+										: "default"
+							}
+							className="text-xs"
+						>
+							{prompt.type || "instructions"}
+						</Badge>
 						{prompt.v && (
 							<Badge variant="outline" className="text-xs">
 								v{prompt.v}

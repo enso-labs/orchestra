@@ -18,6 +18,13 @@ import {
 	FormMessage,
 	FormDescription,
 } from "@/components/ui/form";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +49,7 @@ const formSchema = z.object({
 		message: "Content must be at least 10 characters.",
 	}),
 	public: z.boolean(),
+	type: z.enum(["system", "instructions", "user"]).default("instructions"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -61,6 +69,7 @@ export default function PromptCreatePage() {
 			name: "",
 			content: "",
 			public: false,
+			type: "instructions",
 		},
 	});
 
@@ -71,6 +80,7 @@ export default function PromptCreatePage() {
 				name: values.name.trim(),
 				content: values.content.trim(),
 				public: values.public,
+				type: values.type,
 			});
 
 			alert(`Prompt "${values.name}" created successfully!`);
@@ -171,6 +181,37 @@ export default function PromptCreatePage() {
 										</FormControl>
 										<FormDescription>
 											A descriptive name for this prompt
+										</FormDescription>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							{/* Type */}
+							<FormField
+								control={form.control}
+								name="type"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Prompt Type</FormLabel>
+										<Select
+											value={field.value}
+											onValueChange={field.onChange}
+											defaultValue={field.value}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder="Select prompt type" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="instructions">
+													Instructions (extends default)
+												</SelectItem>
+												<SelectItem value="system">System Prompt (override)</SelectItem>
+												<SelectItem value="user">User Message</SelectItem>
+											</SelectContent>
+										</Select>
+										<FormDescription>
+											Choose how this prompt should be used.
 										</FormDescription>
 										<FormMessage />
 									</FormItem>

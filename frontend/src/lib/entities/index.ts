@@ -2,7 +2,9 @@ export interface ThreadPayload {
 	threadId?: string;
 	images?: string[];
 	query: string;
-	system?: string;
+	system?: string; // legacy
+	instructions?: string;
+	system_prompt?: string;
 	tools?: any[];
 	visualize?: boolean;
 	model?: string;
@@ -15,6 +17,9 @@ export type Agent = {
 	id: string;
 	name: string;
 	description: string;
+	prompt?: string;
+	instructions?: string;
+	system_prompt?: string;
 	setting?: {
 		value: {
 			model?: string;
@@ -52,7 +57,9 @@ export type DashboardTabOption = "agents" | "workflows" | "servers";
 
 export type LLMStreamPayload = {
 	model: string;
-	system: string;
+	system?: string;
+	system_prompt?: string;
+	instructions?: string;
 	stream_mode: string;
 	messages: {
 		role: string;

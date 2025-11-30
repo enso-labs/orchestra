@@ -6,7 +6,9 @@ export type Agent = {
 	name: string;
 	description: string;
 	model: string;
-	prompt: string;
+	prompt?: string; // legacy field - treated as instructions
+	instructions?: string;
+	system_prompt?: string;
 	tools: string[];
 	subagents?: Agent[];
 	mcp?: {
