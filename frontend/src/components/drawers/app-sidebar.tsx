@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
 	ChevronRight,
 	Bot,
@@ -11,7 +11,9 @@ import {
 	FolderKanban,
 	Plus,
 	FileText,
+	Loader2,
 } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
 import {
 	Collapsible,
@@ -545,6 +547,9 @@ interface CollapsibleGroupProps {
 	items: any[];
 	type: "assistants" | "threads";
 	projects?: Project[];
+	loadMore?: (filter?: any) => Promise<void>;
+	hasMore?: boolean;
+	isLoadingMore?: boolean;
 }
 
 function CollapsibleGroup({
@@ -552,13 +557,42 @@ function CollapsibleGroup({
 	items,
 	type,
 	projects = [],
+	loadMore,
+	hasMore = false,
+	isLoadingMore = false,
 }: CollapsibleGroupProps) {
+	const scrollRef = useRef<HTMLDivElement>(null);
 	const titleIcon =
 		type === "assistants" ? (
 			<Bot className="w-4 h-4 mr-2" />
 		) : (
 			<MessageSquare className="w-4 h-4 mr-2" />
 		);
+
+	// Virtualization setup (only for threads)
+	const getScrollElement = useCallback(() => scrollRef.current, []);
+	const estimateSize = useCallback(() => 100, []);
+
+	const virtualizer = type === "threads" ? useVirtualizer({
+		count: items.length,
+		getScrollElement,
+		estimateSize,
+		overscan: 5,
+	}) : null;
+
+	// Infinite scroll detection (only for threads)
+	const isNearBottom = useCallback(() => {
+		const el = scrollRef.current;
+		if (!el) return false;
+		return el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+	}, []);
+
+	const handleScroll = useCallback(() => {
+		if (type === "threads" && isNearBottom() && hasMore && !isLoadingMore && loadMore) {
+			// Filter for unassociated threads (no project_id)
+			loadMore({});
+		}
+	}, [type, isNearBottom, hasMore, isLoadingMore, loadMore]);
 
 	return (
 		<Collapsible
@@ -583,23 +617,62 @@ function CollapsibleGroup({
 				</SidebarGroupLabel>
 				<CollapsibleContent>
 					<SidebarGroupContent className="px-1 pt-2">
-						<SidebarMenu className="gap-0">
-							{type === "assistants"
-								? items.map((item) => (
-										<AssistantItem
-											key={item.agent.id || item.agent.name}
-											agent={item.agent}
-											url={item.url}
-										/>
-									))
-								: items.map((item) => (
-										<ThreadItem
-											key={item.key}
-											thread={item}
-											projects={projects}
-										/>
-									))}
-						</SidebarMenu>
+						{type === "threads" && virtualizer ? (
+							<div
+								ref={scrollRef}
+								onScroll={handleScroll}
+								className="overflow-auto max-h-[calc(100vh-400px)]"
+							>
+								<SidebarMenu className="gap-0" style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+									{virtualizer.getVirtualItems().map((virtualRow) => {
+										const item = items[virtualRow.index];
+										return (
+											<div
+												key={item.key}
+												data-index={virtualRow.index}
+												ref={virtualizer.measureElement}
+												className="absolute top-0 left-0 w-full"
+												style={{ transform: `translateY(${virtualRow.start}px)` }}
+											>
+												<ThreadItem
+													thread={item}
+													projects={projects}
+												/>
+											</div>
+										);
+									})}
+								</SidebarMenu>
+								{isLoadingMore && (
+									<div className="flex items-center justify-center gap-2 p-3 text-sm text-sidebar-foreground/60">
+										<Loader2 className="h-4 w-4 animate-spin" />
+										<span>Loading more threads...</span>
+									</div>
+								)}
+								{items.length === 0 && !isLoadingMore && (
+									<div className="px-3 py-4 text-center text-sm text-sidebar-foreground/50">
+										No threads yet
+									</div>
+								)}
+							</div>
+						) : (
+							<SidebarMenu className="gap-0">
+								{type === "assistants"
+									? items.map((item) => (
+											<AssistantItem
+												key={item.agent.id || item.agent.name}
+												agent={item.agent}
+												url={item.url}
+											/>
+										))
+									: items.map((item) => (
+											<ThreadItem
+												key={item.key}
+												thread={item}
+												projects={projects}
+											/>
+										))}
+							</SidebarMenu>
+						)}
 					</SidebarGroupContent>
 				</CollapsibleContent>
 			</SidebarGroup>
@@ -610,7 +683,7 @@ function CollapsibleGroup({
 // const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { threads } = useChatContext();
+	const { threads, loadMoreThreads, hasMoreThreads, isLoadingMoreThreads } = useChatContext();
 	const { agents } = useAgentContext();
 	const { projects, useEffectGetProjects } = useProjectContext();
 
@@ -677,6 +750,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					items={unassociatedThreads}
 					type="threads"
 					projects={projects}
+					loadMore={loadMoreThreads}
+					hasMore={hasMoreThreads}
+					isLoadingMore={isLoadingMoreThreads}
 				/>
 				</SidebarContent>
 				<SidebarFooter>
