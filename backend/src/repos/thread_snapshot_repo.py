@@ -5,26 +5,29 @@ from src.constants import THREAD_SNAPSHOT_MESSAGE_COUNT
 from src.repos.base_repo import BaseRepo
 from src.schemas.entities.store import ThreadSnapshot
 from src.utils.logger import logger
+from src.utils.format import format_xml_thread
 
 
 class ThreadSnapshotRepo(BaseRepo):
     def __init__(self, user_id: str, store=None):
         super().__init__(user_id, store, "thread_snapshots")
+        
 
     async def upsert_snapshot(self, thread_id: str, messages: list) -> bool:
-        """Create or update a thread snapshot with recent messages."""
+        """Create or update a thread snapshot with recent messages.
+        
+        Note: messages should already be filtered to recent messages before calling this method.
+        """
         try:
-            # Extract last N messages
-            recent_messages = messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:] if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT else messages
-
+            # Extract recent messages for snapshot (last N messages)
+            recent_messages = (
+                messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:]
+                if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
+                else messages
+            )
+            
             # Format messages as "Role: content" pairs
-            formatted_messages = []
-            for msg in recent_messages:
-                role = "User" if msg.get("type") == "human" else "Assistant"
-                content = msg.get("content", "")
-                formatted_messages.append(f"{role}: {content}")
-
-            page_content = "\n".join(formatted_messages)
+            page_content = format_xml_thread(recent_messages, include_tool_calls=False)
 
             # Create snapshot with metadata
             snapshot = ThreadSnapshot(
@@ -32,7 +35,7 @@ class ThreadSnapshotRepo(BaseRepo):
                 page_content=page_content,
                 metadata={
                     "thread_id": thread_id,
-                    "message_count": len(recent_messages),
+                    "message_count": len(messages),
                 }
             )
 
@@ -85,3 +88,7 @@ class ThreadSnapshotRepo(BaseRepo):
         except Exception as e:
             logger.error(f"Failed to search thread snapshots: {e}")
             return []
+        
+        
+    async def delete(self, thread_id: str) -> bool:
+        return await self._delete(thread_id)

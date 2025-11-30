@@ -21,6 +21,8 @@ from langchain_core.messages import (
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
 
+from src.utils.format import format_content
+
 
 ###########################################
 ## Parser
@@ -31,8 +33,9 @@ def input_parser(
     xml_lines = ["<thread>"]
     for message in messages:
         if isinstance(message, HumanMessage):
+            content = format_content(message.content)
             xml_lines.append(
-                f'  <event id="{message.id}" type="{message.type}">{message.content}</event>'
+                f'  <event id="{message.id}" type="{message.type}">{content}</event>'
             )
         elif isinstance(message, ToolMessage):
             xml_lines.append(
@@ -45,8 +48,9 @@ def input_parser(
                         f'  <event id="{tool_call["id"]}" type="tool_input" name="{tool_call["name"]}">{json.dumps(tool_call["args"])}</event>'
                     )
             else:
+                content = format_content(message.content)
                 xml_lines.append(
-                    f'  <event id="{message.id}" type="{message.type}">{message.content}</event>'
+                    f'  <event id="{message.id}" type="{message.type}">{content}</event>'
                 )
     xml_lines.append("</thread>")
     return "\n".join(xml_lines) + llm_response_prefix

@@ -1,4 +1,5 @@
 import base64
+import ujson
 from langchain_core.runnables import RunnableConfig
 import requests
 import re
@@ -6,7 +7,7 @@ import unicodedata
 from typing import Optional, Any
 from loguru import logger
 from datetime import datetime, timezone
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langgraph.prebuilt import ToolRuntime
 
 
@@ -140,3 +141,32 @@ def get_tool_call_env(runtime: ToolRuntime) -> tuple[dict, dict]:
     except Exception as e:
         logger.error(f"Error getting tool call env: {e}")
         raise ValueError(f"Error getting tool call env: {e}")
+
+
+def format_xml_thread(messages: list[BaseMessage], include_tool_calls: bool = True) -> str:
+    xml_lines = ["<thread>"]
+    for message in messages:
+        if isinstance(message, HumanMessage):
+            content = format_content(message.content)
+            xml_lines.append(
+                f'  <event id="{message.id}" type="{message.type}">{content}</event>'
+            )
+        elif isinstance(message, ToolMessage):
+            if include_tool_calls:
+                xml_lines.append(
+                f'  <event id="{message.tool_call_id}" type="tool_output" name="{message.name}" status="{message.status}">{message.content}</event>'
+            )
+        elif isinstance(message, AIMessage):
+            if getattr(message, "tool_calls", None):
+                if include_tool_calls:
+                    for tool_call in message.tool_calls:
+                        xml_lines.append(
+                            f'  <event id="{tool_call["id"]}" type="tool_input" name="{tool_call["name"]}">{ujson.dumps(tool_call["args"])}</event>'
+                        )
+            else:
+                content = format_content(message.content)
+                xml_lines.append(
+                    f'  <event id="{message.id}" type="{message.type}">{content}</event>'
+                )
+    xml_lines.append("</thread>")
+    return "\n".join(xml_lines)

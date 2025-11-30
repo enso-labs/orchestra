@@ -1,9 +1,10 @@
 import asyncio
 from typing import Any
+from langchain_core.messages import HumanMessage
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 from src.utils.logger import logger
-from src.constants import TEST_USER_ID
+from src.constants import TEST_USER_ID, THREAD_SNAPSHOT_MESSAGE_COUNT
 from src.repos.thread_snapshot_repo import ThreadSnapshotRepo
 
 IN_MEMORY_STORE = InMemoryStore()
@@ -31,13 +32,25 @@ class ThreadService:
     async def update(self, thread_id: str, data: dict):
         if self.assistant_id:
             data["assistant_id"] = self.assistant_id
+        
+        # Extract last human message for storage
+        messages = data.get("messages", [])
+        last_human_message = None
+        for message in reversed(messages):
+            if isinstance(message, HumanMessage):
+                last_human_message = message
+                break
+        
+        # Create a copy of data with only the last human message for storage
+        storage_data = data.copy()
+        storage_data["messages"] = [last_human_message.model_dump()] if last_human_message else []
+        
         await self.store.aput(
-            namespace=self._get_namespace(), key=thread_id, value=data
+            namespace=self._get_namespace(), key=thread_id, value=storage_data
         )
 
         # Update thread snapshot for search (non-blocking)
         try:
-            messages = data.get("messages", [])
             if messages:
                 await self.thread_snapshot_repo.upsert_snapshot(thread_id, messages)
         except Exception as e:
@@ -51,6 +64,7 @@ class ThreadService:
     async def delete(self, thread_id: str) -> bool:
         try:
             await self.store.adelete(self._get_namespace(), thread_id)
+            await self.thread_snapshot_repo.delete(thread_id)
             return True
         except Exception as e:
             logger.exception(f"Error deleting thread: {e}")

@@ -91,4 +91,4 @@ MICROSOFT_TEAMS_WEBHOOK_URL = os.getenv("MICROSOFT_TEAMS_WEBHOOK_URL")
 
 # Thread Search
 # Number of recent messages to store per thread snapshot for semantic search
-THREAD_SNAPSHOT_MESSAGE_COUNT = 5
+THREAD_SNAPSHOT_MESSAGE_COUNT = 20
