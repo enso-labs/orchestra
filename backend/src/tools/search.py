@@ -1,12 +1,11 @@
-import re
 from typing import Literal, List, Optional
-from pydantic import BaseModel, Field
 from markitdown import MarkItDown
 from langchain_core.tools import tool
 from langchain_core.tools import ToolException
 from langchain_community.utilities import SearxSearchWrapper
 from src.utils.logger import logger
-
+from src.tools.math import math_calculator
+from src.tools.base.reasoning import think_tool
 
 Categories = Literal[
     "general",
@@ -42,6 +41,7 @@ async def web_search(
 ) -> list:
     """
     Title: Web Search
+    Toolkit: Search
     Description: Perform a targeted web search for the provided query.
         - Always refine the query with the most relevant keywords.
         - Be specific with dates (e.g., "September 7, 2025" instead of "recent" or "today").
@@ -91,7 +91,15 @@ async def web_search(
 
 @tool
 def web_scrape(urls: List[str]) -> str:
-    """Retrieve content from a list of URLs or Paths"""
+    """
+    Title: Web Scrape
+    Toolkit: Search
+    Description: Retrieve content from a list of URLs or Paths
+    Args:
+        urls (List[str]): A list of URLs or paths to scrape
+    Returns:
+        str: A string of the scraped content
+    """
     md = MarkItDown(enable_plugins=False)
     docs = []
     for url in urls:
@@ -108,66 +116,6 @@ def web_scrape(urls: List[str]) -> str:
             formatted_output = document.markdown
         docs.append(formatted_output)
     return "\n\n---\n\n".join(docs)
-
-#########################################################################################################
-## THINK TOOL
-## https://github.com/langchain-ai/deepagents-quickstarts/blob/main/deep_research/research_agent/tools.py
-#########################################################################################################
-@tool(parse_docstring=True)
-def think_tool(reflection: str) -> str:
-    """
-    Provide a concise (≤20 words) reflection on your research step.
-
-    You may use this tool multiple times to iteratively reflect
-    after each search or research action. Keep each reflection short—
-    no more than 20 words.
-
-    Args:
-        reflection: Concise summary (max 20 words) of your thought.
-
-    Returns:
-        Confirmation message with recorded reflection.
-    """
-    if len(reflection.split()) > 20:
-        raise ToolException("Reflection must be 20 words or fewer")
-    return reflection
-
-class MathCalculatorInput(BaseModel):
-    expression: str = Field(
-        description="Mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 - 5) / 2')"
-    )
-
-
-@tool(args_schema=MathCalculatorInput)
-def math_calculator(expression: str) -> str:
-    """
-    Calculate mathematical expressions including addition, subtraction, multiplication, division, and parentheses.
-    """
-    try:
-        # Safe evaluation of basic math expressions
-        # Only allow numbers, operators, parentheses, and basic math functions
-        sanitized = re.sub(r"[^0-9+\-*/().\s]", "", expression)
-
-        # Basic validation
-        if not sanitized or sanitized.strip() == "":
-            return "Error: Invalid math expression"
-
-        # Use eval with restricted scope for safe evaluation
-        result = eval(sanitized, {"__builtins__": {}}, {})
-
-        if not isinstance(result, (int, float)) or not (
-            isinstance(result, int) or isinstance(result, float)
-        ):
-            return "Error: Result is not a valid number"
-
-        if (
-            not (result == result) or result == float("inf") or result == -float("inf")
-        ):  # Check for NaN or inf
-            return "Error: Result is not a valid number"
-
-        return f"{expression} = {result}"
-    except Exception:
-        return f"Error: Invalid math expression - {expression}"
 
 
 SEARCH_TOOLS = [
