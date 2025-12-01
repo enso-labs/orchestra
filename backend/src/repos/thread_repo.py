@@ -1,7 +1,7 @@
 import asyncio
-from typing import Any
-from langchain_core.messages import HumanMessage
-from langgraph.store.base import BaseStore
+from langgraph.store.base import BaseStore, SearchItem
+from langgraph.store.memory import InMemoryStore
+from langgraph.store.postgres.aio import AsyncPostgresStore
 
 from src.services.db import get_store_in_memory
 from src.schemas.entities import SearchFilter
@@ -10,6 +10,7 @@ from src.repos.base_repo import BaseRepo
 from src.schemas.entities.store import ThreadSnapshot
 from src.utils.logger import logger
 from src.utils.format import format_xml_thread
+from src.utils.messages import from_message_to_dict
 
 
 FIELDS = ["messages", "files"]
@@ -17,12 +18,13 @@ FIELDS = ["messages", "files"]
 class ThreadRepo(BaseRepo):
     def __init__(self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)):
         ## Add fields to the store (if supported)
-        try:
-            store.fields = FIELDS
-        except AttributeError:
-            pass
         self.user_id = user_id
         self.store: BaseStore = store
+        
+        try:
+            self.store.fields = FIELDS
+        except AttributeError:
+            pass
         super().__init__(user_id=user_id, store=store, entity_type="threads")
         
 
@@ -37,11 +39,26 @@ class ThreadRepo(BaseRepo):
             for attempt in range(max_retries):
                 try:
                     async with self.store as store:
+                        if search_filter.query:
+                            queried_threads: list[SearchItem] = await store.asearch(
+                                self._get_namespace(), 
+                                limit=search_filter.limit, 
+                                filter=search_filter.filter,
+                                query=search_filter.query,
+                            )
+                            return [
+                                ThreadSnapshot(
+                                    id=thread.key, 
+                                    messages=thread.value["messages"], 
+                                    files=thread.value["files"], 
+                                    score=thread.score, 
+                                    updated_at=thread.updated_at
+                                ).model_dump(exclude_none=True) for thread in queried_threads
+                            ]
                         threads = await store.asearch(
                             self._get_namespace(), 
                             limit=search_filter.limit, 
                             filter=search_filter.filter,
-                            query=search_filter.query,
                         )
                         return sorted(
                             [thread.dict() for thread in threads],
@@ -68,26 +85,18 @@ class ThreadRepo(BaseRepo):
 
         # Extract last human message for storage
         messages = data.get("messages", [])
-        last_human_message = None
-        for message in reversed(messages):
-            if isinstance(message, HumanMessage):
-                last_human_message = message
-                break
+        messages = from_message_to_dict(messages, include_tool_calls=False)
+        recent_messages = (
+            messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:]
+            if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
+            else messages
+        )
         
-        # Create a copy of data with only the last human message for storage
-        storage_data = data.copy()
-        storage_data["messages"] = [last_human_message.model_dump()] if last_human_message else []
+        data["messages"] = recent_messages
         
         await self.store.aput(
-            namespace=self._get_namespace(), key=thread_id, value=storage_data
+            namespace=self._get_namespace(), key=thread_id, value=data
         )
-
-        # Update thread snapshot for search (non-blocking)
-        try:
-            if messages:
-                await self._upsert_snapshot(thread_id, messages)
-        except Exception as e:
-            logger.error(f"Failed to update thread snapshot for {thread_id}: {e}")
 
         return True
         

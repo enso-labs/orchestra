@@ -11,3 +11,11 @@ export interface ThreadSearchRequest {
   limit?: number;
   assistant_id?: string;
 }
+
+export interface SemanticThread {
+  id: string;
+  messages: any[];
+  files: any[];
+  score: number;
+  updated_at: string | null;
+}

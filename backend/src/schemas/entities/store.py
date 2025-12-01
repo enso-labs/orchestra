@@ -1,3 +1,4 @@
+from langchain_core.messages import BaseMessage
 from pydantic import BaseModel
 from typing import Optional, Union, Any
 from datetime import datetime
@@ -34,6 +35,8 @@ class Project(BaseEntity):
 
 
 class ThreadSnapshot(BaseModel):
-    thread_id: str
-    page_content: str
-    metadata: dict[str, Any]
+    id: str
+    messages: list[BaseMessage]
+    files: Optional[Any] = None
+    score: float
+    updated_at: datetime

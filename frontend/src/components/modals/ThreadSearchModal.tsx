@@ -82,7 +82,9 @@ export function ThreadSearchModal({ isOpen, onClose }: ThreadSearchModalProps) {
 
 					{!isLoading && query && results.length === 0 && (
 						<div className="flex items-center justify-center h-full text-center text-muted-foreground">
-							<p>No threads found matching your search. Try different keywords.</p>
+							<p>
+								No threads found matching your search. Try different keywords.
+							</p>
 						</div>
 					)}
 
@@ -94,15 +96,21 @@ export function ThreadSearchModal({ isOpen, onClose }: ThreadSearchModalProps) {
 
 					{results.map((result) => (
 						<div
-							key={result.thread_id}
-							onClick={() => handleResultClick(result.thread_id)}
+							key={result.id}
+							onClick={() => handleResultClick(result.id)}
 							className="p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
 						>
 							<div className="flex items-start justify-between gap-2">
 								<div className="flex-1 min-w-0">
-									<h4 className="font-medium truncate">{result.title}</h4>
-									<p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-										{result.excerpt}
+									{/* <h4 className="font-medium truncate">
+										{result.messages && result.messages.length > 0
+											? result.messages[result.messages.length - 1].content
+											: "No message content"}
+									</h4> */}
+									<p className="text-sm line-clamp-2 mt-1">
+										{result.messages && result.messages.length > 0
+											? result.messages[result.messages.length - 1].content
+											: "No message content"}
 									</p>
 									{result.updated_at && (
 										<p className="text-xs text-muted-foreground mt-1">

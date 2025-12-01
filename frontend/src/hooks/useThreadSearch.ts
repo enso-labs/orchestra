@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { ThreadSearchResult } from "@/lib/entities";
+import { SemanticThread } from "@/lib/entities";
 import { searchThreadsSemantic } from "@/lib/services/threadService";
 
 export const useThreadSearch = () => {
 	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<ThreadSearchResult[]>([]);
+	const [results, setResults] = useState<SemanticThread[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +22,7 @@ export const useThreadSearch = () => {
 				query: searchQuery,
 				limit: 10,
 			});
-			setResults(response.results);
+			setResults(response.threads);
 		} catch (err: any) {
 			setError(err.message || "Failed to search threads");
 			setResults([]);

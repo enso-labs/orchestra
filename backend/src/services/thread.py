@@ -1,22 +1,16 @@
-import asyncio
 from typing import Any
-from langchain_core.messages import HumanMessage
-from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
+from src.services.db import get_store_in_memory
 from src.schemas.entities import SearchFilter
-from src.utils.logger import logger
 from src.constants import TEST_USER_ID
 from src.repos.thread_repo import ThreadRepo
-
-IN_MEMORY_STORE = InMemoryStore()
-
 
 class ThreadService:
     def __init__(
         self,
         user_id: str = None,
         assistant_id: str = None,
-        store: BaseStore = IN_MEMORY_STORE,
+        store: BaseStore = get_store_in_memory(),
         thread_repo: ThreadRepo = None,
     ):
         self.user_id = user_id or TEST_USER_ID

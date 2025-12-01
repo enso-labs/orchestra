@@ -161,7 +161,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 	const navigate = useNavigate();
 	const messages = thread.value?.messages || [];
 	const fileCount = Object.keys(thread.value?.files || {}).length;
-	const lastMessage = messages[messages.length - 1];
+	const lastMessage = messages.filter((msg: any) => msg.type === "human").slice(-1)[0];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
 	const currentProjectId = thread.value?.project_id;
 
@@ -765,15 +765,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						onAddSource={handleAddSource}
 					/>
 					<CollapsibleGroup
-					title="Threads"
-					items={unassociatedThreads}
-					type="threads"
-					projects={projects}
-					loadMore={loadMoreThreads}
-					hasMore={hasMoreThreads}
-					isLoadingMore={isLoadingMoreThreads}
-					onSearchClick={() => setIsThreadSearchOpen(true)}
-				/>
+						title="Threads"
+						items={unassociatedThreads}
+						type="threads"
+						projects={projects}
+						loadMore={loadMoreThreads}
+						hasMore={hasMoreThreads}
+						isLoadingMore={isLoadingMoreThreads}
+						onSearchClick={() => setIsThreadSearchOpen(true)}
+					/>
 				</SidebarContent>
 				<SidebarFooter>
 					<SettingsPopover />
