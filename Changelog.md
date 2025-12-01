@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2
 
 ### Fixed
+  - bug/536-error-search-threads-files (2025-12-01)
   - bug/518-on-new-token-is-broken (2025-11-29)
   - bug/516-fix-google-stop-reason-stream (2025-11-21)
   - bug/505-claude-stream-response (2025-11-19)
