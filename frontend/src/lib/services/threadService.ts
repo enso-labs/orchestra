@@ -1,5 +1,5 @@
 import apiClient from "@/lib/utils/apiClient";
-import { SemanticThread, ThreadPayload, ThreadSearchRequest, ThreadSearchResult } from "@/lib/entities";
+import { SemanticThread, ThreadPayload, ThreadSearchRequest } from "@/lib/entities";
 import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
