@@ -27,37 +27,8 @@ class ThreadService:
             self.user_id, store
         )
 
-    def _get_namespace(self):
-        return (self.user_id, "threads")
-
     async def update(self, thread_id: str, data: dict):
-        if self.assistant_id:
-            data["assistant_id"] = self.assistant_id
-        
-        # Extract last human message for storage
-        messages = data.get("messages", [])
-        last_human_message = None
-        for message in reversed(messages):
-            if isinstance(message, HumanMessage):
-                last_human_message = message
-                break
-        
-        # Create a copy of data with only the last human message for storage
-        storage_data = data.copy()
-        storage_data["messages"] = [last_human_message.model_dump()] if last_human_message else []
-        
-        await self.store.aput(
-            namespace=self._get_namespace(), key=thread_id, value=storage_data
-        )
-
-        # Update thread snapshot for search (non-blocking)
-        try:
-            if messages:
-                await self.thread_snapshot_repo.upsert_snapshot(thread_id, messages)
-        except Exception as e:
-            logger.error(f"Failed to update thread snapshot for {thread_id}: {e}")
-
-        return True
+        return await self.thread_repo.update(thread_id, data)
 
     async def get(self, thread_id: str) -> Any:
         return await self.thread_repo.get(thread_id)

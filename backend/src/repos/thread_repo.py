@@ -23,7 +23,7 @@ class ThreadRepo(BaseRepo):
             pass
         self.user_id = user_id
         self.store: BaseStore = store
-        super().__init__(user_id=user_id, store=store, entity_type="sources")
+        super().__init__(user_id=user_id, store=store, entity_type="threads")
         
 
     async def search(
@@ -104,7 +104,7 @@ class ThreadRepo(BaseRepo):
             logger.error(f"Error deleting thread: {e}")
             return False
 
-    async def upsert_snapshot(self, thread_id: str, messages: list) -> bool:
+    async def _upsert_snapshot(self, thread_id: str, messages: list) -> bool:
         """Create or update a thread snapshot with recent messages.
         
         Note: messages should already be filtered to recent messages before calling this method.
@@ -136,3 +136,4 @@ class ThreadRepo(BaseRepo):
         except Exception as e:
             logger.error(f"Failed to upsert thread snapshot for {thread_id}: {e}")
             return False
+        
