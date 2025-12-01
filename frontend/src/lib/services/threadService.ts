@@ -1,5 +1,5 @@
 import apiClient from "@/lib/utils/apiClient";
-import { ThreadPayload } from "@/lib/entities";
+import { SemanticThread, ThreadPayload, ThreadSearchRequest } from "@/lib/entities";
 import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
@@ -244,6 +244,29 @@ export const updateThreadProject = async (
 		console.error("Error updating thread project:", error);
 		throw new Error(
 			error.response?.data?.detail || "Failed to update thread project",
+		);
+	}
+};
+
+export const searchThreadsSemantic = async (
+	request: ThreadSearchRequest,
+): Promise<{ threads: SemanticThread[] }> => {
+	try {
+		const response = await apiClient.post(
+			`/threads/search`,
+			request,
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			},
+		);
+		return response.data;
+	} catch (error: any) {
+		console.error("Error searching threads semantically:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to search threads",
 		);
 	}
 };

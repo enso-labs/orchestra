@@ -224,23 +224,16 @@ async def stream_generator(
                 final_state = await agent.graph.aget_state(config)
                 configurable = final_state.config.get("configurable", {})
                 messages = final_state.values.get("messages", [])
-
-                # Get the last HumanMessage
-                last_human_message = None
-                for message in reversed(messages):
-                    if isinstance(message, HumanMessage):
-                        last_human_message = message
-                        break
-
+                
+                # Update the store with the final messages and files
+                service_context.store.fields = ["messages", "files"]
                 await service_context.thread_service.update(
                     thread_id=configurable.get("thread_id"),
                     data={
                         "thread_id": configurable.get("thread_id"),
                         "checkpoint_id": configurable.get("checkpoint_id"),
                         "project_id": configurable.get("project_id"),
-                        "messages": [last_human_message.model_dump()]
-                        if last_human_message
-                        else [],
+                        "messages": messages,
                         "todos": todos_list,
                         "files": files_map,
                         "updated_at": get_time(),

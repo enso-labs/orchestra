@@ -24,7 +24,7 @@ class BaseRepo:
         return (self.user_id, self.entity_type)
 
     async def _set(
-        self, key: str, value: Source | Project | Document, ttl: int | None = None
+        self, key: str, value: Any, ttl: int | None = None
     ) -> bool:
         await self.store.aput(
             namespace=self._get_namespace(),

@@ -1,5 +1,6 @@
+from langchain_core.messages import BaseMessage
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from datetime import datetime
 from langchain_core.documents import Document
 from pydantic import field_serializer
@@ -31,3 +32,11 @@ class Project(BaseEntity):
     name: str
     description: Optional[str] = None
     sources: Optional[list[Source]] = None
+
+
+class ThreadSnapshot(BaseModel):
+    id: str
+    messages: list[BaseMessage]
+    files: Optional[Any] = None
+    score: float
+    updated_at: datetime

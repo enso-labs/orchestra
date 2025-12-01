@@ -5,6 +5,7 @@ from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 
 from src.schemas.entities.llm import *
+from src.schemas.entities.store import ThreadSnapshot
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,
@@ -132,5 +133,21 @@ class SearchFilter(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {"query": "", "filter": {}, "limit": 20, "offset": 0}
+        }
+    }
+
+
+class ThreadSemanticSearchRequest(BaseModel):
+    query: str = Field(..., description="Natural language search query")
+    limit: int = Field(default=10, description="Maximum number of results (max 50)")
+    assistant_id: Optional[str] = Field(default=None, description="Optional assistant ID to filter results")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "query": "threads about database optimization",
+                "limit": 10,
+                "assistant_id": None
+            }
         }
     }

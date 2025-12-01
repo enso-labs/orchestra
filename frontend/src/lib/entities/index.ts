@@ -11,6 +11,8 @@ export interface ThreadPayload {
 	collection?: object | null;
 }
 
+export * from "./thread";
+
 export type Agent = {
 	id: string;
 	name: string;

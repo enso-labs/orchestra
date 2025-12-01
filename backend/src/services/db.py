@@ -107,7 +107,7 @@ def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
 def get_store_db(
     embed: str = DEFAULT_EMBED,
     dims: int = 1536,
-    fields: list[str] = DEFAULT_FIELDS,
+    fields: list[str] = [],
 ) -> AsyncIterator[AsyncPostgresStore]:
     return AsyncPostgresStore.from_conn_string(
         conn_string=DB_URI,
