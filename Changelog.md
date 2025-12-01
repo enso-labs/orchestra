@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - feat/530-semantic-search-over-threads (2025-11-30)
+  - feat/534-mermaid-diagram (2025-11-30)
   - feat/528-pagination-for-threads (2025-11-30)
   - feat/519-react-window (2025-11-23)
   - feat/507-add-projects-ui (2025-11-20)
