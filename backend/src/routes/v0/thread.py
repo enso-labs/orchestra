@@ -3,7 +3,7 @@ from fastapi import APIRouter, Body, HTTPException, Depends, status
 from fastapi.responses import Response
 from langgraph.store.base import BaseStore
 from src.contexts.service import ServiceContext
-from src.schemas.entities import ThreadSearch, ThreadSemanticSearchRequest
+from src.schemas.entities import SearchFilter, ThreadSemanticSearchRequest
 from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
@@ -16,27 +16,26 @@ router = APIRouter(tags=["Thread"])
 
 @router.post("/threads/search", name="Query Threads in Checkpointer")
 async def search_threads(
-    thread_search: ThreadSearch = Body(
+    search_filter: SearchFilter = Body(
         openapi_examples=Examples.THREAD_SEARCH_EXAMPLES
     ),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
-        filter = thread_search.model_dump(exclude_none=True).get("filter", {})
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(
                 user_id=user.id, store=store, checkpointer=checkpointer
             )
-            if "thread_id" in filter and not "checkpoint_id" in filter:
+            if "thread_id" in search_filter.filter and not "checkpoint_id" in search_filter.filter:
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
-                    thread_id=filter["thread_id"]
+                    thread_id=search_filter.filter["thread_id"]
                 )
                 # if not checkpoints:
                 #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checkpoints not found")
                 return {"checkpoints": checkpoints}
 
-            threads = await service_context.thread_service.search(filter=filter)
+            threads = await service_context.thread_service.search(search_filter)
             return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")

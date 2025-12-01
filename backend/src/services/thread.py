@@ -3,9 +3,10 @@ from typing import Any
 from langchain_core.messages import HumanMessage
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
+from src.schemas.entities import SearchFilter
 from src.utils.logger import logger
-from src.constants import TEST_USER_ID, THREAD_SNAPSHOT_MESSAGE_COUNT
-from src.repos.thread_snapshot_repo import ThreadSnapshotRepo
+from src.constants import TEST_USER_ID
+from src.repos.thread_repo import ThreadRepo
 
 IN_MEMORY_STORE = InMemoryStore()
 
@@ -16,13 +17,13 @@ class ThreadService:
         user_id: str = None,
         assistant_id: str = None,
         store: BaseStore = IN_MEMORY_STORE,
-        thread_snapshot_repo: ThreadSnapshotRepo = None,
+        thread_repo: ThreadRepo = None,
     ):
         self.user_id = user_id or TEST_USER_ID
         self.assistant_id = assistant_id
         self.store: BaseStore = store
         self.thread_id = None
-        self.thread_snapshot_repo = thread_snapshot_repo or ThreadSnapshotRepo(
+        self.thread_repo = thread_repo or ThreadRepo(
             self.user_id, store
         )
 
@@ -59,52 +60,13 @@ class ThreadService:
         return True
 
     async def get(self, thread_id: str) -> Any:
-        return await self.store.aget(self._get_namespace(), thread_id)
+        return await self.thread_repo.get(thread_id)
 
     async def delete(self, thread_id: str) -> bool:
-        try:
-            await self.store.adelete(self._get_namespace(), thread_id)
-            await self.thread_snapshot_repo.delete(thread_id)
-            return True
-        except Exception as e:
-            logger.exception(f"Error deleting thread: {e}")
-            return False
+        return await self.thread_repo.delete(thread_id)
 
-    async def search(
-        self,
-        limit: int = 20,
-        filter: dict = {},
-    ) -> list[dict]:
-        try:
-            max_retries = 3
-            retry_delay = 1  # seconds
-
-            for attempt in range(max_retries):
-                try:
-                    async with self.store as store:
-                        threads = await store.asearch(
-                            self._get_namespace(), limit=limit, filter=filter
-                        )
-                        return sorted(
-                            [thread.dict() for thread in threads],
-                            key=lambda x: x.get("updated_at"),
-                            reverse=True,
-                        )
-                except Exception as e:
-                    error_msg = str(e).lower()
-                    if "connection" in error_msg and "closed" in error_msg:
-                        logger.warning(
-                            f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}"
-                        )
-                        if attempt < max_retries - 1:
-                            await asyncio.sleep(
-                                retry_delay * (2**attempt)
-                            )  # Exponential backoff
-                            continue
-                    raise e
-        except Exception as e:
-            logger.error(f"Error searching threads: {e}")
-            return []
+    async def search(self, search_filter: SearchFilter) -> list[dict]:
+        return await self.thread_repo.search(search_filter)
 
 
 thread_service = ThreadService()
