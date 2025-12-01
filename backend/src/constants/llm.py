@@ -17,6 +17,7 @@ class ChatModels(str, Enum):
         OPENAI_REASONING_03 = "openai:o3"
         OPENAI_REASONING_04_MINI = "openai:o4-mini"
         OPENAI_GPT_4_1_NANO = "openai:gpt-4.1-nano"
+        OPENAI_GPT_4_1_MINI = "openai:gpt-4.1-mini"
         OPENAI_GPT_5_NANO = "openai:gpt-5-nano"
         OPENAI_GPT_5_MINI = "openai:gpt-5-mini"
         OPENAI_GPT_5 = "openai:gpt-5"
@@ -84,6 +85,7 @@ def get_free_models():
     models = []
     if OPENAI_API_KEY:
         models.append(ChatModels.OPENAI_GPT_5_NANO.value)
+        models.append(ChatModels.OPENAI_GPT_4_1_MINI.value)
     if ANTHROPIC_API_KEY:
         models.append(ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value)
     if GOOGLE_API_KEY:
