@@ -34,7 +34,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 				const firstFile = fileNames[0];
 				setSelectedFile(firstFile);
 				// Only disable preview if the new first file doesn't support preview
-				if (!isMarkdownFile(firstFile) && !isHtmlFile(firstFile)) {
+				if (
+					!isMarkdownFile(firstFile) &&
+					!isHtmlFile(firstFile) &&
+					!isMermaidFile(firstFile)
+				) {
 					setShowPreview(false);
 				}
 			}
@@ -45,7 +49,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	const handleFileSelect = (filename: string) => {
 		setSelectedFile(filename);
 		// Disable preview if switching to a file that doesn't support preview
-		if (!isMarkdownFile(filename) && !isHtmlFile(filename)) {
+		if (
+			!isMarkdownFile(filename) &&
+			!isHtmlFile(filename) &&
+			!isMermaidFile(filename)
+		) {
 			setShowPreview(false);
 		}
 	};
@@ -88,12 +96,16 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	};
 
 	const isMarkdownFile = (filename: string): boolean => {
-		return filename.toLowerCase().endsWith('.md');
+		return filename.toLowerCase().endsWith(".md");
 	};
 
 	const isHtmlFile = (filename: string): boolean => {
 		const lower = filename.toLowerCase();
-		return lower.endsWith('.html') || lower.endsWith('.htm');
+		return lower.endsWith(".html") || lower.endsWith(".htm");
+	};
+
+	const isMermaidFile = (filename: string): boolean => {
+		return filename.toLowerCase().endsWith(".mmd");
 	};
 
 	// Copy current file content
@@ -178,18 +190,25 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 				{/* Actions */}
 				<div className="flex items-center gap-1 px-2 border-l border-border">
-					{/* Preview Toggle (for .md and .html/.htm files) */}
-					{selectedFile && (isMarkdownFile(selectedFile) || isHtmlFile(selectedFile)) && (
-						<Button
-							variant={showPreview ? "secondary" : "ghost"}
-							size="sm"
-							onClick={() => setShowPreview(!showPreview)}
-							className="h-8 gap-2"
-							title={showPreview ? "Show code" : `Preview ${isHtmlFile(selectedFile) ? "HTML" : "markdown"}`}
-						>
-							<Eye className="h-4 w-4" />
-						</Button>
-					)}
+					{/* Preview Toggle (for .md, .html/.htm, and .mmd files) */}
+					{selectedFile &&
+						(isMarkdownFile(selectedFile) ||
+							isHtmlFile(selectedFile) ||
+							isMermaidFile(selectedFile)) && (
+							<Button
+								variant={showPreview ? "secondary" : "ghost"}
+								size="sm"
+								onClick={() => setShowPreview(!showPreview)}
+								className="h-8 gap-2"
+								title={
+									showPreview
+										? "Show code"
+										: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
+								}
+							>
+								<Eye className="h-4 w-4" />
+							</Button>
+						)}
 
 					{/* Copy current file */}
 					<Button
@@ -250,6 +269,14 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 								className="w-full h-full border-0 bg-white"
 								title={`Preview of ${selectedFile}`}
 							/>
+						) : showPreview && isMermaidFile(selectedFile) ? (
+							<ScrollArea className="h-full">
+								<div className="p-6 max-w-4xl mx-auto">
+									<MarkdownCard
+										content={`\`\`\`mermaid\n${getFileContent(selectedFile)}\n\`\`\``}
+									/>
+								</div>
+							</ScrollArea>
 						) : (
 							<MonacoEditor
 								value={getFileContent(selectedFile)}
