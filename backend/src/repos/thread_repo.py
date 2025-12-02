@@ -13,7 +13,7 @@ from src.utils.format import format_xml_thread
 from src.utils.messages import from_message_to_dict
 
 
-FIELDS = ["messages", "files"]
+FIELDS = ["messages"]
 
 class ThreadRepo(BaseRepo):
     def __init__(self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)):
