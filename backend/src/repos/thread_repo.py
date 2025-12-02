@@ -49,8 +49,8 @@ class ThreadRepo(BaseRepo):
                             return [
                                 ThreadSnapshot(
                                     id=thread.key, 
-                                    messages=thread.value["messages"], 
-                                    files=thread.value["files"], 
+                                    messages=thread.value.get("messages", []), 
+                                    files=thread.value.get("files", []), 
                                     score=thread.score, 
                                     updated_at=thread.updated_at
                                 ).model_dump(exclude_none=True) for thread in queried_threads
