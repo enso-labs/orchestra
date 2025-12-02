@@ -13,7 +13,7 @@ from src.utils.format import format_xml_thread
 from src.utils.messages import from_message_to_dict
 
 
-FIELDS = ["messages"]
+FIELDS = ["messages", "files"]
 
 class ThreadRepo(BaseRepo):
     def __init__(self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)):
@@ -49,8 +49,8 @@ class ThreadRepo(BaseRepo):
                             return [
                                 ThreadSnapshot(
                                     id=thread.key, 
-                                    messages=thread.value.get("messages", []), 
-                                    files=thread.value.get("files", []), 
+                                    messages=thread.value["messages"], 
+                                    files=thread.value["files"], 
                                     score=thread.score, 
                                     updated_at=thread.updated_at
                                 ).model_dump(exclude_none=True) for thread in queried_threads

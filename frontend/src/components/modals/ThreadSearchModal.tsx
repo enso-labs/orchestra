@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
 import { useThreadSearch } from "@/hooks/useThreadSearch";
+import { formatContent } from "@/lib/utils/format";
 
 interface ThreadSearchModalProps {
 	isOpen: boolean;
@@ -109,7 +110,7 @@ export function ThreadSearchModal({ isOpen, onClose }: ThreadSearchModalProps) {
 									</h4> */}
 									<p className="text-sm line-clamp-2 mt-1">
 										{result.messages && result.messages.length > 0
-											? result.messages[result.messages.length - 1].content
+											? formatContent(result.messages[result.messages.length - 1].content)
 											: "No message content"}
 									</p>
 									{result.updated_at && (
