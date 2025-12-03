@@ -6,7 +6,9 @@ export type Agent = {
 	name: string;
 	description: string;
 	model: string;
-	prompt: string;
+	prompt?: string;
+	system_prompt?: string;
+	instructions?: string;
 	tools: string[];
 	subagents?: Agent[];
 	mcp?: {

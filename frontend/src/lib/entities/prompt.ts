@@ -2,6 +2,7 @@ export type Prompt = {
 	id?: string;
 	name: string;
 	content: string;
+	type?: "user" | "instructions" | "system";
 	public: boolean;
 	v?: number;
 	slug?: string;

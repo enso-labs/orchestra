@@ -5,6 +5,7 @@ import { useChatContext } from "@/context/ChatContext";
 import { ChatNav } from "@/components/nav/ChatNav";
 import ChatInput from "@/components/inputs/ChatInput";
 import ChatMessages from "@/components/lists/ChatMessages";
+import ChatMessagesSkeleton from "@/components/lists/ChatMessagesSkeleton";
 import { useAppContext } from "@/context/AppContext";
 import { useAgentContext } from "@/context/AgentContext";
 import { useProjectContext } from "@/context/ProjectContext";
@@ -65,10 +66,9 @@ export default function ThreadPage() {
 			try {
 				// Load checkpoints directly for this specific thread
 				// Backend returns checkpoints when thread_id is passed
-				const checkpoints = await searchThreads(
-					"list_checkpoints",
-					{ thread_id: threadId },
-				);
+				const checkpoints = await searchThreads("list_checkpoints", {
+					thread_id: threadId,
+				});
 
 				if (!checkpoints || checkpoints.length === 0) {
 					setError("No checkpoints found for thread");
@@ -82,7 +82,6 @@ export default function ThreadPage() {
 				if (threadData.todos && Object.keys(threadData.todos).length > 0) {
 					setTodos(threadData.todos);
 				}
-
 
 				// Set filesMap
 				if (threadData.files && Object.keys(threadData.files).length > 0) {
@@ -154,16 +153,6 @@ export default function ThreadPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [projectId, projects]);
 
-	if (threadLoading) {
-		return (
-			<ChatLayout>
-				<div className="flex h-full items-center justify-center">
-					<p className="text-muted-foreground">Loading thread...</p>
-				</div>
-			</ChatLayout>
-		);
-	}
-
 	if (error) {
 		return (
 			<ChatLayout>
@@ -187,7 +176,11 @@ export default function ThreadPage() {
 					<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 						<ChatNav sidebarTrigger={<SidebarTrigger />} />
 						<div className="flex-1 min-h-0">
-							<ChatMessages messages={messages} />
+							{threadLoading ? (
+								<ChatMessagesSkeleton />
+							) : (
+								<ChatMessages messages={messages} />
+							)}
 						</div>
 						<div className="sticky bottom-0 bg-background border-border">
 							<div className="max-w-4xl mx-auto">
@@ -214,7 +207,11 @@ export default function ThreadPage() {
 							<div className="flex flex-col h-full min-h-0 overflow-hidden">
 								<ChatNav sidebarTrigger={<SidebarTrigger />} />
 								<div className="flex-1 min-h-0">
-									<ChatMessages messages={messages} />
+									{threadLoading ? (
+										<ChatMessagesSkeleton />
+									) : (
+										<ChatMessages messages={messages} />
+									)}
 								</div>
 								<div className="sticky bottom-0 bg-background border-border">
 									<div className="max-w-4xl mx-auto">
