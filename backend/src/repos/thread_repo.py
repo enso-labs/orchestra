@@ -27,7 +27,16 @@ class ThreadRepo(BaseRepo):
             pass
         super().__init__(user_id=user_id, store=store, entity_type="threads")
         
-
+    def _format(self, item: SearchItem) -> ThreadSnapshot:
+        return ThreadSnapshot(
+            id=item.key,
+            messages=item.value.get("messages", []),
+            files=item.value.get("files", []),
+            todos=item.value.get("todos", []),
+            score=getattr(item, "score", None),
+            updated_at=getattr(item, "updated_at", None),
+        )
+        
     async def search(
         self,
         search_filter: SearchFilter,
@@ -102,7 +111,8 @@ class ThreadRepo(BaseRepo):
         
         
     async def get(self, thread_id: str) -> dict:
-        return await self._get(thread_id)
+        item = await self._get(thread_id)
+        return self._format(item)
         
     async def delete(self, thread_id: str) -> bool:
         try:

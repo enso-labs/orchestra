@@ -36,7 +36,9 @@ class Project(BaseEntity):
 
 class ThreadSnapshot(BaseModel):
     id: str
-    messages: list[BaseMessage]
+    messages: list[Union[BaseMessage, dict]]
     files: Optional[Any] = None
-    score: float
+    todos: Optional[Any] = None
+    score: float | None = None
+    metadata: Optional[dict] = None
     updated_at: datetime

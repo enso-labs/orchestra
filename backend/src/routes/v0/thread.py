@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Body, HTTPException, Depends, status
 from fastapi.responses import Response
 from langgraph.store.base import BaseStore
+from src.schemas.entities.store import ThreadSnapshot
 from src.contexts.service import ServiceContext
 from src.schemas.entities import SearchFilter, ThreadSemanticSearchRequest
 from src.utils.logger import logger
@@ -31,9 +32,14 @@ async def search_threads(
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
                     thread_id=search_filter.filter["thread_id"]
                 )
-                # if not checkpoints:
-                #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Checkpoints not found")
+                thread: ThreadSnapshot = await service_context.thread_service.get(
+                    search_filter.filter["thread_id"]
+                )
+                if thread:
+                    checkpoints[0]['metadata']['files'] = thread.files
+                    checkpoints[0]['metadata']['todos'] = thread.todos
                 return {"checkpoints": checkpoints}
+                
 
             threads = await service_context.thread_service.search(search_filter)
             return {"threads": threads}
