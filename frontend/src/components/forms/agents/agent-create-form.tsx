@@ -17,7 +17,6 @@ import {
 	Library,
 	FileText,
 	Ban,
-	Undo,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
@@ -40,14 +39,12 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAgentContext } from "@/context/AgentContext";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
-import { useNavigate } from "react-router-dom";
-import { base64Compare } from "@/lib/utils/format";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Prompt } from "@/lib/entities/prompt";
 import { cn } from "@/lib/utils";
@@ -268,13 +265,6 @@ export function AgentCreateForm() {
 			}
 		}
 	}, [agent]);
-
-	const agentHasChanged = useMemo(() => {
-		const prevAssistant = agents.find((a: Agent) => a.id === agent.id);
-		if (!prevAssistant) return true;
-		delete agent.system;
-		return !base64Compare(JSON.stringify(prevAssistant), JSON.stringify(agent));
-	}, [agents, agent]);
 
 	const filteredSubagents = agents.filter((a: Agent) => a.id !== agentId);
 
@@ -883,8 +873,7 @@ export function AgentCreateForm() {
 											minimap: false,
 											fontSize: 12,
 											lineNumbers: "on",
-											readOnly: !isEditing,
-										}}
+											}}
 									/>
 								</div>
 							)}

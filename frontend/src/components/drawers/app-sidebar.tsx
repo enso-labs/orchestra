@@ -702,7 +702,6 @@ function CollapsibleGroup({
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { threads, loadMoreThreads, hasMoreThreads, isLoadingMoreThreads } = useChatContext();
-	const { agents } = useAgentContext();
 	const { projects, useEffectGetProjects } = useProjectContext();
 
 	// Modal state
@@ -715,13 +714,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	// Fetch projects on mount
 	useEffectGetProjects();
-
-	const assistantsList = agents.map((agent: Agent) => {
-		return {
-			agent: agent,
-			url: `/a/${agent.id}`,
-		};
-	});
 
 	// Filter out threads that are associated with a project
 	const unassociatedThreads = threads.filter(

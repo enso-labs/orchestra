@@ -5,7 +5,7 @@ import { useChatContext } from "@/context/ChatContext";
 import ListThreads from "@/components/lists/ListThreads";
 import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAgentContext } from "@/context/AgentContext";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
 import { useQueryState } from "nuqs";
@@ -17,7 +17,6 @@ function AgentCreatePage() {
 	const { threads, useListThreadsEffect, messages } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
-	const navigate = useNavigate();
 
 	useEffectGetAgents();
 
