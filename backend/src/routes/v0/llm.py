@@ -144,6 +144,7 @@ async def llm_stream(
                 params.subagents,
                 service_context.config,
                 service_context,
+                params.instructions,
             ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},

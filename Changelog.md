@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/525-pass-instructions (2025-12-03)
   - feat/530-semantic-search-over-threads (2025-11-30)
   - feat/534-mermaid-diagram (2025-11-30)
   - feat/528-pagination-for-threads (2025-11-30)

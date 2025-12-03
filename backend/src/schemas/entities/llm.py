@@ -1,7 +1,7 @@
 from uuid import uuid4
 from datetime import datetime
 from typing import List, Any, Literal, Optional
-from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer
+from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer, model_validator
 from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
@@ -87,7 +87,17 @@ class Assistant(BaseModel):
     name: str
     description: str = Field(default="Helpful AI Assistant.")
     model: Optional[str] = None
-    prompt: str = Field(default="You are a helpful assistant.")
+    system_prompt: Optional[str] = Field(default=None, examples=["You are a helpful assistant."])
+    instructions: Optional[str] = Field(default=None, examples=["Your role is to help the user with their task."])
+
+    @model_validator(mode="after")
+    def validate_system_prompt_or_instructions(cls, values):
+        system_prompt = values.system_prompt
+        instructions = values.instructions
+        if system_prompt and instructions:
+            raise ValueError("Only one of system_prompt or instructions may be set, not both.")
+        return values
+    
     tools: list[str]
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
@@ -131,6 +141,7 @@ class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default="openai:gpt-5-nano")
     system: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
+    instructions: Optional[str] = Field(default="", exclude=True)
     tools: Optional[List[str]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)

@@ -3,6 +3,7 @@ export interface ThreadPayload {
 	images?: string[];
 	query: string;
 	system?: string;
+	instructions?: string;
 	tools?: any[];
 	visualize?: boolean;
 	model?: string;
@@ -54,7 +55,8 @@ export type DashboardTabOption = "agents" | "workflows" | "servers";
 
 export type LLMStreamPayload = {
 	model: string;
-	system: string;
+	system?: string;
+	instructions?: string;
 	stream_mode: string;
 	messages: {
 		role: string;

@@ -144,6 +144,7 @@ def init_config(
 ### Construct Agent
 ################################################################################
 async def construct_agent(
+    instructions: str,
     system_prompt: str,
     tools: list[BaseTool],
     model: BaseChatModel,
@@ -166,7 +167,7 @@ async def construct_agent(
             model=model,
             tools=tools,
             subagents=subagents,
-            prompt=init_system_prompt(system_prompt, config or {}),
+            prompt=init_system_prompt(system_prompt, config or {}, instructions),
             checkpointer=checkpointer,
             store=store,
         )
