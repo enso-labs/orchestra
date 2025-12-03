@@ -753,12 +753,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					{/* <SearchForm /> */}
 				</SidebarHeader>
 				<SidebarContent className="gap-0">
-					{/* We create a collapsible SidebarGroup for each parent. */}
-					<CollapsibleGroup
-						title="Assistants"
-						items={assistantsList}
-						type="assistants"
-					/>
+					{/* Assistants Link */}
+					<SidebarGroup className="border-b border-sidebar-border">
+						<SidebarGroupLabel
+							asChild
+							className={`
+								group/label text-sidebar-foreground hover:bg-sidebar-accent
+								hover:text-sidebar-accent-foreground text-sm
+							`}
+						>
+							<Link to="/assistants" className="flex items-center w-full">
+								<Bot className="w-4 h-4 mr-2" />
+								Assistants
+							</Link>
+						</SidebarGroupLabel>
+					</SidebarGroup>
+
 					<ProjectsCollapsibleGroup
 						projects={projects}
 						onCreateProject={() => setIsCreateProjectModalOpen(true)}

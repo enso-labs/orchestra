@@ -23,7 +23,13 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { truncateFrom } from "@/lib/utils/format";
 import { useChatContext } from "@/context/ChatContext";
 
-function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
+function SelectModel({
+  onModelSelected,
+  disabled,
+}: {
+  onModelSelected?: () => void;
+  disabled?: boolean;
+}) {
   const { model, setModel, models } = useChatContext();
   const [open, setOpen] = useState(false);
 
@@ -78,8 +84,12 @@ function SelectModel({ onModelSelected }: { onModelSelected?: () => void }) {
         <Button
           variant="outline"
           role="combobox"
+          disabled={disabled}
           aria-expanded={open}
-          className="w-full justify-between"
+          className={cn(
+            "w-full justify-between",
+            disabled && "opacity-60 bg-muted/50 cursor-not-allowed"
+          )}
         >
           <span className="flex items-center gap-2 truncate">
             {currentValue && getModelIcon(currentValue)}
