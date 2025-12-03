@@ -76,8 +76,11 @@ def raw_html(content: str) -> str:
 </html>"""
 
 
-def init_system_prompt(system_prompt: str, config: RunnableConfig) -> str:
+def init_system_prompt(system_prompt: str, config: RunnableConfig, instructions: str = None) -> str:
     lines = [system_prompt]
+    if instructions:
+        lines.append("---")
+        lines.append(f"INSTRUCTIONS:\n{instructions}")
     lines.append("---")
     metadata = config.get("metadata", {})
     current_utc = metadata.get("current_utc")

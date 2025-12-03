@@ -495,12 +495,23 @@ class Examples:
     }
 
     LLM_STREAM_EXAMPLES = {
-        "stateless_stream": Example(
-            summary="stateless_stream",
+        "stateless_stream_instructions": Example(
+            summary="stateless_stream_instructions",
             description="LLM Stateless",
             value={
                 "model": "openai:gpt-5-nano",
-                "system": "You are a helpful assistant.",
+                "instructions": "You are a weather assistant.",
+                "tools": ["get_weather"],
+                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+            },
+        ),
+        "stateless_stream_system": Example(
+            summary="stateless_stream_system",
+            description="LLM Stateless",
+            value={
+                "model": "openai:gpt-5-nano",
+                "system": "You are a weather assistant. Only output format in Celsius.",
+                "tools": ["get_weather"],
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
