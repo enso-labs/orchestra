@@ -43,6 +43,8 @@ function AgentIndexPage() {
 		setSearchParams(new URLSearchParams());
 	}, []);
 
+	clearMessages();
+
 	// Simple search on agent name only
 	const filteredAgents = useMemo(() => {
 		if (!searchQuery.trim()) return agents;
