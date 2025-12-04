@@ -24,6 +24,7 @@ import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
 import {
 	Form,
 	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -356,7 +357,11 @@ export function AgentCreateForm() {
 										<Input
 											disabled={!isEditing}
 											placeholder="Agent name"
-											className={!isEditing ? "opacity-60 bg-muted/50 cursor-not-allowed" : ""}
+											className={
+												!isEditing
+													? "opacity-60 bg-muted/50 cursor-not-allowed"
+													: ""
+											}
 											{...field}
 											onChangeCapture={(e) =>
 												setAgent({ ...agent, name: e.currentTarget.value })
@@ -373,14 +378,20 @@ export function AgentCreateForm() {
 							name="description"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className={!isEditing ? "text-muted-foreground/70" : ""}>
+									<FormLabel
+										className={!isEditing ? "text-muted-foreground/70" : ""}
+									>
 										Description
 									</FormLabel>
 									<FormControl>
 										<Textarea
 											disabled={!isEditing}
 											placeholder="Agent description"
-											className={!isEditing ? "opacity-60 bg-muted/50 cursor-not-allowed" : ""}
+											className={
+												!isEditing
+													? "opacity-60 bg-muted/50 cursor-not-allowed"
+													: ""
+											}
 											{...field}
 											onChangeCapture={(e) =>
 												setAgent({
@@ -390,7 +401,10 @@ export function AgentCreateForm() {
 											}
 										/>
 									</FormControl>
-									{/* <FormDescription>This is your agent description.</FormDescription> */}
+									<p className="text-xs text-muted-foreground mt-2">
+										Provides a brief description of the assistant. When to use
+										it, and how it works.
+									</p>
 									<FormMessage />
 								</FormItem>
 							)}
@@ -398,15 +412,14 @@ export function AgentCreateForm() {
 						<Tabs
 							value={promptMode}
 							onValueChange={(v) => isEditing && setPromptMode(v as any)}
-							className={cn("w-full", !isEditing && "opacity-60 pointer-events-none")}
+							className={cn(
+								"w-full",
+								!isEditing && "opacity-60 pointer-events-none",
+							)}
 						>
 							<TabsList className="grid w-full grid-cols-2">
-								<TabsTrigger value="instructions">
-									Instructions (Recommended)
-								</TabsTrigger>
-								<TabsTrigger value="system_prompt">
-									System Prompt Override
-								</TabsTrigger>
+								<TabsTrigger value="instructions">Instructions</TabsTrigger>
+								<TabsTrigger value="system_prompt">System Prompt</TabsTrigger>
 							</TabsList>
 
 							<TabsContent value="instructions" className="mt-4">
@@ -416,7 +429,11 @@ export function AgentCreateForm() {
 									render={({ field }) => (
 										<FormItem>
 											<div className="flex items-center justify-between">
-												<FormLabel className={!isEditing ? "text-muted-foreground/70" : ""}>
+												<FormLabel
+													className={
+														!isEditing ? "text-muted-foreground/70" : ""
+													}
+												>
 													Instructions
 												</FormLabel>
 												<div className="flex gap-2">
@@ -481,7 +498,8 @@ export function AgentCreateForm() {
 												<Textarea
 													{...field}
 													disabled={
-														(!isEditing) || (!!selectedPrompt && promptMode === "instructions")
+														!isEditing ||
+														(!!selectedPrompt && promptMode === "instructions")
 													}
 													placeholder={
 														selectedPrompt
@@ -490,9 +508,11 @@ export function AgentCreateForm() {
 													}
 													className={cn(
 														"min-h-[150px]",
-														(!isEditing) || (!!selectedPrompt && promptMode === "instructions")
+														!isEditing ||
+															(!!selectedPrompt &&
+																promptMode === "instructions")
 															? "opacity-60 bg-muted/50 cursor-not-allowed"
-															: ""
+															: "",
 													)}
 													onChangeCapture={(e) =>
 														setAgent({
@@ -520,7 +540,11 @@ export function AgentCreateForm() {
 									render={({ field }) => (
 										<FormItem>
 											<div className="flex items-center justify-between">
-												<FormLabel className={!isEditing ? "text-muted-foreground/70" : ""}>
+												<FormLabel
+													className={
+														!isEditing ? "text-muted-foreground/70" : ""
+													}
+												>
 													System Prompt
 												</FormLabel>
 												<div className="flex gap-2">
@@ -585,7 +609,8 @@ export function AgentCreateForm() {
 												<Textarea
 													{...field}
 													disabled={
-														(!isEditing) || (!!selectedPrompt && promptMode === "system_prompt")
+														!isEditing ||
+														(!!selectedPrompt && promptMode === "system_prompt")
 													}
 													placeholder={
 														selectedPrompt
@@ -594,9 +619,11 @@ export function AgentCreateForm() {
 													}
 													className={cn(
 														"min-h-[150px]",
-														(!isEditing) || (!!selectedPrompt && promptMode === "system_prompt")
+														!isEditing ||
+															(!!selectedPrompt &&
+																promptMode === "system_prompt")
 															? "opacity-60 bg-muted/50 cursor-not-allowed"
-															: ""
+															: "",
 													)}
 													onChangeCapture={(e) =>
 														setAgent({
@@ -621,7 +648,9 @@ export function AgentCreateForm() {
 							name="model"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className={!isEditing ? "text-muted-foreground/70" : ""}>
+									<FormLabel
+										className={!isEditing ? "text-muted-foreground/70" : ""}
+									>
 										Model
 									</FormLabel>
 									<FormControl>
@@ -713,9 +742,9 @@ export function AgentCreateForm() {
 											disabled={!isEditing}
 											onClick={() => toggleSubagent(subagent)}
 											className={`transition-colors ${
-												isEditing 
-												? "text-muted-foreground hover:text-foreground" 
-												: "text-muted-foreground/50 cursor-not-allowed"
+												isEditing
+													? "text-muted-foreground hover:text-foreground"
+													: "text-muted-foreground/50 cursor-not-allowed"
 											}`}
 											aria-label={`Remove ${subagent.name}`}
 										>
@@ -734,7 +763,9 @@ export function AgentCreateForm() {
 								<div
 									key={ag.id}
 									className={`border rounded-lg p-4 transition-all relative ${
-										isEditing ? "cursor-pointer hover:shadow-md" : "cursor-default opacity-80"
+										isEditing
+											? "cursor-pointer hover:shadow-md"
+											: "cursor-default opacity-80"
 									} ${
 										isSelected
 											? "border-primary bg-primary/10 hover:bg-primary/15"
@@ -840,7 +871,9 @@ export function AgentCreateForm() {
 								<Button
 									type="button"
 									onClick={fetchSystemMessageFromUrl}
-									disabled={isLoadingFromUrl || !systemMessageUrl.trim() || !isEditing}
+									disabled={
+										isLoadingFromUrl || !systemMessageUrl.trim() || !isEditing
+									}
 									className="flex items-center gap-2"
 								>
 									{isLoadingFromUrl ? (
@@ -873,7 +906,7 @@ export function AgentCreateForm() {
 											minimap: false,
 											fontSize: 12,
 											lineNumbers: "on",
-											}}
+										}}
 									/>
 								</div>
 							)}

@@ -35,7 +35,7 @@ function AgentEditPage() {
 		setActiveTab(value);
 	};
 
-	useListThreadsEffect(null, { assistant_id: agentId });
+	useListThreadsEffect(null, { assistant_id: { $eq: agentId } });
 
 	useEffect(() => {
 		// Only clear search params if there are none on init
@@ -71,13 +71,12 @@ function AgentEditPage() {
 						<SidebarTrigger />
 						<Tabs
 							defaultValue="config"
-							value={activeTab || "chat"}
+							value={activeTab || "assistant"}
 							onValueChange={handleTabChange}
 							className="ml-2"
 						>
 							<TabsList>
-								<TabsTrigger value="chat">Chat</TabsTrigger>
-								<TabsTrigger value="threads">Threads</TabsTrigger>
+								<TabsTrigger value="assistant">Assistant</TabsTrigger>
 								<TabsTrigger value="config">Config</TabsTrigger>
 							</TabsList>
 						</Tabs>
@@ -87,21 +86,14 @@ function AgentEditPage() {
 
 				<Tabs
 					defaultValue="config"
-					value={activeTab || "chat"}
+					value={activeTab || "assistant"}
 					onValueChange={handleTabChange}
 					className="flex-1 flex flex-col min-h-0"
 				>
-					<TabsContent value="chat" className="flex-1 min-h-0 m-0">
+					<TabsContent value="assistant" className="flex-1 min-h-0 m-0">
 						<div className="h-full">
 							<ChatPanel agent={agent} showAgentMenu={false} />
 						</div>
-					</TabsContent>
-					<TabsContent value="threads" className="flex-1 min-h-0 m-0 p-4">
-						<ScrollArea className="h-full">
-							<div className="p-2 space-y-2">
-								<ListThreads threads={threads} />
-							</div>
-						</ScrollArea>
 					</TabsContent>
 					<TabsContent value="config" className="flex-1 min-h-0 m-0 p-4">
 						<ScrollArea className="h-full">

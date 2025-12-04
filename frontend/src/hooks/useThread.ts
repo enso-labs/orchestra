@@ -45,7 +45,7 @@ export default function useThread(): ThreadContextType {
 		filter: {
 			thread_id?: string;
 			checkpoint_id?: string;
-			assistant_id?: string;
+			metadata?: { assistant_id?: string, project_id?: string };
 		} = {},
 	) => {
 		// Always pass limit and offset (defaults: 20, 0) to searchThreads
@@ -103,7 +103,7 @@ export default function useThread(): ThreadContextType {
 
 	const useListThreadsEffect = (
 		trigger?: boolean,
-		filter: { assistant_id?: string } = {},
+		filter: { metadata?: { [key: string]: any } } = {},
 	) => {
 		useEffect(() => {
 			// Reset pagination state for fresh load
