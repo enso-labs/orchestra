@@ -65,7 +65,7 @@ import {
 	deleteThread,
 	updateThreadProject,
 } from "@/lib/services";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
 
@@ -159,6 +159,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 	const { agent } = useAgentContext();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const navigate = useNavigate();
+	const { pathname } = useLocation();
 	const messages = thread.value?.messages || [];
 	const fileCount = Object.keys(thread.value?.files || {}).length;
 	const lastMessage = messages.filter((msg: any) => msg.type === "human").slice(-1)[0];
@@ -181,7 +182,11 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 
 	const handleThreadClick = () => {
 		// Navigate to thread route
-		navigate(`/t/${thread.value?.thread_id || thread.key}`);
+		if (pathname.startsWith("/assistant/")) {
+			navigate(`/assistant/${agent.id}/thread/${thread.value?.thread_id || thread.key}`);
+		} else {
+			navigate(`/thread/${thread.value?.thread_id || thread.key}`);
+		}
 		// Close sidebar on mobile
 		if (isMobile) {
 			setOpenMobile(false);

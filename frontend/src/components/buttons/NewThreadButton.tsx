@@ -16,9 +16,12 @@ function NewThreadButton() {
 			const pathname = location.pathname;
 
 			// Handle thread routes
-			if (pathname.startsWith("/t/")) {
-				// On /t/:threadId - go back to chat
+			if (pathname.startsWith("/thread/")) {
+				// On /thread/:threadId - go back to chat
 				navigate("/chat");
+			} else if (pathname.startsWith("/assistant/")) {
+				// On /assistant/:agentId/thread/:threadId - go to agent thread page
+				navigate(`/assistant/${metadata?.assistant_id}`);
 			} else if (pathname.match(/^\/p\/[^/]+\/t\//)) {
 				// On /p/:projectId/t/:threadId - extract projectId and go to project page
 				const projectId = pathname.split("/")[2];

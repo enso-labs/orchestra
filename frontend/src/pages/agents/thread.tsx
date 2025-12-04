@@ -11,20 +11,40 @@ import { useQueryState } from "nuqs";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import useModel from "@/hooks/useModel";
 
 const DEFAULT_TAB = "assistant";
-function AgentEditPage() {
-	const { agentId } = useParams();
+
+function AgentThreadPage() {
+	const { agentId, threadId } = useParams();
 	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
 		useAgentContext();
-	useEffectGetAgent(agentId);
-	useEffectGetAgents();
-
+	const { setModel } = useModel();
 	const {
 		useListThreadsEffect,
 		messages,
 		useEffectUpdateAssistantId,
+		useLoadThreadEffect,
+		setCheckpoints,
+		setMessages,
+		setMetadata,
+		setFilesMap,
+		setTodos,
 	} = useChatContext();
+
+	useEffectGetAgent(agentId);
+	useEffectGetAgents();
+
+	// Load thread data using modularized hook
+	useLoadThreadEffect(threadId, {
+		setCheckpoints,
+		setMessages,
+		setMetadata,
+		setFilesMap,
+		setTodos,
+		setModel,
+	});
+
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
 
@@ -75,7 +95,7 @@ function AgentEditPage() {
 							className="ml-2"
 						>
 							<TabsList>
-								<TabsTrigger value={DEFAULT_TAB}>Assistant</TabsTrigger>
+								<TabsTrigger value="assistant">Assistant</TabsTrigger>
 								<TabsTrigger value="config">Config</TabsTrigger>
 							</TabsList>
 						</Tabs>
@@ -89,7 +109,7 @@ function AgentEditPage() {
 					onValueChange={handleTabChange}
 					className="flex-1 flex flex-col min-h-0"
 				>
-					<TabsContent value={DEFAULT_TAB} className="flex-1 min-h-0 m-0">
+					<TabsContent value="assistant" className="flex-1 min-h-0 m-0">
 						<div className="h-full">
 							<ChatPanel agent={agent} showAgentMenu={false} />
 						</div>
@@ -105,4 +125,4 @@ function AgentEditPage() {
 	);
 }
 
-export default AgentEditPage;
+export default AgentThreadPage;
