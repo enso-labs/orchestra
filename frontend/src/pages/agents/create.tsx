@@ -67,7 +67,6 @@ function AgentCreatePage() {
 							<TabsList>
 								<TabsTrigger value="config">Config</TabsTrigger>
 								<TabsTrigger value="preview">Preview</TabsTrigger>
-								<TabsTrigger value="threads">Threads</TabsTrigger>
 							</TabsList>
 						</Tabs>
 					</div>
@@ -88,13 +87,6 @@ function AgentCreatePage() {
 						<div className="h-full">
 							<ChatPanel />
 						</div>
-					</TabsContent>
-					<TabsContent value="threads" className="flex-1 min-h-0 m-0 p-4">
-						<ScrollArea className="h-full">
-							<div className="p-2 space-y-2">
-								<ListThreads threads={threads} />
-							</div>
-						</ScrollArea>
 					</TabsContent>
 				</Tabs>
 			</div>
