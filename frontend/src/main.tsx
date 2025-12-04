@@ -26,7 +26,7 @@ if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
 }
 
 createRoot(document.getElementById("root")!).render(
-	// <StrictMode>
+	<StrictMode>
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<NuqsAdapter>
 				<AppProvider>
@@ -42,5 +42,5 @@ createRoot(document.getElementById("root")!).render(
 				</AppProvider>
 			</NuqsAdapter>
 		</ThemeProvider>
-	// </StrictMode>,
+	</StrictMode>,
 );
