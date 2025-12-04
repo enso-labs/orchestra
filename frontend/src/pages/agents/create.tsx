@@ -2,7 +2,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChatPanel from "@/pages/chat/ChatPanel";
 import { AgentCreateForm } from "@/components/forms/agents/agent-create-form";
 import { useChatContext } from "@/context/ChatContext";
-import ListThreads from "@/components/lists/ListThreads";
 import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSearchParams } from "react-router-dom";
@@ -14,7 +13,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 function AgentCreatePage() {
 	const { agent, setAgent, useEffectGetAgents } = useAgentContext();
-	const { threads, useListThreadsEffect, messages } = useChatContext();
+	const { useListThreadsEffect, messages } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
 
