@@ -32,7 +32,7 @@ export function ThreadSearchModal({ isOpen, onClose }: ThreadSearchModalProps) {
 	};
 
 	const handleResultClick = (threadId: string) => {
-		navigate(`/t/${threadId}`);
+		navigate(`/thread/${threadId}`);
 		onClose();
 	};
 

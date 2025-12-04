@@ -208,6 +208,7 @@ export default function useChat(): ChatContextType {
 	const getMetadata = () => {
 		return {
 			...metadata,
+			assistant_id: agent.id,
 			current_utc: new Date().toISOString(),
 		};
 	};

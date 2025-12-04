@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { useChatContext } from "@/context/ChatContext";
@@ -16,9 +16,6 @@ import {
 	ResizableHandle,
 } from "@/components/ui/resizable";
 import FileEditorPanel from "@/components/panels/FileEditorPanel";
-import { searchThreads } from "@/lib/services/threadService";
-import { formatMessages } from "@/lib/utils/format";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
 import useModel from "@/hooks/useModel";
 
 export default function ThreadPage() {
@@ -45,10 +42,10 @@ export default function ThreadPage() {
 		viewMode,
 		filesMap,
 		setTodos,
+		useLoadThreadEffect,
+		threadLoading,
+		threadError,
 	} = useChatContext();
-
-	const [threadLoading, setThreadLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 
 	useModelsEffect();
 	useEffectGetAgents();
@@ -56,73 +53,15 @@ export default function ThreadPage() {
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);
 
-	// Load thread data
-	useEffect(() => {
-		const loadThread = async () => {
-			if (!threadId) return;
-			setThreadLoading(true);
-			setError(null);
-
-			try {
-				// Load checkpoints directly for this specific thread
-				// Backend returns checkpoints when thread_id is passed
-				const checkpoints = await searchThreads("list_checkpoints", {
-					thread_id: threadId,
-				});
-
-				if (!checkpoints || checkpoints.length === 0) {
-					setError("No checkpoints found for thread");
-					return;
-				}
-
-				// Get thread data from the first checkpoint
-				const latestCheckpoint = checkpoints[0];
-				const threadData = latestCheckpoint.metadata || {};
-
-				if (threadData.todos && Object.keys(threadData.todos).length > 0) {
-					setTodos(threadData.todos);
-				}
-
-				// Set filesMap
-				if (threadData.files && Object.keys(threadData.files).length > 0) {
-					const formattedMessages = formatMessages(
-						checkpoints[0].values.messages,
-					);
-					const latestAiMessage = formattedMessages
-						.slice()
-						.reverse()
-						.find((msg: any) => ["ai", "assistant"].includes(msg.role));
-
-					if (latestAiMessage) {
-						const newFilesMap = new Map();
-						newFilesMap.set(latestAiMessage.id, threadData.files);
-						setFilesMap(newFilesMap);
-					}
-				} else {
-					setFilesMap(new Map());
-				}
-
-				// Set model from last message
-				const lastMessage =
-					threadData.messages?.[threadData.messages.length - 1];
-				setModel(lastMessage?.model || DEFAULT_CHAT_MODEL);
-
-				// Set checkpoints, messages, and metadata
-				setCheckpoints(checkpoints);
-				setMessages(formatMessages(checkpoints[0].values.messages));
-				// Use checkpoint metadata for thread data, including thread_id
-				setMetadata({ ...threadData, thread_id: threadId });
-			} catch (err) {
-				console.error("Failed to load thread:", err);
-				setError("Failed to load thread");
-			} finally {
-				setThreadLoading(false);
-			}
-		};
-
-		loadThread();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [threadId]);
+	// Load thread data using modularized hook
+	useLoadThreadEffect(threadId, {
+		setCheckpoints,
+		setMessages,
+		setMetadata,
+		setFilesMap,
+		setTodos,
+		setModel,
+	});
 
 	// Handle project context if on /p/:projectId/t/:threadId
 	useEffect(() => {
@@ -153,11 +92,11 @@ export default function ThreadPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [projectId, projects]);
 
-	if (error) {
+	if (threadError) {
 		return (
 			<ChatLayout>
 				<div className="flex h-full flex-col items-center justify-center gap-4">
-					<p className="text-muted-foreground">{error}</p>
+					<p className="text-muted-foreground">{threadError}</p>
 					<button
 						onClick={() => navigate("/chat")}
 						className="text-primary hover:underline"

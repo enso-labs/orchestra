@@ -28,10 +28,12 @@ import { Agent } from "@/lib/services/agentService";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useChatContext } from "@/context/ChatContext";
 
 function AgentIndexPage() {
 	const navigate = useNavigate();
 	const { agents, useEffectGetAgents } = useAgentContext();
+	const { clearMessages } = useChatContext();
 	const [, setSearchParams] = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
 
@@ -40,6 +42,8 @@ function AgentIndexPage() {
 	useEffect(() => {
 		setSearchParams(new URLSearchParams());
 	}, []);
+
+	clearMessages();
 
 	// Simple search on agent name only
 	const filteredAgents = useMemo(() => {
@@ -59,7 +63,8 @@ function AgentIndexPage() {
 
 	const handleAgentClick = (agentId: string) => {
 		// Navigate to agent detail or chat page
-		navigate(`/a/${agentId}`);
+		clearMessages();
+		navigate(`/assistant/${agentId}`);
 	};
 
 	return (
@@ -80,7 +85,7 @@ function AgentIndexPage() {
 										<Button
 											variant="outline"
 											size="icon"
-											onClick={() => navigate("/a/create")}
+											onClick={() => navigate("/assistant/create")}
 										>
 											<Plus className="h-4 w-4" />
 										</Button>
