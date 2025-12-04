@@ -2,7 +2,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChatPanel from "@/pages/chat/ChatPanel";
 import { AgentCreateForm } from "@/components/forms/agents/agent-create-form";
 import { useChatContext } from "@/context/ChatContext";
-import ListThreads from "@/components/lists/ListThreads";
 import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -21,7 +20,6 @@ function AgentEditPage() {
 	useEffectGetAgents();
 
 	const {
-		threads,
 		useListThreadsEffect,
 		messages,
 		useEffectUpdateAssistantId,

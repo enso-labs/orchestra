@@ -24,7 +24,6 @@ import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
