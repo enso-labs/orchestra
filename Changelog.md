@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/545-agent-threads-to-sidebar (2025-12-03)
   - feat/543-relocate-agent-pages (2025-12-03)
   - feat/525-pass-instructions (2025-12-03)
   - feat/530-semantic-search-over-threads (2025-11-30)
