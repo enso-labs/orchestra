@@ -40,10 +40,9 @@ function AgentIndexPage() {
 	useEffectGetAgents();
 
 	useEffect(() => {
+		clearMessages();
 		setSearchParams(new URLSearchParams());
 	}, []);
-
-	clearMessages();
 
 	// Simple search on agent name only
 	const filteredAgents = useMemo(() => {
