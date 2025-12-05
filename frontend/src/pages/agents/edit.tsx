@@ -24,7 +24,9 @@ function AgentEditPage() {
 		useListThreadsEffect,
 		messages,
 		useEffectUpdateAssistantId,
+		useModelsEffect,
 	} = useChatContext();
+	useModelsEffect();
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
 
