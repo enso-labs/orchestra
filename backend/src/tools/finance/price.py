@@ -1,22 +1,20 @@
-import yaml
 import yfinance as yf
+from langchain_core.tools import tool
 from typing import Literal
 from pydantic import BaseModel, Field
-from langchain_core.tools import tool
 import plotly.express as px
-import pandas as pd
 
+########################################################
+## Get Stock Price History
+########################################################
 type Period = Literal[
     "1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"
 ]
-
-
 class GetStockPriceSchema(BaseModel):
     ticker: str = Field(..., description="The ticker of the stock to get the price of")
     period: Period = Field(
         default="1mo", description="The period of the stock to get the price of"
     )
-
 
 @tool(args_schema=GetStockPriceSchema, response_format="content_and_artifact")
 def get_stock_price_history(ticker: str, period: str = "1mo") -> str:
@@ -38,6 +36,3 @@ def get_stock_price_history(ticker: str, period: str = "1mo") -> str:
 
     # Return Plotly figure as JSON
     return hist.to_csv(index=False), fig.to_json()
-
-
-FINANCE_TOOLS = [get_stock_price_history]

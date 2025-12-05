@@ -19,7 +19,8 @@ function AgentThreadPage() {
 	const { agentId, threadId } = useParams();
 	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
 		useAgentContext();
-	const { setModel } = useModel();
+	const { setModel, useModelsEffect } = useModel();
+	useModelsEffect();
 	const {
 		useListThreadsEffect,
 		messages,
@@ -100,7 +101,7 @@ function AgentThreadPage() {
 							</TabsList>
 						</Tabs>
 					</div>
-					<ChatNav sidebarTrigger={null} />
+					<ChatNav sidebarTrigger={null} showModelSelector={false} />
 				</div>
 
 				<Tabs

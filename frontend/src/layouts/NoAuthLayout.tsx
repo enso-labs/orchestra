@@ -5,8 +5,10 @@ import { useAppContext } from "@/context/AppContext";
 
 export default function NoAuthLayout({
 	children,
+	showModelSelector = false,
 }: {
 	children: React.ReactNode;
+	showModelSelector?: boolean;
 }) {
 	const { appVersion } = useAppContext();
 	const location = useLocation();
@@ -26,10 +28,8 @@ export default function NoAuthLayout({
 				)}
 				<div className="absolute top-4 right-4">
 					<div className="flex flex-row gap-2 items-center">
-						<SelectModel />
-						<div className="flex-shrink-0">
-							<ColorModeButton />
-						</div>
+						{showModelSelector && <SelectModel />}
+						<ColorModeButton />
 					</div>
 				</div>
 				{children}

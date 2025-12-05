@@ -24,7 +24,9 @@ function AgentEditPage() {
 		useListThreadsEffect,
 		messages,
 		useEffectUpdateAssistantId,
+		useModelsEffect,
 	} = useChatContext();
+	useModelsEffect();
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
 
@@ -80,7 +82,7 @@ function AgentEditPage() {
 							</TabsList>
 						</Tabs>
 					</div>
-					<ChatNav sidebarTrigger={null} />
+					<ChatNav sidebarTrigger={null} showModelSelector={false} />
 				</div>
 
 				<Tabs
