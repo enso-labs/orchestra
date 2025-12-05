@@ -1,5 +1,5 @@
 import fnmatch
-import pandas as pd
+import polars as pd
 
 
 def drop_columns(df: pd.DataFrame, patterns: list[str]) -> pd.DataFrame:

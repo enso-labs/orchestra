@@ -1,5 +1,4 @@
 import yfinance as yf
-import pandas as pd
 from langchain_core.tools import tool
 from typing import Literal
 from pydantic import BaseModel, Field

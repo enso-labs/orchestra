@@ -5,9 +5,13 @@ from langchain_core.tools import tool
 ########################################################
 ## Get Earnings History
 ########################################################
-@tool(response_format="content_and_artifact", parse_docstring=True)
+@tool(parse_docstring=True)
 def get_earnings_report(ticker: str) -> tuple[str, dict]:
-    """Get the earnings report for a ticker.
+    """Description: Get the earnings report for a ticker.
+    Toolkit: Finance
+    Examples:
+     - get_earnings_report("AAPL")
+     - get_earnings_report("TSLA")
     
     Args:
         ticker: The ticker symbol of the company or currency.
@@ -23,25 +27,27 @@ def get_earnings_report(ticker: str) -> tuple[str, dict]:
     def df_to_section(title: str, df: pd.DataFrame) -> str:
         if df is None or df.empty:
             return f"## {title}\nNo data available.\n\n"
-        return f"## {title}\n" + df.to_markdown(index=False) + "\n\n"
+        return f"## {title}\n" + f"```csv\n{df.to_csv()}\n```" + "\n\n"
 
     # Build content string for the model
     content = ""
     content += df_to_section("Earnings Dates", earnings_dates_df)
     content += df_to_section("Earnings Estimate", earnings_estimate_df)
     content += df_to_section("Earnings History", earnings_history_df)
+    
+    return content
 
     # JSON-serializable artifact with all three
-    artifact = {
-        "earnings_dates": (
-            [] if earnings_dates_df is None else earnings_dates_df.to_dict(orient="records")
-        ),
-        "earnings_estimate": (
-            [] if earnings_estimate_df is None else earnings_estimate_df.to_dict(orient="records")
-        ),
-        "earnings_history": (
-            [] if earnings_history_df is None else earnings_history_df.to_dict(orient="records")
-        ),
-    }
+    # artifact = {
+    #     "earnings_dates": (
+    #         [] if earnings_dates_df is None else earnings_dates_df.to_dict(orient="records")
+    #     ),
+    #     "earnings_estimate": (
+    #         [] if earnings_estimate_df is None else earnings_estimate_df.to_dict(orient="records")
+    #     ),
+    #     "earnings_history": (
+    #         [] if earnings_history_df is None else earnings_history_df.to_dict(orient="records")
+    #     ),
+    # }
 
-    return content, artifact
+    # return content, artifact

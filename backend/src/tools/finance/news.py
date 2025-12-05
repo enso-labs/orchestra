@@ -7,7 +7,7 @@ from src.utils.pandas import drop_columns
 ########################################################
 ## Get Financial News
 ########################################################
-@tool(response_format="content_and_artifact", parse_docstring=True)
+@tool(parse_docstring=True)
 def get_financial_news(ticker: str) -> tuple[str, dict]:
     """Get the financial news for a given ticker.
     
@@ -39,17 +39,13 @@ def get_financial_news(ticker: str) -> tuple[str, dict]:
       ])
 
     # Convert to markdown (clean, no index)
-    markdown = df.to_markdown(index=False)
-
-    # JSON-safe dict
-    json_data = df.to_dict(orient="records")
-
-    return markdown, json_data
+    markdown = f"## Financial News\n" + f"```csv\n{df.to_csv(index=False)}\n```"
+    return markdown
 
 ########################################################
 ## Get SEC Filings
 ########################################################
-@tool(response_format="content_and_artifact", parse_docstring=True)
+@tool(parse_docstring=True)
 def get_sec_filings(ticker: str) -> tuple[str, dict]:
     """Get the SEC filings for a ticker.
     
@@ -59,4 +55,4 @@ def get_sec_filings(ticker: str) -> tuple[str, dict]:
     ticker_obj = yf.Ticker(ticker)
     filings = ticker_obj.get_sec_filings()
     df = pd.DataFrame(filings)
-    return df.to_markdown(index=False)
+    return df.to_csv(index=False)
