@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 
 export function ChatNav({
 	sidebarTrigger,
+	showModelSelector = true,
 }: {
 	sidebarTrigger?: React.ReactNode | undefined;
+	showModelSelector?: boolean;
 }) {
 	const { viewMode, setViewMode, filesMap } = useChatContext();
 	const hasFiles = filesMap.size > 0;
@@ -44,9 +46,11 @@ export function ChatNav({
 							</div>
 						)}
 
-						<div className="w-56">
-							<SelectModel />
-						</div>
+						{showModelSelector && (
+							<div className="w-56">
+								<SelectModel />
+							</div>
+						)}
 						<NewThreadButton />
 						<div className="w-9">
 							<ColorModeButton />

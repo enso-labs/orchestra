@@ -80,7 +80,7 @@ function AgentEditPage() {
 							</TabsList>
 						</Tabs>
 					</div>
-					<ChatNav sidebarTrigger={null} />
+					<ChatNav sidebarTrigger={null} showModelSelector={false} />
 				</div>
 
 				<Tabs
