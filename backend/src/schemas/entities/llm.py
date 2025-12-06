@@ -91,12 +91,10 @@ class Assistant(BaseModel):
     instructions: Optional[str] = Field(default=None, examples=["Your role is to help the user with their task."])
 
     @model_validator(mode="after")
-    def validate_system_prompt_or_instructions(cls, values):
-        system_prompt = values.system_prompt
-        instructions = values.instructions
-        if system_prompt and instructions:
+    def validate_system_prompt_or_instructions(self):
+        if self.system_prompt and self.instructions:
             raise ValueError("Only one of system_prompt or instructions may be set, not both.")
-        return values
+        return self
     
     tools: list[str]
     subagents: Optional[list[dict]] = []

@@ -1,7 +1,7 @@
 import os
 import unittest
 from src.constants import TEST_USER_ID
-from src.repos.tool_repo import ToolRepo, SavedTool
+from src.repos.tool_repo import ToolRepo, SavedTool, ToolConfig
 from src.services.tool import ToolService
 from tests.mock.tool import fake_tool_runtime, MockToolVars
 
@@ -16,7 +16,7 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         self.tool_service = ToolService(user_id=TEST_USER_ID)
         created_tool = SavedTool(
             name=MockToolVars.TEST_TOOL_NAME,
-            base_tool=MockToolVars.BASE_TOOL,
+            config=ToolConfig(base_tool=MockToolVars.BASE_TOOL),
             description="Send a message to the GridSite Microsoft Teams channel.",
             type="default",
             metadata={},
