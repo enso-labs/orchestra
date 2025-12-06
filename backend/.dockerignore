@@ -2,7 +2,6 @@
 **/logs
 **/tests
 **/seeds
-**/examples/
 **/sandbox
 **/scripts
 **/langgraph.json
@@ -17,7 +16,8 @@
 **/.cursor/
 **Dockerfile
 **/requirements-dev.txt
-.example.env
+**/.example.env
+examples/
 **/openspec/
 **/.plans/
 **/.venv/
