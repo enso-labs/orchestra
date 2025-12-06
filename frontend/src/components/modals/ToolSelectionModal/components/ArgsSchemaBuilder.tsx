@@ -9,7 +9,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Plus, X, ChevronRight, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export interface ArgField {
 	type: "str" | "int" | "bool" | "float" | "object" | "array";
@@ -25,7 +25,15 @@ interface ArgsSchemaBuilderProps {
 	onChange: (schema: Record<string, ArgField>) => void;
 }
 
+// Internal representation with stable IDs
+interface ParamEntry {
+	id: string;
+	name: string;
+	field: ArgField;
+}
+
 interface SchemaRowProps {
+	id: string;
 	name: string;
 	field: ArgField;
 	onUpdate: (field: ArgField) => void;
@@ -34,7 +42,14 @@ interface SchemaRowProps {
 	depth?: number;
 }
 
+// Generate unique IDs
+let idCounter = 0;
+function generateId(): string {
+	return `param_${Date.now()}_${++idCounter}`;
+}
+
 function SchemaRow({
+	id,
 	name,
 	field,
 	onUpdate,
@@ -43,6 +58,15 @@ function SchemaRow({
 	depth = 0,
 }: SchemaRowProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
+	// Track property IDs for nested objects
+	const [propertyIds] = useState<Map<string, string>>(() => new Map());
+
+	const getPropertyId = useCallback((propName: string): string => {
+		if (!propertyIds.has(propName)) {
+			propertyIds.set(propName, generateId());
+		}
+		return propertyIds.get(propName)!;
+	}, [propertyIds]);
 
 	const handleTypeChange = (value: ArgField["type"]) => {
 		onUpdate({
@@ -55,9 +79,12 @@ function SchemaRow({
 	};
 
 	const handleAddProperty = () => {
+		const newPropName = `new_param_${Object.keys(field.properties || {}).length + 1}`;
+		// Pre-generate ID for the new property
+		propertyIds.set(newPropName, generateId());
 		const newProps = {
 			...(field.properties || {}),
-			[`new_param_${Object.keys(field.properties || {}).length + 1}`]: {
+			[newPropName]: {
 				type: "str" as const,
 				description: "",
 				required: true,
@@ -79,6 +106,7 @@ function SchemaRow({
 	const handleRemoveProperty = (propName: string) => {
 		const newProps = { ...(field.properties || {}) };
 		delete newProps[propName];
+		propertyIds.delete(propName);
 		onUpdate({ ...field, properties: newProps });
 	};
 
@@ -88,6 +116,12 @@ function SchemaRow({
 		const prop = props[oldName];
 		delete props[oldName];
 		props[newName] = prop;
+		// Transfer the ID to the new name
+		const existingId = propertyIds.get(oldName);
+		if (existingId) {
+			propertyIds.delete(oldName);
+			propertyIds.set(newName, existingId);
+		}
 		onUpdate({ ...field, properties: props });
 	};
 
@@ -99,8 +133,8 @@ function SchemaRow({
 		<div className="space-y-2">
 			<div className="flex items-start gap-2">
 				{/* Indentation/Collapse */}
-				<div 
-					className="flex items-center justify-center w-6 h-10 flex-shrink-0" 
+				<div
+					className="flex items-center justify-center w-6 h-10 flex-shrink-0"
 					style={{ marginLeft: `${depth * 16}px` }}
 				>
 					{(field.type === "object" || field.type === "array") ? (
@@ -184,7 +218,8 @@ function SchemaRow({
 				<div className="border-l-2 border-muted ml-4 pl-0">
 					{Object.entries(field.properties).map(([propName, propField]) => (
 						<SchemaRow
-							key={propName}
+							key={getPropertyId(propName)}
+							id={getPropertyId(propName)}
 							name={propName}
 							field={propField}
 							onUpdate={(updated) => handleUpdateProperty(propName, updated)}
@@ -213,6 +248,7 @@ function SchemaRow({
 				<div className="border-l-2 border-muted ml-4 pl-0 pt-2">
 					<div className="ml-8 text-xs text-muted-foreground mb-1">Array Items Schema:</div>
 					<SchemaRow
+						id={`${id}_items`}
 						name="items"
 						field={field.items}
 						onUpdate={handleUpdateItems}
@@ -227,38 +263,71 @@ function SchemaRow({
 }
 
 export function ArgsSchemaBuilder({ schema, onChange }: ArgsSchemaBuilderProps) {
+	// Track stable IDs for each parameter by maintaining an internal array representation
+	const [params, setParams] = useState<ParamEntry[]>(() =>
+		Object.entries(schema).map(([name, field]) => ({
+			id: generateId(),
+			name,
+			field,
+		}))
+	);
+
+	// Sync with external schema changes (e.g., on initial load or reset)
+	const prevSchemaRef = useRef<Record<string, ArgField>>(schema);
+	useEffect(() => {
+		// Only sync if schema changed externally (not from our own updates)
+		const schemaKeys = Object.keys(schema).sort().join(',');
+		const paramKeys = params.map(p => p.name).sort().join(',');
+		const prevKeys = Object.keys(prevSchemaRef.current).sort().join(',');
+
+		// Check if this is an external change by comparing key structure
+		if (schemaKeys !== paramKeys && schemaKeys !== prevKeys) {
+			setParams(Object.entries(schema).map(([name, field]) => ({
+				id: generateId(),
+				name,
+				field,
+			})));
+		}
+		prevSchemaRef.current = schema;
+	}, [schema, params]);
+
+	// Convert internal params back to schema and call onChange
+	const emitChange = useCallback((newParams: ParamEntry[]) => {
+		const newSchema: Record<string, ArgField> = {};
+		for (const param of newParams) {
+			newSchema[param.name] = param.field;
+		}
+		prevSchemaRef.current = newSchema;
+		setParams(newParams);
+		onChange(newSchema);
+	}, [onChange]);
+
 	const addParameter = () => {
-		const newParamName = `param_${Object.keys(schema).length + 1}`;
-		onChange({
-			...schema,
-			[newParamName]: {
-				type: "str",
-				description: "",
-				required: true,
+		const newParamName = `param_${params.length + 1}`;
+		emitChange([
+			...params,
+			{
+				id: generateId(),
+				name: newParamName,
+				field: {
+					type: "str",
+					description: "",
+					required: true,
+				},
 			},
-		});
+		]);
 	};
 
-	const updateParameter = (name: string, field: ArgField) => {
-		onChange({
-			...schema,
-			[name]: field,
-		});
+	const updateParameter = (id: string, field: ArgField) => {
+		emitChange(params.map(p => p.id === id ? { ...p, field } : p));
 	};
 
-	const removeParameter = (name: string) => {
-		const newSchema = { ...schema };
-		delete newSchema[name];
-		onChange(newSchema);
+	const removeParameter = (id: string) => {
+		emitChange(params.filter(p => p.id !== id));
 	};
 
-	const renameParameter = (oldName: string, newName: string) => {
-		if (oldName === newName) return;
-		const newSchema = { ...schema };
-		const field = newSchema[oldName];
-		delete newSchema[oldName];
-		newSchema[newName] = field;
-		onChange(newSchema);
+	const renameParameter = (id: string, newName: string) => {
+		emitChange(params.map(p => p.id === id ? { ...p, name: newName } : p));
 	};
 
 	return (
@@ -277,19 +346,20 @@ export function ArgsSchemaBuilder({ schema, onChange }: ArgsSchemaBuilderProps) 
 			</div>
 
 			<div className="space-y-4">
-				{Object.entries(schema).length === 0 ? (
+				{params.length === 0 ? (
 					<div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
 						No parameters defined. Click "Add Parameter" to define inputs.
 					</div>
 				) : (
-					Object.entries(schema).map(([name, field]) => (
+					params.map((param) => (
 						<SchemaRow
-							key={name}
-							name={name}
-							field={field}
-							onUpdate={(f) => updateParameter(name, f)}
-							onRemove={() => removeParameter(name)}
-							onNameChange={(n) => renameParameter(name, n)}
+							key={param.id}
+							id={param.id}
+							name={param.name}
+							field={param.field}
+							onUpdate={(f) => updateParameter(param.id, f)}
+							onRemove={() => removeParameter(param.id)}
+							onNameChange={(n) => renameParameter(param.id, n)}
 						/>
 					))
 				)}
@@ -297,4 +367,3 @@ export function ArgsSchemaBuilder({ schema, onChange }: ArgsSchemaBuilderProps) 
 		</div>
 	);
 }
-
