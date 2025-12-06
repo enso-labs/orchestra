@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -10,7 +9,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, Save } from "lucide-react";
-import { ApiToolPayload } from "../hooks/useCustomTools";
+import { ApiToolPayload } from "./hooks/useCustomTools";
 import { HeadersEditor } from "./components/HeadersEditor";
 import { ArgsSchemaBuilder, ArgField } from "./components/ArgsSchemaBuilder";
 
@@ -48,20 +47,6 @@ export function ApiToolForm({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
-	// Auto-convert name to snake_case for create/duplicate
-	useEffect(() => {
-		if (mode === "edit") return;
-		
-		const snakeCase = name
-			.toLowerCase()
-			.replace(/\s+/g, "_")
-			.replace(/[^a-z0-9_]/g, "");
-		
-		// Only update if the user typed something different (to allow them to type)
-		// Actually, let's just show a preview or validate on submit.
-		// A live transform can be annoying.
-		// Let's validate on submit.
-	}, [name, mode]);
 
 	const validate = () => {
 		const newErrors: Record<string, string> = {};
@@ -126,13 +111,13 @@ export function ApiToolForm({
 					</Button>
 					<h2 className="text-xl font-semibold">{title}</h2>
 				</div>
-				<Button onClick={handleSubmit} disabled={isSubmitting}>
+				<Button onClick={handleSubmit} disabled={isSubmitting} className="min-w-[140px]">
 					{isSubmitting ? (
 						<span className="animate-spin mr-2">⏳</span>
 					) : (
 						<Save className="h-4 w-4 mr-2" />
 					)}
-					Save Tool
+					{mode === "edit" ? "Update Tool" : "Create Tool"}
 				</Button>
 			</div>
 

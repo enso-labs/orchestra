@@ -1,8 +1,7 @@
-import { useState } from "react";
-import { Plus, Pencil, Trash2, Copy, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Pencil, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tool } from "./types";
 import { ApiToolForm } from "./ApiToolForm";
 import { useCustomTools, ApiToolPayload } from "./hooks/useCustomTools";
 import {
@@ -20,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 interface CustomToolsPanelProps {
 	selectedTools: Set<string>;
 	onToggleSelection: (toolName: string) => void;
+	onViewModeChange?: (isFormActive: boolean) => void;
 }
 
 type ViewMode = "list" | "create" | "edit" | "duplicate";
@@ -27,6 +27,7 @@ type ViewMode = "list" | "create" | "edit" | "duplicate";
 export function CustomToolsPanel({
 	selectedTools,
 	onToggleSelection,
+	onViewModeChange,
 }: CustomToolsPanelProps) {
 	const {
 		customTools,
@@ -44,6 +45,11 @@ export function CustomToolsPanel({
 	);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [toolToDelete, setToolToDelete] = useState<string | null>(null);
+
+	// Notify parent when view mode changes
+	useEffect(() => {
+		onViewModeChange?.(viewMode !== "list");
+	}, [viewMode, onViewModeChange]);
 
 	const handleCreateClick = () => {
 		setEditingTool(undefined);

@@ -14,7 +14,7 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 		onChange({ ...headers, "": "" });
 	};
 
-	const removeHeader = (keyToRemove: string, index: number) => {
+	const removeHeader = (keyToRemove: string) => {
 		// If key is empty, we might remove the wrong one if multiple are empty.
 		// Using index is safer for the UI list, but object keys must be unique.
 		// Since headers is a Record, keys are unique.
@@ -94,7 +94,7 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 							type="button"
 							variant="ghost"
 							size="icon"
-							onClick={() => removeHeader(key, index)}
+							onClick={() => removeHeader(key)}
 							className="h-9 w-9 text-muted-foreground hover:text-destructive"
 						>
 							<X className="h-4 w-4" />
