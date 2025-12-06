@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc107
 
 ### Changed
+  - feat/479-api-as-a-tool (2025-12-05)
   - feat/547-more-stock-tools (2025-12-04)
 
 ### Fixed

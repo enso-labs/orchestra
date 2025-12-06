@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, TypedDict
 from dataclasses import dataclass
 from fastapi.openapi.models import Example
 from langchain_core.runnables import RunnableConfig
@@ -11,29 +11,58 @@ from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 from src.utils.security import encrypt_value, decrypt_value
 from src.tools import TOOL_LIBRARY
+from src.utils.tools import create_api_tool
 
 
 @dataclass
 class ToolExamples:
-    CREATE_EXAMPLE = Example(
-        name="webhook_marketing_channel",
-        base_tool="send_webhook_to_channel",
-        description="Send a message to the GridSite Microsoft Teams channel.",
-        type="default",
-        metadata={},
-        env={"TEST_WEBHOOK_URL": "https://example.com/webhook"},
-        tags=["example"],
-        verbose=False,
-        disabled=False,
-        public=False,
-    )
+    EXAMPLES = {
+        'webhook_marketing_channel': Example(
+            name="webhook_marketing_channel",
+            base_tool="send_webhook_to_channel",
+            description="Send a message to the GridSite Microsoft Teams channel.",
+            type="default",
+            metadata={},
+            env={"TEST_WEBHOOK_URL": "https://example.com/webhook"},
+            tags=["example"],
+            verbose=False,
+            disabled=False,
+            public=False,
+        ),
+        'get_server_health': Example(
+            name="get_server_health",
+            description="Use this to get the health of the server and app version.",
+            config={
+                'api_tool': {
+                    'base_url': 'https://chat.enso.sh/api',
+                    'method': 'GET',
+                    'endpoint': '/info/health',
+                }
+            },
+            type="api",
+            metadata={},
+            env={},
+            tags=["health"],
+        ),
+    }
 
+
+class ApiConfig(TypedDict):
+    base_url: str
+    method: str
+    endpoint: str
+    args_schema: Optional[dict] = None
+    headers: Optional[dict] = None
+
+class ToolConfig(BaseModel):
+    base_tool: Optional[str] = None
+    api_tool: Optional[ApiConfig] = None
 
 class SavedTool(BaseModel):
     name: str
-    base_tool: str
+    config: ToolConfig
     description: str = Field(default="")
-    type: Literal["default", "mcp", "a2a", "api"]
+    type: Literal["default", "mcp", "a2a", "api", "workflow"]
     metadata: dict = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
     env: Optional[dict] = None
@@ -43,17 +72,45 @@ class SavedTool(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
+    @classmethod
+    def validate(cls, value):
+        # Support for BaseModel-style validation hooks
+        if isinstance(value, dict):
+            type_val = value.get("type")
+        else:
+            type_val = getattr(value, "type", None)
+        if type_val in {"mcp", "a2a", "workflow"}:
+            raise NotImplementedError(f"Tool type '{type_val}' is not yet implemented.")
+        return value
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+        yield from super().__get_validators__()
+    
+
     def to_structured_tool(self) -> StructuredTool:
+        if self.type == "api":
+            return create_api_tool(
+                name=self.name, 
+                description=self.description, 
+                base_url=self.config.api_tool["base_url"],
+                method=self.config.api_tool.get("method", "GET"),
+                endpoint=self.config.api_tool["endpoint"],
+                args_schema=self.config.api_tool.get("args_schema", None),
+                headers=self.config.api_tool.get("headers", {}),
+            )
+        
         found_tool = next(
-            (tool for tool in TOOL_LIBRARY if tool.name == self.base_tool), None
+            (tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None
         )
         if not found_tool:
-            raise ValueError(f"Tool {self.base_tool} not found")
+            raise ValueError(f"Tool {self.config.base_tool} not found")
         tool_data = {**found_tool.model_dump(), **self.model_dump()}
         structured_tool = StructuredTool.from_function(**tool_data)
         structured_tool.metadata = {
             **self.metadata,
-            "base_tool": self.base_tool,
+            "base_tool": self.config.base_tool,
             "env": self.env,
         }
         return structured_tool

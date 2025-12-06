@@ -493,6 +493,80 @@ class Examples:
             },
         ),
     }
+    
+    TOOL_CREATE_EXAMPLES = {
+        "base_tool_override": Example(
+            name="Base Tool Override",
+            description="Override the base tool for a custom tool.",
+            value={
+                "name": "webhook_marketing_channel",
+                "config": {
+                    "base_tool": "send_webhook_to_channel",
+                },
+                "description": "Send a message to the Microsoft Teams channel.",
+                "type": "default",
+                "metadata": {},
+                "env": {"TEST_WEBHOOK_URL": "https://example.com/webhook"},
+                "tags": ["example"],
+                "verbose": False,
+                "disabled": False,
+                "public": False,
+            },
+        ),
+        "api_tool_get_request": Example(
+            name="API Tool GET Request",
+            description="Use this to make a GET request to an API.",
+            value={
+                "name": "get_server_health",
+                "config": {
+                    "api_tool": {
+                        "base_url": "https://chat.enso.sh/api",
+                        "method": "GET",
+                        "endpoint": "/info/health",
+                    }
+                },
+                "description": "Use this to get the health of the server and app version.",
+                "type": "api",
+                "metadata": {},
+                "env": {},
+                "tags": ["health"],
+                "verbose": False,
+                "disabled": False,
+                "public": False,
+            },
+        ),
+        "api_tool_post_request": Example(
+            name="API Tool POST Request",
+            description="Use this to make a POST request to an API.",
+            value={
+                "name": "create_blog_post",
+                "config": {
+                    "api_tool": {
+                        "base_url": "https://jsonplaceholder.typicode.com",
+                        "method": "POST",
+                        "endpoint": "/posts",
+                        "args_schema": {
+                            "title": {
+                                "type": "str",
+                                "description": "The title of the blog post",
+                                "required": True,
+                            },
+                            "body": {
+                                "type": "str",
+                                "description": "The body of the blog post",
+                                "required": True,
+                            },
+                        },
+                        "headers": {
+                            'Content-type': 'application/json; charset=UTF-8',
+                        },
+                    },
+                },
+                "description": "Create a blog post",
+                "type": "api",
+            },
+        ),
+    }
 
     LLM_STREAM_EXAMPLES = {
         "stateless_stream_instructions": Example(

@@ -4,7 +4,8 @@ from langchain_core.runnables import RunnableConfig
 import requests
 import re
 import unicodedata
-from typing import Optional, Any
+from pydantic import BaseModel, Field, create_model
+from typing import Optional, Any, Dict, Type
 from loguru import logger
 from datetime import datetime, timezone
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
@@ -173,3 +174,47 @@ def format_xml_thread(messages: list[BaseMessage], include_tool_calls: bool = Tr
                 )
     xml_lines.append("</thread>")
     return "\n".join(xml_lines)
+
+
+
+def format_schema_to_model(
+    schema: Dict[str, Any],
+    model_name: str = "DynamicModel",
+) -> Type[BaseModel]:
+    """
+    Converts a nested args_schema-like dict into a nested Pydantic model class.
+    """
+
+    fields = {}
+
+    for key, spec in schema.items():
+
+        # If the spec is a nested object (dict of fields), we must detect it.
+        is_nested = (
+            isinstance(spec, dict)
+            and not {"type", "default", "required", "description"} & set(spec.keys())
+        )
+
+        # ---- CASE 1: Nested object ----
+        if is_nested:
+            nested_model = format_schema_to_model(
+                spec,
+                model_name=f"{model_name}_{key.capitalize()}"
+            )
+            fields[key] = (nested_model, Field(None))
+            continue
+
+        # ---- CASE 2: Regular field definition ----
+        field_type = spec.get("type", Any)
+        description = spec.get("description", "")
+        required = spec.get("required", False)
+        default = spec.get("default", None)
+
+        if required:
+            default_value = Field(..., description=description)
+        else:
+            default_value = Field(default, description=description)
+
+        fields[key] = (field_type, default_value)
+
+    return create_model(model_name, **fields)

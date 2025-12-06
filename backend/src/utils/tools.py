@@ -1,12 +1,16 @@
-from typing import Callable
+from typing import Callable, Optional, Dict, Type
+from langchain_core.tools import StructuredTool
 from langchain_core.tools import BaseTool, tool as create_tool
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 from langgraph.prebuilt.interrupt import HumanInterruptConfig, HumanInterrupt
 from langchain_core.tools import StructuredTool
+from pydantic import BaseModel
+from src.utils.api import APIClient
 from src.schemas.contexts import ContextSchema
 from langgraph.runtime import get_runtime
 from src.utils.logger import logger
+from src.utils.format import format_schema_to_model
 
 
 def tool_ctx() -> ContextSchema:
@@ -93,3 +97,72 @@ def attach_tool_details(tool: StructuredTool):
     if tool.name in [n.name for n in FINANCE_TOOLS]:
         tool.tags = ["finance"]
     return tool
+
+
+def create_api_tool(
+    name: str,
+    description: str,
+    base_url: str,
+    method: str,
+    endpoint: str,
+    args_schema: Optional[dict] = None,
+    headers: Optional[Dict[str, str]] = None,
+):
+
+    # 1) Build the Pydantic model *once* from the dict spec
+    args_model: Optional[Type[BaseModel]] = None
+    if args_schema is not None:
+        args_model = format_schema_to_model(args_schema, model_name=f"{name}_Args")
+
+    async def api_call(**tool_args):
+        # 2) Use that model for validation + defaults
+        if args_model is not None:
+            payload = args_model(**tool_args).model_dump()
+        else:
+            payload = tool_args
+
+        api_client = APIClient(base_url=base_url, headers=headers)
+
+        method_lower = method.lower()
+
+        res = await api_client._request(
+            method=method_lower,
+            endpoint=endpoint,
+            data=payload,
+            headers=headers,
+        )
+        return res
+
+    # 3) Wire the model class into the tool as args_schema
+    return StructuredTool.from_function(
+        coroutine=api_call,
+        name=name,
+        description=description,
+        args_schema=args_model,  # <- Pydantic model class, not dict
+    )
+
+## Example usage:
+# args_schema_spec = {
+#     "limit": {
+#         "default": 5,
+#         "description": "The number of threads to return",
+#         "type": int,
+#         "required": True,
+#     },
+#     "metadata": {
+#         "id": {
+#             "required": False,
+#             "description": "Thread ID to fetch",
+#             "type": str,
+#         }
+#     }
+# }
+# tool = create_api_tool(
+#     name="get_threads",
+#     description="Use this to get threads",
+#     base_url="https://chat.enso.sh/api",
+#     method="POST",
+#     endpoint="/threads/search",
+#     headers={'Authorization': f'Bearer {AUTH_TOKEN}'},
+#     args_schema=args_schema_spec,  # <- the dict spec
+# )
