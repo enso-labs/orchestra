@@ -1,11 +1,9 @@
-import asyncio
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import StructuredTool, BaseTool
+from langchain_core.tools import StructuredTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from langgraph.store.base import BaseStore
 
-from src.repos.tool_repo import SavedTool
 from src.schemas.entities.a2a import A2AServer, McpServer
 from src.tools import TOOL_LIBRARY, default_tools, init_tool_library
 from src.utils.a2a import A2ACardResolver
@@ -31,9 +29,7 @@ class ToolService:
     async def tool_details(self):
         try:
             tool_details = []
-            tool_library = (
-                init_tool_library()
-            )  # TODO: This may change in future to user_id specific
+            tool_library = init_tool_library()
             user_tools: list[StructuredTool] = await self.tool_repo.search()
             base_tools = set[str]()
             for tool in user_tools + tool_library:

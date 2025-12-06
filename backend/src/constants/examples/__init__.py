@@ -493,6 +493,49 @@ class Examples:
             },
         ),
     }
+    
+    TOOL_CREATE_EXAMPLES = {
+        "webhook_marketing_channel": Example(
+            name="webhook_marketing_channel",
+            description="Send a message to the Microsoft Teams channel.",
+            value={
+                "name": "webhook_marketing_channel",
+                "config": {
+                    "base_tool": "send_webhook_to_channel",
+                },
+                "description": "Send a message to the Microsoft Teams channel.",
+                "type": "default",
+                "metadata": {},
+                "env": {"TEST_WEBHOOK_URL": "https://example.com/webhook"},
+                "tags": ["example"],
+                "verbose": False,
+                "disabled": False,
+                "public": False,
+            },
+        ),
+        "get_server_health": Example(
+            name="get_server_health",
+            description="Use this to get the health of the server and app version.",
+            value={
+                "name": "get_server_health",
+                "config": {
+                    "api_tool": {
+                        "base_url": "https://chat.enso.sh/api",
+                        "method": "GET",
+                        "endpoint": "/info/health",
+                    }
+                },
+                "description": "Use this to get the health of the server and app version.",
+                "type": "api",
+                "metadata": {},
+                "env": {},
+                "tags": ["health"],
+                "verbose": False,
+                "disabled": False,
+                "public": False,
+            },
+        ),
+    }
 
     LLM_STREAM_EXAMPLES = {
         "stateless_stream_instructions": Example(

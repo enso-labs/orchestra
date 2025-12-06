@@ -2,12 +2,13 @@ from fastapi import Body, HTTPException, Response, status, Depends, APIRouter
 from fastapi.responses import JSONResponse
 from langgraph.store.base import BaseStore
 
+from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.utils.auth import verify_credentials
 from src.services.tool import ToolService
 from src.routes.v0.tool.info import info_router
 from src.routes.v0.tool.invoke import invoke_router
-from src.repos.tool_repo import SavedTool, ToolExamples
+from src.repos.tool_repo import SavedTool
 from src.services.db import get_store
 
 router = APIRouter(tags=["Tool"], prefix="/tools")
@@ -46,7 +47,7 @@ async def list_tools(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_tool(
-    tool: SavedTool = Body(..., examples=[ToolExamples.CREATE_EXAMPLE]),
+    tool: SavedTool = Body(..., openapi_examples=Examples.TOOL_CREATE_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
     store: BaseStore = Depends(get_store),
 ):
