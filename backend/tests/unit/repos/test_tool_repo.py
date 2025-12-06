@@ -1,8 +1,7 @@
 import unittest
 
-from src.repos.tool_repo import ToolRepo
+from src.repos.tool_repo import ToolRepo, SavedTool, ToolConfig
 from src.constants import TEST_USER_ID
-from src.repos.tool_repo import SavedTool
 
 
 TEST_TOOL_NAME = "TEST_webhook_marketing_channel"
@@ -15,7 +14,7 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
         self.tool_repo = ToolRepo(user_id=TEST_USER_ID)
         created_tool = SavedTool(
             name=TEST_TOOL_NAME,
-            base_tool=BASE_TOOL,
+            config=ToolConfig(base_tool=BASE_TOOL),
             description="Send a message to the GridSite Microsoft Teams channel.",
             type="default",
             metadata={},
