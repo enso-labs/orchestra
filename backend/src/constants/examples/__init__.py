@@ -495,9 +495,9 @@ class Examples:
     }
     
     TOOL_CREATE_EXAMPLES = {
-        "webhook_marketing_channel": Example(
-            name="webhook_marketing_channel",
-            description="Send a message to the Microsoft Teams channel.",
+        "base_tool_override": Example(
+            name="Base Tool Override",
+            description="Override the base tool for a custom tool.",
             value={
                 "name": "webhook_marketing_channel",
                 "config": {
@@ -513,9 +513,9 @@ class Examples:
                 "public": False,
             },
         ),
-        "get_server_health": Example(
-            name="get_server_health",
-            description="Use this to get the health of the server and app version.",
+        "api_tool_get_request": Example(
+            name="API Tool GET Request",
+            description="Use this to make a GET request to an API.",
             value={
                 "name": "get_server_health",
                 "config": {
@@ -533,6 +533,37 @@ class Examples:
                 "verbose": False,
                 "disabled": False,
                 "public": False,
+            },
+        ),
+        "api_tool_post_request": Example(
+            name="API Tool POST Request",
+            description="Use this to make a POST request to an API.",
+            value={
+                "name": "create_blog_post",
+                "config": {
+                    "api_tool": {
+                        "base_url": "https://jsonplaceholder.typicode.com",
+                        "method": "POST",
+                        "endpoint": "/posts",
+                        "args_schema": {
+                            "title": {
+                                "type": "str",
+                                "description": "The title of the blog post",
+                                "required": True,
+                            },
+                            "body": {
+                                "type": "str",
+                                "description": "The body of the blog post",
+                                "required": True,
+                            },
+                        },
+                        "headers": {
+                            'Content-type': 'application/json; charset=UTF-8',
+                        },
+                    },
+                },
+                "description": "Create a blog post",
+                "type": "api",
             },
         ),
     }
