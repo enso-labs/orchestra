@@ -5,6 +5,25 @@ export const listTools = async () => {
 	return response.data;
 };
 
+export const createTool = async (tool: any) => {
+	const response = await apiClient.post("/tools", tool);
+	return response.data;
+};
+
+export const deleteTool = async (name: string) => {
+	const response = await apiClient.delete(`/tools/${name}`);
+	return response.data;
+};
+
+export const getUserTools = async () => {
+	const data = await listTools();
+	// Filter for tools with 'custom' tag
+	// Note: Backend must ensure custom tools have this tag
+	return (data.tools || []).filter((tool: any) => 
+		tool.tags && tool.tags.includes("custom")
+	);
+};
+
 export const listToolsArcade = async (
 	toolkit?: string,
 	offset?: number,

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
 import { PlatformToolsPanel } from "./PlatformToolsPanel";
+import { CustomToolsPanel } from "./CustomToolsPanel";
 import { McpServerPanel } from "./McpServerPanel";
 import { A2aAgentPanel } from "./A2aAgentPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
@@ -162,6 +163,13 @@ export function ToolSelectionModal({
 						{activeCategory === "platform" && (
 							<PlatformToolsPanel
 								tools={platformTools}
+								selectedTools={selectedTools}
+								onToggleSelection={toggleTool}
+							/>
+						)}
+
+						{activeCategory === "custom" && (
+							<CustomToolsPanel
 								selectedTools={selectedTools}
 								onToggleSelection={toggleTool}
 							/>

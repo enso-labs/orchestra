@@ -91,7 +91,7 @@ class SavedTool(BaseModel):
 
     def to_structured_tool(self) -> StructuredTool:
         if self.type == "api":
-            return create_api_tool(
+            tool = create_api_tool(
                 name=self.name, 
                 description=self.description, 
                 base_url=self.config.api_tool["base_url"],
@@ -100,6 +100,14 @@ class SavedTool(BaseModel):
                 args_schema=self.config.api_tool.get("args_schema", None),
                 headers=self.config.api_tool.get("headers", {}),
             )
+            tool.metadata = {
+                **self.metadata, 
+                "type": "api", 
+                "env": self.env,
+                "api_config": self.config.api_tool
+            }
+            tool.tags = self.tags
+            return tool
         
         found_tool = next(
             (tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None
