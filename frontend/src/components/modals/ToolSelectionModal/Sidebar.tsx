@@ -1,11 +1,11 @@
-import { Wrench, Server, Users, Gamepad2 } from "lucide-react";
+import { Wrench, Server, Users, PencilRuler } from "lucide-react";
 import { ToolCategory, CategoryConfig } from "./types";
 
 const categories: CategoryConfig[] = [
 	{ id: "platform", label: "Platform", icon: Wrench },
+	{ id: "custom", label: "Custom", icon: PencilRuler },
 	{ id: "mcp", label: "MCP Servers", icon: Server },
 	{ id: "a2a", label: "A2A Agents", icon: Users },
-	{ id: "arcade", label: "Arcade", icon: Gamepad2 },
 ];
 
 interface SidebarProps {

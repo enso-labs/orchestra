@@ -47,7 +47,7 @@ class ToolExamples:
     }
 
 
-class ApiConfig(TypedDict):
+class ApiConfig(BaseModel):
     base_url: str
     method: str
     endpoint: str
@@ -91,15 +91,24 @@ class SavedTool(BaseModel):
 
     def to_structured_tool(self) -> StructuredTool:
         if self.type == "api":
-            return create_api_tool(
+            api_config = self.config.api_tool.model_dump()
+            tool = create_api_tool(
                 name=self.name, 
                 description=self.description, 
-                base_url=self.config.api_tool["base_url"],
-                method=self.config.api_tool.get("method", "GET"),
-                endpoint=self.config.api_tool["endpoint"],
-                args_schema=self.config.api_tool.get("args_schema", None),
-                headers=self.config.api_tool.get("headers", {}),
+                base_url=api_config["base_url"],
+                method=api_config.get("method", "GET"),
+                endpoint=api_config["endpoint"],
+                args_schema=api_config.get("args_schema", None),
+                headers=api_config.get("headers", {}),
             )
+            tool.metadata = {
+                **self.metadata, 
+                "type": "api", 
+                "env": self.env,
+                "api_config": api_config
+            }
+            tool.tags = self.tags
+            return tool
         
         found_tool = next(
             (tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None
