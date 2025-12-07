@@ -53,7 +53,9 @@ class TestProjectService(unittest.IsolatedAsyncioTestCase):
         ]
         await self.project_service.add_docs(project_id=self.project_id, docs=VALID_DOCS)
         results: list[SearchItem] = await self.project_service.search(
-            SearchFilter(filter={"project_id": self.project_id}, query="python programming")
+            SearchFilter(
+                filter={"project_id": self.project_id}, query="python programming"
+            )
         )
         assert (
             results[0].value["page_content"]
@@ -71,6 +73,4 @@ class TestProjectService(unittest.IsolatedAsyncioTestCase):
         assert sources[0].type == "web_scrape"
 
         # Delete source
-        await self.project_service.delete_source(
-            source_id=self.VALID_SOURCES[0].id
-        )
+        await self.project_service.delete_source(source_id=self.VALID_SOURCES[0].id)

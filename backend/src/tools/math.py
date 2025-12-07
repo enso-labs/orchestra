@@ -2,6 +2,7 @@ import re
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 
+
 class MathCalculatorInput(BaseModel):
     expression: str = Field(
         description="Mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 - 5) / 2')"

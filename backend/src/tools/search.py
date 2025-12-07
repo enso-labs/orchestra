@@ -119,8 +119,8 @@ def web_scrape(urls: List[str]) -> str:
 
 
 SEARCH_TOOLS = [
-    web_search, 
-    web_scrape, 
-    math_calculator, 
+    web_search,
+    web_scrape,
+    math_calculator,
     think_tool,
 ]

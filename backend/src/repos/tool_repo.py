@@ -17,7 +17,7 @@ from src.utils.tools import create_api_tool
 @dataclass
 class ToolExamples:
     EXAMPLES = {
-        'webhook_marketing_channel': Example(
+        "webhook_marketing_channel": Example(
             name="webhook_marketing_channel",
             base_tool="send_webhook_to_channel",
             description="Send a message to the GridSite Microsoft Teams channel.",
@@ -29,14 +29,14 @@ class ToolExamples:
             disabled=False,
             public=False,
         ),
-        'get_server_health': Example(
+        "get_server_health": Example(
             name="get_server_health",
             description="Use this to get the health of the server and app version.",
             config={
-                'api_tool': {
-                    'base_url': 'https://chat.enso.sh/api',
-                    'method': 'GET',
-                    'endpoint': '/info/health',
+                "api_tool": {
+                    "base_url": "https://chat.enso.sh/api",
+                    "method": "GET",
+                    "endpoint": "/info/health",
                 }
             },
             type="api",
@@ -54,9 +54,11 @@ class ApiConfig(BaseModel):
     args_schema: Optional[dict] = None
     headers: Optional[dict] = None
 
+
 class ToolConfig(BaseModel):
     base_tool: Optional[str] = None
     api_tool: Optional[ApiConfig] = None
+
 
 class SavedTool(BaseModel):
     name: str
@@ -87,14 +89,13 @@ class SavedTool(BaseModel):
     def __get_validators__(cls):
         yield cls.validate
         yield from super().__get_validators__()
-    
 
     def to_structured_tool(self) -> StructuredTool:
         if self.type == "api":
             api_config = self.config.api_tool.model_dump()
             tool = create_api_tool(
-                name=self.name, 
-                description=self.description, 
+                name=self.name,
+                description=self.description,
                 base_url=api_config["base_url"],
                 method=api_config.get("method", "GET"),
                 endpoint=api_config["endpoint"],
@@ -102,14 +103,14 @@ class SavedTool(BaseModel):
                 headers=api_config.get("headers", {}),
             )
             tool.metadata = {
-                **self.metadata, 
-                "type": "api", 
+                **self.metadata,
+                "type": "api",
                 "env": self.env,
-                "api_config": api_config
+                "api_config": api_config,
             }
             tool.tags = self.tags
             return tool
-        
+
         found_tool = next(
             (tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None
         )

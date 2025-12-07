@@ -28,7 +28,10 @@ async def search_threads(
             service_context = ServiceContext(
                 user_id=user.id, store=store, checkpointer=checkpointer
             )
-            if "thread_id" in search_filter.filter and not "checkpoint_id" in search_filter.filter:
+            if (
+                "thread_id" in search_filter.filter
+                and not "checkpoint_id" in search_filter.filter
+            ):
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
                     thread_id=search_filter.filter["thread_id"]
                 )
@@ -36,10 +39,9 @@ async def search_threads(
                     search_filter.filter["thread_id"]
                 )
                 if thread:
-                    checkpoints[0]['metadata']['files'] = thread.files
-                    checkpoints[0]['metadata']['todos'] = thread.todos
+                    checkpoints[0]["metadata"]["files"] = thread.files
+                    checkpoints[0]["metadata"]["todos"] = thread.todos
                 return {"checkpoints": checkpoints}
-                
 
             threads = await service_context.thread_service.search(search_filter)
             return {"threads": threads}
@@ -138,7 +140,7 @@ async def semantic_search_threads(
         if not request.query or request.query.strip() == "":
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="query field is required and must not be empty"
+                detail="query field is required and must not be empty",
             )
 
         async with get_checkpoint_db() as checkpointer:
@@ -147,10 +149,12 @@ async def semantic_search_threads(
             )
 
             # Perform semantic search
-            search_results = await service_context.thread_service.thread_snapshot_repo.search(
-                query=request.query,
-                limit=request.limit,
-                assistant_id=request.assistant_id
+            search_results = (
+                await service_context.thread_service.thread_snapshot_repo.search(
+                    query=request.query,
+                    limit=request.limit,
+                    assistant_id=request.assistant_id,
+                )
             )
 
             # Enrich results with thread titles
@@ -165,13 +169,15 @@ async def semantic_search_threads(
                         # Try to get title from thread data, fallback to first message
                         title = thread_data.value.get("title", title)
 
-                    enriched_results.append({
-                        "thread_id": thread_id,
-                        "title": title,
-                        "excerpt": result.get("excerpt", ""),
-                        "score": result.get("score", 0.0),
-                        "updated_at": result.get("updated_at"),
-                    })
+                    enriched_results.append(
+                        {
+                            "thread_id": thread_id,
+                            "title": title,
+                            "excerpt": result.get("excerpt", ""),
+                            "score": result.get("score", 0.0),
+                            "updated_at": result.get("updated_at"),
+                        }
+                    )
 
             return {"results": enriched_results}
 
@@ -180,6 +186,5 @@ async def semantic_search_threads(
     except Exception as e:
         logger.exception(f"Error performing semantic search: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

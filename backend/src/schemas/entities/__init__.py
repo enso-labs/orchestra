@@ -129,7 +129,9 @@ class SearchFilter(BaseModel):
     )
     limit: int = Field(default=20, description="The limit of results to search")
     offset: int = Field(default=0, description="The offset of results to search")
-    score_threshold: float = Field(default=0.3, description="The score threshold of results to search")
+    score_threshold: float = Field(
+        default=0.3, description="The score threshold of results to search"
+    )
     model_config = {
         "json_schema_extra": {
             "example": {"query": "", "filter": {}, "limit": 20, "offset": 0}
@@ -140,14 +142,16 @@ class SearchFilter(BaseModel):
 class ThreadSemanticSearchRequest(BaseModel):
     query: str = Field(..., description="Natural language search query")
     limit: int = Field(default=10, description="Maximum number of results (max 50)")
-    assistant_id: Optional[str] = Field(default=None, description="Optional assistant ID to filter results")
+    assistant_id: Optional[str] = Field(
+        default=None, description="Optional assistant ID to filter results"
+    )
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "query": "threads about database optimization",
                 "limit": 10,
-                "assistant_id": None
+                "assistant_id": None,
             }
         }
     }

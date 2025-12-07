@@ -37,24 +37,24 @@ async def test_engine():
     # Convert to asyncpg format and remove sslmode (asyncpg doesn't support it)
     url = make_url(DB_URI)
     url = url.set(drivername="postgresql+asyncpg")
-    
+
     # Remove sslmode from query parameters
     query_params = dict(url.query)
     query_params.pop("sslmode", None)
     url = url.update_query_dict(query_params)
-    
+
     try:
         engine = create_async_engine(
             url,
             echo=False,
             poolclass=NullPool,  # No connection pooling for tests
-            connect_args={"ssl": False}  # asyncpg SSL configuration
+            connect_args={"ssl": False},  # asyncpg SSL configuration
         )
-        
+
         # Test connection
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
-        
+
         yield engine
         await engine.dispose()
     except Exception as e:
@@ -116,23 +116,24 @@ async def mock_external_services():
         # Mock Airtable API endpoints
         respx.post("https://api.airtable.com/v0/app6sU4AprV9uZze6/Contacts").mock(
             return_value=respx.MockResponse(
-                status_code=200,
-                json={"id": "mock_record_id", "fields": {}}
+                status_code=200, json={"id": "mock_record_id", "fields": {}}
             )
         )
         respx.get("https://api.airtable.com/v0/app6sU4AprV9uZze6/Contacts").mock(
             return_value=respx.MockResponse(
                 status_code=200,
-                json={"records": [{"id": "mock_record_id", "fields": {}}]}
+                json={"records": [{"id": "mock_record_id", "fields": {}}]},
             )
         )
-        respx.route(method="PATCH", url__regex=r"^https://api\.airtable\.com/v0/app6sU4AprV9uZze6/Contacts/.+$").mock(
+        respx.route(
+            method="PATCH",
+            url__regex=r"^https://api\.airtable\.com/v0/app6sU4AprV9uZze6/Contacts/.+$",
+        ).mock(
             return_value=respx.MockResponse(
-                status_code=200,
-                json={"id": "mock_record_id", "fields": {}}
+                status_code=200, json={"id": "mock_record_id", "fields": {}}
             )
         )
-        
+
         # Mock OpenAI Chat API endpoints
         respx.post(url__regex=r"^https://api\.openai\.com/v1/chat/completions.*").mock(
             return_value=respx.MockResponse(
@@ -142,43 +143,44 @@ async def mock_external_services():
                     "object": "chat.completion",
                     "created": 1234567890,
                     "model": "gpt-4",
-                    "choices": [{
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": "Mock response"
-                        },
-                        "finish_reason": "stop"
-                    }],
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": {
+                                "role": "assistant",
+                                "content": "Mock response",
+                            },
+                            "finish_reason": "stop",
+                        }
+                    ],
                     "usage": {
                         "prompt_tokens": 10,
                         "completion_tokens": 20,
-                        "total_tokens": 30
-                    }
-                }
+                        "total_tokens": 30,
+                    },
+                },
             )
         )
-        
+
         # Mock OpenAI Embeddings API endpoints
         respx.post(url__regex=r"^https://api\.openai\.com/v1/embeddings.*").mock(
             return_value=respx.MockResponse(
                 status_code=200,
                 json={
                     "object": "list",
-                    "data": [{
-                        "object": "embedding",
-                        "embedding": [0.1] * 1536,  # Mock embedding vector
-                        "index": 0
-                    }],
+                    "data": [
+                        {
+                            "object": "embedding",
+                            "embedding": [0.1] * 1536,  # Mock embedding vector
+                            "index": 0,
+                        }
+                    ],
                     "model": "text-embedding-ada-002",
-                    "usage": {
-                        "prompt_tokens": 10,
-                        "total_tokens": 10
-                    }
-                }
+                    "usage": {"prompt_tokens": 10, "total_tokens": 10},
+                },
             )
         )
-        
+
         # Mock Anthropic API endpoints
         respx.post(url__regex=r"^https://api\.anthropic\.com/.*").mock(
             return_value=respx.MockResponse(
@@ -190,11 +192,11 @@ async def mock_external_services():
                     "content": [{"type": "text", "text": "Mock response"}],
                     "model": "claude-3-opus-20240229",
                     "stop_reason": "end_turn",
-                    "usage": {"input_tokens": 10, "output_tokens": 20}
-                }
+                    "usage": {"input_tokens": 10, "output_tokens": 20},
+                },
             )
         )
-        
+
         yield
 
 
@@ -203,7 +205,7 @@ async def mock_external_services():
 #     """Ensure test user exists in database."""
 #     user_repo = UserRepo(test_db)
 #     user = await user_repo.get_by_email("admin@example.com")
-    
+
 #     if not user:
 #         # Create test user if not exists
 #         user = User(
@@ -216,7 +218,7 @@ async def mock_external_services():
 #         test_db.add(user)
 #         await test_db.commit()
 #         await test_db.refresh(user)
-    
+
 #     return user
 
 

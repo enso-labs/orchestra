@@ -53,7 +53,6 @@ class ProjectRepo(BaseRepo):
     async def delete_source(self, project_id: str, source_id: str) -> bool:
         return await self.source_repo.delete(project_id, source_id)
 
-
     ##################################################################
     ## Document Repo Methods
     ##################################################################
@@ -67,7 +66,7 @@ class ProjectRepo(BaseRepo):
                 offset=0,
             )
         )
-    
+
     async def list_documents(self, source_id: str) -> list[Document]:
         item: SearchItem = await self.source_repo._get(source_id)
         source: Source = Source.model_validate(item.value)

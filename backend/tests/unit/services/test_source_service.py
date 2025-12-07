@@ -34,18 +34,16 @@ class TestSourceService(unittest.IsolatedAsyncioTestCase):
         created_source = await self.source_service.create(
             project_id="test-project", source=VALID_SOURCES[0]
         )
-        
+
         # Verify the created source
         assert created_source.type == VALID_SOURCES[0].type
         assert created_source.content == VALID_SOURCES[0].content
         assert created_source.id is not None
         assert created_source.created_at is not None
         assert created_source.updated_at is not None
-        
+
         # Verify we can search for it
-        results: list[Source] = await self.source_service.search(
-            query="example"
-        )
+        results: list[Source] = await self.source_service.search(query="example")
         assert len(results) >= 1
         # Verify the source is in the results
         found = any(r.id == created_source.id for r in results)

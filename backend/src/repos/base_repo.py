@@ -23,9 +23,7 @@ class BaseRepo:
     def _get_namespace(self):
         return (self.user_id, self.entity_type)
 
-    async def _set(
-        self, key: str, value: Any, ttl: int | None = None
-    ) -> bool:
+    async def _set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         await self.store.aput(
             namespace=self._get_namespace(),
             key=key,
@@ -34,7 +32,7 @@ class BaseRepo:
         )
         logger.info(f"Set {self.entity_type} {key} successfully")
         return True
-    
+
     def _format(self, item: SearchItem) -> Any:
         if self.entity_type == "documents":
             return Document.model_validate(item.value)

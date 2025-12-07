@@ -44,6 +44,7 @@ class ReasoningArgs(BaseModel):
             raise ValueError(f"Reflection must be {MAX_WORDS} words or fewer.")
         return v
 
+
 @tool(description=DESCRIPTION, args_schema=ReasoningArgs)
 def think_tool(reflection: str) -> str:
     return reflection

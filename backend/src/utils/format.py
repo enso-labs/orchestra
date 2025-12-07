@@ -77,7 +77,9 @@ def raw_html(content: str) -> str:
 </html>"""
 
 
-def init_system_prompt(system_prompt: str, config: RunnableConfig, instructions: str = None) -> str:
+def init_system_prompt(
+    system_prompt: str, config: RunnableConfig, instructions: str = None
+) -> str:
     lines = [system_prompt]
     if instructions:
         lines.append("---")
@@ -92,6 +94,7 @@ def init_system_prompt(system_prompt: str, config: RunnableConfig, instructions:
         try:
             import pytz
             from dateutil.parser import isoparse
+
             dt_utc = isoparse(current_utc)
             if timezone_val:
                 tz = pytz.timezone(timezone_val)
@@ -147,7 +150,9 @@ def get_tool_call_env(runtime: ToolRuntime) -> tuple[dict, dict]:
         raise ValueError(f"Error getting tool call env: {e}")
 
 
-def format_xml_thread(messages: list[BaseMessage], include_tool_calls: bool = True) -> str:
+def format_xml_thread(
+    messages: list[BaseMessage], include_tool_calls: bool = True
+) -> str:
     xml_lines = ["<thread>"]
     for message in messages:
         if isinstance(message, HumanMessage):
@@ -158,8 +163,8 @@ def format_xml_thread(messages: list[BaseMessage], include_tool_calls: bool = Tr
         elif isinstance(message, ToolMessage):
             if include_tool_calls:
                 xml_lines.append(
-                f'  <event id="{message.tool_call_id}" type="tool_output" name="{message.name}" status="{message.status}">{message.content}</event>'
-            )
+                    f'  <event id="{message.tool_call_id}" type="tool_output" name="{message.name}" status="{message.status}">{message.content}</event>'
+                )
         elif isinstance(message, AIMessage):
             if getattr(message, "tool_calls", None):
                 if include_tool_calls:
@@ -176,7 +181,6 @@ def format_xml_thread(messages: list[BaseMessage], include_tool_calls: bool = Tr
     return "\n".join(xml_lines)
 
 
-
 def format_schema_to_model(
     schema: Dict[str, Any],
     model_name: str = "DynamicModel",
@@ -188,18 +192,18 @@ def format_schema_to_model(
     fields = {}
 
     for key, spec in schema.items():
-
         # If the spec is a nested object (dict of fields), we must detect it.
-        is_nested = (
-            isinstance(spec, dict)
-            and not {"type", "default", "required", "description"} & set(spec.keys())
-        )
+        is_nested = isinstance(spec, dict) and not {
+            "type",
+            "default",
+            "required",
+            "description",
+        } & set(spec.keys())
 
         # ---- CASE 1: Nested object ----
         if is_nested:
             nested_model = format_schema_to_model(
-                spec,
-                model_name=f"{model_name}_{key.capitalize()}"
+                spec, model_name=f"{model_name}_{key.capitalize()}"
             )
             fields[key] = (nested_model, Field(None))
             continue

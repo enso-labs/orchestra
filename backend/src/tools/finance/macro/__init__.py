@@ -7,8 +7,16 @@ from typing import Literal
 ## Get Market Summary
 ########################################################
 type Market = Literal[
-    "US", "GB", "ASIA", "EUROPE", "RATES", "COMMODITIES", "CURRENCIES", "CRYPTOCURRENCIES"
+    "US",
+    "GB",
+    "ASIA",
+    "EUROPE",
+    "RATES",
+    "COMMODITIES",
+    "CURRENCIES",
+    "CRYPTOCURRENCIES",
 ]
+
 
 @tool(response_format="content_and_artifact", parse_docstring=True)
 def get_market_summary(market: Market = "US") -> tuple[str, dict]:

@@ -70,7 +70,6 @@ export default function ProjectPage() {
 		};
 
 		fetchProject();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [projectId]);
 
 	// Set project_id in metadata when page mounts and persist to localStorage
@@ -91,7 +90,6 @@ export default function ProjectPage() {
 			localStorage.removeItem("current_project_id");
 			selectProject(null);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [projectId]);
 
 	if (projectLoading) {

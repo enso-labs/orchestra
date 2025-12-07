@@ -96,7 +96,7 @@ export default function useThread(): ThreadContextType {
 					: {};
 
 			// Build filesMap
-			let filesMap = new Map<string, any>();
+			const filesMap = new Map<string, any>();
 			if (threadData.files && Object.keys(threadData.files).length > 0) {
 				const formattedMsgs = formatMessages(checkpointsData[0].values.messages);
 				const latestAiMessage = formattedMsgs
@@ -165,7 +165,6 @@ export default function useThread(): ThreadContextType {
 			};
 
 			fetchThread();
-			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, [threadId]);
 	};
 

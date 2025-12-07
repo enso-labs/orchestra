@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 from langchain_core.tools import tool
 
+
 ########################################################
 ## Get Earnings History
 ########################################################
@@ -12,7 +13,7 @@ def get_earnings_report(ticker: str) -> tuple[str, dict]:
     Examples:
      - get_earnings_report("AAPL")
      - get_earnings_report("TSLA")
-    
+
     Args:
         ticker: The ticker symbol of the company or currency.
     """
@@ -34,7 +35,7 @@ def get_earnings_report(ticker: str) -> tuple[str, dict]:
     content += df_to_section("Earnings Dates", earnings_dates_df)
     content += df_to_section("Earnings Estimate", earnings_estimate_df)
     content += df_to_section("Earnings History", earnings_history_df)
-    
+
     return content
 
     # JSON-serializable artifact with all three

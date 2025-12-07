@@ -25,11 +25,12 @@ ARCADE_RESPONSE_EXAMPLE = httpx.get(
     "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json"
 ).json()
 
+
 def get_example_metadata(
     project_id: bool = False,
     assistant_id: bool = False,
     thread_id: bool = False,
-    checkpoint_id: bool = False,    
+    checkpoint_id: bool = False,
 ):
     metadata = {
         "language": "en-US",
@@ -45,6 +46,7 @@ def get_example_metadata(
     if checkpoint_id:
         metadata["checkpoint_id"] = str(uuid4())
     return metadata
+
 
 NEW_THREAD_API_TOOLS = {
     "system": "You are",
@@ -493,7 +495,7 @@ class Examples:
             },
         ),
     }
-    
+
     TOOL_CREATE_EXAMPLES = {
         "base_tool_override": Example(
             name="Base Tool Override",
@@ -558,7 +560,7 @@ class Examples:
                             },
                         },
                         "headers": {
-                            'Content-type': 'application/json; charset=UTF-8',
+                            "Content-type": "application/json; charset=UTF-8",
                         },
                     },
                 },

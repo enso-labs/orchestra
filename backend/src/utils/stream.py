@@ -224,9 +224,12 @@ async def stream_generator(
         finally:
             if service_context.user_id and checkpointer:
                 final_state = await agent.graph.aget_state(config)
-                configurable = { **final_state.config.get("configurable", {}), **config['configurable']}
+                configurable = {
+                    **final_state.config.get("configurable", {}),
+                    **config["configurable"],
+                }
                 messages = final_state.values.get("messages", [])
-                
+
                 # Update the store with the final messages and files
                 service_context.store.fields = ["messages", "files"]
                 await service_context.thread_service.update(

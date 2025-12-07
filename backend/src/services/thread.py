@@ -5,6 +5,7 @@ from src.schemas.entities import SearchFilter
 from src.constants import TEST_USER_ID
 from src.repos.thread_repo import ThreadRepo
 
+
 class ThreadService:
     def __init__(
         self,
@@ -17,9 +18,7 @@ class ThreadService:
         self.assistant_id = assistant_id
         self.store: BaseStore = store
         self.thread_id = None
-        self.thread_repo = thread_repo or ThreadRepo(
-            self.user_id, store
-        )
+        self.thread_repo = thread_repo or ThreadRepo(self.user_id, store)
 
     async def update(self, thread_id: str, data: dict):
         return await self.thread_repo.update(thread_id, data)

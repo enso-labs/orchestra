@@ -4,9 +4,9 @@ from src.tools.finance.macro import get_market_summary
 from src.tools.finance.price import get_stock_price_history
 
 FINANCE_TOOLS = [
-    get_stock_price_history, 
-    get_market_summary, 
-    get_earnings_report, 
+    get_stock_price_history,
+    get_market_summary,
+    get_earnings_report,
     get_sec_filings,
-    get_financial_news
+    get_financial_news,
 ]

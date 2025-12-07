@@ -108,7 +108,6 @@ def create_api_tool(
     args_schema: Optional[dict] = None,
     headers: Optional[Dict[str, str]] = None,
 ):
-
     # 1) Build the Pydantic model *once* from the dict spec
     args_model: Optional[Type[BaseModel]] = None
     if args_schema is not None:
@@ -140,6 +139,7 @@ def create_api_tool(
         description=description,
         args_schema=args_model,  # <- Pydantic model class, not dict
     )
+
 
 ## Example usage:
 # args_schema_spec = {

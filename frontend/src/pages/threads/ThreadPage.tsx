@@ -89,7 +89,6 @@ export default function ThreadPage() {
 				selectProject(null);
 			}
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [projectId, projects]);
 
 	if (threadError) {

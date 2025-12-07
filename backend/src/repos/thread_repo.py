@@ -12,18 +12,21 @@ from src.utils.messages import from_message_to_dict
 
 FIELDS = ["messages"]
 
+
 class ThreadRepo(BaseRepo):
-    def __init__(self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)):
+    def __init__(
+        self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)
+    ):
         ## Add fields to the store (if supported)
         self.user_id = user_id
         self.store: BaseStore = store
-        
+
         try:
             self.store.fields = FIELDS
         except AttributeError:
             pass
         super().__init__(user_id=user_id, store=store, entity_type="threads")
-        
+
     def _format(self, item: SearchItem) -> ThreadSnapshot:
         return ThreadSnapshot(
             id=item.key,
@@ -33,7 +36,7 @@ class ThreadRepo(BaseRepo):
             score=getattr(item, "score", None),
             updated_at=getattr(item, "updated_at", None),
         )
-        
+
     async def search(
         self,
         search_filter: SearchFilter,
@@ -47,23 +50,24 @@ class ThreadRepo(BaseRepo):
                     async with self.store as store:
                         if search_filter.query:
                             queried_threads: list[SearchItem] = await store.asearch(
-                                self._get_namespace(), 
-                                limit=search_filter.limit, 
+                                self._get_namespace(),
+                                limit=search_filter.limit,
                                 filter=search_filter.filter,
                                 query=search_filter.query,
                             )
                             return [
                                 ThreadSnapshot(
-                                    id=thread.key, 
-                                    messages=thread.value.get("messages", []), 
-                                    files=thread.value.get("files", []), 
-                                    score=thread.score, 
-                                    updated_at=thread.updated_at
-                                ).model_dump(exclude_none=True) for thread in queried_threads
+                                    id=thread.key,
+                                    messages=thread.value.get("messages", []),
+                                    files=thread.value.get("files", []),
+                                    score=thread.score,
+                                    updated_at=thread.updated_at,
+                                ).model_dump(exclude_none=True)
+                                for thread in queried_threads
                             ]
                         threads = await store.asearch(
-                            self._get_namespace(), 
-                            limit=search_filter.limit, 
+                            self._get_namespace(),
+                            limit=search_filter.limit,
                             filter=search_filter.filter,
                         )
                         return sorted(
@@ -86,9 +90,8 @@ class ThreadRepo(BaseRepo):
         except Exception as e:
             logger.error(f"Error searching threads: {e}")
             return []
-        
-    async def update(self, thread_id: str, data: dict):
 
+    async def update(self, thread_id: str, data: dict):
         # Extract last human message for storage
         messages = data.get("messages", [])
         messages = from_message_to_dict(messages, include_tool_calls=False)
@@ -97,20 +100,19 @@ class ThreadRepo(BaseRepo):
             if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
             else messages
         )
-        
+
         data["messages"] = recent_messages
-        
+
         await self.store.aput(
             namespace=self._get_namespace(), key=thread_id, value=data
         )
 
         return True
-        
-        
+
     async def get(self, thread_id: str) -> dict:
         item = await self._get(thread_id)
         return self._format(item)
-        
+
     async def delete(self, thread_id: str) -> bool:
         try:
             await self._delete(thread_id)
@@ -122,7 +124,7 @@ class ThreadRepo(BaseRepo):
 
     async def _upsert_snapshot(self, thread_id: str, messages: list) -> bool:
         """Create or update a thread snapshot with recent messages.
-        
+
         Note: messages should already be filtered to recent messages before calling this method.
         """
         try:
@@ -132,7 +134,7 @@ class ThreadRepo(BaseRepo):
                 if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
                 else messages
             )
-            
+
             # Format messages as "Role: content" pairs
             page_content = format_xml_thread(recent_messages, include_tool_calls=False)
 
@@ -143,7 +145,7 @@ class ThreadRepo(BaseRepo):
                 metadata={
                     "thread_id": thread_id,
                     "message_count": len(messages),
-                }
+                },
             )
 
             await self._set(thread_id, snapshot)
@@ -152,4 +154,3 @@ class ThreadRepo(BaseRepo):
         except Exception as e:
             logger.error(f"Failed to upsert thread snapshot for {thread_id}: {e}")
             return False
-        

@@ -1,7 +1,14 @@
 from uuid import uuid4
 from datetime import datetime
 from typing import List, Any, Literal, Optional
-from pydantic import BaseModel, Field, ConfigDict, computed_field, field_serializer, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    computed_field,
+    field_serializer,
+    model_validator,
+)
 from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
@@ -87,15 +94,21 @@ class Assistant(BaseModel):
     name: str
     description: str = Field(default="Helpful AI Assistant.")
     model: Optional[str] = None
-    system_prompt: Optional[str] = Field(default=None, examples=["You are a helpful assistant."])
-    instructions: Optional[str] = Field(default=None, examples=["Your role is to help the user with their task."])
+    system_prompt: Optional[str] = Field(
+        default=None, examples=["You are a helpful assistant."]
+    )
+    instructions: Optional[str] = Field(
+        default=None, examples=["Your role is to help the user with their task."]
+    )
 
     @model_validator(mode="after")
     def validate_system_prompt_or_instructions(self):
         if self.system_prompt and self.instructions:
-            raise ValueError("Only one of system_prompt or instructions may be set, not both.")
+            raise ValueError(
+                "Only one of system_prompt or instructions may be set, not both."
+            )
         return self
-    
+
     tools: list[str]
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}

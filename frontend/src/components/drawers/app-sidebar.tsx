@@ -582,12 +582,12 @@ function CollapsibleGroup({
 	const getScrollElement = useCallback(() => scrollRef.current, []);
 	const estimateSize = useCallback(() => 100, []);
 
-	const virtualizer = type === "threads" ? useVirtualizer({
+	const virtualizer = useVirtualizer({
 		count: items.length,
 		getScrollElement,
 		estimateSize,
 		overscan: 5,
-	}) : null;
+	});
 
 	// Infinite scroll detection (only for threads)
 	const isNearBottom = useCallback(() => {

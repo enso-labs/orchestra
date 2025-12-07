@@ -44,7 +44,9 @@ class CheckpointService:
         return checkpoints
 
     @retry_db_operation(tries=3, delay=1, backoff=2, exceptions=(Exception,))
-    async def list_checkpoints(self, thread_id: str, limit: int = 3) -> list[StateSnapshot]:
+    async def list_checkpoints(
+        self, thread_id: str, limit: int = 3
+    ) -> list[StateSnapshot]:
         try:
             config = RunnableConfig(configurable={"thread_id": thread_id})
             checkpoints = []

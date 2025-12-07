@@ -48,7 +48,7 @@ async def search_projects(
                 doc_dict["score"] = document.score
                 result_documents.append(doc_dict)
         return {"documents": result_documents}
-    
+
     if "source_id" in project_search.filter:
         documents = await service_context.project_service.project_repo.list_documents(
             project_search.filter["source_id"],

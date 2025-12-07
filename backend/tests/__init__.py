@@ -30,20 +30,28 @@ def get_test_token():
 
 async def get_test_user() -> User:
     """Get test user from database for unit tests."""
-    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,
+        async_sessionmaker,
+        AsyncSession,
+    )
     from sqlalchemy.pool import NullPool
     from src.constants import DB_URI
-    
+
     # Create a fresh engine and session for this call
     ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
     engine = create_async_engine(ASYNC_DB_URI, echo=False, poolclass=NullPool)
-    async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    
+    async_session_maker = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
     async with async_session_maker() as db:
         user_repo = UserRepo(db)
         user = await user_repo.get_by_email("admin@example.com")
         if not user:
-            raise ValueError("Test user not found. Make sure to run seed_admin() first.")
-        
+            raise ValueError(
+                "Test user not found. Make sure to run seed_admin() first."
+            )
+
     await engine.dispose()
     return user
