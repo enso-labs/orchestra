@@ -1,9 +1,20 @@
-from langchain.agents.middleware import after_model
+
 from langchain.agents import AgentState
+from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
+from src.constants.llm import ChatModels
 from src.schemas.contexts import ContextSchema
-from langchain.agents.middleware import PIIMiddleware
+from langchain.agents.middleware import (
+    PIIMiddleware,
+    wrap_model_call,
+    ModelRequest,
+    ModelResponse,
+    after_model,
+)
+from src.utils.logger import logger
+from src.utils.format import format_content
+
 
 
 @after_model
@@ -40,3 +51,39 @@ def pii_middleware() -> dict | None:
             apply_to_input=True,
         ),
     ]
+
+
+@wrap_model_call
+async def dynamic_model_selection(request: ModelRequest, handler) -> ModelResponse:
+    """Smart routing based on query complexity and conversation depth."""
+    messages = request.state["messages"]
+    last_message = format_content(messages[-1].content)
+
+    message_count = len(messages)
+
+    # Define keywords for reasoning-heavy tasks
+    complex_keywords = [
+        "explain", "compare", "analyze", "summarize",
+        "derive", "why", "how", "design", "calculate",
+        "build", "create", "develop", "implement", "code",
+    ]
+
+    # Rule 1 — Long conversation → advanced model
+    if message_count > 50:
+        model = ChatModels.OPENAI_GPT_5_NANO.value
+        reason = "long conversation context"
+    
+    # Rule 2 — Complex query → advanced model
+    elif any(word in last_message for word in complex_keywords):
+        model = ChatModels.XAI_GROK_4_1_FAST.value
+        reason = "complex reasoning or analysis query"
+
+    # Default — simple question → basic model
+    else:
+        model = ChatModels.XAI_GROK_4_1_FAST.value
+        reason = "simple query"
+
+    logger.info(f"Using {model} due to {reason}(messages={message_count})")
+
+    request.model = init_chat_model(model)
+    return await handler(request)

@@ -21,6 +21,7 @@ class ChatModels(str, Enum):
         OPENAI_GPT_5_NANO = "openai:gpt-5-nano"
         OPENAI_GPT_5_MINI = "openai:gpt-5-mini"
         OPENAI_GPT_5 = "openai:gpt-5"
+        OPENAI_GPT_5_1 = "openai:gpt-5.1"
         # OPENAI_GPT_5_CODEX = "openai:gpt-5-codex"
     if ANTHROPIC_API_KEY:
         ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic:claude-3-7-sonnet-latest"
@@ -29,8 +30,8 @@ class ChatModels(str, Enum):
         ANTHROPIC_CLAUDE_4_5_HAIKU = "anthropic:claude-haiku-4-5"
         ANTHROPIC_CLAUDE_4_5_SONNET = "anthropic:claude-sonnet-4-5"
     if XAI_API_KEY:
-        XAI_GROK_4_1_LATEST = "xai:grok-4-1-latest"
         XAI_GROK_4_1_FAST = "xai:grok-4-1-fast"
+        XAI_GROK_4_1_FAST_NON_REASONING = "xai:grok-4-1-fast-non-reasoning"
         XAI_GROK_4 = "xai:grok-4"
         XAI_GROK_4_FAST = "xai:grok-4-fast"
         XAI_GROK_4_FAST_NON_REASONING = "xai:grok-4-fast-non-reasoning"
@@ -93,7 +94,7 @@ def get_free_models():
     if GROQ_API_KEY:
         models.append(ChatModels.GROQ_OPENAI_GPT_OSS_120B.value)
     if XAI_API_KEY:
-        models.append(ChatModels.XAI_GROK_4_1_LATEST.value)
+        models.append(ChatModels.XAI_GROK_4_1_FAST.value)
     if OLLAMA_BASE_URL:
         models.extend(get_ollama_models())
     return sorted(models)

@@ -56,7 +56,7 @@ async def get_optional_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=(
-                    f"Unauthorized [{params.model.value}]\n"
+                    f"Unauthorized [{params.model}]\n"
                     "Please sign in for higher limits and better models!"
                 ),
                 headers={"WWW-Authenticate": "Bearer"},
