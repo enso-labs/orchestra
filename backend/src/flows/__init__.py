@@ -1,4 +1,4 @@
-from typing import Type, Literal, Any, AsyncGenerator, Optional
+from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional
 from uuid import uuid4
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
@@ -21,7 +21,7 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
-from src.utils.middleware import add_ai_message_metadata, pii_middleware
+from src.utils.middleware import add_ai_message_metadata, dynamic_model_selection, pii_middleware
 
 
 async def add_memories_to_system():
@@ -55,6 +55,7 @@ def graph_builder(
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
+    middleware: list[Callable] = None,
     graph_id: Literal["deepagent", "react"] = "deepagent",
 ) -> CompiledStateGraph:
     if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
@@ -67,6 +68,11 @@ def graph_builder(
             store=store,
         )
 
+    if middleware:
+        middleware = [add_ai_message_metadata] + pii_middleware() + middleware
+    else:
+        middleware = [add_ai_message_metadata] + pii_middleware()
+
     deep_agent = create_deep_agent(
         model=model,
         tools=tools,
@@ -74,7 +80,7 @@ def graph_builder(
         system_prompt=prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
-        middleware=[add_ai_message_metadata] + pii_middleware(),
+        middleware=middleware,
         store=store,
     )
     return deep_agent
@@ -154,8 +160,12 @@ async def construct_agent(
     store: BaseStore = None,
 ):
     try:
+        middleware = None
         if config.get("metadata", {}).get("user_id"):
             tools, system_prompt = await init_memories(system_prompt, tools)
+        else:
+            ## Automatically select for unauthenticated users
+            middleware = [dynamic_model_selection]
 
         if subagents:
             subagents = await init_subagents(subagents)
@@ -170,6 +180,7 @@ async def construct_agent(
             prompt=init_system_prompt(system_prompt, config or {}, instructions),
             checkpointer=checkpointer,
             store=store,
+            middleware=middleware,
         )
         return agent
     except Exception as e:
@@ -188,6 +199,7 @@ class Orchestra:
         # context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
+        middleware: list[Callable] = None,
         graph_id: Literal["react", "deepagent"] = "deepagent",
     ):
         self.tools = tools
@@ -207,6 +219,7 @@ class Orchestra:
             checkpointer=self.checkpointer,
             store=self.store,
             graph_id=graph_id,
+            middleware=middleware,
         )
 
     async def invoke(
