@@ -12,8 +12,9 @@ from langchain.agents.middleware import (
     ModelResponse,
     after_model,
 )
-
+from src.utils.logger import logger
 from src.utils.format import format_content
+
 
 
 @after_model
@@ -68,7 +69,7 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
     ]
 
     # Rule 1 — Long conversation → advanced model
-    if message_count > 20:
+    if message_count > 50:
         model = ChatModels.OPENAI_GPT_5_NANO.value
         reason = "long conversation context"
     
@@ -82,7 +83,7 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
         model = ChatModels.XAI_GROK_4_1_FAST.value
         reason = "simple query"
 
-    print(f"[Middleware] Using {model} due to {reason}(messages={message_count})")
+    logger.info(f"Using {model} due to {reason}(messages={message_count})")
 
     request.model = init_chat_model(model)
     return await handler(request)
