@@ -3,6 +3,8 @@ import pandas as pd
 from langchain_core.tools import tool
 from typing import Literal
 
+from src.utils.pandas import df_to_serializable_records
+
 ########################################################
 ## Get Market Summary
 ########################################################
@@ -31,13 +33,6 @@ def get_market_summary(market: Market = "US") -> tuple[str, dict]:
     # Build DataFrames
     df_market_status = pd.DataFrame([market_obj.status])
     df_market_summary = pd.DataFrame(market_obj.summary)
-
-    # Helper: make DataFrame JSON-serializable (convert everything to str)
-    def df_to_serializable_records(df: pd.DataFrame):
-        df_copy = df.copy()
-        for col in df_copy.columns:
-            df_copy[col] = df_copy[col].astype(str)
-        return df_copy.to_dict(orient="records")
 
     # This is what you feed back into the model as textual context
     model_ctx = (

@@ -19,7 +19,7 @@ interface ToolTimelineProps {
 
 export default function ToolTimeline({
 	messages,
-	maxPreviewLength = 100,
+	maxPreviewLength = 10000,
 }: ToolTimelineProps) {
 	const { theme } = useTheme();
 

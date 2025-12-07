@@ -9,7 +9,7 @@ import SearchEngineTool from "../tools/SearchEngine";
 // Lazy load heavy Plotly-based component
 const ChartRenderWidget = lazy(() => import("../tools/ChartRenderWidget"));
 
-const MAX_LENGTH = 1000;
+const MAX_LENGTH = 100000000;
 
 interface ToolMessage {
 	id: string;

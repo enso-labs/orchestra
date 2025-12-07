@@ -4,27 +4,24 @@ from langchain_core.tools import tool
 
 #########################################################################################################
 ## REASONING TOOL
-## https://github.com/langchain-ai/deepagents-quickstarts/blob/main/deep_research/research_agent/tools.py
+## Implements Chain of Draft: https://arxiv.org/html/2502.18600v1
 #########################################################################################################
-MAX_WORDS = 20
-DESCRIPTION = f"""
-Title: Reasoning
-Toolkit: Search
-Description: Provide a concise (≤{MAX_WORDS} words) reflection on your research step.
+MAX_WORDS = 10
+DESCRIPTION = f"""Draft a minimalistic (≤{MAX_WORDS} words) reflection on your reasoning process.
+Capture only essential insights and critical information. Use shorthand and omit verbose explanations.
+This tool allows you to think faster by writing less, capturing the core of your thought process.
 
-You may use this tool multiple times to iteratively reflect
-after each search or research action. Keep each reflection short—
-no more than {MAX_WORDS} words.
+Should instruct agent to write thoughts to think_tool.md and use mermaid diagrams to illustrate your thoughts.
 """
 
 EXAMPLES = [
-    "Need to use the Web Scrape tool to get more context from links.",
-    "Check if web sources require scraping for full content.",
-    "Need to scrape more data from multiple URLs.",
-    "Results suggest web scraping could add details.",
-    "Try Web Scrape to extract specific sections from pages.",
-    "Use Web Search to find more information on the topic.",
-    "I should Write a file with results from the web search.",
+    "Scrape links for context and summarize main findings efficiently.",
+    "Check if sources need scraping before starting additional research.",
+    "Scrape multiple URLs for data collection, compare similarities.",
+    "Web scraping might add critical details missing in docs.",
+    "Extract important sections via targeted Web Scrape process.",
+    "Search web for detailed topic info, prioritize trustworthy sources.",
+    "Write search results to file, then analyze and compare.",
 ]
 
 
@@ -32,10 +29,10 @@ class ReasoningArgs(BaseModel):
     reflection: str = Field(
         ...,
         description=(
-            f"The reflection to think about, less than {MAX_WORDS} words. "
-            f"Examples: {', '.join(EXAMPLES)}"
+            f"ABSOLUTELY MUST be a concise draft—STRICTLY no more than {MAX_WORDS} words! Count every word. "
+            "Exceeding the word limit is not allowed and will cause failure. Only key reasoning—no fluff. "
         ),
-        # examples=EXAMPLES,
+        examples=EXAMPLES,
     )
 
     @field_validator("reflection")
