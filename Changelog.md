@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc113
 
 ### Changed
+  - feat/558-dedicated-tools-pages (2025-12-07)
 
 ### Fixed
 
