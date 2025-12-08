@@ -4,9 +4,11 @@ from fastapi.openapi.models import Example
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore, SearchItem
 from langchain_core.tools import StructuredTool
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from pydantic import BaseModel, Field
 from datetime import datetime
 
+from src.schemas.entities.a2a import A2AServers
 from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 from src.utils.security import encrypt_value, decrypt_value
@@ -47,7 +49,7 @@ class ToolExamples:
     }
 
 
-class ApiConfig(BaseModel):
+class APIConfig(BaseModel):
     base_url: str
     method: str
     endpoint: str
@@ -55,9 +57,38 @@ class ApiConfig(BaseModel):
     headers: Optional[dict] = None
 
 
+class MCPConfig(BaseModel):
+    transport: Literal["sse", "streamable_http", "stdio"]
+    url: str
+    headers: dict[str, str]
+    
+class A2AConfig(BaseModel):
+    base_url: str
+    agent_card_path: str
+
 class ToolConfig(BaseModel):
     base_tool: Optional[str] = None
-    api_tool: Optional[ApiConfig] = None
+    api_tool: Optional[APIConfig] = None
+    mcp_tool: Optional[dict[str, dict]] = None  # mcp_tool is always a dict (after MCPConfig.model_dump)
+    a2a_tool: Optional[dict[str, A2AConfig]] = None
+
+    @staticmethod
+    def mcp_tool_as_dict(mcp_tool: Optional[dict[str, MCPConfig]]) -> Optional[dict[str, dict]]:
+        if mcp_tool is None:
+            return None
+        # Return a dict where values are model_dump() representations of MCPConfig
+        return {k: v.model_dump() if isinstance(v, MCPConfig) else v for k, v in mcp_tool.items()}
+
+    def dict(self, *args, **kwargs):
+        data = super().dict(*args, **kwargs)
+        # Ensure mcp_tool is always dict-like, with any MCPConfig model_dumped
+        if "mcp_tool" in data and data["mcp_tool"] is not None:
+            data["mcp_tool"] = self.mcp_tool_as_dict(self.mcp_tool)
+        return data
+
+    def model_dump(self, *args, **kwargs):
+        # Same behavior as .dict(), for pydantic v2 compat
+        return self.dict(*args, **kwargs)
 
 
 class SavedTool(BaseModel):
@@ -81,7 +112,7 @@ class SavedTool(BaseModel):
             type_val = value.get("type")
         else:
             type_val = getattr(value, "type", None)
-        if type_val in {"mcp", "a2a", "workflow"}:
+        if type_val in {"a2a", "workflow"}:
             raise NotImplementedError(f"Tool type '{type_val}' is not yet implemented.")
         return value
 
@@ -89,28 +120,27 @@ class SavedTool(BaseModel):
     def __get_validators__(cls):
         yield cls.validate
         yield from super().__get_validators__()
-
-    def to_structured_tool(self) -> StructuredTool:
-        if self.type == "api":
-            api_config = self.config.api_tool.model_dump()
-            tool = create_api_tool(
-                name=self.name,
-                description=self.description,
-                base_url=api_config["base_url"],
-                method=api_config.get("method", "GET"),
-                endpoint=api_config["endpoint"],
-                args_schema=api_config.get("args_schema", None),
-                headers=api_config.get("headers", {}),
-            )
-            tool.metadata = {
-                **self.metadata,
-                "type": "api",
-                "env": self.env,
-                "api_config": api_config,
-            }
-            tool.tags = self.tags
-            return tool
-
+        
+        
+    def to_api_tool(self) -> StructuredTool:
+        api_config = self.config.api_tool.model_dump()
+        tool = create_api_tool(
+            name=self.name,
+            description=self.description,
+            base_url=api_config["base_url"],
+            method=api_config.get("method", "GET"),
+            endpoint=api_config["endpoint"],
+        )
+        tool.metadata = {
+            **self.metadata,
+            "type": "api",
+            "env": self.env,
+            "api_config": api_config,
+        }
+        tool.tags = self.tags + ["api_tool"]
+        return tool
+    
+    def to_base_tool(self) -> StructuredTool:
         found_tool = next(
             (tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None
         )
@@ -124,6 +154,34 @@ class SavedTool(BaseModel):
             "env": self.env,
         }
         return structured_tool
+
+    async def to_mcp_tools(self, server_name: Optional[str] = None) -> list[StructuredTool]:
+        mcp_client = MultiServerMCPClient(self.config.mcp_tool)
+        tools = await mcp_client.get_tools(server_name=server_name)
+        for tool in tools:
+            tags = list(getattr(tool, "tags", []) or [])
+            if "mcp_tool" not in tags:
+                tags.append("mcp_tool")
+            tool.tags = tags
+        return tools
+    
+    async def to_a2a_tools(self, thread_id: str) -> list[StructuredTool]:
+        a2a_config = self.config.a2a_tool.model_dump()
+        a2a_client = A2AServers(a2a=a2a_config)
+        tools = a2a_client.fetch_agent_cards_as_tools(thread_id)
+        return tools
+    
+    async def to_structured_tools(self) -> list[StructuredTool]:
+        if self.type == "api":
+            return [self.to_api_tool()]
+        elif self.type == "mcp":
+            # return await self.to_mcp_tools()
+            return []
+        elif self.type == "a2a":
+            # return self.to_a2a_tools()
+            return []
+        else:
+            return [self.to_base_tool()]
 
 
 class ToolRepo:
@@ -152,14 +210,14 @@ class ToolRepo:
         )
         return True
 
-    def _format_tools(self, tools: list[SearchItem]) -> list[StructuredTool]:
+    async def _format_tools(self, tools: list[SearchItem]) -> list[StructuredTool]:
         decrypted_tools = []
         logger.info(f"Formatting {len(tools)} tools")
         for tool in tools:
             if "env" in tool.value:
                 tool.value["env"] = decrypt_value(tool.value["env"])
             saved_tool = SavedTool.model_validate(tool.value)
-            decrypted_tools.append(saved_tool.to_structured_tool())
+            decrypted_tools.extend(await saved_tool.to_structured_tools())
         return decrypted_tools
 
     async def search(
@@ -177,7 +235,7 @@ class ToolRepo:
                 limit=limit,
                 offset=offset,
             )
-            return self._format_tools(results)
+            return await self._format_tools(results)
         except Exception as e:
             logger.exception(f"Error searching tools: {e}")
             return []

@@ -35,11 +35,11 @@ class ReasoningArgs(BaseModel):
         examples=EXAMPLES,
     )
 
-    @field_validator("reflection")
-    def must_be_short_enough(cls, v):
-        if len(v.split()) > MAX_WORDS:
-            raise ValueError(f"Reflection must be {MAX_WORDS} words or fewer.")
-        return v
+    # @field_validator("reflection")
+    # def must_be_short_enough(cls, v):
+    #     if len(v.split()) > MAX_WORDS:
+    #         raise ValueError(f"Reflection must be {MAX_WORDS} words or fewer.")
+    #     return v
 
 
 @tool(description=DESCRIPTION, args_schema=ReasoningArgs)

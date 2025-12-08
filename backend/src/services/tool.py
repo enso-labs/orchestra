@@ -35,7 +35,11 @@ class ToolService:
             for tool in user_tools + tool_library:
                 tool: StructuredTool = attach_tool_details(tool)
                 tool_dict = tool.model_dump()
-                tool_dict["args_schema"] = tool_dict["args_schema"].model_json_schema()
+                try:
+                    tool_dict["args_schema"] = tool_dict["args_schema"].model_json_schema()
+                except Exception as e:
+                    logger.error(f"Error formatting args schema for {tool.name}: {e}")
+                    tool_dict["args_schema"] = tool_dict.get("args_schema", None)
                 metadata = tool_dict["metadata"]
                 if metadata and metadata.get("base_tool"):
                     base_tools.add(metadata.get("base_tool"))

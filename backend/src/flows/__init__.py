@@ -12,6 +12,9 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import SubAgent, create_deep_agent
 
 
+from src.contexts.service import ServiceContext
+from src.constants.llm import DEFAULT_SYSTEM_PROMPT
+from src.schemas.entities.llm import Assistant
 from src.schemas.models.auth import ProtectedUser
 from src.services.memory import memory_service
 from src.services.tool import tool_service
@@ -22,6 +25,7 @@ from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 from src.utils.middleware import add_ai_message_metadata, dynamic_model_selection, pii_middleware
+from src.tools import default_tools
 
 
 async def add_memories_to_system():
@@ -90,33 +94,49 @@ async def init_tools(
     tools: list[BaseTool],
     a2a: A2AServers,
     mcp: dict = None,
-    thread_id: str = None,
+    service_context: ServiceContext = None,
 ) -> list[BaseTool]:
     """Initialize tools for a subagent."""
-    tools = tool_service.default_tools(tools)
+    tool_map = {t.name: t for t in default_tools()}
+    tools_list = [tool_map[name] for name in (tools or []) if name in tool_map] 
     a2a = A2AServers(a2a=a2a)
+    thread_id = service_context.config.get("configurable").get("thread_id")
+    user_id = service_context.config.get("configurable").get("user_id")
     if a2a.validate() and thread_id:
-        tools = tools + a2a.fetch_agent_cards_as_tools(thread_id)
+        tools_list = tools_list + a2a.fetch_agent_cards_as_tools(thread_id)
     if mcp:
         mcp_client = MultiServerMCPClient(mcp)
-        tools = tools + await mcp_client.get_tools()
-    return tools
+        tools_list = tools_list + await mcp_client.get_tools()
+    if user_id:
+        for tool in tools:
+            items = await service_context.tool_service.tool_repo.search(
+                filter={"name": tool}
+            )
+            if items:
+                structured_tool = items[0]
+                tool_metadata = {structured_tool.name: structured_tool.metadata}
+                service_context.config["metadata"] = {
+                    **tool_metadata, **service_context.config["metadata"]
+                }
+                tools_list.append(structured_tool)
+    return tools_list
 
 
-async def init_subagents(params: LLMRequest) -> list[SubAgent]:
+async def init_subagents(subagents: list[Assistant], service_context: ServiceContext) -> list[SubAgent]:
     result = []
-    for subagent in params.subagents:
+    for subagent in subagents:
+        system_prompt = subagent.system_prompt or init_system_prompt(DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions)
         subagent_dict = {
             "name": subagent.slug,
             "description": subagent.description,
-            "prompt": subagent.prompt,
+            "system_prompt": system_prompt,
             "tools": await init_tools(
-                subagent.tools, subagent.a2a, subagent.mcp, params.metadata.thread_id
+                subagent.tools, subagent.a2a, subagent.mcp, service_context
             ),
         }
 
-        # if getattr(subagent, "model", None) is not None:
-        #     subagent_dict["model"] = subagent.model
+        if getattr(subagent, "model", None) is not None:
+            subagent_dict["model"] = subagent.model
         result.append(subagent_dict)
     return result
 
@@ -155,32 +175,34 @@ async def construct_agent(
     tools: list[BaseTool],
     model: BaseChatModel,
     subagents: list[SubAgent] = [],
-    config: RunnableConfig = None,
     checkpointer: BaseCheckpointSaver = None,
-    store: BaseStore = None,
+    service_context: ServiceContext = None,
 ):
     try:
         middleware = None
-        if config.get("metadata", {}).get("user_id"):
+        if service_context.config.get("metadata", {}).get("user_id"):
             tools, system_prompt = await init_memories(system_prompt, tools)
         else:
             ## Automatically select for unauthenticated users
             middleware = [dynamic_model_selection]
 
         if subagents:
-            subagents = await init_subagents(subagents)
+            subagents = await init_subagents(
+                subagents,
+                service_context
+            )
 
         # Asynchronous LLM call
         agent = Orchestra(
             graph_id="deepagent",
-            # config=config,
             model=model,
             tools=tools,
             subagents=subagents,
-            prompt=init_system_prompt(system_prompt, config or {}, instructions),
+            prompt=init_system_prompt(system_prompt, service_context.config or {}, instructions),
             checkpointer=checkpointer,
-            store=store,
+            store=service_context.store,
             middleware=middleware,
+            context_schema=ContextSchema,
         )
         return agent
     except Exception as e:
@@ -196,7 +218,7 @@ class Orchestra:
         model: str = "openai:gpt-5-nano",
         prompt: str = "You are a helpful assistant.",
         # config: RunnableConfig = None,
-        # context_schema: Type[Any] | None = None,
+        context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
         middleware: list[Callable] = None,
@@ -206,7 +228,7 @@ class Orchestra:
         self.model = model
         self.prompt = prompt
         # self.config = config
-        # self.context_schema = context_schema
+        self.context_schema = context_schema
         self.store = store
         self.checkpointer = checkpointer
         self.subagents = subagents
@@ -215,7 +237,7 @@ class Orchestra:
             subagents=self.subagents,
             model=self.model,
             prompt=self.prompt,
-            # context_schema=self.context_schema,
+            context_schema=self.context_schema,
             checkpointer=self.checkpointer,
             store=self.store,
             graph_id=graph_id,

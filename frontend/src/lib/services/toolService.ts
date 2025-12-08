@@ -20,7 +20,7 @@ export const getUserTools = async () => {
 	// Filter for tools with 'custom' tag
 	// Note: Backend must ensure custom tools have this tag
 	return (data.tools || []).filter(
-		(tool: any) => tool.tags && tool.tags.includes("custom"),
+		(tool: any) => tool.tags && tool.tags.includes("api_tool"),
 	);
 };
 

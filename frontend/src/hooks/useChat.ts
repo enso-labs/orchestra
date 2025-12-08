@@ -210,6 +210,8 @@ export default function useChat(): ChatContextType {
 			...metadata,
 			assistant_id: agent.id,
 			current_utc: new Date().toISOString(),
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			language: Intl.DateTimeFormat().resolvedOptions().locale,
 		};
 	};
 

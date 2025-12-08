@@ -30,7 +30,7 @@ export default function DefaultTool({
 		return githubDarkTheme;
 	};
 	return (
-		<div className="max-h-[600px] rounded overflow-x-auto">
+		<div className="max-h-[100px] rounded overflow-x-auto">
 			{(() => {
 				try {
 					const parsedJSON =
@@ -44,7 +44,7 @@ export default function DefaultTool({
 								alert("Copied to clipboard (Tool Input)");
 							}}
 							shortenTextAfterLength={200}
-							style={{ ...getJsonTheme(), fontSize: "10px", padding: "5px" }}
+							style={{ ...getJsonTheme(), fontSize: "10px", padding: "5px", whiteSpace: "pre-wrap", wordBreak: "break-word" }}
 						/>
 					);
 				} catch (error) {

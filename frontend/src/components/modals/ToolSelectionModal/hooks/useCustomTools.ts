@@ -86,7 +86,7 @@ export function useCustomTools() {
 			return {
 				description: tool.description,
 				type: "api",
-				tags: ["custom"],
+				tags: ["api_tool"],
 				config: {
 					api_tool: apiConfig
 				}

@@ -3,7 +3,7 @@ import { ToolCategory, CategoryConfig } from "./types";
 
 const categories: CategoryConfig[] = [
 	{ id: "platform", label: "Platform", icon: Wrench },
-	{ id: "custom", label: "Custom", icon: PencilRuler },
+	{ id: "api", label: "API Tools", icon: PencilRuler },
 	{ id: "mcp", label: "MCP Servers", icon: Server },
 	{ id: "a2a", label: "A2A Agents", icon: Users },
 ];

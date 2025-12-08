@@ -13,6 +13,8 @@ import {
 	getMcpTools,
 	getA2aAgents,
 } from "@/lib/services/toolService";
+import { useAgentContext } from "@/context/AgentContext";
+import { Agent } from "@/lib/services/agentService";
 
 interface ToolSelectionModalProps {
 	isOpen: boolean;
@@ -31,6 +33,7 @@ export function ToolSelectionModal({
 	initialA2aConfig = {},
 	onApply,
 }: ToolSelectionModalProps) {
+	const { setAgent } = useAgentContext();
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
@@ -46,6 +49,11 @@ export function ToolSelectionModal({
 
 	const { selectedTools, toggleTool, selectedArray, selectedCount } =
 		useToolSelection(initialSelectedTools);
+
+
+	useEffect(() => {
+		setAgent((prev: Agent) => ({ ...prev, mcp: mcpServers, a2a: a2aServers }));
+	}, [mcpServers, a2aServers]);
 
 	// Fetch platform tools
 	useEffect(() => {
@@ -170,7 +178,7 @@ export function ToolSelectionModal({
 							/>
 						)}
 
-						{activeCategory === "custom" && (
+						{activeCategory === "api" && (
 							<CustomToolsPanel
 								selectedTools={selectedTools}
 								onToggleSelection={toggleTool}
