@@ -99,7 +99,6 @@ export function ToolTestPanel({
 								</div>
 								<div className="col-span-9">
 									<InputRenderer
-										name={name}
 										field={field}
 										value={args[name]}
 										onChange={(val) => handleArgChange(name, val)}
@@ -142,12 +141,10 @@ export function ToolTestPanel({
 }
 
 function InputRenderer({
-	name,
 	field,
 	value,
 	onChange
 }: {
-	name: string;
 	field: ArgField;
 	value: any;
 	onChange: (val: any) => void;
@@ -260,7 +257,7 @@ function JsonInput({
 					lineNumbers: "off",
 					fontSize: 11,
 					wordWrap: "on",
-					folding: false,
+					tabSize: 2,
 				}}
 			/>
 		</div>

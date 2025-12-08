@@ -11,9 +11,8 @@ async def local_test_user(test_db):
         user = User(
             email="admin@example.com",
             username="admin",
-            full_name="Test Admin",
+            name="Test Admin",
             hashed_password=User.get_password_hash("test1234"),
-            access=1,
         )
         test_db.add(user)
         await test_db.commit()
