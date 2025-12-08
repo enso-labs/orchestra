@@ -12,7 +12,7 @@ async def local_test_user(test_db):
             email="admin@example.com",
             username="admin",
             full_name="Test Admin",
-            hashed_password=User.hash_password("test1234"),
+            hashed_password=User.get_password_hash("test1234"),
             access=1,
         )
         test_db.add(user)
