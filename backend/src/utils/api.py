@@ -34,7 +34,12 @@ class APIClient:
                     headers=headers,
                 )
             response.raise_for_status()
-            return response.json()
+            if not response.content:
+                return None
+            try:
+                return response.json()
+            except ValueError:
+                return response.text
         except Exception as e:
             full_url = urllib.parse.urljoin(self.base_url + "/", endpoint)
             logging.error(f"APIClient {method.upper()} {full_url} failed: {e}")
