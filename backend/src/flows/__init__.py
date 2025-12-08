@@ -135,8 +135,8 @@ async def init_subagents(subagents: list[Assistant], service_context: ServiceCon
             ),
         }
 
-        # if getattr(subagent, "model", None) is not None:
-        #     subagent_dict["model"] = subagent.model
+        if getattr(subagent, "model", None) is not None:
+            subagent_dict["model"] = subagent.model
         result.append(subagent_dict)
     return result
 
@@ -202,6 +202,7 @@ async def construct_agent(
             checkpointer=checkpointer,
             store=service_context.store,
             middleware=middleware,
+            context_schema=ContextSchema,
         )
         return agent
     except Exception as e:
@@ -217,7 +218,7 @@ class Orchestra:
         model: str = "openai:gpt-5-nano",
         prompt: str = "You are a helpful assistant.",
         # config: RunnableConfig = None,
-        # context_schema: Type[Any] | None = None,
+        context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
         middleware: list[Callable] = None,
@@ -227,7 +228,7 @@ class Orchestra:
         self.model = model
         self.prompt = prompt
         # self.config = config
-        # self.context_schema = context_schema
+        self.context_schema = context_schema
         self.store = store
         self.checkpointer = checkpointer
         self.subagents = subagents
@@ -236,7 +237,7 @@ class Orchestra:
             subagents=self.subagents,
             model=self.model,
             prompt=self.prompt,
-            # context_schema=self.context_schema,
+            context_schema=self.context_schema,
             checkpointer=self.checkpointer,
             store=self.store,
             graph_id=graph_id,

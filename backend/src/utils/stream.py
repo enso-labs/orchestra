@@ -192,7 +192,10 @@ async def stream_generator(
                 {"messages": input.messages},
                 stream_mode=["messages", "values"],
                 config=config,
-                context=ContextSchema(model=agent.model),
+                context=ContextSchema(
+                    model=agent.model,
+                    user_id=service_context.user_id,
+                ),
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)

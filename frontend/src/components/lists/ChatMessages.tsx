@@ -159,7 +159,7 @@ export const Message = memo(
 			return (
 				<div className="group px-3 md:px-5">
 					<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
-						<DefaultTool selectedToolMessage={message} collapsed={true} />
+						<DefaultTool selectedToolMessage={message} collapsed={false} />
 					</div>
 				</div>
 			);
