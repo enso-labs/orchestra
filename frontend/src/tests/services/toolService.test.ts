@@ -41,8 +41,8 @@ describe("toolService", () => {
 		it("should filter tools with 'custom' tag", async () => {
 			const mockTools = [
 				{ name: "platform_tool", tags: ["platform"] },
-				{ name: "custom_tool", tags: ["custom"] },
-				{ name: "mixed_tool", tags: ["custom", "other"] },
+				{ name: "custom_tool", tags: ["api_tool"] },
+				{ name: "mixed_tool", tags: ["api_tool", "other"] },
 			];
 			(apiClient.get as any).mockResolvedValue({
 				data: { tools: mockTools },

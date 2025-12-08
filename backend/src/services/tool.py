@@ -29,7 +29,7 @@ class ToolService:
     async def tool_details(self):
         try:
             tool_details = []
-            tool_library = init_tool_library(default=False)
+            tool_library = init_tool_library()
             user_tools: list[StructuredTool] = await self.tool_repo.search()
             base_tools = set[str]()
             for tool in user_tools + tool_library:

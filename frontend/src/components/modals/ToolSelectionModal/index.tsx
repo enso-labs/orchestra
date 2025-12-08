@@ -178,7 +178,7 @@ export function ToolSelectionModal({
 							/>
 						)}
 
-						{activeCategory === "custom" && (
+						{activeCategory === "api" && (
 							<CustomToolsPanel
 								selectedTools={selectedTools}
 								onToggleSelection={toggleTool}

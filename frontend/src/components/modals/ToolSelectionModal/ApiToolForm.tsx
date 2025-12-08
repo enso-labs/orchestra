@@ -75,7 +75,7 @@ export function ApiToolForm({
 				name,
 				description,
 				type: "api",
-				tags: ["custom"],
+				tags: ["api_tool"],
 				config: {
 					api_tool: {
 						base_url: baseUrl,
