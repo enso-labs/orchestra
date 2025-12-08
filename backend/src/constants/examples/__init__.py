@@ -568,6 +568,27 @@ class Examples:
                 "type": "api",
             },
         ),
+        "mcp_sse_server": Example(
+            name="MCP Streamable HTTP",
+            description="Use this to connect to a MCP server that supports streamable HTTP.",
+            value={
+                "name": "mcp_sse_server",
+                "config": {
+                    "mcp_tool": {
+                        "enso_mcp": {
+                            "transport": "sse",
+                            "url": "https://mcp.enso.sh/sse",
+                            "headers": {"x-mcp-key": "test1234"},
+                        }
+                    }
+                },
+                "description": "Use this MCP server for web_search, web_scrape, and python_repl tools.",
+                "type": "mcp",
+                "tags": ["mcp", "web", "python"],
+                "disabled": False,
+                "public": False,
+            },
+        )
     }
 
     LLM_STREAM_EXAMPLES = {

@@ -184,9 +184,8 @@ async def stream_generator(
                 model=model,
                 tools=tools,
                 subagents=subagents,
-                config=service_context.config,
                 checkpointer=checkpointer,
-                store=service_context.store,
+                service_context=service_context,
             )
             input.messages[-1].model = agent.model
             async for chunk in agent.astream(

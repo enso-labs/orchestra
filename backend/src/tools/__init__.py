@@ -28,12 +28,16 @@ def auth_tools(user_id: str) -> list[BaseTool]:
     return auth_tools
 
 
-def init_tool_library(user_id: str = None) -> list[BaseTool]:
-    tool_lib = default_tools()
+def init_tool_library(user_id: str = None, default: bool = True) -> list[BaseTool]:
+    tool_lib = []
+    if default:
+        tool_lib.extend(default_tools())
     if user_id:
         tool_lib.extend(auth_tools(user_id))
 
     return tool_lib
+
+
 
 
 TOOL_LIBRARY: List[BaseTool] = init_tool_library()
