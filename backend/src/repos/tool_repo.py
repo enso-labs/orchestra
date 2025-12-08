@@ -130,6 +130,8 @@ class SavedTool(BaseModel):
             base_url=api_config["base_url"],
             method=api_config.get("method", "GET"),
             endpoint=api_config["endpoint"],
+            args_schema=api_config.get("args_schema"),
+            headers=api_config.get("headers"),
         )
         tool.metadata = {
             **self.metadata,

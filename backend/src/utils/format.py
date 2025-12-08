@@ -5,7 +5,7 @@ import requests
 import re
 import unicodedata
 from pydantic import BaseModel, Field, create_model
-from typing import Optional, Any, Dict, Type
+from typing import Optional, Any, Dict, Type, List
 from loguru import logger
 from datetime import datetime, timezone
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
@@ -191,25 +191,31 @@ def format_schema_to_model(
 
     fields = {}
 
+    type_mapping = {
+        "str": str,
+        "string": str,
+        "int": int,
+        "integer": int,
+        "float": float,
+        "number": float,
+        "bool": bool,
+        "boolean": bool,
+        "dict": dict,
+        "object": dict,
+        "list": list,
+        "array": list,
+    }
+
     for key, spec in schema.items():
-        # If the spec is a nested object (dict of fields), we must detect it.
-        is_nested = isinstance(spec, dict) and not {
+        # If the spec is a nested object (dict of fields) WITHOUT explicit type definition, we treat it as nested model.
+        # This supports simplified schemas where nested objects are just dicts of fields.
+        is_implicit_nested = isinstance(spec, dict) and not {
             "type",
             "default",
             "required",
             "description",
         } & set(spec.keys())
 
-        # ---- CASE 1: Nested object ----
-        if is_nested:
-            nested_model = format_schema_to_model(
-                spec, model_name=f"{model_name}_{key.capitalize()}"
-            )
-            fields[key] = (nested_model, Field(None))
-            continue
-
-        # ---- CASE 2: Regular field definition ----
-        field_type = spec.get("type", Any)
         description = spec.get("description", "")
         required = spec.get("required", False)
         default = spec.get("default", None)
@@ -218,6 +224,53 @@ def format_schema_to_model(
             default_value = Field(..., description=description)
         else:
             default_value = Field(default, description=description)
+
+        # ---- CASE 1: Implicit Nested object ----
+        if is_implicit_nested:
+            nested_model = format_schema_to_model(
+                spec, model_name=f"{model_name}_{key.capitalize()}"
+            )
+            fields[key] = (nested_model, default_value)
+            continue
+
+        # ---- CASE 2: Explicit definition ----
+        raw_type = spec.get("type", Any)
+        field_type = Any
+
+        if isinstance(raw_type, str):
+            raw_type = raw_type.lower()
+            
+            if raw_type in ["array", "list"] and "items" in spec:
+                # Handle List[Type]
+                item_spec = spec["items"]
+                # If item spec is simple type string
+                if isinstance(item_spec, dict) and "type" in item_spec:
+                    item_type_str = item_spec["type"]
+                    # If item type is object/nested
+                    if item_type_str == "object" and "properties" in item_spec:
+                         nested_item_model = format_schema_to_model(
+                            item_spec["properties"],
+                            model_name=f"{model_name}_{key.capitalize()}Item"
+                         )
+                         field_type = List[nested_item_model]
+                    else:
+                         py_item_type = type_mapping.get(item_type_str, Any)
+                         field_type = List[py_item_type]
+                else:
+                    field_type = List[Any]
+            
+            elif raw_type in ["object", "dict"] and "properties" in spec:
+                # Handle nested object with properties
+                nested_model = format_schema_to_model(
+                    spec["properties"], model_name=f"{model_name}_{key.capitalize()}"
+                )
+                field_type = nested_model
+            
+            else:
+                # Simple type mapping
+                field_type = type_mapping.get(raw_type, Any)
+        else:
+            field_type = raw_type
 
         fields[key] = (field_type, default_value)
 

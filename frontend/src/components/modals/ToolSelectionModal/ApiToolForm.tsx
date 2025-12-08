@@ -12,6 +12,8 @@ import { ArrowLeft, Save } from "lucide-react";
 import { ApiToolPayload } from "./hooks/useCustomTools";
 import { HeadersEditor } from "./components/HeadersEditor";
 import { ArgsSchemaBuilder, ArgField } from "./components/ArgsSchemaBuilder";
+import { ToolTestPanel } from "./components/ToolTestPanel";
+import { invokeTool } from "@/lib/services/toolService";
 
 interface ApiToolFormProps {
 	initialData?: Partial<ApiToolPayload>;
@@ -46,6 +48,37 @@ export function ApiToolForm({
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [errors, setErrors] = useState<Record<string, string>>({});
+
+	// Test state
+	const [testResult, setTestResult] = useState<any>(undefined);
+	const [testError, setTestError] = useState<string | undefined>(undefined);
+	const [isTestLoading, setIsTestLoading] = useState(false);
+
+	const handleInvoke = async (testArgs: Record<string, any>) => {
+		setIsTestLoading(true);
+		setTestResult(undefined);
+		setTestError(undefined);
+		try {
+			const config = {
+				api_tool: {
+					base_url: baseUrl,
+					method,
+					endpoint,
+					headers: Object.keys(headers).length > 0 ? headers : undefined,
+					args_schema: Object.keys(argsSchema).length > 0 ? argsSchema : undefined,
+				},
+			};
+			// Use a temporary name if not provided
+			const toolName = name.trim() || "ephemeral_tool";
+			const result = await invokeTool(toolName, testArgs, config);
+			setTestResult(result);
+		} catch (err: any) {
+			console.error("Test invocation failed:", err);
+			setTestError(err.message || "Invocation failed");
+		} finally {
+			setIsTestLoading(false);
+		}
+	};
 
 
 	const validate = () => {
@@ -213,6 +246,18 @@ export function ApiToolForm({
 							Define the input parameters the agent will provide when calling this tool.
 						</p>
 						<ArgsSchemaBuilder schema={argsSchema} onChange={setArgsSchema} />
+					</div>
+
+					{/* Test Tool */}
+					<div className="pt-6">
+						<ToolTestPanel
+							argsSchema={argsSchema}
+							onInvoke={handleInvoke}
+							isLoading={isTestLoading}
+							result={testResult}
+							error={testError}
+							isConfigValid={!!(baseUrl && endpoint)}
+						/>
 					</div>
 				</div>
 			</div>

@@ -10,7 +10,7 @@ from src.utils.a2a import A2ACardResolver
 from src.schemas.entities import ArcadeConfig
 from src.utils.logger import logger
 from src.constants import ARCADE_API_KEY
-from src.utils.tools import attach_tool_details
+from src.utils.tools import attach_tool_details, create_api_tool
 from src.services.db import get_store_in_memory
 from src.repos.tool_repo import ToolRepo
 
@@ -101,6 +101,26 @@ class ToolService:
             if self.user_id
             else None,
         )
+
+    async def invoke_ephemeral_tool(self, name: str, config: dict, input: dict):
+        try:
+            api_config = config.get("api_tool")
+            if not api_config:
+                raise ValueError("Only 'api_tool' config is supported for ephemeral invocation")
+
+            tool = create_api_tool(
+                name=name,
+                description="Ephemeral tool",
+                base_url=api_config.get("base_url"),
+                method=api_config.get("method", "GET"),
+                endpoint=api_config.get("endpoint"),
+                args_schema=api_config.get("args_schema"),
+                headers=api_config.get("headers"),
+            )
+            return await self.invoke_structured_tool(tool, input)
+        except Exception as e:
+            logger.exception(f"Error invoking ephemeral tool {name}: {e}")
+            return {"error": str(e)}
 
     async def invoke_structured_tool(
         self, structured_tool: StructuredTool, input: dict

@@ -20,6 +20,10 @@ class InvokeTool(BaseModel):
     result: Optional[Any] = Field(
         default=None, description="The result of the tool invocation"
     )
+    config: Optional[dict] = Field(
+        default=None,
+        description="The configuration of the tool (for ephemeral invocation)",
+    )
 
 
 class ArcadeConfig(BaseModel):

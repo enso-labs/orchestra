@@ -81,3 +81,23 @@ export const convertSpecToTool = async (
 		headers,
 	};
 };
+
+export const invokeTool = async (
+	name: string,
+	args: Record<string, any>,
+	config?: Record<string, any>,
+) => {
+	const payload = [
+		{
+			name,
+			args,
+			config,
+		},
+	];
+	const response = await apiClient.post("/tools/invoke", payload);
+	// response.data.tools is array of results
+	if (response.data?.tools?.[0]) {
+		return response.data.tools[0].result;
+	}
+	throw new Error("No result returned from tool invocation");
+};

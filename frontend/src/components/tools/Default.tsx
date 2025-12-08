@@ -33,8 +33,20 @@ export default function DefaultTool({
 		<div className="max-h-[100px] rounded overflow-x-auto">
 			{(() => {
 				try {
-					const parsedJSON =
+					let parsedJSON =
 						typeof input === "object" ? input : JSON.parse(input);
+
+					if (parsedJSON === null || parsedJSON === undefined) {
+						return (
+							<span className="text-xs text-muted-foreground p-2">null</span>
+						);
+					}
+
+					// If the parsed result is not an object (e.g. string, number, boolean), display it directly
+					if (typeof parsedJSON !== "object") {
+						return <span className="text-xs p-2">{String(parsedJSON)}</span>;
+					}
+
 					return (
 						<JsonView
 							collapsed={collapsed}
@@ -44,7 +56,13 @@ export default function DefaultTool({
 								alert("Copied to clipboard (Tool Input)");
 							}}
 							shortenTextAfterLength={200}
-							style={{ ...getJsonTheme(), fontSize: "10px", padding: "5px", whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+							style={{
+								...getJsonTheme(),
+								fontSize: "10px",
+								padding: "5px",
+								whiteSpace: "pre-wrap",
+								wordBreak: "break-word",
+							}}
 						/>
 					);
 				} catch (error) {
