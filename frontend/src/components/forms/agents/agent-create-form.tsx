@@ -645,7 +645,7 @@ export function AgentCreateForm() {
 						<FormField
 							control={form.control}
 							name="model"
-							render={({ field }) => (
+							render={() => (
 								<FormItem>
 									<FormLabel
 										className={!isEditing ? "text-muted-foreground/70" : ""}
