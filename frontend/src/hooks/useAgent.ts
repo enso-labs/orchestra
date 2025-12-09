@@ -31,7 +31,7 @@ export const INIT_AGENT_STATE: AgentState = {
 };
 
 export function useAgent() {
-	const { model, useModelsEffect } = useModel();
+	const { model, useModelsEffect, updateQueryStateModel } = useModel();
 	useModelsEffect();
 
 	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
@@ -121,6 +121,7 @@ export function useAgent() {
 			...response.data.assistants[0],
 			system: response.data.assistants[0].prompt,
 		});
+		updateQueryStateModel(response.data.assistants[0].model);
 	};
 
 	const useEffectGetAgent = (id: string) => {
