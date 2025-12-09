@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+  - bug/562-select-model-glitchy (2025-12-08)
 
 ## v0.0.2-rc113
 
