@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { searchThreads } from "@/lib/services/threadService";
 import { formatMessages } from "@/lib/utils/format";
-import { DEFAULT_CHAT_MODEL } from "@/lib/config/llm";
+import { latestHumanMessage } from "@/lib/utils/message";
 
 const LIMIT = 20;
 
@@ -109,10 +109,6 @@ export default function useThread(): ThreadContextType {
 				}
 			}
 
-			// Get model from last message
-			const lastMessage = threadData.messages?.[threadData.messages.length - 1];
-			const model = lastMessage?.model || DEFAULT_CHAT_MODEL;
-
 			// Format messages
 			const messages = formatMessages(checkpointsData[0].values.messages);
 
@@ -125,7 +121,7 @@ export default function useThread(): ThreadContextType {
 				metadata,
 				todos,
 				filesMap,
-				model,
+				model: latestHumanMessage(messages)?.model,
 			};
 		} catch (err) {
 			console.error("Failed to load thread:", err);

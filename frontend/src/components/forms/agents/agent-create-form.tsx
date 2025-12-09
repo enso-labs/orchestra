@@ -64,7 +64,7 @@ const formSchema = z.object({
 export function AgentCreateForm() {
 	const navigate = useNavigate();
 	const { agentId } = useParams();
-	const { agent, agents, setAgent, toggleSubagent, isAgentSelected } =
+	const { agent, agents, setAgent, toggleSubagent, isAgentSelected, updateQueryStateModel } =
 		useAgentContext();
 	const [isEditing, setIsEditing] = useState(!agentId);
 	const [originalAgent, setOriginalAgent] = useState<Agent | null>(null);
@@ -645,7 +645,7 @@ export function AgentCreateForm() {
 						<FormField
 							control={form.control}
 							name="model"
-							render={({ field }) => (
+							render={() => (
 								<FormItem>
 									<FormLabel
 										className={!isEditing ? "text-muted-foreground/70" : ""}
@@ -655,9 +655,7 @@ export function AgentCreateForm() {
 									<FormControl>
 										<SelectModel
 											disabled={!isEditing}
-											onModelSelected={() => {
-												setAgent({ ...agent, model: field.value });
-											}}
+											onModelSelected={updateQueryStateModel}
 										/>
 									</FormControl>
 									<FormMessage />

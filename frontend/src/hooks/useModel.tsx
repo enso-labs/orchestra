@@ -20,6 +20,10 @@ export function useModel() {
 		}, []);
 	};
 
+	const updateQueryStateModel = (model: string) => {
+		setModel(model);
+	};
+
 	useEffect(() => {
 		if (!model) {
 			setModel(models.default);
@@ -29,6 +33,7 @@ export function useModel() {
 	return {
 		model,
 		setModel,
+		updateQueryStateModel,
 		models,
 		useModelsEffect,
 	};

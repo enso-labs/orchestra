@@ -706,9 +706,8 @@ function CollapsibleGroup({
 // const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { threads, loadMoreThreads, hasMoreThreads, isLoadingMoreThreads } = useChatContext();
+	const { threads, loadMoreThreads, hasMoreThreads, isLoadingMoreThreads, clearMessages } = useChatContext();
 	const { projects, useEffectGetProjects } = useProjectContext();
-
 	// Modal state
 	const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
 		useState(false);
@@ -737,7 +736,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
 					<Link
 						to="/"
-						onClick={useLinkClick("/")}
+						onClick={(e) => {
+							clearMessages();
+							useLinkClick("/")(e);
+						}}
 						className="flex items-center gap-2 m-2"
 					>
 						<img
