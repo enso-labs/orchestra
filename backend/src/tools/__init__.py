@@ -6,12 +6,13 @@ from src.tools.test import TEST_TOOLS
 from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
 from src.tools.finance import FINANCE_TOOLS
 from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
+from src.tools.api import API_TOOLS
 
 
 def default_tools() -> list[BaseTool]:
     default_tools = [
         *SEARCH_TOOLS,
-        *PYTHON_CODE_INTERPRETER_TOOLS,
+        # *PYTHON_CODE_INTERPRETER_TOOLS,
         *FINANCE_TOOLS,
     ]
     if APP_ENV == "test":
@@ -22,6 +23,7 @@ def default_tools() -> list[BaseTool]:
 def auth_tools(user_id: str) -> list[BaseTool]:
     auth_tools = [
         *MICROSOFT_TEAMS_TOOLS,
+        *API_TOOLS,
     ]
     for tool in auth_tools:
         tool.metadata = {"user_id": user_id}

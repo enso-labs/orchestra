@@ -56,6 +56,47 @@ class APIConfig(BaseModel):
     args_schema: Optional[dict] = None
     headers: Optional[dict] = None
 
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.args_schema is not None:
+            self.args_schema = self._coerce_args_schema_types(self.args_schema)
+
+    @staticmethod
+    def _coerce_args_schema_types(args_schema):
+        """
+        Recursively converts 'type' values in args_schema from JS types ('string', 'number', 'array', etc.)
+        to Python types ('str', 'int'/'float', 'list', etc.).
+        """
+        type_mapping = {
+            "string": "str",
+            "number": "float",
+            "integer": "int",
+            "array": "list",
+            "object": "dict",
+            "boolean": "bool",
+        }
+
+        def coerce(schema):
+            if isinstance(schema, dict):
+                coerced = schema.copy()
+                # If this is a schema field with a "type"
+                if "type" in coerced and isinstance(coerced["type"], str):
+                    js_type = coerced["type"].lower()
+                    coerced["type"] = type_mapping.get(js_type, coerced["type"])  # fallback to original
+                # Recurse into nested schemas
+                for key, value in coerced.items():
+                    if isinstance(value, dict):
+                        coerced[key] = coerce(value)
+                    elif isinstance(value, list):
+                        coerced[key] = [coerce(item) for item in value]
+                return coerced
+            elif isinstance(schema, list):
+                return [coerce(item) for item in schema]
+            else:
+                return schema
+
+        return coerce(args_schema)
+
 
 class MCPConfig(BaseModel):
     transport: Literal["sse", "streamable_http", "stdio"]
@@ -210,6 +251,30 @@ class ToolRepo:
         await self.store.aput(
             namespace=self._get_namespace(), key=tool.name, value=tool_data, ttl=ttl
         )
+        return True
+    
+    async def edit(self, tool_name: str, tool: SavedTool):
+        try:
+            del tool.created_at
+            del tool.updated_at
+            del tool.name
+            tool_data = tool.model_dump()
+            if "env" in tool_data:
+                tool_data["env"] = encrypt_value(tool_data["env"])
+            if "created_at" in tool_data:
+                tool_data["created_at"] = tool_data["created_at"].isoformat()
+            if "updated_at" in tool_data:
+                tool_data["updated_at"] = tool_data["updated_at"].isoformat()
+            await self.store.aput(
+                namespace=self._get_namespace(), key=tool_name, value=tool_data
+            )
+            return True
+        except Exception as e:
+            logger.exception(
+                f"Error updating {self._get_store_key()} {tool_name}: {e}"
+            )
+            return False
+
         return True
 
     async def _format_tools(self, tools: list[SearchItem]) -> list[StructuredTool]:
