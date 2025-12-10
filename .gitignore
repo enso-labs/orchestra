@@ -23,3 +23,5 @@ backend/src/public
 **/openspec/
 **/AGENTS.md
 **/CLAUDE.md
+
+**/node_modules/

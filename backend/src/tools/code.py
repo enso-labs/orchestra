@@ -1,9 +1,12 @@
 import os
+import ujson
 import httpx
 import logging
 from typing import List
 from pydantic import BaseModel, Field, ConfigDict
+from langchain_core.tools import tool
 
+from langchain_sandbox import PyodideSandbox
 from langchain_core.tools import BaseToolkit
 from langchain_core.tools import StructuredTool
 from langchain_core.tools import ToolException
@@ -263,6 +266,30 @@ class InterpreterToolkit(BaseToolkit):
         """Get the tools in the toolkit."""
         toolkit = Interpreter(api_url=self.api_url).toolkit()
         return toolkit
-
-
-PYTHON_CODE_INTERPRETER_TOOLS = InterpreterToolkit().get_tools()
+    
+    
+@tool
+async def python_sandbox(code: str):
+    """Use this tool to execute python code in a sandbox.
+    
+    Example:
+        >>> python_sandbox("print('Hello, World!')")
+        "Hello, World!"
+        >>> python_sandbox("import math; math.sqrt(16)")
+        "4.0"
+    
+    Args:
+        code (str): The python code to execute.
+    """
+    try:
+        sandbox: PyodideSandbox = PyodideSandbox(
+            allow_net=True,
+            sessions_dir="./pysandbox"
+        )
+        code_exec_result = await sandbox.execute(code)
+        return ujson.dumps(code_exec_result.__dict__)
+    except Exception as e:
+        return f"Error: {e}"
+    
+# PYTHON_CODE_INTERPRETER_TOOLS = InterpreterToolkit().get_tools()
+PYTHON_CODE_INTERPRETER_TOOLS = [python_sandbox]

@@ -10,6 +10,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import SubAgent, create_deep_agent
+from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 
 
 from src.contexts.service import ServiceContext
@@ -17,7 +18,6 @@ from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.schemas.entities.llm import Assistant
 from src.schemas.models.auth import ProtectedUser
 from src.services.memory import memory_service
-from src.services.tool import tool_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest
 from src.utils.logger import logger
@@ -27,6 +27,12 @@ from src.schemas.entities.a2a import A2AServers
 from src.utils.middleware import add_ai_message_metadata, dynamic_model_selection, pii_middleware
 from src.tools import default_tools
 
+COMPOSITE_BACKEND = lambda rt: CompositeBackend(
+    default=StateBackend(rt),
+    routes={
+        "/memories/": StoreBackend(rt),
+    }
+)
 
 async def add_memories_to_system():
     memories = await memory_service.search()
@@ -86,6 +92,7 @@ def graph_builder(
         context_schema=context_schema,
         middleware=middleware,
         store=store,
+        backend=COMPOSITE_BACKEND,
     )
     return deep_agent
 
