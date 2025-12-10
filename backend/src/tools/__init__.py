@@ -12,7 +12,7 @@ from src.tools.api import API_TOOLS
 def default_tools() -> list[BaseTool]:
     default_tools = [
         *SEARCH_TOOLS,
-        # *PYTHON_CODE_INTERPRETER_TOOLS,
+        *PYTHON_CODE_INTERPRETER_TOOLS,
         *FINANCE_TOOLS,
     ]
     if APP_ENV == "test":

@@ -1424,6 +1424,15 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-sandbox"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/bd/31183b7c7d3f22ecbd0598bac764f2d5a79509aebfefc91b0f0a3b816357/langchain_sandbox-0.0.3.tar.gz", hash = "sha256:4736d5e5671bbf5ec93ee5c9b26ab1abc2b6859e75cea3b390de8948a8652a57", size = 22430 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/22/2f4154ca10f49bfde86124ced7fab304972cb39586d03eb3785b17ffb25f/langchain_sandbox-0.0.3-py3-none-any.whl", hash = "sha256:03068c117a2e125460c88b8c0aded49644e87646c154b51412fd64d05159a505", size = 5546 },
+]
+
+[[package]]
 name = "langchain-text-splitters"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2264,6 +2273,7 @@ dependencies = [
     { name = "langchain-mcp-adapters" },
     { name = "langchain-ollama" },
     { name = "langchain-openai" },
+    { name = "langchain-sandbox" },
     { name = "langchain-xai" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
@@ -2322,6 +2332,7 @@ requires-dist = [
     { name = "langchain-mcp-adapters", specifier = ">=0.1.9" },
     { name = "langchain-ollama", specifier = ">=0.3.7" },
     { name = "langchain-openai", specifier = ">=0.3.32" },
+    { name = "langchain-sandbox", specifier = ">=0.0.3" },
     { name = "langchain-xai", specifier = ">=0.2.5" },
     { name = "langgraph", specifier = "==1.0.2" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=2.0.23" },
