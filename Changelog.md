@@ -5,16 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.0.2-rc115
+## v0.0.2-rc116
 
 ### Changed
 
 ### Fixed
 
-## v0.0.2-rc114
+## v0.0.2-rc115
 
 ### Changed
   - feat/564-create-tool-as-tool (2025-12-09)
+
+### Fixed
+
+## v0.0.2-rc114
 
 ### Fixed
   - bug/562-select-model-glitchy (2025-12-08)
