@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
-# Install curl (needed for Deno install), cleanup after
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install curl, unzip (required for Deno install), then clean up
+RUN apt-get update && apt-get install -y curl unzip && rm -rf /var/lib/apt/lists/*
 
 # Install Deno
 RUN curl -fsSL https://deno.land/install.sh | sh
