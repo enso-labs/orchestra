@@ -35,7 +35,7 @@ from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
 from src.constants.llm import ChatModels, get_all_models, get_free_models
-from src.tools import default_tools
+from src.tools import init_tool_library
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -106,7 +106,7 @@ async def llm_stream(
         service_context = ServiceContext(config=config, store=store)
         params = await process_presidio(params, service_context.presidio_service)
         ### Collect all tools
-        tool_map = {t.name: t for t in default_tools()}  # O(n) index
+        tool_map = {t.name: t for t in init_tool_library(user_id=user.id)}  # O(n) index
         TOOLS = (
             A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(
                 config["configurable"].get("thread_id")
