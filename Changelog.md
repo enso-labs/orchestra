@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc114
 
 ### Changed
+  - feat/564-create-tool-as-tool (2025-12-09)
 
 ### Fixed
   - bug/562-select-model-glitchy (2025-12-08)
