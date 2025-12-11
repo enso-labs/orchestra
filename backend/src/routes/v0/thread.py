@@ -1,51 +1,55 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 from fastapi import APIRouter, Body, HTTPException, Depends, status
 from fastapi.responses import Response
-from src.schemas.entities import ThreadSearch
+from langgraph.store.base import BaseStore
+from src.schemas.entities.store import ThreadSnapshot
+from src.contexts.service import ServiceContext
+from src.schemas.entities import SearchFilter, ThreadSemanticSearchRequest
 from src.utils.logger import logger
-from src.services.checkpoint import checkpoint_service
-from src.services.thread import thread_service
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.auth import verify_credentials
-from langchain_core.runnables import RunnableConfig
 from langgraph.store.postgres import AsyncPostgresStore
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from langgraph.types import StateSnapshot
-from src.utils.messages import from_message_to_dict
 
 router = APIRouter(tags=["Thread"])
 
 
 @router.post("/threads/search", name="Query Threads in Checkpointer")
 async def search_threads(
-    thread_search: ThreadSearch = Body(
+    search_filter: SearchFilter = Body(
         openapi_examples=Examples.THREAD_SEARCH_EXAMPLES
     ),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
-        thread_service.store = store
-        thread_service.user_id = user.id
-        checkpoint_service.user_id = user.id
         async with get_checkpoint_db() as checkpointer:
-            checkpoint_service.checkpointer = checkpointer
-            filter = thread_search.model_dump(exclude_none=True).get("filter", {})
-            if "thread_id" in filter and not "checkpoint_id" in filter:
-                checkpoints = await checkpoint_service.list_checkpoints(
-                    filter["thread_id"]
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+            if (
+                "thread_id" in search_filter.filter
+                and not "checkpoint_id" in search_filter.filter
+            ):
+                checkpoints = await service_context.checkpoint_service.list_checkpoints(
+                    thread_id=search_filter.filter["thread_id"]
                 )
-                if checkpoints is None:
-                    raise HTTPException(status_code=404, detail="Checkpoints not found")
+                thread: ThreadSnapshot = await service_context.thread_service.get(
+                    search_filter.filter["thread_id"]
+                )
+                if thread:
+                    checkpoints[0]["metadata"]["files"] = thread.files
+                    checkpoints[0]["metadata"]["todos"] = thread.todos
                 return {"checkpoints": checkpoints}
 
-            threads = await thread_service.search(filter=filter)
+            threads = await service_context.thread_service.search(search_filter)
             return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.delete("/threads/{thread_id}", name="Delete Thread")
@@ -55,24 +59,22 @@ async def delete_thread(
     store=Depends(get_store),
 ):
     try:
-        thread_service.store = store
-        thread_service.user_id = user.id
         async with get_checkpoint_db() as checkpointer:
-            checkpoint_service.checkpointer = checkpointer
-            checkpoint_service.user_id = user.id
-            await checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            success = await thread_service.delete(thread_id)
-            if not success:
-                raise HTTPException(status_code=404, detail="Thread not found")
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+            await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
-@router.delete(
-    "/assistants/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread"
-)
+@router.delete("/a/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread")
 async def delete_thread(
     assistant_id: str,
     thread_id: str,
@@ -80,17 +82,109 @@ async def delete_thread(
     store=Depends(get_store),
 ):
     try:
-        thread_service.store = store
-        thread_service.user_id = user.id
-        thread_service.assistant_id = assistant_id
         async with get_checkpoint_db() as checkpointer:
-            checkpoint_service.checkpointer = checkpointer
-            checkpoint_service.user_id = user.id
-            await checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            success = await thread_service.delete(thread_id)
-            if not success:
-                raise HTTPException(status_code=404, detail="Thread not found")
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+            await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/threads/{thread_id}", name="Update Thread")
+async def update_thread(
+    thread_id: str,
+    updates: dict = Body(...),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+            # Get existing thread data
+            existing = await service_context.thread_service.get(thread_id)
+            if not existing:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found"
+                )
+
+            # Merge updates with existing data
+            updated_data = {**existing.value, **updates}
+            await service_context.thread_service.update(thread_id, updated_data)
+            return {"success": True, "thread_id": thread_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error updating thread: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.post("/threads/search/semantic", name="Semantic Search Over Threads")
+async def semantic_search_threads(
+    request: ThreadSemanticSearchRequest = Body(
+        openapi_examples=Examples.THREAD_SEMANTIC_SEARCH_EXAMPLES
+    ),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    try:
+        # Validate query is not empty
+        if not request.query or request.query.strip() == "":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="query field is required and must not be empty",
+            )
+
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+
+            # Perform semantic search
+            search_results = (
+                await service_context.thread_service.thread_snapshot_repo.search(
+                    query=request.query,
+                    limit=request.limit,
+                    assistant_id=request.assistant_id,
+                )
+            )
+
+            # Enrich results with thread titles
+            enriched_results = []
+            for result in search_results:
+                thread_id = result.get("thread_id")
+                if thread_id:
+                    # Fetch thread data to get title
+                    thread_data = await service_context.thread_service.get(thread_id)
+                    title = "Untitled Thread"
+                    if thread_data and thread_data.value:
+                        # Try to get title from thread data, fallback to first message
+                        title = thread_data.value.get("title", title)
+
+                    enriched_results.append(
+                        {
+                            "thread_id": thread_id,
+                            "title": title,
+                            "excerpt": result.get("excerpt", ""),
+                            "score": result.get("score", 0.0),
+                            "updated_at": result.get("updated_at"),
+                        }
+                    )
+
+            return {"results": enriched_results}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error performing semantic search: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )

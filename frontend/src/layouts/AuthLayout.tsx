@@ -2,16 +2,16 @@ import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { Link, useNavigate } from "react-router-dom";
 import { MobileNav } from "@/components/nav/MobileNav";
 import { TOKEN_NAME } from "@/lib/config";
-import useAppHook from "@/hooks/useAppHook";
 import HomeIcon from "@/components/icons/HomeIcon";
+import { useAppContext } from "@/context/AppContext";
+
 export default function AuthLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
 	const navigate = useNavigate();
-	const { appVersion, useFetchAppVersionEffect } = useAppHook();
-	useFetchAppVersionEffect();
+	const { appVersion } = useAppContext();
 
 	const handleLogout = () => {
 		localStorage.removeItem(TOKEN_NAME);

@@ -1,20 +1,11 @@
 from enum import Enum
 from uuid import uuid4
-from typing import Optional, List, Any, Literal
+from typing import Optional, List, Any
 
 from pydantic import BaseModel, Field
-from langgraph.types import StreamMode
-from langchain_core.messages import (
-    AnyMessage,
-    BaseMessage,
-    HumanMessage,
-    AIMessage,
-    SystemMessage,
-    ToolMessage,
-)
 
-from src.schemas.models.assistant import Assistant
-from src.constants.llm import ChatModels
+from src.schemas.entities.llm import *
+from src.schemas.entities.store import ThreadSnapshot
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,
@@ -23,20 +14,16 @@ from src.constants.examples import (
 )
 
 
-class Configurable(BaseModel):
-    thread_id: str
-
-
-class StreamInput(BaseModel):
-    messages: list
-    configurable: Configurable
-
-
-class ChatInput(BaseModel):
-    system: Optional[str] = Field(default="You are a helpful assistant.")
-    query: str = Field(default="What is the capital of France?")
-    images: Optional[List[str]] = Field(default=[])
-    model: Optional[str] = Field(default="openai:gpt-4o-mini")
+class InvokeTool(BaseModel):
+    name: str = Field(description="The name of the tool to invoke")
+    args: dict = Field(description="The arguments to pass to the tool")
+    result: Optional[Any] = Field(
+        default=None, description="The result of the tool invocation"
+    )
+    config: Optional[dict] = Field(
+        default=None,
+        description="The configuration of the tool (for ephemeral invocation)",
+    )
 
 
 class ArcadeConfig(BaseModel):
@@ -54,7 +41,7 @@ class Thread(BaseModel):
     thread_id: str = Field(...)
     checkpoint_ns: Optional[str] = Field(default="")
     checkpoint_id: Optional[str] = Field(default=None)
-    messages: list[AnyMessage] = Field(default_factory=list)
+    messages: list[BaseMessage] = Field(default_factory=list)
     v: Optional[int] = Field(default=1)
     ts: Optional[str] = Field(default=None)
 
@@ -75,7 +62,7 @@ class Threads(BaseModel):
 
 class Answer(BaseModel):
     thread_id: str = Field(...)
-    answer: AnyMessage = Field(...)
+    answer: BaseMessage = Field(...)
 
     model_config = {
         "json_schema_extra": {
@@ -131,30 +118,6 @@ class SearchKwargs(dict):
     filter: str = None
 
 
-class StreamContext(BaseModel):
-    msg: AnyMessage | None = None
-    metadata: dict = {}
-    event: str = ""
-
-
-class Config(BaseModel):
-    user_id: Optional[str] = Field(
-        default=None, description="The user id", examples=[str(uuid4())]
-    )
-    thread_id: Optional[str] = Field(
-        default=None, description="The thread id", examples=[str(uuid4())]
-    )
-    checkpoint_id: Optional[str] = Field(
-        default=None, description="The checkpoint id", examples=[str(uuid4())]
-    )
-    assistant_id: Optional[str] = Field(
-        default=None, description="The assistant id", examples=[str(uuid4())]
-    )
-    graph_id: Optional[Literal["react", "deepagent"]] = Field(
-        default=None, description="The graph id", examples=["react", "deepagent"]
-    )
-
-
 class ThreadSearch(BaseModel):
     limit: int = Field(default=100, description="The limit of threads to search")
     offset: int = Field(default=0, description="The offset of threads to search")
@@ -163,42 +126,36 @@ class ThreadSearch(BaseModel):
     )
 
 
-class LLMRequest(BaseModel):
-    model: ChatModels = Field(default=ChatModels.OPENAI_GPT_5_NANO.value)
-    system: str = "You are a helpful assistant."
-    tools: Optional[List[str]] = Field(default_factory=list)
-    a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
-    mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
-    subagents: Optional[List[Assistant]] = Field(default_factory=list)
+class SearchFilter(BaseModel):
+    query: Optional[str] = Field(default="", description="The query to search")
+    filter: Optional[dict] = Field(
+        default_factory=dict, description="The filter of results to search"
+    )
+    limit: int = Field(default=20, description="The limit of results to search")
+    offset: int = Field(default=0, description="The offset of results to search")
+    score_threshold: float = Field(
+        default=0.3, description="The score threshold of results to search"
+    )
+    model_config = {
+        "json_schema_extra": {
+            "example": {"query": "", "filter": {}, "limit": 20, "offset": 0}
+        }
+    }
 
-    metadata: Optional[Config] = Field(
-        default={}, description="LangGraph configuration"
+
+class ThreadSemanticSearchRequest(BaseModel):
+    query: str = Field(..., description="Natural language search query")
+    limit: int = Field(default=10, description="Maximum number of results (max 50)")
+    assistant_id: Optional[str] = Field(
+        default=None, description="Optional assistant ID to filter results"
     )
 
-    class ChatMessage(BaseModel):
-        role: Literal["user", "assistant", "system", "tool"] = Field(examples=["user"])
-        content: str | List[Any] = Field(examples=["Weather in Dallas?"])
-
-    messages: List[ChatMessage]
-
-    def to_langchain_messages(self) -> List[BaseMessage]:
-        # Convert API messages to LangChain message objects
-        converted: List[BaseMessage] = []
-        for message in self.messages:
-            role = message.role
-            content = message.content
-            if role == "user":
-                converted.append(HumanMessage(content=content))
-            elif role == "assistant":
-                converted.append(AIMessage(content=content))
-            elif role == "system":
-                converted.append(SystemMessage(content=content))
-            elif role == "tool":
-                converted.append(ToolMessage(content=content))
-            else:
-                raise ValueError(f"Unsupported role: {role}")
-        return converted
-
-
-class LLMStreamRequest(LLMRequest):
-    stream_mode: StreamMode | list[StreamMode] = "values"
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "query": "threads about database optimization",
+                "limit": 10,
+                "assistant_id": None,
+            }
+        }
+    }

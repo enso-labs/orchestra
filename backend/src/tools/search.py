@@ -4,7 +4,8 @@ from langchain_core.tools import tool
 from langchain_core.tools import ToolException
 from langchain_community.utilities import SearxSearchWrapper
 from src.utils.logger import logger
-
+from src.tools.math import math_calculator
+from src.tools.base.reasoning import think_tool
 
 Categories = Literal[
     "general",
@@ -34,12 +35,13 @@ Engines = Literal[
 async def web_search(
     query: str,
     num_results: Optional[int] = 5,
-    engines: Optional[List[Engines]] = ["google"],
-    categories: Optional[List[Categories]] = [],
-    language: Optional[str] = "en",
+    # engines: Optional[List[Engines]] = ["google"],
+    # categories: Optional[List[Categories]] = [],
+    # language: Optional[str] = "en",
 ) -> list:
     """
     Title: Web Search
+    Toolkit: Search
     Description: Perform a targeted web search for the provided query.
         - Always refine the query with the most relevant keywords.
         - Be specific with dates (e.g., "September 7, 2025" instead of "recent" or "today").
@@ -70,17 +72,15 @@ async def web_search(
     # Create a SearxSearchWrapper instance.
     searx = SearxSearchWrapper(searx_host=SEARX_SEARCH_HOST_URL)
 
-    logger.info(
-        f"Searching for {query} with {engines} engines and {categories} categories and {language} language"
-    )
+    logger.info(f"Searching for {query} with {num_results} results")
 
     try:
         results = await searx.aresults(
             query=query,
             num_results=num_results,
-            engines=engines,
-            categories=categories,
-            language=language,
+            # engines=engines,
+            # categories=categories,
+            # language=language,
         )
         logger.info(f"Found {len(results)} results")
         return results
@@ -91,7 +91,15 @@ async def web_search(
 
 @tool
 def web_scrape(urls: List[str]) -> str:
-    """Retrieve content from a list of URLs or Paths"""
+    """
+    Title: Web Scrape
+    Toolkit: Search
+    Description: Retrieve content from a list of URLs or Paths
+    Args:
+        urls (List[str]): A list of URLs or paths to scrape
+    Returns:
+        str: A string of the scraped content
+    """
     md = MarkItDown(enable_plugins=False)
     docs = []
     for url in urls:
@@ -110,4 +118,9 @@ def web_scrape(urls: List[str]) -> str:
     return "\n\n---\n\n".join(docs)
 
 
-SEARCH_TOOLS = [web_search, web_scrape]
+SEARCH_TOOLS = [
+    web_search,
+    web_scrape,
+    math_calculator,
+    think_tool,
+]

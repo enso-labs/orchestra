@@ -7,11 +7,14 @@ import {
 	oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import ReactMarkdown from "react-markdown";
-import rehypeSanitize from "rehype-sanitize";
+
+// Use to create links in markdown
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
 import useImageHook from "@/hooks/useImageHook";
 import { useTheme } from "@/hooks/useTheme";
+import mermaid from "mermaid";
 
 interface CodeBlockProps {
 	inline?: boolean;
@@ -26,6 +29,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 	...props
 }) => {
 	const [copied, setCopied] = useState(false);
+	const [mermaidSvg, setMermaidSvg] = useState<string>("");
+	const [mermaidError, setMermaidError] = useState<string>("");
+	const mermaidRef = useRef<HTMLDivElement>(null);
 	const { theme } = useTheme();
 	const match = /language-(\w+)/.exec(className || "");
 	const language = match ? match[1] : "";
@@ -50,7 +56,40 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 		}
 	};
 
-	if (!language) {
+	// Initialize mermaid with theme
+	useEffect(() => {
+		const mermaidTheme = theme === "light" ? "default" : "dark";
+		mermaid.initialize({
+			startOnLoad: false,
+			theme: mermaidTheme,
+			securityLevel: "loose",
+		});
+	}, [theme]);
+
+	// Render mermaid diagrams
+	useEffect(() => {
+		if (language === "mermaid" && code) {
+			const renderDiagram = async () => {
+				try {
+					setMermaidError("");
+					const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+					const { svg } = await mermaid.render(id, code);
+					setMermaidSvg(svg);
+				} catch (error) {
+					console.error("Mermaid rendering error:", error);
+					setMermaidError(
+						error instanceof Error ? error.message : "Failed to render diagram",
+					);
+				}
+			};
+			renderDiagram();
+		}
+	}, [language, code, theme]);
+
+	// Check if this is inline code (no newlines) or a code block (has newlines)
+	const isInlineCode = inline || !code.includes("\n");
+
+	if (!language && isInlineCode) {
 		return (
 			<code
 				className="rounded text-green-400 bg-green-400/10 px-1 py-0.5 text-sm font-mono"
@@ -58,6 +97,69 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 			>
 				{children}
 			</code>
+		);
+	}
+
+	// For code blocks without a language, render with wrapping
+	if (!language) {
+		return (
+			<div className="relative group my-2">
+				<pre className="bg-muted/50 rounded-lg p-3 overflow-x-auto">
+					<code
+						className="text-sm font-mono whitespace-pre-wrap break-words"
+						{...props}
+					>
+						{children}
+					</code>
+				</pre>
+			</div>
+		);
+	}
+
+	// Handle Mermaid diagrams
+	if (language === "mermaid") {
+		return (
+			<div className="relative group my-2">
+				<div className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-t-lg border-b border-border">
+					<span className="text-xs text-muted-foreground font-medium">
+						mermaid diagram
+					</span>
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={handleCopy}
+						className="h-6 w-6 p-0 hover:bg-muted"
+					>
+						{copied ? (
+							<Check className="h-3 w-3 text-green-500" />
+						) : (
+							<Copy className="h-3 w-3" />
+						)}
+					</Button>
+				</div>
+				{mermaidError ? (
+					<div className="bg-red-500/10 border border-red-500/20 rounded-b-lg p-4">
+						<p className="text-xs text-red-400 mb-2">
+							Failed to render diagram:
+						</p>
+						<pre className="text-xs text-red-300 whitespace-pre-wrap">
+							{mermaidError}
+						</pre>
+					</div>
+				) : mermaidSvg ? (
+					<div
+						ref={mermaidRef}
+						className="bg-muted/50 rounded-b-lg p-4 flex justify-center items-center overflow-x-auto"
+						dangerouslySetInnerHTML={{ __html: mermaidSvg }}
+					/>
+				) : (
+					<div className="bg-muted/50 rounded-b-lg p-4 flex justify-center items-center">
+						<span className="text-xs text-muted-foreground">
+							Rendering diagram...
+						</span>
+					</div>
+				)}
+			</div>
 		);
 	}
 
@@ -85,6 +187,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 				language={language}
 				PreTag="div"
 				className="!mt-0 !rounded-t-none"
+				wrapLongLines={true}
 				customStyle={{
 					margin: 0,
 					borderTopLeftRadius: 0,
@@ -160,6 +263,30 @@ const ExpandableCell: React.FC<{ children: React.ReactNode }> = ({
 	);
 };
 
+const footnoteSchema = {
+	...defaultSchema,
+	tagNames: [...(defaultSchema.tagNames || []), "section", "sup"],
+	attributes: {
+		...defaultSchema.attributes,
+		section: [
+			...(defaultSchema.attributes?.section || []),
+			["data-footnotes", true],
+		],
+		sup: [
+			...(defaultSchema.attributes?.sup || []),
+			["data-footnote-ref", true],
+			"id",
+		],
+		a: [
+			...(defaultSchema.attributes?.a || []),
+			["data-footnote-backref", true],
+			"href",
+			"id",
+			"aria-describedby",
+		],
+	},
+};
+
 const BaseCard = ({ content }: { content: string }) => {
 	return (
 		<ReactMarkdown
@@ -179,13 +306,13 @@ const BaseCard = ({ content }: { content: string }) => {
 					<ul className="list-disc pl-5 my-2" {...props} />
 				),
 				ol: ({ ...props }) => (
-					<ol className="list-decimal list-inside mb-2 space-y-1" {...props} />
+					<ol className="list-decimal mb-2 space-y-1" {...props} />
 				),
 				li: ({ node: _node, ...props }) => <li className="ml-2" {...props} />,
 				a: ({ node, ...props }) => (
 					<a
 						target="_blank"
-						className="text-primary underline hover:text-primary/80"
+						className="text-blue-300 underline hover:text-blue-300/80"
 						{...props}
 					/>
 				),
@@ -232,11 +359,7 @@ const BaseCard = ({ content }: { content: string }) => {
 				remarkGfm,
 				// remarkMath,
 			]}
-			rehypePlugins={[
-				// rehypeRaw,
-				// rehypeKatex,
-				rehypeSanitize,
-			]}
+			rehypePlugins={[[rehypeSanitize, footnoteSchema]]}
 			remarkRehypeOptions={{ passThrough: ["link"] }}
 		>
 			{content}

@@ -5,6 +5,25 @@ export const listTools = async () => {
 	return response.data;
 };
 
+export const createTool = async (tool: any) => {
+	const response = await apiClient.post("/tools", tool);
+	return response.data;
+};
+
+export const deleteTool = async (name: string) => {
+	const response = await apiClient.delete(`/tools/${name}`);
+	return response.data;
+};
+
+export const getUserTools = async () => {
+	const data = await listTools();
+	// Filter for tools with 'custom' tag
+	// Note: Backend must ensure custom tools have this tag
+	return (data.tools || []).filter(
+		(tool: any) => tool.tags && tool.tags.includes("api_tool"),
+	);
+};
+
 export const listToolsArcade = async (
 	toolkit?: string,
 	offset?: number,
@@ -61,4 +80,24 @@ export const convertSpecToTool = async (
 		spec,
 		headers,
 	};
+};
+
+export const invokeTool = async (
+	name: string,
+	args: Record<string, any>,
+	config?: Record<string, any>,
+) => {
+	const payload = [
+		{
+			name,
+			args,
+			config,
+		},
+	];
+	const response = await apiClient.post("/tools/invoke", payload);
+	// response.data.tools is array of results
+	if (response.data?.tools?.[0]) {
+		return response.data.tools[0].result;
+	}
+	throw new Error("No result returned from tool invocation");
 };

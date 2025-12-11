@@ -1,10 +1,7 @@
-import os
 import json
 from typing import Callable
 from time import perf_counter
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -12,27 +9,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from src.routes.v0 import create_api_router, mount_static_router
 from src.utils.logger import logger
 from src.services.db import (
     get_checkpoint_db,
     get_store_db,
-    # get_async_db,
-)
-
-from src.routes.v0 import (
-    tool,
-    llm,
-    thread,
-    health,
-    auth,
-    storage,
-    rag,
-    assistant,
-    schedule,
 )
 from src.constants import (
     HOST,
-    LANGCONNECT_SERVER_URL,
     PORT,
     LOG_LEVEL,
     APP_VERSION,
@@ -76,7 +60,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Enso 🤖",
+    title="Enso Labs - Orchestra 🪶",
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. "
@@ -128,49 +112,9 @@ app.add_middleware(
 )
 
 # Include routers
-PREFIX = "/api"
-app.include_router(auth, prefix=PREFIX)
-app.include_router(health, prefix=PREFIX)
-app.include_router(llm, prefix=PREFIX)
-app.include_router(thread, prefix=PREFIX)
-app.include_router(assistant, prefix=PREFIX)
-app.include_router(tool, prefix=PREFIX)
-app.include_router(schedule, prefix=PREFIX)
-if LANGCONNECT_SERVER_URL:
-    app.include_router(rag, prefix=PREFIX)
-app.include_router(storage, prefix=PREFIX)
+app = create_api_router(app)
 # Mount specific directories only if they exist
-app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
-app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
-
-# Check if icons directory exists before mounting
-if os.path.exists("src/public/icons"):
-    app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
-
-
-# Function to serve static files with fallback
-@app.get("/{filename:path}", include_in_schema=False)
-async def serve_static_or_index(filename: str, request: Request):
-    # List of static files to check for at the root
-    static_files = [
-        "manifest.json",
-        "sw.js",
-        "favicon.ico",
-        "robots.txt",
-        "manifest.webmanifest",
-    ]
-
-    # If the request is for a known static file and it exists, serve it
-    if filename in static_files and os.path.exists(f"src/public/{filename}"):
-        return FileResponse(f"src/public/{filename}")
-
-    # For /icons/* paths, check if the file exists
-    if filename.startswith("icons/") and os.path.exists(f"src/public/{filename}"):
-        return FileResponse(f"src/public/{filename}")
-
-    # For all other routes, serve the index.html for SPA routing
-    return FileResponse("src/public/index.html")
-
+app = mount_static_router(app)
 
 ### Run Server
 if __name__ == "__main__":

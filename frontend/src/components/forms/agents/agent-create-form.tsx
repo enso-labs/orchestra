@@ -14,8 +14,12 @@ import {
 	Users,
 	Check,
 	X,
+	Library,
+	FileText,
+	Ban,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
+import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
 
 import {
 	Form,
@@ -33,26 +37,25 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAgentContext } from "@/context/AgentContext";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
-import { useNavigate } from "react-router-dom";
-import { base64Compare } from "@/lib/utils/format";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
+import { Prompt } from "@/lib/entities/prompt";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
 		message: "Name must be at least 2 characters.",
 	}),
-	description: z.string().min(2, {
-		message: "Description must be at least 2 characters.",
-	}),
-	systemMessage: z.string().min(1, {
-		message: "System message is required.",
-	}),
+	description: z.string(),
+	systemMessage: z.string().optional(),
+	instructions: z.string().optional(),
 	model: z.string().min(2, {
 		message: "Model must be at least 2 characters.",
 	}),
@@ -61,34 +64,78 @@ const formSchema = z.object({
 export function AgentCreateForm() {
 	const navigate = useNavigate();
 	const { agentId } = useParams();
-	const { agent, agents, setAgent, toggleSubagent, isAgentSelected } =
+	const { agent, agents, setAgent, toggleSubagent, isAgentSelected, updateQueryStateModel } =
 		useAgentContext();
+	const [isEditing, setIsEditing] = useState(!agentId);
+	const [originalAgent, setOriginalAgent] = useState<Agent | null>(null);
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 	const [fullscreenSystemMessage, setFullscreenSystemMessage] = useState("");
 	const [systemMessageUrl, setSystemMessageUrl] = useState("");
 	const [isUsingUrl, setIsUsingUrl] = useState(false);
 	const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
 	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
+	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+	const [promptMode, setPromptMode] = useState<
+		"instructions" | "system_prompt"
+	>("instructions");
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: "",
 			description: "",
 			systemMessage: "",
+			instructions: "",
 		},
 	});
+
+	useEffect(() => {
+		setIsEditing(!agentId);
+	}, [agentId]);
+
+	const handleEdit = () => {
+		setOriginalAgent(JSON.parse(JSON.stringify(agent)));
+		setIsEditing(true);
+	};
+
+	const handleCancel = () => {
+		if (originalAgent) {
+			setAgent(originalAgent);
+		}
+		setIsEditing(false);
+	};
 
 	const onSubmit = async (values: z.infer<typeof formSchema>) => {
 		const configData: Agent = {
 			name: values.name.trim(),
 			description: values.description.trim(),
 			model: values.model.trim(),
-			prompt: values.systemMessage.trim(),
 			mcp: agent.mcp,
 			a2a: agent.a2a,
 			tools: agent.tools,
 			subagents: agent.subagents,
 		};
+
+		if (promptMode === "instructions") {
+			const instructionContent = selectedPrompt
+				? `{{prompt:${selectedPrompt.id}:v${selectedPrompt.v}}}`
+				: values.instructions?.trim() || "";
+
+			configData.instructions = instructionContent;
+			// We do not force a system prompt here.
+			// If undefined, the backend will apply its default ("You are a helpful assistant.")
+			// or keep the existing one if we were doing a partial update (but here we replace).
+			// If we wanted to strictly enforce the default, we would set it here.
+			// configData.system_prompt = "You are a helpful assistant.";
+		} else {
+			const systemContent = selectedPrompt
+				? `{{prompt:${selectedPrompt.id}:v${selectedPrompt.v}}}`
+				: values.systemMessage?.trim() || "";
+
+			configData.system_prompt = systemContent;
+			configData.instructions = "";
+		}
+
 		if (!agent.id) {
 			console.log("Saving agent configuration:", configData);
 			const response = await agentService.create(configData);
@@ -103,7 +150,8 @@ export function AgentCreateForm() {
 			console.log("Updating agent configuration:", configData);
 			await agentService.update(agent.id, configData);
 			alert(`${values.name} updated successfully!`);
-			navigate(`/assistants`);
+			setIsEditing(false);
+			// navigate(`/assistants`);
 		}
 	};
 
@@ -126,13 +174,22 @@ export function AgentCreateForm() {
 	};
 
 	const openFullscreen = () => {
-		setFullscreenSystemMessage(agent.prompt || "");
+		if (promptMode === "instructions") {
+			setFullscreenSystemMessage(form.getValues("instructions") || "");
+		} else {
+			setFullscreenSystemMessage(form.getValues("systemMessage") || "");
+		}
 		setIsFullscreenOpen(true);
 	};
 
 	const saveFullscreenSystemMessage = () => {
-		setAgent({ ...agent, system: fullscreenSystemMessage });
-		form.setValue("systemMessage", fullscreenSystemMessage);
+		if (promptMode === "instructions") {
+			setAgent({ ...agent, instructions: fullscreenSystemMessage });
+			form.setValue("instructions", fullscreenSystemMessage);
+		} else {
+			setAgent({ ...agent, system_prompt: fullscreenSystemMessage });
+			form.setValue("systemMessage", fullscreenSystemMessage);
+		}
 		setIsFullscreenOpen(false);
 	};
 
@@ -176,16 +233,38 @@ export function AgentCreateForm() {
 	useEffect(() => {
 		form.setValue("name", agent.name);
 		form.setValue("description", agent.description);
-		form.setValue("systemMessage", agent.prompt);
 		form.setValue("model", agent.model);
-	}, [agent]);
 
-	const agentHasChanged = useMemo(() => {
-		const prevAssistant = agents.find((a: Agent) => a.id === agent.id);
-		if (!prevAssistant) return true;
-		delete agent.system;
-		return !base64Compare(JSON.stringify(prevAssistant), JSON.stringify(agent));
-	}, [agents, agent]);
+		// Determine mode and set values
+		if (
+			(agent.instructions && agent.instructions.length > 0) ||
+			(agent.instructions &&
+				agent.system_prompt &&
+				agent.system_prompt.length > 0)
+		) {
+			setPromptMode("instructions");
+			form.setValue("instructions", agent.instructions);
+			form.setValue("systemMessage", agent.system_prompt || "");
+		} else if (
+			agent.system_prompt &&
+			agent.system_prompt !== "You are a helpful assistant."
+		) {
+			setPromptMode("system_prompt");
+			form.setValue("systemMessage", agent.system_prompt);
+			form.setValue("instructions", "");
+		} else {
+			// Default or check legacy prompt
+			if (agent.prompt && agent.prompt !== "You are a helpful assistant.") {
+				setPromptMode("system_prompt");
+				form.setValue("systemMessage", agent.prompt);
+			} else {
+				// Default state - no prefill
+				setPromptMode("instructions");
+				form.setValue("instructions", "");
+				form.setValue("systemMessage", "");
+			}
+		}
+	}, [agent]);
 
 	const filteredSubagents = agents.filter((a: Agent) => a.id !== agentId);
 
@@ -207,17 +286,41 @@ export function AgentCreateForm() {
 						</div>
 						{agent.id ? (
 							<div className="flex items-center gap-2">
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									disabled={!agentHasChanged}
-									onClick={form.handleSubmit(onSubmit)}
-									className="flex items-center gap-2"
-								>
-									<Pencil className="h-4 w-4" />
-									Update
-								</Button>
+								{isEditing ? (
+									<>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={handleCancel}
+											className="flex items-center gap-2"
+										>
+											<Ban className="h-4 w-4" />
+											Cancel
+										</Button>
+										<Button
+											type="button"
+											variant="default"
+											size="sm"
+											onClick={form.handleSubmit(onSubmit)}
+											className="flex items-center gap-2"
+										>
+											<Save className="h-4 w-4" />
+											Save
+										</Button>
+									</>
+								) : (
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={handleEdit}
+										className="flex items-center gap-2"
+									>
+										<Pencil className="h-4 w-4" />
+										Edit
+									</Button>
+								)}
 								<Button
 									type="button"
 									variant="destructive"
@@ -251,7 +354,13 @@ export function AgentCreateForm() {
 									<FormLabel>Name</FormLabel>
 									<FormControl>
 										<Input
+											disabled={!isEditing}
 											placeholder="Agent name"
+											className={
+												!isEditing
+													? "opacity-60 bg-muted/50 cursor-not-allowed"
+													: ""
+											}
 											{...field}
 											onChangeCapture={(e) =>
 												setAgent({ ...agent, name: e.currentTarget.value })
@@ -268,10 +377,20 @@ export function AgentCreateForm() {
 							name="description"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Description</FormLabel>
+									<FormLabel
+										className={!isEditing ? "text-muted-foreground/70" : ""}
+									>
+										Description
+									</FormLabel>
 									<FormControl>
 										<Textarea
+											disabled={!isEditing}
 											placeholder="Agent description"
+											className={
+												!isEditing
+													? "opacity-60 bg-muted/50 cursor-not-allowed"
+													: ""
+											}
 											{...field}
 											onChangeCapture={(e) =>
 												setAgent({
@@ -281,53 +400,262 @@ export function AgentCreateForm() {
 											}
 										/>
 									</FormControl>
-									{/* <FormDescription>This is your agent description.</FormDescription> */}
+									<p className="text-xs text-muted-foreground mt-2">
+										Provides a brief description of the assistant. When to use
+										it, and how it works.
+									</p>
 									<FormMessage />
 								</FormItem>
 							)}
 						/>
-						<FormField
-							control={form.control}
-							name="systemMessage"
-							render={({ field }) => (
-								<FormItem>
-									<div className="flex items-center justify-between">
-										<FormLabel>System Message</FormLabel>
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={openFullscreen}
-											className="h-6 px-2"
-										>
-											<Maximize2 className="h-3 w-3" />
-										</Button>
-									</div>
-									<FormControl>
-										<Textarea
-											{...field}
-											required
-											onChangeCapture={(e) =>
-												setAgent({ ...agent, prompt: e.currentTarget.value })
-											}
-										/>
-									</FormControl>
-									{/* <FormDescription>This is your system message.</FormDescription> */}
-									<FormMessage />
-								</FormItem>
+						<Tabs
+							value={promptMode}
+							onValueChange={(v) => isEditing && setPromptMode(v as any)}
+							className={cn(
+								"w-full",
+								!isEditing && "opacity-60 pointer-events-none",
 							)}
-						/>
+						>
+							<TabsList className="grid w-full grid-cols-2">
+								<TabsTrigger value="instructions">Instructions</TabsTrigger>
+								<TabsTrigger value="system_prompt">System Prompt</TabsTrigger>
+							</TabsList>
+
+							<TabsContent value="instructions" className="mt-4">
+								<FormField
+									control={form.control}
+									name="instructions"
+									render={({ field }) => (
+										<FormItem>
+											<div className="flex items-center justify-between">
+												<FormLabel
+													className={
+														!isEditing ? "text-muted-foreground/70" : ""
+													}
+												>
+													Instructions
+												</FormLabel>
+												<div className="flex gap-2">
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														disabled={!isEditing}
+														onClick={() => setIsPromptModalOpen(true)}
+														className="h-6 px-2 text-xs"
+													>
+														<Library className="h-3 w-3 mr-1" />
+														Browse
+													</Button>
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														onClick={openFullscreen}
+														className="h-6 px-2"
+													>
+														<Maximize2 className="h-3 w-3" />
+													</Button>
+												</div>
+											</div>
+
+											{/* Show selected prompt */}
+											{selectedPrompt && promptMode === "instructions" && (
+												<div className="p-3 border rounded-md bg-muted/50 mb-2">
+													<div className="flex justify-between items-start">
+														<div className="flex-1">
+															<div className="flex items-center gap-2 mb-1">
+																<FileText className="h-4 w-4 text-primary" />
+																<p className="font-medium text-sm">
+																	{selectedPrompt.name}
+																</p>
+																<Badge variant="outline" className="text-xs">
+																	v{selectedPrompt.v}
+																</Badge>
+															</div>
+															<p className="text-xs text-muted-foreground line-clamp-2">
+																{selectedPrompt.content}
+															</p>
+														</div>
+														<Button
+															type="button"
+															variant="ghost"
+															size="sm"
+															onClick={() => {
+																setSelectedPrompt(null);
+																form.setValue("instructions", "");
+															}}
+															className="h-6 w-6 p-0 ml-2"
+														>
+															<X className="h-3 w-3" />
+														</Button>
+													</div>
+												</div>
+											)}
+
+											<FormControl>
+												<Textarea
+													{...field}
+													disabled={
+														!isEditing ||
+														(!!selectedPrompt && promptMode === "instructions")
+													}
+													placeholder={
+														selectedPrompt
+															? "Using saved prompt..."
+															: "Enter instructions to guide the agent (e.g. 'You are a weather expert')..."
+													}
+													className={cn(
+														"min-h-[150px]",
+														!isEditing ||
+															(!!selectedPrompt &&
+																promptMode === "instructions")
+															? "opacity-60 bg-muted/50 cursor-not-allowed"
+															: "",
+													)}
+													onChangeCapture={(e) =>
+														setAgent({
+															...agent,
+															instructions: e.currentTarget.value,
+														})
+													}
+												/>
+											</FormControl>
+											<p className="text-xs text-muted-foreground mt-2">
+												Instructions are appended to the default Ensō system
+												prompt. This is the recommended way to customize agent
+												behavior.
+											</p>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</TabsContent>
+
+							<TabsContent value="system_prompt" className="mt-4">
+								<FormField
+									control={form.control}
+									name="systemMessage"
+									render={({ field }) => (
+										<FormItem>
+											<div className="flex items-center justify-between">
+												<FormLabel
+													className={
+														!isEditing ? "text-muted-foreground/70" : ""
+													}
+												>
+													System Prompt
+												</FormLabel>
+												<div className="flex gap-2">
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														disabled={!isEditing}
+														onClick={() => setIsPromptModalOpen(true)}
+														className="h-6 px-2 text-xs"
+													>
+														<Library className="h-3 w-3 mr-1" />
+														Browse
+													</Button>
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														onClick={openFullscreen}
+														className="h-6 px-2"
+													>
+														<Maximize2 className="h-3 w-3" />
+													</Button>
+												</div>
+											</div>
+
+											{/* Show selected prompt */}
+											{selectedPrompt && promptMode === "system_prompt" && (
+												<div className="p-3 border rounded-md bg-muted/50 mb-2">
+													<div className="flex justify-between items-start">
+														<div className="flex-1">
+															<div className="flex items-center gap-2 mb-1">
+																<FileText className="h-4 w-4 text-primary" />
+																<p className="font-medium text-sm">
+																	{selectedPrompt.name}
+																</p>
+																<Badge variant="outline" className="text-xs">
+																	v{selectedPrompt.v}
+																</Badge>
+															</div>
+															<p className="text-xs text-muted-foreground line-clamp-2">
+																{selectedPrompt.content}
+															</p>
+														</div>
+														<Button
+															type="button"
+															variant="ghost"
+															size="sm"
+															onClick={() => {
+																setSelectedPrompt(null);
+																form.setValue("systemMessage", "");
+															}}
+															className="h-6 w-6 p-0 ml-2"
+														>
+															<X className="h-3 w-3" />
+														</Button>
+													</div>
+												</div>
+											)}
+
+											<FormControl>
+												<Textarea
+													{...field}
+													disabled={
+														!isEditing ||
+														(!!selectedPrompt && promptMode === "system_prompt")
+													}
+													placeholder={
+														selectedPrompt
+															? "Using saved prompt..."
+															: "Enter complete system prompt..."
+													}
+													className={cn(
+														"min-h-[150px]",
+														!isEditing ||
+															(!!selectedPrompt &&
+																promptMode === "system_prompt")
+															? "opacity-60 bg-muted/50 cursor-not-allowed"
+															: "",
+													)}
+													onChangeCapture={(e) =>
+														setAgent({
+															...agent,
+															system_prompt: e.currentTarget.value,
+														})
+													}
+												/>
+											</FormControl>
+											<p className="text-xs text-muted-foreground mt-2">
+												Completely replaces the default system prompt. Use this
+												for advanced customization where full control is needed.
+											</p>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</TabsContent>
+						</Tabs>
 						<FormField
 							control={form.control}
 							name="model"
-							render={({ field }) => (
+							render={() => (
 								<FormItem>
-									<FormLabel>Model</FormLabel>
+									<FormLabel
+										className={!isEditing ? "text-muted-foreground/70" : ""}
+									>
+										Model
+									</FormLabel>
 									<FormControl>
 										<SelectModel
-											onModelSelected={() => {
-												setAgent({ ...agent, model: field.value });
-											}}
+											disabled={!isEditing}
+											onModelSelected={updateQueryStateModel}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -351,6 +679,7 @@ export function AgentCreateForm() {
 						<Button
 							type="button"
 							variant="outline"
+							disabled={!isEditing}
 							onClick={() => setIsToolModalOpen(true)}
 						>
 							<Wrench className="h-4 w-4 mr-2" />
@@ -407,8 +736,13 @@ export function AgentCreateForm() {
 										<span className="text-foreground">{subagent.name}</span>
 										<button
 											type="button"
+											disabled={!isEditing}
 											onClick={() => toggleSubagent(subagent)}
-											className="text-muted-foreground hover:text-foreground transition-colors"
+											className={`transition-colors ${
+												isEditing
+													? "text-muted-foreground hover:text-foreground"
+													: "text-muted-foreground/50 cursor-not-allowed"
+											}`}
 											aria-label={`Remove ${subagent.name}`}
 										>
 											<X className="h-3 w-3" />
@@ -425,15 +759,20 @@ export function AgentCreateForm() {
 							return (
 								<div
 									key={ag.id}
-									className={`border rounded-lg p-4 cursor-pointer hover:shadow-md transition-all relative ${
+									className={`border rounded-lg p-4 transition-all relative ${
+										isEditing
+											? "cursor-pointer hover:shadow-md"
+											: "cursor-default opacity-80"
+									} ${
 										isSelected
 											? "border-primary bg-primary/10 hover:bg-primary/15"
 											: "bg-muted/50 hover:bg-muted"
 									}`}
-									onClick={() => toggleSubagent(ag)}
-									tabIndex={0}
+									onClick={() => isEditing && toggleSubagent(ag)}
+									tabIndex={isEditing ? 0 : -1}
 									role="button"
 									aria-pressed={isSelected}
+									aria-disabled={!isEditing}
 								>
 									{/* Selection indicator */}
 									<div
@@ -502,6 +841,7 @@ export function AgentCreateForm() {
 								type="button"
 								variant="ghost"
 								size="sm"
+								disabled={!isEditing}
 								onClick={toggleUrlMode}
 								className="flex items-center gap-2"
 							>
@@ -528,7 +868,9 @@ export function AgentCreateForm() {
 								<Button
 									type="button"
 									onClick={fetchSystemMessageFromUrl}
-									disabled={isLoadingFromUrl || !systemMessageUrl.trim()}
+									disabled={
+										isLoadingFromUrl || !systemMessageUrl.trim() || !isEditing
+									}
 									className="flex items-center gap-2"
 								>
 									{isLoadingFromUrl ? (
@@ -578,7 +920,7 @@ export function AgentCreateForm() {
 								type="button"
 								onClick={saveFullscreenSystemMessage}
 								className="flex items-center gap-2"
-								disabled={!fullscreenSystemMessage.trim()}
+								disabled={!fullscreenSystemMessage.trim() || !isEditing}
 							>
 								<Save className="h-4 w-4" />
 								Save Changes
@@ -598,6 +940,20 @@ export function AgentCreateForm() {
 				onApply={(selectedTools) => {
 					setAgent({ ...agent, tools: selectedTools });
 					setIsToolModalOpen(false);
+				}}
+			/>
+
+			{/* Prompt Selection Modal */}
+			<PromptSelectionModal
+				isOpen={isPromptModalOpen}
+				onClose={() => setIsPromptModalOpen(false)}
+				onSelect={(prompt) => {
+					setSelectedPrompt(prompt);
+					if (promptMode === "instructions") {
+						form.setValue("instructions", prompt.content);
+					} else {
+						form.setValue("systemMessage", prompt.content);
+					}
 				}}
 			/>
 		</Form>

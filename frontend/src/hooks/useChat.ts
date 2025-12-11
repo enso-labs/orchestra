@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import {
-	constructSystemPrompt,
-	formatMultimodalPayload,
-} from "@/lib/utils/format";
+import { formatContent, formatMultimodalPayload } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
 import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
 import { useAgentContext } from "@/context/AgentContext";
+import { StreamMessageHandler } from "@/lib/utils/message";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -48,6 +46,17 @@ export type ChatContextType = {
 		toolkit: string[];
 	};
 	setArcade: (arcade: { tools: string[]; toolkit: string[] }) => void;
+	streamingRate: {
+		count: number;
+		startTime: number;
+		rate: number | null;
+	} | null;
+	filesMap: Map<string, any>;
+	setFilesMap: (map: Map<string, any>) => void;
+	todos: any[];
+	setTodos: (todos: any[]) => void;
+	viewMode: "chat" | "editor";
+	setViewMode: (mode: "chat" | "editor") => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -64,20 +73,43 @@ export default function useChat(): ChatContextType {
 		in_mem_messages = [...newMessages];
 		setMessagesState(newMessages);
 	};
-	const [metadata, setMetadata] = useState({});
+	const [metadata, setMetadata] = useState<any>(() => {
+		const storedProjectId = localStorage.getItem("current_project_id");
+		return {
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			language: navigator.language,
+			current_utc: undefined,
+			...(storedProjectId ? { project_id: storedProjectId } : {}),
+		};
+	});
 
 	const [controller, setController] = useState<AbortController | null>(null);
+
+	const [streamingRate, setStreamingRate] = useState<{
+		count: number;
+		startTime: number;
+		rate: number | null;
+	} | null>(null);
 
 	const [arcade, setArcade] = useState({
 		tools: [] as string[],
 		toolkit: [] as string[],
 	});
 
+	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [todos, setTodos] = useState<any[]>([]);
+	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
+
 	const abortQuery = () => {
 		if (controller) {
 			controller.abort();
 			setController(null);
 		}
+	};
+
+	const sseHandler = (payload: any, messages: any[]) => {
+		handleMessages(payload, messages);
+		return true;
 	};
 
 	const handleSSE = async (
@@ -100,16 +132,23 @@ export default function useChat(): ChatContextType {
 		clearContent();
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
+		const enrichedMetadata = getMetadata();
 		const source = streamThread({
-			system: constructSystemPrompt(agent.prompt),
-			messages: formatedMessages,
+			system: agent.prompt,
+			input: { messages: formatedMessages },
 			model: agent.model,
-			metadata: metadata,
+			metadata: enrichedMetadata,
 			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,
 			subagents: agent.subagents,
+			presidio: {
+				analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
+				anonymize: localStorage.getItem("enso:tool:pii_anonymize") === "true",
+				// redact: false,
+			},
 		});
+		source.stream();
 
 		source.addEventListener("message", function (e: any) {
 			// Assuming we receive JSON-encoded data payloads:
@@ -132,6 +171,12 @@ export default function useChat(): ChatContextType {
 			source.close();
 			setController(null);
 			setLoading(false);
+			const lastMessageIndex =
+				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
+			if (lastMessageIndex >= 0) {
+				setQuery(in_mem_messages[lastMessageIndex].content);
+				clearMessages(lastMessageIndex);
+			}
 		});
 
 		controller.signal.addEventListener("abort", () => {
@@ -160,13 +205,18 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
+	const getMetadata = () => {
+		return {
+			...metadata,
+			assistant_id: agent.id,
+			current_utc: new Date().toISOString(),
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			language: Intl.DateTimeFormat().resolvedOptions().locale,
+		};
+	};
+
 	const resetMetadata = () => {
-		setMetadata({
-			graph_id: undefined,
-			thread_id: undefined,
-			assistant_id: undefined,
-			checkpoint_id: undefined,
-		});
+		setMetadata({});
 	};
 
 	const clearMessages = (index?: number) => {
@@ -181,10 +231,15 @@ export default function useChat(): ChatContextType {
 			resetMetadata();
 		}
 		setMessages(in_mem_messages);
+		setFilesMap(new Map());
+		setTodos([]);
+		setViewMode("chat");
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
+		// console.log(payload);
 		const streamMode = payload[0];
+
 		if (streamMode === "error") {
 			alert("Error on stream: " + payload[1]);
 			setLoading(false);
@@ -192,122 +247,92 @@ export default function useChat(): ChatContextType {
 			return;
 		}
 
+		if (streamMode === "values") {
+			const valuesData = payload[1];
+
+			// Store files with message association
+			if (valuesData.files && Object.keys(valuesData.files).length > 0) {
+				// Associate files with the latest AI or tool message
+				const latestAiMessage = history
+					.slice()
+					.reverse()
+					.find((msg: any) =>
+						["ai", "assistant", "tool"].includes(msg.type ?? msg.role),
+					);
+
+				if (latestAiMessage) {
+					setFilesMap((prev) => {
+						const newMap = new Map(prev);
+						newMap.set(latestAiMessage.id, valuesData.files);
+						return newMap;
+					});
+				}
+			}
+
+			// Store todos with message association
+			if (valuesData.todos && Object.keys(valuesData.todos).length > 0) {
+				// Associate todos with the latest AI or tool message
+				setTodos(valuesData.todos);
+			}
+
+			return;
+		}
+
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
-			setMetadata((prev) => ({
+			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: responseMetadata.thread_id,
 			}));
-			const expectedContent =
-				typeof response.content === "string"
-					? response.content
-					: (response.content[0]?.text ?? "");
-			console.log(payload);
-			// Handle Tool Input
-			if (response.tool_call_chunks && response.tool_call_chunks.length > 0) {
-				// Only set tool name if we don't have one yet or if the new name is truthy
-				if (!toolNameRef.current || response.tool_call_chunks[0].name) {
-					toolNameRef.current = response.tool_call_chunks[0].name;
-				}
-				setLoadingMessage(`Calling ${toolNameRef.current} tool...`);
-				toolCallChunkRef.current += response.tool_call_chunks[0].args;
-				const existingIndex = history.findIndex(
-					(msg: any) => msg.id === response.id,
-				);
 
-				// If the message already exists, update it
-				if (existingIndex !== -1) {
-					// Consolidate tool_call_chunks for the message with matching id
-					const existingMsg = history[existingIndex];
-					if (toolCallChunkRef.current) {
-						try {
-							existingMsg.input = JSON.parse(toolCallChunkRef.current);
-						} catch {
-							try {
-								const autoAddCommas =
-									"[" + toolCallChunkRef.current.replace(/}\s*{/g, "},{") + "]";
-								existingMsg.input = JSON.parse(autoAddCommas);
-							} catch {
-								existingMsg.input = toolCallChunkRef.current;
-							}
-						}
-					}
-					history[existingIndex] = {
-						...existingMsg,
-						...response,
-					};
-				} else {
-					history.push({
-						...response,
-						input: toolCallChunkRef.current,
-						name: toolNameRef.current,
-					});
-				}
-				setMessagesState([...history]);
-			}
+			const expectedContent = formatContent(response.content);
+			const existingIndex = history.findIndex(
+				(msg: any) => msg.id === response.id,
+			);
 
-			// Handle Final Response & Tool Response
+			// Update streaming rate
 			if (
 				expectedContent &&
 				(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
 			) {
-				const existingIndex = history.findIndex(
-					(msg: any) => msg.id === response.id,
-				);
-				if (existingIndex !== -1) {
-					// Always append to the related message content
-					const existingMsg = history[existingIndex];
-					const updatedContent = (existingMsg.content || "") + expectedContent;
-					history[existingIndex] = {
-						...response,
-						...existingMsg,
-						content: updatedContent,
-					};
-					setMessagesState([...history]);
-					return;
+				if (existingIndex === -1) {
+					setStreamingRate({
+						count: expectedContent.length,
+						startTime: Date.now(),
+						rate: null,
+					});
 				} else {
-					const updateMessage = {
-						...response,
-						content: expectedContent,
-						role: response.type === "tool" ? "tool" : "assistant",
-					};
-					if (responseMetadata.ls_provider && responseMetadata.ls_model_name) {
-						updateMessage.model = `${responseMetadata.ls_provider}:${responseMetadata.ls_model_name}`;
-					}
-					if (responseMetadata.ls_temperature) {
-						updateMessage.temperature = responseMetadata.ls_temperature;
-					}
-					if (responseMetadata.thread_id) {
-						updateMessage.thread_id = responseMetadata.thread_id;
-					}
-					if (
-						responseMetadata.checkpoint_ns &&
-						responseMetadata.checkpoint_node
-					) {
-						updateMessage.checkpoint_ns = responseMetadata.checkpoint_ns;
-					}
-					history.push(updateMessage);
-					setMessagesState([...history]);
+					setStreamingRate((prev: any) => {
+						const now = Date.now();
+						const startTime = prev?.startTime || now;
+						const newCount = (prev?.count || 0) + expectedContent.length;
+						const elapsed = (now - startTime) / 1000;
+
+						return {
+							count: newCount,
+							startTime,
+							rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
+						};
+					});
 				}
 			}
 
-			if (
-				["stop", "end_turn", "STOP"].includes(
-					response.response_metadata?.finish_reason ||
-						response.response_metadata.stop_reason,
-				)
-			) {
+			const streamHandler = new StreamMessageHandler(
+				toolNameRef,
+				toolCallChunkRef,
+				history,
+			);
+
+			// Handle Final Response & Tool Response
+			streamHandler.processResponse(response, expectedContent, existingIndex);
+			setLoadingMessage(`Calling ${streamHandler.toolNameRef.current} tool...`);
+			setMessagesState(streamHandler.history);
+			if (streamHandler.streamStop(response)) {
 				setLoading(false);
 				setController(null);
-				return;
 			}
 		}
-	};
-
-	const sseHandler = (payload: any, messages: any[]) => {
-		handleMessages(payload, messages);
-		return true;
 	};
 
 	const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -340,12 +365,12 @@ export default function useChat(): ChatContextType {
 
 	const useEffectUpdateAssistantId = () => {
 		useEffect(() => {
-			setMetadata((prev) => ({
+			setMetadata((prev: any) => ({
 				...prev,
 				assistant_id: agent.id,
 			}));
 			return () => {
-				setMetadata((prev) => ({
+				setMetadata((prev: any) => ({
 					...prev,
 					assistant_id: undefined,
 				}));
@@ -383,5 +408,12 @@ export default function useChat(): ChatContextType {
 		arcade,
 		setArcade,
 		useEffectUpdateAssistantId,
+		streamingRate,
+		filesMap,
+		setFilesMap,
+		todos,
+		setTodos,
+		viewMode,
+		setViewMode,
 	};
 }

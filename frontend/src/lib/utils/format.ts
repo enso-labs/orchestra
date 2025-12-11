@@ -221,3 +221,18 @@ export async function formatMultimodalPayload(
 
 	return [{ role: "user", content: content }];
 }
+
+export function formatContent(content: any) {
+	if (typeof content === "string") {
+		return content;
+	}
+	return content[0]?.text;
+}
+
+export function isEmpty(str: string) {
+	return (
+		str === null ||
+		str === undefined ||
+		(typeof str === "string" && str.trim().length === 0)
+	);
+}

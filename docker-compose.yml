@@ -58,14 +58,14 @@ services:
   ##############################################
   ## Graphchat
   ##############################################
-  graphchat:
-    image: ryaneggz/graphchat:latest
-    # build:
-    #   context: ./backend
-    #   dockerfile: Dockerfile
-    container_name: graphchat
+  orchestra:
+    # image: ryaneggz/graphchat:0.0.2-rc108
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: orchestra
     env_file:
-      - ./backend/.env.docker
+      - ./backend/.env
     ports:
       - "8000:8000"
     depends_on:
@@ -88,11 +88,11 @@ services:
       - ollama:/root/.ollama
     ports:
       - "11434:11434"
-    command: >
-      sh -c "
-        ollama pull llama3.2-vision &&
-        tail -f /dev/null
-      "
+    # command: >
+    #   sh -c "
+    #     ollama pull qwen3-vl gemma3 &&
+    #     tail -f /dev/null
+    #   "
 
   ##############################################
   ## Exec Server

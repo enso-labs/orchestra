@@ -1,9 +1,9 @@
 import apiClient from "@/lib/utils/apiClient";
-import { ThreadPayload } from "@/lib/entities";
+import { SemanticThread, ThreadPayload, ThreadSearchRequest } from "@/lib/entities";
 import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
-import { SSE } from "sse.js";
+import { SSE, SSEOptions } from "sse.js";
 import { Agent } from "./agentService";
 
 const SYSTEM_PROMPT = `GOAL:
@@ -84,16 +84,28 @@ export const alterSystemPrompt = async (payload: ThreadPayload) => {
 };
 
 type MessageContent = string | Array<{ type: string; [key: string]: any }>;
-
+type Messages = { role: string; content: MessageContent; [key: string]: any }[];
+type Input = { messages: Messages };
+// type Metadata = { thread_id?: string; checkpoint_id?: string; [key: string]: any };
+type A2A = { [key: string]: any };
+type MCP = { [key: string]: any };
+type Tools = string[];
+type Subagents = Agent[];
+type Presidio = {
+	analyze?: boolean;
+	anonymize?: boolean;
+	redact?: boolean;
+};
 interface StreamThreadPayload {
-	system: string;
-	messages: { role: string; content: MessageContent; [key: string]: any }[];
+	system?: string;
+	input: Input;
 	model: string;
-	metadata: { thread_id?: string; checkpoint_id?: string; [key: string]: any };
-	a2a?: object;
-	mcp?: object;
-	tools?: string[];
-	subagents?: Agent[];
+	metadata: any;
+	a2a?: A2A;
+	mcp?: MCP;
+	tools?: Tools;
+	subagents?: Subagents;
+	presidio?: Presidio;
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {
@@ -105,11 +117,16 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 		const token = getAuthToken();
 		if (token) headers.Authorization = `Bearer ${token}`;
 
-		const source = new SSE(`${VITE_API_URL}/llm/stream`, {
+		if (payload.system?.trim() === "") {
+			delete payload.system;
+		}
+		const newConfig: SSEOptions = {
 			headers: headers,
 			payload: JSON.stringify(payload),
 			method: "POST",
-		});
+			start: false,
+		};
+		const source = new SSE(`${VITE_API_URL}/llm/stream`, newConfig);
 		return source;
 	} catch (error: unknown) {
 		console.error("Error streaming thread:", error);
@@ -120,7 +137,7 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 export const searchThreads = async (
 	action: "list_threads" | "list_checkpoints" | "get_checkpoint",
 	filter: { thread_id?: string; checkpoint_id?: string } = {},
-	limit: number = 100,
+	limit: number = 20,
 	offset: number = 0,
 ) => {
 	let payload;
@@ -179,5 +196,77 @@ export const deleteThread = async (threadId: string, assistantId?: string) => {
 	} catch (error: any) {
 		console.error("Error deleting thread:", error);
 		throw new Error(error.response?.data?.detail || "Failed to delete thread");
+	}
+};
+
+export const searchThreadsByProject = async (
+	projectId: string,
+	limit: number = 20,
+	offset: number = 0,
+) => {
+	try {
+		const payload = {
+			limit: limit,
+			offset: offset,
+			filter: { project_id: projectId },
+		};
+		const response = await apiClient.post(`/threads/search`, payload, {
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		return response.data.threads || [];
+	} catch (error: any) {
+		console.error("Error searching threads by project:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to search threads by project",
+		);
+	}
+};
+
+export const updateThreadProject = async (
+	threadId: string,
+	projectId: string | null,
+) => {
+	try {
+		const response = await apiClient.patch(
+			`/threads/${threadId}`,
+			{ project_id: projectId },
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			},
+		);
+		return response.data;
+	} catch (error: any) {
+		console.error("Error updating thread project:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to update thread project",
+		);
+	}
+};
+
+export const searchThreadsSemantic = async (
+	request: ThreadSearchRequest,
+): Promise<{ threads: SemanticThread[] }> => {
+	try {
+		const response = await apiClient.post(
+			`/threads/search`,
+			request,
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			},
+		);
+		return response.data;
+	} catch (error: any) {
+		console.error("Error searching threads semantically:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to search threads",
+		);
 	}
 };

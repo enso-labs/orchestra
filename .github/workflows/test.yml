@@ -1,152 +1,164 @@
 name: Test
 
 on:
-  push:
-    branches:
-      - '*'
-    paths-ignore:
-      - 'Changelog.md'
-      - 'docker/**'
-      - 'docker-compose.yml'
-      - 'docs/**'
-      - '.dockerignore'
-      - 'README.md'
-      - 'deployment/**'
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths-ignore:
-      - 'Changelog.md'
-      - 'docker/**'
-      - 'docker-compose.yml'
-      - 'docs/**'
-      - '.dockerignore'
-      - 'README.md'
-      - 'deployment/**'
+    push:
+        branches:
+            - "*"
+        paths-ignore:
+            - "Changelog.md"
+            - "docker/**"
+            - "docker-compose.yml"
+            - "docs/**"
+            - ".dockerignore"
+            - "README.md"
+            - "deployment/**"
+    pull_request:
+        types: [opened, synchronize, reopened]
+        paths-ignore:
+            - "Changelog.md"
+            - "docker/**"
+            - "docker-compose.yml"
+            - "docs/**"
+            - ".dockerignore"
+            - "README.md"
+            - "deployment/**"
 jobs:
-  ###############################################################
-  ## Test Frontend
-  ###############################################################
-  test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    ###############################################################
+    ## Test Frontend
+    ###############################################################
+    test-frontend:
+        runs-on: ubuntu-latest
+        environment: Test
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-    
-    - name: Cache Node dependencies
-      id: cache-node
-      uses: actions/cache@v4
-      with:
-        path: |
-          **/node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
 
-    - name: Install dependencies
-      working-directory: ./frontend
-      if: steps.cache-node.outputs.cache-hit != 'true'
-      run: npm ci
+            - name: Cache Node dependencies
+              id: cache-node
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      **/node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-node-
 
-    - name: Save Node dependencies cache
-      if: steps.cache-node.outputs.cache-hit != 'true'
-      id: save-cache-node
-      uses: actions/cache@v4
-      with:
-        path: |
-          **/node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }} 
+            - name: Install dependencies
+              working-directory: ./frontend
+              if: steps.cache-node.outputs.cache-hit != 'true'
+              run: npm ci
 
-    - name: Run tests
-      working-directory: ./frontend
-      run: npm test
+            - name: Save Node dependencies cache
+              if: steps.cache-node.outputs.cache-hit != 'true'
+              id: save-cache-node
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      **/node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
 
-    - name: Build frontend
-      working-directory: ./frontend
-      run: npm run build
-      
-  ###############################################################
-  ## Test Backend use Cache
-  ###############################################################
-  test-backend:
-    runs-on: ubuntu-latest
-    environment: Test
-    env:
-      APP_ENV: test
-      APP_LOG_LEVEL: debug
-      POSTGRES_CONNECTION_STRING: ${{ secrets.POSTGRES_CONNECTION_STRING }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-    # services:
-    #   postgres:
-    #     image: pgvector/pgvector:pg16
-    #     env:
-    #       POSTGRES_USER: admin
-    #       POSTGRES_PASSWORD: test1234
-    #       POSTGRES_DB: lg_template_test
-    #     ports:
-    #       - 5432:5432
-    #     options: >-
-    #       --health-cmd pg_isready
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
-      # redis:
-      #   image: redis:alpine
-      #   ports:
-      #     - 6379:6379
-      #   options: >-
-      #     --health-cmd "redis-cli ping"
-      #     --health-interval 10s
-      #     --health-timeout 5s
-      #     --health-retries 5
-    steps:
+            - name: Run tests
+              working-directory: ./frontend
+              run: npm test
 
-    - name: Checkout code
-      uses: actions/checkout@v4
+            - name: Build frontend
+              working-directory: ./frontend
+              run: npm run build
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+    ###############################################################
+    ## Test Backend use Cache
+    ###############################################################
+    test-backend:
+        runs-on: ubuntu-latest
+        environment: Test
+        env:
+            APP_ENV: test
+            APP_LOG_LEVEL: debug
+            APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+            POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@localhost:5432/lg_template_test
+            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        services:
+            postgres:
+                image: pgvector/pgvector:pg16
+                env:
+                    POSTGRES_USER: admin
+                    POSTGRES_PASSWORD: test1234
+                    POSTGRES_DB: lg_template_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+            # redis:
+            #   image: redis:alpine
+            #   ports:
+            #     - 6379:6379
+            #   options: >-
+            #     --health-cmd "redis-cli ping"
+            #     --health-interval 10s
+            #     --health-timeout 5s
+            #     --health-retries 5
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-    - name: Cache Python dependencies
-      id: cache-python
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
 
-    - name: Install dependencies
-      working-directory: ./backend
-      run: |
-        env | sort
-        mkdir -p src/public/docs
-        mkdir -p src/public/assets
-        pip install --upgrade pip
-        pip install uv
-        uv sync --frozen --no-cache --dev
+            - name: Cache Python dependencies
+              id: cache-python
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
 
-    - name: Save Python dependencies cache
-      if: steps.cache-python.outputs.cache-hit != 'true'
-      id: save-cache-python
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+            - name: Install dependencies
+              working-directory: ./backend
+              run: |
+                  env | sort
+                  mkdir -p src/public/docs
+                  mkdir -p src/public/assets
+                  pip install --upgrade pip
+                  pip install uv
+                  uv sync --frozen --no-cache --dev
 
-    - name: Run tests
-      working-directory: ./backend
-      env:
-        PYTHONPATH: ./src:.
-      run: |
-        # Create the database directory
-        mkdir -p ./docker/postgres/data
-        # Run your tests
-        uv run pytest -rs
+            - name: Save Python dependencies cache
+              if: steps.cache-python.outputs.cache-hit != 'true'
+              id: save-cache-python
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+
+            - name: Wait for PostgreSQL
+              run: |
+                  timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U admin; do sleep 1; done'
+
+            - name: Run database migrations
+              working-directory: ./backend
+              env:
+                  PYTHONPATH: ./src:.
+              run: |
+                  uv run alembic upgrade head
+
+            - name: Run tests
+              working-directory: ./backend
+              env:
+                  PYTHONPATH: ./src:.
+              run: |
+                  # Create the database directory
+                  mkdir -p ./docker/postgres/data
+                  # Run your tests
+                  uv run pytest -rs

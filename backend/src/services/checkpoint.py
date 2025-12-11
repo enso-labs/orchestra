@@ -1,6 +1,5 @@
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.runnables.config import RunnableConfig
-from langgraph.prebuilt import create_react_agent
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.checkpoint.base import Checkpoint, BaseCheckpointSaver, CheckpointTuple
 from langgraph.types import StateSnapshot
@@ -21,7 +20,7 @@ class CheckpointService:
         graph: CompiledStateGraph = None,
     ):
         self.user_id = user_id
-        self.checkpointer = checkpointer or IN_MEMORY_CHECKPOINTER
+        self.checkpointer: BaseCheckpointSaver = checkpointer or IN_MEMORY_CHECKPOINTER
         self.graph = graph
 
     @staticmethod
@@ -45,11 +44,13 @@ class CheckpointService:
         return checkpoints
 
     @retry_db_operation(tries=3, delay=1, backoff=2, exceptions=(Exception,))
-    async def list_checkpoints(self, thread_id: str) -> list[StateSnapshot]:
+    async def list_checkpoints(
+        self, thread_id: str, limit: int = 3
+    ) -> list[StateSnapshot]:
         try:
             config = RunnableConfig(configurable={"thread_id": thread_id})
             checkpoints = []
-            async for checkpoint in self.checkpointer.alist(config):
+            async for checkpoint in self.checkpointer.alist(config, limit=limit):
                 messages = self._collect_messages(checkpoint)
                 snapshot = StateSnapshot(
                     values={"messages": from_message_to_dict(messages)},

@@ -1,4 +1,6 @@
 import httpx
+from uuid import uuid4
+from datetime import datetime, timezone
 from fastapi.openapi.models import Example
 
 MCP_SERVER_EXAMPLE = {
@@ -22,6 +24,28 @@ ARCADE_REQ_BODY_EXAMPLE = {
 ARCADE_RESPONSE_EXAMPLE = httpx.get(
     "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json"
 ).json()
+
+
+def get_example_metadata(
+    project_id: bool = False,
+    assistant_id: bool = False,
+    thread_id: bool = False,
+    checkpoint_id: bool = False,
+):
+    metadata = {
+        "language": "en-US",
+        "timezone": "America/Denver",
+        "current_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    if project_id:
+        metadata["project_id"] = str(uuid4())
+    if assistant_id:
+        metadata["assistant_id"] = str(uuid4())
+    if thread_id:
+        metadata["thread_id"] = str(uuid4())
+    if checkpoint_id:
+        metadata["checkpoint_id"] = str(uuid4())
+    return metadata
 
 
 NEW_THREAD_API_TOOLS = {
@@ -389,6 +413,26 @@ class Examples:
             },
         ),
     }
+    THREAD_SEMANTIC_SEARCH_EXAMPLES = {
+        "semantic_search": Example(
+            summary="semantic_search",
+            description="Search threads using natural language",
+            value={
+                "query": "threads about database optimization",
+                "limit": 10,
+                "assistant_id": None,
+            },
+        ),
+        "semantic_search_with_assistant": Example(
+            summary="semantic_search_with_assistant",
+            description="Search threads for a specific assistant",
+            value={
+                "query": "conversations about authentication",
+                "limit": 5,
+                "assistant_id": "assistant-uuid-here",
+            },
+        ),
+    }
 
     LLM_INVOKE_EXAMPLES = {
         "stateless_invoke": Example(
@@ -408,7 +452,7 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "metadata": {"thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj"},
+                "metadata": {"thread_id": str(uuid4())},
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
@@ -419,8 +463,8 @@ class Examples:
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
                 "metadata": {
-                    "thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj",
-                    "checkpoint_id": "6fb4c17e-ff1d-46ca-af6d-ff289a019423",
+                    "thread_id": str(uuid4()),
+                    "checkpoint_id": str(uuid4()),
                 },
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
@@ -437,16 +481,134 @@ class Examples:
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
+        "assistant_query": Example(
+            summary="assistant_query",
+            description="LLM with Assistant Query",
+            value={
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": "100 USD to CAD?"}],
+                    }
+                ],
+                "metadata": get_example_metadata(assistant_id=True),
+            },
+        ),
+    }
+
+    TOOL_CREATE_EXAMPLES = {
+        "base_tool_override": Example(
+            name="Base Tool Override",
+            description="Override the base tool for a custom tool.",
+            value={
+                "name": "webhook_marketing_channel",
+                "config": {
+                    "base_tool": "send_webhook_to_channel",
+                },
+                "description": "Send a message to the Microsoft Teams channel.",
+                "type": "default",
+                "metadata": {},
+                "env": {"TEST_WEBHOOK_URL": "https://example.com/webhook"},
+                "tags": ["example"],
+                "verbose": False,
+                "disabled": False,
+                "public": False,
+            },
+        ),
+        "api_tool_get_request": Example(
+            name="API Tool GET Request",
+            description="Use this to make a GET request to an API.",
+            value={
+                "name": "get_server_health",
+                "config": {
+                    "api_tool": {
+                        "base_url": "https://chat.enso.sh/api",
+                        "method": "GET",
+                        "endpoint": "/info/health",
+                    }
+                },
+                "description": "Use this to get the health of the server and app version.",
+                "type": "api",
+                "metadata": {},
+                "env": {},
+                "tags": ["health"],
+                "verbose": False,
+                "disabled": False,
+                "public": False,
+            },
+        ),
+        "api_tool_post_request": Example(
+            name="API Tool POST Request",
+            description="Use this to make a POST request to an API.",
+            value={
+                "name": "create_blog_post",
+                "config": {
+                    "api_tool": {
+                        "base_url": "https://jsonplaceholder.typicode.com",
+                        "method": "POST",
+                        "endpoint": "/posts",
+                        "args_schema": {
+                            "title": {
+                                "type": "str",
+                                "description": "The title of the blog post",
+                                "required": True,
+                            },
+                            "body": {
+                                "type": "str",
+                                "description": "The body of the blog post",
+                                "required": True,
+                            },
+                        },
+                        "headers": {
+                            "Content-type": "application/json; charset=UTF-8",
+                        },
+                    },
+                },
+                "description": "Create a blog post",
+                "type": "api",
+            },
+        ),
+        "mcp_sse_server": Example(
+            name="MCP Streamable HTTP",
+            description="Use this to connect to a MCP server that supports streamable HTTP.",
+            value={
+                "name": "mcp_sse_server",
+                "config": {
+                    "mcp_tool": {
+                        "enso_mcp": {
+                            "transport": "sse",
+                            "url": "https://mcp.enso.sh/sse",
+                            "headers": {"x-mcp-key": "test1234"},
+                        }
+                    }
+                },
+                "description": "Use this MCP server for web_search, web_scrape, and python_repl tools.",
+                "type": "mcp",
+                "tags": ["mcp", "web", "python"],
+                "disabled": False,
+                "public": False,
+            },
+        )
     }
 
     LLM_STREAM_EXAMPLES = {
-        "stateless_stream": Example(
-            summary="stateless_stream",
+        "stateless_stream_instructions": Example(
+            summary="stateless_stream_instructions",
             description="LLM Stateless",
             value={
                 "model": "openai:gpt-5-nano",
-                "system": "You are a helpful assistant.",
-                "stream_mode": "messages",
+                "instructions": "You are a weather assistant.",
+                "tools": ["get_weather"],
+                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+            },
+        ),
+        "stateless_stream_system": Example(
+            summary="stateless_stream_system",
+            description="LLM Stateless",
+            value={
+                "model": "openai:gpt-5-nano",
+                "system": "You are a weather assistant. Only output format in Celsius.",
+                "tools": ["get_weather"],
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
@@ -456,8 +618,7 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "stream_mode": "messages",
-                "metadata": {"thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj"},
+                "metadata": get_example_metadata(thread_id=True),
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
@@ -467,12 +628,34 @@ class Examples:
             value={
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
-                "stream_mode": "messages",
-                "metadata": {
-                    "thread_id": "thread_CkzLFPHdZX8ID6iZSP9pj",
-                    "checkpoint_id": "6fb4c17e-ff1d-46ca-af6d-ff289a019423",
-                },
+                "metadata": get_example_metadata(thread_id=True, checkpoint_id=True),
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+            },
+        ),
+        "assistant_query": Example(
+            summary="assistant_query",
+            description="LLM with Assistant Query",
+            value={
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": "100 USD to CAD?"}],
+                    }
+                ],
+                "metadata": get_example_metadata(assistant_id=True),
+            },
+        ),
+        "assistant_query_project": Example(
+            summary="assistant_query_project",
+            description="LLM with Assistant Query",
+            value={
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": ""}],
+                    }
+                ],
+                "metadata": get_example_metadata(assistant_id=True, project_id=True),
             },
         ),
     }
@@ -489,3 +672,8 @@ class Examples:
             metadata={},
         ),
     }
+
+    INVOKE_TOOLS_EXAMPLE = [
+        {"name": "get_stock_price", "args": {"symbol": "AAPL"}},
+        {"name": "get_weather", "args": {"location": "New York"}},
+    ]

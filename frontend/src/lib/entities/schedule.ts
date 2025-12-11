@@ -6,7 +6,9 @@ export interface ScheduleCreate {
 	};
 	task: {
 		model: string;
-		system: string;
+		system?: string;
+		system_prompt?: string;
+		instructions?: string;
 		messages: Array<{
 			role: "user" | "assistant" | "system" | "tool";
 			content: string;
@@ -28,7 +30,9 @@ export interface Schedule {
 	};
 	task: {
 		model: string;
-		system: string;
+		system?: string;
+		system_prompt?: string;
+		instructions?: string;
 		messages: Array<{
 			role: "user" | "assistant" | "system" | "tool";
 			content: string;
@@ -52,5 +56,7 @@ export interface ScheduleFormData {
 	inheritFromAgent: boolean;
 	customModel?: string;
 	customSystem?: string;
+	customSystemPrompt?: string;
+	customInstructions?: string;
 	customTools?: string[];
 }

@@ -12,7 +12,7 @@ export const config = [
 		},
 		documentation:
 			"Standard production server configuration with full monitoring capabilities.",
-		documentation_url: "https://demo.enso.sh/servers/production",
+		documentation_url: "https://chat.enso.sh/servers/production",
 		public: true,
 		created_at: "2023-01-15T08:30:00Z",
 		updated_at: "2023-06-22T14:15:30Z",
@@ -29,7 +29,7 @@ export const config = [
 			base_url: "https://a2a.enso.sh",
 		},
 		documentation: "Currency Agent A2A Server",
-		documentation_url: "https://demo.enso.sh/docs/tools",
+		documentation_url: "https://chat.enso.sh/docs/tools",
 		public: true,
 		created_at: "2023-02-10T10:45:00Z",
 		updated_at: "2023-05-18T09:20:15Z",

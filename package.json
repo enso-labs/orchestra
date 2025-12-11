@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.16"
+  }
+}

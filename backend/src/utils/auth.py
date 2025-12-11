@@ -1,16 +1,14 @@
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import Request, status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from datetime import datetime
-from pydantic import EmailStr
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.constants.llm import ChatModels
+from src.constants.llm import get_free_models
 from src.repos.user_repo import UserRepo
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTES
-from src.schemas.entities import LLMRequest, LLMStreamRequest
+from src.schemas.entities import LLMRequest
 from src.schemas.models import User
 from src.services.db import get_async_db
 from src.utils.logger import logger
@@ -22,9 +20,11 @@ security = HTTPBearer(
 
 def create_access_token(user: User, expires_delta: timedelta | None = None):
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=JWT_TOKEN_EXPIRE_MINUTES
+        )
 
     # Create JWT payload with user data
     to_encode = {
@@ -42,15 +42,12 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
 
 
 def is_authorized_model(model: str) -> bool:
-    return model in [
-        ChatModels.OPENAI_GPT_5_NANO.value,
-        ChatModels.GOOGLE_GEMINI_2_5_FLASH_LITE.value,
-    ]
+    return model in get_free_models()
 
 
 async def get_optional_user(
     request: Request,
-    params: LLMRequest | LLMStreamRequest,
+    params: LLMRequest,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_async_db),
 ) -> Optional[User]:
@@ -59,7 +56,7 @@ async def get_optional_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=(
-                    f"Unauthorized [{params.model.value}]\n"
+                    f"Unauthorized [{params.model}]\n"
                     "Please sign in for higher limits and better models!"
                 ),
                 headers={"WWW-Authenticate": "Bearer"},
@@ -100,7 +97,7 @@ async def verify_credentials(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        if datetime.utcnow().timestamp() > exp:
+        if datetime.now(timezone.utc).timestamp() > exp:
             logger.warning(f"Token has expired: {credentials.credentials}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

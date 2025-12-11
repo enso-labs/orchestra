@@ -17,3 +17,11 @@ backend/src/public
 **/.worktrees/
 **/.playwright*
 **/.plans*
+
+**/.claude/
+**/.cursor/
+**/openspec/
+**/AGENTS.md
+**/CLAUDE.md
+
+**/node_modules/

@@ -5,10 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.0.2
+## v0.0.2-rc116
+
+### Changed
+  - feat/566-langchain-sandbox-dx (2025-12-09)
 
 ### Fixed
   - bug/419-schedule-modal (2025-10-12)
+
+## v0.0.2-rc115
+
+### Changed
+  - feat/564-create-tool-as-tool (2025-12-09)
+
+### Fixed
+
+## v0.0.2-rc114
+
+### Fixed
+  - bug/562-select-model-glitchy (2025-12-08)
+
+## v0.0.2-rc113
+
+### Changed
+  - feat/558-dedicated-tools-pages (2025-12-07)
+
+### Fixed
+
+## v0.0.2-rc107
+
+### Changed
+  - feat/553-select-models-modal (2025-12-06)
+  - feat/550-create-tools-ui (2025-12-06)
+  - feat/479-api-as-a-tool (2025-12-05)
+  - feat/547-more-stock-tools (2025-12-04)
+
+### Fixed
+
+## v0.0.2-rc104
+
+### Fixed
+  - bug/538-fetch-threads-directly (2025-12-02)
+  - bug/536-error-search-threads-files (2025-12-01)
+  - bug/518-on-new-token-is-broken (2025-11-29)
+  - bug/516-fix-google-stop-reason-stream (2025-11-21)
+  - bug/505-claude-stream-response (2025-11-19)
+  - bug/456-select-tools (2025-11-02)
+  - bug/444-anon-achat (2025-10-23)
   - bug/423-fix-checkpointer-conn-closed (2025-10-10)
   - bug/406-day-mode-theme-fix (2025-10-05)
   - bug/400-make-login-suck-less (2025-10-01)
@@ -18,6 +61,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bug/370-anthropic-streaming (2025-09-16)
 
 ### Changed
+  - feat/545-agent-threads-to-sidebar (2025-12-03)
+  - feat/543-relocate-agent-pages (2025-12-03)
+  - feat/525-pass-instructions (2025-12-03)
+  - feat/530-semantic-search-over-threads (2025-11-30)
+  - feat/534-mermaid-diagram (2025-11-30)
+  - feat/528-pagination-for-threads (2025-11-30)
+  - feat/519-react-window (2025-11-23)
+  - feat/507-add-projects-ui (2025-11-20)
+  - feat/503-add-bettter-tool-ui (2025-11-20)
+  - feat/494-can-render-html-files (2025-11-20)
+  - feat/509-search-model (2025-11-20)
+  - feat/498-data-model-for-prorject-sources (2025-11-14)
+  - feat/501-update-stale-docs-with-placeholder (2025-11-16)
+  - feat/420-project-endpoints (2025-10-28)
+  - feat/464-update-input-support-multiple-keys (2025-11-11)
+  - feat/490-can-read-deepagents-agent-files (2025-11-10)
+  - feat/485-user-env (2025-11-08)
+  - feat/482-teams-webhook (2025-11-05)
+  - feat/476-html-chart-construct-tool (2025-11-02)
+  - feat/468-support-ms-presidio-analyzer (2025-11-02)
+  - feat/465-update-sidebar (2025-10-31)
+  - feat/457-checkpoint-stream (2025-10-26)
+  - feat/448-tokens-per-sec (2025-10-24)
+  - feat/442-edit-memories (2025-10-22)
+  - feat/431-assistant-id-optimize (2025-10-15)
+  - feat/429-prompt-endpoints (2025-10-12)
   - feat/425-editor-for-system-message (2025-10-10)
   - feat/415-schedules-page (2025-10-08)
   - feat/411-tools-api (2025-10-05)

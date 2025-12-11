@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
 import { PlatformToolsPanel } from "./PlatformToolsPanel";
+import { CustomToolsPanel } from "./CustomToolsPanel";
 import { McpServerPanel } from "./McpServerPanel";
 import { A2aAgentPanel } from "./A2aAgentPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
@@ -12,6 +13,8 @@ import {
 	getMcpTools,
 	getA2aAgents,
 } from "@/lib/services/toolService";
+import { useAgentContext } from "@/context/AgentContext";
+import { Agent } from "@/lib/services/agentService";
 
 interface ToolSelectionModalProps {
 	isOpen: boolean;
@@ -30,6 +33,7 @@ export function ToolSelectionModal({
 	initialA2aConfig = {},
 	onApply,
 }: ToolSelectionModalProps) {
+	const { setAgent } = useAgentContext();
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
@@ -41,9 +45,15 @@ export function ToolSelectionModal({
 		useState<Record<string, A2aServerConfig>>(initialA2aConfig);
 	const [a2aAgents, setA2aAgents] = useState<any[]>([]);
 	const [isA2aLoading, setIsA2aLoading] = useState(false);
+	const [isToolFormActive, setIsToolFormActive] = useState(false);
 
 	const { selectedTools, toggleTool, selectedArray, selectedCount } =
 		useToolSelection(initialSelectedTools);
+
+
+	useEffect(() => {
+		setAgent((prev: Agent) => ({ ...prev, mcp: mcpServers, a2a: a2aServers }));
+	}, [mcpServers, a2aServers]);
 
 	// Fetch platform tools
 	useEffect(() => {
@@ -151,6 +161,8 @@ export function ToolSelectionModal({
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
 			<DialogContent className="max-w-[1400px] w-full sm:w-[95vw] h-[100vh] sm:h-[90vh] max-h-none sm:max-h-[900px] p-0 gap-0">
+				<DialogTitle className="sr-only">Tool Selection</DialogTitle>
+
 				<div className="flex flex-col sm:flex-row h-full overflow-hidden">
 					<Sidebar
 						activeCategory={activeCategory}
@@ -163,6 +175,14 @@ export function ToolSelectionModal({
 								tools={platformTools}
 								selectedTools={selectedTools}
 								onToggleSelection={toggleTool}
+							/>
+						)}
+
+						{activeCategory === "api" && (
+							<CustomToolsPanel
+								selectedTools={selectedTools}
+								onToggleSelection={toggleTool}
+								onViewModeChange={setIsToolFormActive}
 							/>
 						)}
 
@@ -192,41 +212,35 @@ export function ToolSelectionModal({
 							/>
 						)}
 
-						{activeCategory === "arcade" && (
-							<div className="flex items-center justify-center h-full">
-								<p className="text-muted-foreground">
-									Arcade integration coming soon
-								</p>
+						{/* Action Bar - Hidden when editing a tool form */}
+						{!isToolFormActive && (
+							<div className="flex-shrink-0 border-t border-border px-4 sm:px-6 py-3 sm:py-4 bg-background">
+								<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+									<div className="text-sm text-muted-foreground">
+										{selectedCount > 0 ? (
+											<span>
+												Selected: <strong>{selectedCount}</strong> tool
+												{selectedCount !== 1 ? "s" : ""}
+											</span>
+										) : (
+											<span>No tools selected</span>
+										)}
+									</div>
+									<div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+										<Button
+											variant="outline"
+											onClick={handleClose}
+											className="flex-1 sm:flex-none"
+										>
+											Cancel
+										</Button>
+										<Button onClick={handleApply} className="flex-1 sm:flex-none">
+											Apply Changes
+										</Button>
+									</div>
+								</div>
 							</div>
 						)}
-
-						{/* Action Bar */}
-						<div className="flex-shrink-0 border-t border-border px-4 sm:px-6 py-3 sm:py-4 bg-background">
-							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-								<div className="text-sm text-muted-foreground">
-									{selectedCount > 0 ? (
-										<span>
-											Selected: <strong>{selectedCount}</strong> tool
-											{selectedCount !== 1 ? "s" : ""}
-										</span>
-									) : (
-										<span>No tools selected</span>
-									)}
-								</div>
-								<div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-									<Button
-										variant="outline"
-										onClick={handleClose}
-										className="flex-1 sm:flex-none"
-									>
-										Cancel
-									</Button>
-									<Button onClick={handleApply} className="flex-1 sm:flex-none">
-										Apply Changes
-									</Button>
-								</div>
-							</div>
-						</div>
 					</div>
 				</div>
 			</DialogContent>

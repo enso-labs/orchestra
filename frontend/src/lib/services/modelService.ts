@@ -16,6 +16,8 @@ export interface Model {
 }
 
 export interface ModelsResponse {
+	default: string;
+	free: string[];
 	models: string[];
 }
 

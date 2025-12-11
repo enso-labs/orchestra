@@ -1,37 +1,59 @@
-from langchain_core.tools import StructuredTool, BaseTool
+from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import StructuredTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain_arcade import ArcadeToolManager
+
+from langgraph.store.base import BaseStore
 
 from src.schemas.entities.a2a import A2AServer, McpServer
-from src.tools import TOOL_LIBRARY
+from src.tools import TOOL_LIBRARY, default_tools, init_tool_library
 from src.utils.a2a import A2ACardResolver
 from src.schemas.entities import ArcadeConfig
 from src.utils.logger import logger
-from src.utils.tools import attach_tool_details
 from src.constants import ARCADE_API_KEY
+from src.utils.tools import attach_tool_details, create_api_tool
+from src.services.db import get_store_in_memory
+from src.repos.tool_repo import ToolRepo
 
 
 class ToolService:
-    @staticmethod
-    def default_tools(tools: list[str]) -> list[BaseTool]:
-        default_tools = [tool for tool in TOOL_LIBRARY if tool.name in tools]
-        return default_tools
+    def __init__(
+        self,
+        user_id: str = None,
+        store: BaseStore = get_store_in_memory(),
+        config: RunnableConfig = None,
+    ):
+        self.user_id = user_id
+        self.store = store
+        self.tool_repo = ToolRepo(user_id=user_id, store=store, config=config)
 
-    @staticmethod
-    def tool_details():
-        tool_details = []
-        for tool in TOOL_LIBRARY:
-            updated_tool = attach_tool_details(tool)
-            tool_details.append(
-                {
-                    "name": updated_tool.name,
-                    "description": updated_tool.description,
-                    "args": updated_tool.args,
-                    "tags": updated_tool.tags,
-                    "metadata": updated_tool.metadata,
-                }
-            )
-        return tool_details
+    async def tool_details(self):
+        try:
+            tool_details = []
+            tool_library = init_tool_library(user_id=self.user_id)
+            user_tools: list[StructuredTool] = await self.tool_repo.search()
+            base_tools = set[str]()
+            for tool in user_tools + tool_library:
+                tool: StructuredTool = attach_tool_details(tool)
+                tool_dict = tool.model_dump()
+                try:
+                    tool_dict["args_schema"] = tool_dict["args_schema"].model_json_schema()
+                except Exception as e:
+                    logger.error(f"Error formatting args schema for {tool.name}: {e}")
+                    tool_dict["args_schema"] = tool_dict.get("args_schema", None)
+                metadata = tool_dict["metadata"]
+                if metadata and metadata.get("base_tool"):
+                    base_tools.add(metadata.get("base_tool"))
+
+                if tool.name not in base_tools:
+                    ## Does NOT indicate whether async or sync, so we remove
+                    # tool_dict['coroutine'] = tool_dict['coroutine'] is not None
+                    del tool_dict["func"]
+                    del tool_dict["coroutine"]
+                    tool_details.append(tool_dict)
+            return tool_details
+        except Exception as e:
+            logger.exception(f"Error fetching tool details: {e}")
+            return []
 
     @staticmethod
     async def mcp_tools(mcp: dict[str, McpServer]):
@@ -61,9 +83,57 @@ class ToolService:
     def arcade_tools(
         arcade: ArcadeConfig,
     ) -> list[StructuredTool]:
+        from langchain_arcade import ArcadeToolManager
+
         manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
         tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
         return tools
+
+    async def invoke_default_tool(self, name: str, input: dict, config: dict = None):
+        tool: StructuredTool = next(
+            (tool for tool in TOOL_LIBRARY if tool.name == name), None
+        )
+        if not tool:
+            raise ValueError(f"Tool {name} not found")
+        return await tool.ainvoke(
+            input=input,
+            config={"configurable": {"user_id": self.user_id, **config}}
+            if self.user_id
+            else None,
+        )
+
+    async def invoke_ephemeral_tool(self, name: str, config: dict, input: dict):
+        try:
+            api_config = config.get("api_tool")
+            if not api_config:
+                raise ValueError("Only 'api_tool' config is supported for ephemeral invocation")
+
+            tool = create_api_tool(
+                name=name,
+                description="Ephemeral tool",
+                base_url=api_config.get("base_url"),
+                method=api_config.get("method", "GET"),
+                endpoint=api_config.get("endpoint"),
+                args_schema=api_config.get("args_schema"),
+                headers=api_config.get("headers"),
+            )
+            return await self.invoke_structured_tool(tool, input)
+        except Exception as e:
+            logger.exception(f"Error invoking ephemeral tool {name}: {e}")
+            return {"error": str(e)}
+
+    async def invoke_structured_tool(
+        self, structured_tool: StructuredTool, input: dict
+    ):
+        try:
+            return await structured_tool.ainvoke(
+                input=input, config={"metadata": structured_tool.metadata}
+            )
+        except Exception as e:
+            logger.exception(
+                f"Error invoking structured tool {structured_tool.name}: {e}"
+            )
+            return {"error": str(e)}
 
 
 tool_service = ToolService()

@@ -1,26 +1,21 @@
-import { StringParam, useQueryParam } from "use-query-params";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChatPanel from "@/pages/chat/ChatPanel";
-import NewThreadButton from "@/components/buttons/NewThreadButton";
-import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { AgentCreateForm } from "@/components/forms/agents/agent-create-form";
 import { useChatContext } from "@/context/ChatContext";
-import ListThreads from "@/components/lists/ListThreads";
 import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAgentContext } from "@/context/AgentContext";
-import { Bot } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
+import { useQueryState } from "nuqs";
+import ChatLayout from "@/layouts/chat-layout-v2";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 function AgentCreatePage() {
 	const { agent, setAgent, useEffectGetAgents } = useAgentContext();
-	const { threads, useListThreadsEffect, messages } = useChatContext();
-	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
+	const { useListThreadsEffect, messages } = useChatContext();
+	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
-	const navigate = useNavigate();
 
 	useEffectGetAgents();
 
@@ -57,54 +52,44 @@ function AgentCreatePage() {
 	}, []);
 
 	return (
-		<div className="h-full flex flex-col">
-			<div className="absolute top-4 right-4">
-				<div className="flex flex-row gap-2 items-center">
-					<NewThreadButton />
-					<ColorModeButton />
-				</div>
-			</div>
-			<Tabs
-				defaultValue="config"
-				value={activeTab || "config"}
-				onValueChange={handleTabChange}
-				className="h-full flex flex-col"
-			>
-				<div className="px-4 pt-4 flex flex-row gap-1 items-center">
-					<MainToolTip content="Assistants" delayDuration={500}>
-						<Button
-							variant="outline"
-							size="icon"
-							onClick={() => navigate("/assistants")}
+		<ChatLayout>
+			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+				<div className="flex items-center justify-between px-4 pt-4 pb-2">
+					<div className="flex items-center gap-2">
+						<SidebarTrigger />
+						<Tabs
+							defaultValue="config"
+							value={activeTab || "config"}
+							onValueChange={handleTabChange}
+							className="ml-2"
 						>
-							<Bot />
-						</Button>
-					</MainToolTip>
-					<TabsList>
-						<TabsTrigger value="config">Config</TabsTrigger>
-						<TabsTrigger value="preview">Preview</TabsTrigger>
-						<TabsTrigger value="threads">Threads</TabsTrigger>
-					</TabsList>
-				</div>
-				<TabsContent value="config" className="flex-1 p-4 h-0">
-					<ScrollArea className="h-full">
-						<AgentCreateForm />
-					</ScrollArea>
-				</TabsContent>
-				<TabsContent value="preview" className="flex-1 h-0">
-					<div className="h-full">
-						<ChatPanel showAgentMenu={false} />
+							<TabsList>
+								<TabsTrigger value="config">Config</TabsTrigger>
+								<TabsTrigger value="preview">Preview</TabsTrigger>
+							</TabsList>
+						</Tabs>
 					</div>
-				</TabsContent>
-				<TabsContent value="threads" className="flex-1 p-4 h-0">
-					<ScrollArea className="h-full flex-1">
-						<div className="p-2 space-y-2">
-							<ListThreads threads={threads} />
+				</div>
+
+				<Tabs
+					defaultValue="config"
+					value={activeTab || "config"}
+					onValueChange={handleTabChange}
+					className="flex-1 flex flex-col min-h-0"
+				>
+					<TabsContent value="config" className="flex-1 min-h-0 m-0 p-4">
+						<ScrollArea className="h-full">
+							<AgentCreateForm />
+						</ScrollArea>
+					</TabsContent>
+					<TabsContent value="preview" className="flex-1 min-h-0 m-0">
+						<div className="h-full">
+							<ChatPanel />
 						</div>
-					</ScrollArea>
-				</TabsContent>
-			</Tabs>
-		</div>
+					</TabsContent>
+				</Tabs>
+			</div>
+		</ChatLayout>
 	);
 }
 

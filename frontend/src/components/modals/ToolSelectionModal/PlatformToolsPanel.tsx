@@ -25,7 +25,7 @@ export function PlatformToolsPanel({
 			(tool) =>
 				tool.name.toLowerCase().includes(query) ||
 				tool.description.toLowerCase().includes(query) ||
-				tool.tags.some((tag) => tag.toLowerCase().includes(query)),
+				(tool.tags ?? []).some((tag) => tag.toLowerCase().includes(query)),
 		);
 	}, [tools, searchQuery]);
 

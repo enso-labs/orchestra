@@ -1,5 +1,5 @@
-import ujson
-from typing import Annotated, Any
+from typing import Any, List
+from uuid import uuid4
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi import (
     Body,
@@ -12,24 +12,30 @@ from fastapi import (
     Form,
     UploadFile,
 )
-from langchain.chat_models import init_chat_model
-
-from src.constants import APP_LOG_LEVEL, GROQ_API_KEY
+from langgraph.store.base import BaseStore
+from langmem.prompts.types import (
+    OptimizerInput,
+)
+from src.services.llm import llm_service
+from src.schemas.entities.a2a import A2AServers
+from src.services.presidio import PresidioException, process_presidio
+from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
+from src.contexts.service import ServiceContext
+from src.constants import GROQ_API_KEY
 from src.schemas.models import ProtectedUser
 from src.utils.auth import get_optional_user
-from src.utils.logger import logger, log_to_file
+from src.utils.logger import logger
 from src.constants.mock import MockResponse
 from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest
-from src.utils.stream import handle_multi_mode
+from src.utils.stream import stream_generator
 from src.utils.llm import audio_to_text
-from src.flows import construct_agent
-from src.services.thread import thread_service
-from src.services.checkpoint import checkpoint_service
+from src.flows import construct_agent, init_config
+from src.services.assistant import Assistant
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.rate_limit import limiter
-from src.constants.llm import ChatModels
-
+from src.constants.llm import ChatModels, get_all_models, get_free_models
+from src.tools import init_tool_library
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -53,16 +59,22 @@ async def llm_invoke(
     user: ProtectedUser = Depends(get_optional_user),
     store=Depends(get_store),
 ) -> dict[str, Any] | Any:
+    params.input.to_langchain_messages()
+    params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
     if user:
-        thread_service.store = store
+        service_context = ServiceContext(user_id=user.id, store=store)
+        if params.metadata.assistant_id:
+            assistant: Assistant = await service_context.assistant_service.get(
+                params.metadata.assistant_id
+            )
+            params = assistant.to_llm_request(
+                input=params.input,
+                model=params.model,
+                metadata=params.metadata,
+            )
     async with get_checkpoint_db() as checkpointer:
-        checkpoint_service.checkpointer = checkpointer
-        agent = await construct_agent(params, checkpointer, store)
-        checkpoint_service.graph = agent.graph
-        response = await agent.ainvoke(
-            {"messages": params.to_langchain_messages()},
-            context={"user": user} if user else None,
-        )
+        agent = await construct_agent(params, checkpointer, service_context.store)
+        response = await agent.invoke(params.input)
         return response
 
 
@@ -79,58 +91,77 @@ async def llm_stream(
     request: Request,
     params: LLMRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
-    store=Depends(get_store),
+    store: BaseStore = Depends(get_store),
 ) -> StreamingResponse:
     """
     Streams LLM output as server-sent events (SSE).
     """
     try:
+        # Convert API messages to LangChain message objects
+        params.input.to_langchain_messages()
+        # Initialize thread id
+        params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
+        # Initialize config
+        config = init_config(params, user)
+        service_context = ServiceContext(config=config, store=store)
+        params = await process_presidio(params, service_context.presidio_service)
+        ### Collect all tools
+        tool_map = {t.name: t for t in init_tool_library(user_id=user.id)}  # O(n) index
+        TOOLS = (
+            A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(
+                config["configurable"].get("thread_id")
+            )
+            + await service_context.tool_service.mcp_tools(params.mcp)
+            + [tool_map[name] for name in (params.tools or ()) if name in tool_map]
+        )
 
-        async def event_generator():
-            ## Keeps in memory if not auth user
-            if user:
-                thread_service.store = store
-                thread_service.user_id = user.id
-                params.metadata.user_id = user.id
-            async with get_checkpoint_db() as checkpointer:
-                checkpoint_service.checkpointer = checkpointer
-                agent = await construct_agent(params, checkpointer, store)
-                checkpoint_service.graph = agent.graph
-                try:
-                    async for chunk in agent.astream(
-                        {"messages": params.to_langchain_messages()},
-                        stream_mode=["messages", "values"],
-                        context={"user_id": user.id} if user else None,
-                    ):
-                        # Serialize and yield each chunk as SSE
-                        stream_chunk = handle_multi_mode(chunk)
-                        if stream_chunk:
-                            data = ujson.dumps(stream_chunk)
-                            log_to_file(
-                                str(data), params.model
-                            ) and APP_LOG_LEVEL == "DEBUG"
-                            logger.debug(f"data: {str(data)}")
-                            yield f"data: {data}\n\n"
+        if user:
+            for tool in params.tools:
+                items = await service_context.tool_service.tool_repo.search(
+                    filter={"name": tool}
+                )
+                if items:
+                    structured_tool = items[0]
+                    tool_metadata = {structured_tool.name: structured_tool.metadata}
+                    config["metadata"] = {**tool_metadata, **config["metadata"]}
+                    TOOLS.append(structured_tool)
 
-                except Exception as e:
-                    # Yield error as SSE if streaming fails
-                    logger.exception("Error in event_generator: %s", e)
-                    # raise HTTPException(status_code=500, detail=str(e))
-                    error_msg = ujson.dumps(("error", str(e)))
-                    yield f"data: {error_msg}\n\n"
-                finally:
-                    # Update model info in checkpoint after streaming
-                    await agent.add_model_to_ai_message(params.model)
-
-        # Return streaming response with appropriate headers
+        if config["configurable"].get("assistant_id"):
+            assistant: Assistant = await service_context.assistant_service.get(
+                config["configurable"].get("assistant_id"),
+            )
+            params = assistant.to_llm_request(
+                input=params.input,
+                model=params.model,
+                metadata=config["metadata"],
+            )
         return StreamingResponse(
-            event_generator(),
+            stream_generator(
+                params.input,
+                params.model,
+                params.system,
+                TOOLS,
+                params.subagents,
+                service_context.config,
+                service_context,
+                params.instructions,
+            ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
         )
+    except PresidioException as e:
+        logger.warning(f"Sensitive data detected in the query: {e.results}")
+        return JSONResponse(
+            content={"error": e.message, "results": e.results},
+            media_type="application/json",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+        )
     except Exception as e:
-        logger.exception("Error in llm_stream: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(f"Error in llm_stream: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 ################################################################################
@@ -163,69 +194,61 @@ async def transcribe(
         return JSONResponse(
             content={"transcript": transcript.model_dump()},
             media_type="application/json",
-            status_code=200,
+            status_code=status.HTTP_200_OK,
         )
     except Exception as e:
         logger.exception(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 ################################################################################
-### Chat Completion
+### Optimize Prompt
 ################################################################################
-# @llm_router.post(
-#     "/chat",
-#     name="Chat Completion",
-#     responses={
-#         status.HTTP_200_OK: {
-#             "description": "Chat completion response.",
-#             "content": {
-#                 "application/json": {
-#                     "example": Answer.model_json_schema()["examples"]["new_thread"]
-#                 },
-#             },
-#         }
-#     },
-# )
-# @limiter.limit(TIME_LIMIT)
-# async def chat_completion(
-#     request: Request,
-#     body: Annotated[ChatInput, Body()],
-#     user: ProtectedUser = Depends(get_optional_user),
-#     # db: AsyncSession = Depends(get_async_db)
-# ):
-#     try:
-#         model = body.model.split(":")
-#         provider = model[0]
-#         model_name = model[1]
-#         llm = init_chat_model(
-#             model=model_name,
-#             model_provider=provider,
-#             temperature=0.9,
-#             # max_tokens=1000,
-#             max_retries=3,
-#             # timeout=1000
-#         )
-#         response = await llm.ainvoke(
-#             [
-#                 {"role": "system", "content": body.system},
-#                 {"role": "user", "content": body.query},
-#             ]
-#         )
-#         return JSONResponse(
-#             content={"answer": response.model_dump()},
-#             media_type="application/json",
-#             status_code=200,
-#         )
-#     except Exception as e:
-#         logger.exception(str(e))
-#         raise HTTPException(status_code=500, detail=str(e))
+@llm_router.post("/optimize")
+@limiter.limit(TIME_LIMIT)
+async def optimize_prompt(
+    request: Request,
+    body: PromptOptimizerRequest = Body(...),
+    user: ProtectedUser = Depends(get_optional_user),
+):
+    optimizer = PromptOptimizer(body.model)
+    optimizer_input = OptimizerInput(
+        trajectories=body.trajectories,
+        prompt=body.prompt,
+    )
+    result = await optimizer.optimize(optimizer_input, body.kind, body.config)
+    return JSONResponse(content={"result": result}, status_code=200)
 
 
+################################################################################
+### List Models
+################################################################################
 @llm_router.get(
     "/models",
     name="List Models",
 )
 async def list_models():
-    chat_models = sorted({model.value for model in ChatModels})
-    return JSONResponse(content={"models": chat_models}, status_code=200)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "default": ChatModels.XAI_GROK_4_1_FAST.value,
+            "free": get_free_models(),
+            "models": get_all_models(),
+        },
+    )
+
+
+################################################################################
+### Reset Models
+################################################################################
+@llm_router.get(
+    "/models/reset",
+    name="Reset Models",
+)
+async def reset_models():
+    llm_service._reset_cache()
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, content={"message": "Models reset successfully"}
+    )

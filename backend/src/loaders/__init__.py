@@ -16,19 +16,39 @@ from langchain_community.document_loaders import (
     SitemapLoader,
     BlockchainDocumentLoader,
 )
+from langchain_core.document_loaders import BaseLoader
 
 from .basic import Base64Loader, CopyPasteLoader
 
 import nest_asyncio
+from contextlib import contextmanager
+from functools import wraps
 
-nest_asyncio.apply()
+# Don't apply nest_asyncio globally as it conflicts with uvicorn's loop_factory parameter
+# Instead, apply it conditionally only when needed for specific loaders
+
+
+@contextmanager
+def allow_nested_event_loop():
+    """
+    Context manager to temporarily enable nested event loops.
+    Use this for loaders that may be called from within an existing event loop.
+    """
+    nest_asyncio.apply()
+    try:
+        yield
+    finally:
+        # Note: nest_asyncio doesn't provide an unapply(), so this remains applied
+        # for the duration of the process. This is acceptable since we only use
+        # this context when we know we need nested loops.
+        pass
 
 
 class Loader:
     LOADER_CLASSES = {
         "gitbook": GitbookLoader,
-        "web_base": WebBaseLoader,
-        "website": RecursiveUrlLoader,  # Alias for 'web_base
+        "web_scrape": WebBaseLoader,
+        "web_scrape_recursive": RecursiveUrlLoader,  # Alias for 'web_base
         "youtube": YoutubeLoader,
         "polygon": BlockchainDocumentLoader,
         "ethereum": BlockchainDocumentLoader,
@@ -70,7 +90,7 @@ class Loader:
             "readthedocs",
         ),  # type: ignore
         loader_config,
-    ):
+    ) -> BaseLoader:
         loader_class = Loader.LOADER_CLASSES.get(loader_type)
         if not loader_class:
             raise ValueError(f"Unsupported document loader type: {loader_type}")
@@ -93,12 +113,12 @@ class Loader:
             return loader_class(web_page=urls[0], load_all_paths=True)
 
         # Handling for loaders that require URLs or file paths
-        if loader_type == "web_base":
+        if loader_type == "web_scrape":
             urls = loader_config.get("urls", [])
             return loader_class(web_paths=set(urls))
 
         # Handling for loaders that require URLs or file paths
-        if loader_type in {"sitemap", "website"}:
+        if loader_type in {"sitemap", "web_scrape_recursive"}:
             urls = loader_config.get("urls", [])
             return loader_class(urls[0])
 

@@ -47,9 +47,10 @@ class User(Base):
         DateTime(timezone=True), onupdate=func.now()
     )
 
-    threads: Mapped[list["Thread"]] = relationship(
-        "Thread", back_populates="user_relation"
-    )
+    # NOTE: threads relationship removed - threads table no longer uses SQLAlchemy
+    # threads: Mapped[list["Thread"]] = relationship(
+    #     "Thread", back_populates="user_relation"
+    # )
 
     @staticmethod
     def get_password_hash(password: str) -> str:

@@ -1,5 +1,5 @@
 import { useContext, createContext } from "react";
-import { useAgent } from "@/hooks/useAgent";
+import useAgent from "@/hooks/useAgent";
 
 export const AgentContext = createContext({});
 export default function AgentProvider({

@@ -1,6 +1,7 @@
-from dataclasses import dataclass
-
+from pydantic.dataclasses import dataclass
+from typing import Optional
 
 @dataclass
 class ContextSchema:
-    user_id: str
+    model: str
+    user_id: Optional[str] = None

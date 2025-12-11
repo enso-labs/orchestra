@@ -7,9 +7,28 @@ const MANIFEST: Partial<VitePWAOptions> = {
 	registerType: "autoUpdate",
 	strategies: "generateSW",
 	includeAssets: ["favicon.ico", "icons/*.png"],
-	injectRegister: null, // Handle registration manually
+	injectRegister: null,
+	// ↑ you handle registration manually – keep it consistent
 	workbox: {
-		maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+		// OPTION A: raise the limit (10 MiB)
+		maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+
+		// OPTION B (recommended even with A): don't precache the heaviest libs;
+		// they'll be loaded via normal requests and cached at runtime.
+		// (Use either `exclude` at plugin root or `globIgnores` here)
+		globIgnores: ["**/*monaco*.js", "**/*plotly*.js"],
+
+		// Add a simple runtime caching rule for big JS
+		runtimeCaching: [
+			{
+				urlPattern: ({ request }) => request.destination === "script",
+				handler: "NetworkFirst",
+				options: {
+					cacheName: "js-runtime",
+					expiration: { maxEntries: 50, maxAgeSeconds: 7 * 24 * 60 * 60 },
+				},
+			},
+		],
 	},
 	manifest: {
 		name: "Ensō",
@@ -23,58 +42,72 @@ const MANIFEST: Partial<VitePWAOptions> = {
 		orientation: "portrait",
 		categories: ["education", "productivity"],
 		icons: [
-			{
-				src: "/icons/icon-192.png",
-				sizes: "192x192",
-				type: "image/png",
-			},
-			{
-				src: "/icons/icon-512.png",
-				sizes: "512x512",
-				type: "image/png",
-			},
+			{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+			{ src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
 		],
 	},
-	// devOptions: {
-	//   enabled: true, // Enable PWA in development
-	//   type: 'module',
-	//   navigateFallback: 'index.html'
-	// }
+	// In dev, consider disabling the SW to avoid cache confusion:
+	// devOptions: { enabled: false }
 };
 
-// https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [react(), VitePWA(MANIFEST)],
 	build: {
 		outDir: "../backend/src/public",
 		emptyOutDir: true,
 		sourcemap: process.env.NODE_ENV === "development",
+		chunkSizeWarningLimit: 1500, // (optional) calm Vite warnings; not related to Workbox
+
 		rollupOptions: {
 			output: {
-				manualChunks: {
-					vendor: ["react", "react-dom"],
-					router: ["react-router-dom"],
+				manualChunks(id) {
+					// Core vendor chunk
+					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+						return 'vendor';
+					}
+					// Router chunk
+					if (id.includes('node_modules/react-router')) {
+						return 'router';
+					}
+					// Monaco editor chunk
+					if (id.includes('node_modules/@monaco-editor') || id.includes('node_modules/monaco-editor')) {
+						return 'monaco';
+					}
+					// Plotly chunk (now using plotly.js-dist-min)
+					if (id.includes('node_modules/plotly.js') || id.includes('node_modules/react-plotly.js')) {
+						return 'plotly';
+					}
+					// UI components chunk
+					if (id.includes('node_modules/@radix-ui')) {
+						return 'ui';
+					}
+					// Markdown/syntax highlighting chunk
+					if (id.includes('node_modules/react-markdown') ||
+						id.includes('node_modules/react-syntax-highlighter') ||
+						id.includes('node_modules/prismjs') ||
+						id.includes('node_modules/rehype') ||
+						id.includes('node_modules/remark')) {
+						return 'markdown';
+					}
 				},
 			},
 		},
 	},
 	resolve: {
-		alias: {
-			"@": path.resolve(__dirname, "./src"),
-		},
+		alias: { "@": path.resolve(__dirname, "./src") },
 	},
 	server: {
-		allowedHosts: ["palace-expiration-que-rebound.trycloudflare.com"],
+		allowedHosts: ["frontend.enso.sh"],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",
 				changeOrigin: true,
-				rewrite: (path: string) => path.replace(/^\/api/, ""),
+				rewrite: (p: string) => p.replace(/^\/api/, ""),
 			},
 			"/docs": {
 				target: "http://localhost:8000",
 				changeOrigin: true,
-				rewrite: (path: string) => path.replace(/^\/docs/, ""),
+				rewrite: (p: string) => p.replace(/^\/docs/, ""),
 			},
 		},
 	},

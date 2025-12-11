@@ -4,8 +4,11 @@ import { createRoot } from "react-dom/client";
 import { AppRoutes } from "./routes";
 import ChatProvider from "./context/ChatContext";
 import AgentProvider from "./context/AgentContext";
+import ProjectProvider from "./context/ProjectContext";
 import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
+import { PromptProvider } from "./context/PromptContext";
+import { NuqsAdapter } from "nuqs/adapters/react";
 
 // Register service worker
 if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
@@ -25,13 +28,19 @@ if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-			<AppProvider>
-				<AgentProvider>
-					<ChatProvider>
-						<AppRoutes />
-					</ChatProvider>
-				</AgentProvider>
-			</AppProvider>
+			<NuqsAdapter>
+				<AppProvider>
+					<AgentProvider>
+						<ProjectProvider>
+							<PromptProvider>
+								<ChatProvider>
+									<AppRoutes />
+								</ChatProvider>
+							</PromptProvider>
+						</ProjectProvider>
+					</AgentProvider>
+				</AppProvider>
+			</NuqsAdapter>
 		</ThemeProvider>
 	</StrictMode>,
 );

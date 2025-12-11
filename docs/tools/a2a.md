@@ -1,8 +1,11 @@
 # Agent-to-Agent [(A2A)](https://github.com/enso-labs/a2a-langgraph)
 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
-<a href="https://demo.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
+<a href="https://orchestra.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
 <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
+
+!!! warning "Under Development"
+    The A2A (Agent-to-Agent) protocol integration is currently under active development. Features and APIs may change. This documentation is provided for reference and early adopters. Check back soon for updates!
 
 [A2A](https://github.com/google/A2A?tab=readme-ov-file#conceptual-overview) is an protocol enabling communication and interoperability between opaque agentic applications.
 
@@ -34,13 +37,13 @@ Enso Labs A2A support is based on the [LangGraph Currency Agent w/ A2A Protocol]
 
     ![A2A Tool Execution](https://github.com/ryaneggz/static/blob/main/enso/a2a-tool.png?raw=true)  
 
-## Example [API Usage](https://demo.enso.sh/api#/Thread/Create_New_Thread_api_threads_post):
+## Example [API Usage](https://orchestra.enso.sh/api#/Thread/Create_New_Thread_api_threads_post):
 
 #### Fetch A2A Server Information
 
 ```bash
 curl -X 'POST' \
-  'https://demo.enso.sh/api/tools/a2a/info' \
+  'https://orchestra.enso.sh/api/tools/a2a/info' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -57,7 +60,7 @@ curl -X 'POST' \
 
 ```bash
 curl -X 'POST' \
-  'https://demo.enso.sh/api/thread' \
+  'https://orchestra.enso.sh/api/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{

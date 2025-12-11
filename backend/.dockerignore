@@ -7,10 +7,19 @@
 **/langgraph.json
 **.dockerignore
 **.cursorignore
+**/.playwright-mcp/
+**/.worktrees/
+**/AGENTS.md
+**/CLAUDE.md
 **/vscode
+**/.claude/
+**/.cursor/
 **Dockerfile
 **/requirements-dev.txt
-.example.env
+**/.example.env
+examples/
+**/openspec/
+**/.plans/
 **/.venv/
 Makefile
 **/.vscode
@@ -20,3 +29,4 @@ Makefile
 **/logs/
 **/.plans/
 **/AGENTS.md
+**/node_modules/

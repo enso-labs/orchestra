@@ -1,25 +1,42 @@
-import { useAgentContext } from "@/context/AgentContext";
-import LLLMConfig from "@/lib/config/llm";
-import { useEffect } from "react";
-
-import { StringParam, useQueryParam } from "use-query-params";
+import { listModels, ModelsResponse } from "@/lib/services/modelService";
+import { useQueryState } from "nuqs";
+import { useEffect, useState } from "react";
 
 export function useModel() {
-	const { agent, setAgent } = useAgentContext();
-	const [queryModel, setQueryModel] = useQueryParam("model", StringParam);
+	const [model, setModel] = useQueryState("model");
+	const [models, setModels] = useState<ModelsResponse>({
+		default: "",
+		free: [],
+		models: [],
+	});
+
+	const useModelsEffect = () => {
+		useEffect(() => {
+			const fetchModels = async () => {
+				const response = await listModels();
+				setModels(response.data);
+			};
+			fetchModels();
+		}, []);
+	};
+
+	const updateQueryStateModel = (model: string) => {
+		setModel(model);
+	};
 
 	useEffect(() => {
-		// Initialize from query param on mount or when query param changes
-		if (queryModel && queryModel !== agent.model) {
-			setAgent({ ...agent, model: queryModel });
-		} else if (!queryModel && !agent.model) {
-			// Set default if neither exists
-			setAgent({ ...agent, model: LLLMConfig.DEFAULT_CHAT_MODEL });
-			setQueryModel(LLLMConfig.DEFAULT_CHAT_MODEL);
+		if (!model) {
+			setModel(models.default);
 		}
-	}, [queryModel, setAgent, setQueryModel, agent.model]);
+	}, [model, models.default]);
 
-	return typeof agent.model === "string"
-		? agent.model
-		: LLLMConfig.DEFAULT_CHAT_MODEL;
+	return {
+		model,
+		setModel,
+		updateQueryStateModel,
+		models,
+		useModelsEffect,
+	};
 }
+
+export default useModel;

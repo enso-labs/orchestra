@@ -1,20 +1,18 @@
-import { StringParam, useQueryParam } from "use-query-params";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChatPanel from "@/pages/chat/ChatPanel";
-import NewThreadButton from "@/components/buttons/NewThreadButton";
-import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { AgentCreateForm } from "@/components/forms/agents/agent-create-form";
 import { useChatContext } from "@/context/ChatContext";
-import ListThreads from "@/components/lists/ListThreads";
 import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useAgentContext } from "@/context/AgentContext";
-import { Bot } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { INIT_AGENT_STATE } from "@/hooks/useAgent";
+import { useQueryState } from "nuqs";
+import ChatLayout from "@/layouts/chat-layout-v2";
+import { ChatNav } from "@/components/nav/ChatNav";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
+const DEFAULT_TAB = "assistant";
 function AgentEditPage() {
 	const { agentId } = useParams();
 	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
@@ -23,14 +21,14 @@ function AgentEditPage() {
 	useEffectGetAgents();
 
 	const {
-		threads,
 		useListThreadsEffect,
 		messages,
 		useEffectUpdateAssistantId,
+		useModelsEffect,
 	} = useChatContext();
-	const [activeTab, setActiveTab] = useQueryParam("tab", StringParam);
+	useModelsEffect();
+	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
-	const navigate = useNavigate();
 
 	useEffectUpdateAssistantId();
 
@@ -50,7 +48,7 @@ function AgentEditPage() {
 
 	useEffect(() => {
 		if (messages.length > 0) {
-			setActiveTab("chat");
+			setActiveTab(DEFAULT_TAB);
 		}
 	}, [messages]);
 
@@ -67,54 +65,45 @@ function AgentEditPage() {
 	}, []);
 
 	return (
-		<div className="h-full flex flex-col">
-			<div className="absolute top-4 right-4">
-				<div className="flex flex-row gap-2 items-center">
-					<NewThreadButton />
-					<ColorModeButton />
-				</div>
-			</div>
-			<Tabs
-				defaultValue="config"
-				value={activeTab || "chat"}
-				onValueChange={handleTabChange}
-				className="h-full flex flex-col"
-			>
-				<div className="px-4 pt-4 flex flex-row gap-1 items-center">
-					<MainToolTip content="Assistants" delayDuration={500}>
-						<Button
-							variant="outline"
-							size="icon"
-							onClick={() => navigate("/assistants")}
+		<ChatLayout>
+			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+				<div className="flex items-center justify-between px-4 pt-4 pb-2">
+					<div className="flex items-center gap-2">
+						<SidebarTrigger />
+						<Tabs
+							defaultValue="config"
+							value={activeTab || DEFAULT_TAB}
+							onValueChange={handleTabChange}
+							className="ml-2"
 						>
-							<Bot />
-						</Button>
-					</MainToolTip>
-					<TabsList>
-						<TabsTrigger value="chat">Chat</TabsTrigger>
-						<TabsTrigger value="threads">Threads</TabsTrigger>
-						<TabsTrigger value="config">Config</TabsTrigger>
-					</TabsList>
-				</div>
-				<TabsContent value="chat" className="flex-1 h-0">
-					<div className="h-full">
-						<ChatPanel agent={agent} showAgentMenu={false} />
+							<TabsList>
+								<TabsTrigger value={DEFAULT_TAB}>Assistant</TabsTrigger>
+								<TabsTrigger value="config">Config</TabsTrigger>
+							</TabsList>
+						</Tabs>
 					</div>
-				</TabsContent>
-				<TabsContent value="threads" className="flex-1 p-4 h-0">
-					<ScrollArea className="h-full flex-1">
-						<div className="p-2 space-y-2">
-							<ListThreads threads={threads} />
+					<ChatNav sidebarTrigger={null} showModelSelector={false} />
+				</div>
+
+				<Tabs
+					defaultValue="config"
+					value={activeTab || DEFAULT_TAB}
+					onValueChange={handleTabChange}
+					className="flex-1 flex flex-col min-h-0"
+				>
+					<TabsContent value={DEFAULT_TAB} className="flex-1 min-h-0 m-0">
+						<div className="h-full">
+							<ChatPanel agent={agent} showAgentMenu={false} />
 						</div>
-					</ScrollArea>
-				</TabsContent>
-				<TabsContent value="config" className="flex-1 p-4 h-0">
-					<ScrollArea className="h-full">
-						<AgentCreateForm />
-					</ScrollArea>
-				</TabsContent>
-			</Tabs>
-		</div>
+					</TabsContent>
+					<TabsContent value="config" className="flex-1 min-h-0 m-0 p-4">
+						<ScrollArea className="h-full">
+							<AgentCreateForm />
+						</ScrollArea>
+					</TabsContent>
+				</Tabs>
+			</div>
+		</ChatLayout>
 	);
 }
 

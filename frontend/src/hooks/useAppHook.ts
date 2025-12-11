@@ -39,18 +39,8 @@ export default function useAppHook() {
 	};
 
 	const fetchAppVersion = async () => {
-		const response = await apiClient.get("/health");
+		const response = await apiClient.get("/info/health");
 		setAppVersion(response.data.version);
-	};
-
-	const useFetchAppVersionEffect = () => {
-		useEffect(() => {
-			fetchAppVersion();
-
-			return () => {
-				// Cleanup logic if needed
-			};
-		}, []);
 	};
 
 	const handleMenuOpen = () => {
@@ -91,10 +81,23 @@ export default function useAppHook() {
 		return null;
 	};
 
+	function isLikelyMobile() {
+		const uaData = (navigator as any).userAgentData;
+		if (uaData && uaData.mobile) return true; // #1 Most factual
+
+		if ((navigator as any).connection?.type === "cellular") return true; // #2 Good indicator
+
+		const coarse = window.matchMedia("(pointer: coarse)").matches;
+		const touch = navigator.maxTouchPoints > 1;
+
+		return coarse && touch; // #3 + #4 combined = best factual proxy
+	}
+
 	return {
 		appVersion,
+		fetchAppVersion,
 		isMobile,
-		useFetchAppVersionEffect,
+		isLikelyMobile,
 		loading,
 		setLoading,
 		loadingMessage,

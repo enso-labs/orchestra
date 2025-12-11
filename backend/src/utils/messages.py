@@ -1,46 +1,21 @@
 from langchain_core.messages import (
-    AnyMessage,
     HumanMessage,
     BaseMessage,
     AIMessage,
     SystemMessage,
     ToolMessage,
 )
-from src.utils.format import get_base64_image
+import ujson
+
+from src.utils.format import format_content
 
 
-def construct_messages(
-    query: str, images: list[str] = None, base64_encode: bool = False
-) -> list[AnyMessage]:
-    # Create message content based on whether images are present
-    if images:
-        content = [{"type": "text", "text": query}]
-
-        for image in images:
-            if base64_encode:
-                encoded_image = get_base64_image(image)
-                if encoded_image:  # Only add if encoding was successful
-                    content.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": encoded_image, "detail": "auto"},
-                        }
-                    )
-            else:
-                content.append(
-                    {"type": "image_url", "image_url": {"url": image, "detail": "auto"}}
-                )
-    else:
-        content = query
-
-    messages = [HumanMessage(content=content)]
-    return messages
-
-
-def from_message_to_dict(messages) -> list[BaseMessage]:
+def from_message_to_dict(messages, include_tool_calls: bool = True) -> list[dict]:
     # Convert API messages to LangChain message objects
     converted: list[dict] = []
     for message in messages:
+        if not include_tool_calls and isinstance(message, ToolMessage):
+            continue
         converted.append(message.model_dump())
     return converted
 
@@ -55,10 +30,10 @@ def from_dict_to_message(messages) -> list[BaseMessage]:
             converted.append(HumanMessage(content=content))
         elif role == "assistant":
             converted.append(AIMessage(content=content))
-        elif role == "system":
-            converted.append(SystemMessage(content=content))
         elif role == "tool":
             converted.append(ToolMessage(content=content))
+        elif role == "system":
+            converted.append(SystemMessage(content=content))
         else:
             raise ValueError(f"Unsupported role: {role}")
     return converted

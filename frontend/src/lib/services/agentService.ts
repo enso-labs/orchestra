@@ -6,12 +6,30 @@ export type Agent = {
 	name: string;
 	description: string;
 	model: string;
-	prompt: string;
+	prompt?: string;
+	system_prompt?: string;
+	instructions?: string;
 	tools: string[];
 	subagents?: Agent[];
-	mcp?: object;
-	a2a?: object;
+	mcp?: {
+		[key: string]: {
+			transport: string;
+			url: string;
+			headers: Record<string, string>;
+		};
+	};
+	a2a?: {
+		[key: string]: {
+			base_url: string;
+			agent_card_path: string;
+		};
+	};
 	metadata?: object;
+	presidio?: {
+		analyze?: boolean;
+		anonymize?: boolean;
+		redact?: boolean;
+	};
 	schedules?: Schedule[]; // Agent's associated schedules
 	created_at?: string;
 	updated_at?: string;

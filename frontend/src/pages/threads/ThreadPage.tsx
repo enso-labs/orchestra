@@ -1,0 +1,168 @@
+import { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import ChatLayout from "@/layouts/chat-layout-v2";
+import { useChatContext } from "@/context/ChatContext";
+import { ChatNav } from "@/components/nav/ChatNav";
+import ChatInput from "@/components/inputs/ChatInput";
+import ChatMessages from "@/components/lists/ChatMessages";
+import ChatMessagesSkeleton from "@/components/lists/ChatMessagesSkeleton";
+import { useAppContext } from "@/context/AppContext";
+import { useAgentContext } from "@/context/AgentContext";
+import { useProjectContext } from "@/context/ProjectContext";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+	ResizablePanelGroup,
+	ResizablePanel,
+	ResizableHandle,
+} from "@/components/ui/resizable";
+import FileEditorPanel from "@/components/panels/FileEditorPanel";
+import useModel from "@/hooks/useModel";
+
+export default function ThreadPage() {
+	const { threadId, projectId } = useParams<{
+		threadId: string;
+		projectId?: string;
+	}>();
+	const navigate = useNavigate();
+	const { loading } = useAppContext();
+	const { useEffectGetAgents } = useAgentContext();
+	const { selectProject, projects } = useProjectContext();
+	const { setModel } = useModel();
+	const {
+		messages,
+		setMessages,
+		metadata,
+		setMetadata,
+		setFilesMap,
+		setCheckpoints,
+		useEffectUpdateAssistantId,
+		useListThreadsEffect,
+		useListCheckpointsEffect,
+		useModelsEffect,
+		viewMode,
+		filesMap,
+		setTodos,
+		useLoadThreadEffect,
+		threadLoading,
+		threadError,
+	} = useChatContext();
+
+	useModelsEffect();
+	useEffectGetAgents();
+	useEffectUpdateAssistantId();
+	useListThreadsEffect(!loading);
+	useListCheckpointsEffect(!loading, metadata);
+
+	// Load thread data using modularized hook
+	useLoadThreadEffect(threadId, {
+		setCheckpoints,
+		setMessages,
+		setMetadata,
+		setFilesMap,
+		setTodos,
+		setModel,
+	});
+
+	// Handle project context if on /p/:projectId/t/:threadId
+	useEffect(() => {
+		if (projectId) {
+			setMetadata((prev: any) => ({
+				...prev,
+				project_id: projectId,
+			}));
+			localStorage.setItem("current_project_id", projectId);
+
+			// Set selectedProject
+			const project = projects.find((p: any) => p.id === projectId);
+			if (project) {
+				selectProject(project);
+			}
+		}
+
+		return () => {
+			if (projectId) {
+				setMetadata((prev: any) => {
+					const { project_id, ...rest } = prev;
+					return rest;
+				});
+				localStorage.removeItem("current_project_id");
+				selectProject(null);
+			}
+		};
+	}, [projectId, projects]);
+
+	if (threadError) {
+		return (
+			<ChatLayout>
+				<div className="flex h-full flex-col items-center justify-center gap-4">
+					<p className="text-muted-foreground">{threadError}</p>
+					<button
+						onClick={() => navigate("/chat")}
+						className="text-primary hover:underline"
+					>
+						Go to Chat
+					</button>
+				</div>
+			</ChatLayout>
+		);
+	}
+
+	return (
+		<ChatLayout>
+			<div className="flex h-full relative">
+				{viewMode === "chat" ? (
+					<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+						<ChatNav sidebarTrigger={<SidebarTrigger />} />
+						<div className="flex-1 min-h-0">
+							{threadLoading ? (
+								<ChatMessagesSkeleton />
+							) : (
+								<ChatMessages messages={messages} />
+							)}
+						</div>
+						<div className="sticky bottom-0 bg-background border-border">
+							<div className="max-w-4xl mx-auto">
+								<div className="flex flex-col gap-2 px-4 pb-4">
+									<ChatInput showAgentMenu={true} />
+								</div>
+							</div>
+						</div>
+					</div>
+				) : (
+					<ResizablePanelGroup direction="horizontal" className="flex-1">
+						<ResizablePanel
+							defaultSize={60}
+							minSize={50}
+							maxSize={80}
+							className="hidden md:block"
+						>
+							<FileEditorPanel filesMap={filesMap} />
+						</ResizablePanel>
+
+						<ResizableHandle withHandle className="hidden md:flex" />
+
+						<ResizablePanel defaultSize={40} minSize={20} maxSize={50}>
+							<div className="flex flex-col h-full min-h-0 overflow-hidden">
+								<ChatNav sidebarTrigger={<SidebarTrigger />} />
+								<div className="flex-1 min-h-0">
+									{threadLoading ? (
+										<ChatMessagesSkeleton />
+									) : (
+										<ChatMessages messages={messages} />
+									)}
+								</div>
+								<div className="sticky bottom-0 bg-background border-border">
+									<div className="max-w-4xl mx-auto">
+										<div className="flex flex-col gap-2 px-4 pb-4">
+											<ChatInput showAgentMenu={true} />
+										</div>
+									</div>
+								</div>
+							</div>
+						</ResizablePanel>
+					</ResizablePanelGroup>
+				)}
+			</div>
+		</ChatLayout>
+	);
+}

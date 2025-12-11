@@ -3,13 +3,13 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status, Path, Respo
 
 from langgraph.store.postgres import AsyncPostgresStore
 
+from src.contexts.service import ServiceContext
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store
 from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 from src.services.assistant import (
-    assistant_service,
     AssistantSearch,
     Assistant,
     ASSISTANT_EXAMPLES,
@@ -28,15 +28,16 @@ async def search_assistants(
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
-    assistant_service.store = store
-    assistant_service.user_id = user.id
+    service_context = ServiceContext(user_id=user.id, store=store)
     # If id is provided, return the assistant
     if "id" in assistant_search.filter:
-        assistant = await assistant_service.get(assistant_search.filter["id"])
-        return {"assistants": [assistant]}
+        assistant = await service_context.assistant_service.get(
+            assistant_search.filter["id"]
+        )
+        return {"assistants": [assistant.model_dump()]}
     # If id is not provided, return all assistants
-    assistants = await assistant_service.search()
-    return {"assistants": assistants}
+    assistants: list[Assistant] = await service_context.assistant_service.search()
+    return {"assistants": [assistant.model_dump() for assistant in assistants]}
 
 
 @router.post("", name="Create Assistant")
@@ -48,15 +49,16 @@ async def create_assistant(
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
-        assistant_service.store = store
-        assistant_service.user_id = user.id
         assistant_id = str(uuid.uuid4())
-        existing_assistant = await assistant_service.get(assistant_id)
+        service_context = ServiceContext(user_id=user.id, store=store)
+        existing_assistant = await service_context.assistant_service.get(assistant_id)
         if existing_assistant:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="Assistant already exists"
             )
-        assistant = await assistant_service.update(assistant_id, assistant.model_dump())
+        assistant = await service_context.assistant_service.update(
+            assistant_id, assistant.model_dump()
+        )
         return {"assistant_id": assistant_id}
 
     except HTTPException as e:
@@ -76,9 +78,10 @@ async def update_assistant(
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
-        assistant_service.store = store
-        assistant_service.user_id = user.id
-        await assistant_service.update(assistant_id, assistant.model_dump())
+        service_context = ServiceContext(user_id=user.id, store=store)
+        await service_context.assistant_service.update(
+            assistant_id, assistant.model_dump()
+        )
         return {"assistant_id": assistant_id}
 
     except HTTPException as e:
@@ -94,7 +97,6 @@ async def delete_assistant(
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
-    assistant_service.store = store
-    assistant_service.user_id = user.id
-    await assistant_service.delete(assistant_id)
+    service_context = ServiceContext(user_id=user.id, store=store)
+    await service_context.assistant_service.delete(assistant_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

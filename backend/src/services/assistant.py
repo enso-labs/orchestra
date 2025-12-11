@@ -2,44 +2,51 @@ import asyncio
 from typing import Any
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
-from src.utils.logger import logger
-from src.schemas.models.assistant import *
 from langgraph.store.base import SearchItem
-from src.constants.examples import Examples
 
-IN_MEMORY_STORE = InMemoryStore()
-STORE_KEY = "assistants"
+from src.schemas.entities.llm import *
+from src.utils.logger import logger
+from src.constants.examples import Examples
+from src.services.db import get_store_in_memory
 
 
 class AssistantService:
-    def __init__(self, user_id: str = None, store: BaseStore = IN_MEMORY_STORE):
+    def __init__(self, user_id: str = None, store: BaseStore = get_store_in_memory()):
         self.user_id = user_id
         self.store: BaseStore = store
+
+    def _get_store_key(self):
+        return "assistants"
+
+    def _get_namespace(self):
+        return (self.user_id, self._get_store_key())
 
     async def update(self, assistant_id: str, data: dict):
         try:
             await self.store.aput(
-                namespace=(STORE_KEY, self.user_id), key=assistant_id, value=data
+                namespace=self._get_namespace(), key=assistant_id, value=data
             )
             return True
         except Exception as e:
-            logger.exception(f"Error updating {STORE_KEY} {assistant_id}: {e}")
+            logger.exception(
+                f"Error updating {self._get_store_key()} {assistant_id}: {e}"
+            )
             return False
 
         return True
 
     async def get(self, key: str) -> Any:
-        assistant_raw = await self.store.aget((STORE_KEY, self.user_id), key)
+        assistant_raw = await self.store.aget(self._get_namespace(), key)
         if assistant_raw:
             return self._format_assistant([assistant_raw])[0]
         return None
 
     async def delete(self, key: str) -> bool:
         try:
-            await self.store.adelete((STORE_KEY, self.user_id), key)
+            await self.store.adelete(self._get_namespace(), key)
             return True
         except Exception as e:
-            logger.exception(f"Error deleting {STORE_KEY} {key}: {e}")
+            logger.exception(f"Error deleting {self._get_store_key()} {key}: {e}")
             return False
 
     async def search(
@@ -54,14 +61,14 @@ class AssistantService:
                 assistants = await self._postgres_search(limit)
             return self._format_assistant(assistants)
         except Exception as e:
-            logger.error(f"Error searching {STORE_KEY}: {e}")
+            logger.error(f"Error searching {self._get_store_key()}: {e}")
             return []
 
     ###########################################################################
     ## Search
     ###########################################################################
     async def _in_memory_search(self, limit: int = 1000) -> list[dict]:
-        items = await self.store.asearch((STORE_KEY, self.user_id), limit=limit)
+        items = await self.store.asearch(self._get_namespace(), limit=limit)
         return sorted(
             [item for item in items],
             key=lambda x: x.updated_at,
@@ -75,7 +82,7 @@ class AssistantService:
         for attempt in range(max_retries):
             try:
                 async with self.store as store:
-                    items = await store.asearch((STORE_KEY, self.user_id), limit=limit)
+                    items = await store.asearch(self._get_namespace(), limit=limit)
                     return sorted(
                         [item for item in items],
                         key=lambda x: x.updated_at,
@@ -101,7 +108,7 @@ class AssistantService:
             assistant.id = item.key
             assistant.updated_at = item.updated_at
             assistant.created_at = item.created_at
-            assistants.append(assistant.model_dump())
+            assistants.append(assistant)
         return assistants
 
 
