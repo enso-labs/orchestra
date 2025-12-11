@@ -130,6 +130,7 @@ async def create_thread(
             )
             thread.id = str(uuid.uuid4())
             checkpoint = empty_checkpoint()
+            await service_context.thread_service.update(thread.id, thread.model_dump(exclude_none=True))
             saved = await checkpointer.aput(
                 config=RunnableConfig(
                     configurable={
@@ -139,10 +140,14 @@ async def create_thread(
                     }
                 ), 
                 checkpoint=checkpoint,
-                metadata=CheckpointMetadata(source="thread"),
+                metadata=CheckpointMetadata(
+                    source="input", 
+                    step=-1,
+                    files=thread.files,
+                    todos=thread.todos,
+                ),
                 new_versions=ChannelVersions(),
             )
-            await service_context.thread_service.update(thread.id, thread.model_dump(exclude_none=True))
             return saved['configurable']
     except HTTPException:
         raise
