@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc117
 
 ### Changed
+  - feat/446-configure-schedule-via-assistant-id (2025-12-10)
   - feat/513-create-thread-api (2025-12-10)
 
 ### Fixed
