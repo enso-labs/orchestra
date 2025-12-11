@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - feat/566-langchain-sandbox-dx (2025-12-09)
 
 ### Fixed
+  - bug/419-schedule-modal (2025-10-12)
 
 ## v0.0.2-rc115
 
