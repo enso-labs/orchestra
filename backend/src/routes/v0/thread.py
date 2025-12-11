@@ -127,16 +127,27 @@ async def create_thread(
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(
                 user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            )            
+            assistant_id = thread.metadata.get('assistant_id', None)
+            if assistant_id:
+                assistant = await service_context.assistant_service.get(assistant_id)
+                if not assistant:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found"
+                    )
+            
             thread.id = str(uuid.uuid4())
             checkpoint = empty_checkpoint()
-            await service_context.thread_service.update(thread.id, thread.model_dump(exclude_none=True))
+            await service_context.thread_service.update(
+                thread.id, thread.model_dump(exclude_none=True)
+            )
             saved = await checkpointer.aput(
                 config=RunnableConfig(
                     configurable={
                         "thread_id": thread.id, 
                         "checkpoint_id": checkpoint.get("id"),
                         "checkpoint_ns": checkpoint.get("ns", ""),
+                        "assistant_id": assistant_id,
                     }
                 ), 
                 checkpoint=checkpoint,
@@ -145,6 +156,7 @@ async def create_thread(
                     step=-1,
                     files=thread.files,
                     todos=thread.todos,
+                    assistant_id=thread.metadata.get('assistant_id', None),
                 ),
                 new_versions=ChannelVersions(),
             )

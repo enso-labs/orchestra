@@ -416,7 +416,24 @@ THREAD_CREATE_EXAMPLE = Example(
                 ],
             }
         },
-        
+        "metadata": get_example_metadata(),
+    },
+)
+
+THREAD_CREATE_EXAMPLE_WITH_ASSISTANT = Example(
+    summary="thread_create_with_assistant",
+    description="Create Thread with Assistant",
+    value={
+        "title": "Python: Fetch Last 3 Posts",
+        "metadata": get_example_metadata(assistant_id=True),
+        "files": {
+            "/hello_world.py": {
+                "content": [
+                    "print('Hello, World!')"
+                ],
+            },
+        },
+        "todos": []
     },
 )
 
@@ -433,6 +450,7 @@ class Examples:
     SCHEDULE_FIND_EXAMPLE = SCHEDULE_FIND_EXAMPLE
     THREAD_CREATE_EXAMPLES = {
         "thread_create": THREAD_CREATE_EXAMPLE,
+        "thread_create_with_assistant": THREAD_CREATE_EXAMPLE_WITH_ASSISTANT,
     }
     THREAD_SEARCH_EXAMPLES = {
         "list_threads": Example(
