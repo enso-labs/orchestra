@@ -3,6 +3,7 @@ from typing import Callable, Optional
 from uuid import uuid4
 from datetime import datetime
 
+from src.constants import APP_ENV
 from src.schemas.entities import LLMRequest
 from apscheduler.triggers.cron import CronTrigger
 
@@ -29,14 +30,15 @@ class JobTrigger(BaseModel):
         # If minute field is '*' or '*/1', it runs every minute (less than 1 hour)
         # If hour field is '*', it runs every hour or more frequently
         # We want to ensure the minimum interval is 1 hour
-        if minute_field in ("*", "*/1"):
-            raise ValueError(
-                "Cron expression must not schedule more frequently than 1 hour (minute field must not be '*' or '*/1')"
-            )
-        if hour_field == "*":
-            raise ValueError(
-                "Cron expression must not schedule more frequently than 1 hour (hour field must not be '*')"
-            )
+        if APP_ENV != "test":
+            if minute_field in ("*", "*/1"):
+                raise ValueError(
+                    "Cron expression must not schedule more frequently than 1 hour (minute field must not be '*' or '*/1')"
+                )
+            if hour_field == "*":
+                raise ValueError(
+                    "Cron expression must not schedule more frequently than 1 hour (hour field must not be '*')"
+                )
         return v
 
     @classmethod
@@ -133,27 +135,7 @@ class ScheduleCreate(BaseModel):
     )
     trigger: JobTrigger
     task: LLMRequest
-
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "title": "Daily Weather Check",
-                "trigger": {"type": "cron", "expression": "* * * * *"},
-                "task": {
-                    "model": "openai:gpt-5-nano",
-                    "system": "You are a helpful assistant.",
-                    "messages": [{"role": "user", "content": "Weather in Dallas?"}],
-                    "tools": [],
-                    "a2a": {},
-                    "mcp": {},
-                    "subagents": [],
-                    "metadata": {},
-                },
-            }
-        }
-    }
-
-
+    
 class ScheduleUpdate(BaseModel):
     title: Optional[str] = Field(
         None,

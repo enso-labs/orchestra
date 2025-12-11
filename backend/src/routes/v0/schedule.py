@@ -56,10 +56,18 @@ async def get_job(
 ################################################################################
 ### Create Schedule
 ################################################################################
-@router.post("/schedules", status_code=201, responses={201: {"model": JobUpdated}})
+@router.post(
+    "/schedules", 
+    status_code=201, 
+    responses={
+        201: {
+            "content": {"application/json": {"example": Examples.SCHEDULE_CREATED_RESPONSE_EXAMPLE}}
+        }
+    }
+)
 async def create_job(
     job: ScheduleCreate = Body(
-        openapi_examples={"create_schedule": Examples.SCHEDULE_CREATE_EXAMPLE}
+        openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLES
     ),
     user: ProtectedUser = Depends(verify_credentials),
 ):
