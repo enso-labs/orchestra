@@ -5,7 +5,7 @@ from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 
 from src.schemas.entities.llm import *
-from src.schemas.entities.store import ThreadSnapshot
+from src.schemas.entities.store import Thread
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,

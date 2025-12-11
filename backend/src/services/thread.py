@@ -4,6 +4,7 @@ from src.services.db import get_store_in_memory
 from src.schemas.entities import SearchFilter
 from src.constants import TEST_USER_ID
 from src.repos.thread_repo import ThreadRepo
+from src.schemas.entities.store import Thread
 
 
 class ThreadService:
@@ -19,6 +20,9 @@ class ThreadService:
         self.store: BaseStore = store
         self.thread_id = None
         self.thread_repo = thread_repo or ThreadRepo(self.user_id, store)
+        
+    async def create(self, thread: Thread):
+        return await self.thread_repo.create(thread)
 
     async def update(self, thread_id: str, data: dict):
         return await self.thread_repo.update(thread_id, data)

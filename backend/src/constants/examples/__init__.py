@@ -378,6 +378,65 @@ SCHEDULE_UPDATE_EXAMPLE = Example(
 )
 
 
+THREAD_CREATE_EXAMPLE = Example(
+    summary="thread_create",
+    description="Create Thread",
+    value={
+        # "messages": [{"role": "user", "content": "What is the capital of France?"}],
+        "title": "Python: Fetch Last 3 Posts",
+        "todos": [
+            {
+                "content": "Explain how to convert JSON to DataFrame in Python using pandas.",
+                "status": "completed",
+            }
+        ],
+        "files": {
+            "/hello_world.py": {
+                "content": [
+                    "print('Hello, World!')"
+                ],
+            },
+            "/fetch_last_posts.py": {
+                "content": [
+                    "import requests",
+                    "import json",
+                    "",
+                    "response = requests.get('https://jsonplaceholder.typicode.com/posts')",
+                    "posts = response.json()",
+                    "",
+                    "# Get last 3 posts by ID (highest IDs)",
+                    "last_three = sorted(posts, key=lambda p: p['id'], reverse=True)[:3]",
+                    "",
+                    "# Save to file",
+                    "with open('last_posts.json', 'w') as f:",
+                    " json.dump(last_three, f, indent=4)",
+                    "",
+                    "print(\"Saved last 3 posts to last_posts.json\")",
+                    "print(json.dumps(last_three, indent=4))"
+                ],
+            }
+        },
+        "metadata": get_example_metadata(),
+    },
+)
+
+THREAD_CREATE_EXAMPLE_WITH_ASSISTANT = Example(
+    summary="thread_create_with_assistant",
+    description="Create Thread with Assistant",
+    value={
+        "title": "Python: Fetch Last 3 Posts",
+        "metadata": get_example_metadata(assistant_id=True),
+        "files": {
+            "/hello_world.py": {
+                "content": [
+                    "print('Hello, World!')"
+                ],
+            },
+        },
+        "todos": []
+    },
+)
+
 class Examples:
     LOGIN_RESPONSE_EXAMPLE = LOGIN_RESPONSE_EXAMPLE
     EXISTING_THREAD_ANSWER_EXAMPLE = EXISTING_THREAD_ANSWER_EXAMPLE
@@ -389,6 +448,10 @@ class Examples:
     SCHEDULE_CREATE_EXAMPLE = SCHEDULE_CREATE_EXAMPLE
     SCHEDULE_UPDATE_EXAMPLE = SCHEDULE_UPDATE_EXAMPLE
     SCHEDULE_FIND_EXAMPLE = SCHEDULE_FIND_EXAMPLE
+    THREAD_CREATE_EXAMPLES = {
+        "thread_create": THREAD_CREATE_EXAMPLE,
+        "thread_create_with_assistant": THREAD_CREATE_EXAMPLE_WITH_ASSISTANT,
+    }
     THREAD_SEARCH_EXAMPLES = {
         "list_threads": Example(
             summary="list_threads",

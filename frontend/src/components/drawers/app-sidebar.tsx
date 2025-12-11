@@ -168,6 +168,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 
 	// Extract a meaningful title from the content
 	const getThreadTitle = () => {
+		if (thread.value?.title) return thread.value?.title;
 		if (!lastMessage) return "Empty thread";
 		const content =
 			typeof lastMessage.content === "string"
