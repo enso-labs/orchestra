@@ -1,13 +1,15 @@
-import asyncio
 from langgraph.store.base import BaseStore, SearchItem
+from langgraph.checkpoint.base import create_checkpoint
+
 from src.services.db import get_store_in_memory
 from src.schemas.entities import SearchFilter
 from src.constants import THREAD_SNAPSHOT_MESSAGE_COUNT
 from src.repos.base_repo import BaseRepo
-from src.schemas.entities.store import ThreadSnapshot
+from src.schemas.entities.store import Thread
 from src.utils.logger import logger
 from src.utils.format import format_xml_thread
 from src.utils.messages import from_message_to_dict
+from src.utils.retry import retry_db_operation
 
 
 FIELDS = ["messages"]
@@ -27,9 +29,10 @@ class ThreadRepo(BaseRepo):
             pass
         super().__init__(user_id=user_id, store=store, entity_type="threads")
 
-    def _format(self, item: SearchItem) -> ThreadSnapshot:
-        return ThreadSnapshot(
+    def _format(self, item: SearchItem) -> Thread:
+        return Thread(
             id=item.key,
+            title=item.value.get("title", None),    
             messages=item.value.get("messages", []),
             files=item.value.get("files", []),
             todos=item.value.get("todos", []),
@@ -37,56 +40,31 @@ class ThreadRepo(BaseRepo):
             updated_at=getattr(item, "updated_at", None),
         )
 
+    @retry_db_operation(tries=3, delay=1, backoff=2, exceptions=(Exception,))
     async def search(
         self,
         search_filter: SearchFilter,
     ) -> list[dict]:
         try:
-            max_retries = 3
-            retry_delay = 1  # seconds
-
-            for attempt in range(max_retries):
-                try:
-                    async with self.store as store:
-                        if search_filter.query:
-                            queried_threads: list[SearchItem] = await store.asearch(
-                                self._get_namespace(),
-                                limit=search_filter.limit,
-                                filter=search_filter.filter,
-                                query=search_filter.query,
-                            )
-                            return [
-                                ThreadSnapshot(
-                                    id=thread.key,
-                                    messages=thread.value.get("messages", []),
-                                    files=thread.value.get("files", []),
-                                    score=thread.score,
-                                    updated_at=thread.updated_at,
-                                ).model_dump(exclude_none=True)
-                                for thread in queried_threads
-                            ]
-                        threads = await store.asearch(
-                            self._get_namespace(),
-                            limit=search_filter.limit,
-                            filter=search_filter.filter,
-                        )
-                        return sorted(
-                            [thread.dict() for thread in threads],
-                            key=lambda x: x.get("updated_at"),
-                            reverse=True,
-                        )
-                except Exception as e:
-                    error_msg = str(e).lower()
-                    if "connection" in error_msg and "closed" in error_msg:
-                        logger.warning(
-                            f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}"
-                        )
-                        if attempt < max_retries - 1:
-                            await asyncio.sleep(
-                                retry_delay * (2**attempt)
-                            )  # Exponential backoff
-                            continue
-                    raise e
+            async with self.store as store:
+                if search_filter.query:
+                    queried_threads: list[SearchItem] = await store.asearch(
+                        self._get_namespace(),
+                        limit=search_filter.limit,
+                        filter=search_filter.filter,
+                        query=search_filter.query,
+                    )
+                    return [self._format(thread) for thread in queried_threads]
+                threads = await store.asearch(
+                    self._get_namespace(),
+                    limit=search_filter.limit,
+                    filter=search_filter.filter,
+                )
+                return sorted(
+                    [thread.dict() for thread in threads],
+                    key=lambda x: x.get("updated_at"),
+                    reverse=True,
+                )
         except Exception as e:
             logger.error(f"Error searching threads: {e}")
             return []
@@ -122,35 +100,35 @@ class ThreadRepo(BaseRepo):
             logger.error(f"Error deleting thread: {e}")
             return False
 
-    async def _upsert_snapshot(self, thread_id: str, messages: list) -> bool:
-        """Create or update a thread snapshot with recent messages.
+    # async def _upsert_snapshot(self, thread_id: str, messages: list) -> bool:
+    #     """Create or update a thread snapshot with recent messages.
 
-        Note: messages should already be filtered to recent messages before calling this method.
-        """
-        try:
-            # Extract recent messages for snapshot (last N messages)
-            recent_messages = (
-                messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:]
-                if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
-                else messages
-            )
+    #     Note: messages should already be filtered to recent messages before calling this method.
+    #     """
+    #     try:
+    #         # Extract recent messages for snapshot (last N messages)
+    #         recent_messages = (
+    #             messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:]
+    #             if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
+    #             else messages
+    #         )
 
-            # Format messages as "Role: content" pairs
-            page_content = format_xml_thread(recent_messages, include_tool_calls=False)
+    #         # Format messages as "Role: content" pairs
+    #         page_content = format_xml_thread(recent_messages, include_tool_calls=False)
 
-            # Create snapshot with metadata
-            snapshot = ThreadSnapshot(
-                thread_id=thread_id,
-                page_content=page_content,
-                metadata={
-                    "thread_id": thread_id,
-                    "message_count": len(messages),
-                },
-            )
+    #         # Create snapshot with metadata
+    #         snapshot = ThreadSnapshot(
+    #             thread_id=thread_id,
+    #             page_content=page_content,
+    #             metadata={
+    #                 "thread_id": thread_id,
+    #                 "message_count": len(messages),
+    #             },
+    #         )
 
-            await self._set(thread_id, snapshot)
-            return True
+    #         await self._set(thread_id, snapshot)
+    #         return True
 
-        except Exception as e:
-            logger.error(f"Failed to upsert thread snapshot for {thread_id}: {e}")
-            return False
+    #     except Exception as e:
+    #         logger.error(f"Failed to upsert thread snapshot for {thread_id}: {e}")
+    #         return False

@@ -3,11 +3,12 @@ from pydantic import BaseModel
 from typing import Optional, Union, Any
 from datetime import datetime
 from langchain_core.documents import Document
-from pydantic import field_serializer
+from pydantic import field_serializer, Field
 
 
 class BaseEntity(BaseModel):
     id: Optional[str] = None
+    metadata: Optional[dict] = None
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
@@ -24,7 +25,6 @@ class BaseEntity(BaseModel):
 class Source(BaseEntity):
     type: str
     content: dict = {}
-    metadata: Optional[dict] = None
     documents: Optional[list[Union[Document, str]]] = None
 
 
@@ -33,12 +33,10 @@ class Project(BaseEntity):
     description: Optional[str] = None
     sources: Optional[list[Source]] = None
 
-
-class ThreadSnapshot(BaseModel):
-    id: str
-    messages: list[Union[BaseMessage, dict]]
+class Thread(BaseEntity):
+    title: Optional[str] = None
+    messages: list[Union[BaseMessage, dict]] = Field(default_factory=list)
     files: Optional[Any] = None
     todos: Optional[Any] = None
     score: float | None = None
-    metadata: Optional[dict] = None
-    updated_at: datetime
+    

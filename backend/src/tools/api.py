@@ -1,4 +1,5 @@
 import httpx
+import ujson
 import logging
 import urllib.parse
 from typing import Dict, Optional, Any
@@ -197,6 +198,7 @@ class ToolArgs(BaseModel):
 
 @tool(args_schema=ToolArgs)
 async def edit_tool(
+    name: str,
     description: str,
     base_url: str,
     method: str,
@@ -285,7 +287,24 @@ async def edit_tool(
         logging.error(f"Error editing API tool {name}: {e}")
         return f"Error editing API tool {name}: {e}"    
     
+class GetToolInfoArgs(BaseModel):
+    name: str = Field(description="The name of the tool. Must be snake_case (lowercase, numbers, underscores).")
+    runtime: Any = None
+
+@tool(args_schema=GetToolInfoArgs)
+async def get_tool_info(name: str, runtime: ToolRuntime = None):
+    """Get the information of a tool by name."""
+    from src.repos.tool_repo import ToolRepo
+    user_id = runtime.context.user_id
+    if not user_id:
+        raise ValueError("User ID is required to get tool information.")
+    tool_repo = ToolRepo(user_id=user_id, store=runtime.store)
+    tool = await tool_repo.search(filter={"name": name})
+    return ujson.dumps(tool)
+    
+    
 API_TOOLS = [
     create_tool,
     edit_tool,
+    get_tool_info,
 ]

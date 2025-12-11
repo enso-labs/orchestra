@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.2-rc117
+
+### Changed
+  - feat/513-create-thread-api (2025-12-10)
+
+### Fixed
+
 ## v0.0.2-rc116
 
 ### Changed
+  - feat/513-create-thread-api (2025-12-10)
   - feat/566-langchain-sandbox-dx (2025-12-09)
 
 ### Fixed
