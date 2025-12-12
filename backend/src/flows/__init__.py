@@ -156,13 +156,13 @@ async def init_memories(system_prompt: str, tools: list[BaseTool]):
 
 def init_config(
     params: LLMRequest,
-    user: ProtectedUser | None = None,
+    user_id: ProtectedUser | None = None,
     max_concurrency: int = 4,
     recursion_limit: int = 500,
 ) -> RunnableConfig:
     return RunnableConfig(
         configurable={
-            "user_id": user.id if user else None,
+            "user_id": user_id,
             "thread_id": params.metadata.thread_id or str(uuid4()),
             "assistant_id": params.metadata.assistant_id or None,
             "project_id": params.metadata.project_id or None,

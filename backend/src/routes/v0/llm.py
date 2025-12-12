@@ -55,7 +55,7 @@ async def llm_invoke(
     user: ProtectedUser = Depends(get_optional_user),
     store=Depends(get_store),
 ) -> dict[str, Any] | Any:
-    config = init_config(params, user)
+    config = init_config(params, user.id)
     llm_controller = LLMController(user=user, store=store, config=config)
     response = await llm_controller.llm_invoke(params)
     return response
@@ -79,7 +79,7 @@ async def llm_stream(
     Streams LLM output as server-sent events (SSE).
     """
     try:
-        config = init_config(params, user)
+        config = init_config(params, user.id)
         llm_controller = LLMController(user=user, store=store, config=config)
         assistant = await llm_controller.llm_stream(params)
         return StreamingResponse(
