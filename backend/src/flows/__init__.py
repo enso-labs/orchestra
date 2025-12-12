@@ -60,7 +60,7 @@ async def add_memories_to_system():
 def graph_builder(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
-    prompt: str = "You are a helpful assistant.",
+    system_prompt: str = "You are a helpful assistant.",
     model: str = "openai:gpt-5-nano",
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
@@ -72,7 +72,7 @@ def graph_builder(
         return create_agent(
             model=model,
             tools=tools,
-            system_prompt=prompt,
+            system_prompt=system_prompt,
             checkpointer=checkpointer,
             context_schema=context_schema,
             store=store,
@@ -87,7 +87,7 @@ def graph_builder(
         model=model,
         tools=tools,
         subagents=subagents,
-        system_prompt=prompt,
+        system_prompt=system_prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
         middleware=middleware,
@@ -205,7 +205,7 @@ async def construct_agent(
             model=model,
             tools=tools,
             subagents=subagents,
-            prompt=init_system_prompt(system_prompt, service_context.config or {}, instructions),
+            system_prompt=init_system_prompt(system_prompt, service_context.config or {}, instructions),
             checkpointer=checkpointer,
             store=service_context.store,
             middleware=middleware,
@@ -223,7 +223,7 @@ class Orchestra:
         tools: list[BaseTool],
         subagents: Optional[list[SubAgent]] = None,
         model: str = "openai:gpt-5-nano",
-        prompt: str = "You are a helpful assistant.",
+        system_prompt: str = "You are a helpful assistant.",
         # config: RunnableConfig = None,
         context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
@@ -233,7 +233,7 @@ class Orchestra:
     ):
         self.tools = tools
         self.model = model
-        self.prompt = prompt
+        self.system_prompt = system_prompt
         # self.config = config
         self.context_schema = context_schema
         self.store = store
@@ -243,7 +243,7 @@ class Orchestra:
             tools=self.tools,
             subagents=self.subagents,
             model=self.model,
-            prompt=self.prompt,
+            system_prompt=self.system_prompt,
             context_schema=self.context_schema,
             checkpointer=self.checkpointer,
             store=self.store,

@@ -82,6 +82,28 @@ class LLMService:
 
         return [f"{normalized_provider}:{model}" for model in tool_models]
     
+    
+    async def init_tools(self, tools: list[str], a2a: dict, mcp: dict):
+        tool_map = {t.name: t for t in init_tool_library(user_id=self.user_id)}  # O(n) index
+        filtered_tools = (
+            A2AServers(a2a=a2a).fetch_agent_cards_as_tools(
+                self.config["configurable"].get("thread_id")
+            )
+            + await self.tool_service.mcp_tools(mcp)
+            + [tool_map[name] for name in (tools or ()) if name in tool_map]
+        )
+        if self.user_id:
+            for tool in tools:
+                items = await self.tool_service.tool_repo.search(
+                    filter={"name": tool}
+                )
+                if items:
+                    structured_tool = items[0]
+                    tool_metadata = {structured_tool.name: structured_tool.metadata}
+                    self.config["metadata"] = {**tool_metadata, **self.config["metadata"]}
+                    filtered_tools.append(structured_tool)
+        return filtered_tools
+    
     async def assistant(
         self, 
         params: LLMRequest, 
@@ -92,6 +114,11 @@ class LLMService:
             assistant: Assistant = await self.assistant_service.get(
                 params.metadata.assistant_id
             )
+            assistant.tools = await self.init_tools(
+                assistant.tools, 
+                assistant.a2a, 
+                assistant.mcp
+            )
             return assistant.to_llm_request(
                 input=params.input,
                 model=params.model,
@@ -99,26 +126,7 @@ class LLMService:
             )
             
         ### Collect all tools
-        tool_map = {t.name: t for t in init_tool_library(user_id=self.user_id)}  # O(n) index
-        tools = (
-            A2AServers(a2a=params.a2a).fetch_agent_cards_as_tools(
-                self.config["configurable"].get("thread_id")
-            )
-            + await self.tool_service.mcp_tools(params.mcp)
-            + [tool_map[name] for name in (params.tools or ()) if name in tool_map]
-        )
-        if self.user_id:
-            for tool in params.tools:
-                items = await self.tool_service.tool_repo.search(
-                    filter={"name": tool}
-                )
-                if items:
-                    structured_tool = items[0]
-                    tool_metadata = {structured_tool.name: structured_tool.metadata}
-                    self.config["metadata"] = {**tool_metadata, **self.config["metadata"]}
-                    tools.append(structured_tool)
-                    
-        params.tools = tools
+        params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)
         return params
         
 # Make sure this is a singleton used by your app (e.g., FastAPI dependency)

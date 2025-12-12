@@ -97,7 +97,7 @@ type Presidio = {
 	redact?: boolean;
 };
 interface StreamThreadPayload {
-	system?: string;
+	system_prompt?: string;
 	input: Input;
 	model: string;
 	metadata: any;
@@ -117,8 +117,8 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 		const token = getAuthToken();
 		if (token) headers.Authorization = `Bearer ${token}`;
 
-		if (payload.system?.trim() === "") {
-			delete payload.system;
+		if (payload.system_prompt?.trim() === "") {
+			delete payload.system_prompt;
 		}
 		const newConfig: SSEOptions = {
 			headers: headers,

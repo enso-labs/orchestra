@@ -33,7 +33,7 @@ class LLMController:
 		return stream_generator(
 			input=assistant.input,
 			model=assistant.model,
-			system_prompt=assistant.system,
+			system_prompt=assistant.system_prompt,
 			tools=assistant.tools,
 			subagents=assistant.subagents,
 			config=self.service_context.config,

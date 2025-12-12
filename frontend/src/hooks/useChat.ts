@@ -134,7 +134,7 @@ export default function useChat(): ChatContextType {
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
 		const source = streamThread({
-			system: agent.prompt,
+			system_prompt: agent.prompt,
 			input: { messages: formatedMessages },
 			model: agent.model,
 			metadata: enrichedMetadata,

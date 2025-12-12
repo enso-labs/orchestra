@@ -16,6 +16,7 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from langchain_core.tools import BaseTool, StructuredTool
 
 from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.utils.format import slugify
@@ -142,6 +143,8 @@ class Assistant(BaseModel):
             tools=self.tools,
             a2a=self.a2a,
             mcp=self.mcp,
+            system_prompt=self.system_prompt,
+            instructions=self.instructions,
             subagents=self.subagents,
             metadata=metadata or self.metadata,
             input=input,
@@ -151,9 +154,9 @@ class Assistant(BaseModel):
 class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default="openai:gpt-5-nano")
-    system: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
+    system_prompt: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
     instructions: Optional[str] = Field(default="", exclude=True)
-    tools: Optional[List[str]] = Field(default_factory=list)
+    tools: Optional[List[str|BaseTool|StructuredTool]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
