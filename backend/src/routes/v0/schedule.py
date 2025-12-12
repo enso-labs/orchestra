@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends, Response, HTTPException, Body
+from fastapi import APIRouter, Depends, Response, Body
 from fastapi.responses import JSONResponse
+from langgraph.store.base import BaseStore
 
+from src.controllers.llm import LLMController
+from src.flows import init_config
+from src.services.db import get_store
 from src.services.schedule import schedule_service
 from src.schemas.models import ProtectedUser
 from src.utils.auth import verify_credentials
@@ -56,15 +60,25 @@ async def get_job(
 ################################################################################
 ### Create Schedule
 ################################################################################
-@router.post("/schedules", status_code=201, responses={201: {"model": JobUpdated}})
+@router.post(
+    "/schedules", 
+    status_code=201, 
+    responses={
+        201: {
+            "content": {"application/json": {"example": Examples.SCHEDULE_CREATED_RESPONSE_EXAMPLE}}
+        }
+    }
+)
 async def create_job(
     job: ScheduleCreate = Body(
-        openapi_examples={"create_schedule": Examples.SCHEDULE_CREATE_EXAMPLE}
+        openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLES
     ),
     user: ProtectedUser = Depends(verify_credentials),
+    store: BaseStore = Depends(get_store),
 ):
-    schedule_service.user_id = user.id
-    schedule = schedule_service.create_job(job)
+    config = init_config(job.task, user.id)
+    llm_controller = LLMController(user=user, store=store, config=config)
+    schedule = await llm_controller.llm_task(job)
     return JSONResponse(
         status_code=201,
         content={

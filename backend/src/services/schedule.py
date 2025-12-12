@@ -5,12 +5,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, EVENT_JOB_MISSED
 from apscheduler.triggers.interval import IntervalTrigger
-import logging
+from src.schemas.contexts import ContextSchema
+from src.utils.logger import logger
+import ujson
+from langgraph.store.base import BaseStore
 
-from src.services.db import DB_URI
+from src.services.db import DB_URI, get_store_in_memory
 from src.schemas.entities.schedule import JobTrigger, Job, Schedule
-
-logger = logging.getLogger(__name__)
+from src.utils.format import get_time
 
 jobstores = {"default": SQLAlchemyJobStore(url=DB_URI, tablename="schedules")}
 SCHEDULER = AsyncIOScheduler(jobstores=jobstores)
@@ -21,22 +23,14 @@ IN_MEMORY_JOBS = {}
 # Event listeners for debugging
 def job_executed(event):
     logger.info(f"Job {event.job_id} executed successfully")
-    print(f"✅ Job {event.job_id} executed successfully")
 
 
 def job_error(event):
-    logger.error(f"Job {event.job_id} failed: {event.exception}")
-    print(f"❌ Job {event.job_id} failed with error: {event.exception}")
-    import traceback
-
-    traceback.print_exception(
-        type(event.exception), event.exception, event.exception.__traceback__
-    )
+    logger.exception(f"Job {event.job_id} failed: {event.exception}")
 
 
 def job_missed(event):
     logger.warning(f"Job {event.job_id} missed its scheduled time")
-    print(f"⚠️ Job {event.job_id} missed its scheduled time")
 
 
 # Add event listeners
@@ -54,31 +48,99 @@ def create_trigger(trigger: JobTrigger):
         raise ValueError("Invalid trigger type")
 
 
-async def scheduled_llm_invoke_wrapper(task_dict: dict, metadata: dict):
+async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None):
     """
-    Wrapper function for scheduled LLM invocations.
-    Reconstructs LLMRequest from dict and invokes the LLM.
+    Standalone function for scheduled LLM invocations.
+    This must be a module-level function (not a method) so APScheduler can pickle it.
     """
+    from uuid import uuid4
     from src.schemas.entities import LLMRequest
-    from src.controllers.llm import llm_invoke
+    from src.flows import construct_agent, Orchestra, init_config
+    from src.services.db import get_checkpoint_db, get_store_db
+    from src.contexts.service import ServiceContext
 
-    logger.info(f"🚀 Starting scheduled LLM job with task: {task_dict}")
-    print(f"🚀 Starting scheduled LLM job")
-
-    try:
-        # Reconstruct LLMRequest from dict
-        task = LLMRequest(**task_dict)
-        logger.info(f"✓ Successfully reconstructed LLMRequest")
-
-        # Invoke the LLM
-        result = await llm_invoke(task, user_id=metadata["user_id"])
-        logger.info(f"✓ LLM invocation completed successfully")
-        print(f"✓ LLM invocation completed successfully")
-        return result
-    except Exception as e:
-        logger.error(f"❌ Error in scheduled job: {e}", exc_info=True)
-        print(f"❌ Error in scheduled job: {e}")
-        raise
+    logger.info(f"🚀 Starting scheduled LLM job: {title}")
+    
+    # Reconstruct LLMRequest from dict
+    params = LLMRequest(**task_dict)
+    params.metadata.user_id = user_id
+    params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
+    logger.info(f"✓ Successfully reconstructed LLMRequest")
+    
+    # Initialize config and get files and todos
+    config = init_config(params, user_id)
+    files_map = config['metadata'].get('files', {})
+    todos_list = config['metadata'].get('todos', [])
+    
+    async with (
+        get_store_db() as store,
+        get_checkpoint_db() as checkpointer,
+    ):
+        try:
+            service_context = ServiceContext(
+                user_id=user_id, 
+                store=store, 
+                config=config, 
+                checkpointer=checkpointer
+            )
+            params = await service_context.llm_service.assistant(params)
+            agent: Orchestra = await construct_agent(
+                instructions=params.instructions,
+                system_prompt=params.system_prompt,
+                tools=params.tools,
+                model=params.model,
+                subagents=params.subagents,
+                checkpointer=checkpointer,
+                service_context=service_context,
+            )
+            params.input.messages[-1].model = agent.model
+            # Avoid isinstance checks with subscripted generics—use duck typing or explicit conversion
+            try:
+                # If messages are not yet LangChain messages (i.e., last one lacks 'type'), convert
+                if not hasattr(params.input.messages[-1], "type"):
+                    params.input = params.input.to_langchain_messages()
+            except Exception:
+                # Defensive fallback for malformed input
+                params.input = params.input.to_langchain_messages()
+                
+            ctx_schema = ContextSchema(model=params.model, user_id=user_id)
+            response = await agent.invoke(
+                params.input,
+                config=config, 
+                context=ctx_schema
+            )
+            logger.info(f"✓ LLM invocation completed successfully")
+            
+            files_map = {**files_map, **response.get('files', {})}
+            todos_list = [*todos_list, *response.get('todos', [])]
+            return response
+        except Exception as e:
+            logger.error(f"❌ Error in scheduled job: {e}", exc_info=True)
+            raise
+        finally:
+            if service_context.user_id and service_context.checkpointer:
+                final_state = await agent.graph.aget_state(config)
+                configurable = {
+                    **final_state.config.get("configurable", {}),
+                    **config["configurable"],
+                }
+                messages = final_state.values.get("messages", [])
+                messages[-1].model = agent.model
+                service_context.store.fields = ["messages", "files"]
+                await service_context.thread_service.update(
+                    thread_id=configurable.get("thread_id"),
+                    data={
+                        "thread_id": configurable.get("thread_id"),
+                        "checkpoint_id": configurable.get("checkpoint_id"),
+                        "assistant_id": configurable.get("assistant_id"),
+                        "project_id": configurable.get("project_id"),
+                        "messages": messages,
+                        "todos": todos_list,
+                        "files": files_map,
+                        "updated_at": get_time(),
+                    },
+                )
+                logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
 
 def create_job(job: Job):
@@ -93,20 +155,21 @@ def create_job(job: Job):
 
 
 class ScheduleService:
-    def __init__(self, user_id: str = None):
+    def __init__(self, user_id: str = None, store: BaseStore = None):
         self.user_id = user_id
+        self.store = store or get_store_in_memory()
         self.scheduler = SCHEDULER
 
     def get_jobs(self) -> list[Schedule]:
         user_schedules = []
-        for schedule in self.scheduler.get_jobs():
-            if schedule.kwargs["metadata"]["user_id"] == self.user_id:
+        for job in self.scheduler.get_jobs():
+            if job.kwargs.get("user_id") == self.user_id:
                 schedule = Schedule(
-                    id=schedule.id,
-                    title=schedule.kwargs["metadata"].get("title", "Untitled Schedule"),
-                    trigger=JobTrigger.from_trigger(schedule.trigger),
-                    task=schedule.args[0],
-                    next_run_time=schedule.next_run_time,
+                    id=job.id,
+                    title=job.kwargs.get("title", "Untitled Schedule"),
+                    trigger=JobTrigger.from_trigger(job.trigger),
+                    task=job.args[0],
+                    next_run_time=job.next_run_time,
                 )
                 user_schedules.append(schedule)
         user_schedules.sort(key=lambda x: x.next_run_time, reverse=True)
@@ -114,14 +177,14 @@ class ScheduleService:
 
     def get_job(self, job_id: str) -> Schedule:
         job = self.scheduler.get_job(job_id)
-        if job.kwargs["metadata"]["user_id"] != self.user_id:
+        if job.kwargs.get("user_id") != self.user_id:
             raise HTTPException(
                 status_code=403, detail="Not authorized to access this job"
             )
 
         schedule = Schedule(
             id=job.id,
-            title=job.kwargs["metadata"].get("title", "Untitled Schedule"),
+            title=job.kwargs.get("title", "Untitled Schedule"),
             trigger=JobTrigger.from_trigger(job.trigger),
             task=job.args[0],
             next_run_time=job.next_run_time,
@@ -132,13 +195,13 @@ class ScheduleService:
         job_id = str(uuid4())
         trigger = create_trigger(job.trigger)
 
-        # Use wrapper function and pass dict for proper serialization
+        # Use standalone function for proper pickling by APScheduler
         scheduled_job = self.scheduler.add_job(
             id=job_id,
-            func=scheduled_llm_invoke_wrapper,
+            func=scheduled_llm_invoke,
             trigger=trigger,
             args=[job.task.model_dump()],
-            kwargs={"metadata": {"user_id": self.user_id, "title": job.title}},
+            kwargs={"user_id": self.user_id, "title": job.title},
             replace_existing=True,
             misfire_grace_time=300,
         )
@@ -162,7 +225,7 @@ class ScheduleService:
         if not existing_job:
             raise HTTPException(status_code=404, detail="Schedule not found")
 
-        if existing_job.kwargs["metadata"]["user_id"] != self.user_id:
+        if existing_job.kwargs.get("user_id") != self.user_id:
             raise HTTPException(
                 status_code=403, detail="Not authorized to access this job"
             )
@@ -176,11 +239,11 @@ class ScheduleService:
         if job_update.task is not None:
             update_params["args"] = [job_update.task.model_dump()]
 
-        # Handle title update by updating kwargs metadata
+        # Handle title update by updating kwargs
         if job_update.title is not None:
-            current_metadata = existing_job.kwargs.get("metadata", {})
-            current_metadata["title"] = job_update.title
-            update_params["kwargs"] = {"metadata": current_metadata}
+            current_kwargs = existing_job.kwargs.copy()
+            current_kwargs["title"] = job_update.title
+            update_params["kwargs"] = current_kwargs
 
         # Update the job using modify_job
         self.scheduler.modify_job(job_id, **update_params)
@@ -204,7 +267,7 @@ class ScheduleService:
     def delete_job(self, job_id: str) -> None:
         try:
             job = self.scheduler.get_job(job_id)
-            if job.kwargs["metadata"]["user_id"] != self.user_id:
+            if job.kwargs.get("user_id") != self.user_id:
                 raise HTTPException(
                     status_code=403, detail="Not authorized to access this job"
                 )

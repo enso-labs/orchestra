@@ -8,6 +8,7 @@ from src.schemas.entities.llm import *
 from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.services.db import get_store_in_memory
+from src.schemas.entities.llm import Assistant
 
 
 class AssistantService:

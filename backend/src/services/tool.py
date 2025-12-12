@@ -5,11 +5,10 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.store.base import BaseStore
 
 from src.schemas.entities.a2a import A2AServer, McpServer
-from src.tools import TOOL_LIBRARY, default_tools, init_tool_library
+from src.tools import init_tool_library
 from src.utils.a2a import A2ACardResolver
-from src.schemas.entities import ArcadeConfig
+# from src.schemas.entities import ArcadeConfig
 from src.utils.logger import logger
-from src.constants import ARCADE_API_KEY
 from src.utils.tools import attach_tool_details, create_api_tool
 from src.services.db import get_store_in_memory
 from src.repos.tool_repo import ToolRepo
@@ -79,28 +78,28 @@ class ToolService:
                 logger.error(f"Error fetching agent card for {server.base_url}: {e}")
         return agent_cards
 
-    @staticmethod
-    def arcade_tools(
-        arcade: ArcadeConfig,
-    ) -> list[StructuredTool]:
-        from langchain_arcade import ArcadeToolManager
+    # @staticmethod
+    # def arcade_tools(
+    #     arcade: ArcadeConfig,
+    # ) -> list[StructuredTool]:
+    #     from langchain_arcade import ArcadeToolManager
 
-        manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
-        tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
-        return tools
+    #     manager = ArcadeToolManager(api_key=ARCADE_API_KEY)
+    #     tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
+    #     return tools
 
-    async def invoke_default_tool(self, name: str, input: dict, config: dict = None):
-        tool: StructuredTool = next(
-            (tool for tool in TOOL_LIBRARY if tool.name == name), None
-        )
-        if not tool:
-            raise ValueError(f"Tool {name} not found")
-        return await tool.ainvoke(
-            input=input,
-            config={"configurable": {"user_id": self.user_id, **config}}
-            if self.user_id
-            else None,
-        )
+    # async def invoke_default_tool(self, name: str, input: dict, config: dict = None):
+    #     tool: StructuredTool = next(
+    #         (tool for tool in TOOL_LIBRARY if tool.name == name), None
+    #     )
+    #     if not tool:
+    #         raise ValueError(f"Tool {name} not found")
+    #     return await tool.ainvoke(
+    #         input=input,
+    #         config={"configurable": {"user_id": self.user_id, **config}}
+    #         if self.user_id
+    #         else None,
+    #     )
 
     async def invoke_ephemeral_tool(self, name: str, config: dict, input: dict):
         try:
