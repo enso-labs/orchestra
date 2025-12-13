@@ -65,7 +65,7 @@ services:
       dockerfile: Dockerfile
     container_name: orchestra
     env_file:
-      - ./backend/.env
+      - ./backend/.env.docker
     ports:
       - "8000:8000"
     depends_on:
