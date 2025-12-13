@@ -78,7 +78,9 @@ def raw_html(content: str) -> str:
 
 
 def init_system_prompt(
-    system_prompt: str, config: RunnableConfig, instructions: str = None
+    system_prompt: str, 
+    config: RunnableConfig, 
+    instructions: str = None
 ) -> str:
     lines = [system_prompt]
     if instructions:

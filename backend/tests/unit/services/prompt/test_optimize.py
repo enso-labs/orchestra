@@ -81,7 +81,7 @@ trajectories = [
 
 class TestPromptOptimizeCases(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.optimizer = PromptOptimizer(ChatModels.OPENAI_GPT_5_NANO)
+        self.optimizer = PromptOptimizer(ChatModels.DEFAULT.value)
 
     @unittest.skip("Skipping test_optimize")
     async def test_optimize(self):

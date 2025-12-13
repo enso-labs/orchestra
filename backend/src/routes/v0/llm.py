@@ -171,7 +171,7 @@ async def list_models():
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "default": ChatModels.XAI_GROK_4_1_FAST.value,
+            "default": ChatModels.DEFAULT.value,
             "free": get_free_models(),
             "models": get_all_models(),
         },

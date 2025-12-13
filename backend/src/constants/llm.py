@@ -43,6 +43,9 @@ class ChatModels(str, Enum):
     if GROQ_API_KEY:
         GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b"
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
+    # Default Model
+    DEFAULT = XAI_GROK_4_1_FAST
+    LOW_COST = OPENAI_GPT_5_NANO
 
 
 def get_ollama_models():
@@ -107,4 +110,5 @@ def get_system_prompt():
         return file.read()
 
 
+DEFAULT_CHAT_MODEL = ChatModels.XAI_GROK_4_1_FAST.value
 DEFAULT_SYSTEM_PROMPT = get_system_prompt()

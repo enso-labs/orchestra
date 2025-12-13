@@ -4,6 +4,7 @@ from uuid import uuid4
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.store.base import BaseStore
 
+from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.services.tool import ToolService
 from src.schemas.entities.a2a import A2AServers
 from src.services.db import get_store_in_memory
@@ -125,6 +126,9 @@ class LLMService:
                 metadata=params.metadata,
             )
             
+        ## Protection if not defined
+        if not params.system_prompt:
+            params.system_prompt = DEFAULT_SYSTEM_PROMPT
         ### Collect all tools
         params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)
         return params

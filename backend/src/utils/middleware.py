@@ -70,17 +70,17 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
 
     # Rule 1 — Long conversation → advanced model
     if message_count > 50:
-        model = ChatModels.OPENAI_GPT_5_NANO.value
+        model = ChatModels.LOW_COST.value
         reason = "long conversation context"
     
     # Rule 2 — Complex query → advanced model
     elif any(word in last_message for word in complex_keywords):
-        model = ChatModels.XAI_GROK_4_1_FAST.value
+        model = ChatModels.DEFAULT.value
         reason = "complex reasoning or analysis query"
 
     # Default — simple question → basic model
     else:
-        model = ChatModels.XAI_GROK_4_1_FAST.value
+        model = ChatModels.DEFAULT.value
         reason = "simple query"
 
     logger.info(f"Using {model} due to {reason}(messages={message_count})")
