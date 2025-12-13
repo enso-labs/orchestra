@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from data
 from src.constants import (
     OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
@@ -107,6 +108,6 @@ def get_system_prompt():
         return file.read()
 
 
-DEFAULT_CHAT_MODEL = ChatModels.XAI_GROK_4_1_FAST.value\
+DEFAULT_CHAT_MODEL = ChatModels.XAI_GROK_4_1_FAST.value
 DEFAULT_CHAT_MODEL_LOW_COST = ChatModels.OPENAI_GPT_5_NANO.value
 DEFAULT_SYSTEM_PROMPT = get_system_prompt()
