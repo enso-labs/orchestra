@@ -17,6 +17,7 @@ backend/src/public
 **/.worktrees/
 **/.playwright*
 **/.plans*
+**/.backups
 
 **/.claude/
 **/.cursor/

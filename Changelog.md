@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc119
 
 ### Changed
+  - feat/574-move-to-mongo (2025-12-13)
 
 ### Fixed
 
