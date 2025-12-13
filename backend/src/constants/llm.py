@@ -1,6 +1,5 @@
 import os
 from enum import Enum
-from data
 from src.constants import (
     OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
