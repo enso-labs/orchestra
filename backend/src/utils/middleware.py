@@ -3,7 +3,7 @@ from langchain.agents import AgentState
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
-from src.constants.llm import ChatModels
+from src.constants.llm import ChatModels, DefaultModels
 from src.schemas.contexts import ContextSchema
 from langchain.agents.middleware import (
     PIIMiddleware,
@@ -70,17 +70,17 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
 
     # Rule 1 — Long conversation → advanced model
     if message_count > 50:
-        model = ChatModels.LOW_COST.value
+        model = DefaultModels.LOW_COST.value
         reason = "long conversation context"
     
     # Rule 2 — Complex query → advanced model
     elif any(word in last_message for word in complex_keywords):
-        model = ChatModels.DEFAULT.value
+        model = DefaultModels.DEFAULT.value
         reason = "complex reasoning or analysis query"
 
     # Default — simple question → basic model
     else:
-        model = ChatModels.DEFAULT.value
+        model = DefaultModels.DEFAULT.value
         reason = "simple query"
 
     logger.info(f"Using {model} due to {reason}(messages={message_count})")

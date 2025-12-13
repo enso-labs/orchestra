@@ -12,7 +12,7 @@ from langmem.prompts.types import (
 )
 from langmem import Prompt, create_prompt_optimizer, create_multi_prompt_optimizer
 
-from src.constants.llm import ChatModels
+from src.constants.llm import ChatModels, DefaultModels
 
 
 DEFAULT_TRAJECTORIES = [
@@ -63,7 +63,7 @@ DEFAULT_PROMPTS = [
 class PromptOptimizerRequest(BaseModel):
     trajectories: List[dict] = Field(default=DEFAULT_TRAJECTORIES)
     prompt: str | Prompt = Field(default=DEFAULT_PROMPTS[1])
-    model: str = Field(default=ChatModels.DEFAULT.value)
+    model: str = Field(default=DefaultModels.DEFAULT.value)
     kind: Optional[str] = Field(default="gradient")
     config: Optional[dict] = Field(
         default={"min_reflection_steps": 1, "max_reflection_steps": 3}
