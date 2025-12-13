@@ -3,7 +3,7 @@ from langchain.agents import AgentState
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
-from src.constants.llm import ChatModels
+from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_CHAT_MODEL_LOW_COST
 from src.schemas.contexts import ContextSchema
 from langchain.agents.middleware import (
     PIIMiddleware,
@@ -70,17 +70,17 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
 
     # Rule 1 — Long conversation → advanced model
     if message_count > 50:
-        model = ChatModels.OPENAI_GPT_5_NANO.value
+        model = DEFAULT_CHAT_MODEL_LOW_COST
         reason = "long conversation context"
     
     # Rule 2 — Complex query → advanced model
     elif any(word in last_message for word in complex_keywords):
-        model = ChatModels.XAI_GROK_4_1_FAST.value
+        model = DEFAULT_CHAT_MODEL
         reason = "complex reasoning or analysis query"
 
     # Default — simple question → basic model
     else:
-        model = ChatModels.XAI_GROK_4_1_FAST.value
+        model = DEFAULT_CHAT_MODEL
         reason = "simple query"
 
     logger.info(f"Using {model} due to {reason}(messages={message_count})")

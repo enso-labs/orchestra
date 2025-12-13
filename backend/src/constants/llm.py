@@ -107,4 +107,36 @@ def get_system_prompt():
         return file.read()
 
 
+def get_default_chat_model():
+    """Get the default chat model based on available API keys."""
+    if XAI_API_KEY:
+        return ChatModels.XAI_GROK_4_1_FAST.value
+    if OPENAI_API_KEY:
+        return ChatModels.OPENAI_GPT_4_1_MINI.value
+    if ANTHROPIC_API_KEY:
+        return ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value
+    if GOOGLE_API_KEY:
+        return ChatModels.GOOGLE_GEMINI_2_5_FLASH.value
+    if GROQ_API_KEY:
+        return ChatModels.GROQ_LLAMA_3_3_70B_VERSATILE.value
+    return None
+
+
+def get_default_low_cost_model():
+    """Get the default low-cost chat model based on available API keys."""
+    if OPENAI_API_KEY:
+        return ChatModels.OPENAI_GPT_5_NANO.value
+    if XAI_API_KEY:
+        return ChatModels.XAI_GROK_4_1_FAST.value
+    if ANTHROPIC_API_KEY:
+        return ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value
+    if GOOGLE_API_KEY:
+        return ChatModels.GOOGLE_GEMINI_FLASH_LITE_LATEST.value
+    if GROQ_API_KEY:
+        return ChatModels.GROQ_OPENAI_GPT_OSS_120B.value
+    return None
+
+
+DEFAULT_CHAT_MODEL = get_default_chat_model()
+DEFAULT_CHAT_MODEL_LOW_COST = get_default_low_cost_model()
 DEFAULT_SYSTEM_PROMPT = get_system_prompt()

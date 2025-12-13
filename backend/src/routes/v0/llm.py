@@ -31,7 +31,7 @@ from src.utils.llm import audio_to_text
 from src.flows import init_config
 from src.services.db import get_store
 from src.utils.rate_limit import limiter
-from src.constants.llm import ChatModels, get_all_models, get_free_models
+from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -171,7 +171,7 @@ async def list_models():
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "default": ChatModels.XAI_GROK_4_1_FAST.value,
+            "default": DEFAULT_CHAT_MODEL,
             "free": get_free_models(),
             "models": get_all_models(),
         },
