@@ -4,7 +4,7 @@ import unittest
 
 from langmem.prompts.types import AnnotatedTrajectory, MultiPromptOptimizerInput, Prompt
 from src.services.prompt.optimize import PromptOptimizer
-from src.constants.llm import DEFAULT_CHAT_MODEL, ChatModels, DefaultModels
+from src.constants.llm import DEFAULT_CHAT_MODEL
 
 
 prompts = [

@@ -31,7 +31,7 @@ from src.utils.llm import audio_to_text
 from src.flows import init_config
 from src.services.db import get_store
 from src.utils.rate_limit import limiter
-from src.constants.llm import DEFAULT_CHAT_MODEL, ChatModels, DefaultModels, get_all_models, get_free_models
+from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 

@@ -12,7 +12,7 @@ from langmem.prompts.types import (
 )
 from langmem import Prompt, create_prompt_optimizer, create_multi_prompt_optimizer
 
-from src.constants.llm import DEFAULT_CHAT_MODEL, ChatModels, DefaultModels
+from src.constants.llm import DEFAULT_CHAT_MODEL, ChatModels
 
 
 DEFAULT_TRAJECTORIES = [
