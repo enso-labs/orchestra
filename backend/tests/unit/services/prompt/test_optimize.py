@@ -4,7 +4,7 @@ import unittest
 
 from langmem.prompts.types import AnnotatedTrajectory, MultiPromptOptimizerInput, Prompt
 from src.services.prompt.optimize import PromptOptimizer
-from src.constants.llm import ChatModels, DefaultModels
+from src.constants.llm import DEFAULT_CHAT_MODEL, ChatModels, DefaultModels
 
 
 prompts = [
@@ -81,7 +81,7 @@ trajectories = [
 
 class TestPromptOptimizeCases(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.optimizer = PromptOptimizer(DefaultModels.DEFAULT.value)
+        self.optimizer = PromptOptimizer(DEFAULT_CHAT_MODEL)
 
     @unittest.skip("Skipping test_optimize")
     async def test_optimize(self):
