@@ -1,5 +1,9 @@
 name: Build
 
+permissions:
+    contents: read
+    packages: write
+
 on:
     push:
         tags:
@@ -101,8 +105,8 @@ jobs:
             ###############################################################
             - name: Copy Docker README and LICENSE to backend
               run: |
-                cp docker/README.md backend/README.md
-                cp LICENSE backend/LICENSE
+                  cp docker/README.md backend/README.md
+                  cp LICENSE backend/LICENSE
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -112,7 +116,7 @@ jobs:
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
+                  password: ${{ github.token }}
 
             - name: Build and push Docker image
               working-directory: ./backend
