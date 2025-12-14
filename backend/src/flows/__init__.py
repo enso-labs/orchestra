@@ -156,20 +156,25 @@ async def init_memories(system_prompt: str, tools: list[BaseTool]):
 
 def init_config(
     params: LLMRequest,
-    user_id: ProtectedUser | None = None,
+    user_id: str | None = None,
     max_concurrency: int = 4,
     recursion_limit: int = 500,
 ) -> RunnableConfig:
+    metadata = params.metadata.model_dump()
+    if user_id:
+        metadata["user_id"] = user_id
+    if not metadata.get("thread_id"):
+        metadata["thread_id"] = str(uuid4())
     return RunnableConfig(
         configurable={
             "user_id": user_id,
-            "thread_id": params.metadata.thread_id or str(uuid4()),
-            "assistant_id": params.metadata.assistant_id or None,
-            "project_id": params.metadata.project_id or None,
+            "thread_id": metadata.get("thread_id"),
+            "assistant_id": metadata.get("assistant_id", None),
+            "project_id": metadata.get("project_id", None),
         },
         max_concurrency=max_concurrency,
         recursion_limit=recursion_limit,
-        metadata={**params.metadata.model_dump()},
+        metadata=metadata,
     )
 
 

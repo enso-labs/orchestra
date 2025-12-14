@@ -89,6 +89,8 @@ class ThreadRepo(BaseRepo):
 
     async def get(self, thread_id: str) -> dict:
         item = await self._get(thread_id)
+        if not item:
+            return None
         return self._format(item)
 
     async def delete(self, thread_id: str) -> bool:

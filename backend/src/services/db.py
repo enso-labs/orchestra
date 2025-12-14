@@ -45,11 +45,6 @@ def load_models():
     from src.schemas.models import (
         User,
         Token,
-        Agent,
-        Revision,
-        Settings,
-        Thread,
-        Server,
     )
 
     return _Base
