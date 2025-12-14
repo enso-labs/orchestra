@@ -1,0 +1,44 @@
+# Exclude everything except backend/ and docker/README.md
+*
+!backend/
+!docker/README.md
+
+# Backend exclusions
+backend/.env*
+backend/logs/
+backend/tests/
+backend/seeds/
+backend/sandbox/
+backend/scripts/
+backend/langgraph.json
+backend/.dockerignore
+backend/.cursorignore
+backend/.playwright-mcp/
+backend/.worktrees/
+backend/AGENTS.md
+backend/CLAUDE.md
+backend/.claude/
+backend/.cursor/
+backend/Dockerfile
+backend/requirements-dev.txt
+backend/.example.env
+backend/examples/
+backend/openspec/
+backend/.plans/
+backend/.venv/
+backend/Makefile
+backend/.vscode/
+backend/.pytest_cache/
+backend/.cursor*
+backend/**/__pycache__
+backend/*.ipynb
+backend/.DS_Store
+backend/docs/
+backend/.backups/
+backend/pytest*
+backend/pysandbox/
+
+# General exclusions
+**/.git
+**/node_modules/
+**/.DS_Store

@@ -17,19 +17,23 @@ ENV PATH="$DENO_INSTALL/bin:$PATH"
 WORKDIR /app
 
 # Copy only dep files first for better caching
-COPY pyproject.toml uv.lock* /app/
+COPY backend/pyproject.toml backend/uv.lock* /app/
 
 # Install deps
 RUN uv sync --frozen --no-cache --no-dev
 
 # Copy app code
-COPY . /app
+COPY backend/ /app/
+
+# Copy Docker README for registry display
+COPY docker/README.md /app/README.md
 
 # Compile all .py files to .pyc (optimized bytecode)
 RUN python -m compileall -b -f -q /app
 
 # Remove all .py source files, keep only .pyc
-RUN find /app -type f -name "*.py" -delete
+# Exclude migrations/ directory - Alembic requires .py files
+RUN find /app -type f -name "*.py" ! -path "/app/migrations/*" -delete
 
 # =============================================================================
 # Stage 2: Runtime - Ship only .pyc bytecode
