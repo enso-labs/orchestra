@@ -37,7 +37,9 @@ async def search_assistants(
         return {"assistants": [assistant.model_dump()]}
     # If id is not provided, return all assistants
     assistants: list[Assistant] = await service_context.assistant_service.search()
-    return {"assistants": [assistant.model_dump() for assistant in assistants]}
+    if assistants:
+        return {"assistants": [assistant.model_dump() for assistant in assistants]}
+    return {"assistants": []}
 
 
 @router.post("", name="Create Assistant")

@@ -24,10 +24,13 @@ APP_SECRET_KEY = os.getenv("APP_SECRET_KEY", "this-is-a-secret-key")
 APP_LOG_LEVEL = os.getenv("APP_LOG_LEVEL", "INFO").upper()
 
 # Database
-DB_URI = os.getenv(
-    "POSTGRES_CONNECTION_STRING",
-    "postgresql://admin:test1234@localhost:5432/lg_template_dev?sslmode=disable",
-)
+def get_db_uri():
+    uri = os.getenv("POSTGRES_CONNECTION_STRING")
+    if not uri:
+        raise ValueError("POSTGRES_CONNECTION_STRING is not set in the environment variables")
+    return uri
+
+DB_URI = get_db_uri()
 
 # Database Connection Pool Settings
 DB_POOL_MIN_SIZE = int(os.getenv("DB_POOL_MIN_SIZE", "5"))

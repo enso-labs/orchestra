@@ -349,6 +349,17 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 				>
 					{virtualizer.getVirtualItems().map((virtualRow) => {
 						const message = messages[virtualRow.index];
+						if (message.type === "ai") {
+							// Go backwards to find the nearest previous human message
+							for (let i = virtualRow.index - 1; i >= 0; i--) {
+								const prevMessage = messages[i];
+								if (prevMessage && prevMessage.type === "human") {
+									// Attach human's model to this AI message
+									message.model = prevMessage.model;
+									break;
+								}
+							}
+						}
 						return (
 							<div
 								key={message.id}

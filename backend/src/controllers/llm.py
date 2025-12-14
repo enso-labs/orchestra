@@ -16,10 +16,10 @@ from src.utils.logger import logger
 from src.utils.format import get_time
 
 class LLMController:
-	def __init__(self, user: ProtectedUser, store: BaseStore, config: RunnableConfig):
-		self.user = user
+	def __init__(self, user_id: str | None, store: BaseStore, config: RunnableConfig):
+		self.user_id = user_id
 		self.store = store
-		self.service_context = ServiceContext(user_id=self.user.id, store=self.store, config=config)
+		self.service_context = ServiceContext(user_id=self.user_id, store=self.store, config=config)
 	
 	async def _update_store(self, agent: Orchestra, config: RunnableConfig) -> None:
 		final_state = await agent.graph.aget_state(config)
@@ -45,7 +45,7 @@ class LLMController:
   
 	async def llm_invoke(self, params: LLMRequest):
 		try:
-			config = init_config(params, self.user.id)
+			config = init_config(params, user_id=self.user_id)
 			params = await self.service_context.llm_service.assistant(params)
 			async with get_checkpoint_db() as checkpointer:
 				agent: Orchestra = await construct_agent(
@@ -56,7 +56,7 @@ class LLMController:
 				response = await agent.invoke(
         			params.input, 
            			config=config, 
-              		context=ContextSchema(model=params.model, user_id=self.user.id)
+              		context=ContextSchema(model=params.model, user_id=self.user_id)
                 )
 				return response
 		except Exception as e:

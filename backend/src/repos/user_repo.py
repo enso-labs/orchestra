@@ -4,11 +4,9 @@ from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.schemas.entities.auth import UserCreate
-from src.schemas.models import Thread, User, Token
+from src.schemas.models import User, Token
 from src.constants import APP_SECRET_KEY
 from src.utils.logger import logger
-from sqlalchemy import Column
-
 
 class UserRepo:
     def __init__(self, db: AsyncSession, user_id: str | None = None):
@@ -130,25 +128,3 @@ class UserRepo:
             if token:
                 return Token.decrypt_value(token.value, APP_SECRET_KEY)
         return None
-
-    async def threads(self, page=1, per_page=20, sort_order="desc", agent=None):
-        """Get all threads for a user."""
-        try:
-            query = select(Thread).filter(Thread.user == self.user_id)
-
-            if agent:
-                query = query.filter(Thread.agent == agent)
-
-            # Apply sort order
-            if sort_order.lower() == "asc":
-                query = query.order_by(Thread.created_at.asc())
-            else:
-                query = query.order_by(Thread.created_at.desc())
-
-            query = query.offset((page - 1) * per_page).limit(per_page)
-
-            result = await self.db.execute(query)
-            return result.scalars().all()
-        except Exception as e:
-            logger.exception(f"Failed to list threads: {str(e)}")
-            return []

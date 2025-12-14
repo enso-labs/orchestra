@@ -105,16 +105,27 @@ class LLMService:
                     filtered_tools.append(structured_tool)
         return filtered_tools
     
+    def default_system_prompt(self, item: LLMRequest|Assistant) -> str:
+        if not item.system_prompt:
+            return DEFAULT_SYSTEM_PROMPT
+        return item.system_prompt
+    
     async def assistant(
         self, 
         params: LLMRequest, 
     ) -> LLMRequest:
         params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         params.input.to_langchain_messages()
+        ## Protection if not defined
+        if not params.system_prompt:
+            params.system_prompt = DEFAULT_SYSTEM_PROMPT
+        
+        ## Auto Assign Assistant if ID is provided
         if params.metadata.assistant_id:
             assistant: Assistant = await self.assistant_service.get(
                 params.metadata.assistant_id
             )
+            assistant.system_prompt = self.default_system_prompt(assistant)
             assistant.tools = await self.init_tools(
                 assistant.tools, 
                 assistant.a2a, 
@@ -126,10 +137,9 @@ class LLMService:
                 metadata=params.metadata,
             )
             
-        ## Protection if not defined
-        if not params.system_prompt:
-            params.system_prompt = DEFAULT_SYSTEM_PROMPT
+        
         ### Collect all tools
+        params.system_prompt = self.default_system_prompt(params)
         params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)
         return params
         
