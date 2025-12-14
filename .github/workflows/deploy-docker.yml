@@ -24,8 +24,8 @@ jobs:
                   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
                   SSH_HOST: ${{ secrets.SSH_HOST }}
                   SSH_USER: ${{ secrets.SSH_USER }}
-                  GHCR_USERNAME: ${{ github.actor }}
-                  GHCR_TOKEN: ${{ github.token }}
+                  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME || github.actor }}
+                  GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
                   GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/orchestra
               run: |
                   # ---------------------------------------------------
