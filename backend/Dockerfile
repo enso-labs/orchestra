@@ -1,31 +1,21 @@
 # =============================================================================
 # Stage 1: Build - Install deps and compile .py to .pyc
 # =============================================================================
-FROM cgr.dev/chainguard/wolfi-base AS builder
+FROM python:3.12-slim-bookworm AS builder
 
-ARG PYTHON_VERSION=3.12
+# Install curl and unzip (required for Deno install)
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip && rm -rf /var/lib/apt/lists/*
 
-ENV LANG=C.UTF-8 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH"
-
-WORKDIR /app
-
-# Install Python, pip, and build essentials
-RUN apk update && apk add --no-cache \
-    python-${PYTHON_VERSION} \
-    py${PYTHON_VERSION}-pip \
-    curl \
-    unzip
-
-# Install Deno (required by langchain-sandbox)
+# Install Deno to a shared location
 ENV DENO_INSTALL="/opt/deno"
 RUN mkdir -p $DENO_INSTALL/bin && \
     curl -fsSL https://deno.land/install.sh | DENO_INSTALL=$DENO_INSTALL sh
 
-# Copy uv CLI
+# uv CLI
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
+
+ENV PATH="$DENO_INSTALL/bin:$PATH"
+WORKDIR /app
 
 # Copy only dep files first for better caching
 COPY pyproject.toml uv.lock* /app/
@@ -46,9 +36,9 @@ RUN python -m compileall -b -f -q /app
 RUN find /app -type f -name "*.py" ! -path "/app/migrations/*" -delete
 
 # =============================================================================
-# Stage 2: Runtime - Minimal distroless Python image
+# Stage 2: Runtime - Ship only .pyc bytecode (distroless)
 # =============================================================================
-FROM cgr.dev/chainguard/python:latest
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -59,6 +49,9 @@ WORKDIR /app
 
 # Copy Deno binary from builder
 COPY --from=builder /opt/deno /opt/deno
+
+# Copy uv CLI
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 
 # Copy virtual environment and compiled bytecode from builder
 COPY --from=builder /app /app

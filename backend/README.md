@@ -2,41 +2,183 @@
 
 # Enso Labs - Orchestra 🪶
 
-Docker deployment guide for the Orchestra backend.
+AI Agent Orchestrator built on LangGraph powered by [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A)
 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
 <a href="https://chat.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
 <a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](../LICENSE)
-[![DCO](https://img.shields.io/badge/DCO-1.1-yellow)](../DCO)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![DCO](https://img.shields.io/badge/DCO-1.1-yellow)](DCO)
 
 <img src="https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true">
 
 </div>
 
-This guide covers deploying the Orchestra backend using Docker. For local development, see the project root docs in `../README.md`.
+Base API infrastructure for Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A) protocols by [Enso Labs](https://enso.sh). The goal of Enso is the enrich the lives of the curious. Those who seek to buy back their time and compound their personal growth. Those who build and don't wait for IT to be built for them.
 
 ## 📖 Table of Contents
 
--   [📋 Prerequisites](#-prerequisites)
--   [🚀 Quick Start](#-quick-start)
--   [🧩 Docker Compose Services](#-docker-compose-services)
--   [🧱 Docker Compose Example](#-docker-compose-example)
--   [🏗️ Build Commands](#-build-commands)
--   [⚙️ Environment Variables](#-environment-variables)
--   [🗄️ Database Migrations](#-database-migrations)
--   [🚢 Production Considerations](#-production-considerations)
--   [🧰 Troubleshooting](#-troubleshooting)
+This project includes tools for running shell commands and Docker container operations. For detailed information, please refer to the following documentation:
+
+-   [Tools Documentation](./docs/tools/tools.md)
+-   [Docker Deployment (GHCR / Docker Compose)](#-docker-deployment-ghcr--docker-compose)
+
+## 🐳 Docker Deployment (GHCR)
+
+We publish the backend image to GitHub Container Registry (GHCR). For the full Docker/Docker Compose deployment guide (env setup, services, migrations, troubleshooting), jump to [Docker Deployment details](#-docker-deployment-ghcr--docker-compose).
+
+```bash
+docker pull ghcr.io/enso-labs/orchestra:latest
+```
 
 ## 📋 Prerequisites
+
+-   [Docker](https://docs.docker.com/engine/install/ubuntu/) Installed
+-   Python 3.11 or higher
+-   Access to OpenAI API (for GPT-4o model) or Anthropic API (for Claude 3.5 Sonnet)
+
+## 🛠️ Development
+
+1. **Environment Variables:**
+
+    Create a `.env` file in the root directory and add your API key(s):
+
+    ```bash
+    # Backend
+    cd <project-root>/backend
+    cp .example.env .env
+
+    # Frontend
+    cd <project-root>/frontend
+    cp .example.env .env
+    ```
+
+    Ensure that your `.env` file is not tracked by git by checking the `.gitignore`:
+
+2. **Start Docker Services**
+
+    Below will start the database, and the GUI for viewing the Postgres DB.
+
+    ```bash
+    cd <project-root>
+    docker compose up postgres pgadmin
+    ```
+
+3. **Setup Server Environment**
+
+    Assumes you're using [astral uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation). See `./backend/scripts` directory for other dev utilities.
+
+    ```bash
+    # Change directory
+    cd <project-root>/backend
+
+    # Generate virtualenv
+    uv venv
+
+    # Activate
+    source .venv/bin/activate
+
+    # Install
+    uv sync
+
+    # Run
+    bash scripts/dev.sh # Select "no" when prompted.
+    ```
+
+4. **Setup Client Environment**
+
+    ```bash
+    # Change Directory
+    cd <project-root>/frontend
+
+    # Install
+    npm install
+
+    # Run
+    npm run dev
+    ```
+
+## Database Migrations
+
+This project uses Alembic for database migrations. Here's how to work with migrations:
+
+### Initial Setup
+
+1. Create the database (if not exists):
+
+    ```bash
+    cd backend
+    alembic upgrade head
+    ```
+
+    ```bash
+    python -m seeds.user_seeder
+    ```
+
+2. Create new
+
+    ```bash
+    alembic revision -m "description_of_changes"
+    ```
+
+    ```bash
+    ### Appliy Next
+    alembic upgrade +1
+
+    ### Speicif revision
+    alembic upgrade <revis_id>
+
+    ### Appliy Down
+    alembic downgrade -1
+
+    ### Appliy Down
+    alembic downgrade <revis_id>
+
+    ### History
+    alembic history
+    ```
+
+### Run Playwright MCP Locally
+
+1. Start Ngrok on port 8931
+
+    ```bash
+    ngrok http 8931
+    ```
+
+2. Run MCP server
+
+    ```bash
+    npx @playwright/mcp@latest \
+    --port 8931 \
+    --executable-path $HOME/.cache/ms-playwright/chromium-<version>/chrome-linux/chrome \
+    --vision
+    ```
+
+## 🤝 Integrations
+
+-   [Configuring gcalcli](https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md)
+-   [Issues Logging into gcalcli](https://github.com/insanum/gcalcli/issues/808)
+
+## 🗺️ Roadmap
+
+-   [ ] [Human-In-The-Loop](https://langchain-ai.github.io/langgraph/how-tos/create-react-agent-hitl/#usage)
+
+---
+
+## 🐳 Docker Deployment (GHCR / Docker Compose)
+
+This section covers deploying the Orchestra backend using Docker. For local development, see the sections above.
+
+### 📋 Prerequisites
 
 -   [Docker](https://docs.docker.com/engine/install/) installed
 -   [Docker Compose](https://docs.docker.com/compose/install/) installed
 -   Access to AI provider API keys (OpenAI, Anthropic, etc.)
 
-## 🚀 Quick Start
+### 🚀 Quick Start
 
-### Using Pre-built Image
+#### Using Pre-built Image
 
 Pull the latest image from GitHub Container Registry:
 
@@ -44,7 +186,7 @@ Pull the latest image from GitHub Container Registry:
 docker pull ghcr.io/enso-labs/orchestra:latest
 ```
 
-### 1. Environment Setup
+#### 1. Environment Setup
 
 Create a `.env.docker` file in the `backend/` directory:
 
@@ -64,7 +206,7 @@ SEARX_SEARCH_HOST_URL="http://search_engine:8080"
 SHELL_EXEC_SERVER_URL="http://exec_server:3005/exec"
 ```
 
-### 2. Start Services
+#### 2. Start Services
 
 From the project root directory:
 
@@ -76,14 +218,14 @@ docker compose up postgres orchestra
 docker compose up
 ```
 
-### 3. Verify Deployment
+#### 3. Verify Deployment
 
 The API will be available at `http://localhost:8000`
 
 -   API Docs: `http://localhost:8000/docs`
 -   Health Check: `http://localhost:8000/health`
 
-## 🧩 Docker Compose Services
+### 🧩 Docker Compose Services
 
 | Service         | Port      | Description                        |
 | --------------- | --------- | ---------------------------------- |
@@ -95,7 +237,7 @@ The API will be available at `http://localhost:8000`
 | `exec_server`   | 3005      | Shell execution server             |
 | `ollama`        | 11434     | Local LLM inference (requires GPU) |
 
-## 🧱 Docker Compose Example
+### 🧱 Docker Compose Example
 
 ```yaml
 services:
@@ -121,11 +263,11 @@ services:
             - postgres
 ```
 
-## 🏗️ Build Commands
+### 🏗️ Build Commands
 
-### Build with Script (Recommended)
+#### Build with Script (Recommended)
 
-The build script copies this README into the image and handles tagging:
+The build script copies the Docker deployment README into the image and handles tagging:
 
 ```bash
 # From project root
@@ -135,13 +277,13 @@ bash backend/scripts/build.sh
 bash backend/scripts/build.sh v1.0.0
 ```
 
-### Build with Docker Compose
+#### Build with Docker Compose
 
 ```bash
 docker compose build orchestra
 ```
 
-### Manual Build
+#### Manual Build
 
 ```bash
 # Copy README first, then build
@@ -150,9 +292,9 @@ cd backend
 docker build -t orchestra:local .
 ```
 
-## ⚙️ Environment Variables
+### ⚙️ Environment Variables
 
-### Application Config
+#### Application Config
 
 | Variable         | Description                          | Default       |
 | ---------------- | ------------------------------------ | ------------- |
@@ -163,13 +305,13 @@ docker build -t orchestra:local .
 | `USER_AGENT`     | User agent string for requests       | `enso-dev`    |
 | `TEST_USER_ID`   | Test user UUID                       | -             |
 
-### Database
+#### Database
 
 | Variable                     | Description                  | Default |
 | ---------------------------- | ---------------------------- | ------- |
 | `POSTGRES_CONNECTION_STRING` | PostgreSQL connection string | -       |
 
-### AI Providers (at least one required)
+#### AI Providers (at least one required)
 
 | Variable            | Description       | Default |
 | ------------------- | ----------------- | ------- |
@@ -179,7 +321,7 @@ docker build -t orchestra:local .
 | `XAI_API_KEY`       | xAI API key       | -       |
 | `OLLAMA_BASE_URL`   | Ollama server URL | -       |
 
-### Tool Config
+#### Tool Config
 
 | Variable                | Description              | Default                      |
 | ----------------------- | ------------------------ | ---------------------------- |
@@ -187,7 +329,7 @@ docker build -t orchestra:local .
 | `SHELL_EXEC_SERVER_URL` | Shell execution endpoint | `http://localhost:3005/exec` |
 | `TAVILY_API_KEY`        | Tavily search API key    | -                            |
 
-### Services (Alpha)
+#### Services (Alpha)
 
 | Variable                  | Description                 | Default |
 | ------------------------- | --------------------------- | ------- |
@@ -195,7 +337,7 @@ docker build -t orchestra:local .
 | `PRESIDIO_ANONYMIZE_HOST` | Presidio anonymize endpoint | -       |
 | `PRESIDIO_API_KEY`        | Presidio API key            | -       |
 
-### Storage
+#### Storage
 
 | Variable            | Description       | Default    |
 | ------------------- | ----------------- | ---------- |
@@ -205,7 +347,7 @@ docker build -t orchestra:local .
 | `ACCESS_SECRET_KEY` | S3 secret key     | -          |
 | `BUCKET`            | S3 bucket name    | `enso_dev` |
 
-## 🗄️ Database Migrations
+### 🗄️ Database Migrations
 
 Run migrations inside the container:
 
@@ -217,22 +359,22 @@ docker compose exec orchestra alembic upgrade head
 docker compose run --rm orchestra alembic upgrade head
 ```
 
-## 🚢 Production Considerations
+### 🚢 Production Considerations
 
-### Security
+#### Security
 
 -   Generate strong values for `APP_SECRET_KEY` and `JWT_SECRET_KEY`
 -   Use SSL/TLS termination (nginx, traefik, etc.)
 -   Restrict database access to internal networks
 -   Never expose `.env` files
 
-### Performance
+#### Performance
 
 -   Configure appropriate resource limits in `docker-compose.yml`
 -   Use a reverse proxy for load balancing
 -   Enable PostgreSQL connection pooling for high traffic
 
-### Dockerfile Features
+#### Dockerfile Features
 
 The Dockerfile uses a multi-stage build:
 
@@ -241,9 +383,9 @@ The Dockerfile uses a multi-stage build:
 
 > **Note**: Migration files (`.py`) are preserved since Alembic requires source files.
 
-## 🧰 Troubleshooting
+### 🧰 Troubleshooting
 
-### Container won't start
+#### Container won't start
 
 ```bash
 # Check logs
@@ -253,7 +395,7 @@ docker compose logs orchestra
 ls -la backend/.env.docker
 ```
 
-### Database connection failed
+#### Database connection failed
 
 ```bash
 # Ensure postgres is running
@@ -263,7 +405,7 @@ docker compose ps postgres
 docker compose logs postgres
 ```
 
-### Port already in use
+#### Port already in use
 
 ```bash
 # Check what's using the port
