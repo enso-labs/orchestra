@@ -92,7 +92,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 	if (!language && isInlineCode) {
 		return (
 			<code
-				className="rounded text-green-400 bg-green-400/10 px-1 py-0.5 text-sm font-mono"
+				className="rounded text-green-400 bg-green-400/10 px-1 py-0.5 text-sm font-mono whitespace-pre-wrap break-words"
 				{...props}
 			>
 				{children}

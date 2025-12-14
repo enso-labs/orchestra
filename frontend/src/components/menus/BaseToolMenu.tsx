@@ -12,7 +12,7 @@ import {
 import { useAgentContext } from "@/context/AgentContext";
 import ImageUpload from "../inputs/ImageUpload";
 
-const DEFAULT_AGENT_TOOLS = ["web_search", "web_scrape", "math_calculator", "think_tool"];
+const DEFAULT_AGENT_TOOLS = ["web_search", "web_scrape", "math_calculator", "think_tool", "python_sandbox"];
 
 export function BaseToolMenu() {
 	const {
@@ -68,14 +68,14 @@ export function BaseToolMenu() {
 			>
 				<DropdownMenuGroup>
 					<ImageUpload />
-					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+					{/* <DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
 					<DropdownMenuItem
 						onClick={() => setWebSearchCheck(!webSearchCheck)}
 						className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
 					>
 						<Globe className="h-12 w-12" />
 						<span>Web Search {webSearchCheck ? "✅" : "🚫"}</span>
-					</DropdownMenuItem>
+					</DropdownMenuItem> */}
 					{localStorage.getItem("enso:checkbox:pii_analyze") && (
 						<DropdownMenuItem
 							onClick={() => setPiiAnalyzeCheck(!piiAnalyzeCheck)}
