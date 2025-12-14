@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Globe, ShieldCheck, ShieldOff } from "lucide-react";
+import { Plus, ShieldCheck, ShieldOff } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -18,8 +18,6 @@ export function BaseToolMenu() {
 	const {
 		agent,
 		setAgent,
-		webSearchCheck,
-		setWebSearchCheck,
 		piiAnalyzeCheck,
 		setPiiAnalyzeCheck,
 		piiAnonymizeCheck,
@@ -30,23 +28,6 @@ export function BaseToolMenu() {
 	useEffect(() => {
 		setAgent({ ...agent, tools: [...agent.tools, ...DEFAULT_AGENT_TOOLS] });
 	}, []);
-
-	useEffect(() => {
-		localStorage.setItem("enso:tool:search", JSON.stringify(webSearchCheck));
-		if (webSearchCheck) {
-			setAgent({
-				...agent,
-				tools: [...new Set([...agent.tools, ...DEFAULT_AGENT_TOOLS])],
-			});
-		} else {
-			setAgent({
-				...agent,
-				tools: agent.tools.filter(
-					(tool: string) => !DEFAULT_AGENT_TOOLS.includes(tool),
-				),
-			});
-		}
-	}, [webSearchCheck]);
 
 	return (
 		<DropdownMenu open={open}>
@@ -68,14 +49,9 @@ export function BaseToolMenu() {
 			>
 				<DropdownMenuGroup>
 					<ImageUpload />
-					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
-					<DropdownMenuItem
-						onClick={() => setWebSearchCheck(!webSearchCheck)}
-						className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
-					>
-						<Globe className="h-12 w-12" />
-						<span>Web Search {webSearchCheck ? "✅" : "🚫"}</span>
-					</DropdownMenuItem>
+					{localStorage.getItem("enso:checkbox:pii_analyze") && (
+						<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+					)}
 					{localStorage.getItem("enso:checkbox:pii_analyze") && (
 						<DropdownMenuItem
 							onClick={() => setPiiAnalyzeCheck(!piiAnalyzeCheck)}
