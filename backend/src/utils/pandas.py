@@ -33,6 +33,7 @@ def drop_columns(df: pd.DataFrame, patterns: list[str]) -> pd.DataFrame:
     # Drop all matching columns
     return df.drop(columns=list(cols_to_drop), errors="ignore")
 
+
 def df_to_serializable_records(df: pd.DataFrame):
     df_copy = df.copy()
     for col in df_copy.columns:

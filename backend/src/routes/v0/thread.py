@@ -12,7 +12,11 @@ from src.schemas.models import ProtectedUser
 from src.services.db import get_store, get_checkpoint_db
 from src.utils.auth import verify_credentials
 from langgraph.store.postgres import AsyncPostgresStore
-from langgraph.checkpoint.base import empty_checkpoint, CheckpointMetadata, ChannelVersions
+from langgraph.checkpoint.base import (
+    empty_checkpoint,
+    CheckpointMetadata,
+    ChannelVersions,
+)
 
 from src.utils.messages import from_message_to_dict
 
@@ -54,6 +58,7 @@ async def search_threads(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
 
 @router.post("/threads/search/semantic", name="Semantic Search Over Threads")
 async def semantic_search_threads(
@@ -117,6 +122,7 @@ async def semantic_search_threads(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
+
 @router.post("/threads", name="Create Thread")
 async def create_thread(
     thread: Thread = Body(openapi_examples=Examples.THREAD_CREATE_EXAMPLES),
@@ -127,15 +133,16 @@ async def create_thread(
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(
                 user_id=user.id, store=store, checkpointer=checkpointer
-            )            
-            assistant_id = thread.metadata.get('assistant_id', None)
+            )
+            assistant_id = thread.metadata.get("assistant_id", None)
             if assistant_id:
                 assistant = await service_context.assistant_service.get(assistant_id)
                 if not assistant:
                     raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found"
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Assistant not found",
                     )
-            
+
             thread.id = str(uuid.uuid4())
             checkpoint = empty_checkpoint()
             await service_context.thread_service.update(
@@ -144,23 +151,23 @@ async def create_thread(
             saved = await checkpointer.aput(
                 config=RunnableConfig(
                     configurable={
-                        "thread_id": thread.id, 
+                        "thread_id": thread.id,
                         "checkpoint_id": checkpoint.get("id"),
                         "checkpoint_ns": checkpoint.get("ns", ""),
                         "assistant_id": assistant_id,
                     }
-                ), 
+                ),
                 checkpoint=checkpoint,
                 metadata=CheckpointMetadata(
-                    source="input", 
+                    source="input",
                     step=-1,
                     files=thread.files,
                     todos=thread.todos,
-                    assistant_id=thread.metadata.get('assistant_id', None),
+                    assistant_id=thread.metadata.get("assistant_id", None),
                 ),
                 new_versions=ChannelVersions(),
             )
-            return saved['configurable']
+            return saved["configurable"]
     except HTTPException:
         raise
     except Exception as e:
@@ -168,7 +175,8 @@ async def create_thread(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
-        
+
+
 @router.get("/threads/{thread_id}", name="Get Thread")
 async def get_thread(
     thread_id: str,
@@ -191,7 +199,7 @@ async def get_thread(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         ) from e
-        
+
 
 @router.patch("/threads/{thread_id}", name="Update Thread")
 async def update_thread(
@@ -217,7 +225,10 @@ async def update_thread(
             update_message = f"Thread {thread_id} updated with fields: {', '.join(thread.model_dump(exclude_none=True).keys())}"
             logger.info(update_message)
             await service_context.thread_service.update(thread_id, updated_data)
-            return UJSONResponse(status_code=status.HTTP_200_OK, content={"thread_id": thread_id, "message": update_message})
+            return UJSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"thread_id": thread_id, "message": update_message},
+            )
     except HTTPException:
         raise
     except Exception as e:
@@ -225,6 +236,7 @@ async def update_thread(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
 
 @router.delete("/threads/{thread_id}", name="Delete Thread")
 async def delete_thread(

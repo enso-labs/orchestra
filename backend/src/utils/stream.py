@@ -174,8 +174,8 @@ async def stream_generator(
     service_context: ServiceContext,
     instructions: str = None,
 ):
-    files_map = config['metadata'].get('files', {})
-    todos_list = config['metadata'].get('todos', [])
+    files_map = config["metadata"].get("files", {})
+    todos_list = config["metadata"].get("todos", [])
     async with get_checkpoint_db() as checkpointer:
         try:
             agent = await construct_agent(

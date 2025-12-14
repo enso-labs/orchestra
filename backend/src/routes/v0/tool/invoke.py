@@ -41,7 +41,7 @@ async def invoke_tools(
                     target_tool = next(
                         (t for t in user_tools if t.name == tool.name), None
                     )
-                    
+
                     if target_tool:
                         result = await service.invoke_structured_tool(
                             target_tool, tool.args

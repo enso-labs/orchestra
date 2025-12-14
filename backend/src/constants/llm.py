@@ -66,7 +66,7 @@ def get_ollama_models():
 
 def get_all_models():
     from src.services.llm import llm_service  # Lazy import to avoid circular dependency
-    
+
     models = []
     if OPENAI_API_KEY:
         models.extend(llm_service.model_by_provider(provider="openai"))

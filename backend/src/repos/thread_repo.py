@@ -32,7 +32,7 @@ class ThreadRepo(BaseRepo):
     def _format(self, item: SearchItem) -> Thread:
         return Thread(
             id=item.key,
-            title=item.value.get("title", None),    
+            title=item.value.get("title", None),
             messages=item.value.get("messages", []),
             files=item.value.get("files", []),
             todos=item.value.get("todos", []),

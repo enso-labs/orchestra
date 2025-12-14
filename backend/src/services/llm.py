@@ -17,13 +17,13 @@ from src.tools import init_tool_library
 
 class LLMService:
     def __init__(
-        self, 
-        user_id: str = None, 
-        store: BaseStore = get_store_in_memory(), 
+        self,
+        user_id: str = None,
+        store: BaseStore = get_store_in_memory(),
         tool_service: ToolService = None,
         assistant_service: AssistantService = None,
         config: RunnableConfig = None,
-        ttl_seconds: int = 60 * 60 * 24
+        ttl_seconds: int = 60 * 60 * 24,
     ):  # 24 hours
         self.user_id = user_id
         self.store = store
@@ -82,10 +82,11 @@ class LLMService:
         normalized_provider = "google_genai" if provider == "google" else provider
 
         return [f"{normalized_provider}:{model}" for model in tool_models]
-    
-    
+
     async def init_tools(self, tools: list[str], a2a: dict, mcp: dict):
-        tool_map = {t.name: t for t in init_tool_library(user_id=self.user_id)}  # O(n) index
+        tool_map = {
+            t.name: t for t in init_tool_library(user_id=self.user_id)
+        }  # O(n) index
         filtered_tools = (
             A2AServers(a2a=a2a).fetch_agent_cards_as_tools(
                 self.config["configurable"].get("thread_id")
@@ -95,31 +96,32 @@ class LLMService:
         )
         if self.user_id:
             for tool in tools:
-                items = await self.tool_service.tool_repo.search(
-                    filter={"name": tool}
-                )
+                items = await self.tool_service.tool_repo.search(filter={"name": tool})
                 if items:
                     structured_tool = items[0]
                     tool_metadata = {structured_tool.name: structured_tool.metadata}
-                    self.config["metadata"] = {**tool_metadata, **self.config["metadata"]}
+                    self.config["metadata"] = {
+                        **tool_metadata,
+                        **self.config["metadata"],
+                    }
                     filtered_tools.append(structured_tool)
         return filtered_tools
-    
-    def default_system_prompt(self, item: LLMRequest|Assistant) -> str:
+
+    def default_system_prompt(self, item: LLMRequest | Assistant) -> str:
         if not item.system_prompt:
             return DEFAULT_SYSTEM_PROMPT
         return item.system_prompt
-    
+
     async def assistant(
-        self, 
-        params: LLMRequest, 
+        self,
+        params: LLMRequest,
     ) -> LLMRequest:
         params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         params.input.to_langchain_messages()
         ## Protection if not defined
         if not params.system_prompt:
             params.system_prompt = DEFAULT_SYSTEM_PROMPT
-        
+
         ## Auto Assign Assistant if ID is provided
         if params.metadata.assistant_id:
             assistant: Assistant = await self.assistant_service.get(
@@ -127,21 +129,19 @@ class LLMService:
             )
             assistant.system_prompt = self.default_system_prompt(assistant)
             assistant.tools = await self.init_tools(
-                assistant.tools, 
-                assistant.a2a, 
-                assistant.mcp
+                assistant.tools, assistant.a2a, assistant.mcp
             )
             return assistant.to_llm_request(
                 input=params.input,
                 model=params.model,
                 metadata=params.metadata,
             )
-            
-        
+
         ### Collect all tools
         params.system_prompt = self.default_system_prompt(params)
         params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)
         return params
-        
+
+
 # Make sure this is a singleton used by your app (e.g., FastAPI dependency)
 llm_service = LLMService()

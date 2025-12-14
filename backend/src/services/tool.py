@@ -7,6 +7,7 @@ from langgraph.store.base import BaseStore
 from src.schemas.entities.a2a import A2AServer, McpServer
 from src.tools import init_tool_library
 from src.utils.a2a import A2ACardResolver
+
 # from src.schemas.entities import ArcadeConfig
 from src.utils.logger import logger
 from src.utils.tools import attach_tool_details, create_api_tool
@@ -35,7 +36,9 @@ class ToolService:
                 tool: StructuredTool = attach_tool_details(tool)
                 tool_dict = tool.model_dump()
                 try:
-                    tool_dict["args_schema"] = tool_dict["args_schema"].model_json_schema()
+                    tool_dict["args_schema"] = tool_dict[
+                        "args_schema"
+                    ].model_json_schema()
                 except Exception as e:
                     logger.error(f"Error formatting args schema for {tool.name}: {e}")
                     tool_dict["args_schema"] = tool_dict.get("args_schema", None)
@@ -105,7 +108,9 @@ class ToolService:
         try:
             api_config = config.get("api_tool")
             if not api_config:
-                raise ValueError("Only 'api_tool' config is supported for ephemeral invocation")
+                raise ValueError(
+                    "Only 'api_tool' config is supported for ephemeral invocation"
+                )
 
             tool = create_api_tool(
                 name=name,

@@ -7,6 +7,7 @@ from langgraph.prebuilt import ToolRuntime
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
+
 class APIClient:
     def __init__(self, base_url: str, headers: Optional[Dict[str, str]] = None):
         self.base_url = base_url.rstrip("/")  # Normalize base (remove trailing /)
@@ -85,14 +86,19 @@ class APIClient:
 
 
 class ToolArgs(BaseModel):
-    name: str = Field(description="The name of the tool. Must be snake_case (lowercase, numbers, underscores).")
-    description: str = Field(description="The description of the tool. Provide concise formatting instructions for the tool.")
+    name: str = Field(
+        description="The name of the tool. Must be snake_case (lowercase, numbers, underscores)."
+    )
+    description: str = Field(
+        description="The description of the tool. Provide concise formatting instructions for the tool."
+    )
     base_url: str = Field(description="The base URL of the tool")
     method: str = Field(description="The method of the tool")
     endpoint: str = Field(description="The endpoint of the tool")
     args_schema: Optional[dict] = Field(description="The arguments schema of the tool")
     headers: Optional[Dict[str, str]] = Field(description="The headers of the tool")
     runtime: Any
+
 
 @tool(args_schema=ToolArgs)
 async def create_tool(
@@ -106,7 +112,7 @@ async def create_tool(
     runtime: ToolRuntime = None,
 ):
     """Create a custom API tool. If api_token is required provide a placeholder for the token like {{api_token}}.
-    
+
     Examples:
         ```python
         await create_tool(
@@ -116,7 +122,7 @@ async def create_tool(
             method="GET",
             endpoint="/info/health",
         )
-        
+
         await create_tool(
             name="create_blog_post",
             description="Use this to create a blog post.",
@@ -150,7 +156,7 @@ async def create_tool(
             },
         )
         ```
-        
+
     Args:
         name: The name of the tool to create.
         description: The description of the tool to create.
@@ -162,32 +168,40 @@ async def create_tool(
     """
     try:
         from src.repos.tool_repo import APIConfig, SavedTool, ToolConfig, ToolRepo
+
         user_id = runtime.context.user_id
         if not user_id:
             raise ValueError("User ID is required to create API tool.")
         tool_repo = ToolRepo(user_id=user_id, store=runtime.store)
-        await tool_repo.create(SavedTool(
-            name=name,
-            description=description,
-            type="api",
-            config=ToolConfig(
-                api_tool=APIConfig(
-                    base_url=base_url,
-                    method=method,
-                    endpoint=endpoint,
-                    args_schema=args_schema,
-                    headers=headers,
-                )
+        await tool_repo.create(
+            SavedTool(
+                name=name,
+                description=description,
+                type="api",
+                config=ToolConfig(
+                    api_tool=APIConfig(
+                        base_url=base_url,
+                        method=method,
+                        endpoint=endpoint,
+                        args_schema=args_schema,
+                        headers=headers,
+                    )
+                ),
             )
-        ))
+        )
         return f"API tool {name} created successfully."
     except Exception as e:
         logging.error(f"Error creating API tool {name}: {e}")
         return f"Error creating API tool {name}: {e}"
 
+
 class ToolArgs(BaseModel):
-    name: str = Field(description="The name of the tool. Must be snake_case (lowercase, numbers, underscores).")
-    description: str = Field(description="The description of the tool. Provide concise formatting instructions for the tool.")
+    name: str = Field(
+        description="The name of the tool. Must be snake_case (lowercase, numbers, underscores)."
+    )
+    description: str = Field(
+        description="The description of the tool. Provide concise formatting instructions for the tool."
+    )
     base_url: str = Field(description="The base URL of the tool")
     method: str = Field(description="The method of the tool")
     endpoint: str = Field(description="The endpoint of the tool")
@@ -208,7 +222,7 @@ async def edit_tool(
     runtime: ToolRuntime = None,
 ):
     """Edit a custom API tool by name.
-    
+
     Examples:
         ```python
         await create_tool(
@@ -218,7 +232,7 @@ async def edit_tool(
             method="GET",
             endpoint="/info/health",
         )
-        
+
         await create_tool(
             name="create_blog_post",
             description="Use this to create a blog post.",
@@ -252,7 +266,7 @@ async def edit_tool(
             },
         )
         ```
-        
+
     Args:
         name: The name of the tool to edit.
         description: The description of the tool to edit.
@@ -264,45 +278,54 @@ async def edit_tool(
     """
     try:
         from src.repos.tool_repo import APIConfig, SavedTool, ToolConfig, ToolRepo
+
         user_id = runtime.context.user_id
         if not user_id:
             raise ValueError("User ID is required to edit API tool.")
         tool_repo = ToolRepo(user_id=user_id, store=runtime.store)
-        await tool_repo.edit(name, SavedTool(
-            name=name,
-            description=description,
-            type="api",
-            config=ToolConfig(
-                api_tool=APIConfig(
-                    base_url=base_url,
-                    method=method,
-                    endpoint=endpoint,
-                    args_schema=args_schema,
-                    headers=headers,
-                )
-            )
-        ))
+        await tool_repo.edit(
+            name,
+            SavedTool(
+                name=name,
+                description=description,
+                type="api",
+                config=ToolConfig(
+                    api_tool=APIConfig(
+                        base_url=base_url,
+                        method=method,
+                        endpoint=endpoint,
+                        args_schema=args_schema,
+                        headers=headers,
+                    )
+                ),
+            ),
+        )
         return f"API tool {name} edited successfully."
     except Exception as e:
         logging.error(f"Error editing API tool {name}: {e}")
-        return f"Error editing API tool {name}: {e}"    
-    
+        return f"Error editing API tool {name}: {e}"
+
+
 class GetToolInfoArgs(BaseModel):
-    name: str = Field(description="The name of the tool. Must be snake_case (lowercase, numbers, underscores).")
+    name: str = Field(
+        description="The name of the tool. Must be snake_case (lowercase, numbers, underscores)."
+    )
     runtime: Any = None
+
 
 @tool(args_schema=GetToolInfoArgs)
 async def get_tool_info(name: str, runtime: ToolRuntime = None):
     """Get the information of a tool by name."""
     from src.repos.tool_repo import ToolRepo
+
     user_id = runtime.context.user_id
     if not user_id:
         raise ValueError("User ID is required to get tool information.")
     tool_repo = ToolRepo(user_id=user_id, store=runtime.store)
     tool = await tool_repo.search(filter={"name": name})
     return ujson.dumps(tool)
-    
-    
+
+
 API_TOOLS = [
     create_tool,
     edit_tool,

@@ -36,31 +36,40 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
 
 
 def mount_static_router(app: FastAPI):
-    app.mount("/docs", StaticFiles(directory="src/public/docs", html=True), name="docs")
-    app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
+    if os.path.exists("src/public/docs"):
+        app.mount(
+            "/docs", StaticFiles(directory="src/public/docs", html=True), name="docs"
+        )
+    if os.path.exists("src/public/assets"):
+        app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
     if os.path.exists("src/public/icons"):
         app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
 
-    @app.get("/{filename:path}", include_in_schema=False)
-    async def serve_static_or_index(filename: str, request: Request):
-        # List of static files to check for at the root
-        static_files = [
-            "manifest.json",
-            "sw.js",
-            "favicon.ico",
-            "robots.txt",
-            "manifest.webmanifest",
-        ]
+    # Only mount SPA catch-all if index.html exists
+    if os.path.exists("src/public/index.html"):
 
-        # If the request is for a known static file and it exists, serve it
-        if filename in static_files and os.path.exists(f"src/public/{filename}"):
-            return FileResponse(f"src/public/{filename}")
+        @app.get("/{filename:path}", include_in_schema=False)
+        async def serve_static_or_index(filename: str, request: Request):
+            # List of static files to check for at the root
+            static_files = [
+                "manifest.json",
+                "sw.js",
+                "favicon.ico",
+                "robots.txt",
+                "manifest.webmanifest",
+            ]
 
-        # For /icons/* paths, check if the file exists
-        if filename.startswith("icons/") and os.path.exists(f"src/public/{filename}"):
-            return FileResponse(f"src/public/{filename}")
+            # If the request is for a known static file and it exists, serve it
+            if filename in static_files and os.path.exists(f"src/public/{filename}"):
+                return FileResponse(f"src/public/{filename}")
 
-        # For all other routes, serve the index.html for SPA routing
-        return FileResponse("src/public/index.html")
+            # For /icons/* paths, check if the file exists
+            if filename.startswith("icons/") and os.path.exists(
+                f"src/public/{filename}"
+            ):
+                return FileResponse(f"src/public/{filename}")
+
+            # For all other routes, serve the index.html for SPA routing
+            return FileResponse("src/public/index.html")
 
     return app

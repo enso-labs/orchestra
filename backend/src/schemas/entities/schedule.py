@@ -135,7 +135,8 @@ class ScheduleCreate(BaseModel):
     )
     trigger: JobTrigger
     task: LLMRequest
-    
+
+
 class ScheduleUpdate(BaseModel):
     title: Optional[str] = Field(
         None,

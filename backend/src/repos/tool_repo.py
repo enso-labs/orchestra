@@ -82,7 +82,9 @@ class APIConfig(BaseModel):
                 # If this is a schema field with a "type"
                 if "type" in coerced and isinstance(coerced["type"], str):
                     js_type = coerced["type"].lower()
-                    coerced["type"] = type_mapping.get(js_type, coerced["type"])  # fallback to original
+                    coerced["type"] = type_mapping.get(
+                        js_type, coerced["type"]
+                    )  # fallback to original
                 # Recurse into nested schemas
                 for key, value in coerced.items():
                     if isinstance(value, dict):
@@ -102,23 +104,32 @@ class MCPConfig(BaseModel):
     transport: Literal["sse", "streamable_http", "stdio"]
     url: str
     headers: dict[str, str]
-    
+
+
 class A2AConfig(BaseModel):
     base_url: str
     agent_card_path: str
 
+
 class ToolConfig(BaseModel):
     base_tool: Optional[str] = None
     api_tool: Optional[APIConfig] = None
-    mcp_tool: Optional[dict[str, dict]] = None  # mcp_tool is always a dict (after MCPConfig.model_dump)
+    mcp_tool: Optional[dict[str, dict]] = (
+        None  # mcp_tool is always a dict (after MCPConfig.model_dump)
+    )
     a2a_tool: Optional[dict[str, A2AConfig]] = None
 
     @staticmethod
-    def mcp_tool_as_dict(mcp_tool: Optional[dict[str, MCPConfig]]) -> Optional[dict[str, dict]]:
+    def mcp_tool_as_dict(
+        mcp_tool: Optional[dict[str, MCPConfig]],
+    ) -> Optional[dict[str, dict]]:
         if mcp_tool is None:
             return None
         # Return a dict where values are model_dump() representations of MCPConfig
-        return {k: v.model_dump() if isinstance(v, MCPConfig) else v for k, v in mcp_tool.items()}
+        return {
+            k: v.model_dump() if isinstance(v, MCPConfig) else v
+            for k, v in mcp_tool.items()
+        }
 
     def dict(self, *args, **kwargs):
         data = super().dict(*args, **kwargs)
@@ -161,8 +172,7 @@ class SavedTool(BaseModel):
     def __get_validators__(cls):
         yield cls.validate
         yield from super().__get_validators__()
-        
-        
+
     def to_api_tool(self) -> StructuredTool:
         api_config = self.config.api_tool.model_dump()
         tool = create_api_tool(
@@ -182,7 +192,7 @@ class SavedTool(BaseModel):
         }
         tool.tags = self.tags + ["api_tool"]
         return tool
-    
+
     def to_base_tool(self) -> StructuredTool:
         found_tool = next(
             (tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None
@@ -198,7 +208,9 @@ class SavedTool(BaseModel):
         }
         return structured_tool
 
-    async def to_mcp_tools(self, server_name: Optional[str] = None) -> list[StructuredTool]:
+    async def to_mcp_tools(
+        self, server_name: Optional[str] = None
+    ) -> list[StructuredTool]:
         mcp_client = MultiServerMCPClient(self.config.mcp_tool)
         tools = await mcp_client.get_tools(server_name=server_name)
         for tool in tools:
@@ -207,13 +219,13 @@ class SavedTool(BaseModel):
                 tags.append("mcp_tool")
             tool.tags = tags
         return tools
-    
+
     async def to_a2a_tools(self, thread_id: str) -> list[StructuredTool]:
         a2a_config = self.config.a2a_tool.model_dump()
         a2a_client = A2AServers(a2a=a2a_config)
         tools = a2a_client.fetch_agent_cards_as_tools(thread_id)
         return tools
-    
+
     async def to_structured_tools(self) -> list[StructuredTool]:
         if self.type == "api":
             return [self.to_api_tool()]
@@ -252,7 +264,7 @@ class ToolRepo:
             namespace=self._get_namespace(), key=tool.name, value=tool_data, ttl=ttl
         )
         return True
-    
+
     async def edit(self, tool_name: str, tool: SavedTool):
         try:
             del tool.created_at
@@ -270,9 +282,7 @@ class ToolRepo:
             )
             return True
         except Exception as e:
-            logger.exception(
-                f"Error updating {self._get_store_key()} {tool_name}: {e}"
-            )
+            logger.exception(f"Error updating {self._get_store_key()} {tool_name}: {e}")
             return False
 
         return True

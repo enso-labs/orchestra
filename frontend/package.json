@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"docs": "cd ../backend && bash scripts/docs.sh",
-		"build": "tsc -b && vite build",
+		"build": "npm run docs && tsc -b && vite build",
 		"format": "npx prettier --write .",
 		"lint": "eslint .",
 		"preview": "vite preview",

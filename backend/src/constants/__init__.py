@@ -23,12 +23,16 @@ APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 APP_SECRET_KEY = os.getenv("APP_SECRET_KEY", "this-is-a-secret-key")
 APP_LOG_LEVEL = os.getenv("APP_LOG_LEVEL", "INFO").upper()
 
+
 # Database
 def get_db_uri():
     uri = os.getenv("POSTGRES_CONNECTION_STRING")
     if not uri:
-        raise ValueError("POSTGRES_CONNECTION_STRING is not set in the environment variables")
+        raise ValueError(
+            "POSTGRES_CONNECTION_STRING is not set in the environment variables"
+        )
     return uri
+
 
 DB_URI = get_db_uri()
 

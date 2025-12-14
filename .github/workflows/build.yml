@@ -1,121 +1,127 @@
 name: Build
 
 on:
-  push:
-    tags:
-      - '*'
+    push:
+        tags:
+            - "*"
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    environment: Dev
-    env:
-      DOCKER_USERNAME: ryaneggz
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      ###############################################################
-      ## Frontend
-      ###############################################################
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+    build:
+        runs-on: ubuntu-latest
+        environment: Dev
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Install frontend dependencies
-        working-directory: ./frontend
-        run: npm ci
+            ###############################################################
+            ## Frontend
+            ###############################################################
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: "npm"
+                  cache-dependency-path: frontend/package-lock.json
 
-      - name: Create public directory
-        working-directory: ./backend
-        run: mkdir -p src/public
+            - name: Install frontend dependencies
+              working-directory: ./frontend
+              run: npm ci
 
-      - name: Build frontend
-        working-directory: ./frontend
-        run: npm run build
+            - name: Create public directory
+              working-directory: ./backend
+              run: mkdir -p src/public
 
-      - name: Prune frontend dependencies
-        working-directory: ./frontend
-        run: npm prune --production
+            - name: Build frontend
+              working-directory: ./frontend
+              run: npm run build
 
-      - name: Save Node dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            **/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+            - name: Prune frontend dependencies
+              working-directory: ./frontend
+              run: npm prune --production
 
-      ###############################################################
-      ## Backend
-      ###############################################################
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+            - name: Save Node dependencies cache
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      **/node_modules
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
 
-      - name: Cache Python dependencies
-        id: cache-python
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-              ${{ runner.os }}-pip-
+            ###############################################################
+            ## Backend
+            ###############################################################
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
 
-      - name: Install dependencies
-        working-directory: ./backend
-        run: |
-          env | sort
-          pip install --upgrade pip
-          pip install uv
-          uv sync --frozen --no-cache --no-dev
+            - name: Cache Python dependencies
+              id: cache-python
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
 
-      - name: Build docs
-        run: |
-          # Copy docs folder to backend directory
-          cp -r docs backend/docs
-          
-          # Change to backend directory
-          cd backend
-          
-          # Build docs
-          uv run mkdocs build --site-dir src/public/docs
-          
-          # Cleanup docs folder from backend
-          rm -rf docs || true
+            - name: Install dependencies
+              working-directory: ./backend
+              run: |
+                  env | sort
+                  pip install --upgrade pip
+                  pip install uv
+                  uv sync --frozen --no-cache --no-dev
 
-      - name: Save Python dependencies cache
-        if: steps.cache-python.outputs.cache-hit != 'true'
-        id: save-cache-python
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+            - name: Build docs
+              run: |
+                  # Copy docs folder to backend directory
+                  cp -r docs backend/docs
 
-      ###############################################################
-      ## Docker
-      ###############################################################
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+                  # Change to backend directory
+                  cd backend
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
+                  # Build docs
+                  uv run mkdocs build --site-dir src/public/docs
 
-      - name: Build and push Docker image
-        working-directory: ./backend
-        run: |
-          # Use the tag name for the Docker image version
-          DOCKER_IMAGE=ryaneggz/graphchat:${GITHUB_REF#refs/tags/}
-          DOCKER_LATEST=ryaneggz/graphchat:latest
-          
-          echo "Building images: $DOCKER_IMAGE and $DOCKER_LATEST"
-          docker build --squash -t $DOCKER_IMAGE -t $DOCKER_LATEST .
-          docker push $DOCKER_IMAGE
-          docker push $DOCKER_LATEST
+                  # Cleanup docs folder from backend
+                  rm -rf docs || true
+
+            - name: Save Python dependencies cache
+              if: steps.cache-python.outputs.cache-hit != 'true'
+              id: save-cache-python
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+
+            ###############################################################
+            ## Docker
+            ###############################################################
+            - name: Copy Docker README and LICENSE to backend
+              run: |
+                cp docker/README.md backend/README.md
+                cp LICENSE backend/LICENSE
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to GitHub Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build and push Docker image
+              working-directory: ./backend
+              run: |
+                  # Use the tag name for the Docker image version
+                  DOCKER_IMAGE=ghcr.io/enso-labs/orchestra:${GITHUB_REF#refs/tags/}
+                  DOCKER_LATEST=ghcr.io/enso-labs/orchestra:latest
+
+                  echo "Building images: $DOCKER_IMAGE and $DOCKER_LATEST"
+                  docker build --squash -t $DOCKER_IMAGE -t $DOCKER_LATEST .
+                  docker push $DOCKER_IMAGE
+                  docker push $DOCKER_LATEST

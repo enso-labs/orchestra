@@ -319,8 +319,8 @@ SCHEDULE_CREATED_RESPONSE_EXAMPLE = Example(
             "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
             "task": {
                 "metadata": {
-                    "thread_id": "thread-uuid-here", # Required
-                    "assistant_id": "assistant-uuid-here", # Required
+                    "thread_id": "thread-uuid-here",  # Required
+                    "assistant_id": "assistant-uuid-here",  # Required
                 },
             },
             "next_run_time": "2025-10-04T18:27:00-06:00",
@@ -374,7 +374,7 @@ SCHEDULE_CREATE_EXAMPLE = Example(
             "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             "tools": ["get_weather"],
             "metadata": {
-                "thread_id": "thread-uuid-here", # Required
+                "thread_id": "thread-uuid-here",  # Required
             },
         },
     }
@@ -392,7 +392,7 @@ SCHEDULE_UPDATE_EXAMPLE = Example(
             ],
             "tools": ["get_weather"],
             "metadata": {
-                "thread_id": "thread-uuid-here", # Required
+                "thread_id": "thread-uuid-here",  # Required
             },
         },
     }
@@ -413,9 +413,7 @@ THREAD_CREATE_EXAMPLE = Example(
         ],
         "files": {
             "/hello_world.py": {
-                "content": [
-                    "print('Hello, World!')"
-                ],
+                "content": ["print('Hello, World!')"],
             },
             "/fetch_last_posts.py": {
                 "content": [
@@ -432,10 +430,10 @@ THREAD_CREATE_EXAMPLE = Example(
                     "with open('last_posts.json', 'w') as f:",
                     " json.dump(last_three, f, indent=4)",
                     "",
-                    "print(\"Saved last 3 posts to last_posts.json\")",
-                    "print(json.dumps(last_three, indent=4))"
+                    'print("Saved last 3 posts to last_posts.json")',
+                    "print(json.dumps(last_three, indent=4))",
                 ],
-            }
+            },
         },
         "metadata": get_example_metadata(),
     },
@@ -449,12 +447,10 @@ THREAD_CREATE_EXAMPLE_WITH_ASSISTANT = Example(
         "metadata": get_example_metadata(assistant_id=True),
         "files": {
             "/hello_world.py": {
-                "content": [
-                    "print('Hello, World!')"
-                ],
+                "content": ["print('Hello, World!')"],
             },
         },
-        "todos": []
+        "todos": [],
     },
 )
 
@@ -470,13 +466,13 @@ SCHEDULE_CREATE_ASSISTANT_EXAMPLE = Example(
             },
             "metadata": {
                 ## TODO: Add support when files work correctly for llm requests
-                # "thread_id": "thread-uuid-here", 
+                # "thread_id": "thread-uuid-here",
                 "assistant_id": "assistant-uuid-here",
             },
         },
     },
-   
 )
+
 
 class Examples:
     LOGIN_RESPONSE_EXAMPLE = LOGIN_RESPONSE_EXAMPLE
@@ -696,7 +692,7 @@ class Examples:
                 "disabled": False,
                 "public": False,
             },
-        )
+        ),
     }
 
     LLM_STREAM_EXAMPLES = {

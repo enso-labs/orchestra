@@ -78,9 +78,7 @@ def raw_html(content: str) -> str:
 
 
 def init_system_prompt(
-    system_prompt: str, 
-    config: RunnableConfig, 
-    instructions: str = None
+    system_prompt: str, config: RunnableConfig, instructions: str = None
 ) -> str:
     lines = [system_prompt]
     if instructions:
@@ -241,7 +239,7 @@ def format_schema_to_model(
 
         if isinstance(raw_type, str):
             raw_type = raw_type.lower()
-            
+
             if raw_type in ["array", "list"] and "items" in spec:
                 # Handle List[Type]
                 item_spec = spec["items"]
@@ -250,24 +248,24 @@ def format_schema_to_model(
                     item_type_str = item_spec["type"]
                     # If item type is object/nested
                     if item_type_str == "object" and "properties" in item_spec:
-                         nested_item_model = format_schema_to_model(
+                        nested_item_model = format_schema_to_model(
                             item_spec["properties"],
-                            model_name=f"{model_name}_{key.capitalize()}Item"
-                         )
-                         field_type = List[nested_item_model]
+                            model_name=f"{model_name}_{key.capitalize()}Item",
+                        )
+                        field_type = List[nested_item_model]
                     else:
-                         py_item_type = type_mapping.get(item_type_str, Any)
-                         field_type = List[py_item_type]
+                        py_item_type = type_mapping.get(item_type_str, Any)
+                        field_type = List[py_item_type]
                 else:
                     field_type = List[Any]
-            
+
             elif raw_type in ["object", "dict"] and "properties" in spec:
                 # Handle nested object with properties
                 nested_model = format_schema_to_model(
                     spec["properties"], model_name=f"{model_name}_{key.capitalize()}"
                 )
                 field_type = nested_model
-            
+
             else:
                 # Simple type mapping
                 field_type = type_mapping.get(raw_type, Any)

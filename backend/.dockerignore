@@ -25,9 +25,15 @@ Makefile
 **/.vscode
 **/.pytest_cache/
 **.cursor*
-**/__pycache__/
+**/__pycache__
 **/logs/
 **/.plans/
 **/AGENTS.md
 **/node_modules/
+**/.git
+**/*.ipynb
+**/.DS_Store
+**/docs
 **/.backups/
+**/pytest*
+**/pysandbox

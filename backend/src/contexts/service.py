@@ -31,7 +31,7 @@ class ServiceContext:
             config["configurable"].get("user_id", None)
             or config["metadata"].get("user_id", None)
         )
-        
+
         self.tool_service = ToolService(user_id=self.user_id, store=store)
         self.memory_service = MemoryService(user_id=self.user_id, store=store)
         self.thread_service = ThreadService(user_id=self.user_id, store=store)
@@ -40,11 +40,13 @@ class ServiceContext:
         self.schedule_service = ScheduleService(user_id=self.user_id, store=store)
         self.assistant_service = AssistantService(user_id=self.user_id, store=store)
         self.presidio_service = PresidioService()
-        self.llm_service = LLMService(user_id=self.user_id, 
-                                      store=store, 
-                                      tool_service=self.tool_service, 
-                                      assistant_service=self.assistant_service, 
-                                      config=config)
+        self.llm_service = LLMService(
+            user_id=self.user_id,
+            store=store,
+            tool_service=self.tool_service,
+            assistant_service=self.assistant_service,
+            config=config,
+        )
         if checkpointer:
             self.checkpoint_service = CheckpointService(
                 user_id=self.user_id, checkpointer=checkpointer

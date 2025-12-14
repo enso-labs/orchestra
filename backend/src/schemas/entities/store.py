@@ -33,10 +33,10 @@ class Project(BaseEntity):
     description: Optional[str] = None
     sources: Optional[list[Source]] = None
 
+
 class Thread(BaseEntity):
     title: Optional[str] = None
     messages: list[Union[BaseMessage, dict]] = Field(default_factory=list)
     files: Optional[Any] = None
     todos: Optional[Any] = None
     score: float | None = None
-    
