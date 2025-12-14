@@ -61,8 +61,8 @@ services:
     orchestra:
         # image: ryaneggz/graphchat:0.0.2-rc108
         build:
-            context: .
-            dockerfile: backend/Dockerfile
+            context: ./backend
+            dockerfile: Dockerfile
         container_name: orchestra
         env_file:
             - ./backend/.env.docker

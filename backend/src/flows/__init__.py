@@ -24,15 +24,20 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
-from src.utils.middleware import add_ai_message_metadata, dynamic_model_selection, pii_middleware
+from src.utils.middleware import (
+    add_ai_message_metadata,
+    dynamic_model_selection,
+    pii_middleware,
+)
 from src.tools import default_tools
 
 COMPOSITE_BACKEND = lambda rt: CompositeBackend(
     default=StateBackend(rt),
     routes={
         "/memories/": StoreBackend(rt),
-    }
+    },
 )
+
 
 async def add_memories_to_system():
     memories = await memory_service.search()
@@ -105,7 +110,7 @@ async def init_tools(
 ) -> list[BaseTool]:
     """Initialize tools for a subagent."""
     tool_map = {t.name: t for t in default_tools()}
-    tools_list = [tool_map[name] for name in (tools or []) if name in tool_map] 
+    tools_list = [tool_map[name] for name in (tools or []) if name in tool_map]
     a2a = A2AServers(a2a=a2a)
     thread_id = service_context.config.get("configurable").get("thread_id")
     user_id = service_context.config.get("configurable").get("user_id")
@@ -123,16 +128,21 @@ async def init_tools(
                 structured_tool = items[0]
                 tool_metadata = {structured_tool.name: structured_tool.metadata}
                 service_context.config["metadata"] = {
-                    **tool_metadata, **service_context.config["metadata"]
+                    **tool_metadata,
+                    **service_context.config["metadata"],
                 }
                 tools_list.append(structured_tool)
     return tools_list
 
 
-async def init_subagents(subagents: list[Assistant], service_context: ServiceContext) -> list[SubAgent]:
+async def init_subagents(
+    subagents: list[Assistant], service_context: ServiceContext
+) -> list[SubAgent]:
     result = []
     for subagent in subagents:
-        system_prompt = subagent.system_prompt or init_system_prompt(DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions)
+        system_prompt = subagent.system_prompt or init_system_prompt(
+            DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions
+        )
         subagent_dict = {
             "name": subagent.slug,
             "description": subagent.description,
@@ -199,10 +209,7 @@ async def construct_agent(
             middleware = [dynamic_model_selection]
 
         if subagents:
-            subagents = await init_subagents(
-                subagents,
-                service_context
-            )
+            subagents = await init_subagents(subagents, service_context)
 
         # Asynchronous LLM call
         agent = Orchestra(
@@ -210,7 +217,9 @@ async def construct_agent(
             model=model,
             tools=tools,
             subagents=subagents,
-            system_prompt=init_system_prompt(system_prompt, service_context.config or {}, instructions),
+            system_prompt=init_system_prompt(
+                system_prompt, service_context.config or {}, instructions
+            ),
             checkpointer=checkpointer,
             store=service_context.store,
             middleware=middleware,

@@ -9,9 +9,9 @@ jobs:
     build:
         runs-on: ubuntu-latest
         environment: Dev
-        env:
-            DOCKER_USERNAME: ryaneggz
-            DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        permissions:
+            contents: read
+            packages: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -99,22 +99,29 @@ jobs:
             ###############################################################
             ## Docker
             ###############################################################
+            - name: Copy Docker README and LICENSE to backend
+              run: |
+                cp docker/README.md backend/README.md
+                cp LICENSE backend/LICENSE
+
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
-            - name: Login to Docker Hub
-              uses: docker/login-action@v2
+            - name: Login to GitHub Container Registry
+              uses: docker/login-action@v3
               with:
-                  username: ${{ env.DOCKER_USERNAME }}
-                  password: ${{ env.DOCKER_PASSWORD }}
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push Docker image
+              working-directory: ./backend
               run: |
                   # Use the tag name for the Docker image version
-                  DOCKER_IMAGE=ryaneggz/graphchat:${GITHUB_REF#refs/tags/}
-                  DOCKER_LATEST=ryaneggz/graphchat:latest
+                  DOCKER_IMAGE=ghcr.io/enso-labs/orchestra:${GITHUB_REF#refs/tags/}
+                  DOCKER_LATEST=ghcr.io/enso-labs/orchestra:latest
 
                   echo "Building images: $DOCKER_IMAGE and $DOCKER_LATEST"
-                  docker build --squash -f backend/Dockerfile -t $DOCKER_IMAGE -t $DOCKER_LATEST .
+                  docker build --squash -t $DOCKER_IMAGE -t $DOCKER_LATEST .
                   docker push $DOCKER_IMAGE
                   docker push $DOCKER_LATEST

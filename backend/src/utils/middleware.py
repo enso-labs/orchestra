@@ -1,4 +1,3 @@
-
 from langchain.agents import AgentState
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
@@ -14,7 +13,6 @@ from langchain.agents.middleware import (
 )
 from src.utils.logger import logger
 from src.utils.format import format_content
-
 
 
 @after_model
@@ -63,16 +61,27 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
 
     # Define keywords for reasoning-heavy tasks
     complex_keywords = [
-        "explain", "compare", "analyze", "summarize",
-        "derive", "why", "how", "design", "calculate",
-        "build", "create", "develop", "implement", "code",
+        "explain",
+        "compare",
+        "analyze",
+        "summarize",
+        "derive",
+        "why",
+        "how",
+        "design",
+        "calculate",
+        "build",
+        "create",
+        "develop",
+        "implement",
+        "code",
     ]
 
     # Rule 1 — Long conversation → advanced model
     if message_count > 50:
         model = DEFAULT_CHAT_MODEL_LOW_COST
         reason = "long conversation context"
-    
+
     # Rule 2 — Complex query → advanced model
     elif any(word in last_message for word in complex_keywords):
         model = DEFAULT_CHAT_MODEL

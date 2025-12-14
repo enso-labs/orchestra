@@ -20,7 +20,7 @@ class ThreadService:
         self.store: BaseStore = store
         self.thread_id = None
         self.thread_repo = thread_repo or ThreadRepo(self.user_id, store)
-        
+
     async def create(self, thread: Thread):
         return await self.thread_repo.create(thread)
 

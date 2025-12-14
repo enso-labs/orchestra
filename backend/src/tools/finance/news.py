@@ -45,12 +45,13 @@ def get_financial_news(ticker: str) -> tuple[str, dict]:
     # Convert to markdown (clean, no index)
     markdown = f"## Financial News\n" + f"```csv\n{df.to_csv(index=False)}\n```"
     return markdown
-    #TODO: Eval if this is cleaner later on. Get fidgety as table but looks good.
+    # TODO: Eval if this is cleaner later on. Get fidgety as table but looks good.
     # This is what you feed back into the model as textual context
     # model_ctx = (
     #     "FINANCIAL NEWS:\n" + df.to_markdown(index=False) + "\n\n"
     # )
     # return model_ctx
+
 
 ########################################################
 ## Get SEC Filings

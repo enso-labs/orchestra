@@ -8,6 +8,7 @@ from src.schemas.models import User, Token
 from src.constants import APP_SECRET_KEY
 from src.utils.logger import logger
 
+
 class UserRepo:
     def __init__(self, db: AsyncSession, user_id: str | None = None):
         self.db = db

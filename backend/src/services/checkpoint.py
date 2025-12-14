@@ -2,7 +2,13 @@ import uuid
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.checkpoint.base import Checkpoint, BaseCheckpointSaver, CheckpointTuple, CheckpointMetadata, ChannelVersions
+from langgraph.checkpoint.base import (
+    Checkpoint,
+    BaseCheckpointSaver,
+    CheckpointTuple,
+    CheckpointMetadata,
+    ChannelVersions,
+)
 from langgraph.types import StateSnapshot
 from langchain_core.messages import BaseMessage
 from src.utils.logger import logger
@@ -70,22 +76,23 @@ class CheckpointService:
         except Exception as e:
             logger.exception(f"Error listing checkpoints: {e}")
             return []
-        
-    async def create_checkpoint(self, 
-        thread_id: str, 
+
+    async def create_checkpoint(
+        self,
+        thread_id: str,
         checkpoint: Checkpoint,
         metadata: CheckpointMetadata,
         new_versions: ChannelVersions,
     ):
         config = RunnableConfig(
             configurable={
-                "thread_id": thread_id, 
+                "thread_id": thread_id,
                 "checkpoint_id": checkpoint.get("id"),
                 "checkpoint_ns": checkpoint.get("ns", ""),
             }
         )
         checkpoint = await self.checkpointer.aput(
-            config=config, 
+            config=config,
             checkpoint=checkpoint,
             metadata=metadata,
             new_versions=new_versions,

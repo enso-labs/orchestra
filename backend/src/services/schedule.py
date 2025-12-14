@@ -60,28 +60,25 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     from src.contexts.service import ServiceContext
 
     logger.info(f"🚀 Starting scheduled LLM job: {title}")
-    
+
     # Reconstruct LLMRequest from dict
     params = LLMRequest(**task_dict)
     params.metadata.user_id = user_id
     params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
     logger.info(f"✓ Successfully reconstructed LLMRequest")
-    
+
     # Initialize config and get files and todos
     config = init_config(params, user_id)
-    files_map = config['metadata'].get('files', {})
-    todos_list = config['metadata'].get('todos', [])
-    
+    files_map = config["metadata"].get("files", {})
+    todos_list = config["metadata"].get("todos", [])
+
     async with (
         get_store_db() as store,
         get_checkpoint_db() as checkpointer,
     ):
         try:
             service_context = ServiceContext(
-                user_id=user_id, 
-                store=store, 
-                config=config, 
-                checkpointer=checkpointer
+                user_id=user_id, store=store, config=config, checkpointer=checkpointer
             )
             params = await service_context.llm_service.assistant(params)
             agent: Orchestra = await construct_agent(
@@ -102,17 +99,15 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             except Exception:
                 # Defensive fallback for malformed input
                 params.input = params.input.to_langchain_messages()
-                
+
             ctx_schema = ContextSchema(model=params.model, user_id=user_id)
             response = await agent.invoke(
-                params.input,
-                config=config, 
-                context=ctx_schema
+                params.input, config=config, context=ctx_schema
             )
             logger.info(f"✓ LLM invocation completed successfully")
-            
-            files_map = {**files_map, **response.get('files', {})}
-            todos_list = [*todos_list, *response.get('todos', [])]
+
+            files_map = {**files_map, **response.get("files", {})}
+            todos_list = [*todos_list, *response.get("todos", [])]
             return response
         except Exception as e:
             logger.error(f"❌ Error in scheduled job: {e}", exc_info=True)

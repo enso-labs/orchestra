@@ -49,10 +49,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SettingsPopover } from "../popovers/SettingsPopover";
 import { useChatContext } from "@/context/ChatContext";
-import {
-	formatContent,
-	truncateFrom,
-} from "@/lib/utils/format";
+import { formatContent, truncateFrom } from "@/lib/utils/format";
 import { useAgentContext } from "@/context/AgentContext";
 import { useProjectContext } from "@/context/ProjectContext";
 import { Agent } from "@/lib/services/agentService";
@@ -61,10 +58,7 @@ import { CreateProjectModal } from "@/components/modals/CreateProjectModal";
 import { AddSourceModal } from "@/components/modals/AddSourceModal";
 import { ThreadSearchModal } from "@/components/modals/ThreadSearchModal";
 import { formatDistanceToNow } from "date-fns";
-import {
-	deleteThread,
-	updateThreadProject,
-} from "@/lib/services";
+import { deleteThread, updateThreadProject } from "@/lib/services";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
@@ -150,19 +144,16 @@ interface ThreadItemProps {
 }
 
 function ThreadItem({ thread, projects }: ThreadItemProps) {
-	const {
-		metadata,
-		threads,
-		setThreads,
-		clearMessages,
-	} = useChatContext();
+	const { metadata, threads, setThreads, clearMessages } = useChatContext();
 	const { agent } = useAgentContext();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
 	const messages = thread.value?.messages || [];
 	const fileCount = Object.keys(thread.value?.files || {}).length;
-	const lastMessage = messages.filter((msg: any) => msg.type === "human").slice(-1)[0];
+	const lastMessage = messages
+		.filter((msg: any) => msg.type === "human")
+		.slice(-1)[0];
 	const isSelected = metadata?.thread_id === thread.value?.thread_id;
 	const currentProjectId = thread.value?.project_id;
 
@@ -184,7 +175,9 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 	const handleThreadClick = () => {
 		// Navigate to thread route
 		if (pathname.startsWith("/assistant/")) {
-			navigate(`/assistant/${agent.id}/thread/${thread.value?.thread_id || thread.key}`);
+			navigate(
+				`/assistant/${agent.id}/thread/${thread.value?.thread_id || thread.key}`,
+			);
 		} else {
 			navigate(`/thread/${thread.value?.thread_id || thread.key}`);
 		}
@@ -324,9 +317,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 											key={project.id}
 											onClick={() => handleAddToProject(project.id!)}
 											className={`cursor-pointer ${
-												currentProjectId === project.id
-													? "bg-accent"
-													: ""
+												currentProjectId === project.id ? "bg-accent" : ""
 											}`}
 										>
 											{project.name}
@@ -598,7 +589,13 @@ function CollapsibleGroup({
 	}, []);
 
 	const handleScroll = useCallback(() => {
-		if (type === "threads" && isNearBottom() && hasMore && !isLoadingMore && loadMore) {
+		if (
+			type === "threads" &&
+			isNearBottom() &&
+			hasMore &&
+			!isLoadingMore &&
+			loadMore
+		) {
 			// Filter for unassociated threads (no project_id)
 			loadMore({});
 		}
@@ -647,7 +644,13 @@ function CollapsibleGroup({
 								onScroll={handleScroll}
 								className="overflow-auto max-h-[calc(100vh-400px)]"
 							>
-								<SidebarMenu className="gap-0" style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+								<SidebarMenu
+									className="gap-0"
+									style={{
+										height: `${virtualizer.getTotalSize()}px`,
+										position: "relative",
+									}}
+								>
 									{virtualizer.getVirtualItems().map((virtualRow) => {
 										const item = items[virtualRow.index];
 										return (
@@ -656,12 +659,11 @@ function CollapsibleGroup({
 												data-index={virtualRow.index}
 												ref={virtualizer.measureElement}
 												className="absolute top-0 left-0 w-full"
-												style={{ transform: `translateY(${virtualRow.start}px)` }}
+												style={{
+													transform: `translateY(${virtualRow.start}px)`,
+												}}
 											>
-												<ThreadItem
-													thread={item}
-													projects={projects}
-												/>
+												<ThreadItem thread={item} projects={projects} />
 											</div>
 										);
 									})}
@@ -707,8 +709,15 @@ function CollapsibleGroup({
 // const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { threads, loadMoreThreads, hasMoreThreads, isLoadingMoreThreads, clearMessages } = useChatContext();
+	const {
+		threads,
+		loadMoreThreads,
+		hasMoreThreads,
+		isLoadingMoreThreads,
+		clearMessages,
+	} = useChatContext();
 	const { projects, useEffectGetProjects } = useProjectContext();
+	const onLogoLinkClick = useLinkClick("/");
 	// Modal state
 	const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
 		useState(false);
@@ -739,7 +748,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						to="/"
 						onClick={(e) => {
 							clearMessages();
-							useLinkClick("/")(e);
+							onLogoLinkClick(e);
 						}}
 						className="flex items-center gap-2 m-2"
 					>

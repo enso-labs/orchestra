@@ -40,6 +40,4 @@ def init_tool_library(user_id: str = None, default: bool = True) -> list[BaseToo
     return tool_lib
 
 
-
-
 TOOL_LIBRARY: List[BaseTool] = init_tool_library()

@@ -17,16 +17,13 @@ ENV PATH="$DENO_INSTALL/bin:$PATH"
 WORKDIR /app
 
 # Copy only dep files first for better caching
-COPY backend/pyproject.toml backend/uv.lock* /app/
+COPY pyproject.toml uv.lock* /app/
 
 # Install deps
 RUN uv sync --frozen --no-cache --no-dev
 
 # Copy app code
-COPY backend/ /app/
-
-# Copy Docker README for registry display
-COPY docker/README.md /app/README.md
+COPY . /app
 
 # Compile all .py files to .pyc (optimized bytecode)
 RUN python -m compileall -b -f -q /app

@@ -21,6 +21,15 @@ Base API infrastructure for Composable AI Agents built on LangGraph and powered 
 This project includes tools for running shell commands and Docker container operations. For detailed information, please refer to the following documentation:
 
 -   [Tools Documentation](./docs/tools/tools.md)
+-   [Docker Deployment (GHCR / Docker Compose)](https://github.com/enso-labs/orchestra/blob/main/docker/README.md)
+
+## 🐳 Docker Deployment (GHCR)
+
+We publish the backend image to GitHub Container Registry (GHCR). For the full Docker/Docker Compose deployment guide (env setup, services, migrations, troubleshooting), see [Docker Deployment docs](https://github.com/enso-labs/orchestra/blob/main/docker/README.md).
+
+```bash
+docker pull ghcr.io/enso-labs/orchestra:latest
+```
 
 ## 📋 Prerequisites
 

@@ -33,7 +33,7 @@ export default function DefaultTool({
 		<div className="max-h-[100px] rounded overflow-x-auto">
 			{(() => {
 				try {
-					let parsedJSON =
+					const parsedJSON =
 						typeof input === "object" ? input : JSON.parse(input);
 
 					if (parsedJSON === null || parsedJSON === undefined) {
