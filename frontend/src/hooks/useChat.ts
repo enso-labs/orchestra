@@ -250,22 +250,20 @@ export default function useChat(): ChatContextType {
 		setStreamingRate(null);
 	};
 
-	// Helper to update loading message with current metrics
-	const updateLoadingMessageWithMetrics = (
-		metrics: { ttft: number | null; rate: number | null } | null,
+	// Helper to update loading message with TTFT (only TTFT, not rate)
+	const updateLoadingMessageWithTTFT = (
+		ttft: number | null,
 		additionalText?: string,
 	) => {
-		if (!metrics) {
-			if (additionalText) setLoadingMessage(additionalText);
-			return;
-		}
-
 		const parts: string[] = [];
-		if (metrics.ttft !== null) parts.push(`TTFT: ${metrics.ttft}ms`);
-		if (metrics.rate !== null) parts.push(`${metrics.rate} chars/s`);
+		if (ttft !== null) parts.push(`TTFT: ${ttft}ms`);
 		if (additionalText) parts.push(additionalText);
 
-		setLoadingMessage(parts.join(" • "));
+		if (parts.length > 0) {
+			setLoadingMessage(parts.join(" • "));
+		} else if (additionalText) {
+			setLoadingMessage(additionalText);
+		}
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
@@ -358,8 +356,8 @@ export default function useChat(): ChatContextType {
 							rate: null,
 						};
 
-						// Update loading message to show TTFT immediately
-						updateLoadingMessageWithMetrics(newMetrics);
+						// Update loading message to show TTFT only (not rate)
+						updateLoadingMessageWithTTFT(ttft);
 
 						return newMetrics;
 					});
@@ -378,8 +376,10 @@ export default function useChat(): ChatContextType {
 							rate,
 						};
 
-						// Update loading message with streaming metrics
-						updateLoadingMessageWithMetrics(newMetrics);
+						// Keep TTFT in loading message (don't add rate here)
+						if (prev?.ttft !== null) {
+							updateLoadingMessageWithTTFT(prev.ttft);
+						}
 
 						return newMetrics;
 					});
@@ -395,16 +395,17 @@ export default function useChat(): ChatContextType {
 			// Handle Final Response & Tool Response
 			streamHandler.processResponse(response, expectedContent, existingIndex);
 
-			// Update loading message, preserving TTFT if available
+			// Update loading message, preserving TTFT (not rate)
 			setStreamingRate((prev: any) => {
 				if (streamHandler.toolNameRef.current) {
-					updateLoadingMessageWithMetrics(
-						prev,
+					// Show TTFT + tool name
+					updateLoadingMessageWithTTFT(
+						prev?.ttft ?? null,
 						`Calling ${streamHandler.toolNameRef.current} tool...`,
 					);
-				} else if (prev) {
-					// No tool call, just update with current metrics
-					updateLoadingMessageWithMetrics(prev);
+				} else if (prev?.ttft !== null) {
+					// No tool call, just show TTFT
+					updateLoadingMessageWithTTFT(prev.ttft);
 				}
 				return prev;
 			});
