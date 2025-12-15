@@ -12,6 +12,7 @@ import {
 	FileText,
 	Book,
 	Globe,
+	Github,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
@@ -79,10 +80,18 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => navigate("/docs/")}
+						onClick={() => window.open("https://enso.sh", "_blank")}
 					>
 						<Globe className="h-4 w-4" />
 						Website
+					</Button>
+					<Button
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+						onClick={() => window.open("https://github.com/enso-labs", "_blank")}
+					>
+						<Github className="h-4 w-4" />
+						Github
 					</Button>
 					<Button
 						onClick={() => {
