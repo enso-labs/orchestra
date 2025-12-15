@@ -44,7 +44,6 @@ def load_models():
     """Import all models to ensure they are registered with SQLAlchemy"""
     from src.schemas.models import (
         User,
-        Token,
     )
 
     return _Base

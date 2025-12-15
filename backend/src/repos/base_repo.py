@@ -5,6 +5,7 @@ from langchain_core.documents import Document
 from src.schemas.entities import SearchFilter
 from src.services.db import get_store_in_memory
 from src.schemas.entities.store import Source, Project, Document
+from src.schemas.entities.auth import ApiToken
 from src.utils.logger import logger
 
 
@@ -40,6 +41,8 @@ class BaseRepo:
             return Source.model_validate(item.value)
         elif self.entity_type == "projects":
             return Project.model_validate(item.value)
+        elif self.entity_type == "api_tokens":
+            return ApiToken.model_validate(item.value)
         else:
             raise ValueError(f"Invalid entity type: {self.entity_type}")
 

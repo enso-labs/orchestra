@@ -1,13 +1,9 @@
-import asyncio
 from typing import Optional
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.schemas.entities.auth import UserCreate
-from src.schemas.models import User, Token
-from src.constants import APP_SECRET_KEY
-from src.utils.logger import logger
-
+from src.schemas.models import User
 
 class UserRepo:
     def __init__(self, db: AsyncSession, user_id: str | None = None):
@@ -29,38 +25,6 @@ class UserRepo:
         """Get user by username."""
         result = await self.db.execute(select(User).filter(User.username == username))
         return result.scalar_one_or_none()
-
-    async def get_token(self, key: str | Token):
-        """
-        Get decrypted token value for a user by key.
-        Returns None if token doesn't exist.
-        """
-        user_id = self.user_id
-
-        if not isinstance(self.db, AsyncSession):
-            raise TypeError("Expected AsyncSession but got regular Session")
-
-        result = await self.db.execute(
-            select(Token).filter(Token.user_id == user_id, Token.key == key)
-        )
-        token = result.scalar_one_or_none()
-
-        if token:
-            return Token.decrypt_value(str(token.value), APP_SECRET_KEY)
-        raise ValueError(f"Token not found for key: {key}")
-
-    async def get_all_tokens(self) -> list[dict]:
-        """Get all tokens for a user."""
-        user_id = self.user_id
-        result = await self.db.execute(select(Token).filter(Token.user_id == user_id))
-        tokens = result.scalars().all()
-        return [
-            {
-                "key": token.key,
-                "value": Token.decrypt_value(str(token.value), APP_SECRET_KEY),
-            }
-            for token in tokens
-        ]
 
     async def create(self, user_data: UserCreate) -> User:
         """Create a new user."""
@@ -95,37 +59,3 @@ class UserRepo:
             await self.db.commit()
             return True
         return False
-
-    @staticmethod
-    def _get_key_name(key: str) -> str:
-        if key == "openai":
-            return "OPENAI_API_KEY"
-        elif key == "anthropic":
-            return "ANTHROPIC_API_KEY"
-        elif key == "ollama":
-            return "OLLAMA_BASE_URL"
-        elif key == "groq":
-            return "GROQ_API_KEY"
-        elif key == "gemini":
-            return "GEMINI_API_KEY"
-        raise ValueError(f"Invalid key: {key}")
-
-    @staticmethod
-    def get_provider(model_name: str) -> str:
-        return model_name.split(":", 1)[0]
-
-    def get_token_by_provider(self, model_name: str | None = None) -> Optional[str]:
-        """
-        Get decrypted token value for a user by key.
-        Returns None if token doesn't exist.
-
-        The key is expected to be in format 'provider:model',
-        and we'll match on the provider part only.
-        """
-        if model_name:
-            provider = self.get_provider(model_name)
-            key_name = self._get_key_name(provider)
-            token = asyncio.run(self.get_token(key_name))
-            if token:
-                return Token.decrypt_value(token.value, APP_SECRET_KEY)
-        return None

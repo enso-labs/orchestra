@@ -12,6 +12,7 @@ import {
 	FileText,
 	Book,
 	Globe,
+    Key,
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { useNavigate } from "react-router-dom";
@@ -53,6 +54,14 @@ export function SettingsPopover() {
 				align="end"
 			>
 				<div className="flex flex-col gap-1">
+					<Button
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+						onClick={() => navigate("/settings")}
+					>
+						<Key className="h-4 w-4" />
+						Settings
+					</Button>
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"

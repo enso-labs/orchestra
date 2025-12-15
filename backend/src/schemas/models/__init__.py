@@ -1,7 +1,6 @@
-from src.schemas.models.auth import User, Token, ProtectedUser
+from src.schemas.models.auth import User, ProtectedUser
 
 __all__ = [
     "User",
-    "Token",
     "ProtectedUser",
 ]

@@ -86,29 +86,3 @@ class User(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
         )
-
-
-class Token(Base):
-    __tablename__ = "tokens"
-
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    key = Column(String, primary_key=True)
-    value = Column(Text, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    @staticmethod
-    def encrypt_value(value: str, secret_key: str) -> str:
-        from cryptography.fernet import Fernet
-
-        f = Fernet(secret_key.encode())
-        return f.encrypt(value.encode()).decode()
-
-    @staticmethod
-    def decrypt_value(encrypted_value: str, secret_key: str) -> str:
-        from cryptography.fernet import Fernet
-
-        f = Fernet(secret_key.encode())
-        return f.decrypt(encrypted_value.encode()).decode()

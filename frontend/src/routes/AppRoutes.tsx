@@ -26,6 +26,7 @@ import ChatV2Page from "@/pages/chat/chat-v2";
 import ProjectPage from "@/pages/projects/ProjectPage";
 import ThreadPage from "@/pages/threads/ThreadPage";
 import AgentThreadPage from "@/pages/agents/thread";
+import SettingsPage from "@/pages/settings";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -156,6 +157,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<ThreadPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/settings"
+						element={
+							<PrivateRoute>
+								<SettingsPage />
 							</PrivateRoute>
 						}
 					/>

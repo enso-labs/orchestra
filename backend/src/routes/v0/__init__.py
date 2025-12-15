@@ -9,12 +9,12 @@ from .thread import router as thread
 from .tool import router as tool
 from .info import router as info
 from .auth import router as auth
-from .token import router as token
 from .storage import router as storage
 from .assistant import router as assistant
 from .schedule import router as schedule
 from .prompt import router as prompt
 from .project import router as project
+from .api_tokens import router as api_tokens
 
 
 def create_api_router(app: FastAPI, prefix: str = "/api"):
@@ -27,6 +27,7 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
     app.include_router(prompt, prefix=prefix)
     app.include_router(project, prefix=prefix)
     app.include_router(schedule, prefix=prefix)
+    app.include_router(api_tokens, prefix=prefix)
     if LANGCONNECT_SERVER_URL:
         from .rag import gateway as rag
 
