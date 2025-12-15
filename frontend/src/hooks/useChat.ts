@@ -250,6 +250,24 @@ export default function useChat(): ChatContextType {
 		setStreamingRate(null);
 	};
 
+	// Helper to update loading message with current metrics
+	const updateLoadingMessageWithMetrics = (
+		metrics: { ttft: number | null; rate: number | null } | null,
+		additionalText?: string,
+	) => {
+		if (!metrics) {
+			if (additionalText) setLoadingMessage(additionalText);
+			return;
+		}
+
+		const parts: string[] = [];
+		if (metrics.ttft !== null) parts.push(`TTFT: ${metrics.ttft}ms`);
+		if (metrics.rate !== null) parts.push(`${metrics.rate} chars/s`);
+		if (additionalText) parts.push(additionalText);
+
+		setLoadingMessage(parts.join(" • "));
+	};
+
 	const handleMessages = (payload: any, history: any[]) => {
 		// console.log(payload);
 		const streamMode = payload[0];
@@ -327,41 +345,43 @@ export default function useChat(): ChatContextType {
 			if (chunkCharCount > 0) {
 				if (existingIndex === -1) {
 					// First chunk - calculate TTFT (from submit to first response, whether tool call or content)
+					const now = Date.now();
 					setStreamingRate((prev: any) => {
-						const now = Date.now();
 						const submitTime = prev?.submitTime || now;
 						const ttft = now - submitTime;
 
-						// Update loading message to show TTFT
-						setLoadingMessage(`TTFT: ${ttft}ms`);
-
-						return {
+						const newMetrics = {
 							submitTime,
 							firstTokenTime: now,
 							ttft,
 							count: chunkCharCount,
 							rate: null,
 						};
+
+						// Update loading message to show TTFT immediately
+						updateLoadingMessageWithMetrics(newMetrics);
+
+						return newMetrics;
 					});
 				} else {
 					// Subsequent chunks - update count and rate
+					const now = Date.now();
 					setStreamingRate((prev: any) => {
-						const now = Date.now();
 						const firstTokenTime = prev?.firstTokenTime || now;
 						const newCount = (prev?.count || 0) + chunkCharCount;
 						const elapsed = (now - firstTokenTime) / 1000;
 						const rate = elapsed > 0.1 ? Math.round(newCount / elapsed) : null;
 
-						// Update loading message with streaming metrics
-						if (rate && prev?.ttft) {
-							setLoadingMessage(`TTFT: ${prev.ttft}ms • ${rate} chars/s`);
-						}
-
-						return {
+						const newMetrics = {
 							...prev,
 							count: newCount,
 							rate,
 						};
+
+						// Update loading message with streaming metrics
+						updateLoadingMessageWithMetrics(newMetrics);
+
+						return newMetrics;
 					});
 				}
 			}
@@ -374,7 +394,21 @@ export default function useChat(): ChatContextType {
 
 			// Handle Final Response & Tool Response
 			streamHandler.processResponse(response, expectedContent, existingIndex);
-			setLoadingMessage(`Calling ${streamHandler.toolNameRef.current} tool...`);
+
+			// Update loading message, preserving TTFT if available
+			setStreamingRate((prev: any) => {
+				if (streamHandler.toolNameRef.current) {
+					updateLoadingMessageWithMetrics(
+						prev,
+						`Calling ${streamHandler.toolNameRef.current} tool...`,
+					);
+				} else if (prev) {
+					// No tool call, just update with current metrics
+					updateLoadingMessageWithMetrics(prev);
+				}
+				return prev;
+			});
+
 			setMessagesState(streamHandler.history);
 			if (streamHandler.streamStop(response)) {
 				setLoading(false);
