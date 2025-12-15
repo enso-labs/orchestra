@@ -205,11 +205,13 @@ export const Message = memo(
 									"Unknown model"}
 							</button>
 
-							{isLatest && streamingRate?.rate && (
+							{isLatest && streamingRate && (
 								<span
 									className={`text-sm text-muted-foreground/70 ${loading ? "animate-pulse" : ""}`}
 								>
-									{streamingRate.rate} tok/s • {streamingRate.count} tokens
+									{streamingRate.ttft !== null && `TTFT: ${streamingRate.ttft}ms`}
+									{streamingRate.ttft !== null && streamingRate.rate && " • "}
+									{streamingRate.rate && `${streamingRate.rate} chars/s • ${streamingRate.count.toLocaleString()} characters`}
 								</span>
 							)}
 						</div>

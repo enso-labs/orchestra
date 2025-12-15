@@ -47,9 +47,11 @@ export type ChatContextType = {
 	};
 	setArcade: (arcade: { tools: string[]; toolkit: string[] }) => void;
 	streamingRate: {
-		count: number;
-		startTime: number;
+		submitTime: number | null;
+		firstTokenTime: number | null;
+		ttft: number | null;
 		rate: number | null;
+		count: number;
 	} | null;
 	filesMap: Map<string, any>;
 	setFilesMap: (map: Map<string, any>) => void;
@@ -86,9 +88,11 @@ export default function useChat(): ChatContextType {
 	const [controller, setController] = useState<AbortController | null>(null);
 
 	const [streamingRate, setStreamingRate] = useState<{
-		count: number;
-		startTime: number;
+		submitTime: number | null;
+		firstTokenTime: number | null;
+		ttft: number | null;
 		rate: number | null;
+		count: number;
 	} | null>(null);
 
 	const [arcade, setArcade] = useState({
@@ -105,6 +109,7 @@ export default function useChat(): ChatContextType {
 			controller.abort();
 			setController(null);
 		}
+		setStreamingRate(null);
 	};
 
 	const sseHandler = (payload: any, messages: any[]) => {
@@ -191,6 +196,14 @@ export default function useChat(): ChatContextType {
 	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
+		// Initialize metrics state with submit timestamp
+		setStreamingRate({
+			submitTime: Date.now(),
+			firstTokenTime: null,
+			ttft: null,
+			rate: null,
+			count: 0,
+		});
 		const { controller } = await handleSSE(argQuery || query, images);
 		setController(controller);
 		setQuery("");
@@ -234,6 +247,7 @@ export default function useChat(): ChatContextType {
 		setFilesMap(new Map());
 		setTodos([]);
 		setViewMode("chat");
+		setStreamingRate(null);
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
@@ -292,27 +306,38 @@ export default function useChat(): ChatContextType {
 			);
 
 			// Update streaming rate
+			// Note: count represents character count (not actual tokens)
 			if (
 				expectedContent &&
 				(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
 			) {
 				if (existingIndex === -1) {
-					setStreamingRate({
-						count: expectedContent.length,
-						startTime: Date.now(),
-						rate: null,
-					});
-				} else {
+					// First chunk - calculate TTFT
 					setStreamingRate((prev: any) => {
 						const now = Date.now();
-						const startTime = prev?.startTime || now;
-						const newCount = (prev?.count || 0) + expectedContent.length;
-						const elapsed = (now - startTime) / 1000;
+						const submitTime = prev?.submitTime || now;
+						const ttft = now - submitTime;
 
 						return {
+							submitTime,
+							firstTokenTime: now,
+							ttft,
+							count: expectedContent.length,
+							rate: null,
+						};
+					});
+				} else {
+					// Subsequent chunks - update count and rate
+					setStreamingRate((prev: any) => {
+						const now = Date.now();
+						const firstTokenTime = prev?.firstTokenTime || now;
+						const newCount = (prev?.count || 0) + expectedContent.length;
+						const elapsed = (now - firstTokenTime) / 1000;
+
+						return {
+							...prev,
 							count: newCount,
-							startTime,
-							rate: elapsed > 0.1 ? Math.round(newCount / elapsed / 4) : null,
+							rate: elapsed > 0.1 ? Math.round(newCount / elapsed) : null,
 						};
 					});
 				}
