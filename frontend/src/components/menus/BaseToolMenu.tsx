@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Globe, ShieldCheck, ShieldOff } from "lucide-react";
+import { Plus, ShieldCheck, ShieldOff } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuTrigger,
 	DropdownMenuGroup,
 	DropdownMenuItem,
-	DropdownMenuSeparator,
+	// DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useAgentContext } from "@/context/AgentContext";
 import ImageUpload from "../inputs/ImageUpload";
@@ -19,7 +19,7 @@ export function BaseToolMenu() {
 		agent,
 		setAgent,
 		webSearchCheck,
-		setWebSearchCheck,
+		// setWebSearchCheck,
 		piiAnalyzeCheck,
 		setPiiAnalyzeCheck,
 		piiAnonymizeCheck,
