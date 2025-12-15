@@ -12,6 +12,7 @@ import {
 	FileText,
 	Book,
 	Globe,
+    Key,
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { useNavigate } from "react-router-dom";
@@ -88,10 +89,20 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => window.open("https://github.com/enso-labs", "_blank")}
+						onClick={() =>
+							window.open("https://github.com/enso-labs", "_blank")
+						}
 					>
 						<SiGithub className="h-4 w-4" />
 						Github
+					</Button>
+					<Button
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+						onClick={() => navigate("/settings")}
+					>
+						<Key className="h-4 w-4" />
+						Settings
 					</Button>
 					<Button
 						onClick={() => {

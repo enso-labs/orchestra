@@ -37,8 +37,6 @@ export type ChatContextType = {
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
 	resetMetadata: () => void;
-	state: any[];
-	setState: (state: any[]) => void;
 	useEffectUpdateAssistantId: () => void;
 	// tools
 	arcade: {
@@ -67,7 +65,7 @@ export default function useChat(): ChatContextType {
 	const toolCallChunkRef = useRef("");
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
-	const [state, setState] = useState<any[]>([]);
+	// const [state, setState] = useState<any[]>([]);
 
 	const setMessages = (newMessages: any[]) => {
 		in_mem_messages = [...newMessages];
@@ -394,8 +392,8 @@ export default function useChat(): ChatContextType {
 		setController,
 		// model,
 		// setModel,
-		state,
-		setState,
+		// state,
+		// setState,
 		// systemMessage,
 		// setSystemMessage,
 		// NEW

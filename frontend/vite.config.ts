@@ -102,12 +102,10 @@ export default defineConfig({
 			"/api": {
 				target: "http://localhost:8000",
 				changeOrigin: true,
-				rewrite: (p: string) => p.replace(/^\/api/, ""),
 			},
 			"/docs": {
 				target: "http://localhost:8000",
 				changeOrigin: true,
-				rewrite: (p: string) => p.replace(/^\/docs/, ""),
 			},
 		},
 	},
