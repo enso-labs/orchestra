@@ -12,12 +12,8 @@ import {
 	FileText,
 	Book,
 	Globe,
-	Github,
-<<<<<<< HEAD
-=======
-	Github,
->>>>>>> bug/575-api-docs-not-showing-in-docker
 } from "lucide-react";
+import { SiGithub } from "react-icons/si";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -94,7 +90,7 @@ export function SettingsPopover() {
 						className="w-full justify-start gap-2 text-sm font-normal"
 						onClick={() => window.open("https://github.com/enso-labs", "_blank")}
 					>
-						<Github className="h-4 w-4" />
+						<SiGithub className="h-4 w-4" />
 						Github
 					</Button>
 					<Button
