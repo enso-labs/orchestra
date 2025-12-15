@@ -307,22 +307,39 @@ export default function useChat(): ChatContextType {
 
 			// Update streaming rate
 			// Note: count represents character count (not actual tokens)
-			if (
-				expectedContent &&
-				(!response.tool_call_chunks || response.tool_call_chunks.length === 0)
-			) {
+			// Track metrics for both content and tool calls to measure TTFT accurately
+			const hasContent = expectedContent && expectedContent.length > 0;
+			const hasToolCalls = response.tool_call_chunks && response.tool_call_chunks.length > 0;
+
+			// Calculate character count from both content and tool calls
+			let chunkCharCount = 0;
+			if (hasContent) {
+				chunkCharCount += expectedContent.length;
+			}
+			if (hasToolCalls) {
+				// Count characters from tool call chunks
+				response.tool_call_chunks.forEach((chunk: any) => {
+					if (chunk.name) chunkCharCount += chunk.name.length;
+					if (chunk.args) chunkCharCount += JSON.stringify(chunk.args).length;
+				});
+			}
+
+			if (chunkCharCount > 0) {
 				if (existingIndex === -1) {
-					// First chunk - calculate TTFT
+					// First chunk - calculate TTFT (from submit to first response, whether tool call or content)
 					setStreamingRate((prev: any) => {
 						const now = Date.now();
 						const submitTime = prev?.submitTime || now;
 						const ttft = now - submitTime;
 
+						// Update loading message to show TTFT
+						setLoadingMessage(`TTFT: ${ttft}ms`);
+
 						return {
 							submitTime,
 							firstTokenTime: now,
 							ttft,
-							count: expectedContent.length,
+							count: chunkCharCount,
 							rate: null,
 						};
 					});
@@ -331,13 +348,19 @@ export default function useChat(): ChatContextType {
 					setStreamingRate((prev: any) => {
 						const now = Date.now();
 						const firstTokenTime = prev?.firstTokenTime || now;
-						const newCount = (prev?.count || 0) + expectedContent.length;
+						const newCount = (prev?.count || 0) + chunkCharCount;
 						const elapsed = (now - firstTokenTime) / 1000;
+						const rate = elapsed > 0.1 ? Math.round(newCount / elapsed) : null;
+
+						// Update loading message with streaming metrics
+						if (rate && prev?.ttft) {
+							setLoadingMessage(`TTFT: ${prev.ttft}ms • ${rate} chars/s`);
+						}
 
 						return {
 							...prev,
 							count: newCount,
-							rate: elapsed > 0.1 ? Math.round(newCount / elapsed) : null,
+							rate,
 						};
 					});
 				}
