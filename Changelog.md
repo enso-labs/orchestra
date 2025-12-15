@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+  - bug/575-api-docs-not-showing-in-docker (2025-12-14)
 
 ## v0.0.2-rc120
 

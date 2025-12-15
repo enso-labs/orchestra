@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Globe, ShieldCheck, ShieldOff } from "lucide-react";
+import { Plus, ShieldCheck, ShieldOff, Globe } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -68,14 +68,14 @@ export function BaseToolMenu() {
 			>
 				<DropdownMenuGroup>
 					<ImageUpload />
-					{/* <DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
 					<DropdownMenuItem
 						onClick={() => setWebSearchCheck(!webSearchCheck)}
 						className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
 					>
 						<Globe className="h-12 w-12" />
 						<span>Web Search {webSearchCheck ? "✅" : "🚫"}</span>
-					</DropdownMenuItem> */}
+					</DropdownMenuItem>
 					{localStorage.getItem("enso:checkbox:pii_analyze") && (
 						<DropdownMenuItem
 							onClick={() => setPiiAnalyzeCheck(!piiAnalyzeCheck)}

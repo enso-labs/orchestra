@@ -7,10 +7,11 @@ import {
 import { logout } from "@/lib/utils/auth";
 import {
 	Settings,
-	LayoutDashboard,
 	Cog,
 	Calendar,
 	FileText,
+	Book,
+	Globe,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
@@ -62,18 +63,26 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => navigate("/assistants")}
-					>
-						<LayoutDashboard className="h-4 w-4" />
-						Assistants
-					</Button>
-					<Button
-						variant="ghost"
-						className="w-full justify-start gap-2 text-sm font-normal"
 						onClick={() => navigate("/schedules")}
 					>
 						<Calendar className="h-4 w-4" />
 						Schedules
+					</Button>
+					<Button
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+						onClick={() => navigate("/docs/")}
+					>
+						<Book className="h-4 w-4" />
+						Documentation
+					</Button>
+					<Button
+						variant="ghost"
+						className="w-full justify-start gap-2 text-sm font-normal"
+						onClick={() => navigate("/docs/")}
+					>
+						<Globe className="h-4 w-4" />
+						Website
 					</Button>
 					<Button
 						onClick={() => {
