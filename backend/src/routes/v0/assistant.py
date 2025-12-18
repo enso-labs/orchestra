@@ -1,5 +1,6 @@
 import uuid
 from fastapi import APIRouter, Body, Depends, HTTPException, status, Path, Response
+from fastapi_cache.decorator import cache
 
 from langgraph.store.postgres import AsyncPostgresStore
 
@@ -23,6 +24,7 @@ router = APIRouter(tags=["Assistant"], prefix="/assistants")
 
 
 @router.post("/search", name="Query Assistants")
+@cache(expire=30)
 async def search_assistants(
     assistant_search: AssistantSearch = Body(...),
     user: ProtectedUser = Depends(verify_credentials),

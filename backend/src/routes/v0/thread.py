@@ -2,6 +2,7 @@
 import uuid
 from fastapi import APIRouter, Body, HTTPException, Depends, status
 from fastapi.responses import Response, UJSONResponse
+from fastapi_cache.decorator import cache
 from langgraph.graph.state import RunnableConfig
 from src.schemas.entities.store import Thread
 from src.contexts.service import ServiceContext
@@ -24,6 +25,7 @@ router = APIRouter(tags=["Thread"])
 
 
 @router.post("/threads/search", name="Query Threads in Checkpointer")
+@cache(expire=15)
 async def search_threads(
     search_filter: SearchFilter = Body(
         openapi_examples=Examples.THREAD_SEARCH_EXAMPLES

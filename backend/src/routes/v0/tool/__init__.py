@@ -1,5 +1,6 @@
 from fastapi import Body, HTTPException, Response, status, Depends, APIRouter
 from fastapi.responses import JSONResponse
+from fastapi_cache.decorator import cache
 from langgraph.store.base import BaseStore
 
 from src.constants.examples import Examples
@@ -27,6 +28,7 @@ router = APIRouter(tags=["Tool"], prefix="/tools")
         }
     },
 )
+@cache(expire=30)
 async def list_tools(
     user: ProtectedUser = Depends(verify_credentials),
     store: BaseStore = Depends(get_store),

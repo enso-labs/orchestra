@@ -52,6 +52,7 @@ dependencies = [
     "ujson>=5.11.0",
     "uvicorn>=0.35.0",
     "yfinance>=0.2.66",
+    "fastapi-cache2>=0.2.2",
 ]
 
 [dependency-groups]

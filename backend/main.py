@@ -25,6 +25,7 @@ from src.constants import (
 from src.utils.migrations import run_migrations
 from src.utils.rate_limit import limiter
 from src.services.schedule import schedule_service
+from src.utils.cache import init_cache
 from contextlib import asynccontextmanager
 
 
@@ -42,6 +43,9 @@ async def lifespan(app: FastAPI):
         run_migrations()
 
     schedule_service.scheduler.start()
+
+    # Initialize cache
+    init_cache()
 
     # Enter the async context managers to get live instances
     async with (
