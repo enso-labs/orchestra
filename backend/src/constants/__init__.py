@@ -15,7 +15,7 @@ OAUTH_GITHUB_REDIRECT_URI = os.getenv("OAUTH_GITHUB_REDIRECT_URI")
 # JWT Settings
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "this-is-a-secret-key")
 JWT_ALGORITHM = "HS256"
-JWT_TOKEN_EXPIRE_MINUTES = 60 * 24
+JWT_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30 # 30 days
 
 # App
 APP_ENV = os.getenv("APP_ENV", "development")
