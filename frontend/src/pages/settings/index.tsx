@@ -1,4 +1,5 @@
 import { ApiTokensSettings } from "@/components/settings/ApiTokensSettings";
+import { ModelVisibilitySettings } from "@/components/settings/ModelVisibilitySettings";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -24,6 +25,7 @@ export default function SettingsPage() {
 								</div>
 
 								<ApiTokensSettings />
+								<ModelVisibilitySettings />
 							</div>
 						</ScrollArea>
 					</div>
