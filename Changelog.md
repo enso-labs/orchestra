@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - feat/578-api-token-support (2025-12-14)
 
 ### Fixed
+  - bug/541-gemini-stream-stop-fix (2025-12-19)
   - bug/575-api-docs-not-showing-in-docker (2025-12-14)
 
 ## v0.0.2-rc120
