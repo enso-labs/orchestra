@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc121
 
 ### Changed
+  - feat/585-user-defaults (2025-12-17)
   - feat/578-api-token-support (2025-12-14)
 
 ### Fixed

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Response, Body
 from fastapi.responses import JSONResponse
+from fastapi_cache.decorator import cache
 from langgraph.store.base import BaseStore
 
 from src.controllers.llm import LLMController
@@ -29,6 +30,7 @@ router = APIRouter(tags=["Schedule"])
         }
     },
 )
+@cache(expire=30)
 async def get_jobs(
     user: ProtectedUser = Depends(verify_credentials),
 ):

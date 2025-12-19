@@ -1,17 +1,14 @@
+import uuid
+import sqlalchemy as sa
 from typing import Optional
 from datetime import datetime
-import sqlalchemy as sa
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey
+from sqlalchemy import String, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from passlib.context import CryptContext
 from pydantic import BaseModel
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-import uuid
-from typing import TYPE_CHECKING
+from sqlalchemy.orm import Mapped, mapped_column
 
-if TYPE_CHECKING:
-    from .thread import Thread
 from src.services.db import get_db_base
 
 Base = get_db_base()
@@ -46,11 +43,6 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), onupdate=func.now()
     )
-
-    # NOTE: threads relationship removed - threads table no longer uses SQLAlchemy
-    # threads: Mapped[list["Thread"]] = relationship(
-    #     "Thread", back_populates="user_relation"
-    # )
 
     @staticmethod
     def get_password_hash(password: str) -> str:

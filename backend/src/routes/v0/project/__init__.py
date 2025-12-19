@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import Response
 from fastapi import status
+from fastapi_cache.decorator import cache
 from langgraph.store.postgres import AsyncPostgresStore
 
 from src.schemas.examples import Examples
@@ -85,6 +86,7 @@ async def create_project(
 ### Get Project
 ################################################################################
 @router.get("/{project_id}", name="Get Project")
+@cache(expire=30)
 async def get_project(
     project_id: str,
     user: ProtectedUser = Depends(verify_credentials),
@@ -116,6 +118,7 @@ async def delete_project(
 ### Get Project Sources
 ################################################################################
 @router.get("/{project_id}/sources", name="Get Project Sources")
+@cache(expire=30)
 async def get_project_sources(
     project_id: str,
     user: ProtectedUser = Depends(verify_credentials),

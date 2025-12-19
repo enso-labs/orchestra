@@ -2,11 +2,18 @@ import os
 import ujson
 import httpx
 import logging
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from langchain_core.tools import tool
 
-from langchain_sandbox import PyodideSandbox
+# TODO: Uncomment when langchain-sandbox is updated for langchain-core>=1.0
+# from langchain_sandbox import PyodideSandbox
+PyodideSandbox: Optional[type] = None
+try:
+    from langchain_sandbox import PyodideSandbox  # type: ignore
+except ImportError:
+    pass
+
 from langchain_core.tools import BaseToolkit
 from langchain_core.tools import StructuredTool
 from langchain_core.tools import ToolException
@@ -281,8 +288,10 @@ async def python_sandbox(code: str):
     Args:
         code (str): The python code to execute.
     """
+    if PyodideSandbox is None:
+        return "Error: langchain-sandbox is not installed. Use the Interpreter toolkit instead."
     try:
-        sandbox: PyodideSandbox = PyodideSandbox(
+        sandbox = PyodideSandbox(
             allow_net=True, sessions_dir="./pysandbox"
         )
         code_exec_result = await sandbox.execute(code)
@@ -291,5 +300,6 @@ async def python_sandbox(code: str):
         return f"Error: {e}"
 
 
+# Use InterpreterToolkit when langchain-sandbox is unavailable
 # PYTHON_CODE_INTERPRETER_TOOLS = InterpreterToolkit().get_tools()
-PYTHON_CODE_INTERPRETER_TOOLS = [python_sandbox]
+PYTHON_CODE_INTERPRETER_TOOLS = [python_sandbox] if PyodideSandbox else []

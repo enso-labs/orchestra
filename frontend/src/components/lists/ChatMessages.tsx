@@ -112,7 +112,9 @@ export const Message = memo(
 									rows={1}
 								/>
 							) : (
-								<MarkdownCard content={formatContent(message.content)} />
+								<div className="py-2 whitespace-pre-wrap break-words">
+									{formatContent(message.content)}
+								</div>
 							)}
 							{isEditing && !isEditingText && (
 								<div className="flex absolute bottom-1 right-1">

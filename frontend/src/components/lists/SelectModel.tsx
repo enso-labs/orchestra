@@ -22,6 +22,7 @@ import { getAuthToken } from "@/lib/utils/auth";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { truncateFrom } from "@/lib/utils/format";
 import { useChatContext } from "@/context/ChatContext";
+import { useModelVisibility } from "@/hooks/useModelVisibility";
 
 function SelectModel({
   onModelSelected,
@@ -31,6 +32,7 @@ function SelectModel({
   disabled?: boolean;
 }) {
   const { model, setModel, models } = useChatContext();
+  const { isModelVisible } = useModelVisibility();
   const [open, setOpen] = useState(false);
 
   const handleModelChange = (value: string) => {
@@ -106,7 +108,9 @@ function SelectModel({
           <CommandList>
             <CommandEmpty>No model found.</CommandEmpty>
             <CommandGroup>
-              {models.models.map((modelValue: string) => {
+              {models.models
+                .filter((m: string) => isModelVisible(m))
+                .map((modelValue: string) => {
                 const disabled =
                   !authToken && !models.free.includes(modelValue as string);
                 const fullLabel = getModelLabel(modelValue);
