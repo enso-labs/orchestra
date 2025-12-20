@@ -16,7 +16,7 @@ export default function NoAuthLayout({
 	return (
 		<div className="h-full flex flex-col bg-background">
 			<main className="flex-1 flex flex-col items-center justify-center bg-background p-6">
-				{location.pathname !== "/login" && (
+				{location.pathname !== "/login" && location.pathname !== "/" && (
 					<div className="absolute top-4 left-4">
 						<Link
 							to="/login"
@@ -38,7 +38,7 @@ export default function NoAuthLayout({
 			<footer className="mt-auto bg-card border-t border-border">
 				<div className="px-4 sm:px-6 lg:px-8 py-4">
 					<p className="text-center text-muted-foreground text-xs">
-						&copy; 2025 Ensō Labs. All rights reserved. v{appVersion}
+						&copy; 2025 Ruska Labs. All rights reserved. v{appVersion}
 					</p>
 				</div>
 			</footer>
