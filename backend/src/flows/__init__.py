@@ -13,10 +13,10 @@ from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 
 
+from src.constants import APP_ENV
 from src.contexts.service import ServiceContext
 from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.schemas.entities.llm import Assistant
-from src.schemas.models.auth import ProtectedUser
 from src.services.memory import memory_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest
@@ -73,9 +73,11 @@ def graph_builder(
     middleware: list[Callable] = None,
     graph_id: Literal["deepagent", "react"] = "deepagent",
 ) -> CompiledStateGraph:
+    from langchain.chat_models import init_chat_model
+    llm = init_chat_model(model=model)
     if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
         return create_agent(
-            model=model,
+            model=llm,
             tools=tools,
             system_prompt=system_prompt,
             checkpointer=checkpointer,
@@ -89,7 +91,7 @@ def graph_builder(
         middleware = [add_ai_message_metadata] + pii_middleware()
 
     deep_agent = create_deep_agent(
-        model=model,
+        model=llm,
         tools=tools,
         subagents=subagents,
         system_prompt=system_prompt,
@@ -98,6 +100,7 @@ def graph_builder(
         middleware=middleware,
         store=store,
         backend=COMPOSITE_BACKEND,
+        debug=APP_ENV == "development" or APP_ENV == "test",
     )
     return deep_agent
 

@@ -22,6 +22,7 @@ export const Message = memo(
 		loading,
 		filesMap,
 		viewMode,
+		ttft,
 	}: {
 		message: any;
 		isLatest?: boolean;
@@ -31,6 +32,7 @@ export const Message = memo(
 		loading: boolean;
 		filesMap: Map<string, any>;
 		viewMode: string;
+		ttft?: number | null;
 	}) {
 		const ICON_SIZE = 4;
 		const [isEditing, setIsEditing] = useState(false);
@@ -211,6 +213,7 @@ export const Message = memo(
 								<span
 									className={`text-sm text-muted-foreground/70 ${loading ? "animate-pulse" : ""}`}
 								>
+									{ttft != null && `TTFT: ${(ttft / 1000).toFixed(2)}s • `}
 									{streamingRate.rate} tok/s • {streamingRate.count} tokens
 								</span>
 							)}
@@ -229,15 +232,36 @@ export const Message = memo(
 			prevProps.loading === nextProps.loading &&
 			prevProps.streamingRate === nextProps.streamingRate &&
 			prevProps.viewMode === nextProps.viewMode &&
-			prevProps.filesMap === nextProps.filesMap
+			prevProps.filesMap === nextProps.filesMap &&
+			prevProps.ttft === nextProps.ttft
 		);
 	},
 );
 
 const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 	const { loading, loadingMessage } = useAppContext();
-	const { streamingRate, handleSubmit, filesMap, viewMode } = useChatContext();
+	const {
+		streamingRate,
+		handleSubmit,
+		filesMap,
+		viewMode,
+		ttft,
+		submitStartTime,
+	} = useChatContext();
+	const [elapsedTime, setElapsedTime] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+
+	// Live timer for TTFT while waiting for first token
+	useEffect(() => {
+		if (submitStartTime !== null && ttft === null) {
+			const interval = setInterval(() => {
+				setElapsedTime(Date.now() - submitStartTime);
+			}, 100);
+			return () => clearInterval(interval);
+		} else {
+			setElapsedTime(null);
+		}
+	}, [submitStartTime, ttft]);
 	const isAtBottomRef = useRef(true);
 	const rafIdRef = useRef<number | null>(null);
 	const lastScrollHeightRef = useRef(0);
@@ -379,6 +403,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 									loading={loading}
 									filesMap={filesMap}
 									viewMode={viewMode}
+									ttft={ttft}
 								/>
 							</div>
 						);
@@ -388,6 +413,11 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 					<div className="flex justify-start p-3 max-w-4xl mx-auto px-5">
 						<Loader2 className="h-5 w-5 animate-spin mx-2" />
 						<span className="text-muted-foreground">{loadingMessage}</span>
+						{(elapsedTime !== null || ttft !== null) && (
+							<span className="text-sm text-muted-foreground/70 ml-2">
+								• TTFT: {((ttft ?? elapsedTime ?? 0) / 1000).toFixed(2)}s
+							</span>
+						)}
 					</div>
 				)}
 			</div>

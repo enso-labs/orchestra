@@ -93,12 +93,13 @@ export class StreamMessageHandler {
 	}
 
 	public streamStop(response: any) {
-		return (
+		const stopReason =
 			["stop", "end_turn", "STOP"].includes(
 				response.response_metadata?.finish_reason ||
 					response.response_metadata.stop_reason,
-			) && response.tool_calls?.length === 0
-		);
+			) && response.tool_calls?.length === 0;
+			
+		return stopReason;
 	}
 
 	public processResponse(
