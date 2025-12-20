@@ -21,6 +21,9 @@ class ChatModels(str, Enum):
         OPENAI_GPT_5_MINI = "openai:gpt-5-mini"
         OPENAI_GPT_5 = "openai:gpt-5"
         OPENAI_GPT_5_1 = "openai:gpt-5.1"
+        OPENAI_GPT_5_2 = "openai:gpt-5.2"
+        OPENAI_GPT_5_2_CHAT_LATEST = "openai:gpt-5.2-chat-latest"
+        OPENAI_GPT_5_2_PRO = "openai:gpt-5.2-pro"
         # OPENAI_GPT_5_CODEX = "openai:gpt-5-codex"
     if ANTHROPIC_API_KEY:
         ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic:claude-3-7-sonnet-latest"
@@ -40,6 +43,7 @@ class ChatModels(str, Enum):
         GOOGLE_GEMINI_2_5_FLASH = "google_genai:gemini-2.5-flash"
         GOOGLE_GEMINI_2_5_PRO = "google_genai:gemini-2.5-pro"
         GOOGLE_GEMINI_FLASH_LITE_LATEST = "google_genai:gemini-flash-lite-latest"
+        GOOGLE_GEMINI_3_FLASH_PREVIEW = "google_genai:gemini-3-flash-preview"
     if GROQ_API_KEY:
         GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b"
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
@@ -91,7 +95,7 @@ def get_free_models():
     if ANTHROPIC_API_KEY:
         models.append(ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value)
     if GOOGLE_API_KEY:
-        models.append(ChatModels.GOOGLE_GEMINI_FLASH_LITE_LATEST.value)
+        models.append(ChatModels.GOOGLE_GEMINI_3_FLASH_PREVIEW.value)
     if GROQ_API_KEY:
         models.append(ChatModels.GROQ_OPENAI_GPT_OSS_120B.value)
     if XAI_API_KEY:
@@ -109,14 +113,14 @@ def get_system_prompt():
 
 def get_default_chat_model():
     """Get the default chat model based on available API keys."""
+    if GOOGLE_API_KEY:
+        return ChatModels.GOOGLE_GEMINI_3_FLASH_PREVIEW.value
     if XAI_API_KEY:
         return ChatModels.XAI_GROK_4_1_FAST.value
     if OPENAI_API_KEY:
         return ChatModels.OPENAI_GPT_4_1_MINI.value
     if ANTHROPIC_API_KEY:
         return ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value
-    if GOOGLE_API_KEY:
-        return ChatModels.GOOGLE_GEMINI_2_5_FLASH.value
     if GROQ_API_KEY:
         return ChatModels.GROQ_LLAMA_3_3_70B_VERSATILE.value
     return None
@@ -124,19 +128,20 @@ def get_default_chat_model():
 
 def get_default_low_cost_model():
     """Get the default low-cost chat model based on available API keys."""
+    if GOOGLE_API_KEY:
+        return ChatModels.GOOGLE_GEMINI_3_FLASH_PREVIEW.value
     if OPENAI_API_KEY:
         return ChatModels.OPENAI_GPT_5_NANO.value
     if XAI_API_KEY:
         return ChatModels.XAI_GROK_4_1_FAST.value
     if ANTHROPIC_API_KEY:
         return ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value
-    if GOOGLE_API_KEY:
-        return ChatModels.GOOGLE_GEMINI_FLASH_LITE_LATEST.value
     if GROQ_API_KEY:
         return ChatModels.GROQ_OPENAI_GPT_OSS_120B.value
     return None
 
 
 DEFAULT_CHAT_MODEL = get_default_chat_model()
-DEFAULT_CHAT_MODEL_LOW_COST = get_default_low_cost_model()
+DEFAULT_CHAT_MODEL_BASIC = get_default_low_cost_model()
+DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value
 DEFAULT_SYSTEM_PROMPT = get_system_prompt()

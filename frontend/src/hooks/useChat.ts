@@ -55,6 +55,8 @@ export type ChatContextType = {
 	setTodos: (todos: any[]) => void;
 	viewMode: "chat" | "editor";
 	setViewMode: (mode: "chat" | "editor") => void;
+	ttft: number | null;
+	submitStartTime: number | null;
 };
 
 export default function useChat(): ChatContextType {
@@ -97,6 +99,9 @@ export default function useChat(): ChatContextType {
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
 	const [todos, setTodos] = useState<any[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
+	const [ttft, setTtft] = useState<number | null>(null);
+	const [submitStartTime, setSubmitStartTime] = useState<number | null>(null);
+	const submitStartTimeRef = useRef<number | null>(null);
 
 	const abortQuery = () => {
 		if (controller) {
@@ -189,6 +194,10 @@ export default function useChat(): ChatContextType {
 	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
+		setTtft(null);
+		const now = Date.now();
+		submitStartTimeRef.current = now;
+		setSubmitStartTime(now);
 		const { controller } = await handleSSE(argQuery || query, images);
 		setController(controller);
 		setQuery("");
@@ -232,6 +241,9 @@ export default function useChat(): ChatContextType {
 		setFilesMap(new Map());
 		setTodos([]);
 		setViewMode("chat");
+		setTtft(null);
+		submitStartTimeRef.current = null;
+		setSubmitStartTime(null);
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
@@ -289,6 +301,14 @@ export default function useChat(): ChatContextType {
 				(msg: any) => msg.id === response.id,
 			);
 
+			// Calculate TTFT on first token
+			if (existingIndex === -1 && submitStartTimeRef.current !== null) {
+				const ttftValue = Date.now() - submitStartTimeRef.current;
+				setTtft(ttftValue);
+				submitStartTimeRef.current = null;
+				setSubmitStartTime(null);
+			}
+
 			// Update streaming rate
 			if (
 				expectedContent &&
@@ -329,6 +349,9 @@ export default function useChat(): ChatContextType {
 			if (streamHandler.streamStop(response)) {
 				setLoading(false);
 				setController(null);
+			} else {
+				setLoading(false);
+				setController(controller);
 			}
 		}
 	};
@@ -413,5 +436,7 @@ export default function useChat(): ChatContextType {
 		setTodos,
 		viewMode,
 		setViewMode,
+		ttft,
+		submitStartTime,
 	};
 }
