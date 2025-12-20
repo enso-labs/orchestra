@@ -19,7 +19,7 @@ export function HomeSection() {
 
 					<h1 className="text-4xl font-bold mt-4">Orchestra</h1>
 					<p className="text-lg text-muted-foreground max-w-[42rem] mt-2">
-						Steerable Self-Improving Harnesses for{" "}
+						Self-Improving Harnesses for{" "}
 						<a
 							href="https://docs.langchain.com/oss/python/deepagents/overview"
 							target="_blank"
@@ -36,7 +36,7 @@ export function HomeSection() {
 					</div>
 
 					{/* Links intentionally sit beneath Tagline */}
-					<div className="flex flex-row flex-wrap justify-center gap-2 mt-3">
+					<div className="flex flex-row flex-wrap justify-center gap-1 mt-3">
 						<Button
 							variant="ghost"
 							size="sm"
@@ -48,7 +48,7 @@ export function HomeSection() {
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								<BookOpen className="w-4 h-4 mr-2" />
+								<BookOpen className="w-4 h-4 mr-1" />
 								Docs
 							</a>
 						</Button>
@@ -63,7 +63,7 @@ export function HomeSection() {
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								<Newspaper className="w-4 h-4 mr-2" />
+								<Newspaper className="w-4 h-4 mr-1" />
 								Blog
 							</a>
 						</Button>
@@ -78,7 +78,7 @@ export function HomeSection() {
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								<Share2 className="w-4 h-4 mr-2" />
+								<Share2 className="w-4 h-4 mr-1" />
 								Social
 							</a>
 						</Button>
@@ -93,7 +93,7 @@ export function HomeSection() {
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								<MessageCircle className="w-4 h-4 mr-2" />
+								<MessageCircle className="w-4 h-4 mr-1" />
 								Slack
 							</a>
 						</Button>

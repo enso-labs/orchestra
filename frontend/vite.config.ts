@@ -31,9 +31,9 @@ const MANIFEST: Partial<VitePWAOptions> = {
 		],
 	},
 	manifest: {
-		name: "Ensō",
-		short_name: "Ensō",
-		description: "Ensō",
+		name: "Ruska AI",
+		short_name: "Ruska AI",
+		description: "Ruska AI",
 		theme_color: "#000000",
 		background_color: "#000000",
 		display: "standalone",
@@ -62,32 +62,43 @@ export default defineConfig({
 			output: {
 				manualChunks(id) {
 					// Core vendor chunk
-					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-						return 'vendor';
+					if (
+						id.includes("node_modules/react/") ||
+						id.includes("node_modules/react-dom/")
+					) {
+						return "vendor";
 					}
 					// Router chunk
-					if (id.includes('node_modules/react-router')) {
-						return 'router';
+					if (id.includes("node_modules/react-router")) {
+						return "router";
 					}
 					// Monaco editor chunk
-					if (id.includes('node_modules/@monaco-editor') || id.includes('node_modules/monaco-editor')) {
-						return 'monaco';
+					if (
+						id.includes("node_modules/@monaco-editor") ||
+						id.includes("node_modules/monaco-editor")
+					) {
+						return "monaco";
 					}
 					// Plotly chunk (now using plotly.js-dist-min)
-					if (id.includes('node_modules/plotly.js') || id.includes('node_modules/react-plotly.js')) {
-						return 'plotly';
+					if (
+						id.includes("node_modules/plotly.js") ||
+						id.includes("node_modules/react-plotly.js")
+					) {
+						return "plotly";
 					}
 					// UI components chunk
-					if (id.includes('node_modules/@radix-ui')) {
-						return 'ui';
+					if (id.includes("node_modules/@radix-ui")) {
+						return "ui";
 					}
 					// Markdown/syntax highlighting chunk
-					if (id.includes('node_modules/react-markdown') ||
-						id.includes('node_modules/react-syntax-highlighter') ||
-						id.includes('node_modules/prismjs') ||
-						id.includes('node_modules/rehype') ||
-						id.includes('node_modules/remark')) {
-						return 'markdown';
+					if (
+						id.includes("node_modules/react-markdown") ||
+						id.includes("node_modules/react-syntax-highlighter") ||
+						id.includes("node_modules/prismjs") ||
+						id.includes("node_modules/rehype") ||
+						id.includes("node_modules/remark")
+					) {
+						return "markdown";
 					}
 				},
 			},
@@ -97,13 +108,17 @@ export default defineConfig({
 		alias: { "@": path.resolve(__dirname, "./src") },
 	},
 	server: {
-		allowedHosts: ["frontend.enso.sh"],
+		allowedHosts: [
+			"chat.ruska.ai",
+			"orchestra.ruska.ai",
+			"frontend.enso.sh",
+		],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",
 				changeOrigin: true,
 			},
-			"/docs": {
+			"/docs/": {
 				target: "http://localhost:8000",
 				changeOrigin: true,
 			},
