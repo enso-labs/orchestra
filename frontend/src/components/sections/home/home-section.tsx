@@ -19,7 +19,15 @@ export function HomeSection() {
 
 					<h1 className="text-4xl font-bold mt-4">Orchestra</h1>
 					<p className="text-lg text-muted-foreground max-w-[42rem] mt-2">
-						Steerable Self-Improving Harnesses for <a href="https://docs.langchain.com/oss/python/deepagents/overview" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">DeepAgents</a>
+						Steerable Self-Improving Harnesses for{" "}
+						<a
+							href="https://docs.langchain.com/oss/python/deepagents/overview"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline hover:text-primary"
+						>
+							DeepAgents
+						</a>
 					</p>
 
 					{/* ChatInput intentionally sits beneath Links */}
@@ -81,7 +89,7 @@ export function HomeSection() {
 							asChild
 						>
 							<a
-								href="https://join.slack.com/t/enso-labs-workspace/shared_invite/zt-3l2lnevo6-hOe5ZeoAz~xj7CFAJk2bzg"
+								href="https://join.slack.com/t/ruska-ai-workspace/shared_invite/zt-3l2lnevo6-hOe5ZeoAz~xj7CFAJk2bzg"
 								target="_blank"
 								rel="noopener noreferrer"
 							>

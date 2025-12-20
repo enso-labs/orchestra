@@ -13,7 +13,7 @@ export default function HelpfulIcons() {
 				/>
 			</a>
 			<a
-				href="https://github.com/enso-labs/cloud"
+				href="https://github.com/ruska-ai/cloud"
 				target="_blank"
 				className="hover:opacity-80 transition-opacity"
 				rel="noreferrer"
