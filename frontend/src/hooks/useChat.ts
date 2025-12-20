@@ -349,9 +349,6 @@ export default function useChat(): ChatContextType {
 			if (streamHandler.streamStop(response)) {
 				setLoading(false);
 				setController(null);
-			} else {
-				setLoading(false);
-				setController(controller);
 			}
 		}
 	};
