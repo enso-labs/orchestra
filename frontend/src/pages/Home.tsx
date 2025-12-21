@@ -21,7 +21,7 @@ export default function Home() {
 
 	if (messages.length === 0) {
 		return (
-			<NoAuthLayout>
+			<NoAuthLayout showModelSelector={true}>
 				<HomeSection />
 			</NoAuthLayout>
 		);

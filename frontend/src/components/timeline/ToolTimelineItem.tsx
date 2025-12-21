@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { ChevronDown, ChevronUp, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { truncateFrom } from "@/lib/utils/format";
@@ -50,11 +50,17 @@ function ToolContent({
 		};
 	}
 
-	if (["get_stock_price_history"].includes(message.name)) {
+	if (message.artifact) {
 		return {
 			element: (
 				<div className="w-full overflow-hidden rounded-lg border border-border">
-					<Suspense fallback={<div className="h-[400px] flex items-center justify-center text-muted-foreground">Loading chart...</div>}>
+					<Suspense
+						fallback={
+							<div className="h-[400px] flex items-center justify-center text-muted-foreground">
+								Loading chart...
+							</div>
+						}
+					>
 						<ChartRenderWidget content={message.artifact} />
 					</Suspense>
 				</div>
@@ -104,6 +110,12 @@ export default function ToolTimelineItem({
 	};
 
 	const isSuccess = message.status === "success";
+
+	useEffect(() => {
+		if (message.artifact) {
+			setIsExpanded(true);
+		}
+	}, [message.artifact]);	
 
 	return (
 		<div className="bg-muted/50 rounded-lg border border-border/50 overflow-hidden">
