@@ -9,8 +9,11 @@ import { Agent } from "@/lib/services/agentService";
 import { ChatNav } from "@/components/nav/ChatNav";
 
 export default function Home() {
-	const { messages } = useChatContext();
+	const { messages, useModelsEffect } = useChatContext();
 	const { setAgent } = useAgentContext();
+
+	// Fetch models for the SelectModel component
+	useModelsEffect();
 
 	useEffect(() => {
 		setAgent((prev: Agent) => ({
