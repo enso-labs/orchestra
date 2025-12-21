@@ -122,8 +122,8 @@ jobs:
               working-directory: ./backend
               run: |
                   # Use the tag name for the Docker image version
-                  DOCKER_IMAGE=ghcr.io/enso-labs/orchestra:${GITHUB_REF#refs/tags/}
-                  DOCKER_LATEST=ghcr.io/enso-labs/orchestra:latest
+                  DOCKER_IMAGE=ghcr.io/ruska-ai/orchestra:${GITHUB_REF#refs/tags/}
+                  DOCKER_LATEST=ghcr.io/ruska-ai/orchestra:latest
 
                   echo "Building images: $DOCKER_IMAGE and $DOCKER_LATEST"
                   docker build --squash -t $DOCKER_IMAGE -t $DOCKER_LATEST .

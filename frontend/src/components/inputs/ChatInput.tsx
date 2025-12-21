@@ -88,7 +88,7 @@ export default function ChatInput({
 			<textarea
 				ref={textareaRef}
 				className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? "rounded-none" : "rounded-t-3xl"} focus:outline-none border-b-0`}
-				placeholder="How can I help you be present?"
+				placeholder="How can I help you be more productive?"
 				rows={1}
 				value={query}
 				onChange={handleTextareaResize}

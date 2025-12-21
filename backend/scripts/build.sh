@@ -14,7 +14,7 @@ TAG=${1:-$SHORT_SHA}
 ## Container Registry
 ########################################################################
 REGISTRY="ghcr.io"
-REPOSITORY="enso-labs"
+REPOSITORY="ruska-ai"
 IMAGE_NAME="orchestra"
 FULL_IMAGE="$REGISTRY/$REPOSITORY/$IMAGE_NAME"
 

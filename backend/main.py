@@ -70,7 +70,7 @@ app = FastAPI(
         "This is a simple API for building chatbots with LangGraph. "
         "It allows you to create new threads, query existing threads, "
         "and get the history of a thread.\n Check out the repo on "
-        f"<a href='https://github.com/enso-labs/orchestra'>Github</a>"
+        f"<a href='https://github.com/ruska-ai/orchestra'>Github</a>"
     ),
     contact={"name": "Ryan Eggleston", "email": "reggleston@enso.sh"},
     debug=True,

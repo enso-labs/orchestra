@@ -20,7 +20,7 @@ class Examples:
         #     value=[{
         #         "type": "gitbook",
         #         "metadata": {
-        #             "urls": ["https://github.com/enso-labs/a2a-langgraph"],
+        #             "urls": ["https://github.com/ruska-ai/a2a-langgraph"],
         #             "load_all_paths": True,
         #         },
         #     }],
@@ -32,7 +32,7 @@ class Examples:
                 {
                     "type": "web_scrape",
                     "content": {
-                        "urls": ["https://github.com/enso-labs/a2a-langgraph"],
+                        "urls": ["https://github.com/ruska-ai/a2a-langgraph"],
                     },
                 }
             ],

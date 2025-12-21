@@ -1,8 +1,7 @@
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Optional
 
 
-@dataclass
-class ContextSchema:
+class ContextSchema(BaseModel):
     model: str
     user_id: Optional[str] = None

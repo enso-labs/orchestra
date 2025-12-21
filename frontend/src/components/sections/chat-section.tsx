@@ -12,7 +12,7 @@ export function ChatSection() {
 			<p className="text-lg mb-2">
 				AI Orchestrator powered by{" "}
 				<a
-					href="https://github.com/enso-labs/mcp-sse"
+					href="https://github.com/ruska-ai/mcp-sse"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="text-primary hover:underline"
@@ -21,7 +21,7 @@ export function ChatSection() {
 				</a>{" "}
 				&{" "}
 				<a
-					href="https://github.com/enso-labs/a2a-langgraph"
+					href="https://github.com/ruska-ai/a2a-langgraph"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="text-primary hover:underline"

@@ -28,7 +28,7 @@ This project includes tools for running shell commands and Docker container oper
 We publish the backend image to GitHub Container Registry (GHCR). For the full Docker/Docker Compose deployment guide (env setup, services, migrations, troubleshooting), jump to [Docker Deployment details](#-docker-deployment-ghcr--docker-compose).
 
 ```bash
-docker pull ghcr.io/enso-labs/orchestra:latest
+docker pull ghcr.io/ruska-ai/orchestra:latest
 ```
 
 ## 📋 Prerequisites
@@ -183,7 +183,7 @@ This section covers deploying the Orchestra backend using Docker. For local deve
 Pull the latest image from GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/enso-labs/orchestra:latest
+docker pull ghcr.io/ruska-ai/orchestra:latest
 ```
 
 #### 1. Environment Setup
@@ -254,7 +254,7 @@ services:
 
     # Server (use pre-built image or build locally)
     orchestra:
-        image: ghcr.io/enso-labs/orchestra:latest
+        image: ghcr.io/ruska-ai/orchestra:latest
         container_name: orchestra
         env_file: .env.docker
         ports:
