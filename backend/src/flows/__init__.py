@@ -209,7 +209,9 @@ async def construct_agent(
             tools, system_prompt = await init_memories(system_prompt, tools)
         else:
             ## Automatically select for unauthenticated users
-            middleware = [dynamic_model_selection]
+            middleware = [
+                # dynamic_model_selection
+            ]
 
         if subagents:
             subagents = await init_subagents(subagents, service_context)
