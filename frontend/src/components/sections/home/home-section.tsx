@@ -8,7 +8,7 @@ export function HomeSection() {
 	return (
 		<div className="w-full">
 			{/* Desktop: 3-column grid (rule of thirds). Center column holds the primary content. */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+			<div className="grid grid-cols-1 lg:grid-cols-[1fr_42rem_1fr] gap-6 items-start">
 				<div className="hidden lg:block" />
 				<div className="flex flex-col items-center text-center">
 					<img
