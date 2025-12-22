@@ -108,37 +108,41 @@ def create_api_tool(
     args_schema: Optional[dict] = None,
     headers: Optional[Dict[str, str]] = None,
 ):
-    # 1) Build the Pydantic model *once* from the dict spec
-    args_model: Optional[Type[BaseModel]] = None
-    if args_schema is not None:
-        args_model = format_schema_to_model(args_schema, model_name=f"{name}_Args")
+    try:
+        # 1) Build the Pydantic model *once* from the dict spec
+        args_model: Optional[Type[BaseModel]] = None
+        if args_schema is not None:
+            args_model = format_schema_to_model(args_schema, model_name=f"{name}_Args")
 
-    async def api_call(**tool_args):
-        # 2) Use that model for validation + defaults
-        if args_model is not None:
-            payload = args_model(**tool_args).model_dump()
-        else:
-            payload = tool_args
+        async def api_call(**tool_args):
+            # 2) Use that model for validation + defaults
+            if args_model is not None:
+                payload = args_model(**tool_args).model_dump()
+            else:
+                payload = tool_args
 
-        api_client = APIClient(base_url=base_url, headers=headers)
+            api_client = APIClient(base_url=base_url, headers=headers)
 
-        method_lower = method.lower()
+            method_lower = method.lower()
 
-        res = await api_client._request(
-            method=method_lower,
-            endpoint=endpoint,
-            data=payload,
-            headers=headers,
+            res = await api_client._request(
+                method=method_lower,
+                endpoint=endpoint,
+                data=payload,
+                headers=headers,
+            )
+            return res
+
+        # 3) Wire the model class into the tool as args_schema
+        return StructuredTool.from_function(
+            coroutine=api_call,
+            name=name,
+            description=description,
+            args_schema=args_model,  # <- Pydantic model class, not dict
         )
-        return res
-
-    # 3) Wire the model class into the tool as args_schema
-    return StructuredTool.from_function(
-        coroutine=api_call,
-        name=name,
-        description=description,
-        args_schema=args_model,  # <- Pydantic model class, not dict
-    )
+    except Exception as e:
+        logger.exception(f"Error creating API tool {name}: {e}")
+        raise
 
 
 ## Example usage:
