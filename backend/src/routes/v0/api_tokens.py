@@ -7,7 +7,7 @@ from src.repos.api_token_repo import ApiTokenRepo
 from src.schemas.entities.auth import ApiToken
 from src.services.db import get_store
 
-router = APIRouter(tags=["api-tokens"])
+router = APIRouter(tags=["Token"])
 
 class CreateApiTokenRequest(BaseModel):
     name: str
