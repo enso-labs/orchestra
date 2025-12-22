@@ -691,12 +691,28 @@ export function AgentCreateForm() {
 					{agent.tools && agent.tools.length > 0 && (
 						<div className="flex flex-wrap gap-2">
 							{agent.tools.map((tool: string) => (
-								<span
+								<div
 									key={tool}
-									className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-sm text-foreground"
+									className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-sm"
 								>
-									{tool}
-								</span>
+									<span className="text-foreground">{tool}</span>
+									<button
+										type="button"
+										disabled={!isEditing}
+										onClick={() => {
+											const updatedTools = agent.tools?.filter((t: string) => t !== tool) || [];
+											setAgent({ ...agent, tools: updatedTools });
+										}}
+										className={`transition-colors ${
+											isEditing
+												? "text-muted-foreground hover:text-foreground"
+												: "text-muted-foreground/50 cursor-not-allowed"
+										}`}
+										aria-label={`Remove ${tool}`}
+									>
+										<X className="h-3 w-3" />
+									</button>
+								</div>
 							))}
 						</div>
 					)}

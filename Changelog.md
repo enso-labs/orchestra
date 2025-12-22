@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc126
 
 ### Changed
+  - feat/596-deselect-tools (2025-12-21)
   - feat/589-correlation-matraix (2025-12-20)
   - feat/588-home-page-facelift (2025-12-20)
 
