@@ -18,6 +18,9 @@ def get_financial_news(ticker: str) -> tuple[str, dict]:
     # Convert full results to DataFrame
     df_raw = pd.DataFrame(yf.Ticker(ticker).news)
 
+    if df_raw.empty:
+        return f"No financial news found for the given ticker: {ticker}.", {}
+
     # Expand ONLY the "content" field
     df = pd.json_normalize(df_raw["content"])
 
@@ -45,6 +48,7 @@ def get_financial_news(ticker: str) -> tuple[str, dict]:
     # Convert to markdown (clean, no index)
     markdown = f"## Financial News\n" + f"```csv\n{df.to_csv(index=False)}\n```"
     return markdown
+
     # TODO: Eval if this is cleaner later on. Get fidgety as table but looks good.
     # This is what you feed back into the model as textual context
     # model_ctx = (

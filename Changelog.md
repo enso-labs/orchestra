@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - feat/588-home-page-facelift (2025-12-20)
 
 ### Fixed
+  - bug/592-chart-render-issue (2025-12-21)
 
 ## v0.0.2-rc125
 

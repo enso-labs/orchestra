@@ -50,7 +50,13 @@ function ToolContent({
 		};
 	}
 
-	if (message.artifact) {
+	// If we have a Plotly chart, parse the artifact
+	let messageArtifact: any = null;
+	try {
+		messageArtifact = JSON.parse(message.artifact);
+	} catch {}
+
+	if (messageArtifact?.data && messageArtifact?.layout) {
 		return {
 			element: (
 				<div className="w-full overflow-hidden rounded-lg border border-border">
