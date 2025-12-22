@@ -5,15 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.0.2-rc126
+## v0.0.2-rc130
 
 ### Changed
+  - feat/595-tokens-and-secrets (2025-12-21)
   - feat/596-deselect-tools (2025-12-21)
   - feat/589-correlation-matraix (2025-12-20)
   - feat/588-home-page-facelift (2025-12-20)
 
 ### Fixed
   - bug/592-chart-render-issue (2025-12-21)
+
+## v0.0.2-rc129
+
+### Changed
+  - feat/595-tokens-and-secrets (2025-12-21)
+  - feat/596-deselect-tools (2025-12-21)
+  - feat/589-correlation-matraix (2025-12-20)
+  - feat/588-home-page-facelift (2025-12-20)
 
 ## v0.0.2-rc125
 

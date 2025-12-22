@@ -27,12 +27,12 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
     app.include_router(prompt, prefix=prefix)
     app.include_router(project, prefix=prefix)
     app.include_router(schedule, prefix=prefix)
-    app.include_router(api_tokens, prefix=prefix)
     if LANGCONNECT_SERVER_URL:
         from .rag import gateway as rag
 
         app.include_router(rag, prefix=prefix)
     app.include_router(storage, prefix=prefix)
+    app.include_router(api_tokens, prefix=prefix)
     return app
 
 
