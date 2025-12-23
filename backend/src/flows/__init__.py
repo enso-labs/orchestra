@@ -9,6 +9,7 @@ from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.cache.memory import InMemoryCache
 from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 
@@ -31,13 +32,17 @@ from src.utils.middleware import (
 )
 from src.tools import default_tools
 
-COMPOSITE_BACKEND = lambda rt: CompositeBackend(
-    default=StateBackend(rt),
-    routes={
-        "/memories/": StoreBackend(rt),
-    },
-)
 
+CACHE_LLM = InMemoryCache()
+
+
+def init_backend(rt):
+    user_root = f"/users/{rt.context.user_id}"
+    store = StoreBackend(rt)
+    return CompositeBackend(default=StateBackend(rt), routes={
+        f"{user_root}/memories/": store,
+        f"{user_root}/config/": store
+    })
 
 async def add_memories_to_system():
     memories = await memory_service.search()
@@ -71,6 +76,7 @@ def graph_builder(
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
     middleware: list[Callable] = None,
+    backend: CompositeBackend = None,
     graph_id: Literal["deepagent", "react"] = "deepagent",
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
@@ -99,7 +105,8 @@ def graph_builder(
         context_schema=context_schema,
         middleware=middleware,
         store=store,
-        backend=COMPOSITE_BACKEND,
+        cache=CACHE_LLM,
+        backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
     )
     return deep_agent
@@ -229,6 +236,7 @@ async def construct_agent(
             store=service_context.store,
             middleware=middleware,
             context_schema=ContextSchema,
+            backend=init_backend,
         )
         return agent
     except Exception as e:
@@ -249,6 +257,7 @@ class Orchestra:
         store: BaseStore = None,
         middleware: list[Callable] = None,
         graph_id: Literal["react", "deepagent"] = "deepagent",
+        backend: CompositeBackend = None,
     ):
         self.tools = tools
         self.model = model
@@ -268,6 +277,7 @@ class Orchestra:
             store=self.store,
             graph_id=graph_id,
             middleware=middleware,
+            backend=backend,
         )
 
     async def invoke(
