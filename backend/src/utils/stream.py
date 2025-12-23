@@ -1,4 +1,6 @@
+from deepagents.backends import StoreBackend
 from langchain.agents.middleware import PIIDetectionError
+from langchain.tools import ToolRuntime
 import ujson
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
@@ -12,7 +14,7 @@ from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
-from src.flows import construct_agent
+from src.flows import construct_agent, init_backend
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
@@ -174,10 +176,28 @@ async def stream_generator(
     service_context: ServiceContext,
     instructions: str = None,
 ):
-    files_map = config["metadata"].get("files", {})
+    files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
     async with get_checkpoint_db() as checkpointer:
         try:
+            ctx = ContextSchema(
+                model=model,
+                user_id=service_context.user_id,
+            )
+            runtime = ToolRuntime(  
+                state={"messages": [], "files": files_map},  
+                context=ctx,  
+                tool_call_id="tc",  
+                store=service_context.store,  
+                stream_writer=lambda _: None,  
+                config=config,  
+            )
+            store_backend = StoreBackend(runtime)
+            routes = {
+                f"/users/{service_context.user_id}/memories/": store_backend,
+                f"/users/{service_context.user_id}/config/": store_backend,
+            }
+            backend = init_backend(runtime, routes=routes)
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,
@@ -185,17 +205,15 @@ async def stream_generator(
                 tools=tools,
                 subagents=subagents,
                 checkpointer=checkpointer,
+                backend=backend,
                 service_context=service_context,
             )
             input.messages[-1].model = agent.model
             async for chunk in agent.astream(
-                {"messages": input.messages},
+                input,
                 stream_mode=["messages", "values"],
                 config=config,
-                context=ContextSchema(
-                    model=agent.model,
-                    user_id=service_context.user_id,
-                ),
+                context=ctx,
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)

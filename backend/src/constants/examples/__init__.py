@@ -703,7 +703,9 @@ class Examples:
                 "model": "openai:gpt-5-nano",
                 "instructions": "You are a weather assistant.",
                 "tools": ["get_weather"],
-                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                "input": {
+                    "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                },
             },
         ),
         "stateless_stream_system": Example(
@@ -713,17 +715,39 @@ class Examples:
                 "model": "openai:gpt-5-nano",
                 "system": "You are a weather assistant. Only output format in Celsius.",
                 "tools": ["get_weather"],
-                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                "input": {
+                    "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                },
             },
         ),
-        "persistant_thread": Example(
-            summary="persistant_thread",
-            description="LLM with Persistant Thread",
+        "python_sandbox": Example(
+            summary="python_sandbox",
+            description="LLM with Python Sandbox",
             value={
-                "model": "openai:gpt-5-nano",
-                "system": "You are a helpful assistant.",
+                "model": "openai:gpt-4.1-mini",
+                "system": "You are a helpful assistant, that can execute python code in a sandbox to complete tasks.",
+                "tools": ["python_sandbox"],
+                "input": {
+                    "messages": [{"role": "user", "content": "Execute python file ./fib.py and return results."}],
+                     "files": {
+                        "/fib.py": {
+                            "content": [
+                            "def fibonacci(n):",
+                            "    sequence = [0, 1]",
+                            "    while len(sequence) < n:",
+                            "        sequence.append(sequence[-1] + sequence[-2])",
+                            "    return sequence[:n]",
+                            "",
+                            "if __name__ == \"__main__\":",
+                            "    print(fibonacci(10))",
+                            ""
+                            ],
+                            "created_at": "2025-12-23T21:10:06.470896+00:00",
+                            "modified_at": "2025-12-23T21:10:06.470896+00:00"
+                        }
+                    },
+                },
                 "metadata": get_example_metadata(thread_id=True),
-                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
         "branch_from_checkpoint": Example(
@@ -733,19 +757,18 @@ class Examples:
                 "model": "openai:gpt-5-nano",
                 "system": "You are a helpful assistant.",
                 "metadata": get_example_metadata(thread_id=True, checkpoint_id=True),
-                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                "input": {
+                    "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                },
             },
         ),
         "assistant_query": Example(
             summary="assistant_query",
             description="LLM with Assistant Query",
             value={
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [{"type": "text", "text": "100 USD to CAD?"}],
-                    }
-                ],
+                "input": {
+                    "messages": [{"role": "user", "content": "100 USD to CAD?"}],
+                },
                 "metadata": get_example_metadata(assistant_id=True),
             },
         ),
@@ -753,12 +776,9 @@ class Examples:
             summary="assistant_query_project",
             description="LLM with Assistant Query",
             value={
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [{"type": "text", "text": ""}],
-                    }
-                ],
+                "input": {
+                    "messages": [{"role": "user", "content": "100 USD to CAD? Compare against previous exchange rates."}],
+                },
                 "metadata": get_example_metadata(assistant_id=True, project_id=True),
             },
         ),

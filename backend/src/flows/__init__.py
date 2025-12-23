@@ -1,5 +1,6 @@
 from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional
 from uuid import uuid4
+from langchain.tools import ToolRuntime
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -27,7 +28,7 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 from src.utils.middleware import (
     add_ai_message_metadata,
-    dynamic_model_selection,
+    # dynamic_model_selection,
     pii_middleware,
 )
 from src.tools import default_tools
@@ -35,14 +36,6 @@ from src.tools import default_tools
 
 CACHE_LLM = InMemoryCache()
 
-
-def init_backend(rt):
-    user_root = f"/users/{rt.context.user_id}"
-    store = StoreBackend(rt)
-    return CompositeBackend(default=StateBackend(rt), routes={
-        f"{user_root}/memories/": store,
-        f"{user_root}/config/": store
-    })
 
 async def add_memories_to_system():
     memories = await memory_service.search()
@@ -191,6 +184,7 @@ def init_config(
             "thread_id": metadata.get("thread_id"),
             "assistant_id": metadata.get("assistant_id", None),
             "project_id": metadata.get("project_id", None),
+            "files": params.input.files or {},
         },
         max_concurrency=max_concurrency,
         recursion_limit=recursion_limit,
@@ -198,20 +192,32 @@ def init_config(
     )
 
 
+def init_backend(runtime: ToolRuntime, *, routes):  
+    """Factory function that creates a CompositeBackend with custom routes."""  
+    built_routes = {}  
+    for prefix, backend_or_factory in routes.items():  
+        if callable(backend_or_factory):  
+            built_routes[prefix] = backend_or_factory(runtime)  
+        else:  
+            built_routes[prefix] = backend_or_factory  
+    default_state = StateBackend(runtime)  
+    return CompositeBackend(default=default_state, routes=built_routes)
+
 ################################################################################
 ### Construct Agent
 ################################################################################
 async def construct_agent(
     instructions: str,
     system_prompt: str,
-    tools: list[BaseTool],
     model: BaseChatModel,
+    tools: list[BaseTool],
     subagents: list[SubAgent] = [],
+    middleware: list[Callable] = [],
+    backend: CompositeBackend = None,
     checkpointer: BaseCheckpointSaver = None,
     service_context: ServiceContext = None,
 ):
     try:
-        middleware = None
         if service_context.config.get("metadata", {}).get("user_id"):
             tools, system_prompt = await init_memories(system_prompt, tools)
         else:
@@ -236,7 +242,7 @@ async def construct_agent(
             store=service_context.store,
             middleware=middleware,
             context_schema=ContextSchema,
-            backend=init_backend,
+            backend=backend,
         )
         return agent
     except Exception as e:
