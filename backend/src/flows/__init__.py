@@ -18,7 +18,7 @@ from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 from src.constants import APP_ENV
 from src.contexts.service import ServiceContext
 from src.constants.llm import DEFAULT_SYSTEM_PROMPT
-from src.schemas.entities.llm import Assistant
+from src.schemas.entities.llm import Assistant, LLMInput
 from src.services.memory import memory_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest
@@ -288,11 +288,16 @@ class Orchestra:
 
     async def invoke(
         self,
-        messages: list[BaseMessage],
+        input: LLMInput,
         config: RunnableConfig = None,
         context: dict[str, Any] = None,
     ) -> BaseMessage:
-        return await self.graph.ainvoke(messages, config=config, context=context)
+        input.to_langchain_messages()
+        return await self.graph.ainvoke(
+            input, 
+            config=config, 
+            context=context,
+        )
 
     def astream(
         self,

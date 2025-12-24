@@ -573,16 +573,34 @@ class Examples:
                 "messages": [{"role": "user", "content": "Weather in Dallas?"}],
             },
         ),
-        "deepagent": Example(
-            summary="deepagent",
-            description="Invoke DeepAgent Graph",
+        "python_sandbox": Example(
+            summary="python_sandbox",
+            description="LLM with Python Sandbox",
             value={
-                "model": "openai:gpt-5-nano",
-                "system": "You are a helpful assistant.",
-                "metadata": {
-                    "graph_id": "deepagent",
+                "model": "openai:gpt-4.1-mini",
+                "system": "You are a helpful assistant, that can execute python code in a sandbox to complete tasks.",
+                "tools": ["python_sandbox"],
+                "input": {
+                    "messages": [{"role": "user", "content": "Execute python file ./fib.py and return results."}],
+                     "files": {
+                        "/fib.py": {
+                            "content": [
+                            "def fibonacci(n):",
+                            "    sequence = [0, 1]",
+                            "    while len(sequence) < n:",
+                            "        sequence.append(sequence[-1] + sequence[-2])",
+                            "    return sequence[:n]",
+                            "",
+                            "if __name__ == \"__main__\":",
+                            "    print(fibonacci(10))",
+                            ""
+                            ],
+                            "created_at": "2025-12-23T21:10:06.470896+00:00",
+                            "modified_at": "2025-12-23T21:10:06.470896+00:00"
+                        }
+                    },
                 },
-                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                "metadata": get_example_metadata(thread_id=True),
             },
         ),
         "assistant_query": Example(

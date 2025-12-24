@@ -1,12 +1,14 @@
+from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
+from langchain.tools import ToolRuntime
 import ujson
 
 from langgraph.store.base import BaseStore
 from langchain_core.runnables import RunnableConfig
 
+from src.schemas.entities.llm import LLMInput
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.schedule import ScheduleCreate
 from src.schemas.entities import LLMRequest
-from src.schemas.models import ProtectedUser
 from src.contexts.service import ServiceContext
 from src.flows import construct_agent, init_config
 from src.services.db import get_checkpoint_db
@@ -23,6 +25,28 @@ class LLMController:
         self.service_context = ServiceContext(
             user_id=self.user_id, store=self.store, config=config
         )
+        
+    def _init_context(self, request: LLMRequest) -> ContextSchema:
+        return ContextSchema(model=request.model, user_id=self.user_id)
+        
+    def _init_runtime(self, request: LLMRequest) -> ToolRuntime:
+        return ToolRuntime(
+            state={"messages": [], "files": request.input.files},
+            context=self._init_context(request),
+            tool_call_id="tc_runtime_init",
+            store=self.store,
+            stream_writer=lambda _: None,
+            config=self.service_context.config,
+        )
+        
+    def init_backend(self, request: LLMRequest) -> CompositeBackend:
+        runtime = self._init_runtime(request)
+        store_backend = StoreBackend(runtime)
+        built_routes = {
+            f"/users/{runtime.context.user_id}/memories/": store_backend,
+            f"/users/{runtime.context.user_id}/config/": store_backend,
+        }  
+        return CompositeBackend(default=StateBackend(runtime), routes=built_routes)
 
     async def _update_store(self, agent: Orchestra, config: RunnableConfig) -> None:
         final_state = await agent.graph.aget_state(config)
@@ -50,15 +74,21 @@ class LLMController:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
             async with get_checkpoint_db() as checkpointer:
+                backend = self.init_backend(params)
                 agent: Orchestra = await construct_agent(
-                    params,
-                    checkpointer,
+                    instructions=params.instructions,
+                    system_prompt=params.system_prompt,
+                    model=params.model,
+                    tools=params.tools,
+                    subagents=params.subagents,
+                    checkpointer=checkpointer,
+                    backend=backend,
                     service_context=self.service_context,
                 )
                 response = await agent.invoke(
                     params.input,
                     config=config,
-                    context=ContextSchema(model=params.model, user_id=self.user_id),
+                    context=self._init_context(params),
                 )
                 return response
         except Exception as e:
