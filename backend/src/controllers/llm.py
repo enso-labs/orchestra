@@ -5,7 +5,6 @@ import ujson
 from langgraph.store.base import BaseStore
 from langchain_core.runnables import RunnableConfig
 
-from src.schemas.entities.llm import LLMInput
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.schedule import ScheduleCreate
 from src.schemas.entities import LLMRequest
