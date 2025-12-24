@@ -53,7 +53,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	// Memoized Monaco options to prevent re-initialization
 	const monacoOptions = useMemo(
 		() => ({
-			minimap: { enabled: true },
+			minimap: true,
 			lineNumbers: "on" as const,
 			wordWrap: "on" as const,
 			fontSize: 13,
@@ -491,7 +491,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 								key={selectedFile}
 								value={getFileContent(selectedFile)}
 								language={getLanguage(selectedFile)}
-								onChange={handleContentChange}
+								handleChange={handleContentChange}
 								height="100%"
 								options={monacoOptions}
 							/>
