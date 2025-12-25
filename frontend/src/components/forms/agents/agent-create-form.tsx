@@ -291,57 +291,57 @@ export function AgentCreateForm() {
 										<Button
 											type="button"
 											variant="outline"
-											size="sm"
+											size="icon"
 											onClick={handleCancel}
-											className="flex items-center gap-2"
+											aria-label="Cancel"
+											title="Cancel"
 										>
 											<Ban className="h-4 w-4" />
-											Cancel
 										</Button>
 										<Button
 											type="button"
 											variant="default"
-											size="sm"
+											size="icon"
 											onClick={form.handleSubmit(onSubmit)}
-											className="flex items-center gap-2"
+											aria-label="Save"
+											title="Save"
 										>
 											<Save className="h-4 w-4" />
-											Save
 										</Button>
 									</>
 								) : (
 									<Button
 										type="button"
 										variant="outline"
-										size="sm"
+										size="icon"
 										onClick={handleEdit}
-										className="flex items-center gap-2"
+										aria-label="Edit"
+										title="Edit"
 									>
 										<Pencil className="h-4 w-4" />
-										Edit
 									</Button>
 								)}
 								<Button
 									type="button"
 									variant="destructive"
-									size="sm"
+									size="icon"
 									onClick={deleteAgent}
-									className="flex items-center gap-2"
+									aria-label="Delete"
+									title="Delete"
 								>
 									<Trash2 className="h-4 w-4" />
-									Delete
 								</Button>
 							</div>
 						) : (
 							<Button
 								type="button"
 								variant="outline"
-								size="sm"
+								size="icon"
 								onClick={form.handleSubmit(onSubmit)}
-								className="flex items-center gap-2"
+								aria-label="Save"
+								title="Save"
 							>
 								<Save className="h-4 w-4" />
-								Save
 							</Button>
 						)}
 					</div>

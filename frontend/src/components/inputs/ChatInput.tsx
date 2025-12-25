@@ -9,7 +9,7 @@ import { useAppContext } from "@/context/AppContext";
 import BaseToolMenu from "../menus/BaseToolMenu";
 import AgentMenu from "../menus/AgentMenu";
 import { useProjectContext } from "@/context/ProjectContext";
-import { X, Folder } from "lucide-react";
+import { X, Folder, FolderCode } from "lucide-react";
 import { Button } from "../ui/button";
 
 export default function ChatInput({
@@ -37,6 +37,9 @@ export default function ChatInput({
 		handleSubmit,
 		metadata,
 		setMetadata,
+		viewMode,
+		setViewMode,
+		filesMap,
 	} = useChatContext();
 
 	const handleResetProject = () => {
@@ -46,6 +49,16 @@ export default function ChatInput({
 			return rest;
 		});
 		localStorage.removeItem("current_project_id");
+	};
+
+	// Count total files across all messages
+	const fileCount = Array.from(filesMap?.values() || []).reduce(
+		(acc: number, files: any) => acc + Object.keys(files || {}).length,
+		0,
+	);
+
+	const toggleViewMode = () => {
+		setViewMode(viewMode === "chat" ? "editor" : "chat");
 	};
 
 	// Initialize the recorder controls using the hook
@@ -113,6 +126,21 @@ export default function ChatInput({
 					<div className="flex gap-1">
 						{/* <ImageUpload /> */}
 						<BaseToolMenu />
+						{/* File toggle button */}
+						<Button
+							variant={viewMode === "editor" ? "secondary" : "ghost"}
+							size="sm"
+							className="h-8 px-2 gap-1 relative"
+							onClick={toggleViewMode}
+							title={viewMode === "editor" ? "Back to Chat" : "Manage Files"}
+						>
+							<FolderCode className="h-4 w-4" />
+							{fileCount > 0 && (
+								<span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+									{fileCount}
+								</span>
+							)}
+						</Button>
 					</div>
 					{showAgentMenu && (
 						<div className="max-w-62">

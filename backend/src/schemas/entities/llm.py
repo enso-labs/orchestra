@@ -1,6 +1,6 @@
 from uuid import uuid4
 from datetime import datetime
-from typing import List, Any, Literal, Optional
+from typing import Dict, List, Any, Literal, Optional
 from pydantic import (
     BaseModel,
     Field,
@@ -60,6 +60,7 @@ class LLMInput(BaseModel):
         content: str | List[Any] = Field(examples=["Weather in Dallas?"])
 
     messages: List[ChatMessage]
+    files: Optional[Dict[str, Any]] = Field(default=None)
 
     def to_langchain_messages(self) -> "LLMInput":
         # Convert API messages to LangChain message objects
@@ -68,9 +69,9 @@ class LLMInput(BaseModel):
             role = message.role
             content = message.content
             if role == "user":
-                converted.append(HumanMessage(content=content))
+                converted.append(HumanMessage(content=content, role=role))
             elif role == "assistant":
-                converted.append(AIMessage(content=content))
+                converted.append(AIMessage(content=content, role=role))
             elif role == "system":
                 converted.append(SystemMessage(content=content))
             elif role == "tool":

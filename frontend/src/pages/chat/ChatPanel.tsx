@@ -23,7 +23,11 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 	const { appVersion } = useAppContext();
 	const { messages, viewMode, filesMap } = useChatContext();
 
-	if (agent && messages.length === 0) {
+	// Check if there are any files in the filesMap
+	const hasFiles = filesMap.size > 0;
+
+	// Show AgentSection only when in chat mode with no messages and no files
+	if (agent && messages.length === 0 && viewMode === "chat" && !hasFiles) {
 		return (
 			<ChatLayout>
 				{chatNav}

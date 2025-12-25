@@ -619,17 +619,18 @@ wheels = [
 
 [[package]]
 name = "deepagents"
-version = "0.3.0"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain" },
     { name = "langchain-anthropic" },
     { name = "langchain-core" },
+    { name = "langchain-google-genai" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/c7/d3c2840bd0e66b6cd5948aa69625e129328ad261308e18fcb9a9420709da/deepagents-0.3.0.tar.gz", hash = "sha256:3dd4d2ed53efb1ef78aeb1020a5696c0ec7e58e627b305a6665d33fe6fbdedff", size = 51387 }
+sdist = { url = "https://files.pythonhosted.org/packages/01/53/d8e663bf01af6a2c93373da5b488c7826ac84b742cc861ffd5d72467766d/deepagents-0.3.1.tar.gz", hash = "sha256:99d89cc5ce4729ac27fd2afdc93a132d8b863e5972ecede1c6d21cd921dae298", size = 51587 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/e9/60bab7f37ff38bf982ea578e457ed1878ded613a3425462bcd07b00487e9/deepagents-0.3.0-py3-none-any.whl", hash = "sha256:9e23532d8d535dc2b0b4e0834453a1223a6a8f81b77947c0faf54537d05ce89a", size = 54065 },
+    { url = "https://files.pythonhosted.org/packages/f2/04/81b3c1f66194405da0856b8e72680ae3b2dc70f0c5ce44ee665279c24954/deepagents-0.3.1-py3-none-any.whl", hash = "sha256:f62c735715f8d18edbde6bcd4b54c5a8155f38a3625292ba43503ea947929985", size = 54263 },
 ]
 
 [[package]]
@@ -2259,7 +2260,7 @@ requires-dist = [
     { name = "authlib", specifier = ">=1.6.3" },
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "cryptography", specifier = ">=45.0.7" },
-    { name = "deepagents", specifier = "==0.3.0" },
+    { name = "deepagents", specifier = "==0.3.1" },
     { name = "fastapi", specifier = ">=0.116.1" },
     { name = "fastapi-cache2", specifier = ">=0.2.2" },
     { name = "langchain", specifier = ">=1.2.0" },
