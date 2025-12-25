@@ -12,6 +12,10 @@ on:
             - ".dockerignore"
             - "README.md"
             - "deployment/**"
+            - "examples/**"
+            - "openspec/**"
+            - "cli/**"
+            - "website/**"
     pull_request:
         types: [opened, synchronize, reopened]
         paths-ignore:
@@ -22,6 +26,10 @@ on:
             - ".dockerignore"
             - "README.md"
             - "deployment/**"
+            - "examples/**"
+            - "openspec/**"
+            - "cli/**"
+            - "website/**"
 jobs:
     ###############################################################
     ## Test Frontend
