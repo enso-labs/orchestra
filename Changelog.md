@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.2-rc132
+
+### Changed
+  - feat/614-native-mcp-support-fast-mcp (2025-12-25)
+
 ## v0.0.2-rc131
 
 ### Changed
+  - feat/614-native-mcp-support-fast-mcp (2025-12-25)
   - feat/602-can-add-files (2025-12-22)
 
 ## v0.0.2-rc130
