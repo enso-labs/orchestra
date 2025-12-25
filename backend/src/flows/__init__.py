@@ -1,5 +1,6 @@
 from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional
 from uuid import uuid4
+from langchain.tools import ToolRuntime
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -9,6 +10,7 @@ from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.cache.memory import InMemoryCache
 from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 
@@ -16,7 +18,7 @@ from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 from src.constants import APP_ENV
 from src.contexts.service import ServiceContext
 from src.constants.llm import DEFAULT_SYSTEM_PROMPT
-from src.schemas.entities.llm import Assistant
+from src.schemas.entities.llm import Assistant, LLMInput
 from src.services.memory import memory_service
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest
@@ -26,17 +28,13 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 from src.utils.middleware import (
     add_ai_message_metadata,
-    dynamic_model_selection,
+    # dynamic_model_selection,
     pii_middleware,
 )
 from src.tools import default_tools
 
-COMPOSITE_BACKEND = lambda rt: CompositeBackend(
-    default=StateBackend(rt),
-    routes={
-        "/memories/": StoreBackend(rt),
-    },
-)
+
+CACHE_LLM = InMemoryCache()
 
 
 async def add_memories_to_system():
@@ -71,6 +69,7 @@ def graph_builder(
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
     middleware: list[Callable] = None,
+    backend: CompositeBackend = None,
     graph_id: Literal["deepagent", "react"] = "deepagent",
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
@@ -99,7 +98,8 @@ def graph_builder(
         context_schema=context_schema,
         middleware=middleware,
         store=store,
-        backend=COMPOSITE_BACKEND,
+        cache=CACHE_LLM,
+        backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
     )
     return deep_agent
@@ -184,6 +184,7 @@ def init_config(
             "thread_id": metadata.get("thread_id"),
             "assistant_id": metadata.get("assistant_id", None),
             "project_id": metadata.get("project_id", None),
+            "files": params.input.files or {},
         },
         max_concurrency=max_concurrency,
         recursion_limit=recursion_limit,
@@ -191,20 +192,32 @@ def init_config(
     )
 
 
+def init_backend(runtime: ToolRuntime, *, routes):  
+    """Factory function that creates a CompositeBackend with custom routes."""  
+    built_routes = {}  
+    for prefix, backend_or_factory in routes.items():  
+        if callable(backend_or_factory):  
+            built_routes[prefix] = backend_or_factory(runtime)  
+        else:  
+            built_routes[prefix] = backend_or_factory  
+    default_state = StateBackend(runtime)  
+    return CompositeBackend(default=default_state, routes=built_routes)
+
 ################################################################################
 ### Construct Agent
 ################################################################################
 async def construct_agent(
     instructions: str,
     system_prompt: str,
-    tools: list[BaseTool],
     model: BaseChatModel,
+    tools: list[BaseTool],
     subagents: list[SubAgent] = [],
+    middleware: list[Callable] = [],
+    backend: CompositeBackend = None,
     checkpointer: BaseCheckpointSaver = None,
     service_context: ServiceContext = None,
 ):
     try:
-        middleware = None
         if service_context.config.get("metadata", {}).get("user_id"):
             tools, system_prompt = await init_memories(system_prompt, tools)
         else:
@@ -229,6 +242,7 @@ async def construct_agent(
             store=service_context.store,
             middleware=middleware,
             context_schema=ContextSchema,
+            backend=backend,
         )
         return agent
     except Exception as e:
@@ -249,6 +263,7 @@ class Orchestra:
         store: BaseStore = None,
         middleware: list[Callable] = None,
         graph_id: Literal["react", "deepagent"] = "deepagent",
+        backend: CompositeBackend = None,
     ):
         self.tools = tools
         self.model = model
@@ -268,15 +283,21 @@ class Orchestra:
             store=self.store,
             graph_id=graph_id,
             middleware=middleware,
+            backend=backend,
         )
 
     async def invoke(
         self,
-        messages: list[BaseMessage],
+        input: LLMInput,
         config: RunnableConfig = None,
         context: dict[str, Any] = None,
     ) -> BaseMessage:
-        return await self.graph.ainvoke(messages, config=config, context=context)
+        input.to_langchain_messages()
+        return await self.graph.ainvoke(
+            input, 
+            config=config, 
+            context=context,
+        )
 
     def astream(
         self,

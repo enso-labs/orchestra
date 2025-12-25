@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { formatContent, formatMultimodalPayload } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
@@ -57,6 +57,12 @@ export type ChatContextType = {
 	setViewMode: (mode: "chat" | "editor") => void;
 	ttft: number | null;
 	submitStartTime: number | null;
+	// File CRUD operations
+	addFile: (path: string, content?: string) => void;
+	updateFileContent: (path: string, content: string) => void;
+	removeFile: (path: string) => void;
+	renameFile: (oldPath: string, newPath: string) => void;
+	getFilesForSubmission: () => Record<string, any>;
 };
 
 export default function useChat(): ChatContextType {
@@ -136,9 +142,17 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
+		// Collect files from filesMap for submission
+		const filesToSubmit: Record<string, any> = {};
+		filesMap.forEach((files) => {
+			Object.assign(filesToSubmit, files);
+		});
 		const source = streamThread({
 			system_prompt: agent.prompt,
-			input: { messages: formatedMessages },
+			input: {
+				messages: formatedMessages,
+				...(Object.keys(filesToSubmit).length > 0 && { files: filesToSubmit }),
+			},
 			model: agent.model,
 			metadata: enrichedMetadata,
 			tools: agent.tools,
@@ -396,6 +410,90 @@ export default function useChat(): ChatContextType {
 		}, [agent.id]);
 	};
 
+	// File CRUD operations (wrapped in useCallback for stable references)
+	const addFile = useCallback((path: string, content: string = "") => {
+		const now = new Date().toISOString();
+		const newFile = {
+			content: content.split("\n"),
+			created_at: now,
+			modified_at: now,
+		};
+		setFilesMap((prev) => {
+			const newMap = new Map(prev);
+			const userFilesKey = "__user_files__";
+			const userFiles = newMap.get(userFilesKey) || {};
+			newMap.set(userFilesKey, { ...userFiles, [path]: newFile });
+			return newMap;
+		});
+	}, []);
+
+	const updateFileContent = useCallback((path: string, content: string) => {
+		setFilesMap((prev) => {
+			const newMap = new Map(prev);
+			for (const [key, files] of newMap.entries()) {
+				if (files && files[path]) {
+					newMap.set(key, {
+						...files,
+						[path]: {
+							...files[path],
+							content: content.split("\n"),
+							modified_at: new Date().toISOString(),
+						},
+					});
+					return newMap;
+				}
+			}
+			return newMap;
+		});
+	}, []);
+
+	const removeFile = useCallback((path: string) => {
+		setFilesMap((prev) => {
+			const newMap = new Map(prev);
+			for (const [key, files] of newMap.entries()) {
+				if (files && files[path]) {
+					const { [path]: _, ...rest } = files;
+					if (Object.keys(rest).length === 0) {
+						newMap.delete(key);
+					} else {
+						newMap.set(key, rest);
+					}
+					return newMap;
+				}
+			}
+			return newMap;
+		});
+	}, []);
+
+	const renameFile = useCallback((oldPath: string, newPath: string) => {
+		setFilesMap((prev) => {
+			const newMap = new Map(prev);
+			for (const [key, files] of newMap.entries()) {
+				if (files && files[oldPath]) {
+					const { [oldPath]: fileData, ...rest } = files;
+					newMap.set(key, {
+						...rest,
+						[newPath]: {
+							...fileData,
+							modified_at: new Date().toISOString(),
+						},
+					});
+					return newMap;
+				}
+			}
+			return newMap;
+		});
+	}, []);
+
+	// Convert filesMap to backend format for submission
+	const getFilesForSubmission = useCallback((): Record<string, any> => {
+		const result: Record<string, any> = {};
+		filesMap.forEach((files) => {
+			Object.assign(result, files);
+		});
+		return result;
+	}, [filesMap]);
+
 	return {
 		responseRef,
 		toolCallChunkRef,
@@ -435,5 +533,11 @@ export default function useChat(): ChatContextType {
 		setViewMode,
 		ttft,
 		submitStartTime,
+		// File CRUD
+		addFile,
+		updateFileContent,
+		removeFile,
+		renameFile,
+		getFilesForSubmission,
 	};
 }

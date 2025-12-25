@@ -1,5 +1,5 @@
 import Editor from "@monaco-editor/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface Props {
 	value: string;
@@ -26,9 +26,16 @@ function MonacoEditor({
 }: Props) {
 	const [error, setError] = useState("");
 	const [editorValue, setEditorValue] = useState(value);
+	const prevValueRef = useRef(value);
 
-	// Only update editor value when the external value changes significantly
+	// Only update editor value when the external value prop changes (not when editorValue changes)
 	useEffect(() => {
+		// Skip if the prop value hasn't actually changed
+		if (prevValueRef.current === value) {
+			return;
+		}
+		prevValueRef.current = value;
+
 		// Only do JSON comparison for JSON language
 		if (language === "json" || !language) {
 			try {

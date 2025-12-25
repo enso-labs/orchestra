@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, Pencil } from "lucide-react";
+import { useChatContext } from "@/context/ChatContext";
+import { Button } from "@/components/ui/button";
 import {
 	Accordion,
 	AccordionContent,
@@ -22,8 +24,13 @@ interface FileViewerProps {
 }
 
 export default function FileViewer({ files }: FileViewerProps) {
+	const { setViewMode } = useChatContext();
 	const fileNames = Object.keys(files);
 	const [selectedFile, setSelectedFile] = useState<string>(fileNames[0]);
+
+	const handleEditInEditor = () => {
+		setViewMode("editor");
+	};
 
 	// Get file extension for language detection
 	const getLanguage = (filename: string): string => {
@@ -95,7 +102,18 @@ export default function FileViewer({ files }: FileViewerProps) {
 								<span className="text-xs text-muted-foreground font-mono">
 									{fileNames[0]}
 								</span>
-								<CopyTextButton text={getFileContent(files[fileNames[0]])} />
+								<div className="flex items-center gap-1">
+									<Button
+										variant="ghost"
+										size="sm"
+										className="h-7 px-2 gap-1"
+										onClick={handleEditInEditor}
+										title="Edit in Editor"
+									>
+										<Pencil className="h-3 w-3" />
+									</Button>
+									<CopyTextButton text={getFileContent(files[fileNames[0]])} />
+								</div>
 							</div>
 
 							<div className="border border-border rounded-md overflow-hidden">
@@ -140,7 +158,18 @@ export default function FileViewer({ files }: FileViewerProps) {
 											<span className="text-xs text-muted-foreground font-mono">
 												{filename}
 											</span>
-											<CopyTextButton text={getFileContent(files[filename])} />
+											<div className="flex items-center gap-1">
+												<Button
+													variant="ghost"
+													size="sm"
+													className="h-7 px-2 gap-1"
+													onClick={handleEditInEditor}
+													title="Edit in Editor"
+												>
+													<Pencil className="h-3 w-3" />
+												</Button>
+												<CopyTextButton text={getFileContent(files[filename])} />
+											</div>
 										</div>
 
 										<div className="border border-border rounded-md overflow-hidden">

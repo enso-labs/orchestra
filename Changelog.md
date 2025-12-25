@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc130
 
 ### Changed
+  - feat/602-can-add-files (2025-12-22)
   - feat/595-tokens-and-secrets (2025-12-21)
   - feat/596-deselect-tools (2025-12-21)
   - feat/589-correlation-matraix (2025-12-20)

@@ -96,9 +96,10 @@ type Presidio = {
 	anonymize?: boolean;
 	redact?: boolean;
 };
+type Files = Record<string, { content: string[]; created_at: string; modified_at: string }>;
 interface StreamThreadPayload {
 	system_prompt?: string;
-	input: Input;
+	input: Input & { files?: Files };
 	model: string;
 	metadata: any;
 	a2a?: A2A;
