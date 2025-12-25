@@ -1,3 +1,6 @@
 [submodule "website"]
 	path = website
 	url = https://github.com/ruska-ai/website
+[submodule "cli"]
+	path = cli
+	url = git@github.com:ruska-ai/shell.git
