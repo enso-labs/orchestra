@@ -67,12 +67,12 @@ markdown_extensions:
           toc_depth: 3
 
 # Site metadata
-site_url: https://orchestra.enso.sh
+site_url: https://orchestra.ruska.ai
 site_description: Composable AI Agent Infrastructure built on LangGraph with MCP & A2A protocol support
-site_author: Enso Labs
+site_author: Ruska Labs
 
 # Copyright
-copyright: Copyright &copy; 2025 Enso Labs. All rights reserved.
+copyright: Copyright &copy; 2025 Ruska Labs. All rights reserved.
 
 extra:
     base_url: "/docs/"
@@ -85,5 +85,5 @@ extra:
           link: https://github.com/ruska-ai
           name: Enso Labs on GitHub
         - icon: fontawesome/solid/link
-          link: https://enso.sh/socials
+          link: https://ruska.ai/socials
           name: Follow us on social media

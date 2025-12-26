@@ -32,7 +32,7 @@ const MCP_TEMPLATES = {
 		url: "",
 		headers: {},
 	},
-	enso: {
+	ruska: {
 		name: "Ruska MCP",
 		transport: "sse" as const,
 		url: "https://chat.ruska.ai/mcp",

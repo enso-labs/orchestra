@@ -103,7 +103,7 @@ app = FastAPI(
         "and get the history of a thread.\n Check out the repo on "
         f"<a href='https://github.com/ruska-ai/orchestra'>Github</a>"
     ),
-    contact={"name": "Ryan Eggleston", "email": "reggleston@enso.sh"},
+    contact={"name": "Ryan Eggleston", "email": "reggleston@ruska.ai"},
     debug=True,
     docs_url="/api",
     lifespan=lifespan,

@@ -36,7 +36,7 @@ class ToolExamples:
             description="Use this to get the health of the server and app version.",
             config={
                 "api_tool": {
-                    "base_url": "https://chat.enso.sh/api",
+                    "base_url": "https://chat.ruska.ai/api",
                     "method": "GET",
                     "endpoint": "/info/health",
                 }
