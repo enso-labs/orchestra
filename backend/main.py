@@ -7,6 +7,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 from fastmcp import FastMCP
+from fastmcp.server.openapi import RouteMap, MCPType
 
 load_dotenv()
 
@@ -40,7 +41,17 @@ api_app = create_api_router(api_app)
 api_app = mount_static_router(api_app)
 
 # Generate MCP server from FastAPI app for LLM-friendly API
-mcp = FastMCP.from_fastapi(app=api_app, name=APP_TITLE)
+mcp_ignore_routes = [
+    # ✅ allow-list: anything tagged "mcp" gets included
+    RouteMap(
+        tags={"mcp"},
+        mcp_type=MCPType.TOOL,   # or RESOURCE / RESOURCE_TEMPLATE if you want semantics
+    ),
+
+    # ❌ deny-list fallback: exclude everything else
+    RouteMap(mcp_type=MCPType.EXCLUDE),
+]
+mcp = FastMCP.from_fastapi(app=api_app, name=APP_TITLE, route_maps=mcp_ignore_routes)
 mcp_app = mcp.http_app(path="/mcp")
 
 
