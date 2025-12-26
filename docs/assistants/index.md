@@ -176,17 +176,16 @@ Assistants can be configured with multiple tools:
   "model": "anthropic:claude-sonnet-4-5",
   "tools": ["search"],
   "mcp": {
-    "enso_mcp": {
-      "transport": "sse",
-      "url": "https://mcp.enso.sh/sse",
+    "ruska_mcp": {
+      "url": "https://chat.ruska.ai/mcp",
       "headers": {
-        "x-mcp-key": "your_api_key"
+        "x-api-key": "your_api_key"
       }
     }
   },
   "a2a": {
-    "data_agent": {
-      "base_url": "https://a2a.enso.sh",
+    "ruska_a2a": {
+      "base_url": "https://a2a.ruska.ai",
       "agent_card_path": "/.well-known/agent.json"
     }
   }

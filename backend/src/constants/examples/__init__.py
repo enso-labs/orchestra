@@ -8,7 +8,7 @@ MCP_SERVER_EXAMPLE = {
     "url": "https://mcp.enso.sh/sse",
     "headers": {"x-mcp-key": "your_api_key"},
 }
-MCP_DICT_EXAMPLE = {"enso_mcp": MCP_SERVER_EXAMPLE}
+MCP_DICT_EXAMPLE = {"ruska_mcp": MCP_SERVER_EXAMPLE}
 MCP_REQ_BODY_EXAMPLE = {"mcp": MCP_DICT_EXAMPLE}
 
 A2A_SERVER_EXAMPLE = {
@@ -697,7 +697,7 @@ class Examples:
                 "name": "mcp_sse_server",
                 "config": {
                     "mcp_tool": {
-                        "enso_mcp": {
+                        "ruska_mcp": {
                             "transport": "sse",
                             "url": "https://mcp.enso.sh/sse",
                             "headers": {"x-mcp-key": "test1234"},
