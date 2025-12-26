@@ -46,6 +46,7 @@ TIME_LIMIT = "200/day"
     "/invoke",
     responses={status.HTTP_200_OK: MockResponse.INVOKE_RESPONSE},
     name="Invoke Graph",
+    operation_id="ruska_invoke_llm",
     dependencies=[Depends(get_optional_user)],
 )
 @limiter.limit(TIME_LIMIT)
@@ -147,7 +148,7 @@ async def transcribe(
 ################################################################################
 ### Optimize Prompt
 ################################################################################
-@llm_router.post("/optimize")
+@llm_router.post("/optimize", operation_id="ruska_optimize_prompt")
 @limiter.limit(TIME_LIMIT)
 async def optimize_prompt(
     request: Request,
@@ -169,6 +170,7 @@ async def optimize_prompt(
 @llm_router.get(
     "/models",
     name="List Models",
+    operation_id="ruska_list_models",
 )
 async def list_models():
     return JSONResponse(
@@ -187,6 +189,7 @@ async def list_models():
 @llm_router.get(
     "/models/reset",
     name="Reset Models",
+    operation_id="ruska_reset_models",
 )
 async def reset_models():
     llm_service._reset_cache()

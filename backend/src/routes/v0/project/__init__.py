@@ -21,7 +21,7 @@ router = APIRouter(tags=["Project"], prefix="/projects")
 ################################################################################
 ### Search Projects
 ################################################################################
-@router.post("/search", name="Query Projects")
+@router.post("/search", name="Query Projects", operation_id="ruska_search_projects")
 async def search_projects(
     project_search: SearchFilter = Body(...),
     user: ProtectedUser = Depends(verify_credentials),
@@ -71,7 +71,7 @@ async def search_projects(
 ################################################################################
 ### Create Project
 ################################################################################
-@router.post("", name="Create Project")
+@router.post("", name="Create Project", operation_id="ruska_create_project")
 async def create_project(
     project: Project = Body(openapi_examples=Examples.PROJECT_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
@@ -85,7 +85,7 @@ async def create_project(
 ################################################################################
 ### Get Project
 ################################################################################
-@router.get("/{project_id}", name="Get Project")
+@router.get("/{project_id}", name="Get Project", operation_id="ruska_get_project")
 @cache(expire=30)
 async def get_project(
     project_id: str,
@@ -103,7 +103,7 @@ async def get_project(
 ################################################################################
 ### Delete Project
 ################################################################################
-@router.delete("/{project_id}", name="Delete Project")
+@router.delete("/{project_id}", name="Delete Project", operation_id="ruska_delete_project")
 async def delete_project(
     project_id: str,
     user: ProtectedUser = Depends(verify_credentials),
@@ -117,7 +117,7 @@ async def delete_project(
 ################################################################################
 ### Get Project Sources
 ################################################################################
-@router.get("/{project_id}/sources", name="Get Project Sources")
+@router.get("/{project_id}/sources", name="Get Project Sources", operation_id="ruska_get_project_sources")
 @cache(expire=30)
 async def get_project_sources(
     project_id: str,
@@ -140,7 +140,7 @@ async def get_project_sources(
 ################################################################################
 ### Add Project Sources
 ################################################################################
-@router.post("/{project_id}/sources", name="Add Project Sources")
+@router.post("/{project_id}/sources", name="Add Project Sources", operation_id="ruska_add_project_sources")
 async def add_project_sources(
     project_id: str,
     sources: list[Source] = Body(openapi_examples=Examples.SOURCE_EXAMPLES),
@@ -163,7 +163,7 @@ async def add_project_sources(
 ################################################################################
 ### Delete Project Sources
 ################################################################################
-@router.delete("/{project_id}/sources/{source_id}", name="Delete Project Source")
+@router.delete("/{project_id}/sources/{source_id}", name="Delete Project Source", operation_id="ruska_delete_project_source")
 async def delete_project_source(
     project_id: str,
     source_id: str,

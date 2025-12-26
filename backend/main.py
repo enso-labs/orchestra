@@ -22,6 +22,7 @@ from src.constants import (
     LOG_LEVEL,
     APP_VERSION,
     APP_ENV,
+    APP_TITLE,
 )
 from src.utils.migrations import run_migrations
 from src.utils.rate_limit import limiter
@@ -39,7 +40,7 @@ api_app = create_api_router(api_app)
 api_app = mount_static_router(api_app)
 
 # Generate MCP server from FastAPI app for LLM-friendly API
-mcp = FastMCP.from_fastapi(app=api_app, name="Orchestra MCP")
+mcp = FastMCP.from_fastapi(app=api_app, name=APP_TITLE)
 mcp_app = mcp.http_app(path="/mcp")
 
 
@@ -83,7 +84,7 @@ async def lifespan(app: FastAPI):
 
 # Create combined app with both REST and MCP routes
 app = FastAPI(
-    title="Enso Labs - Orchestra 🪶",
+    title=APP_TITLE,
     version=APP_VERSION,
     description=(
         "This is a simple API for building chatbots with LangGraph. "
