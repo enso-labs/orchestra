@@ -3,15 +3,45 @@ import asyncio
 import respx
 from httpx import AsyncClient, ASGITransport
 from main import app
-from sqlalchemy import text
+from sqlalchemy import text, create_engine
 from sqlalchemy.engine.url import make_url
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from src.constants import DB_URI
-from src.services.db import get_async_db, get_store
+from src.services.db import get_async_db, get_store, get_store_db, get_checkpoint_db
 from src.repos.user_repo import UserRepo
 from src.schemas.models import User
 from langgraph.store.memory import InMemoryStore
+
+
+def ensure_database_exists(db_uri: str) -> None:
+    """Create the database if it doesn't exist."""
+    if "/" not in db_uri:
+        return
+
+    base_uri, db_name = db_uri.rsplit("/", 1)
+    if "?" in db_name:
+        db_name = db_name.split("?")[0]
+
+    postgres_uri = f"{base_uri}/postgres"
+
+    try:
+        engine = create_engine(postgres_uri, isolation_level="AUTOCOMMIT")
+        with engine.connect() as conn:
+            result = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
+                {"dbname": db_name}
+            )
+            if not result.fetchone():
+                conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+        engine.dispose()
+    except (OperationalError, ProgrammingError):
+        pass
+
+
+# Ensure database exists before tests run
+ensure_database_exists(DB_URI)
 
 
 class TestInMemoryStore(InMemoryStore):
@@ -22,9 +52,9 @@ class TestInMemoryStore(InMemoryStore):
         self.fields = ["page_content", "metadata"]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def event_loop():
-    """Create a new event loop for each test function."""
+    """Create a single event loop for the entire test session."""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     yield loop
@@ -86,6 +116,22 @@ async def test_store():
 
 
 @pytest.fixture
+async def test_postgres_store():
+    """Provide a real postgres store with setup() called."""
+    async with get_store_db() as store:
+        await store.setup()
+        yield store
+
+
+@pytest.fixture
+async def test_checkpoint_saver():
+    """Provide a real postgres checkpoint saver with setup() called."""
+    async with get_checkpoint_db() as saver:
+        await saver.setup()
+        yield saver
+
+
+@pytest.fixture
 async def async_client(test_store, test_db):
     """Async HTTP client for testing with store and db overrides."""
     from fastapi import Request
@@ -100,6 +146,30 @@ async def async_client(test_store, test_db):
     app.dependency_overrides[get_async_db] = override_get_async_db
     app.dependency_overrides[get_store] = override_get_store
     app.state.store = test_store
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+
+    # Clean up
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def async_client_postgres(test_postgres_store, test_db):
+    """Async HTTP client for testing with real postgres store."""
+    from fastapi import Request
+
+    # Override dependencies
+    async def override_get_async_db():
+        yield test_db
+
+    def override_get_store(req: Request):
+        return test_postgres_store
+
+    app.dependency_overrides[get_async_db] = override_get_async_db
+    app.dependency_overrides[get_store] = override_get_store
+    app.state.store = test_postgres_store
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
