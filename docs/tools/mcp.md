@@ -66,7 +66,7 @@ The `mcp` property accepts a **dictionary of server names** mapped to their conf
 }
 ```
 
-Each key in the `mcp` dictionary is a unique server name you choose (e.g., `"weather_server"`, `"database_server"`, `"enso_mcp"`).
+Each key in the `mcp` dictionary is a unique server name you choose (e.g., `"weather_server"`, `"database_server"`, `"ruska_mcp"`).
 
 ### Granular Tool Selection
 
@@ -135,12 +135,12 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -d '{
   "mcp": {
-    "enso_mcp": {
+    "ruska_mcp": {
       "headers": {
-        "x-mcp-key": "your_api_key"
+        "x-api-key": "your_api_key"
       },
-      "transport": "sse",
-      "url": "https://mcp.enso.sh/sse"
+      "transport": "streamable_http",
+      "url": "https://mcp.ruska.ai/sse"
     }
   }
 }'
@@ -156,12 +156,12 @@ curl -X 'POST' \
   -d '{
   "images": [],
   "mcp": {
-    "enso_mcp": {
-      "headers": {
-        "x-mcp-key": "your_api_key"
+    "ruska_mcp": {
+      "headers": {  
+        "x-api-key": "your_api_key"
       },
-      "transport": "sse",
-      "url": "https://mcp.enso.sh/sse"
+      "transport": "http",
+      "url": "https://chat.ruska.ai/mcp"
     }
   },
   "model": "openai-gpt-4o",

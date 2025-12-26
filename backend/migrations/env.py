@@ -9,11 +9,46 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, create_engine, text
 from sqlalchemy import pool
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from alembic import context
 from src.services.db import get_db_base
 from src.constants import DB_URI
+
+
+def ensure_database_exists(db_uri: str) -> None:
+    """Create the database if it doesn't exist."""
+    # Parse the database name from the URI
+    # Format: postgresql://user:pass@host:port/dbname
+    if "/" not in db_uri:
+        return
+
+    base_uri, db_name = db_uri.rsplit("/", 1)
+    # Remove query params from db_name if present
+    if "?" in db_name:
+        db_name = db_name.split("?")[0]
+
+    # Connect to the default 'postgres' database to create the target db
+    postgres_uri = f"{base_uri}/postgres"
+
+    try:
+        engine = create_engine(postgres_uri, isolation_level="AUTOCOMMIT")
+        with engine.connect() as conn:
+            # Check if database exists
+            result = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
+                {"dbname": db_name}
+            )
+            if not result.fetchone():
+                conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+        engine.dispose()
+    except (OperationalError, ProgrammingError):
+        # If we can't connect to postgres db or create, the main connection will fail with a clearer error
+        pass
+
+
+ensure_database_exists(DB_URI)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DB_URI)

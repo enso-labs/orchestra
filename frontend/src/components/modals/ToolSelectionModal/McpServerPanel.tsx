@@ -32,11 +32,11 @@ const MCP_TEMPLATES = {
 		url: "",
 		headers: {},
 	},
-	enso: {
-		name: "Enso MCP",
+	ruska: {
+		name: "Ruska MCP",
 		transport: "sse" as const,
-		url: "https://mcp.enso.sh/sse",
-		headers: { "x-mcp-key": "" },
+		url: "https://chat.ruska.ai/mcp",
+		headers: { "x-api-key": "" },
 	},
 	github: {
 		name: "GitHub MCP",

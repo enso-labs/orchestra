@@ -9,12 +9,12 @@ from src.constants.examples import Examples
 from src.services.db import get_store
 from langgraph.store.base import BaseStore
 
-from src.utils.logger import logger
+from src.utils.logger import log_error, logger
 
 invoke_router = APIRouter()
 
 
-@invoke_router.post("/invoke", name="Invoke Tools")
+@invoke_router.post("/invoke", name="Invoke Tools", operation_id="ruska_invoke_tools")
 async def invoke_tools(
     request: Request,
     tools: List[InvokeTool] = Body(..., examples=[Examples.INVOKE_TOOLS_EXAMPLE]),
@@ -55,5 +55,5 @@ async def invoke_tools(
             tool_results.append(tool_result.model_dump())
         return {"tools": tool_results}
     except Exception as e:
-        logger.exception(f"Error invoking tools: {e}")
+        log_error(f"Error invoking tools: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

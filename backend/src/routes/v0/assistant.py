@@ -23,7 +23,7 @@ from src.services.assistant import (
 router = APIRouter(tags=["Assistant"], prefix="/assistants")
 
 
-@router.post("/search", name="Query Assistants")
+@router.post("/search", name="Query Assistants", operation_id="ruska_search_assistants")
 @cache(expire=30)
 async def search_assistants(
     assistant_search: AssistantSearch = Body(...),
@@ -44,7 +44,7 @@ async def search_assistants(
     return {"assistants": []}
 
 
-@router.post("", name="Create Assistant")
+@router.post("", name="Create Assistant", operation_id="ruska_create_assistant")
 async def create_assistant(
     assistant: Assistant = Body(
         ..., examples={"currency_agent": ASSISTANT_EXAMPLES["currency_agent"]}
@@ -72,7 +72,7 @@ async def create_assistant(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.put("/{assistant_id}", name="Update Assistant")
+@router.put("/{assistant_id}", name="Update Assistant", operation_id="ruska_update_assistant")
 async def update_assistant(
     assistant_id: str = Path(..., description="The ID of the assistant to update"),
     assistant: Assistant = Body(
@@ -95,7 +95,7 @@ async def update_assistant(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.delete("/{assistant_id}", name="Delete Assistant")
+@router.delete("/{assistant_id}", name="Delete Assistant", operation_id="ruska_delete_assistant")
 async def delete_assistant(
     assistant_id: str = Path(..., description="The ID of the assistant to delete"),
     user: ProtectedUser = Depends(verify_credentials),

@@ -24,7 +24,12 @@ from src.utils.messages import from_message_to_dict
 router = APIRouter(tags=["Thread"])
 
 
-@router.post("/threads/search", name="Query Threads in Checkpointer")
+@router.post(
+    "/threads/search", 
+    name="Query Threads in Checkpointer", 
+    operation_id="ruska_search_threads", 
+    tags=['mcp'],
+)
 @cache(expire=15)
 async def search_threads(
     search_filter: SearchFilter = Body(
@@ -62,7 +67,12 @@ async def search_threads(
         )
 
 
-@router.post("/threads/search/semantic", name="Semantic Search Over Threads")
+@router.post(
+    "/threads/search/semantic", 
+    name="Semantic Search Over Threads", 
+    operation_id="ruska_semantic_search_threads", 
+    tags=['mcp'],
+)
 async def semantic_search_threads(
     request: ThreadSemanticSearchRequest = Body(
         openapi_examples=Examples.THREAD_SEMANTIC_SEARCH_EXAMPLES
@@ -125,7 +135,9 @@ async def semantic_search_threads(
         )
 
 
-@router.post("/threads", name="Create Thread")
+@router.post(
+    "/threads", name="Create Thread", operation_id="ruska_create_thread", tags=['mcp'],
+)
 async def create_thread(
     thread: Thread = Body(openapi_examples=Examples.THREAD_CREATE_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
@@ -179,7 +191,7 @@ async def create_thread(
         )
 
 
-@router.get("/threads/{thread_id}", name="Get Thread")
+@router.get("/threads/{thread_id}", name="Get Thread", operation_id="ruska_get_thread", tags=['mcp'])
 async def get_thread(
     thread_id: str,
     user: ProtectedUser = Depends(verify_credentials),
@@ -203,7 +215,7 @@ async def get_thread(
         ) from e
 
 
-@router.patch("/threads/{thread_id}", name="Update Thread")
+@router.patch("/threads/{thread_id}", name="Update Thread", operation_id="ruska_update_thread", tags=['mcp'])
 async def update_thread(
     thread_id: str,
     thread: Thread = Body(...),
@@ -240,7 +252,7 @@ async def update_thread(
         )
 
 
-@router.delete("/threads/{thread_id}", name="Delete Thread")
+@router.delete("/threads/{thread_id}", name="Delete Thread", operation_id="ruska_delete_thread", tags=['mcp'])
 async def delete_thread(
     thread_id: str,
     user: ProtectedUser = Depends(verify_credentials),
@@ -262,7 +274,12 @@ async def delete_thread(
         )
 
 
-@router.delete("/a/{assistant_id}/threads/{thread_id}", name="Delete Assistant Thread")
+@router.delete(
+    "/a/{assistant_id}/threads/{thread_id}", 
+    name="Delete Assistant Thread", 
+    operation_id="ruska_delete_assistant_thread",
+    tags=['mcp'],
+)
 async def delete_thread(
     assistant_id: str,
     thread_id: str,

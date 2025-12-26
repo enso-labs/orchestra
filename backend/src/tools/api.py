@@ -118,7 +118,7 @@ async def create_tool(
         await create_tool(
             name="get_server_health",
             description="Use this to get the health of the server and app version.",
-            base_url="https://chat.enso.sh/api",
+            base_url="https://chat.ruska.ai/api",
             method="GET",
             endpoint="/info/health",
         )
@@ -228,7 +228,7 @@ async def edit_tool(
         await create_tool(
             name="get_server_health",
             description="Use this to get the health of the server and app version.",
-            base_url="https://chat.enso.sh/api",
+            base_url="https://chat.ruska.ai/api",
             method="GET",
             endpoint="/info/health",
         )

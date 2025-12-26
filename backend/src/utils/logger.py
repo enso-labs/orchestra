@@ -2,7 +2,7 @@ import os
 import sys
 from loguru import logger
 
-from src.constants import APP_LOG_LEVEL
+from src.constants import APP_LOG_LEVEL, APP_ENV
 
 # Define a log format that is readable and user-friendly
 LOG_FORMAT = (
@@ -54,5 +54,13 @@ def log_to_file(message: str, model: str, folder: str = "llm_stream"):
         log_file.write(str(message) + "\n")
 
 
+def log_error(message: str, *args, **kwargs):
+    """Log an error message. Uses exception() in dev/test for full traceback, error() in production."""
+    if APP_ENV in ("development"):
+        logger.exception(message, *args, **kwargs)
+    else:
+        logger.error(message, *args, **kwargs)
+
+
 # Expose the logger for use in other files
-__all__ = ["logger", "log_to_file"]
+__all__ = ["logger", "log_to_file", "log_error"]

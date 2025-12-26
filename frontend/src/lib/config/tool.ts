@@ -1,5 +1,5 @@
 const DEFAULT_MCP_CONFIG = {
-	enso_mcp: {
+	ruska_mcp: {
 		transport: "sse",
 		url: "https://mcp.enso.sh/sse",
 		headers: { "x-mcp-key": "your_api_key" },
