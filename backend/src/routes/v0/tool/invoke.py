@@ -14,7 +14,7 @@ from src.utils.logger import logger
 invoke_router = APIRouter()
 
 
-@invoke_router.post("/invoke", name="Invoke Tools")
+@invoke_router.post("/invoke", name="Invoke Tools", operation_id="ruska_invoke_tools")
 async def invoke_tools(
     request: Request,
     tools: List[InvokeTool] = Body(..., examples=[Examples.INVOKE_TOOLS_EXAMPLE]),

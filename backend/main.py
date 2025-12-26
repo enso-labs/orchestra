@@ -143,4 +143,10 @@ app.add_middleware(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host=HOST, port=PORT, log_level=LOG_LEVEL)
+    uvicorn.run(
+        app,
+        host=HOST,
+        port=PORT,
+        log_level=LOG_LEVEL,
+        timeout_graceful_shutdown=1,  # Force close SSE connections quickly on shutdown
+    )
