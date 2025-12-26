@@ -19,7 +19,7 @@ export function HomeSection() {
 
 					<h1 className="text-4xl font-bold mt-4">Orchestra</h1>
 					<p className="text-lg text-muted-foreground max-w-[42rem] mt-2">
-						Self-Improving Harnesses for{" "}
+						Steerable Harnesses built on {" "}
 						<a
 							href="https://docs.langchain.com/oss/python/deepagents/overview"
 							target="_blank"
