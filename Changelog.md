@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc131
 
 ### Changed
-  - feat/614-native-mcp-support-fast-mcp (2025-12-25)
   - feat/602-can-add-files (2025-12-22)
 
 ## v0.0.2-rc130
