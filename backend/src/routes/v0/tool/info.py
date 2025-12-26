@@ -19,6 +19,7 @@ info_router = APIRouter()
             "content": {"application/json": {"example": []}},
         }
     },
+    include_in_schema=False,
 )
 async def list_mcp_info(
     config: dict[str, McpServer] = Body(..., examples=MCP_DICT_EXAMPLE),
@@ -61,6 +62,7 @@ async def list_mcp_info(
             "content": {"application/json": {"example": A2A_GET_AGENT_CARD_EXAMPLE}},
         }
     },
+    include_in_schema=False,
 )
 async def get_a2a_agent_card(
     config: dict[str, A2AServer] = Body(..., examples=A2A_DICT_EXAMPLE),
