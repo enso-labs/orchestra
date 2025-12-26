@@ -9,7 +9,7 @@ from src.tools import init_tool_library
 from src.utils.a2a import A2ACardResolver
 
 # from src.schemas.entities import ArcadeConfig
-from src.utils.logger import logger
+from src.utils.logger import log_error, logger
 from src.utils.tools import attach_tool_details, create_api_tool
 from src.services.db import get_store_in_memory
 from src.repos.tool_repo import ToolRepo
@@ -123,7 +123,7 @@ class ToolService:
             )
             return await self.invoke_structured_tool(tool, input)
         except Exception as e:
-            logger.exception(f"Error invoking ephemeral tool {name}: {e}")
+            log_error(f"Error invoking ephemeral tool {name}: {e}")
             return {"error": str(e)}
 
     async def invoke_structured_tool(
@@ -134,7 +134,7 @@ class ToolService:
                 input=input, config={"metadata": structured_tool.metadata}
             )
         except Exception as e:
-            logger.exception(
+            log_error(
                 f"Error invoking structured tool {structured_tool.name}: {e}"
             )
             return {"error": str(e)}
