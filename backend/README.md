@@ -1,22 +1,24 @@
 <div align="center">
 
-<div style="display: flex; align-items: center; gap: 3px; justify-content: center;">
-  <img
-    src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
-    style="
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 0;
-      vertical-align: middle;
-    "
-    alt="Ruska Logo"
-  />
-  <h1 style="margin: 0; font-size: 2.4rem; font-weight: 600; font-family: inherit; line-height: 1;">
-    <em>RCHESTRA</em>
-  </h1>
-</div>
+<table align="center">
+  <tr>
+    <td style="padding: 0; vertical-align: middle;">
+      <img
+        src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+        width="60"
+        height="60"
+        style="border-radius: 50%; display: block;"
+        alt="Ruska Logo"
+      />
+    </td>
+    <td style="padding: 0 0 0 2px; vertical-align: middle;">
+      <span style="font-weight: 600; font-style: italic; font-size: 2.4rem; line-height: 1;">
+        RCHESTRA
+      </span>
+    </td>
+  </tr>
+</table>
+
 
 Steerable Harnesses for [DeepAgents](https://docs.langchain.com/oss/python/deepagents/overview)
 
