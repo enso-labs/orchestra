@@ -111,13 +111,13 @@ export function BaseToolMenu() {
 				>
 					<DropdownMenuGroup>
 						<ImageUpload />
-						<DropdownMenuItem
+						{/* <DropdownMenuItem
 							onClick={() => setShowFileDialog(true)}
 							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
 						>
 							<FileCode className="h-4 w-4" />
 							<span>Add File</span>
-						</DropdownMenuItem>
+						</DropdownMenuItem> */}
 						<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
 						<DropdownMenuItem
 							onClick={() => setWebSearchCheck(!webSearchCheck)}
