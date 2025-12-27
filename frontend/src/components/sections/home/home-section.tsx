@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { FaGithub } from "react-icons/fa";
 import { BookOpen, Newspaper, Share2, MessageCircle } from "lucide-react";
-import { PiAperture } from "react-icons/pi";
+// import { PiAperture } from "react-icons/pi";
 
 export function HomeSection() {
 	return (
