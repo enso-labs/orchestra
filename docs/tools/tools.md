@@ -1,6 +1,6 @@
 # Tools & Integrations
 
-Ensō Orchestra provides a rich ecosystem of tools and protocol integrations that allow you to compose powerful AI agent systems. Whether you're using built-in tools or connecting external services via MCP and A2A protocols, Orchestra makes it easy to extend your agents' capabilities.
+Ruska Orchestra provides a rich ecosystem of tools and protocol integrations that allow you to compose powerful AI agent systems. Whether you're using built-in tools or connecting external services via MCP and A2A protocols, Orchestra makes it easy to extend your agents' capabilities.
 
 ## Overview
 

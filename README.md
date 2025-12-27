@@ -1,8 +1,24 @@
 <div align="center">
 
-# Ruska Labs - Orchestra 🪶
+<div style="display: flex; align-items: center; gap: 3px; justify-content: center;">
+  <img
+    src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+    style="
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 0;
+      vertical-align: middle;
+    "
+    alt="Ruska Logo"
+  />
+  <h1 style="margin: 0; font-size: 2.4rem; font-weight: 600; font-family: inherit; line-height: 1;">
+    <em>RCHESTRA</em>
+  </h1>
+</div>
 
-AI Agent Orchestrator built on LangGraph powered by [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A)
+Steerable Harnesses for [DeepAgents](https://docs.langchain.com/oss/python/deepagents/overview)
 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
 <a href="https://chat.ruska.ai/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
@@ -14,7 +30,21 @@ AI Agent Orchestrator built on LangGraph powered by [MCP](https://github.com/mod
 
 </div>
 
-Base API infrastructure for Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A) protocols by [Ruska Labs](https://ruska.ai). The goal of Ruska is the enrich the lives of the curious. Those who seek to buy back their time and compound their personal growth. Those who build and don't wait for IT to be built for them.
+**Open-source AI agent orchestration platform** built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A) protocols.
+
+Self-host for free or let us deploy it for you. Your agents, your data, your infrastructure.
+
+---
+
+## 🚀 Deployment Options
+
+| Option | Best For | Get Started |
+|--------|----------|-------------|
+| **Community (Free)** | Developers, self-hosting | `docker pull ghcr.io/ruska-ai/orchestra:latest` |
+| **Managed Cloud** | Teams wanting convenience | [chat.ruska.ai](https://chat.ruska.ai) |
+| **Enterprise** | Organizations needing SSO, compliance, SLA | [Contact Us](https://ruska.ai/enterprise) |
+
+---
 
 ## 📖 Table of Contents
 
@@ -163,6 +193,22 @@ This project uses Alembic for database migrations. Here's how to work with migra
 ## 🗺️ Roadmap
 
 -   [ ] [Human-In-The-Loop](https://langchain-ai.github.io/langgraph/how-tos/create-react-agent-hitl/#usage)
+
+---
+
+## 🏢 Enterprise
+
+For organizations needing managed deployment, compliance, or dedicated support:
+
+| Feature | Description |
+|---------|-------------|
+| **SSO/SAML** | Integrate with your identity provider |
+| **Audit Logging** | Comprehensive logs for compliance |
+| **Air-Gapped Deployment** | Run in isolated environments |
+| **Priority Support** | SLA-backed response times |
+| **Custom Integrations** | Connect to your internal tools |
+
+We partner with you to deploy Orchestra inside your infrastructure. [Contact us](https://ruska.ai/enterprise) to discuss your requirements.
 
 ---
 

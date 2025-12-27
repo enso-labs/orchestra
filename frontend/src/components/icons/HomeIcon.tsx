@@ -12,7 +12,7 @@ function HomeIcon({ onClick }: { onClick?: () => void }) {
 				alt="Logo"
 				className="w-8 h-8 rounded-full"
 			/>
-			<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+			<h1 className="text-2xl font-bold text-foreground">RUSKA</h1>
 		</Link>
 	);
 }

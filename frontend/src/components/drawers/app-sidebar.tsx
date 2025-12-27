@@ -752,12 +752,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						}}
 						className="flex items-center gap-2 m-2"
 					>
-						<img
-							src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
-							alt="Logo"
-							className="w-8 h-8 rounded-full"
-						/>
-						<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+						<span className="flex items-center gap-0.5">
+							<img
+								src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+								alt="Logo"
+								className="w-10 h-10 rounded-full pl-0"
+							/>
+							<h1 className="text-3xl font-bold text-foreground italic">RCHESTRA</h1>
+						</span>
 					</Link>
 					{/* <SearchForm /> */}
 				</SidebarHeader>

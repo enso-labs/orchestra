@@ -2,7 +2,7 @@ export const config = [
 	{
 		id: "srv-001",
 		user_id: "usr-acme-001",
-		name: "Ensō MCP Server",
+		name: "Ruska MCP Server",
 		slug: "enso-mcp-server",
 		description: "Includes web scraping, shell commands, and search tools",
 		type: "mcp",
@@ -20,7 +20,7 @@ export const config = [
 	{
 		id: "srv-002",
 		user_id: "usr-acme-001",
-		name: "Ensō A2A Server",
+		name: "Ruska A2A Server",
 		slug: "enso-a2a-server",
 		description: "Currency Agent A2A Server",
 		type: "a2a",
