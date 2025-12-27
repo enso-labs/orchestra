@@ -1,12 +1,12 @@
 <div align="center">
 
-# Enso Labs - Orchestra 🪶
+# Ruska Labs - Orchestra 🪶
 
 AI Agent Orchestrator built on LangGraph powered by [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A)
 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
-<a href="https://chat.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
-<a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
+<a href="https://chat.ruska.ai/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
+<a href="https://ruska.ai/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![DCO](https://img.shields.io/badge/DCO-1.1-yellow)](DCO)
 
@@ -14,7 +14,7 @@ AI Agent Orchestrator built on LangGraph powered by [MCP](https://github.com/mod
 
 </div>
 
-Base API infrastructure for Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A) protocols by [Enso Labs](https://enso.sh). The goal of Enso is the enrich the lives of the curious. Those who seek to buy back their time and compound their personal growth. Those who build and don't wait for IT to be built for them.
+Base API infrastructure for Composable AI Agents built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A) protocols by [Ruska Labs](https://ruska.ai). The goal of Ruska is the enrich the lives of the curious. Those who seek to buy back their time and compound their personal growth. Those who build and don't wait for IT to be built for them.
 
 ## 📖 Table of Contents
 
@@ -302,7 +302,7 @@ docker build -t orchestra:local .
 | `APP_LOG_LEVEL`  | Logging level                        | `DEBUG`       |
 | `APP_SECRET_KEY` | Application secret key               | -             |
 | `JWT_SECRET_KEY` | JWT signing key                      | -             |
-| `USER_AGENT`     | User agent string for requests       | `enso-dev`    |
+| `USER_AGENT`     | User agent string for requests       | `ruska-dev`    |
 | `TEST_USER_ID`   | Test user UUID                       | -             |
 
 #### Database

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { FaGithub } from "react-icons/fa";
 import { BookOpen, Newspaper, Share2, MessageCircle } from "lucide-react";
+import { PiAperture } from "react-icons/pi";
 
 export function HomeSection() {
 	return (
@@ -11,15 +12,16 @@ export function HomeSection() {
 			<div className="grid grid-cols-1 lg:grid-cols-[1fr_42rem_1fr] gap-6 items-start">
 				<div className="hidden lg:block" />
 				<div className="flex flex-col items-center text-center">
+					{/* <PiAperture className="w-32 h-32 sm:w-32 sm:h-32 rounded-full" /> */}
 					<img
-						src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+						src="https://github.com/ruska-ai/static/blob/master/ruska_logo_200.png?raw=true"
 						alt="Logo"
 						className="w-28 h-28 sm:w-32 sm:h-32 rounded-full"
 					/>
 
-					<h1 className="text-4xl font-bold mt-4">Orchestra</h1>
-					<p className="text-lg text-muted-foreground max-w-[42rem] mt-2">
-						Steerable Harnesses built on {" "}
+					<h1 className="text-4xl font-bold italic mt-2">ORCHESTRA</h1>
+					<p className="text-lg text-muted-foreground max-w-[42rem]">
+						Steerable Harnesses built on{" "}
 						<a
 							href="https://docs.langchain.com/oss/python/deepagents/overview"
 							target="_blank"

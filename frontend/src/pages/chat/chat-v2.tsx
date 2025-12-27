@@ -26,8 +26,8 @@ export function ChatV2Page() {
 	useListCheckpointsEffect(!loading, metadata);
 
 	const defaultAgent: Agent = {
-		name: "Ensō Orchestra",
-		description: "Ensō is an AI assistant built by Ensō Labs.",
+		name: "ORCHESTRA",
+		description: "Steerable Harnesses built on DeepAgents",
 		model: "",
 		prompt: "",
 		tools: [],

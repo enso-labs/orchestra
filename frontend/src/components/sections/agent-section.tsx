@@ -1,5 +1,7 @@
 import ChatInput from "@/components/inputs/ChatInput";
 import { Agent } from "@/lib/services/agentService";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Newspaper, Share2, MessageCircle } from "lucide-react";
 
 interface AgentSectionProps {
 	agent: Agent;
@@ -14,22 +16,74 @@ export function AgentSection({ agent, showAgentMenu = false }: AgentSectionProps
 				alt="Logo"
 				className="w-32 h-32 mx-auto rounded-full"
 			/>
-			<h1 className="text-4xl font-bold mt-2">{agent.name}</h1>
-			<p className="text-lg mb-2">{agent.description}</p>
-			{/* <div className="flex flex-row gap-2 mb-2">
-				{agent.mcp && (
-					<a href={agent.mcp.url}>
-						<img src="https://img.shields.io/badge/View-MCP-blue" />
-					</a>
-				)}
-				{agent.a2a && (
-					<a href={agent.a2a.url}>
-						<img src="https://img.shields.io/badge/View-A2A-blue" />
-					</a>
-				)}
-			</div> */}
+			<h1 className="text-4xl font-bold mt-2 italic">{agent.name}</h1>
+			<p className="text-lg text-muted-foreground mb-2">{agent.description}</p>
 			<div className="flex flex-col w-full lg:w-[600px]">
 				<ChatInput showAgentMenu={showAgentMenu} />
+			</div>
+
+			{/* Links intentionally sit beneath Tagline */}
+			<div className="flex flex-row flex-wrap justify-center gap-1 mt-3">
+				<Button
+					variant="ghost"
+					size="sm"
+					className="text-muted-foreground hover:text-foreground h-8"
+					asChild
+				>
+					<a
+						href="https://ruska.ai/docs/"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<BookOpen className="w-4 h-4 mr-1" />
+						Docs
+					</a>
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="text-muted-foreground hover:text-foreground h-8"
+					asChild
+				>
+					<a
+						href="https://ruska.ai/blog"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<Newspaper className="w-4 h-4 mr-1" />
+						Blog
+					</a>
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="text-muted-foreground hover:text-foreground h-8"
+					asChild
+				>
+					<a
+						href="https://ruska.ai/socials"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<Share2 className="w-4 h-4 mr-1" />
+						Social
+					</a>
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="text-muted-foreground hover:text-foreground h-8"
+					asChild
+				>
+					<a
+						href="https://join.slack.com/t/ruska-ai-workspace/shared_invite/zt-3l2lnevo6-hOe5ZeoAz~xj7CFAJk2bzg"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<MessageCircle className="w-4 h-4 mr-1" />
+						Slack
+					</a>
+				</Button>
 			</div>
 		</>
 	);
