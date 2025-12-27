@@ -76,7 +76,7 @@ export function AgentSection({ agent, showAgentMenu = false }: AgentSectionProps
 					asChild
 				>
 					<a
-						href="https://join.slack.com/t/ruska-ai-workspace/shared_invite/zt-3l2lnevo6-hOe5ZeoAz~xj7CFAJk2bzg"
+						href="https://join.slack.com/t/ruska-ai/shared_invite/zt-3l2lnevo6-hOe5ZeoAz~xj7CFAJk2bzg"
 						target="_blank"
 						rel="noopener noreferrer"
 					>
