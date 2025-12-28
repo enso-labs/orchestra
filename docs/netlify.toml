@@ -1,0 +1,13 @@
+[build]
+  base = "."
+  command = "npm ci && npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[context.deploy-preview]
+  command = "npm ci && npm run build"
+
+[context.branch-deploy]
+  command = "npm ci && npm run build"

@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { FileText, Download, Check, Copy, Eye, Plus, X } from "lucide-react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { FileText, Download, Check, Copy, Eye, Plus, X, Folder } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
@@ -20,9 +20,22 @@ import {
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { useChatContext } from "@/context/ChatContext";
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface FileEditorPanelProps {
 	filesMap: Map<string, any>;
+}
+
+interface BreadcrumbSegment {
+	label: string;
+	path: string;
+	isLast: boolean;
 }
 
 export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
@@ -72,6 +85,19 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	const fileNames = Object.keys(allFiles);
 	const [selectedFile, setSelectedFile] = useState(fileNames[0]);
+
+	// Parse selected file path into breadcrumb segments
+	const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
+		if (!selectedFile) return [];
+
+		const parts = selectedFile.replace(/^\//, "").split("/").filter(Boolean);
+
+		return parts.map((part, index) => ({
+			label: part,
+			path: "/" + parts.slice(0, index + 1).join("/"),
+			isLast: index === parts.length - 1,
+		}));
+	}, [selectedFile]);
 
 	// Reset selected file when filesMap changes
 	useEffect(() => {
@@ -163,6 +189,12 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		return "";
 	};
 
+	const normalizePath = (path: string): string => {
+		const trimmed = path.trim();
+		if (!trimmed) return "";
+		return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+	};
+
 	// Handle content change with debounce
 	const handleContentChange = useCallback(
 		(value: string | undefined) => {
@@ -188,13 +220,14 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	// Create new file
 	const handleCreateFile = () => {
-		const error = validatePath(newFilePath);
+		const normalizedPath = normalizePath(newFilePath);
+		const error = validatePath(normalizedPath);
 		if (error) {
 			setPathError(error);
 			return;
 		}
-		addFile(newFilePath, "");
-		setSelectedFile(newFilePath);
+		addFile(normalizedPath, "");
+		setSelectedFile(normalizedPath);
 		setShowNewFileDialog(false);
 		setNewFilePath("");
 		setPathError("");
@@ -227,13 +260,14 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	// Rename file
 	const handleRenameFile = () => {
 		if (!fileToRename) return;
-		const error = validatePath(renamePath, fileToRename);
+		const normalizedPath = normalizePath(renamePath);
+		const error = validatePath(normalizedPath, fileToRename);
 		if (error) {
 			setPathError(error);
 			return;
 		}
-		renameFile(fileToRename, renamePath);
-		setSelectedFile(renamePath);
+		renameFile(fileToRename, normalizedPath);
+		setSelectedFile(normalizedPath);
 		setShowRenameDialog(false);
 		setFileToRename(null);
 		setRenamePath("");
@@ -256,10 +290,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	const handleInlineRenameSubmit = () => {
 		if (!inlineRenaming) return;
-		const error = validatePath(inlineRenamePath, inlineRenaming);
-		if (!error && inlineRenamePath !== inlineRenaming) {
-			renameFile(inlineRenaming, inlineRenamePath);
-			setSelectedFile(inlineRenamePath);
+		const normalizedPath = normalizePath(inlineRenamePath);
+		const error = validatePath(normalizedPath, inlineRenaming);
+		if (!error && normalizedPath !== inlineRenaming) {
+			renameFile(inlineRenaming, normalizedPath);
+			setSelectedFile(normalizedPath);
 		}
 		setInlineRenaming(null);
 		setInlineRenamePath("");
@@ -324,8 +359,45 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		}
 	};
 
+	// File breadcrumb component
+	const FileBreadcrumb = () => {
+		if (!selectedFile || breadcrumbSegments.length === 0) return null;
+
+		return (
+			<div className="px-3 py-1.5 border-b border-border bg-muted/20">
+				<Breadcrumb>
+					<BreadcrumbList className="text-xs">
+						{/* Root indicator */}
+						<BreadcrumbItem>
+							<span className="font-mono text-muted-foreground">/</span>
+						</BreadcrumbItem>
+
+						{breadcrumbSegments.map((segment) => (
+							<React.Fragment key={segment.path}>
+								<BreadcrumbSeparator />
+								<BreadcrumbItem>
+									{segment.isLast ? (
+										<BreadcrumbPage className="flex items-center gap-1">
+											<FileText className="h-3 w-3" />
+											<span className="font-medium">{segment.label}</span>
+										</BreadcrumbPage>
+									) : (
+										<span className="flex items-center gap-1 text-muted-foreground">
+											<Folder className="h-3 w-3" />
+											<span>{segment.label}</span>
+										</span>
+									)}
+								</BreadcrumbItem>
+							</React.Fragment>
+						))}
+					</BreadcrumbList>
+				</Breadcrumb>
+			</div>
+		);
+	};
+
 	return (
-		<div className="h-full flex flex-col bg-background">
+		<div className="h-full flex flex-col bg-background" role="main" aria-label="File editor">
 			{/* File Tabs (VSCode-like) */}
 			<div className="flex items-center border-b border-border bg-muted/30">
 				<ScrollArea className="flex-1">
@@ -369,10 +441,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 										{/* Close button */}
 										<button
 											onClick={(e) => initiateDelete(filename, e)}
-											className="ml-1 p-0.5 rounded hover:bg-destructive/20 opacity-0 group-hover:opacity-100 transition-opacity"
+											className="ml-1 p-1 md:p-0.5 rounded hover:bg-destructive/20 opacity-0 group-hover:opacity-100 transition-opacity"
 											title="Close file"
+											aria-label={`Close ${filename}`}
 										>
-											<X className="h-3 w-3 hover:text-destructive" />
+											<X className="h-4 w-4 md:h-3 md:w-3 hover:text-destructive" />
 										</button>
 									</button>
 								</ContextMenuTrigger>
@@ -394,6 +467,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 							onClick={() => setShowNewFileDialog(true)}
 							className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
 							title="New File"
+							aria-label="Create new file"
 						>
 							<Plus className="h-4 w-4" />
 						</button>
@@ -417,6 +491,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 										? "Show code"
 										: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
 								}
+								aria-label={
+									showPreview
+										? "Show code"
+										: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
+								}
 							>
 								<Eye className="h-4 w-4" />
 							</Button>
@@ -428,6 +507,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 						onClick={handleCopy}
 						className="h-8 gap-2"
 						title="Copy current file"
+						aria-label="Copy file content to clipboard"
 					>
 						{copied ? (
 							<Check className="h-4 w-4 text-green-500" />
@@ -442,6 +522,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 						onClick={handleDownloadFile}
 						className="h-8 gap-2"
 						title="Download current file"
+						aria-label="Download current file"
 					>
 						<Download className="h-4 w-4" />
 					</Button>
@@ -453,6 +534,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 							onClick={handleDownloadAllAsZip}
 							className="h-8 gap-2 text-xs"
 							title="Download all as ZIP"
+							aria-label="Download all files as ZIP"
 						>
 							<Download className="h-4 w-4" />
 							All
@@ -460,6 +542,9 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 					)}
 				</div>
 			</div>
+
+			{/* File Path Breadcrumb */}
+			<FileBreadcrumb />
 
 			{/* Editor Area */}
 			<div className="flex-1 overflow-hidden">
