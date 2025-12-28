@@ -19,9 +19,6 @@ set -a # automatically export all variables
 source $ENV_FILE
 set +a
 
-### Build Docs
-bash ./scripts/docs.sh
-
 if [ $(git log -n1 --pretty="format:%d" | sed "s/, /\n/g" | grep tag: | sed "s/tag: \|)//g" | wc -l) -gt 0 ]; then
   export API_VERSION=$(git log -n1 --pretty="format:%d" | sed "s/, /\n/g" | grep tag: | sed "s/tag: \|)//g" | head -n1)
   echo "Tag exists: $API_VERSION"

@@ -1,10 +1,16 @@
+---
+title: Threads
+slug: /threads
+sidebar_position: 4
+---
+
 # Threads
 
-Threads are stateful conversations that maintain message history and context. Every interaction in Ensō Orchestra happens within a thread, whether you're chatting directly or using an assistant.
+Threads are stateful conversations that maintain message history and context. Every interaction in Orchestra happens within a thread, whether you're chatting directly or using an assistant.
 
 ## Overview
 
-Threads represent the conversation layer of Ensō Orchestra. They:
+Threads represent the conversation layer of Orchestra. They:
 
 - **Maintain Context**: Keep track of all messages, both from users and AI
 - **Store Tool Executions**: Record when and how tools were used
@@ -78,7 +84,7 @@ Create a thread programmatically:
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread' \
+  'https://orchestra.ruska.ai/api/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -92,7 +98,7 @@ curl -X 'POST' \
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread' \
+  'https://orchestra.ruska.ai/api/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -105,7 +111,7 @@ curl -X 'POST' \
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread' \
+  'https://orchestra.ruska.ai/api/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -174,7 +180,7 @@ Get a specific thread:
 
 ```bash
 curl -X 'GET' \
-  'https://orchestra.enso.sh/api/thread/thread_xyz789' \
+  'https://orchestra.ruska.ai/api/thread/thread_xyz789' \
   -H 'accept: application/json'
 ```
 
@@ -182,7 +188,7 @@ List all your threads:
 
 ```bash
 curl -X 'GET' \
-  'https://orchestra.enso.sh/api/threads?limit=20&offset=0' \
+  'https://orchestra.ruska.ai/api/threads?limit=20&offset=0' \
   -H 'accept: application/json'
 ```
 
@@ -192,7 +198,7 @@ Continue an existing conversation:
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread/thread_xyz789/message' \
+  'https://orchestra.ruska.ai/api/thread/thread_xyz789/message' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -214,7 +220,7 @@ The AI will respond with full context from the previous messages in the thread.
 
 ```bash
 curl -X 'DELETE' \
-  'https://orchestra.enso.sh/api/thread/thread_xyz789'
+  'https://orchestra.ruska.ai/api/thread/thread_xyz789'
 ```
 
 !!! warning "Permanent Deletion"
@@ -251,7 +257,7 @@ Threads support file uploads for multi-modal interactions:
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread' \
+  'https://orchestra.ruska.ai/api/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -311,7 +317,7 @@ Change models mid-conversation to optimize for different tasks:
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread/thread_xyz789/message' \
+  'https://orchestra.ruska.ai/api/thread/thread_xyz789/message' \
   -H 'Content-Type: application/json' \
   -d '{
   "query": "Now summarize our conversation so far",
@@ -356,7 +362,7 @@ For real-time interaction, use streaming to receive responses as they're generat
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread/stream' \
+  'https://orchestra.ruska.ai/api/thread/stream' \
   -H 'Content-Type: application/json' \
   -d '{
   "query": "Write a long essay about AI safety",
@@ -403,12 +409,12 @@ Combine text, images, and audio in a single thread:
 
 For complete thread API documentation:
 
-- [Thread API Reference](https://orchestra.enso.sh/api#/Thread)
-- [Create Thread](https://orchestra.enso.sh/api#/Thread/Create_New_Thread)
-- [Get Thread](https://orchestra.enso.sh/api#/Thread/Get_Thread)
-- [List Threads](https://orchestra.enso.sh/api#/Thread/List_Threads)
-- [Add Message](https://orchestra.enso.sh/api#/Thread/Add_Message_to_Thread)
-- [Delete Thread](https://orchestra.enso.sh/api#/Thread/Delete_Thread)
+- [Thread API Reference](https://orchestra.ruska.ai/api#/Thread)
+- [Create Thread](https://orchestra.ruska.ai/api#/Thread/Create_New_Thread)
+- [Get Thread](https://orchestra.ruska.ai/api#/Thread/Get_Thread)
+- [List Threads](https://orchestra.ruska.ai/api#/Thread/List_Threads)
+- [Add Message](https://orchestra.ruska.ai/api#/Thread/Add_Message_to_Thread)
+- [Delete Thread](https://orchestra.ruska.ai/api#/Thread/Delete_Thread)
 
 ## Related Documentation
 

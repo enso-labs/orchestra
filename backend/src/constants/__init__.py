@@ -23,6 +23,7 @@ APP_ENV = os.getenv("APP_ENV", "development")
 APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
 APP_SECRET_KEY = os.getenv("APP_SECRET_KEY", "this-is-a-secret-key")
 APP_LOG_LEVEL = os.getenv("APP_LOG_LEVEL", "INFO").upper()
+DOCS_BASE_URL = os.getenv("DOCS_BASE_URL", "https://docs.ruska.ai")
 
 
 # Database

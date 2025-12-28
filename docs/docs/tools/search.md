@@ -1,3 +1,8 @@
+---
+title: Search
+slug: /tools/search
+---
+
 # search_engine
 
 The `search_engine` tool allows performing web searches using a Searx search instance. It returns search results based on the provided query and optional parameters.

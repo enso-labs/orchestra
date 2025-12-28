@@ -1,10 +1,15 @@
-# Getting Started with Ensō Orchestra
+---
+title: Getting Started
+sidebar_position: 2
+---
 
-Welcome to Ensō Orchestra! This guide will walk you through your first steps with the platform, from logging in to sending your first AI-powered message.
+# Getting Started with Orchestra
+
+Welcome to Orchestra! This guide will walk you through your first steps with the platform, from logging in to sending your first AI-powered message.
 
 ## What You'll Learn
 
--   How to access your Ensō Orchestra instance
+-   How to access your Orchestra instance
 -   Creating your first conversation thread
 -   Understanding and selecting AI models
 -   Basic chat interactions
@@ -14,7 +19,7 @@ Welcome to Ensō Orchestra! This guide will walk you through your first steps wi
 
 Before you begin, ensure you have:
 
--   Access to an Ensō Orchestra instance (e.g., `https://orchestra.enso.sh`)
+-   Access to an Orchestra instance (e.g., `https://orchestra.ruska.ai`)
 -   User account credentials
 -   A modern web browser
 
@@ -22,7 +27,7 @@ Before you begin, ensure you have:
 
 ### Step 1: Log In
 
-1. Navigate to your Ensō Orchestra instance in your web browser
+1. Navigate to your Orchestra instance in your web browser
 2. Enter your credentials:
     - **Email**: Your user email (e.g., `admin@example.com` for demo)
     - **Password**: Your password
@@ -32,7 +37,7 @@ You'll be redirected to the main chat interface.
 
 ### Step 2: Start a New Thread
 
-When you first log in, you'll see the Ensō Orchestra interface with:
+When you first log in, you'll see the Orchestra interface with:
 
 -   **Sidebar**: Shows your previous threads and assistants
 -   **Main Chat Area**: Where conversations happen
@@ -42,7 +47,7 @@ The interface automatically creates a new thread when you send your first messag
 
 ### Step 3: Select Your Model
 
-At the top of the chat interface, you'll see a model dropdown. Ensō Orchestra supports multiple AI providers:
+At the top of the chat interface, you'll see a model dropdown. Orchestra supports multiple AI providers:
 
 -   **Anthropic**: Claude models (Haiku, Sonnet, Opus)
 -   **OpenAI**: GPT models (GPT-5, GPT-4o, etc.)
@@ -66,13 +71,13 @@ Your message will be sent to the selected AI model, and you'll see the response 
 
 **Example first messages:**
 
--   `What is Ensō Orchestra and what can it do?`
+-   `What is Orchestra and what can it do?`
 -   `Help me write a Python function to calculate fibonacci numbers`
 -   `What's the latest news about AI development?` (requires search tool)
 
 ### Step 5: Explore Tools (Optional)
 
-Ensō Orchestra's power comes from its ability to integrate external tools. To explore tools:
+Orchestra's power comes from its ability to integrate external tools. To explore tools:
 
 1. Click the **Tools** icon next to the message input
 2. Browse available tools:
@@ -170,9 +175,9 @@ Now that you've sent your first message, explore these features:
 
 ### Dive into the API
 
-Ensō Orchestra provides a full REST API that mirrors the OpenAI Assistants API:
+Orchestra provides a full REST API that mirrors the OpenAI Assistants API:
 
--   [API Documentation](https://orchestra.enso.sh/api): Interactive API reference
+-   [API Documentation](https://orchestra.ruska.ai/api): Interactive API reference
 -   Create threads programmatically
 -   Build custom integrations
 -   Deploy AI agents at scale
@@ -180,8 +185,8 @@ Ensō Orchestra provides a full REST API that mirrors the OpenAI Assistants API:
 ### Advanced Features
 
 -   **[Storage & RAG](storage/index.md)**: Upload documents for retrieval-augmented generation
--   **[Projects](https://orchestra.enso.sh/api#/Project)**: Organize document indexes for knowledge bases
--   **[Prompts](https://orchestra.enso.sh/api#/Prompt)**: Create reusable prompt templates
+-   **[Projects](https://orchestra.ruska.ai/api#/Project)**: Organize document indexes for knowledge bases
+-   **[Prompts](https://orchestra.ruska.ai/api#/Prompt)**: Create reusable prompt templates
 
 ## Tips for Success
 
@@ -200,8 +205,8 @@ If you encounter issues or have questions:
 
 -   **[Discord Community](https://discord.com/invite/QRfjg4YNzU)**: Get help from the community
 -   **[GitHub Issues](https://github.com/ruska-ai)**: Report bugs or request features
--   **[API Docs](https://orchestra.enso.sh/api)**: Detailed technical reference
+-   **[API Docs](https://orchestra.ruska.ai/api)**: Detailed technical reference
 
 ---
 
-**Ready to build?** Start exploring [Assistants](assistants/index.md) or dive into the [API Documentation](https://orchestra.enso.sh/api).
+**Ready to build?** Start exploring [Assistants](assistants/index.md) or dive into the [API Documentation](https://orchestra.ruska.ai/api).

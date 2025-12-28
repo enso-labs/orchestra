@@ -24,20 +24,6 @@ steps:
       pip install uv
       uv sync --frozen --no-cache --no-dev
 
-  - name: Build docs
-    run: |
-      # Copy docs folder to backend directory
-      cp -r docs backend/docs
-      
-      # Change to backend directory
-      cd backend
-      
-      # Build docs
-      # mkdocs build --site-dir src/public/docs
-      
-      # Cleanup docs folder from backend
-      rm -rf docs || true
-
   - name: Save Python dependencies cache
     if: steps.cache-python.outputs.cache-hit != 'true'
     id: save-cache-python

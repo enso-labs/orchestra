@@ -4,3 +4,6 @@
 [submodule "cli"]
 	path = cli
 	url = git@github.com:ruska-ai/shell.git
+[submodule "docs"]
+	path = docs
+	url = git@github.com:ruska-ai/docs.git

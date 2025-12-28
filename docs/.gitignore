@@ -1,0 +1,10 @@
+**/.env*
+**/node_modules
+**/build
+**/dist
+**/coverage
+**/logs
+**/tests
+**/sandbox
+**/scripts
+**/.docusaurus

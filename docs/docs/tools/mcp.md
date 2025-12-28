@@ -1,11 +1,17 @@
+---
+title: MCP
+slug: /tools/mcp
+---
+
 # Model Context Protocol [(MCP)](https://modelcontextprotocol.io/introduction)
 
-<a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
-<a href="https://orchestra.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
-<a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
+[![Join Discord](https://img.shields.io/badge/Join-Discord-purple)](https://discord.com/invite/QRfjg4YNzU)
+[![View API Docs](https://img.shields.io/badge/View-API%20Docs-blue)](https://orchestra.ruska.ai/api)
+[![Follow Social](https://img.shields.io/badge/Follow-Social-black)](https://ruska.ai/socials)
 
-!!! info "Actively Evolving"
+:::info Actively Evolving
 MCP integration is actively being enhanced with new features and capabilities. This documentation reflects the current implementation and is updated regularly.
+:::
 
 [MCP](https://modelcontextprotocol.io/introduction) is an open protocol that standardizes how applications provide context to LLMs. Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect your devices to various peripherals and accessories, MCP provides a standardized way to connect AI models to different data sources and tools.
 
@@ -13,7 +19,7 @@ MCP integration is actively being enhanced with new features and capabilities. T
 
 ## Introduction
 
-Enso Labs MCP support is based on the [Langchain MCP Adapter](https://github.com/langchain-ai/langchain-mcp-adapters) repository. A sample MCP server can be found at [Enso Labs - MCP SSE Server](https://github.com/ruska-ai/mcp-sse).
+Ruska Labs MCP support is based on the [Langchain MCP Adapter](https://github.com/langchain-ai/langchain-mcp-adapters) repository. A sample MCP server can be found at [Ruska Labs - MCP SSE Server](https://github.com/ruska-ai/mcp-sse).
 
 See this [permalink](https://github.com/ruska-ai/mcp-sse/blob/caa79bee4af4914d729ef1989156b66966121d80/main.py#L22-L27) for an example for how to include `x-mcp-key` authentication.
 
@@ -106,7 +112,7 @@ Once MCP servers are configured, you can selectively enable specific tools from 
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/assistant' \
+  'https://orchestra.ruska.ai/api/assistant' \
   -H 'Content-Type: application/json' \
   -d '{
   "name": "Weather Assistant",
@@ -124,13 +130,13 @@ curl -X 'POST' \
 
 This assistant has access to the `get_weather` tool from the MCP server and the built-in `search` tool, but NOT other tools the weather server might expose.
 
-## Example [API Usage](https://orchestra.enso.sh/api#/Thread/Create_New_Thread_api_threads_post):
+## Example [API Usage](https://orchestra.ruska.ai/api#/Thread/Create_New_Thread_api_threads_post):
 
 #### GET MCP server information
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/tools/mcp/info' \
+  'https://orchestra.ruska.ai/api/tools/mcp/info' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -150,7 +156,7 @@ curl -X 'POST' \
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/llm/thread' \
+  'https://orchestra.ruska.ai/api/llm/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{

@@ -1,6 +1,12 @@
+---
+title: Tools & Integrations
+slug: /tools
+sidebar_position: 6
+---
+
 # Tools & Integrations
 
-Ruska Orchestra provides a rich ecosystem of tools and protocol integrations that allow you to compose powerful AI agent systems. Whether you're using built-in tools or connecting external services via MCP and A2A protocols, Orchestra makes it easy to extend your agents' capabilities.
+Orchestra provides a rich ecosystem of tools and protocol integrations that allow you to compose powerful AI agent systems. Whether you're using built-in tools or connecting external services via MCP and A2A protocols, Orchestra makes it easy to extend your agents' capabilities.
 
 ## Overview
 
@@ -48,7 +54,7 @@ Use the `/api/tools` endpoint to create customized tools:
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/tools' \
+  'https://orchestra.ruska.ai/api/tools' \
   -H 'Content-Type: application/json' \
   -d '{
   "name": "webhook_marketing_channel",
@@ -100,7 +106,7 @@ Get all tools in your repository:
 
 ```bash
 curl -X 'GET' \
-  'https://orchestra.enso.sh/api/tools' \
+  'https://orchestra.ruska.ai/api/tools' \
   -H 'accept: application/json'
 ```
 
@@ -137,7 +143,7 @@ Remove a tool from your repository:
 
 ```bash
 curl -X 'DELETE' \
-  'https://orchestra.enso.sh/api/tools/webhook_marketing_channel' \
+  'https://orchestra.ruska.ai/api/tools/webhook_marketing_channel' \
   -H 'accept: application/json'
 ```
 
@@ -150,7 +156,7 @@ Reference your custom tools in assistant configurations:
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/assistant' \
+  'https://orchestra.ruska.ai/api/assistant' \
   -H 'Content-Type: application/json' \
   -d '{
   "name": "Marketing Automation Bot",
@@ -180,7 +186,7 @@ This ensures your custom configurations take precedence over defaults.
 
 ```bash
 # Create webhook tool for Slack
-curl -X 'POST' 'https://orchestra.enso.sh/api/tools' \
+curl -X 'POST' 'https://orchestra.ruska.ai/api/tools' \
   -H 'Content-Type: application/json' \
   -d '{
   "name": "notify_engineering_slack",
@@ -193,7 +199,7 @@ curl -X 'POST' 'https://orchestra.enso.sh/api/tools' \
 }'
 
 # Use in assistant
-curl -X 'POST' 'https://orchestra.enso.sh/api/assistant' \
+curl -X 'POST' 'https://orchestra.ruska.ai/api/assistant' \
   -d '{
   "name": "DevOps Monitor",
   "instructions": "Monitor system health. Alert engineering when issues arise.",
@@ -205,7 +211,7 @@ curl -X 'POST' 'https://orchestra.enso.sh/api/assistant' \
 
 ```bash
 # Create tool with API credentials
-curl -X 'POST' 'https://orchestra.enso.sh/api/tools' \
+curl -X 'POST' 'https://orchestra.ruska.ai/api/tools' \
   -H 'Content-Type: application/json' \
   -d '{
   "name": "send_customer_email",
@@ -224,17 +230,17 @@ curl -X 'POST' 'https://orchestra.enso.sh/api/tools' \
 
 ```bash
 # Create multiple webhook tools
-curl -X 'POST' 'https://orchestra.enso.sh/api/tools' \
+curl -X 'POST' 'https://orchestra.ruska.ai/api/tools' \
   -d '{"name":"notify_slack","base_tool":"send_webhook","type":"default","env":{"WEBHOOK_URL":"https://hooks.slack.com/..."}}'
 
-curl -X 'POST' 'https://orchestra.enso.sh/api/tools' \
+curl -X 'POST' 'https://orchestra.ruska.ai/api/tools' \
   -d '{"name":"notify_teams","base_tool":"send_webhook","type":"default","env":{"WEBHOOK_URL":"https://outlook.office.com/webhook/..."}}'
 
-curl -X 'POST' 'https://orchestra.enso.sh/api/tools' \
+curl -X 'POST' 'https://orchestra.ruska.ai/api/tools' \
   -d '{"name":"notify_discord","base_tool":"send_webhook","type":"default","env":{"WEBHOOK_URL":"https://discord.com/api/webhooks/..."}}'
 
 # Use all in one assistant
-curl -X 'POST' 'https://orchestra.enso.sh/api/assistant' \
+curl -X 'POST' 'https://orchestra.ruska.ai/api/assistant' \
   -d '{
   "name": "Broadcast Bot",
   "instructions": "Send important announcements to all team channels.",
@@ -263,8 +269,8 @@ curl -X 'POST' 'https://orchestra.enso.sh/api/assistant' \
 
 For complete tool API documentation:
 
-- [POST /tools](https://orchestra.enso.sh/api#/Tools/Create_Tool) - Create a new tool
-- [GET /tools](https://orchestra.enso.sh/api#/Tools/List_Tools) - List all tools
-- [DELETE /tools/{tool_name}](https://orchestra.enso.sh/api#/Tools/Delete_Tool) - Delete a tool
+- [POST /tools](https://orchestra.ruska.ai/api#/Tools/Create_Tool) - Create a new tool
+- [GET /tools](https://orchestra.ruska.ai/api#/Tools/List_Tools) - List all tools
+- [DELETE /tools/&#123;tool_name&#125;](https://orchestra.ruska.ai/api#/Tools/Delete_Tool) - Delete a tool
 
 ---

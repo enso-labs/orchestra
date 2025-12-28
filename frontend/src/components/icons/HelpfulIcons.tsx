@@ -2,7 +2,7 @@ export default function HelpfulIcons() {
 	return (
 		<div className="text-center flex justify-center gap-2 my-3">
 			<a
-				href="/docs/"
+				href="https://docs.ruska.ai"
 				target="_blank"
 				className="hover:opacity-80 transition-opacity"
 				rel="noreferrer"

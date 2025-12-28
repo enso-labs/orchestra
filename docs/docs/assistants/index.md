@@ -1,3 +1,9 @@
+---
+title: Assistants
+slug: /assistants
+sidebar_position: 3
+---
+
 # Assistants
 
 Assistants are pre-configured AI agents with specific instructions, tools, and behaviors. Think of them as specialized team members that you can deploy for specific tasks, whether through the web interface or via API.
@@ -71,7 +77,7 @@ Create an assistant programmatically using the REST API:
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/assistant' \
+  'https://orchestra.ruska.ai/api/assistant' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -109,7 +115,7 @@ curl -X 'POST' \
 
 ```bash
 curl -X 'POST' \
-  'https://orchestra.enso.sh/api/thread' \
+  'https://orchestra.ruska.ai/api/thread' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -133,7 +139,7 @@ Modify an assistant's configuration at any time:
 
 ```bash
 curl -X 'PATCH' \
-  'https://orchestra.enso.sh/api/assistant/asst_abc123' \
+  'https://orchestra.ruska.ai/api/assistant/asst_abc123' \
   -H 'Content-Type: application/json' \
   -d '{
   "instructions": "Updated instructions here...",
@@ -150,7 +156,7 @@ Remove an assistant when no longer needed:
 
 ```bash
 curl -X 'DELETE' \
-  'https://orchestra.enso.sh/api/assistant/asst_abc123'
+  'https://orchestra.ruska.ai/api/assistant/asst_abc123'
 ```
 
 ### Listing Your Assistants
@@ -159,7 +165,7 @@ Get all assistants in your account:
 
 ```bash
 curl -X 'GET' \
-  'https://orchestra.enso.sh/api/assistants' \
+  'https://orchestra.ruska.ai/api/assistants' \
   -H 'accept: application/json'
 ```
 
@@ -224,7 +230,7 @@ These values are appended to the end of the system prompt, providing context to 
 
 ### Scheduled Assistants
 
-Combine assistants with the [Schedules API](https://orchestra.enso.sh/api#/Schedule) to create recurring agent tasks:
+Combine assistants with the [Schedules API](https://orchestra.ruska.ai/api#/Schedule) to create recurring agent tasks:
 
 - Daily report generation
 - Periodic data analysis
@@ -298,11 +304,11 @@ See the **Schedules** section in your user settings for more information.
 
 For complete API documentation, see:
 
-- [Assistant API Reference](https://orchestra.enso.sh/api#/Assistant)
-- [Create Assistant](https://orchestra.enso.sh/api#/Assistant/Create_Assistant)
-- [Update Assistant](https://orchestra.enso.sh/api#/Assistant/Update_Assistant)
-- [Delete Assistant](https://orchestra.enso.sh/api#/Assistant/Delete_Assistant)
-- [List Assistants](https://orchestra.enso.sh/api#/Assistant/List_Assistants)
+- [Assistant API Reference](https://orchestra.ruska.ai/api#/Assistant)
+- [Create Assistant](https://orchestra.ruska.ai/api#/Assistant/Create_Assistant)
+- [Update Assistant](https://orchestra.ruska.ai/api#/Assistant/Update_Assistant)
+- [Delete Assistant](https://orchestra.ruska.ai/api#/Assistant/Delete_Assistant)
+- [List Assistants](https://orchestra.ruska.ai/api#/Assistant/List_Assistants)
 
 ## Related Documentation
 
