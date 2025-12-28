@@ -9,7 +9,7 @@ import { Agent } from "@/lib/services/agentService";
 import { ChatNav } from "@/components/nav/ChatNav";
 
 export default function Home() {
-	const { messages, useModelsEffect } = useChatContext();
+	const { messages, useModelsEffect, viewMode, filesMap } = useChatContext();
 	const { setAgent } = useAgentContext();
 
 	// Fetch models for the SelectModel component
@@ -22,7 +22,7 @@ export default function Home() {
 		}));
 	}, []);
 
-	if (messages.length === 0) {
+	if (messages.length === 0 && viewMode === "chat" && filesMap.size === 0) {
 		return (
 			<NoAuthLayout showModelSelector={true}>
 				<HomeSection />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ShieldCheck, ShieldOff, Globe, FileCode } from "lucide-react";
+import { Plus, ShieldCheck, ShieldOff, Globe } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -56,12 +56,16 @@ export function BaseToolMenu() {
 	};
 
 	const handleCreateFile = () => {
-		const error = validatePath(newFilePath);
+		const trimmedPath = newFilePath.trim();
+		const normalizedPath = trimmedPath.startsWith("/")
+			? trimmedPath
+			: `/${trimmedPath}`;
+		const error = validatePath(normalizedPath);
 		if (error) {
 			setPathError(error);
 			return;
 		}
-		addFile(newFilePath, "");
+		addFile(normalizedPath, "");
 		setViewMode("editor");
 		setShowFileDialog(false);
 		setNewFilePath("");
@@ -111,13 +115,16 @@ export function BaseToolMenu() {
 				>
 					<DropdownMenuGroup>
 						<ImageUpload />
+						{/* TODO: This has a bug when clicked where FREEZES interface 
+						https://github.com/ruska-ai/orchestra/pull/620#pullrequestreview-3614465679 
+						
 						<DropdownMenuItem
 							onClick={() => setShowFileDialog(true)}
 							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
 						>
 							<FileCode className="h-4 w-4" />
 							<span>Add File</span>
-						</DropdownMenuItem>
+						</DropdownMenuItem> */}
 						<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
 						<DropdownMenuItem
 							onClick={() => setWebSearchCheck(!webSearchCheck)}
