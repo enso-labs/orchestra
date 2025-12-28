@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { FileText, Download, Check, Copy, Eye, Plus, X } from "lucide-react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { FileText, Download, Check, Copy, Eye, Plus, X, Folder } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
@@ -20,9 +20,22 @@ import {
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { useChatContext } from "@/context/ChatContext";
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface FileEditorPanelProps {
 	filesMap: Map<string, any>;
+}
+
+interface BreadcrumbSegment {
+	label: string;
+	path: string;
+	isLast: boolean;
 }
 
 export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
@@ -72,6 +85,19 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	const fileNames = Object.keys(allFiles);
 	const [selectedFile, setSelectedFile] = useState(fileNames[0]);
+
+	// Parse selected file path into breadcrumb segments
+	const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
+		if (!selectedFile) return [];
+
+		const parts = selectedFile.replace(/^\//, "").split("/").filter(Boolean);
+
+		return parts.map((part, index) => ({
+			label: part,
+			path: "/" + parts.slice(0, index + 1).join("/"),
+			isLast: index === parts.length - 1,
+		}));
+	}, [selectedFile]);
 
 	// Reset selected file when filesMap changes
 	useEffect(() => {
@@ -333,6 +359,43 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		}
 	};
 
+	// File breadcrumb component
+	const FileBreadcrumb = () => {
+		if (!selectedFile || breadcrumbSegments.length === 0) return null;
+
+		return (
+			<div className="px-3 py-1.5 border-b border-border bg-muted/20">
+				<Breadcrumb>
+					<BreadcrumbList className="text-xs">
+						{/* Root indicator */}
+						<BreadcrumbItem>
+							<span className="font-mono text-muted-foreground">/</span>
+						</BreadcrumbItem>
+
+						{breadcrumbSegments.map((segment) => (
+							<React.Fragment key={segment.path}>
+								<BreadcrumbSeparator />
+								<BreadcrumbItem>
+									{segment.isLast ? (
+										<BreadcrumbPage className="flex items-center gap-1">
+											<FileText className="h-3 w-3" />
+											<span className="font-medium">{segment.label}</span>
+										</BreadcrumbPage>
+									) : (
+										<span className="flex items-center gap-1 text-muted-foreground">
+											<Folder className="h-3 w-3" />
+											<span>{segment.label}</span>
+										</span>
+									)}
+								</BreadcrumbItem>
+							</React.Fragment>
+						))}
+					</BreadcrumbList>
+				</Breadcrumb>
+			</div>
+		);
+	};
+
 	return (
 		<div className="h-full flex flex-col bg-background">
 			{/* File Tabs (VSCode-like) */}
@@ -469,6 +532,9 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 					)}
 				</div>
 			</div>
+
+			{/* File Path Breadcrumb */}
+			<FileBreadcrumb />
 
 			{/* Editor Area */}
 			<div className="flex-1 overflow-hidden">
