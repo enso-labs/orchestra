@@ -24,24 +24,28 @@ export function ChatNav({
 					<div className="flex items-center gap-2">
 						{/* Mode toggle - only visible when files exist */}
 						{hasFiles && (
-							<div className="hidden md:flex items-center gap-1 border border-border rounded-lg p-1">
+							<div className="flex items-center gap-1 border border-border rounded-lg p-1">
 								<Button
 									variant={viewMode === "chat" ? "secondary" : "ghost"}
 									size="sm"
 									onClick={() => setViewMode("chat")}
 									className="h-8 gap-2"
+									aria-label="Switch to chat view"
+									aria-pressed={viewMode === "chat"}
 								>
 									<MessageSquare className="h-4 w-4" />
-									Chat
+									<span className="hidden sm:inline">Chat</span>
 								</Button>
 								<Button
 									variant={viewMode === "editor" ? "secondary" : "ghost"}
 									size="sm"
 									onClick={() => setViewMode("editor")}
 									className="h-8 gap-2"
+									aria-label="Switch to editor view"
+									aria-pressed={viewMode === "editor"}
 								>
 									<LayoutGrid className="h-4 w-4" />
-									Editor
+									<span className="hidden sm:inline">Editor</span>
 								</Button>
 							</div>
 						)}

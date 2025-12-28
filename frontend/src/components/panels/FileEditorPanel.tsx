@@ -397,7 +397,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	};
 
 	return (
-		<div className="h-full flex flex-col bg-background">
+		<div className="h-full flex flex-col bg-background" role="main" aria-label="File editor">
 			{/* File Tabs (VSCode-like) */}
 			<div className="flex items-center border-b border-border bg-muted/30">
 				<ScrollArea className="flex-1">
@@ -441,10 +441,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 										{/* Close button */}
 										<button
 											onClick={(e) => initiateDelete(filename, e)}
-											className="ml-1 p-0.5 rounded hover:bg-destructive/20 opacity-0 group-hover:opacity-100 transition-opacity"
+											className="ml-1 p-1 md:p-0.5 rounded hover:bg-destructive/20 opacity-0 group-hover:opacity-100 transition-opacity"
 											title="Close file"
+											aria-label={`Close ${filename}`}
 										>
-											<X className="h-3 w-3 hover:text-destructive" />
+											<X className="h-4 w-4 md:h-3 md:w-3 hover:text-destructive" />
 										</button>
 									</button>
 								</ContextMenuTrigger>
@@ -466,6 +467,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 							onClick={() => setShowNewFileDialog(true)}
 							className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
 							title="New File"
+							aria-label="Create new file"
 						>
 							<Plus className="h-4 w-4" />
 						</button>
@@ -489,6 +491,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 										? "Show code"
 										: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
 								}
+								aria-label={
+									showPreview
+										? "Show code"
+										: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
+								}
 							>
 								<Eye className="h-4 w-4" />
 							</Button>
@@ -500,6 +507,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 						onClick={handleCopy}
 						className="h-8 gap-2"
 						title="Copy current file"
+						aria-label="Copy file content to clipboard"
 					>
 						{copied ? (
 							<Check className="h-4 w-4 text-green-500" />
@@ -514,6 +522,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 						onClick={handleDownloadFile}
 						className="h-8 gap-2"
 						title="Download current file"
+						aria-label="Download current file"
 					>
 						<Download className="h-4 w-4" />
 					</Button>
@@ -525,6 +534,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 							onClick={handleDownloadAllAsZip}
 							className="h-8 gap-2 text-xs"
 							title="Download all as ZIP"
+							aria-label="Download all files as ZIP"
 						>
 							<Download className="h-4 w-4" />
 							All
