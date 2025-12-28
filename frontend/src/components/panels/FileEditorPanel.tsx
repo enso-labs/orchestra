@@ -163,6 +163,12 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		return "";
 	};
 
+	const normalizePath = (path: string): string => {
+		const trimmed = path.trim();
+		if (!trimmed) return "";
+		return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+	};
+
 	// Handle content change with debounce
 	const handleContentChange = useCallback(
 		(value: string | undefined) => {
@@ -188,13 +194,14 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	// Create new file
 	const handleCreateFile = () => {
-		const error = validatePath(newFilePath);
+		const normalizedPath = normalizePath(newFilePath);
+		const error = validatePath(normalizedPath);
 		if (error) {
 			setPathError(error);
 			return;
 		}
-		addFile(newFilePath, "");
-		setSelectedFile(newFilePath);
+		addFile(normalizedPath, "");
+		setSelectedFile(normalizedPath);
 		setShowNewFileDialog(false);
 		setNewFilePath("");
 		setPathError("");
@@ -227,13 +234,14 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	// Rename file
 	const handleRenameFile = () => {
 		if (!fileToRename) return;
-		const error = validatePath(renamePath, fileToRename);
+		const normalizedPath = normalizePath(renamePath);
+		const error = validatePath(normalizedPath, fileToRename);
 		if (error) {
 			setPathError(error);
 			return;
 		}
-		renameFile(fileToRename, renamePath);
-		setSelectedFile(renamePath);
+		renameFile(fileToRename, normalizedPath);
+		setSelectedFile(normalizedPath);
 		setShowRenameDialog(false);
 		setFileToRename(null);
 		setRenamePath("");
@@ -256,10 +264,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 	const handleInlineRenameSubmit = () => {
 		if (!inlineRenaming) return;
-		const error = validatePath(inlineRenamePath, inlineRenaming);
-		if (!error && inlineRenamePath !== inlineRenaming) {
-			renameFile(inlineRenaming, inlineRenamePath);
-			setSelectedFile(inlineRenamePath);
+		const normalizedPath = normalizePath(inlineRenamePath);
+		const error = validatePath(normalizedPath, inlineRenaming);
+		if (!error && normalizedPath !== inlineRenaming) {
+			renameFile(inlineRenaming, normalizedPath);
+			setSelectedFile(normalizedPath);
 		}
 		setInlineRenaming(null);
 		setInlineRenamePath("");
