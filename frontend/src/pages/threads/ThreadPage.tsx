@@ -36,6 +36,7 @@ export default function ThreadPage() {
 		messages,
 		setMessages,
 		metadata,
+		setViewMode,
 		setMetadata,
 		setFilesMap,
 		setCheckpoints,
