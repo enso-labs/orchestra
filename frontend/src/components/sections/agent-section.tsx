@@ -31,7 +31,7 @@ export function AgentSection({ agent, showAgentMenu = false }: AgentSectionProps
 					asChild
 				>
 					<a
-						href="https://ruska.ai/docs/"
+						href="https://docs.ruska.ai"
 						target="_blank"
 						rel="noopener noreferrer"
 					>

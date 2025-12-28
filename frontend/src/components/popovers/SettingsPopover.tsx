@@ -73,7 +73,9 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => navigate("/docs/")}
+						onClick={() =>
+							window.open("https://docs.ruska.ai", "_blank", "noopener,noreferrer")
+						}
 					>
 						<Book className="h-4 w-4" />
 						Documentation
