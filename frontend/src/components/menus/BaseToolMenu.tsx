@@ -115,7 +115,10 @@ export function BaseToolMenu() {
 				>
 					<DropdownMenuGroup>
 						<ImageUpload />
-						{/* <DropdownMenuItem
+						{/* TODO: This has a bug when clicked where FREEZES interface 
+						https://github.com/ruska-ai/orchestra/pull/620#pullrequestreview-3614465679 
+						
+						<DropdownMenuItem
 							onClick={() => setShowFileDialog(true)}
 							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
 						>

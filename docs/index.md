@@ -1,13 +1,13 @@
-# Enso Labs - Orchestra 🪶
+# Ruska Labs - Orchestra 🪶
 
 <a href="https://discord.com/invite/QRfjg4YNzU"><img src="https://img.shields.io/badge/Join-Discord-purple"></a>
-<a href="https://orchestra.enso.sh/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
-<a href="https://enso.sh/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
+<a href="https://orchestra.ruska.ai/api"><img src="https://img.shields.io/badge/View-API Docs-blue"></a>
+<a href="https://ruska.ai/socials"><img src="https://img.shields.io/badge/Follow-Social-black"></a>
 
 !!! info "Living Documentation"
 This documentation is actively maintained and continuously updated as Orchestra evolves. Features, APIs, and best practices are regularly refined. For the most current information, check back frequently or join our [Discord community](https://discord.com/invite/QRfjg4YNzU).
 
-Ensō Orchestra is a composable AI agent infrastructure built on LangGraph and powered by the [MCP](https://github.com/modelcontextprotocol) & [A2A](https://github.com/google/A2A) protocols by [Enso Labs](https://enso.sh).
+Ruska Orchestra is an open-source platform for building Steerable DeepAgent Harnesses by [Ruska Labs](https://ruska.ai).
 
 ## What is Ensō Orchestra?
 
@@ -78,11 +78,10 @@ Ready to get started? Follow our [Getting Started Guide](getting-started.md) to:
 
 ## Community & Support
 
--   **[Discord](https://discord.com/invite/QRfjg4YNzU)**: Join our community for discussions and support
 -   **[GitHub](https://github.com/ruska-ai)**: Contribute to Enso Labs projects
--   **[API Documentation](https://orchestra.enso.sh/api)**: Complete API reference and interactive docs
--   **[Social Media](https://enso.sh/socials)**: Follow us for updates and news
+-   **[API Documentation](https://orchestra.ruska.ai/api)**: Complete API reference and interactive docs
+-   **[Social Media](https://ruska.ai/socials)**: Follow us for updates and news
 
 ---
 
-_Ensō Orchestra is developed by [Enso Labs](https://enso.sh) - enriching the lives of builders and innovators._
+_Ensō Orchestra is developed by [Enso Labs](https://ruska.ai) - enriching the lives of builders and innovators._
