@@ -24,10 +24,10 @@ class LLMController:
         self.service_context = ServiceContext(
             user_id=self.user_id, store=self.store, config=config
         )
-        
+
     def _init_context(self, request: LLMRequest) -> ContextSchema:
         return ContextSchema(model=request.model, user_id=self.user_id)
-        
+
     def _init_runtime(self, request: LLMRequest) -> ToolRuntime:
         return ToolRuntime(
             state={"messages": [], "files": request.input.files},
@@ -37,14 +37,14 @@ class LLMController:
             stream_writer=lambda _: None,
             config=self.service_context.config,
         )
-        
+
     def init_backend(self, request: LLMRequest) -> CompositeBackend:
         runtime = self._init_runtime(request)
         store_backend = StoreBackend(runtime)
         built_routes = {
             f"/users/{runtime.context.user_id}/memories/": store_backend,
             f"/users/{runtime.context.user_id}/config/": store_backend,
-        }  
+        }
         return CompositeBackend(default=StateBackend(runtime), routes=built_routes)
 
     async def _update_store(self, agent: Orchestra, config: RunnableConfig) -> None:

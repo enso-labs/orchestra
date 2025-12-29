@@ -90,12 +90,14 @@ def get_all_models():
 def get_free_models():
     models = []
     if OPENAI_API_KEY:
-        models.extend([
-            ChatModels.OPENAI_GPT_4_1_NANO.value,
-            ChatModels.OPENAI_GPT_4_1_MINI.value,
-            ChatModels.OPENAI_GPT_5_NANO.value,
-            ChatModels.OPENAI_GPT_5_MINI.value,
-        ])
+        models.extend(
+            [
+                ChatModels.OPENAI_GPT_4_1_NANO.value,
+                ChatModels.OPENAI_GPT_4_1_MINI.value,
+                ChatModels.OPENAI_GPT_5_NANO.value,
+                ChatModels.OPENAI_GPT_5_MINI.value,
+            ]
+        )
     if ANTHROPIC_API_KEY:
         models.append(ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value)
     if GOOGLE_API_KEY:

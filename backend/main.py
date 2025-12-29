@@ -45,9 +45,8 @@ mcp_ignore_routes = [
     # ✅ allow-list: anything tagged "mcp" gets included
     RouteMap(
         tags={"mcp"},
-        mcp_type=MCPType.TOOL,   # or RESOURCE / RESOURCE_TEMPLATE if you want semantics
+        mcp_type=MCPType.TOOL,  # or RESOURCE / RESOURCE_TEMPLATE if you want semantics
     ),
-
     # ❌ deny-list fallback: exclude everything else
     RouteMap(mcp_type=MCPType.EXCLUDE),
 ]
@@ -161,4 +160,3 @@ if __name__ == "__main__":
         log_level=LOG_LEVEL,
         timeout_graceful_shutdown=1,  # Force close SSE connections quickly on shutdown
     )
- 

@@ -1,20 +1,21 @@
 import os
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
 
-from src.constants import DOCS_BASE_URL, LANGCONNECT_SERVER_URL
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from src.constants import LANGCONNECT_SERVER_URL
+
+from .api_tokens import router as api_tokens
+from .assistant import router as assistant
+from .auth import router as auth
+from .info import router as info
 from .llm import llm_router as llm
+from .project import router as project
+from .prompt import router as prompt
+from .schedule import router as schedule
+from .storage import router as storage
 from .thread import router as thread
 from .tool import router as tool
-from .info import router as info
-from .auth import router as auth
-from .storage import router as storage
-from .assistant import router as assistant
-from .schedule import router as schedule
-from .prompt import router as prompt
-from .project import router as project
-from .api_tokens import router as api_tokens
 
 
 def create_api_router(app: FastAPI, prefix: str = "/api"):
@@ -37,13 +38,6 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
 
 
 def mount_static_router(app: FastAPI):
-    @app.get("/docs", include_in_schema=False)
-    @app.get("/docs/{path:path}", include_in_schema=False)
-    async def redirect_docs(path: str = ""):
-        target = f"{DOCS_BASE_URL}/docs"
-        if path:
-            target = f"{target}/{path}"
-        return RedirectResponse(url=target, status_code=307)
     if os.path.exists("src/public/assets"):
         app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
     if os.path.exists("src/public/icons"):

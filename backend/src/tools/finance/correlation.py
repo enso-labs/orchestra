@@ -9,9 +9,7 @@ import plotly.express as px
 ########################################################
 ## Get Correlation Matrix
 ########################################################
-type Period = Literal[
-    "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"
-]
+type Period = Literal["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"]
 
 
 class GetCorrelationMatrixSchema(BaseModel):
@@ -28,7 +26,10 @@ def get_correlation_matrix(tickers: list[str], period: str = "1y") -> tuple[str,
     """Get the correlation matrix for a list of stock tickers and return a Plotly heatmap as JSON."""
     # Validate minimum tickers
     if len(tickers) < 2:
-        return "Error: At least 2 tickers are required to compute a correlation matrix.", ""
+        return (
+            "Error: At least 2 tickers are required to compute a correlation matrix.",
+            "",
+        )
 
     # Fetch historical closing prices for each ticker using yf.Ticker().history()
     prices_dict = {}
@@ -40,7 +41,10 @@ def get_correlation_matrix(tickers: list[str], period: str = "1y") -> tuple[str,
 
     # Check if we have at least 2 valid tickers
     if len(prices_dict) < 2:
-        return f"Error: Not enough valid tickers with data. Only found: {list(prices_dict.keys())}", ""
+        return (
+            f"Error: Not enough valid tickers with data. Only found: {list(prices_dict.keys())}",
+            "",
+        )
 
     # Combine into a single DataFrame
     prices = pd.DataFrame(prices_dict)
@@ -68,4 +72,3 @@ def get_correlation_matrix(tickers: list[str], period: str = "1y") -> tuple[str,
 
     # Return CSV data for model context and Plotly JSON for visualization
     return corr.to_csv(), fig.to_json()
-

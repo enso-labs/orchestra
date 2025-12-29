@@ -2,7 +2,11 @@ from langchain.agents import AgentState
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
-from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_CHAT_MODEL_BASIC, DEFAULT_CHAT_MODEL_ADVANCED
+from src.constants.llm import (
+    DEFAULT_CHAT_MODEL,
+    DEFAULT_CHAT_MODEL_BASIC,
+    DEFAULT_CHAT_MODEL_ADVANCED,
+)
 from src.schemas.contexts import ContextSchema
 from langchain.agents.middleware import (
     PIIMiddleware,

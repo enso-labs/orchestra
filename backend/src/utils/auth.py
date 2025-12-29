@@ -69,7 +69,7 @@ async def get_optional_user(
                 return await verify_credentials(request, credentials, db)
             except HTTPException:
                 pass
-                
+
         if not is_authorized_model(params.model):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -102,29 +102,33 @@ async def verify_credentials(
                 # Use 'system' to look up in global index
                 token_repo = ApiTokenRepo("system", store)
                 token = await token_repo.get_by_hash_global(hashed)
-                
+
                 if token:
                     user_repo = UserRepo(db, user_id=token.user_id)
                     user = await user_repo.get_by_id()
-                    
+
                     if not user:
-                        logger.warning(f"User {token.user_id} not found for valid token {token.id}")
+                        logger.warning(
+                            f"User {token.user_id} not found for valid token {token.id}"
+                        )
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="User not found",
                         )
-                    
+
                     # Update last used timestamp
                     user_token_repo = ApiTokenRepo(token.user_id, store)
                     await user_token_repo.update_last_used(token.id)
-                    
-                    logger.info(f"Authenticated user via API Token: {user.id} {user.email}")
+
+                    logger.info(
+                        f"Authenticated user via API Token: {user.id} {user.email}"
+                    )
                     user_repo.user_id = user.id
                     request.state.user = user.protected()
                     request.state.token = api_key
                     request.state.user_repo = user_repo
                     return user.protected()
-                
+
                 # If api_key provided but invalid
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

@@ -134,9 +134,7 @@ class ToolService:
                 input=input, config={"metadata": structured_tool.metadata}
             )
         except Exception as e:
-            log_error(
-                f"Error invoking structured tool {structured_tool.name}: {e}"
-            )
+            log_error(f"Error invoking structured tool {structured_tool.name}: {e}")
             return {"error": str(e)}
 
 

@@ -184,13 +184,13 @@ async def stream_generator(
                 model=model,
                 user_id=service_context.user_id,
             )
-            runtime = ToolRuntime(  
-                state={"messages": [], "files": files_map},  
-                context=ctx,  
-                tool_call_id="tc",  
-                store=service_context.store,  
-                stream_writer=lambda _: None,  
-                config=config,  
+            runtime = ToolRuntime(
+                state={"messages": [], "files": files_map},
+                context=ctx,
+                tool_call_id="tc",
+                store=service_context.store,
+                stream_writer=lambda _: None,
+                config=config,
             )
             store_backend = StoreBackend(runtime)
             routes = {

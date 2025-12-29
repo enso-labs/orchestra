@@ -72,7 +72,9 @@ async def create_assistant(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.put("/{assistant_id}", name="Update Assistant", operation_id="ruska_update_assistant")
+@router.put(
+    "/{assistant_id}", name="Update Assistant", operation_id="ruska_update_assistant"
+)
 async def update_assistant(
     assistant_id: str = Path(..., description="The ID of the assistant to update"),
     assistant: Assistant = Body(
@@ -95,7 +97,9 @@ async def update_assistant(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.delete("/{assistant_id}", name="Delete Assistant", operation_id="ruska_delete_assistant")
+@router.delete(
+    "/{assistant_id}", name="Delete Assistant", operation_id="ruska_delete_assistant"
+)
 async def delete_assistant(
     assistant_id: str = Path(..., description="The ID of the assistant to delete"),
     user: ProtectedUser = Depends(verify_credentials),
