@@ -1,3 +1,4 @@
+from typing import Callable
 from langchain.agents import AgentState
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import AIMessage
@@ -48,8 +49,26 @@ def pii_middleware() -> dict | None:
             strategy="block",
             apply_to_input=True,
         ),
+        PIIMiddleware(
+            "api_key",
+            detector=r"otk_[A-Za-z0-9]+",
+            strategy="block",
+            apply_to_input=True,
+        ),
     ]
 
+@wrap_model_call
+def retry_model(
+    request: ModelRequest,
+    handler: Callable[[ModelRequest], ModelResponse],
+) -> ModelResponse:
+    for attempt in range(3):
+        try:
+            return handler(request)
+        except Exception as e:
+            if attempt == 2:
+                raise
+            logger.warning(f"Retry {attempt + 1}/3 after error: {e}")
 
 @wrap_model_call
 async def dynamic_model_selection(request: ModelRequest, handler) -> ModelResponse:
@@ -96,3 +115,6 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
 
     request.model = init_chat_model(model)
     return await handler(request)
+
+
+DEFAULT_MIDDLEWARE = [add_ai_message_metadata, retry_model] + pii_middleware()

@@ -26,11 +26,7 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
-from src.utils.middleware import (
-    add_ai_message_metadata,
-    # dynamic_model_selection,
-    pii_middleware,
-)
+from src.utils.middleware import DEFAULT_MIDDLEWARE
 from src.tools import default_tools
 
 
@@ -84,11 +80,6 @@ def graph_builder(
             store=store,
         )
 
-    if middleware:
-        middleware = [add_ai_message_metadata] + pii_middleware() + middleware
-    else:
-        middleware = [add_ai_message_metadata] + pii_middleware()
-
     deep_agent = create_deep_agent(
         model=llm,
         tools=tools,
@@ -96,7 +87,7 @@ def graph_builder(
         system_prompt=system_prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
-        middleware=middleware,
+        middleware= DEFAULT_MIDDLEWARE + middleware,
         store=store,
         cache=CACHE_LLM,
         backend=backend,
