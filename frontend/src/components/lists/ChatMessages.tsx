@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, memo, useState } from "react";
+import { useEffect, useRef, useCallback, memo, useState, useMemo } from "react";
 import { Loader2, Edit, Check, X } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -11,6 +11,9 @@ import CopyTextButton from "../buttons/CopyTextButton";
 import FileViewer from "../viewers/FileViewer";
 import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
+import ToolCallGroup from "../groups/ToolCallGroup";
+import MessageErrorBoundary from "../errors/MessageErrorBoundary";
+import { groupToolMessages } from "@/lib/utils/messageGrouping";
 
 export const Message = memo(
 	function Message({
@@ -159,6 +162,23 @@ export const Message = memo(
 			);
 		}
 
+		// Handle grouped tool calls
+		if (message.type === 'tool_group') {
+			return (
+				<div className="group px-3 md:px-5">
+					<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm m-2">
+						<MessageErrorBoundary>
+							<ToolCallGroup
+								toolCalls={message.toolCalls}
+								isLatest={isLatest}
+								defaultExpanded={isLatest && loading}
+							/>
+						</MessageErrorBoundary>
+					</div>
+				</div>
+			);
+		}
+
 		if ("input" in message) {
 			return (
 				<div className="group px-3 md:px-5">
@@ -266,13 +286,16 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 	const rafIdRef = useRef<number | null>(null);
 	const lastScrollHeightRef = useRef(0);
 
+	// Group tool messages using memoization
+	const groupedMessages = useMemo(() => groupToolMessages(messages), [messages]);
+
 	// Memoize virtualizer options to prevent recreation
 	const getScrollElement = useCallback(() => scrollRef.current, []);
 	const estimateSize = useCallback(() => 100, []);
 
 	// Virtualizer setup
 	const virtualizer = useVirtualizer({
-		count: messages.length,
+		count: groupedMessages.length,
 		getScrollElement,
 		estimateSize,
 		overscan: 5,
@@ -374,21 +397,34 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 					style={{ height: `${virtualizer.getTotalSize()}px` }}
 				>
 					{virtualizer.getVirtualItems().map((virtualRow) => {
-						const message = messages[virtualRow.index];
-						if (message.type === "ai") {
-							// Go backwards to find the nearest previous human message
-							for (let i = virtualRow.index - 1; i >= 0; i--) {
-								const prevMessage = messages[i];
-								if (prevMessage && prevMessage.type === "human") {
-									// Attach human's model to this AI message
-									message.model = prevMessage.model;
-									break;
+						const item = groupedMessages[virtualRow.index];
+
+						// Handle grouped messages
+						let message;
+						if (item.type === 'tool_group') {
+							message = item; // Grouped tool calls
+						} else {
+							message = item.message; // Regular message
+
+							if (message.type === "ai") {
+								// Go backwards to find the nearest previous human message
+								for (let i = virtualRow.index - 1; i >= 0; i--) {
+									const prevItem = groupedMessages[i];
+									const prevMessage = prevItem.type === 'regular' ? prevItem.message : null;
+									if (prevMessage && prevMessage.type === "human") {
+										// Attach human's model to this AI message
+										message.model = prevMessage.model;
+										break;
+									}
 								}
 							}
 						}
+
+						const key = item.type === 'tool_group' ? item.id : item.message.id;
+
 						return (
 							<div
-								key={message.id}
+								key={key}
 								data-index={virtualRow.index}
 								ref={virtualizer.measureElement}
 								className="absolute top-0 left-0 w-full"
@@ -396,7 +432,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 							>
 								<Message
 									message={message}
-									isLatest={virtualRow.index === messages.length - 1}
+									isLatest={virtualRow.index === groupedMessages.length - 1}
 									messages={messages}
 									streamingRate={streamingRate}
 									handleSubmit={handleSubmit}
