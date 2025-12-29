@@ -6,4 +6,4 @@
 	url = git@github.com:ruska-ai/shell.git
 [submodule "wiki"]
 	path = wiki
-	url = https://github.com/ruska-ai/wiki[
+	url = https://github.com/ruska-ai/wiki
