@@ -5,6 +5,7 @@ from sqlalchemy import select
 from src.schemas.entities.auth import UserCreate
 from src.schemas.models import User
 
+
 class UserRepo:
     def __init__(self, db: AsyncSession, user_id: str | None = None):
         self.db = db

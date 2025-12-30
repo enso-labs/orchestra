@@ -9,7 +9,7 @@ build:
 tag:
 	bash scripts/tag.sh
 
-seeds:
+seeds.user:
 	python -m seeds.user_seeder
 
 format:

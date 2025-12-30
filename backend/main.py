@@ -45,9 +45,8 @@ mcp_ignore_routes = [
     # ✅ allow-list: anything tagged "mcp" gets included
     RouteMap(
         tags={"mcp"},
-        mcp_type=MCPType.TOOL,   # or RESOURCE / RESOURCE_TEMPLATE if you want semantics
+        mcp_type=MCPType.TOOL,  # or RESOURCE / RESOURCE_TEMPLATE if you want semantics
     ),
-
     # ❌ deny-list fallback: exclude everything else
     RouteMap(mcp_type=MCPType.EXCLUDE),
 ]

@@ -581,22 +581,27 @@ class Examples:
                 "system": "You are a helpful assistant, that can execute python code in a sandbox to complete tasks.",
                 "tools": ["python_sandbox"],
                 "input": {
-                    "messages": [{"role": "user", "content": "Execute python file ./fib.py and return results."}],
-                     "files": {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "Execute python file ./fib.py and return results.",
+                        }
+                    ],
+                    "files": {
                         "/fib.py": {
                             "content": [
-                            "def fibonacci(n):",
-                            "    sequence = [0, 1]",
-                            "    while len(sequence) < n:",
-                            "        sequence.append(sequence[-1] + sequence[-2])",
-                            "    return sequence[:n]",
-                            "",
-                            "if __name__ == \"__main__\":",
-                            "    print(fibonacci(10))",
-                            ""
+                                "def fibonacci(n):",
+                                "    sequence = [0, 1]",
+                                "    while len(sequence) < n:",
+                                "        sequence.append(sequence[-1] + sequence[-2])",
+                                "    return sequence[:n]",
+                                "",
+                                'if __name__ == "__main__":',
+                                "    print(fibonacci(10))",
+                                "",
                             ],
                             "created_at": "2025-12-23T21:10:06.470896+00:00",
-                            "modified_at": "2025-12-23T21:10:06.470896+00:00"
+                            "modified_at": "2025-12-23T21:10:06.470896+00:00",
                         }
                     },
                 },
@@ -746,22 +751,27 @@ class Examples:
                 "system": "You are a helpful assistant, that can execute python code in a sandbox to complete tasks.",
                 "tools": ["python_sandbox"],
                 "input": {
-                    "messages": [{"role": "user", "content": "Execute python file ./fib.py and return results."}],
-                     "files": {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "Execute python file ./fib.py and return results.",
+                        }
+                    ],
+                    "files": {
                         "/fib.py": {
                             "content": [
-                            "def fibonacci(n):",
-                            "    sequence = [0, 1]",
-                            "    while len(sequence) < n:",
-                            "        sequence.append(sequence[-1] + sequence[-2])",
-                            "    return sequence[:n]",
-                            "",
-                            "if __name__ == \"__main__\":",
-                            "    print(fibonacci(10))",
-                            ""
+                                "def fibonacci(n):",
+                                "    sequence = [0, 1]",
+                                "    while len(sequence) < n:",
+                                "        sequence.append(sequence[-1] + sequence[-2])",
+                                "    return sequence[:n]",
+                                "",
+                                'if __name__ == "__main__":',
+                                "    print(fibonacci(10))",
+                                "",
                             ],
                             "created_at": "2025-12-23T21:10:06.470896+00:00",
-                            "modified_at": "2025-12-23T21:10:06.470896+00:00"
+                            "modified_at": "2025-12-23T21:10:06.470896+00:00",
                         }
                     },
                 },
@@ -795,7 +805,12 @@ class Examples:
             description="LLM with Assistant Query",
             value={
                 "input": {
-                    "messages": [{"role": "user", "content": "100 USD to CAD? Compare against previous exchange rates."}],
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "100 USD to CAD? Compare against previous exchange rates.",
+                        }
+                    ],
                 },
                 "metadata": get_example_metadata(assistant_id=True, project_id=True),
             },

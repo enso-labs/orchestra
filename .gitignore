@@ -16,13 +16,9 @@
 backend/src/public
 **/.worktrees/
 **/.playwright*
-**/.plans*
 **/.backups/
 
-**/.claude/
 **/.cursor/
 **/openspec/
-**/AGENTS.md
-**/CLAUDE.md
-
 **/node_modules/
+**/.old/
