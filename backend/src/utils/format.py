@@ -6,7 +6,7 @@ import requests
 import re
 import unicodedata
 from pydantic import BaseModel, Field, create_model
-from typing import Optional, Any, Dict, Type, List
+from typing import Optional, Any, Dict, Type, List, Tuple
 from loguru import logger
 from datetime import datetime, timezone
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
@@ -277,7 +277,7 @@ def format_schema_to_model(
 
     return create_model(model_name, **fields)
 
-def split_front_matter(md: str):
+def split_front_matter(md: str) -> Tuple[Optional[Dict[str, Any]], str]:
     """
     Split the front matter from the markdown content.
     Returns a dictionary of the front matter and the markdown content.
@@ -289,7 +289,12 @@ def split_front_matter(md: str):
     if end == -1:
         return None, md
 
-    fm = yaml.safe_load(md[4:end]) or {}
+    try:
+        fm = yaml.safe_load(md[4:end]) or {}
+    except yaml.YAMLError as e:
+        logger.error(f"Failed to parse YAML front matter: {e}")
+        raise ValueError(f"Invalid YAML front matter: {e}") from e
+
     body = md[end + 4 :].lstrip("\n")
 
     return fm, body

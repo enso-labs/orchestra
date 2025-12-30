@@ -37,7 +37,7 @@ cli:
     commands: See package.json
 ```
 
-The main way external AI Agents find out information about RUSKA will be from the `./website/public/llm.txt` that should ALWAYS reflect the current public documentation for LLM search engines. If something in the application is our of sync with this file we should make sure to update the file the `llm.txt` so that it reflects the most accurate picture of the application and how users can get the MOST out of it.
+The main way external AI Agents find out information about RUSKA will be from the `./website/public/llm.txt` that should ALWAYS reflect the current public documentation for LLM search engines. If something in the application is out of sync with this file we should make sure to update the file the `llm.txt` so that it reflects the most accurate picture of the application and how users can get the MOST out of it.
 
 ## Code Style
 
