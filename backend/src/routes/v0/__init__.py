@@ -44,6 +44,7 @@ def mount_static_router(app: FastAPI):
         if path:
             target = f"{target}/{path}"
         return RedirectResponse(url=target, status_code=307)
+
     if os.path.exists("src/public/assets"):
         app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
     if os.path.exists("src/public/icons"):

@@ -69,6 +69,7 @@ def graph_builder(
     graph_id: Literal["deepagent", "react"] = "deepagent",
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
+
     llm = init_chat_model(model=model)
     if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
         return create_agent(
@@ -87,7 +88,7 @@ def graph_builder(
         system_prompt=system_prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
-        middleware= DEFAULT_MIDDLEWARE + middleware,
+        middleware=DEFAULT_MIDDLEWARE + middleware,
         store=store,
         cache=CACHE_LLM,
         backend=backend,
@@ -183,16 +184,17 @@ def init_config(
     )
 
 
-def init_backend(runtime: ToolRuntime, *, routes):  
-    """Factory function that creates a CompositeBackend with custom routes."""  
-    built_routes = {}  
-    for prefix, backend_or_factory in routes.items():  
-        if callable(backend_or_factory):  
-            built_routes[prefix] = backend_or_factory(runtime)  
-        else:  
-            built_routes[prefix] = backend_or_factory  
-    default_state = StateBackend(runtime)  
+def init_backend(runtime: ToolRuntime, *, routes):
+    """Factory function that creates a CompositeBackend with custom routes."""
+    built_routes = {}
+    for prefix, backend_or_factory in routes.items():
+        if callable(backend_or_factory):
+            built_routes[prefix] = backend_or_factory(runtime)
+        else:
+            built_routes[prefix] = backend_or_factory
+    default_state = StateBackend(runtime)
     return CompositeBackend(default=default_state, routes=built_routes)
+
 
 ################################################################################
 ### Construct Agent
@@ -285,8 +287,8 @@ class Orchestra:
     ) -> BaseMessage:
         input.to_langchain_messages()
         return await self.graph.ainvoke(
-            input, 
-            config=config, 
+            input,
+            config=config,
             context=context,
         )
 

@@ -291,9 +291,7 @@ async def python_sandbox(code: str):
     if PyodideSandbox is None:
         return "Error: langchain-sandbox is not installed. Use the Interpreter toolkit instead."
     try:
-        sandbox = PyodideSandbox(
-            allow_net=True, sessions_dir="./pysandbox"
-        )
+        sandbox = PyodideSandbox(allow_net=True, sessions_dir="./pysandbox")
         code_exec_result = await sandbox.execute(code)
         return ujson.dumps(code_exec_result.__dict__)
     except Exception as e:

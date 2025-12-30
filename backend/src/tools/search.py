@@ -24,8 +24,7 @@ def strip_control_chars(s: str) -> str:
     but keep newlines and tabs for formatting.
     """
     return "".join(
-        ch for ch in s
-        if ch in ("\n", "\t") or unicodedata.category(ch)[0] != "C"
+        ch for ch in s if ch in ("\n", "\t") or unicodedata.category(ch)[0] != "C"
     )
 
 

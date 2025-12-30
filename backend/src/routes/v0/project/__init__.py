@@ -21,7 +21,9 @@ router = APIRouter(tags=["Project"], prefix="/projects")
 ################################################################################
 ### Search Projects
 ################################################################################
-@router.post("/search", name="Query Projects", operation_id="ruska_search_projects", tags=['mcp'])
+@router.post(
+    "/search", name="Query Projects", operation_id="ruska_search_projects", tags=["mcp"]
+)
 async def search_projects(
     project_search: SearchFilter = Body(...),
     user: ProtectedUser = Depends(verify_credentials),
@@ -71,7 +73,9 @@ async def search_projects(
 ################################################################################
 ### Create Project
 ################################################################################
-@router.post("", name="Create Project", operation_id="ruska_create_project", tags=['mcp'])
+@router.post(
+    "", name="Create Project", operation_id="ruska_create_project", tags=["mcp"]
+)
 async def create_project(
     project: Project = Body(openapi_examples=Examples.PROJECT_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
@@ -89,7 +93,7 @@ async def create_project(
     "/{project_id}",
     name="Get Project",
     operation_id="ruska_get_project",
-    tags=['mcp'],
+    tags=["mcp"],
 )
 @cache(expire=30)
 async def get_project(
@@ -112,7 +116,7 @@ async def get_project(
     "/{project_id}",
     name="Delete Project",
     operation_id="ruska_delete_project",
-    tags=['mcp'],
+    tags=["mcp"],
 )
 async def delete_project(
     project_id: str,
@@ -131,7 +135,7 @@ async def delete_project(
     "/{project_id}/sources",
     name="Get Project Sources",
     operation_id="ruska_get_project_sources",
-    tags=['mcp'],
+    tags=["mcp"],
 )
 @cache(expire=30)
 async def get_project_sources(
@@ -159,7 +163,7 @@ async def get_project_sources(
     "/{project_id}/sources",
     name="Add Project Sources",
     operation_id="ruska_add_project_sources",
-    tags=['mcp'],
+    tags=["mcp"],
 )
 async def add_project_sources(
     project_id: str,
@@ -187,7 +191,7 @@ async def add_project_sources(
     "/{project_id}/sources/{source_id}",
     name="Delete Project Source",
     operation_id="ruska_delete_project_source",
-    tags=['mcp'],
+    tags=["mcp"],
 )
 async def delete_project_source(
     project_id: str,

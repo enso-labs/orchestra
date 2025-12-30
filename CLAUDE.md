@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file guidance to AI agents when working with the codebase.
+This file provides guidance to AI agents when working with the codebase.
 
 ## Project Overview
 

@@ -213,8 +213,10 @@ PROMPT_EXAMPLES = {
     ),
 }
 
+
 def fetch_prompt(name: str = "ruska-default"):
     from langsmith import Client
+
     client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
     prompt = client.pull_prompt(name)
     return prompt

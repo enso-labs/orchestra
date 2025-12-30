@@ -277,6 +277,7 @@ def format_schema_to_model(
 
     return create_model(model_name, **fields)
 
+
 def split_front_matter(md: str) -> Tuple[Optional[Dict[str, Any]], str]:
     """
     Split the front matter from the markdown content.

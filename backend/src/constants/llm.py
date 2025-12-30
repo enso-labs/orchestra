@@ -90,12 +90,14 @@ def get_all_models():
 def get_free_models():
     models = []
     if OPENAI_API_KEY:
-        models.extend([
-            ChatModels.OPENAI_GPT_4_1_NANO.value,
-            ChatModels.OPENAI_GPT_4_1_MINI.value,
-            ChatModels.OPENAI_GPT_5_NANO.value,
-            ChatModels.OPENAI_GPT_5_MINI.value,
-        ])
+        models.extend(
+            [
+                ChatModels.OPENAI_GPT_4_1_NANO.value,
+                ChatModels.OPENAI_GPT_4_1_MINI.value,
+                ChatModels.OPENAI_GPT_5_NANO.value,
+                ChatModels.OPENAI_GPT_5_MINI.value,
+            ]
+        )
     if ANTHROPIC_API_KEY:
         models.append(ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value)
     if GOOGLE_API_KEY:
@@ -109,8 +111,25 @@ def get_free_models():
     return sorted(models)
 
 
-def get_system_prompt():
-    return fetch_prompt("ruska-default")
+def get_system_prompt() -> str:
+    """
+    Fetch and return the default system prompt as a string.
+
+    Returns:
+        str: The system prompt content, or a fallback message if fetching fails.
+    """
+    try:
+        prompt = fetch_prompt("ruska-default")
+        # Try to extract content from LangSmith Prompt object
+        if hasattr(prompt, "content"):
+            return prompt.content
+        elif hasattr(prompt, "template"):
+            return prompt.template
+        else:
+            return str(prompt)
+    except Exception as e:
+        logger.error(f"Error fetching system prompt: {e}")
+        return "You are a helpful AI assistant."
 
 
 def get_default_chat_model():
@@ -146,4 +165,10 @@ def get_default_low_cost_model():
 DEFAULT_CHAT_MODEL = get_default_chat_model()
 DEFAULT_CHAT_MODEL_BASIC = get_default_low_cost_model()
 DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value
-DEFAULT_SYSTEM_PROMPT = get_system_prompt()
+
+# Initialize default system prompt with error handling to prevent import-time failures
+try:
+    DEFAULT_SYSTEM_PROMPT: str = get_system_prompt()
+except Exception as e:
+    logger.error(f"Failed to initialize DEFAULT_SYSTEM_PROMPT at import time: {e}")
+    DEFAULT_SYSTEM_PROMPT: str = "You are a helpful AI assistant."

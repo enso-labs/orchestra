@@ -38,7 +38,7 @@ def ensure_database_exists(db_uri: str) -> None:
             # Check if database exists
             result = conn.execute(
                 text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
-                {"dbname": db_name}
+                {"dbname": db_name},
             )
             if not result.fetchone():
                 conn.execute(text(f'CREATE DATABASE "{db_name}"'))
