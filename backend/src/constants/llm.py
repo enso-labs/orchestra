@@ -111,7 +111,7 @@ def get_free_models():
     return sorted(models)
 
 
-def get_system_prompt() -> str:
+def get_system_prompt():
     """
     Fetch and return the default system prompt as a string.
 
@@ -126,7 +126,9 @@ def get_system_prompt() -> str:
         elif hasattr(prompt, "template"):
             return prompt.template
         else:
-            return str(prompt)
+            prompt = prompt.format_prompt()
+            content = prompt.messages[-1].content
+            return content
     except Exception as e:
         logger.error(f"Error fetching system prompt: {e}")
         return "You are a helpful AI assistant."
@@ -168,7 +170,7 @@ DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value
 
 # Initialize default system prompt with error handling to prevent import-time failures
 try:
-    DEFAULT_SYSTEM_PROMPT: str = get_system_prompt()
+    DEFAULT_SYSTEM_PROMPT = get_system_prompt()
 except Exception as e:
     logger.error(f"Failed to initialize DEFAULT_SYSTEM_PROMPT at import time: {e}")
     DEFAULT_SYSTEM_PROMPT: str = "You are a helpful AI assistant."
