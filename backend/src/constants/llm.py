@@ -1,5 +1,5 @@
-import os
 from enum import Enum
+from src.services.prompt import fetch_prompt
 from src.constants import (
     OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
@@ -110,9 +110,7 @@ def get_free_models():
 
 
 def get_system_prompt():
-    path = "src/static/prompts/md"
-    with open(os.path.join(path, "default.md"), "r") as file:
-        return file.read()
+    return fetch_prompt("ruska-default")
 
 
 def get_default_chat_model():

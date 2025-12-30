@@ -1,4 +1,5 @@
 import base64
+import yaml
 import ujson
 from langchain_core.runnables import RunnableConfig
 import requests
@@ -275,3 +276,20 @@ def format_schema_to_model(
         fields[key] = (field_type, default_value)
 
     return create_model(model_name, **fields)
+
+def split_front_matter(md: str):
+    """
+    Split the front matter from the markdown content.
+    Returns a dictionary of the front matter and the markdown content.
+    """
+    if not md.startswith("---\n"):
+        return None, md
+
+    end = md.find("\n---", 4)
+    if end == -1:
+        return None, md
+
+    fm = yaml.safe_load(md[4:end]) or {}
+    body = md[end + 4 :].lstrip("\n")
+
+    return fm, body

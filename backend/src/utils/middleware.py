@@ -49,22 +49,22 @@ def pii_middleware() -> dict | None:
             strategy="block",
             apply_to_input=True,
         ),
-        PIIMiddleware(
-            "api_key",
-            detector=r"otk_[A-Za-z0-9]+",
-            strategy="block",
-            apply_to_input=True,
-        ),
+        # PIIMiddleware(
+        #     "api_key",
+        #     detector=r"otk_[A-Za-z0-9]+",
+        #     strategy="block",
+        #     apply_to_input=True,
+        # ),
     ]
 
 @wrap_model_call
-def retry_model(
+async def retry_model(
     request: ModelRequest,
     handler: Callable[[ModelRequest], ModelResponse],
 ) -> ModelResponse:
     for attempt in range(3):
         try:
-            return handler(request)
+            return await handler(request)
         except Exception as e:
             if attempt == 2:
                 raise
