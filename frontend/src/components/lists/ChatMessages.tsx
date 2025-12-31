@@ -11,6 +11,7 @@ import CopyTextButton from "../buttons/CopyTextButton";
 import FileViewer from "../viewers/FileViewer";
 import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
+import TextSelectionPopover from "../popovers/TextSelectionPopover";
 
 export const Message = memo(
 	function Message({
@@ -248,9 +249,11 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 		viewMode,
 		ttft,
 		submitStartTime,
+		appendToQuery,
 	} = useChatContext();
 	const [elapsedTime, setElapsedTime] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const messagesContainerRef = useRef<HTMLDivElement>(null);
 
 	// Live timer for TTFT while waiting for first token
 	useEffect(() => {
@@ -371,9 +374,14 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 				className="flex-1 overflow-auto p-1 mb-1 pb-5"
 			>
 				<div
+					ref={messagesContainerRef}
 					className="max-w-4xl mx-auto px-5 relative"
 					style={{ height: `${virtualizer.getTotalSize()}px` }}
 				>
+					<TextSelectionPopover
+						containerRef={messagesContainerRef}
+						onAddToInput={appendToQuery}
+					/>
 					{virtualizer.getVirtualItems().map((virtualRow) => {
 						const message = messages[virtualRow.index];
 						if (message.type === "ai") {
