@@ -1,7 +1,7 @@
 import { ImagePreview } from "./ImagePreview";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { useChatContext } from "@/context/ChatContext";
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import useAppHook from "@/hooks/useAppHook";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
@@ -17,7 +17,6 @@ export default function ChatInput({
 }: {
 	showAgentMenu?: boolean;
 }) {
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const [isRecording, setIsRecording] = useState(false);
 	const { loading } = useAppContext();
 	const { isLikelyMobile } = useAppHook();
@@ -40,6 +39,7 @@ export default function ChatInput({
 		viewMode,
 		setViewMode,
 		filesMap,
+		inputRef,
 	} = useChatContext();
 
 	const handleResetProject = () => {
@@ -65,10 +65,10 @@ export default function ChatInput({
 	const recorderControls = useVoiceVisualizer();
 
 	useEffect(() => {
-		if (textareaRef.current) {
-			textareaRef.current.focus();
+		if (inputRef.current) {
+			inputRef.current.focus();
 		}
-	}, []);
+	}, [inputRef]);
 
 	return (
 		<div className="flex flex-col w-full">
@@ -99,7 +99,7 @@ export default function ChatInput({
 			)}
 
 			<textarea
-				ref={textareaRef}
+				ref={inputRef}
 				className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? "rounded-none" : "rounded-t-3xl"} focus:outline-none border-b-0`}
 				placeholder="How can I help you be more productive?"
 				rows={1}

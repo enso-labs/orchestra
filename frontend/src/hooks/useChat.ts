@@ -16,6 +16,8 @@ export type ChatContextType = {
 	toolCallChunkRef: React.RefObject<string>;
 	query: string;
 	setQuery: (query: string) => void;
+	appendToQuery: (text: string) => void;
+	inputRef: React.RefObject<HTMLTextAreaElement>;
 	handleSubmit: (query: string) => void;
 	sseHandler: (
 		payload: any,
@@ -71,6 +73,7 @@ export default function useChat(): ChatContextType {
 	const responseRef = useRef("");
 	const toolNameRef = useRef("");
 	const toolCallChunkRef = useRef("");
+	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
 	// const [state, setState] = useState<any[]>([]);
@@ -378,6 +381,19 @@ export default function useChat(): ChatContextType {
 		setQuery(e.target.value);
 	};
 
+	const appendToQuery = useCallback((text: string) => {
+		const quotedText = `> ${text}\n\n`;
+		setQuery((prev) => (prev ? `${quotedText}${prev}` : quotedText));
+		// Focus input and position cursor after the quoted text
+		setTimeout(() => {
+			if (inputRef.current) {
+				inputRef.current.focus();
+				const cursorPosition = quotedText.length;
+				inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+			}
+		}, 0);
+	}, []);
+
 	const deleteThread = async (threadId: string) => {
 		try {
 			const response = await apiClient.delete(`/threads/${threadId}`, {
@@ -506,6 +522,8 @@ export default function useChat(): ChatContextType {
 		clearContent,
 		query,
 		setQuery,
+		appendToQuery,
+		inputRef,
 		messages,
 		setMessages,
 		metadata,

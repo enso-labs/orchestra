@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - feat/560-ctrl-click-thread-sidebar (2025-12-30)
+  - feat/514-add-context-to-input (2025-12-30)
   - feat/622-docs-to-netlify (2025-12-28)
 
 ### Fixed
