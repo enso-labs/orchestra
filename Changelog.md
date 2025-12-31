@@ -5,11 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.0.2-rc135
+# v0.0.2-rc138
 
 ### Changed
   - feat/560-ctrl-click-thread-sidebar (2025-12-30)
   - feat/514-add-context-to-input (2025-12-30)
+
+## v0.0.2-rc135
+
+### Changed
   - feat/622-docs-to-netlify (2025-12-28)
 
 ### Fixed
