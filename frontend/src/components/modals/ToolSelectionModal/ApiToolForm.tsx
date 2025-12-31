@@ -30,7 +30,9 @@ export function ApiToolForm({
 	mode,
 }: ApiToolFormProps) {
 	const [name, setName] = useState(initialData?.name || "");
-	const [description, setDescription] = useState(initialData?.description || "");
+	const [description, setDescription] = useState(
+		initialData?.description || "",
+	);
 	const [baseUrl, setBaseUrl] = useState(
 		initialData?.config?.api_tool?.base_url || "",
 	);
@@ -44,7 +46,8 @@ export function ApiToolForm({
 		initialData?.config?.api_tool?.headers || {},
 	);
 	const [argsSchema, setArgsSchema] = useState<Record<string, ArgField>>(
-		(initialData?.config?.api_tool?.args_schema as Record<string, ArgField>) || {},
+		(initialData?.config?.api_tool?.args_schema as Record<string, ArgField>) ||
+			{},
 	);
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +69,8 @@ export function ApiToolForm({
 					method,
 					endpoint,
 					headers: Object.keys(headers).length > 0 ? headers : undefined,
-					args_schema: Object.keys(argsSchema).length > 0 ? argsSchema : undefined,
+					args_schema:
+						Object.keys(argsSchema).length > 0 ? argsSchema : undefined,
 				},
 			};
 			// Use a temporary name if not provided
@@ -81,15 +85,15 @@ export function ApiToolForm({
 		}
 	};
 
-
 	const validate = () => {
 		const newErrors: Record<string, string> = {};
 
 		if (!name.trim()) newErrors.name = "Name is required";
 		if (!/^[a-z0-9_]+$/.test(name)) {
-			newErrors.name = "Name must be snake_case (lowercase, numbers, underscores)";
+			newErrors.name =
+				"Name must be snake_case (lowercase, numbers, underscores)";
 		}
-		
+
 		if (!baseUrl.trim()) newErrors.baseUrl = "Base URL is required";
 		if (!/^https?:\/\//.test(baseUrl)) {
 			newErrors.baseUrl = "Base URL must start with http:// or https://";
@@ -116,7 +120,8 @@ export function ApiToolForm({
 						method,
 						endpoint,
 						headers: Object.keys(headers).length > 0 ? headers : undefined,
-						args_schema: Object.keys(argsSchema).length > 0 ? argsSchema : undefined,
+						args_schema:
+							Object.keys(argsSchema).length > 0 ? argsSchema : undefined,
 					},
 				},
 			};
@@ -145,7 +150,11 @@ export function ApiToolForm({
 					</Button>
 					<h2 className="text-xl font-semibold">{title}</h2>
 				</div>
-				<Button onClick={handleSubmit} disabled={isSubmitting} className="min-w-[140px]">
+				<Button
+					onClick={handleSubmit}
+					disabled={isSubmitting}
+					className="min-w-[140px]"
+				>
 					{isSubmitting ? (
 						<span className="animate-spin mr-2">⏳</span>
 					) : (
@@ -160,8 +169,10 @@ export function ApiToolForm({
 				<div className="max-w-3xl mx-auto space-y-8">
 					{/* Basic Info */}
 					<div className="space-y-4">
-						<h3 className="text-lg font-medium border-b pb-2">Basic Information</h3>
-						
+						<h3 className="text-lg font-medium border-b pb-2">
+							Basic Information
+						</h3>
+
 						<div className="space-y-4">
 							<div className="space-y-2">
 								<label className="text-sm font-medium">Tool Name</label>
@@ -181,7 +192,7 @@ export function ApiToolForm({
 									</p>
 								)}
 							</div>
-							
+
 							<div className="space-y-2">
 								<label className="text-sm font-medium">Description</label>
 								<Textarea
@@ -197,8 +208,10 @@ export function ApiToolForm({
 
 					{/* API Configuration */}
 					<div className="space-y-4">
-						<h3 className="text-lg font-medium border-b pb-2">API Configuration</h3>
-						
+						<h3 className="text-lg font-medium border-b pb-2">
+							API Configuration
+						</h3>
+
 						{/* URL Builder - Method + Base URL inline */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Request URL</label>
@@ -226,11 +239,14 @@ export function ApiToolForm({
 								<p className="text-xs text-destructive">{errors.baseUrl}</p>
 							)}
 						</div>
-						
+
 						{/* Optional Endpoint */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">
-								Endpoint <span className="text-muted-foreground font-normal">(optional)</span>
+								Endpoint{" "}
+								<span className="text-muted-foreground font-normal">
+									(optional)
+								</span>
 							</label>
 							<Input
 								value={endpoint}
@@ -249,7 +265,8 @@ export function ApiToolForm({
 					<div className="space-y-4">
 						<h3 className="text-lg font-medium border-b pb-2">Parameters</h3>
 						<p className="text-sm text-muted-foreground">
-							Define the input parameters the agent will provide when calling this tool.
+							Define the input parameters the agent will provide when calling
+							this tool.
 						</p>
 						<ArgsSchemaBuilder schema={argsSchema} onChange={setArgsSchema} />
 					</div>
@@ -270,4 +287,3 @@ export function ApiToolForm({
 		</div>
 	);
 }
-
