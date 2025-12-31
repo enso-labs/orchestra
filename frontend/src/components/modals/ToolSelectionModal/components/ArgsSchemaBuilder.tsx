@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
 	Select,
@@ -152,64 +153,66 @@ function SchemaRow({
 					)}
 				</div>
 
-				<div className="flex-1 grid grid-cols-12 gap-2">
-					{/* Name */}
-					<div className="col-span-3">
-						<Input
-							value={name}
-							onChange={(e) => onNameChange(e.target.value)}
-							placeholder="Name"
-							disabled={depth > 0 && name === "items"} // Items schema doesn't have a name key
-							className="h-9"
-						/>
-					</div>
-
-					{/* Type */}
-					<div className="col-span-2">
-						<Select value={field.type} onValueChange={handleTypeChange}>
-							<SelectTrigger className="h-9">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="str">String</SelectItem>
-								<SelectItem value="int">Integer</SelectItem>
-								<SelectItem value="float">Float</SelectItem>
-								<SelectItem value="bool">Boolean</SelectItem>
-								<SelectItem value="object">Object</SelectItem>
-								<SelectItem value="array">Array</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					{/* Description */}
-					<div className="col-span-5">
-						<Input
-							value={field.description}
-							onChange={(e) => onUpdate({ ...field, description: e.target.value })}
-							placeholder="Description"
-							className="h-9"
-						/>
-					</div>
-
-					{/* Required & Actions */}
-					<div className="col-span-2 flex items-center justify-end gap-2">
-						<div className="flex items-center gap-1" title="Required">
-							<span className="text-xs text-muted-foreground">Req</span>
-							<Switch
-								checked={field.required}
-								onCheckedChange={(c) => onUpdate({ ...field, required: c })}
+				<div className="flex-1 space-y-2">
+					{/* Row 1: Name, Type, Required, Actions */}
+					<div className="flex items-center gap-2">
+						{/* Name */}
+						<div className="flex-1 min-w-0">
+							<Input
+								value={name}
+								onChange={(e) => onNameChange(e.target.value)}
+								placeholder="Name"
+								disabled={depth > 0 && name === "items"}
+								className="h-9"
 							/>
 						</div>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							onClick={onRemove}
-							className="h-8 w-8 text-muted-foreground hover:text-destructive"
-						>
-							<X className="h-4 w-4" />
-						</Button>
+
+						{/* Type */}
+						<div className="w-24 flex-shrink-0">
+							<Select value={field.type} onValueChange={handleTypeChange}>
+								<SelectTrigger className="h-9">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="str">String</SelectItem>
+									<SelectItem value="int">Integer</SelectItem>
+									<SelectItem value="float">Float</SelectItem>
+									<SelectItem value="bool">Boolean</SelectItem>
+									<SelectItem value="object">Object</SelectItem>
+									<SelectItem value="array">Array</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Required & Actions */}
+						<div className="flex items-center gap-2 flex-shrink-0">
+							<div className="flex items-center gap-1" title="Required">
+								<span className="text-xs text-muted-foreground">Req</span>
+								<Switch
+									checked={field.required}
+									onCheckedChange={(c) => onUpdate({ ...field, required: c })}
+								/>
+							</div>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								onClick={onRemove}
+								className="h-8 w-8 text-muted-foreground hover:text-destructive"
+							>
+								<X className="h-4 w-4" />
+							</Button>
+						</div>
 					</div>
+
+					{/* Row 2: Description (full width) */}
+					<Textarea
+						value={field.description}
+						onChange={(e) => onUpdate({ ...field, description: e.target.value })}
+						placeholder="Description"
+						rows={2}
+						className="min-h-[36px] resize-y"
+					/>
 				</div>
 			</div>
 
