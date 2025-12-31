@@ -31,6 +31,13 @@ export class StreamMessageHandler {
 		const existingIndex = this.history.findIndex(
 			(msg: any) => msg.id === response.id,
 		);
+
+		// NEW: Reset chunk if this is a new tool call (new ID)
+		if (existingIndex === -1) {
+			this.toolCallChunkRef.current = "";
+			this.toolNameRef.current = "";
+		}
+
 		// Only set tool name if we don't have one yet or if the new name is truthy
 		if (!this.toolNameRef.current || response.tool_call_chunks[0].name) {
 			this.toolNameRef.current = response.tool_call_chunks[0].name;

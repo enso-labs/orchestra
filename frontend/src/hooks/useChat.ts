@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { formatContent, formatMultimodalPayload } from "@/lib/utils/format";
+import { formatContent, formatMultimodalPayload, formatMessages } from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
 import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
@@ -359,7 +359,11 @@ export default function useChat(): ChatContextType {
 			// Handle Final Response & Tool Response
 			streamHandler.processResponse(response, expectedContent, existingIndex);
 			setLoadingMessage(`Calling ${streamHandler.toolNameRef.current} tool...`);
-			setMessagesState(streamHandler.history);
+
+			// CRITICAL FIX: Apply formatMessages() to normalize streaming data
+			// This ensures consistency with checkpoint reload behavior
+			const normalizedHistory = formatMessages(streamHandler.history);
+			setMessagesState(normalizedHistory);
 			if (streamHandler.streamStop(response)) {
 				setLoading(false);
 				setController(null);

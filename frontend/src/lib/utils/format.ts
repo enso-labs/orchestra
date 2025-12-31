@@ -92,6 +92,9 @@ export function base64Compare(a: string, b: string) {
 }
 
 export function formatMessages(messages: any[]) {
+	if (!messages || !Array.isArray(messages)) {
+		return [];
+	}
 	return messages.map((message: any) => {
 		let messageCopy = { ...message };
 		// User Message
@@ -102,21 +105,59 @@ export function formatMessages(messages: any[]) {
 			};
 		}
 
-		// Input Message
+		// Input Message - handle both string and object args
 		if (
 			["assistant", "ai"].includes(message.type) &&
 			message.tool_calls?.length
 		) {
-			const input = message.tool_calls.map((tool_call: any) => {
-				return {
-					...tool_call.args,
+			try {
+				const input = message.tool_calls
+					.filter((tool_call: any) => {
+						// Accept both objects and valid JSON strings
+						if (tool_call.args && typeof tool_call.args === 'object') {
+							return true;
+						}
+						if (typeof tool_call.args === 'string' && tool_call.args.trim()) {
+							return true;
+						}
+						return false;
+					})
+					.map((tool_call: any) => {
+						// Parse JSON string if necessary
+						let args = tool_call.args;
+						if (typeof args === 'string') {
+							try {
+								args = JSON.parse(args);
+							} catch {
+								// If parsing fails, wrap in object
+								return { raw: args };
+							}
+						}
+						return { ...args };
+					});
+				// Only add input if we have valid tool calls
+				if (input.length > 0) {
+					messageCopy = {
+						...messageCopy,
+						type: "AIMessageChunk",
+						role: "AIMessageChunk",
+						input,
+					};
+				} else {
+					// No valid tool calls, treat as regular assistant message
+					messageCopy = {
+						...messageCopy,
+						role: "assistant",
+					};
+				}
+			} catch (error) {
+				console.warn("Error formatting tool_calls for message:", message.id, error);
+				// Fallback to assistant message if formatting fails
+				messageCopy = {
+					...messageCopy,
+					role: "assistant",
 				};
-			});
-			messageCopy = {
-				...messageCopy,
-				role: "AIMessageChunk",
-				input,
-			};
+			}
 		}
 
 		if (["tool"].includes(message.type)) {
