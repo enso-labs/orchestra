@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -161,7 +162,7 @@ export function ApiToolForm({
 					<div className="space-y-4">
 						<h3 className="text-lg font-medium border-b pb-2">Basic Information</h3>
 						
-						<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-4">
 							<div className="space-y-2">
 								<label className="text-sm font-medium">Tool Name</label>
 								<Input
@@ -183,10 +184,12 @@ export function ApiToolForm({
 							
 							<div className="space-y-2">
 								<label className="text-sm font-medium">Description</label>
-								<Input
+								<Textarea
 									value={description}
 									onChange={(e) => setDescription(e.target.value)}
-									placeholder="What does this tool do?"
+									placeholder="What does this tool do? Provide detailed instructions..."
+									rows={3}
+									className="resize-y"
 								/>
 							</div>
 						</div>
@@ -196,11 +199,12 @@ export function ApiToolForm({
 					<div className="space-y-4">
 						<h3 className="text-lg font-medium border-b pb-2">API Configuration</h3>
 						
-						<div className="grid grid-cols-12 gap-4">
-							<div className="col-span-2 space-y-2">
-								<label className="text-sm font-medium">Method</label>
+						{/* URL Builder - Method + Base URL inline */}
+						<div className="space-y-2">
+							<label className="text-sm font-medium">Request URL</label>
+							<div className="flex">
 								<Select value={method} onValueChange={setMethod}>
-									<SelectTrigger>
+									<SelectTrigger className="w-24 rounded-r-none border-r-0 flex-shrink-0">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
@@ -211,29 +215,31 @@ export function ApiToolForm({
 										<SelectItem value="PATCH">PATCH</SelectItem>
 									</SelectContent>
 								</Select>
-							</div>
-							
-							<div className="col-span-6 space-y-2">
-								<label className="text-sm font-medium">Base URL</label>
 								<Input
 									value={baseUrl}
 									onChange={(e) => setBaseUrl(e.target.value)}
 									placeholder="https://api.example.com"
-									className={errors.baseUrl ? "border-destructive" : ""}
-								/>
-								{errors.baseUrl && (
-									<p className="text-xs text-destructive">{errors.baseUrl}</p>
-								)}
-							</div>
-							
-							<div className="col-span-4 space-y-2">
-								<label className="text-sm font-medium">Endpoint</label>
-								<Input
-									value={endpoint}
-									onChange={(e) => setEndpoint(e.target.value)}
-									placeholder="/v1/resource"
+									className={`rounded-l-none flex-1 ${errors.baseUrl ? "border-destructive" : ""}`}
 								/>
 							</div>
+							{errors.baseUrl && (
+								<p className="text-xs text-destructive">{errors.baseUrl}</p>
+							)}
+						</div>
+						
+						{/* Optional Endpoint */}
+						<div className="space-y-2">
+							<label className="text-sm font-medium">
+								Endpoint <span className="text-muted-foreground font-normal">(optional)</span>
+							</label>
+							<Input
+								value={endpoint}
+								onChange={(e) => setEndpoint(e.target.value)}
+								placeholder="/v1/resource"
+							/>
+							<p className="text-xs text-muted-foreground">
+								Appended to Base URL. Leave empty if full path is in Base URL.
+							</p>
 						</div>
 
 						<HeadersEditor headers={headers} onChange={setHeaders} />
