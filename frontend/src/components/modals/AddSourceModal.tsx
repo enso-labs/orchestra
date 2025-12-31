@@ -41,7 +41,9 @@ export function AddSourceModal({
 		}
 
 		if (!content.trim()) {
-			setError(sourceType === "copy" ? "Text content is required" : "URL is required");
+			setError(
+				sourceType === "copy" ? "Text content is required" : "URL is required",
+			);
 			return;
 		}
 

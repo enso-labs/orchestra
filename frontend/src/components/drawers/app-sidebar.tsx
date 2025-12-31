@@ -764,7 +764,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 								alt="Logo"
 								className="w-10 h-10 rounded-full pl-0"
 							/>
-							<h1 className="text-3xl font-bold text-foreground italic">RCHESTRA</h1>
+							<h1 className="text-3xl font-bold text-foreground italic">
+								RCHESTRA
+							</h1>
 						</span>
 					</Link>
 					{/* <SearchForm /> */}

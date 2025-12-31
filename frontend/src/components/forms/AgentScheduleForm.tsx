@@ -137,7 +137,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 							</div>
 							<div className="flex-1 min-w-0">
 								<div className="flex items-center gap-2 mb-1">
-									<h3 className="font-semibold text-lg truncate">{agent.name}</h3>
+									<h3 className="font-semibold text-lg truncate">
+										{agent.name}
+									</h3>
 									<Badge variant="secondary" className="shrink-0">
 										{agent.model}
 									</Badge>
@@ -149,13 +151,11 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								</p>
 								{agent.tools && agent.tools.length > 0 && (
 									<div className="flex flex-wrap gap-1 mt-2">
-										<span className="text-xs text-muted-foreground mr-1">Tools:</span>
+										<span className="text-xs text-muted-foreground mr-1">
+											Tools:
+										</span>
 										{agent.tools.slice(0, 4).map((tool, index) => (
-											<Badge
-												key={index}
-												variant="outline"
-												className="text-xs"
-											>
+											<Badge key={index} variant="outline" className="text-xs">
 												{tool}
 											</Badge>
 										))}
@@ -171,7 +171,8 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 					</div>
 					<div className="mt-3 pt-3 border-t">
 						<p className="text-xs text-muted-foreground">
-							This schedule will run automatically using the configuration above.
+							This schedule will run automatically using the configuration
+							above.
 						</p>
 					</div>
 				</CardContent>
@@ -183,21 +184,31 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 					<div className="h-8 w-8 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
 						<span className="text-xs font-semibold text-primary">1</span>
 					</div>
-					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">Details</span>
+					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">
+						Details
+					</span>
 				</div>
 				<div className="h-px w-8 bg-border" />
 				<div className="flex items-center gap-2">
 					<div className="h-8 w-8 rounded-full bg-muted border-2 border-border flex items-center justify-center">
-						<span className="text-xs font-semibold text-muted-foreground">2</span>
+						<span className="text-xs font-semibold text-muted-foreground">
+							2
+						</span>
 					</div>
-					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">When</span>
+					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">
+						When
+					</span>
 				</div>
 				<div className="h-px w-8 bg-border" />
 				<div className="flex items-center gap-2">
 					<div className="h-8 w-8 rounded-full bg-muted border-2 border-border flex items-center justify-center">
-						<span className="text-xs font-semibold text-muted-foreground">3</span>
+						<span className="text-xs font-semibold text-muted-foreground">
+							3
+						</span>
 					</div>
-					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">What</span>
+					<span className="text-xs font-medium text-muted-foreground hidden sm:inline">
+						What
+					</span>
 				</div>
 			</div>
 
@@ -216,7 +227,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								</CardDescription>
 							</div>
 						</div>
-						<Badge variant="outline" className="text-xs">Step 1</Badge>
+						<Badge variant="outline" className="text-xs">
+							Step 1
+						</Badge>
 					</div>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -271,7 +284,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								</CardDescription>
 							</div>
 						</div>
-						<Badge variant="outline" className="text-xs">Step 2</Badge>
+						<Badge variant="outline" className="text-xs">
+							Step 2
+						</Badge>
 					</div>
 				</CardHeader>
 				<CardContent>
@@ -298,7 +313,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								</CardDescription>
 							</div>
 						</div>
-						<Badge variant="outline" className="text-xs">Step 3</Badge>
+						<Badge variant="outline" className="text-xs">
+							Step 3
+						</Badge>
 					</div>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -306,7 +323,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 					<div className="space-y-3">
 						<div className="flex items-start justify-between">
 							<div>
-								<Label className="text-base font-semibold">Configuration Mode</Label>
+								<Label className="text-base font-semibold">
+									Configuration Mode
+								</Label>
 								<p className="text-sm text-muted-foreground mt-1">
 									Choose how this schedule should use agent settings
 								</p>
@@ -322,23 +341,30 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 									"relative p-4 rounded-lg border-2 text-left transition-all",
 									watchInheritFromAgent
 										? "border-primary bg-primary/5 shadow-sm"
-										: "border-border hover:border-primary/50 hover:bg-accent/50"
+										: "border-border hover:border-primary/50 hover:bg-accent/50",
 								)}
 							>
 								<div className="flex items-start gap-3">
-									<div className={cn(
-										"p-2 rounded-md shrink-0",
-										watchInheritFromAgent ? "bg-primary/10" : "bg-muted"
-									)}>
-										<Bot className={cn(
-											"h-4 w-4",
-											watchInheritFromAgent ? "text-primary" : "text-muted-foreground"
-										)} />
+									<div
+										className={cn(
+											"p-2 rounded-md shrink-0",
+											watchInheritFromAgent ? "bg-primary/10" : "bg-muted",
+										)}
+									>
+										<Bot
+											className={cn(
+												"h-4 w-4",
+												watchInheritFromAgent
+													? "text-primary"
+													: "text-muted-foreground",
+											)}
+										/>
 									</div>
 									<div className="flex-1">
 										<div className="font-medium mb-1">Use Agent Settings</div>
 										<p className="text-xs text-muted-foreground">
-											Inherit model, prompt, and tools from <span className="font-medium">{agent.name}</span>
+											Inherit model, prompt, and tools from{" "}
+											<span className="font-medium">{agent.name}</span>
 										</p>
 									</div>
 									{watchInheritFromAgent && (
@@ -359,18 +385,24 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 									"relative p-4 rounded-lg border-2 text-left transition-all",
 									!watchInheritFromAgent
 										? "border-primary bg-primary/5 shadow-sm"
-										: "border-border hover:border-primary/50 hover:bg-accent/50"
+										: "border-border hover:border-primary/50 hover:bg-accent/50",
 								)}
 							>
 								<div className="flex items-start gap-3">
-									<div className={cn(
-										"p-2 rounded-md shrink-0",
-										!watchInheritFromAgent ? "bg-primary/10" : "bg-muted"
-									)}>
-										<Settings className={cn(
-											"h-4 w-4",
-											!watchInheritFromAgent ? "text-primary" : "text-muted-foreground"
-										)} />
+									<div
+										className={cn(
+											"p-2 rounded-md shrink-0",
+											!watchInheritFromAgent ? "bg-primary/10" : "bg-muted",
+										)}
+									>
+										<Settings
+											className={cn(
+												"h-4 w-4",
+												!watchInheritFromAgent
+													? "text-primary"
+													: "text-muted-foreground",
+											)}
+										/>
 									</div>
 									<div className="flex-1">
 										<div className="font-medium mb-1">Custom Configuration</div>
@@ -396,12 +428,16 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 							<div className="p-3 border-b bg-muted/50">
 								<div className="flex items-center gap-2">
 									<div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-									<span className="text-sm font-medium">Active Agent Configuration</span>
+									<span className="text-sm font-medium">
+										Active Agent Configuration
+									</span>
 								</div>
 							</div>
 							<div className="p-4 space-y-3">
 								<div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-									<span className="text-sm font-medium text-muted-foreground">Model</span>
+									<span className="text-sm font-medium text-muted-foreground">
+										Model
+									</span>
 									<div className="flex items-center gap-2">
 										<Badge variant="secondary" className="font-mono">
 											{agent.model}
@@ -410,7 +446,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								</div>
 								<Separator />
 								<div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-									<span className="text-sm font-medium text-muted-foreground">System</span>
+									<span className="text-sm font-medium text-muted-foreground">
+										System
+									</span>
 									<p className="text-sm text-foreground">
 										{agent.prompt && agent.prompt.length > 150
 											? `${agent.prompt.substring(0, 150)}...`
@@ -421,7 +459,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 									<>
 										<Separator />
 										<div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-											<span className="text-sm font-medium text-muted-foreground">Tools</span>
+											<span className="text-sm font-medium text-muted-foreground">
+												Tools
+											</span>
 											<div className="flex flex-wrap gap-2">
 												{agent.tools.map((tool, index) => (
 													<Badge
@@ -440,7 +480,9 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 							<div className="px-4 py-3 bg-muted/30 border-t rounded-b-lg">
 								<p className="text-xs text-muted-foreground flex items-start gap-2">
 									<Info className="h-3 w-3 mt-0.5 shrink-0" />
-									Any changes to <span className="font-medium">{agent.name}</span> will automatically apply to this schedule
+									Any changes to{" "}
+									<span className="font-medium">{agent.name}</span> will
+									automatically apply to this schedule
 								</p>
 							</div>
 						</div>

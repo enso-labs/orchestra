@@ -62,12 +62,15 @@ function SchemaRow({
 	// Track property IDs for nested objects
 	const [propertyIds] = useState<Map<string, string>>(() => new Map());
 
-	const getPropertyId = useCallback((propName: string): string => {
-		if (!propertyIds.has(propName)) {
-			propertyIds.set(propName, generateId());
-		}
-		return propertyIds.get(propName)!;
-	}, [propertyIds]);
+	const getPropertyId = useCallback(
+		(propName: string): string => {
+			if (!propertyIds.has(propName)) {
+				propertyIds.set(propName, generateId());
+			}
+			return propertyIds.get(propName)!;
+		},
+		[propertyIds],
+	);
 
 	const handleTypeChange = (value: ArgField["type"]) => {
 		onUpdate({
@@ -75,7 +78,10 @@ function SchemaRow({
 			type: value,
 			// Reset nested structures if type changes
 			properties: value === "object" ? {} : undefined,
-			items: value === "array" ? { type: "str", description: "", required: false } : undefined,
+			items:
+				value === "array"
+					? { type: "str", description: "", required: false }
+					: undefined,
 		});
 	};
 
@@ -138,7 +144,7 @@ function SchemaRow({
 					className="flex items-center justify-center w-6 h-10 flex-shrink-0"
 					style={{ marginLeft: `${depth * 16}px` }}
 				>
-					{(field.type === "object" || field.type === "array") ? (
+					{field.type === "object" || field.type === "array" ? (
 						<Button
 							type="button"
 							variant="ghost"
@@ -146,7 +152,11 @@ function SchemaRow({
 							className="h-6 w-6 p-0"
 							onClick={() => setIsExpanded(!isExpanded)}
 						>
-							{isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+							{isExpanded ? (
+								<ChevronDown className="h-3 w-3" />
+							) : (
+								<ChevronRight className="h-3 w-3" />
+							)}
 						</Button>
 					) : (
 						<div className="w-6" />
@@ -208,7 +218,9 @@ function SchemaRow({
 					{/* Row 2: Description (full width) */}
 					<Textarea
 						value={field.description}
-						onChange={(e) => onUpdate({ ...field, description: e.target.value })}
+						onChange={(e) =>
+							onUpdate({ ...field, description: e.target.value })
+						}
 						placeholder="Description"
 						rows={2}
 						className="min-h-[36px] resize-y"
@@ -227,7 +239,9 @@ function SchemaRow({
 							field={propField}
 							onUpdate={(updated) => handleUpdateProperty(propName, updated)}
 							onRemove={() => handleRemoveProperty(propName)}
-							onNameChange={(newName) => handleRenameProperty(propName, newName)}
+							onNameChange={(newName) =>
+								handleRenameProperty(propName, newName)
+							}
 							depth={depth + 1}
 						/>
 					))}
@@ -249,7 +263,9 @@ function SchemaRow({
 			{/* Nested Array Items */}
 			{isExpanded && field.type === "array" && field.items && (
 				<div className="border-l-2 border-muted ml-4 pl-0 pt-2">
-					<div className="ml-8 text-xs text-muted-foreground mb-1">Array Items Schema:</div>
+					<div className="ml-8 text-xs text-muted-foreground mb-1">
+						Array Items Schema:
+					</div>
 					<SchemaRow
 						id={`${id}_items`}
 						name="items"
@@ -265,45 +281,56 @@ function SchemaRow({
 	);
 }
 
-export function ArgsSchemaBuilder({ schema, onChange }: ArgsSchemaBuilderProps) {
+export function ArgsSchemaBuilder({
+	schema,
+	onChange,
+}: ArgsSchemaBuilderProps) {
 	// Track stable IDs for each parameter by maintaining an internal array representation
 	const [params, setParams] = useState<ParamEntry[]>(() =>
 		Object.entries(schema).map(([name, field]) => ({
 			id: generateId(),
 			name,
 			field,
-		}))
+		})),
 	);
 
 	// Sync with external schema changes (e.g., on initial load or reset)
 	const prevSchemaRef = useRef<Record<string, ArgField>>(schema);
 	useEffect(() => {
 		// Only sync if schema changed externally (not from our own updates)
-		const schemaKeys = Object.keys(schema).sort().join(',');
-		const paramKeys = params.map(p => p.name).sort().join(',');
-		const prevKeys = Object.keys(prevSchemaRef.current).sort().join(',');
+		const schemaKeys = Object.keys(schema).sort().join(",");
+		const paramKeys = params
+			.map((p) => p.name)
+			.sort()
+			.join(",");
+		const prevKeys = Object.keys(prevSchemaRef.current).sort().join(",");
 
 		// Check if this is an external change by comparing key structure
 		if (schemaKeys !== paramKeys && schemaKeys !== prevKeys) {
-			setParams(Object.entries(schema).map(([name, field]) => ({
-				id: generateId(),
-				name,
-				field,
-			})));
+			setParams(
+				Object.entries(schema).map(([name, field]) => ({
+					id: generateId(),
+					name,
+					field,
+				})),
+			);
 		}
 		prevSchemaRef.current = schema;
 	}, [schema, params]);
 
 	// Convert internal params back to schema and call onChange
-	const emitChange = useCallback((newParams: ParamEntry[]) => {
-		const newSchema: Record<string, ArgField> = {};
-		for (const param of newParams) {
-			newSchema[param.name] = param.field;
-		}
-		prevSchemaRef.current = newSchema;
-		setParams(newParams);
-		onChange(newSchema);
-	}, [onChange]);
+	const emitChange = useCallback(
+		(newParams: ParamEntry[]) => {
+			const newSchema: Record<string, ArgField> = {};
+			for (const param of newParams) {
+				newSchema[param.name] = param.field;
+			}
+			prevSchemaRef.current = newSchema;
+			setParams(newParams);
+			onChange(newSchema);
+		},
+		[onChange],
+	);
 
 	const addParameter = () => {
 		const newParamName = `param_${params.length + 1}`;
@@ -322,21 +349,23 @@ export function ArgsSchemaBuilder({ schema, onChange }: ArgsSchemaBuilderProps) 
 	};
 
 	const updateParameter = (id: string, field: ArgField) => {
-		emitChange(params.map(p => p.id === id ? { ...p, field } : p));
+		emitChange(params.map((p) => (p.id === id ? { ...p, field } : p)));
 	};
 
 	const removeParameter = (id: string) => {
-		emitChange(params.filter(p => p.id !== id));
+		emitChange(params.filter((p) => p.id !== id));
 	};
 
 	const renameParameter = (id: string, newName: string) => {
-		emitChange(params.map(p => p.id === id ? { ...p, name: newName } : p));
+		emitChange(params.map((p) => (p.id === id ? { ...p, name: newName } : p)));
 	};
 
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
-				<label className="text-sm font-medium">Input Parameters (args_schema)</label>
+				<label className="text-sm font-medium">
+					Input Parameters (args_schema)
+				</label>
 				<Button
 					type="button"
 					variant="outline"

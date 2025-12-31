@@ -16,7 +16,6 @@ export default function ChatProvider({
 	const imageHooks = useImageHook();
 	const configHooks = useConfigHook();
 	const threadHooks = useThread();
-	
 
 	return (
 		<ChatContext.Provider

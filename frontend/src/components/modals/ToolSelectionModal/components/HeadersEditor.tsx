@@ -18,9 +18,9 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 		// If key is empty, we might remove the wrong one if multiple are empty.
 		// Using index is safer for the UI list, but object keys must be unique.
 		// Since headers is a Record, keys are unique.
-		// But if we have multiple empty keys in UI (impossible in Record), 
+		// But if we have multiple empty keys in UI (impossible in Record),
 		// we should probably model the internal state as array of pairs for editing.
-		
+
 		const newHeaders = { ...headers };
 		delete newHeaders[keyToRemove];
 		onChange(newHeaders);
@@ -28,7 +28,7 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 
 	const updateKey = (oldKey: string, newKey: string, value: string) => {
 		if (oldKey === newKey) return;
-		
+
 		const newHeaders = { ...headers };
 		delete newHeaders[oldKey];
 		newHeaders[newKey] = value;
@@ -39,20 +39,20 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 		onChange({ ...headers, [key]: newValue });
 	};
 
-	// To handle adding new empty keys correctly with Record, we might need local state 
+	// To handle adding new empty keys correctly with Record, we might need local state
 	// or accept that we can only have one empty key at a time.
 	// A better approach for the form is to use an array of objects and convert to Record on save.
 	// But the props are Record. Let's assume the parent handles it or we convert here.
 	// Actually, for a controlled component, passed Record is hard to edit if keys change.
 	// Let's change the component to accept [key, value][] or similar if possible.
 	// For now, I'll stick to the props but be careful.
-	
+
 	// Issue: If I change a key, the order might jump.
 	// Issue: I can't have two empty keys.
-	
+
 	// Refactor: Local state as array of pairs.
 	// Sync with props when they change (if different).
-	
+
 	return (
 		<div className="space-y-2">
 			<div className="flex items-center justify-between">
@@ -68,7 +68,7 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 					Add
 				</Button>
 			</div>
-			
+
 			{headerEntries.length === 0 && (
 				<div className="text-sm text-muted-foreground italic px-2">
 					No headers configured.
@@ -105,4 +105,3 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 		</div>
 	);
 }
-

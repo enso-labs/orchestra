@@ -168,7 +168,9 @@ export default function FileViewer({ files }: FileViewerProps) {
 												>
 													<Pencil className="h-3 w-3" />
 												</Button>
-												<CopyTextButton text={getFileContent(files[filename])} />
+												<CopyTextButton
+													text={getFileContent(files[filename])}
+												/>
 											</div>
 										</div>
 

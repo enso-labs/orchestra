@@ -196,9 +196,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 				<div>
 					<h2 className="text-2xl font-bold">Schedules</h2>
 					<div className="flex items-center gap-2 mt-1">
-						<p className="text-sm text-muted-foreground">
-							Automated tasks for
-						</p>
+						<p className="text-sm text-muted-foreground">Automated tasks for</p>
 						<Badge variant="secondary" className="gap-1.5">
 							<Bot className="h-3 w-3" />
 							<span className="font-medium">{agent.name}</span>

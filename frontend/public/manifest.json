@@ -8,7 +8,13 @@
 	"scope": "/",
 	"start_url": "/",
 	"orientation": "portrait",
-	"categories": ["education", "productivity", "ai", "technology", "orchestrator"],
+	"categories": [
+		"education",
+		"productivity",
+		"ai",
+		"technology",
+		"orchestrator"
+	],
 	"lang": "en-US",
 	"icons": [
 		{

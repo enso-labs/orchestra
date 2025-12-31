@@ -114,10 +114,10 @@ export function formatMessages(messages: any[]) {
 				const input = message.tool_calls
 					.filter((tool_call: any) => {
 						// Accept both objects and valid JSON strings
-						if (tool_call.args && typeof tool_call.args === 'object') {
+						if (tool_call.args && typeof tool_call.args === "object") {
 							return true;
 						}
-						if (typeof tool_call.args === 'string' && tool_call.args.trim()) {
+						if (typeof tool_call.args === "string" && tool_call.args.trim()) {
 							return true;
 						}
 						return false;
@@ -125,7 +125,7 @@ export function formatMessages(messages: any[]) {
 					.map((tool_call: any) => {
 						// Parse JSON string if necessary
 						let args = tool_call.args;
-						if (typeof args === 'string') {
+						if (typeof args === "string") {
 							try {
 								args = JSON.parse(args);
 							} catch {
@@ -151,7 +151,11 @@ export function formatMessages(messages: any[]) {
 					};
 				}
 			} catch (error) {
-				console.warn("Error formatting tool_calls for message:", message.id, error);
+				console.warn(
+					"Error formatting tool_calls for message:",
+					message.id,
+					error,
+				);
 				// Fallback to assistant message if formatting fails
 				messageCopy = {
 					...messageCopy,

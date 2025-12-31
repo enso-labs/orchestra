@@ -137,12 +137,11 @@ export default function ThreadPage() {
 				) : (
 					<>
 						{/* Desktop: ResizablePanel split view (unchanged behavior) */}
-						<ResizablePanelGroup direction="horizontal" className="hidden md:flex flex-1">
-							<ResizablePanel
-								defaultSize={60}
-								minSize={50}
-								maxSize={80}
-							>
+						<ResizablePanelGroup
+							direction="horizontal"
+							className="hidden md:flex flex-1"
+						>
+							<ResizablePanel defaultSize={60} minSize={50} maxSize={80}>
 								<FileEditorPanel filesMap={filesMap} />
 							</ResizablePanel>
 

@@ -121,7 +121,7 @@ export default function ToolTimelineItem({
 		if (message.artifact) {
 			setIsExpanded(true);
 		}
-	}, [message.artifact]);	
+	}, [message.artifact]);
 
 	return (
 		<div className="bg-muted/50 rounded-lg border border-border/50 overflow-hidden">

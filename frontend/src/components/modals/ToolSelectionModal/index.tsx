@@ -50,7 +50,6 @@ export function ToolSelectionModal({
 	const { selectedTools, toggleTool, selectedArray, selectedCount } =
 		useToolSelection(initialSelectedTools);
 
-
 	useEffect(() => {
 		setAgent((prev: Agent) => ({ ...prev, mcp: mcpServers, a2a: a2aServers }));
 	}, [mcpServers, a2aServers]);
@@ -234,7 +233,10 @@ export function ToolSelectionModal({
 										>
 											Cancel
 										</Button>
-										<Button onClick={handleApply} className="flex-1 sm:flex-none">
+										<Button
+											onClick={handleApply}
+											className="flex-1 sm:flex-none"
+										>
 											Apply Changes
 										</Button>
 									</div>

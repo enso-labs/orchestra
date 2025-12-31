@@ -14,9 +14,10 @@ export default function TextSelectionPopover({
 }: TextSelectionPopoverProps) {
 	const { selectedText, selectionRect, clearSelection } =
 		useTextSelection(containerRef);
-	const [position, setPosition] = useState<{ top: number; left: number } | null>(
-		null,
-	);
+	const [position, setPosition] = useState<{
+		top: number;
+		left: number;
+	} | null>(null);
 
 	useEffect(() => {
 		if (!selectionRect || !containerRef.current) {
@@ -29,10 +30,7 @@ export default function TextSelectionPopover({
 		// Position above the selection, centered horizontally
 		const top = selectionRect.top - containerRect.top - 40;
 		const left =
-			selectionRect.left -
-			containerRect.left +
-			selectionRect.width / 2 -
-			40; // 40 = half button width approx
+			selectionRect.left - containerRect.left + selectionRect.width / 2 - 40; // 40 = half button width approx
 
 		setPosition({ top, left });
 	}, [selectionRect, containerRef]);

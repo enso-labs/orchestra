@@ -108,11 +108,7 @@ export default defineConfig({
 		alias: { "@": path.resolve(__dirname, "./src") },
 	},
 	server: {
-		allowedHosts: [
-			"chat.ruska.ai",
-			"orchestra.ruska.ai",
-			"frontend.enso.sh",
-		],
+		allowedHosts: ["chat.ruska.ai", "orchestra.ruska.ai", "frontend.enso.sh"],
 		proxy: {
 			"/api": {
 				target: "http://localhost:8000",

@@ -1,5 +1,20 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { FileText, Download, Check, Copy, Eye, Plus, X, Folder } from "lucide-react";
+import React, {
+	useState,
+	useMemo,
+	useEffect,
+	useCallback,
+	useRef,
+} from "react";
+import {
+	FileText,
+	Download,
+	Check,
+	Copy,
+	Eye,
+	Plus,
+	X,
+	Folder,
+} from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
@@ -397,7 +412,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	};
 
 	return (
-		<div className="h-full flex flex-col bg-background" role="main" aria-label="File editor">
+		<div
+			className="h-full flex flex-col bg-background"
+			role="main"
+			aria-label="File editor"
+		>
 			{/* File Tabs (VSCode-like) */}
 			<div className="flex items-center border-b border-border bg-muted/30">
 				<ScrollArea className="flex-1">

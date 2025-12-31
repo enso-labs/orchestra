@@ -36,7 +36,7 @@ export function ToolTestPanel({
 				defaults[name] = field.default;
 			}
 		});
-		setArgs(prev => ({ ...defaults, ...prev }));
+		setArgs((prev) => ({ ...defaults, ...prev }));
 	}, [argsSchema]);
 
 	const handleArgChange = (name: string, value: any) => {
@@ -69,7 +69,9 @@ export function ToolTestPanel({
 			{!isConfigValid && (
 				<Alert variant="destructive" className="py-2 text-xs">
 					<AlertTriangle className="h-3 w-3" />
-					<AlertTitle className="text-xs font-semibold ml-2">Configuration Incomplete</AlertTitle>
+					<AlertTitle className="text-xs font-semibold ml-2">
+						Configuration Incomplete
+					</AlertTitle>
 					<AlertDescription className="text-xs ml-2">
 						Please enter a valid Base URL and Endpoint to test this tool.
 					</AlertDescription>
@@ -89,9 +91,14 @@ export function ToolTestPanel({
 						{Object.entries(argsSchema).map(([name, field]) => (
 							<div key={name} className="grid grid-cols-12 gap-2 items-start">
 								<div className="col-span-3 pt-2">
-									<Label className="text-xs font-medium truncate block" title={name}>
+									<Label
+										className="text-xs font-medium truncate block"
+										title={name}
+									>
 										{name}
-										{field.required && <span className="text-destructive ml-0.5">*</span>}
+										{field.required && (
+											<span className="text-destructive ml-0.5">*</span>
+										)}
 									</Label>
 									<span className="text-[10px] text-muted-foreground font-mono opacity-70">
 										{field.type}
@@ -115,10 +122,12 @@ export function ToolTestPanel({
 					<Label className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
 						Result
 					</Label>
-					<div className={`
+					<div
+						className={`
 						rounded-md border font-mono text-xs overflow-auto max-h-[400px] shadow-sm
 						${error ? "bg-destructive/5 border-destructive/20 text-destructive p-3" : "bg-card text-foreground"}
-					`}>
+					`}
+					>
 						{error ? (
 							<div className="flex items-start gap-2">
 								<AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
@@ -143,7 +152,7 @@ export function ToolTestPanel({
 function InputRenderer({
 	field,
 	value,
-	onChange
+	onChange,
 }: {
 	field: ArgField;
 	value: any;
@@ -155,10 +164,7 @@ function InputRenderer({
 	if (field.type === "bool") {
 		return (
 			<div className="flex items-center h-9">
-				<Switch
-					checked={!!val}
-					onCheckedChange={onChange}
-				/>
+				<Switch checked={!!val} onCheckedChange={onChange} />
 				<span className="ml-2 text-xs text-muted-foreground">
 					{val ? "True" : "False"}
 				</span>
@@ -173,9 +179,10 @@ function InputRenderer({
 				step={field.type === "float" ? "any" : "1"}
 				value={val}
 				onChange={(e) => {
-					const num = field.type === "int" 
-						? parseInt(e.target.value) 
-						: parseFloat(e.target.value);
+					const num =
+						field.type === "int"
+							? parseInt(e.target.value)
+							: parseFloat(e.target.value);
 					onChange(isNaN(num) ? "" : num);
 				}}
 				placeholder={`Enter ${field.type}...`}
@@ -186,10 +193,10 @@ function InputRenderer({
 
 	if (field.type === "object" || field.type === "array") {
 		return (
-			<JsonInput 
-				value={val} 
-				onChange={onChange} 
-				placeholder={`Enter ${field.type} JSON...`} 
+			<JsonInput
+				value={val}
+				onChange={onChange}
+				placeholder={`Enter ${field.type} JSON...`}
 			/>
 		);
 	}
@@ -263,4 +270,3 @@ function JsonInput({
 		</div>
 	);
 }
-

@@ -8,7 +8,10 @@ interface AgentSectionProps {
 	showAgentMenu?: boolean;
 }
 
-export function AgentSection({ agent, showAgentMenu = false }: AgentSectionProps) {
+export function AgentSection({
+	agent,
+	showAgentMenu = false,
+}: AgentSectionProps) {
 	return (
 		<>
 			<img

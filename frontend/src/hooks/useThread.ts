@@ -55,7 +55,8 @@ export default function useThread(): ThreadContextType {
 	const [checkpoint, setCheckpoint] = useState<any>(null);
 	const [cursor, setCursor] = useState<string | null>(null);
 	const [hasMoreThreads, setHasMoreThreads] = useState<boolean>(true);
-	const [isLoadingMoreThreads, setIsLoadingMoreThreads] = useState<boolean>(false);
+	const [isLoadingMoreThreads, setIsLoadingMoreThreads] =
+		useState<boolean>(false);
 	const [threadLoading, setThreadLoading] = useState<boolean>(false);
 	const [threadError, setThreadError] = useState<string | null>(null);
 
@@ -67,70 +68,75 @@ export default function useThread(): ThreadContextType {
 		);
 	}, [checkpoints]);
 
-	const loadThread = useCallback(async (threadId: string): Promise<ThreadData | null> => {
-		if (!threadId) return null;
+	const loadThread = useCallback(
+		async (threadId: string): Promise<ThreadData | null> => {
+			if (!threadId) return null;
 
-		setThreadLoading(true);
-		setThreadError(null);
+			setThreadLoading(true);
+			setThreadError(null);
 
-		try {
-			// Load checkpoints directly for this specific thread
-			// Backend returns checkpoints when thread_id is passed
-			const checkpointsData = await searchThreads("list_checkpoints", {
-				thread_id: threadId,
-			});
+			try {
+				// Load checkpoints directly for this specific thread
+				// Backend returns checkpoints when thread_id is passed
+				const checkpointsData = await searchThreads("list_checkpoints", {
+					thread_id: threadId,
+				});
 
-			if (!checkpointsData || checkpointsData.length === 0) {
-				setThreadError("No checkpoints found for thread");
-				return null;
-			}
-
-			// Get thread data from the first checkpoint
-			const latestCheckpoint = checkpointsData[0];
-			const threadData = latestCheckpoint.metadata || {};
-
-			// Extract todos
-			const todos =
-				threadData.todos && Object.keys(threadData.todos).length > 0
-					? threadData.todos
-					: {};
-
-			// Build filesMap
-			const filesMap = new Map<string, any>();
-			if (threadData.files && Object.keys(threadData.files).length > 0) {
-				const formattedMsgs = formatMessages(checkpointsData[0].values.messages);
-				const latestAiMessage = formattedMsgs
-					.slice()
-					.reverse()
-					.find((msg: any) => ["ai", "assistant"].includes(msg.role));
-
-				if (latestAiMessage) {
-					filesMap.set(latestAiMessage.id, threadData.files);
+				if (!checkpointsData || checkpointsData.length === 0) {
+					setThreadError("No checkpoints found for thread");
+					return null;
 				}
+
+				// Get thread data from the first checkpoint
+				const latestCheckpoint = checkpointsData[0];
+				const threadData = latestCheckpoint.metadata || {};
+
+				// Extract todos
+				const todos =
+					threadData.todos && Object.keys(threadData.todos).length > 0
+						? threadData.todos
+						: {};
+
+				// Build filesMap
+				const filesMap = new Map<string, any>();
+				if (threadData.files && Object.keys(threadData.files).length > 0) {
+					const formattedMsgs = formatMessages(
+						checkpointsData[0].values.messages,
+					);
+					const latestAiMessage = formattedMsgs
+						.slice()
+						.reverse()
+						.find((msg: any) => ["ai", "assistant"].includes(msg.role));
+
+					if (latestAiMessage) {
+						filesMap.set(latestAiMessage.id, threadData.files);
+					}
+				}
+
+				// Format messages
+				const messages = formatMessages(checkpointsData[0].values.messages);
+
+				// Build metadata including thread_id
+				const metadata = { ...threadData, thread_id: threadId };
+
+				return {
+					checkpoints: checkpointsData,
+					messages,
+					metadata,
+					todos,
+					filesMap,
+					model: latestHumanMessage(messages)?.model,
+				};
+			} catch (err) {
+				console.error("Failed to load thread:", err);
+				setThreadError("Failed to load thread");
+				return null;
+			} finally {
+				setThreadLoading(false);
 			}
-
-			// Format messages
-			const messages = formatMessages(checkpointsData[0].values.messages);
-
-			// Build metadata including thread_id
-			const metadata = { ...threadData, thread_id: threadId };
-
-			return {
-				checkpoints: checkpointsData,
-				messages,
-				metadata,
-				todos,
-				filesMap,
-				model: latestHumanMessage(messages)?.model,
-			};
-		} catch (err) {
-			console.error("Failed to load thread:", err);
-			setThreadError("Failed to load thread");
-			return null;
-		} finally {
-			setThreadLoading(false);
-		}
-	}, []);
+		},
+		[],
+	);
 
 	const useLoadThreadEffect = (
 		threadId: string | undefined,
@@ -169,7 +175,7 @@ export default function useThread(): ThreadContextType {
 		filter: {
 			thread_id?: string;
 			checkpoint_id?: string;
-			metadata?: { assistant_id?: string, project_id?: string };
+			metadata?: { assistant_id?: string; project_id?: string };
 		} = {},
 	) => {
 		// Always pass limit and offset (defaults: 20, 0) to searchThreads
@@ -207,7 +213,12 @@ export default function useThread(): ThreadContextType {
 			}
 
 			// Fetch threads with limit (offset=0 since we use cursor-based pagination)
-			const newThreads = await searchThreads("list_threads", paginationFilter, LIMIT, 0);
+			const newThreads = await searchThreads(
+				"list_threads",
+				paginationFilter,
+				LIMIT,
+				0,
+			);
 
 			setThreads((prev) => [...prev, ...newThreads]);
 

@@ -70,13 +70,12 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 			) : (
 				<>
 					{/* Desktop: ResizablePanel split view (unchanged behavior) */}
-					<ResizablePanelGroup direction="horizontal" className="hidden md:flex flex-1">
+					<ResizablePanelGroup
+						direction="horizontal"
+						className="hidden md:flex flex-1"
+					>
 						{/* LEFT: File Editor Panel */}
-						<ResizablePanel
-							defaultSize={60}
-							minSize={50}
-							maxSize={80}
-						>
+						<ResizablePanel defaultSize={60} minSize={50} maxSize={80}>
 							<FileEditorPanel filesMap={filesMap} />
 						</ResizablePanel>
 

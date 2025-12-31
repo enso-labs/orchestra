@@ -74,7 +74,11 @@ export function SettingsPopover() {
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
 						onClick={() =>
-							window.open("https://docs.ruska.ai", "_blank", "noopener,noreferrer")
+							window.open(
+								"https://docs.ruska.ai",
+								"_blank",
+								"noopener,noreferrer",
+							)
 						}
 					>
 						<Book className="h-4 w-4" />

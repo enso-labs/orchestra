@@ -116,8 +116,7 @@ export default function ChatInput({
 						query.length > 0
 					) {
 						e.preventDefault();
-						if (!loading && !isLikelyMobile())
-							handleSubmit(query, images);
+						if (!loading && !isLikelyMobile()) handleSubmit(query, images);
 					}
 				}}
 			/>

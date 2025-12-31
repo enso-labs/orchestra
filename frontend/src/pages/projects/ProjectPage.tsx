@@ -111,7 +111,9 @@ export default function ProjectPage() {
 		return (
 			<ChatLayout>
 				<div className="flex h-full flex-col items-center justify-center gap-4">
-					<p className="text-muted-foreground">{error || "Project not found"}</p>
+					<p className="text-muted-foreground">
+						{error || "Project not found"}
+					</p>
 					<Button onClick={() => navigate("/chat")}>Go to Chat</Button>
 				</div>
 			</ChatLayout>
@@ -181,12 +183,11 @@ export default function ProjectPage() {
 				) : (
 					<>
 						{/* Desktop: ResizablePanel split view (unchanged behavior) */}
-						<ResizablePanelGroup direction="horizontal" className="hidden md:flex flex-1">
-							<ResizablePanel
-								defaultSize={60}
-								minSize={50}
-								maxSize={80}
-							>
+						<ResizablePanelGroup
+							direction="horizontal"
+							className="hidden md:flex flex-1"
+						>
+							<ResizablePanel defaultSize={60} minSize={50} maxSize={80}>
 								<FileEditorPanel filesMap={filesMap} />
 							</ResizablePanel>
 

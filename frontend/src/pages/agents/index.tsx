@@ -69,7 +69,10 @@ function AgentIndexPage() {
 	return (
 		<ChatLayout>
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-				<ChatNav sidebarTrigger={<SidebarTrigger />} showModelSelector={false} />
+				<ChatNav
+					sidebarTrigger={<SidebarTrigger />}
+					showModelSelector={false}
+				/>
 				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					{/* Fixed header section */}
 					<div className="flex-shrink-0 px-4 pt-4">
@@ -91,7 +94,8 @@ function AgentIndexPage() {
 									</MainToolTip>
 								</div>
 								<p className="text-muted-foreground mb-6">
-									Discover and deploy specialized AI assistants for your workflows
+									Discover and deploy specialized AI assistants for your
+									workflows
 								</p>
 
 								{/* Search bar */}

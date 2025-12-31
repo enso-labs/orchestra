@@ -1,5 +1,9 @@
 import apiClient from "@/lib/utils/apiClient";
-import { SemanticThread, ThreadPayload, ThreadSearchRequest } from "@/lib/entities";
+import {
+	SemanticThread,
+	ThreadPayload,
+	ThreadSearchRequest,
+} from "@/lib/entities";
 import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
@@ -96,7 +100,10 @@ type Presidio = {
 	anonymize?: boolean;
 	redact?: boolean;
 };
-type Files = Record<string, { content: string[]; created_at: string; modified_at: string }>;
+type Files = Record<
+	string,
+	{ content: string[]; created_at: string; modified_at: string }
+>;
 interface StreamThreadPayload {
 	system_prompt?: string;
 	input: Input & { files?: Files };
@@ -253,21 +260,15 @@ export const searchThreadsSemantic = async (
 	request: ThreadSearchRequest,
 ): Promise<{ threads: SemanticThread[] }> => {
 	try {
-		const response = await apiClient.post(
-			`/threads/search`,
-			request,
-			{
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${getAuthToken()}`,
-				},
+		const response = await apiClient.post(`/threads/search`, request, {
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${getAuthToken()}`,
 			},
-		);
+		});
 		return response.data;
 	} catch (error: any) {
 		console.error("Error searching threads semantically:", error);
-		throw new Error(
-			error.response?.data?.detail || "Failed to search threads",
-		);
+		throw new Error(error.response?.data?.detail || "Failed to search threads");
 	}
 };

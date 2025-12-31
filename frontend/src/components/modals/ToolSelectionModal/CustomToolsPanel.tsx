@@ -40,9 +40,9 @@ export function CustomToolsPanel({
 	} = useCustomTools();
 
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
-	const [editingTool, setEditingTool] = useState<Partial<ApiToolPayload> | undefined>(
-		undefined,
-	);
+	const [editingTool, setEditingTool] = useState<
+		Partial<ApiToolPayload> | undefined
+	>(undefined);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [toolToDelete, setToolToDelete] = useState<string | null>(null);
 
@@ -182,7 +182,9 @@ export function CustomToolsPanel({
 										<div className="flex items-center gap-2">
 											<h4 className="font-semibold">{tool.name}</h4>
 											{selectedTools.has(tool.name) && (
-												<Badge variant="default" className="text-[10px] h-4">Selected</Badge>
+												<Badge variant="default" className="text-[10px] h-4">
+													Selected
+												</Badge>
 											)}
 										</div>
 										<p className="text-sm text-muted-foreground line-clamp-2">
@@ -193,13 +195,16 @@ export function CustomToolsPanel({
 												<span className="uppercase font-bold text-xs bg-muted px-1 rounded">
 													{tool.metadata.api_config.method}
 												</span>
-												<span className="truncate max-w-[200px]" title={tool.metadata.api_config.base_url}>
+												<span
+													className="truncate max-w-[200px]"
+													title={tool.metadata.api_config.base_url}
+												>
 													{tool.metadata.api_config.base_url}
 												</span>
 											</div>
 										)}
 									</div>
-									
+
 									<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 										<Button
 											variant="ghost"
@@ -237,13 +242,17 @@ export function CustomToolsPanel({
 			</div>
 
 			{/* Delete Confirmation */}
-			<AlertDialog open={!!toolToDelete} onOpenChange={(open) => !open && setToolToDelete(null)}>
+			<AlertDialog
+				open={!!toolToDelete}
+				onOpenChange={(open) => !open && setToolToDelete(null)}
+			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
 						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will permanently delete the tool <span className="font-mono font-bold">{toolToDelete}</span>.
-							This action cannot be undone.
+							This will permanently delete the tool{" "}
+							<span className="font-mono font-bold">{toolToDelete}</span>. This
+							action cannot be undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -260,4 +269,3 @@ export function CustomToolsPanel({
 		</div>
 	);
 }
-

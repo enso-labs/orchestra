@@ -64,8 +64,14 @@ const formSchema = z.object({
 export function AgentCreateForm() {
 	const navigate = useNavigate();
 	const { agentId } = useParams();
-	const { agent, agents, setAgent, toggleSubagent, isAgentSelected, updateQueryStateModel } =
-		useAgentContext();
+	const {
+		agent,
+		agents,
+		setAgent,
+		toggleSubagent,
+		isAgentSelected,
+		updateQueryStateModel,
+	} = useAgentContext();
 	const [isEditing, setIsEditing] = useState(!agentId);
 	const [originalAgent, setOriginalAgent] = useState<Agent | null>(null);
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
@@ -700,7 +706,8 @@ export function AgentCreateForm() {
 										type="button"
 										disabled={!isEditing}
 										onClick={() => {
-											const updatedTools = agent.tools?.filter((t: string) => t !== tool) || [];
+											const updatedTools =
+												agent.tools?.filter((t: string) => t !== tool) || [];
 											setAgent({ ...agent, tools: updatedTools });
 										}}
 										className={`transition-colors ${

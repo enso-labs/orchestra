@@ -55,7 +55,8 @@ export function useCustomTools() {
 			await fetchCustomTools();
 		} catch (err: any) {
 			console.error("Failed to save tool:", err);
-			const msg = err.response?.data?.detail || err.message || "Failed to save tool";
+			const msg =
+				err.response?.data?.detail || err.message || "Failed to save tool";
 			toast.error(msg);
 			throw new Error(msg);
 		}
@@ -68,7 +69,8 @@ export function useCustomTools() {
 			await fetchCustomTools();
 		} catch (err: any) {
 			console.error("Failed to delete tool:", err);
-			const msg = err.response?.data?.detail || err.message || "Failed to delete tool";
+			const msg =
+				err.response?.data?.detail || err.message || "Failed to delete tool";
 			toast.error(msg);
 			throw new Error(msg);
 		}
@@ -81,19 +83,19 @@ export function useCustomTools() {
 	const getToolForDuplicate = (tool: Tool): Partial<ApiToolPayload> => {
 		// Try to extract config from metadata if available (for custom tools)
 		const apiConfig = tool.metadata?.api_config;
-		
+
 		if (apiConfig) {
 			return {
 				description: tool.description,
 				type: "api",
 				tags: ["api_tool"],
 				config: {
-					api_tool: apiConfig
-				}
+					api_tool: apiConfig,
+				},
 			};
 		}
-		
-		// For platform tools or others without explicit config, 
+
+		// For platform tools or others without explicit config,
 		// we can't easily duplicate them as API tools yet.
 		// Returning empty config will just open a blank form.
 		return {
@@ -112,4 +114,3 @@ export function useCustomTools() {
 		getToolForDuplicate,
 	};
 }
-

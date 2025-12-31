@@ -18,7 +18,15 @@ interface ThreadSearchModalProps {
 
 export function ThreadSearchModal({ isOpen, onClose }: ThreadSearchModalProps) {
 	const navigate = useNavigate();
-	const { query, setQuery, results, isLoading, error, handleSearch, clearSearch } = useThreadSearch();
+	const {
+		query,
+		setQuery,
+		results,
+		isLoading,
+		error,
+		handleSearch,
+		clearSearch,
+	} = useThreadSearch();
 
 	useEffect(() => {
 		if (!isOpen) {
@@ -110,7 +118,9 @@ export function ThreadSearchModal({ isOpen, onClose }: ThreadSearchModalProps) {
 									</h4> */}
 									<p className="text-sm line-clamp-2 mt-1">
 										{result.messages && result.messages.length > 0
-											? formatContent(result.messages[result.messages.length - 1].content)
+											? formatContent(
+													result.messages[result.messages.length - 1].content,
+												)
 											: "No message content"}
 									</p>
 									{result.updated_at && (

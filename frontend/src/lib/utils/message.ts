@@ -105,7 +105,7 @@ export class StreamMessageHandler {
 				response.response_metadata?.finish_reason ||
 					response.response_metadata.stop_reason,
 			) && response.tool_calls?.length === 0;
-			
+
 		return stopReason;
 	}
 

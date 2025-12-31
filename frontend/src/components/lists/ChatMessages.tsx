@@ -161,7 +161,10 @@ export const Message = memo(
 		}
 
 		// Only render input for tool-related messages
-		if ("input" in message && ["tool", "AIMessageChunk"].includes(message.type ?? message.role)) {
+		if (
+			"input" in message &&
+			["tool", "AIMessageChunk"].includes(message.type ?? message.role)
+		) {
 			return (
 				<div className="group px-3 md:px-5">
 					<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">

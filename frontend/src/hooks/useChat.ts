@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { formatContent, formatMultimodalPayload, formatMessages } from "@/lib/utils/format";
+import {
+	formatContent,
+	formatMultimodalPayload,
+	formatMessages,
+} from "@/lib/utils/format";
 import { streamThread } from "@/lib/services";
 import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
