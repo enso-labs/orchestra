@@ -172,15 +172,21 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 		return truncateFrom(firstLine, "end", "...", 50);
 	};
 
-	const handleThreadClick = () => {
-		// Navigate to thread route
-		if (pathname.startsWith("/assistant/")) {
-			navigate(
-				`/assistant/${agent.id}/thread/${thread.value?.thread_id || thread.key}`,
-			);
-		} else {
-			navigate(`/thread/${thread.value?.thread_id || thread.key}`);
+	const handleThreadClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+		// Build the thread URL
+		const threadUrl = pathname.startsWith("/assistant/")
+			? `/assistant/${agent.id}/thread/${thread.value?.thread_id || thread.key}`
+			: `/thread/${thread.value?.thread_id || thread.key}`;
+
+		// Check for Ctrl/Cmd+Click to open in new tab
+		if (event.ctrlKey || event.metaKey) {
+			window.open(threadUrl, "_blank", "noopener,noreferrer");
+			return;
 		}
+
+		// Normal navigation within app
+		navigate(threadUrl);
+
 		// Close sidebar on mobile
 		if (isMobile) {
 			setOpenMobile(false);
