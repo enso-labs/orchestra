@@ -16,7 +16,11 @@ def from_message_to_dict(messages, include_tool_calls: bool = True) -> list[dict
     for message in messages:
         if not include_tool_calls and isinstance(message, ToolMessage):
             continue
-        converted.append(message.model_dump())
+        # Handle both Pydantic models and plain dicts
+        if isinstance(message, dict):
+            converted.append(message)
+        else:
+            converted.append(message.model_dump())
     return converted
 
 

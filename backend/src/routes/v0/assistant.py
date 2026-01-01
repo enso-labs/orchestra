@@ -26,7 +26,9 @@ router = APIRouter(tags=["Assistant"], prefix="/assistants")
 @router.post("/search", name="Query Assistants", operation_id="ruska_search_assistants")
 @cache(expire=30)
 async def search_assistants(
-    assistant_search: AssistantSearch = Body(...),
+    assistant_search: AssistantSearch = Body(
+        openapi_examples=Examples.ASSISTANT_SEARCH_EXAMPLES
+    ),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):

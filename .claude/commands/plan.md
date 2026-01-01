@@ -1,6 +1,6 @@
 # Plan
 
-Create an implementation plan for the given task and save it to .plans/[task-name]/SPEC.md
+Create an implementation plan for the given task and save it to `$PROJECT_ROOT/.plans/[task-name]/SPEC.md`
 
 ## Variables
 

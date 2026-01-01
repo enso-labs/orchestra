@@ -17,7 +17,7 @@ from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 
 from src.constants import APP_ENV
 from src.contexts.service import ServiceContext
-from src.constants.llm import DEFAULT_SYSTEM_PROMPT
+from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
 from src.schemas.entities.llm import Assistant, LLMInput
 from src.services.memory import memory_service
 from src.tools.memory import MEMORY_TOOLS
@@ -60,7 +60,7 @@ def graph_builder(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
     system_prompt: str = "You are a helpful assistant.",
-    model: str = "openai:gpt-5-nano",
+    model: str = DEFAULT_CHAT_MODEL,
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
@@ -165,7 +165,14 @@ def init_config(
     max_concurrency: int = 4,
     recursion_limit: int = 500,
 ) -> RunnableConfig:
-    metadata = params.metadata.model_dump()
+    # Handle both Pydantic models and plain dicts
+    metadata = (
+        params.metadata.model_dump()
+        if hasattr(params.metadata, "model_dump")
+        else dict(params.metadata)
+        if params.metadata
+        else {}
+    )
     if user_id:
         metadata["user_id"] = user_id
     if not metadata.get("thread_id"):
@@ -240,7 +247,7 @@ class Orchestra:
         self,
         tools: list[BaseTool],
         subagents: Optional[list[SubAgent]] = None,
-        model: str = "openai:gpt-5-nano",
+        model: str = DEFAULT_CHAT_MODEL,
         system_prompt: str = "You are a helpful assistant.",
         # config: RunnableConfig = None,
         context_schema: Type[Any] | None = None,

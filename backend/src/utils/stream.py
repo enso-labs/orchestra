@@ -29,6 +29,13 @@ from src.utils.format import get_time
 ###########################################################################
 ## Handlers
 ###########################################################################
+def _to_dict(message) -> dict:
+    """Convert a message to dict, handling both Pydantic models and plain dicts."""
+    if isinstance(message, dict):
+        return message
+    return message.model_dump()
+
+
 def handle_tasks_mode(payload: dict):
     converted: List[dict] = []
 
@@ -36,14 +43,14 @@ def handle_tasks_mode(payload: dict):
         input = payload["input"]
         if "messages" in payload["input"]:
             for message in input["messages"]:
-                converted.append(message.model_dump())
+                converted.append(_to_dict(message))
             input["messages"] = converted
         return payload
 
     if "result" in payload:
         messages = payload["result"][0][1]
         for message in messages:
-            converted.append(message.model_dump())
+            converted.append(_to_dict(message))
         payload["result"][0] = [payload["result"][0][0], converted]
 
     return payload
@@ -51,13 +58,13 @@ def handle_tasks_mode(payload: dict):
 
 def handle_messages_mode(payload: dict):
     if isinstance(payload, tuple):
-        return [payload[0].model_dump(), payload[1]]
+        return [_to_dict(payload[0]), payload[1]]
 
     converted: List[dict] = []
 
     if "messages" in payload:
         for message in payload["messages"]:
-            converted.append(message.model_dump())
+            converted.append(_to_dict(message))
         payload["messages"] = converted
 
     return payload
@@ -72,7 +79,7 @@ def handle_debug_mode(payload: dict):
 
             if "messages" in input:
                 for message in input.get("messages"):
-                    converted.append(message.model_dump())
+                    converted.append(_to_dict(message))
                 payload["payload"]["input"]["messages"] = converted
                 return payload
 
@@ -82,7 +89,7 @@ def handle_debug_mode(payload: dict):
         if payload.get("payload", {}).get("result"):
             messages = payload.get("payload", {}).get("result")[0][1]
             for message in messages:
-                converted.append(message.model_dump())
+                converted.append(_to_dict(message))
             payload["payload"]["result"][0] = [
                 payload["payload"]["result"][0][0],
                 converted,
@@ -100,7 +107,7 @@ def handle_updates_mode(payload: dict):
         messages = payload.get("tools", {}).get("messages", [])
 
     for message in messages:
-        converted.append(message.model_dump())
+        converted.append(_to_dict(message))
     return converted
 
 
@@ -108,7 +115,7 @@ def handle_values_mode(payload: dict):
     converted: List[dict] = []
     messages = payload.get("messages", [])
     for message in messages:
-        converted.append(message.model_dump())
+        converted.append(_to_dict(message))
     payload["messages"] = converted
     return payload
 
@@ -146,7 +153,7 @@ def handle_multi_mode(chunk: dict):
             msg = i1[0]
 
             if isinstance(msg, ToolMessage):
-                return (i0, (msg.model_dump(), i1[1] or None))
+                return (i0, (_to_dict(msg), i1[1] or None))
 
             if isinstance(msg, AIMessageChunk):
                 stop = (
@@ -156,7 +163,7 @@ def handle_multi_mode(chunk: dict):
                 )
                 content = msg.content or msg.additional_kwargs.get("reasoning_content")
                 if msg.tool_calls or msg.tool_call_chunks or stop or content:
-                    return (i0, (msg.model_dump(), i1[1] or None))
+                    return (i0, (_to_dict(msg), i1[1] or None))
                 logger.warning(f"No content: {chunk}")
                 return None
 

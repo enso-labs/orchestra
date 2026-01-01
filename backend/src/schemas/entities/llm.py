@@ -16,7 +16,7 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from src.constants.llm import DEFAULT_SYSTEM_PROMPT
+from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
 from src.utils.format import slugify
 
 
@@ -152,7 +152,7 @@ class Assistant(BaseModel):
 
 class LLMRequest(BaseModel):
     input: LLMInput
-    model: Optional[str] = Field(default="openai:gpt-5-nano")
+    model: Optional[str] = Field(default=DEFAULT_CHAT_MODEL)
     system_prompt: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
     instructions: Optional[str] = Field(default="", exclude=True)
     tools: Optional[List[Any]] = Field(default_factory=list)
@@ -161,5 +161,17 @@ class LLMRequest(BaseModel):
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
     presidio: Optional[PresidioRequest] = Field(default_factory=PresidioRequest)
     metadata: Optional[Config] = Field(
-        default={}, description="LangGraph configuration"
+        default_factory=Config, description="LangGraph configuration"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_metadata(cls, values):
+        """Ensure metadata is always a Config model, not a plain dict."""
+        if isinstance(values, dict) and "metadata" in values:
+            meta = values.get("metadata")
+            if meta is None or meta == {}:
+                values["metadata"] = Config()
+            elif isinstance(meta, dict):
+                values["metadata"] = Config(**meta)
+        return values

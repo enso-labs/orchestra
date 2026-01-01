@@ -475,6 +475,24 @@ SCHEDULE_CREATE_ASSISTANT_EXAMPLE = Example(
 
 
 class Examples:
+    ASSISTANT_SEARCH_EXAMPLES = {
+        "search_assistants": Example(
+            summary="search_assistants",
+            description="Search Assistants",
+            value={
+                "limit": 200,
+                "offset": 0,
+                "sort": "updated_at",
+                "sort_order": "desc",
+                "filter": {},
+            },
+        ),
+        "get_assistant": Example(
+            summary="get_assistant",
+            description="Get Assistant by ID",
+            value={"filter": {"id": "assistant-uuid-here"}},
+        ),
+    }
     LOGIN_RESPONSE_EXAMPLE = LOGIN_RESPONSE_EXAMPLE
     EXISTING_THREAD_ANSWER_EXAMPLE = EXISTING_THREAD_ANSWER_EXAMPLE
     THREAD_HISTORY_EXAMPLE = THREAD_HISTORY_EXAMPLE
