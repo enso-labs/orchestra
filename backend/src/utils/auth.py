@@ -21,7 +21,7 @@ security = HTTPBearer(
 
 
 def generate_api_key_str() -> str:
-    return f"enso_{secrets.token_urlsafe(32)}"
+    return f"otk_{secrets.token_urlsafe(32)}"
 
 
 def hash_token(token: str) -> str:

@@ -22,7 +22,7 @@ async def test_api_token_lifecycle(async_client: AsyncClient):
     data = response.json()
     api_token_str = data["token"]
     token_id = data["api_token"]["id"]
-    assert api_token_str.startswith("enso_")
+    assert api_token_str.startswith("otk_")
 
     # 3. List Tokens
     response = await async_client.get("/api/tokens", headers=headers)

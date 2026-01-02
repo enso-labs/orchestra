@@ -9,7 +9,7 @@ Implement API token authentication for the Orchestra CLI (`ruska` command). User
 ### Backend API Reference
 
 The backend supports API key authentication via `x-api-key` header:
-- **Token Format**: `enso_{32-char-urlsafe-token}` (e.g., `enso_abc123...`)
+- **Token Format**: `otk_{32-char-urlsafe-token}` (e.g., `otk_abc123...`)
 - **Authentication**: `backend/src/utils/auth.py:90-131` - `verify_credentials()` checks `x-api-key` header first, then falls back to Bearer token
 - **Token Management**: `backend/src/routes/v0/api_tokens.py` provides CRUD endpoints:
   - `GET /api/tokens` - List user's API tokens (requires auth)
@@ -46,7 +46,7 @@ cli/
 
 ```json
 {
-  "apiKey": "enso_...",
+  "apiKey": "otk_...",
   "host": "https://chat.ruska.ai"
 }
 ```
