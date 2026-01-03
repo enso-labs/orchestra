@@ -230,7 +230,7 @@ async def stream_generator(
                     if stream_type == "values" and "files" in chunk_data:
                         files_map = {**files_map, **chunk_data["files"]}
                     if stream_type == "values" and "todos" in chunk_data:
-                        todos_list = [*todos_list, *chunk_data["todos"]]
+                        todos_list = chunk_data["todos"]
                     data = ujson.dumps(stream_chunk)
                     log_to_file(str(data), agent.model) and APP_LOG_LEVEL == "DEBUG"
                     logger.debug(f"data: {str(data)}")
