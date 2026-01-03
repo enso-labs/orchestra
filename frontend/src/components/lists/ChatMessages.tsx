@@ -12,6 +12,7 @@ import FileViewer from "../viewers/FileViewer";
 import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
 import TextSelectionPopover from "../popovers/TextSelectionPopover";
+import TodoList from "./TodoList";
 
 export const Message = memo(
 	function Message({
@@ -253,6 +254,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 		ttft,
 		submitStartTime,
 		appendToQuery,
+		todos,
 	} = useChatContext();
 	const [elapsedTime, setElapsedTime] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -421,6 +423,11 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 						);
 					})}
 				</div>
+				{todos && todos.length > 0 && (
+					<div className="max-w-4xl mx-auto px-5 mt-2 mb-2">
+						<TodoList todos={todos} />
+					</div>
+				)}
 				{loading && (
 					<div className="flex justify-start p-3 max-w-4xl mx-auto px-5">
 						<Loader2 className="h-5 w-5 animate-spin mx-2" />

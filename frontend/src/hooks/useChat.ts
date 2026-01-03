@@ -10,6 +10,7 @@ import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
 import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
+import type { Todo } from "@/components/lists/TodoList";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -57,8 +58,8 @@ export type ChatContextType = {
 	} | null;
 	filesMap: Map<string, any>;
 	setFilesMap: (map: Map<string, any>) => void;
-	todos: any[];
-	setTodos: (todos: any[]) => void;
+	todos: Todo[];
+	setTodos: (todos: Todo[]) => void;
 	viewMode: "chat" | "editor";
 	setViewMode: (mode: "chat" | "editor") => void;
 	ttft: number | null;
@@ -110,7 +111,7 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
-	const [todos, setTodos] = useState<any[]>([]);
+	const [todos, setTodos] = useState<Todo[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 	const [ttft, setTtft] = useState<number | null>(null);
 	const [submitStartTime, setSubmitStartTime] = useState<number | null>(null);
