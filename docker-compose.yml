@@ -58,18 +58,18 @@ services:
     ##############################################
     ## Graphchat
     ##############################################
-    orchestra:
-        # image: ryaneggz/graphchat:0.0.2-rc108
-        build:
-            context: ./backend
-            dockerfile: Dockerfile
-        container_name: orchestra
-        env_file:
-            - ./backend/.env.docker
-        ports:
-            - "8000:8000"
-        depends_on:
-            - postgres
+    # orchestra:
+    #     # image: ryaneggz/graphchat:0.0.2-rc108
+    #     build:
+    #         context: ./backend
+    #         dockerfile: Dockerfile
+    #     container_name: orchestra
+    #     env_file:
+    #         - ./backend/.env.docker
+    #     ports:
+    #         - "8000:8000"
+    #     depends_on:
+    #         - postgres
 
     ##############################################
     ## Ollama (AI Service)
