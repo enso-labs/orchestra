@@ -1,9 +1,9 @@
 [submodule "website"]
 	path = website
-	url = https://github.com/ruska-ai/website
+	url = git@github.com:ruska-ai/website.git
 [submodule "cli"]
 	path = cli
-	url = https://github.com/ruska-ai/ruska-cli.git
+	url = git@github.com:ruska-ai/ruska-cli.git
 [submodule "wiki"]
 	path = wiki
-	url = https://github.com/ruska-ai/wiki
+	url = git@github.com:ruska-ai/wiki.git
