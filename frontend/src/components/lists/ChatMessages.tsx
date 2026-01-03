@@ -376,7 +376,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 			<div
 				ref={scrollRef}
 				onScroll={handleScroll}
-				className="flex-1 overflow-auto p-1 mb-1 pb-5"
+				className="flex-1 overflow-auto p-1 mb-1"
 			>
 				<div
 					ref={messagesContainerRef}

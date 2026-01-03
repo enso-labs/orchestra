@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { searchThreads } from "@/lib/services/threadService";
 import { formatMessages } from "@/lib/utils/format";
 import { latestHumanMessage } from "@/lib/utils/message";
+import type { Todo } from "@/components/lists/TodoList";
 
 const LIMIT = 20;
 
@@ -9,7 +10,7 @@ export type ThreadData = {
 	checkpoints: any[];
 	messages: any[];
 	metadata: any;
-	todos: Record<string, any>;
+	todos: Todo[];
 	filesMap: Map<string, any>;
 	model: string;
 };
@@ -43,7 +44,7 @@ export type ThreadContextType = {
 			setMessages: (messages: any[]) => void;
 			setMetadata: (metadata: any) => void;
 			setFilesMap: (filesMap: Map<string, any>) => void;
-			setTodos: (todos: Record<string, any>) => void;
+			setTodos: (todos: Todo[]) => void;
 			setModel: (model: string) => void;
 		},
 	) => void;
@@ -91,11 +92,10 @@ export default function useThread(): ThreadContextType {
 				const latestCheckpoint = checkpointsData[0];
 				const threadData = latestCheckpoint.metadata || {};
 
-				// Extract todos
-				const todos =
-					threadData.todos && Object.keys(threadData.todos).length > 0
-						? threadData.todos
-						: {};
+				// Extract todos (backend sends as array)
+				const todos: Todo[] = Array.isArray(threadData.todos)
+					? threadData.todos
+					: [];
 
 				// Build filesMap
 				const filesMap = new Map<string, any>();
@@ -145,7 +145,7 @@ export default function useThread(): ThreadContextType {
 			setMessages: (messages: any[]) => void;
 			setMetadata: (metadata: any) => void;
 			setFilesMap: (filesMap: Map<string, any>) => void;
-			setTodos: (todos: Record<string, any>) => void;
+			setTodos: (todos: Todo[]) => void;
 			setModel: (model: string) => void;
 		},
 	) => {
@@ -159,9 +159,8 @@ export default function useThread(): ThreadContextType {
 					callbacks.setMessages(data.messages);
 					callbacks.setMetadata(data.metadata);
 					callbacks.setFilesMap(data.filesMap);
-					if (Object.keys(data.todos).length > 0) {
-						callbacks.setTodos(data.todos);
-					}
+					// Always set todos to clear stale data when switching threads
+					callbacks.setTodos(data.todos);
 					callbacks.setModel(data.model);
 				}
 			};
