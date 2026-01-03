@@ -44,7 +44,7 @@ export function ApiTokensSettings() {
 	const fetchTokens = async () => {
 		try {
 			setLoading(true);
-			const res = await apiClient.get<ApiToken[]>("/api/tokens");
+			const res = await apiClient.get<ApiToken[]>("/tokens");
 			if (Array.isArray(res.data)) {
 				setTokens(res.data);
 			} else {
