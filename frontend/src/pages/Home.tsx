@@ -2,7 +2,6 @@ import NoAuthLayout from "../layouts/NoAuthLayout";
 import { useChatContext } from "@/context/ChatContext";
 import HomeSection from "@/components/sections/home";
 import ChatPanel from "./chat/ChatPanel";
-import LLLMConfig from "@/lib/config/llm";
 import { useEffect } from "react";
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
@@ -18,7 +17,7 @@ export default function Home() {
 	useEffect(() => {
 		setAgent((prev: Agent) => ({
 			...prev,
-			model: LLLMConfig.DEFAULT_CHAT_MODEL,
+			model: '',
 		}));
 	}, []);
 
