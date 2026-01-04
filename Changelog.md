@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.0.2-rc139
+## v0.0.2-rc140
 
 ### Changed
+- FEAT: Render the todos state from useThread in Session
+- FEAT: Not Required to pass assistant to ruska chat
+- FEAT: CLI Should have Command for getting current version info and heath info
+- FEAT: Truncate Tool Calls. Allow extension (cli) #54
 
 ### Fixed
 
