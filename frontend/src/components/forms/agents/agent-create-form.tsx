@@ -63,7 +63,7 @@ const formSchema = z.object({
 	model: z.string().min(2, {
 		message: "Model must be at least 2 characters.",
 	}),
-	public: z.boolean().default(false),
+	public: z.boolean(),
 });
 
 export function AgentCreateForm() {
