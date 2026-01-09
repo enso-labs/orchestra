@@ -181,7 +181,8 @@ export default function useChat(): ChatContextType {
 					subagents: agent.subagents,
 					presidio: {
 						analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
-						anonymize: localStorage.getItem("enso:tool:pii_anonymize") === "true",
+						anonymize:
+							localStorage.getItem("enso:tool:pii_anonymize") === "true",
 						// redact: false,
 					},
 				};
