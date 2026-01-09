@@ -151,7 +151,20 @@ export function AgentCreateForm() {
 		if (!agent.id) {
 			console.log("Saving agent configuration:", configData);
 			const response = await agentService.create(configData);
-			alert(`${values.name} created successfully!`);
+			// If user set public toggle, publish the newly created agent
+			if (form.getValues("public")) {
+				try {
+					await agentService.publish(response.data.assistant_id);
+					alert(`${values.name} created and published successfully!`);
+				} catch (error) {
+					console.error("Failed to publish agent after creation:", error);
+					alert(
+						`${values.name} created but failed to publish. You can publish it manually from settings.`,
+					);
+				}
+			} else {
+				alert(`${values.name} created successfully!`);
+			}
 			navigate(`/a/${response.data.assistant_id}`);
 		} else {
 			const confirmed = confirm(
@@ -717,7 +730,9 @@ export function AgentCreateForm() {
 												} catch (error) {
 													// Revert on failure
 													field.onChange(!checked);
-													alert("Failed to update visibility. Please try again.");
+													alert(
+														"Failed to update visibility. Please try again.",
+													);
 												}
 											}
 										}}
