@@ -31,8 +31,8 @@ export default function PublicAgentPage() {
 					id: agent.id,
 					name: agent.name,
 					description: agent.description,
-					model: agent.model || "",
-					tools: [],
+					// model: agent.model || "",
+					// tools: [],
 					public: true,
 				});
 			} catch (err) {

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc140
 
 ### Changed
+  - feat/633-public-agents-display (2026-01-08)
   - feat/471-public-agents (2026-01-08)
 - FEAT: Render the todos state from useThread in Session
 - FEAT: Not Required to pass assistant to ruska chat
