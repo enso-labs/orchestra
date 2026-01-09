@@ -62,9 +62,7 @@ export default function TodoList({ todos, className }: TodoListProps) {
 				<AccordionTrigger className="hover:no-underline py-2">
 					<div className="flex items-center gap-2">
 						<ListTodo className="h-4 w-4 text-primary" />
-						<span className="text-sm font-medium">
-							Tasks ({todos.length})
-						</span>
+						<span className="text-sm font-medium">Tasks ({todos.length})</span>
 						<span className="text-xs text-muted-foreground">
 							{completedCount} of {todos.length} completed
 						</span>

@@ -75,7 +75,11 @@ export function ApiTokensSettings() {
 	};
 
 	const deleteToken = async (id: string) => {
-		if (!confirm("Are you sure you want to revoke this API token? This action cannot be undone.")) {
+		if (
+			!confirm(
+				"Are you sure you want to revoke this API token? This action cannot be undone.",
+			)
+		) {
 			return;
 		}
 		try {
