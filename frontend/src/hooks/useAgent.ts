@@ -184,21 +184,19 @@ export function useAgent() {
 	const useEffectGetAgents = () => {
 		useEffect(() => {
 			handleGetAgents();
+			return () => {
+				setAgents([]);
+			};
 		}, []);
-
-		return () => {
-			setAgents([]);
-		};
 	};
 
 	const useEffectGetPublicAgents = () => {
 		useEffect(() => {
 			handleGetPublicAgents();
+			return () => {
+				setPublicAgents([]);
+			};
 		}, []);
-
-		return () => {
-			setPublicAgents([]);
-		};
 	};
 
 	const clearMcp = () => {
