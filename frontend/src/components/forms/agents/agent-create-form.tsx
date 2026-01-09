@@ -17,6 +17,8 @@ import {
 	Library,
 	FileText,
 	Ban,
+	Globe,
+	Lock,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
@@ -24,11 +26,13 @@ import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
 import {
 	Form,
 	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
@@ -59,6 +63,7 @@ const formSchema = z.object({
 	model: z.string().min(2, {
 		message: "Model must be at least 2 characters.",
 	}),
+	public: z.boolean(),
 });
 
 export function AgentCreateForm() {
@@ -92,6 +97,7 @@ export function AgentCreateForm() {
 			description: "",
 			systemMessage: "",
 			instructions: "",
+			public: false,
 		},
 	});
 
@@ -240,6 +246,7 @@ export function AgentCreateForm() {
 		form.setValue("name", agent.name);
 		form.setValue("description", agent.description);
 		form.setValue("model", agent.model);
+		form.setValue("public", agent.public || false);
 
 		// Determine mode and set values
 		if (
@@ -669,6 +676,58 @@ export function AgentCreateForm() {
 							)}
 						/>
 					</div>
+
+					{/* Public Toggle - Only show for existing agents */}
+					{agent.id && (
+						<FormField
+							control={form.control}
+							name="public"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mt-4">
+									<div className="space-y-0.5">
+										<FormLabel className="text-base flex items-center gap-2">
+											{field.value ? (
+												<Globe className="h-4 w-4" />
+											) : (
+												<Lock className="h-4 w-4" />
+											)}
+											{field.value ? "Public" : "Private"}
+										</FormLabel>
+										<FormDescription>
+											{field.value
+												? "Anyone can view and use this agent via share link"
+												: "Only you can view and use this agent"}
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											checked={field.value}
+											onCheckedChange={async (checked) => {
+												field.onChange(checked);
+												try {
+													if (checked) {
+														await agentService.publish(agent.id);
+														alert("Agent published successfully!");
+													} else {
+														await agentService.unpublish(agent.id);
+														alert("Agent unpublished successfully!");
+													}
+													setAgent({ ...agent, public: checked });
+												} catch (error) {
+													// Revert on failure
+													field.onChange(!checked);
+													alert(
+														"Failed to update visibility. Please try again.",
+													);
+												}
+											}}
+											disabled={!isEditing}
+										/>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+					)}
 				</div>
 
 				<div className="border border-border rounded-lg p-6">

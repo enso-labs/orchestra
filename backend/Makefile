@@ -13,10 +13,28 @@ tag:
 	bash scripts/tag.sh
 
 seeds.user:
-	python -m seeds.user_seeder
+	uv run python -m seeds.user_seeder --env-file ~/.env/orchestra/.env.backend
 
 format:
 	uvx ruff format
 
 test:
-	uv run pytest
+	@set -a && . ~/.env/orchestra/.env.backend && set +a && uv run pytest
+
+migrate.up:
+	ENV_FILE=~/.env/orchestra/.env.backend uv run alembic upgrade head
+
+migrate.down:
+	ENV_FILE=~/.env/orchestra/.env.backend uv run alembic downgrade -1
+
+migrate.history:
+	ENV_FILE=~/.env/orchestra/.env.backend uv run alembic history
+
+migrate.revision:
+	ENV_FILE=~/.env/orchestra/.env.backend uv run alembic revision -m "description_of_changes"
+
+migrate.upgrade:
+	ENV_FILE=~/.env/orchestra/.env.backend uv run alembic upgrade +1
+
+migrate.downgrade:
+	ENV_FILE=~/.env/orchestra/.env.backend uv run alembic downgrade -1

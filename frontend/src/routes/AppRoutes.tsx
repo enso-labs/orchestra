@@ -18,6 +18,7 @@ import OAuthCallback from "@/pages/OAuthCallback";
 import AgentCreatePage from "@/pages/agents/create";
 import AgentIndexPage from "@/pages/agents";
 import AgentEditPage from "@/pages/agents/edit";
+import PublicAgentPage from "@/pages/agents/public";
 import SchedulesIndexPage from "@/pages/schedules";
 import PromptsIndexPage from "@/pages/prompts";
 import PromptCreatePage from "@/pages/prompts/create";
@@ -62,6 +63,9 @@ const AppRoutes: React.FC = () => {
 						<Route path="auth/:provider/callback" element={<OAuthCallback />} />
 						<Route path="*" element={<NotFound />} />
 					</Route>
+
+					{/* Public Agent Route - accessible without auth */}
+					<Route path="/a/:agentId" element={<PublicAgentPage />} />
 
 					{/* Private Routes */}
 					<Route

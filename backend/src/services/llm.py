@@ -124,18 +124,38 @@ class LLMService:
 
         ## Auto Assign Assistant if ID is provided
         if params.metadata.assistant_id:
-            assistant: Assistant = await self.assistant_service.get(
-                params.metadata.assistant_id
-            )
-            assistant.system_prompt = self.default_system_prompt(assistant)
-            assistant.tools = await self.init_tools(
-                assistant.tools, assistant.a2a, assistant.mcp
-            )
-            return assistant.to_llm_request(
-                input=params.input,
-                model=params.model,
-                metadata=params.metadata,
-            )
+            # Try user's namespace first (if user_id exists)
+            assistant: Assistant | None = None
+            if self.user_id:
+                assistant = await self.assistant_service.get(
+                    params.metadata.assistant_id
+                )
+
+            # Fall back to public namespace if not found in user namespace
+            if not assistant:
+                assistant = await self.assistant_service.get_public(
+                    params.metadata.assistant_id
+                )
+                if assistant:
+                    logger.info(
+                        f"Loading public assistant {params.metadata.assistant_id} "
+                        f"for user {self.user_id or 'anonymous'}"
+                    )
+
+            if assistant:
+                assistant.system_prompt = self.default_system_prompt(assistant)
+                assistant.tools = await self.init_tools(
+                    assistant.tools, assistant.a2a, assistant.mcp
+                )
+                return assistant.to_llm_request(
+                    input=params.input,
+                    model=params.model,
+                    metadata=params.metadata,
+                )
+            else:
+                logger.warning(
+                    f"Assistant {params.metadata.assistant_id} not found in user or public namespace"
+                )
 
         ### Collect all tools
         params.system_prompt = self.default_system_prompt(params)

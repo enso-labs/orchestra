@@ -117,12 +117,23 @@ class Assistant(BaseModel):
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
+    # Public agent fields
+    public: bool = Field(
+        default=False, description="Whether the assistant is publicly accessible"
+    )
+    owner_id: Optional[str] = Field(
+        default=None, description="The user ID of the assistant owner"
+    )
+    published_at: Optional[datetime] = Field(
+        default=None, description="When the assistant was made public"
+    )
+
     @computed_field
     @property
     def slug(self) -> str:
         return slugify(self.name)
 
-    @field_serializer("created_at", "updated_at")
+    @field_serializer("created_at", "updated_at", "published_at")
     def serialize_dt(self, dt: Optional[datetime], _):
         return dt.isoformat() if dt else None
 
@@ -148,6 +159,39 @@ class Assistant(BaseModel):
             metadata=metadata or self.metadata,
             input=input,
         )
+
+
+class PublicAssistant(BaseModel):
+    """Safe projection of Assistant for public access - excludes sensitive configuration."""
+
+    id: str
+    name: str
+    description: str
+    slug: str
+    model: Optional[str] = None
+    owner_id: Optional[str] = None
+    published_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    @classmethod
+    def from_assistant(cls, assistant: Assistant) -> "PublicAssistant":
+        """Create PublicAssistant from full Assistant, stripping sensitive fields."""
+        return cls(
+            id=assistant.id,
+            name=assistant.name,
+            description=assistant.description,
+            slug=assistant.slug,
+            model=assistant.model,
+            owner_id=assistant.owner_id,
+            published_at=assistant.published_at,
+            updated_at=assistant.updated_at,
+            created_at=assistant.created_at,
+        )
+
+    @field_serializer("created_at", "updated_at", "published_at")
+    def serialize_dt(self, dt: Optional[datetime], _):
+        return dt.isoformat() if dt else None
 
 
 class LLMRequest(BaseModel):

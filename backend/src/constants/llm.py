@@ -142,7 +142,7 @@ def get_default_chat_model():
         return ChatModels.GOOGLE_GEMINI_3_FLASH_PREVIEW.value
     if XAI_API_KEY:
         return ChatModels.XAI_GROK_4_1_FAST.value
-    
+
     if ANTHROPIC_API_KEY:
         return ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value
     if GROQ_API_KEY:

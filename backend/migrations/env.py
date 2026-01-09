@@ -1,13 +1,19 @@
 from logging.config import fileConfig
 import os
 import sys
+from pathlib import Path
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load env file from ENV_FILE env var if set, otherwise default .env
+env_file = os.environ.get("ENV_FILE")
+if env_file:
+    load_dotenv(Path(env_file).expanduser())
+else:
+    load_dotenv()
 
 from sqlalchemy import engine_from_config, create_engine, text
 from sqlalchemy import pool
