@@ -155,24 +155,38 @@ export default function useChat(): ChatContextType {
 		filesMap.forEach((files) => {
 			Object.assign(filesToSubmit, files);
 		});
-		const source = streamThread({
-			system_prompt: agent.prompt,
-			input: {
-				messages: formatedMessages,
-				...(Object.keys(filesToSubmit).length > 0 && { files: filesToSubmit }),
-			},
-			model: agent.model,
-			metadata: enrichedMetadata,
-			tools: agent.tools,
-			a2a: agent.a2a,
-			mcp: agent.mcp,
-			subagents: agent.subagents,
-			presidio: {
-				analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
-				anonymize: localStorage.getItem("enso:tool:pii_anonymize") === "true",
-				// redact: false,
-			},
-		});
+
+		// For public agents, only send input and metadata (settings are server-side)
+		const payload = agent.public
+			? {
+					input: {
+						messages: formatedMessages,
+					},
+					metadata: enrichedMetadata,
+					model: "", // Required by type but ignored server-side for public agents
+				}
+			: {
+					system_prompt: agent.prompt,
+					input: {
+						messages: formatedMessages,
+						...(Object.keys(filesToSubmit).length > 0 && {
+							files: filesToSubmit,
+						}),
+					},
+					model: agent.model,
+					metadata: enrichedMetadata,
+					tools: agent.tools,
+					a2a: agent.a2a,
+					mcp: agent.mcp,
+					subagents: agent.subagents,
+					presidio: {
+						analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
+						anonymize: localStorage.getItem("enso:tool:pii_anonymize") === "true",
+						// redact: false,
+					},
+				};
+
+		const source = streamThread(payload);
 		source.stream();
 
 		source.addEventListener("message", function (e: any) {

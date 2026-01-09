@@ -71,7 +71,7 @@ export default function PublicAgentPage() {
 	// Show agent info header before chat starts
 	if (messages.length === 0) {
 		return (
-			<NoAuthLayout showModelSelector={true}>
+			<NoAuthLayout showModelSelector={false}>
 				<AgentSection agent={publicAgent} showAgentMenu={false} />
 			</NoAuthLayout>
 		);
@@ -80,7 +80,7 @@ export default function PublicAgentPage() {
 	// Chat in progress
 	return (
 		<div className="h-full flex flex-col bg-background overflow-hidden">
-			<ChatPanel chatNav={<ChatNav />} />
+			<ChatPanel chatNav={<ChatNav showModelSelector={false} />} />
 		</div>
 	);
 }

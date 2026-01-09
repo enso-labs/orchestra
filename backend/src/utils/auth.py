@@ -13,6 +13,7 @@ from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_TOKEN_EXPIRE_MINUTE
 from src.schemas.entities import LLMRequest
 from src.schemas.models import User
 from src.services.db import get_async_db
+from src.services.assistant import AssistantService
 from src.utils.logger import logger
 
 security = HTTPBearer(
@@ -69,6 +70,20 @@ async def get_optional_user(
                 return await verify_credentials(request, credentials, db)
             except HTTPException:
                 pass
+
+        # Allow unauthenticated access for public assistants
+        if params.metadata and params.metadata.assistant_id:
+            store = getattr(request.app.state, "store", None)
+            if store:
+                assistant_service = AssistantService(user_id=None, store=store)
+                public_assistant = await assistant_service.get_public(
+                    params.metadata.assistant_id
+                )
+                if public_assistant:
+                    logger.info(
+                        f"Allowing unauthenticated access for public assistant: {params.metadata.assistant_id}"
+                    )
+                    return None
 
         if not is_authorized_model(params.model):
             raise HTTPException(
