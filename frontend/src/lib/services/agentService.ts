@@ -33,6 +33,10 @@ export type Agent = {
 	schedules?: Schedule[]; // Agent's associated schedules
 	created_at?: string;
 	updated_at?: string;
+	// Public agent fields
+	public?: boolean;
+	owner_id?: string;
+	published_at?: string;
 };
 
 export default class AgentService {
@@ -131,6 +135,68 @@ export default class AgentService {
 			return response;
 		} catch (error) {
 			console.error("Failed to delete agent schedule:", error);
+			throw error;
+		}
+	}
+
+	// Public agent methods
+
+	/**
+	 * Publish an assistant (make it publicly accessible)
+	 */
+	static async publish(assistantId: string) {
+		try {
+			const response = await apiClient.post(
+				`${this.BASE_URL}/${assistantId}/publish`,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to publish assistant:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Unpublish an assistant (make it private)
+	 */
+	static async unpublish(assistantId: string) {
+		try {
+			const response = await apiClient.delete(
+				`${this.BASE_URL}/${assistantId}/publish`,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to unpublish assistant:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Get a public assistant by ID (no auth required)
+	 */
+	static async getPublic(assistantId: string) {
+		try {
+			const response = await apiClient.get(
+				`${this.BASE_URL}/public/${assistantId}`,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to get public assistant:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * List all public assistants (no auth required)
+	 */
+	static async listPublic(limit: number = 50, offset: number = 0) {
+		try {
+			const response = await apiClient.get(`${this.BASE_URL}/public`, {
+				params: { limit, offset },
+			});
+			return response;
+		} catch (error) {
+			console.error("Failed to list public assistants:", error);
 			throw error;
 		}
 	}

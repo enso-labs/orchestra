@@ -1,3 +1,18 @@
+import argparse
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Parse args and load env before importing from src
+parser = argparse.ArgumentParser()
+parser.add_argument("--env-file", type=str, help="Path to .env file")
+args = parser.parse_args()
+
+if args.env_file:
+    env_path = Path(args.env_file).expanduser()
+    load_dotenv(env_path)
+else:
+    load_dotenv()
+
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from src.constants import DB_URI

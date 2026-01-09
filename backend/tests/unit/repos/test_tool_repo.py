@@ -1,7 +1,9 @@
 import unittest
+from unittest.mock import patch
 
 from src.repos.tool_repo import ToolRepo, SavedTool, ToolConfig
 from src.constants import TEST_USER_ID
+from src.tools.test import TEST_TOOLS
 
 
 TEST_TOOL_NAME = "TEST_webhook_marketing_channel"
@@ -9,6 +11,15 @@ BASE_TOOL = "send_webhook_to_channel"
 
 
 class TestToolRepo(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        """Start mocking TOOL_LIBRARY before async setup."""
+        self.patcher = patch("src.repos.tool_repo.TOOL_LIBRARY", TEST_TOOLS)
+        self.patcher.start()
+
+    def tearDown(self):
+        """Stop mocking TOOL_LIBRARY after async teardown."""
+        self.patcher.stop()
+
     async def asyncSetUp(self):
         """Set up test fixtures before each test method"""
         self.tool_repo = ToolRepo(user_id=TEST_USER_ID)

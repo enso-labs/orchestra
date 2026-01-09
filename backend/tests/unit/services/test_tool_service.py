@@ -1,18 +1,27 @@
 import os
 import unittest
+from unittest.mock import patch
 from src.constants import TEST_USER_ID
 from src.repos.tool_repo import ToolRepo, SavedTool, ToolConfig
 from src.services.tool import ToolService
+from src.tools.test import TEST_TOOLS
 from tests.mock.tool import fake_tool_runtime, MockToolVars
 
 
 class TestToolRepo(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
-        """Set up test fixtures before each test method"""
-
+    def setUp(self):
+        """Start mocking TOOL_LIBRARY before async setup."""
+        self.patcher = patch("src.repos.tool_repo.TOOL_LIBRARY", TEST_TOOLS)
+        self.patcher.start()
         os.environ["APP_ENV"] = "test"
         os.environ["TEST_WEBHOOK_URL"] = "https://example.com/webhook"
 
+    def tearDown(self):
+        """Stop mocking TOOL_LIBRARY after async teardown."""
+        self.patcher.stop()
+
+    async def asyncSetUp(self):
+        """Set up test fixtures before each test method"""
         self.tool_service = ToolService(user_id=TEST_USER_ID)
         created_tool = SavedTool(
             name=MockToolVars.TEST_TOOL_NAME,
@@ -33,9 +42,7 @@ class TestToolRepo(unittest.IsolatedAsyncioTestCase):
 
     async def asyncTearDown(self):
         """Clean up after each test method"""
-        # Optionally, teardown steps here (e.g., deleting the tool)
         await self.tool_repo.delete(self.tool.name)
-        pass
 
     async def test_invoke_saved_tool(self):
         """Test that the saved tool is converted to a structured tool correctly"""

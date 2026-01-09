@@ -19,6 +19,9 @@ import {
 	Zap,
 	Network,
 	UserCog,
+	Globe,
+	Lock,
+	Share2,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
@@ -139,9 +142,28 @@ function AgentIndexPage() {
 													<CardHeader className="pb-3">
 														<div className="flex items-start justify-between">
 															<Computer className="h-5 w-5 text-primary flex-shrink-0" />
-															<div className="flex items-center gap-1 text-xs text-muted-foreground">
-																<Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-																{/* <span>{agent.rating || 0}</span> */}
+															<div className="flex items-center gap-2">
+																{agent.public && (
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		className="h-6 w-6"
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			navigator.clipboard.writeText(
+																				`${window.location.origin}/a/${agent.id}`,
+																			);
+																			alert("Share link copied to clipboard!");
+																		}}
+																		title="Copy share link"
+																	>
+																		<Share2 className="h-3 w-3" />
+																	</Button>
+																)}
+																<div className="flex items-center gap-1 text-xs text-muted-foreground">
+																	<Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+																	{/* <span>{agent.rating || 0}</span> */}
+																</div>
 															</div>
 														</div>
 														<CardTitle className="text-base group-hover:text-primary transition-colors line-clamp-2">
@@ -153,47 +175,59 @@ function AgentIndexPage() {
 													</CardHeader>
 													<CardContent className="pt-0">
 														<div className="space-y-2">
-															{/* MCP, A2A & Subagents Indicators */}
-															{(agent.mcp ||
-																agent.a2a ||
-																(agent.subagents &&
-																	agent.subagents.length > 0)) && (
-																<div className="flex flex-wrap gap-1">
-																	{agent.mcp &&
-																		Object.keys(agent.mcp).length > 0 && (
-																			<Badge
-																				variant="secondary"
-																				className="text-xs gap-1"
-																			>
-																				<Zap className="h-3 w-3" />
-																				MCP
-																			</Badge>
-																		)}
-																	{agent.a2a &&
-																		Object.keys(agent.a2a).length > 0 && (
-																			<Badge
-																				variant="secondary"
-																				className="text-xs gap-1"
-																			>
-																				<Network className="h-3 w-3" />
-																				A2A
-																			</Badge>
-																		)}
-																	{agent.subagents &&
-																		agent.subagents.length > 0 && (
-																			<Badge
-																				variant="outline"
-																				className="text-xs gap-1"
-																			>
-																				<UserCog className="h-3 w-3" />
-																				{agent.subagents.length}{" "}
-																				{agent.subagents.length === 1
-																					? "Subagent"
-																					: "Subagents"}
-																			</Badge>
-																		)}
-																</div>
-															)}
+															{/* Public/Private & MCP, A2A & Subagents Indicators */}
+															<div className="flex flex-wrap gap-1">
+																{agent.public ? (
+																	<Badge
+																		variant="default"
+																		className="text-xs gap-1"
+																	>
+																		<Globe className="h-3 w-3" />
+																		Public
+																	</Badge>
+																) : (
+																	<Badge
+																		variant="outline"
+																		className="text-xs gap-1"
+																	>
+																		<Lock className="h-3 w-3" />
+																		Private
+																	</Badge>
+																)}
+																{agent.mcp &&
+																	Object.keys(agent.mcp).length > 0 && (
+																		<Badge
+																			variant="secondary"
+																			className="text-xs gap-1"
+																		>
+																			<Zap className="h-3 w-3" />
+																			MCP
+																		</Badge>
+																	)}
+																{agent.a2a &&
+																	Object.keys(agent.a2a).length > 0 && (
+																		<Badge
+																			variant="secondary"
+																			className="text-xs gap-1"
+																		>
+																			<Network className="h-3 w-3" />
+																			A2A
+																		</Badge>
+																	)}
+																{agent.subagents &&
+																	agent.subagents.length > 0 && (
+																		<Badge
+																			variant="outline"
+																			className="text-xs gap-1"
+																		>
+																			<UserCog className="h-3 w-3" />
+																			{agent.subagents.length}{" "}
+																			{agent.subagents.length === 1
+																				? "Subagent"
+																				: "Subagents"}
+																		</Badge>
+																	)}
+															</div>
 
 															{/* Categories */}
 															{agent.tools && agent.tools.length > 0 && (

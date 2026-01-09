@@ -1,5 +1,14 @@
 import uuid
-from fastapi import APIRouter, Body, Depends, HTTPException, status, Path, Response
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    status,
+    Path,
+    Response,
+    Query,
+)
 from fastapi_cache.decorator import cache
 
 from langgraph.store.postgres import AsyncPostgresStore
@@ -13,8 +22,10 @@ from src.utils.logger import logger
 from src.services.assistant import (
     AssistantSearch,
     Assistant,
+    AssistantService,
     ASSISTANT_EXAMPLES,
 )
+from src.schemas.entities.llm import PublicAssistant
 
 
 ################################################################################
@@ -110,3 +121,150 @@ async def delete_assistant(
     service_context = ServiceContext(user_id=user.id, store=store)
     await service_context.assistant_service.delete(assistant_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+################################################################################
+### Public Assistant Routes
+################################################################################
+@router.get(
+    "/public",
+    name="List Public Assistants",
+    operation_id="ruska_list_public_assistants",
+)
+async def list_public_assistants(
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """List all public assistants - no authentication required."""
+    service = AssistantService(user_id=None, store=store)
+    assistants = await service.search_public(limit=limit, offset=offset)
+
+    return {
+        "assistants": [
+            PublicAssistant.from_assistant(a).model_dump() for a in assistants
+        ],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.get(
+    "/public/{assistant_id}",
+    name="Get Public Assistant",
+    operation_id="ruska_get_public_assistant",
+)
+async def get_public_assistant(
+    assistant_id: str = Path(..., description="The ID of the public assistant"),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Get public assistant info (limited fields) - no authentication required."""
+    # Input validation
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service = AssistantService(user_id=None, store=store)
+    assistant = await service.get_public(assistant_id)
+
+    if not assistant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found"
+        )
+
+    return {"assistant": PublicAssistant.from_assistant(assistant).model_dump()}
+
+
+################################################################################
+### Publish/Unpublish Assistant
+################################################################################
+@router.post(
+    "/{assistant_id}/publish",
+    name="Publish Assistant",
+    operation_id="ruska_publish_assistant",
+)
+async def publish_assistant(
+    assistant_id: str = Path(..., description="The ID of the assistant to publish"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Make an assistant publicly accessible."""
+    # Input validation
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    try:
+        service_context = ServiceContext(user_id=user.id, store=store)
+
+        # Verify ownership by checking user's namespace
+        assistant = await service_context.assistant_service.get(assistant_id)
+        if not assistant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found"
+            )
+
+        success = await service_context.assistant_service.publish(assistant_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to publish assistant",
+            )
+        return {"assistant_id": assistant_id, "public": True}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception(f"Error publishing assistant: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.delete(
+    "/{assistant_id}/publish",
+    name="Unpublish Assistant",
+    operation_id="ruska_unpublish_assistant",
+)
+async def unpublish_assistant(
+    assistant_id: str = Path(..., description="The ID of the assistant to unpublish"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Remove public access from an assistant."""
+    # Input validation
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    try:
+        service_context = ServiceContext(user_id=user.id, store=store)
+
+        # Verify ownership by checking user's namespace
+        assistant = await service_context.assistant_service.get(assistant_id)
+        if not assistant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found"
+            )
+
+        success = await service_context.assistant_service.unpublish(assistant_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to unpublish assistant",
+            )
+        return {"assistant_id": assistant_id, "public": False}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception(f"Error unpublishing assistant: {e}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
