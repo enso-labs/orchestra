@@ -14,7 +14,12 @@ import {
 	Plus,
 	X,
 	Folder,
+	Mic,
+	Square,
 } from "lucide-react";
+import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
+import apiClient from "@/lib/utils/apiClient";
+import { MainToolTip } from "../tooltips/MainToolTip";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
@@ -78,6 +83,12 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	// Debounce timer ref
 	const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+	// Voice recording state
+	const [isRecording, setIsRecording] = useState(false);
+	const recorderControls = useVoiceVisualizer();
+	const { startRecording, stopRecording, isRecordingInProgress, recordedBlob } =
+		recorderControls;
+
 	// Memoized Monaco options to prevent re-initialization
 	const monacoOptions = useMemo(
 		() => ({
@@ -131,6 +142,43 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		}
 	}, [fileNames, selectedFile]);
 
+	// Track recording state changes
+	useEffect(() => {
+		setIsRecording(isRecordingInProgress);
+	}, [isRecordingInProgress]);
+
+	// Handle recorded blob - transcribe and insert into editor
+	useEffect(() => {
+		if (!recordedBlob || !selectedFile) return;
+
+		const formData = new FormData();
+		formData.append("file", recordedBlob, "recording.webm");
+		formData.append("model", "whisper-large-v3");
+		formData.append("response_format", "verbose_json");
+		formData.append("temperature", "0.0");
+		formData.append("timeout", "30");
+
+		apiClient
+			.post("/llm/transcribe", formData, {
+				headers: {
+					"Content-Type": "multipart/form-data",
+				},
+			})
+			.then((response) => {
+				const transcribedText = response.data.transcript.text;
+				if (transcribedText && selectedFile) {
+					const currentContent = getFileContent(selectedFile);
+					const newContent = currentContent
+						? `${currentContent}\n${transcribedText}`
+						: transcribedText;
+					updateFileContent(selectedFile, newContent);
+				}
+			})
+			.catch((error) => {
+				console.error("Error transcribing audio:", error);
+			});
+	}, [recordedBlob, selectedFile, updateFileContent]);
+
 	const handleFileSelect = (filename: string) => {
 		setSelectedFile(filename);
 		if (
@@ -139,6 +187,19 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 			!isMermaidFile(filename)
 		) {
 			setShowPreview(false);
+		}
+	};
+
+	// Voice recording handlers
+	const handleStartRecording = () => {
+		if (startRecording) {
+			startRecording();
+		}
+	};
+
+	const handleStopRecording = () => {
+		if (stopRecording) {
+			stopRecording();
 		}
 	};
 
@@ -496,6 +557,30 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 				{/* Actions */}
 				<div className="flex items-center gap-1 px-2 border-l border-border">
+					{/* Dictation button */}
+					{selectedFile && (
+						<MainToolTip
+							content={isRecording ? "Stop dictation" : "Start dictation"}
+							delayDuration={500}
+						>
+							<Button
+								variant={isRecording ? "destructive" : "ghost"}
+								size="sm"
+								onClick={
+									isRecording ? handleStopRecording : handleStartRecording
+								}
+								className="h-8 gap-2"
+								aria-label={isRecording ? "Stop dictation" : "Start dictation"}
+							>
+								{isRecording ? (
+									<Square className="h-4 w-4" />
+								) : (
+									<Mic className="h-4 w-4" />
+								)}
+							</Button>
+						</MainToolTip>
+					)}
+
 					{selectedFile &&
 						(isMarkdownFile(selectedFile) ||
 							isHtmlFile(selectedFile) ||
@@ -564,6 +649,22 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 
 			{/* File Path Breadcrumb */}
 			<FileBreadcrumb />
+
+			{/* Voice Visualizer - only show when recording */}
+			{isRecording && (
+				<div className="px-4 py-2 bg-background border-b border-border">
+					<VoiceVisualizer
+						controls={recorderControls}
+						height={35}
+						width="100%"
+						isControlPanelShown={false}
+						isDefaultUIShown={false}
+						onlyRecording={true}
+						speed={1}
+						barWidth={2}
+					/>
+				</div>
+			)}
 
 			{/* Editor Area */}
 			<div className="flex-1 overflow-hidden">

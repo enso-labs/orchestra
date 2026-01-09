@@ -17,7 +17,7 @@ export default function Home() {
 	useEffect(() => {
 		setAgent((prev: Agent) => ({
 			...prev,
-			model: '',
+			model: "",
 		}));
 	}, []);
 
