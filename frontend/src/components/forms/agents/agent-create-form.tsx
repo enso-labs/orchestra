@@ -151,20 +151,7 @@ export function AgentCreateForm() {
 		if (!agent.id) {
 			console.log("Saving agent configuration:", configData);
 			const response = await agentService.create(configData);
-			// If user set public toggle, publish the newly created agent
-			if (form.getValues("public")) {
-				try {
-					await agentService.publish(response.data.assistant_id);
-					alert(`${values.name} created and published successfully!`);
-				} catch (error) {
-					console.error("Failed to publish agent after creation:", error);
-					alert(
-						`${values.name} created but failed to publish. You can publish it manually from settings.`,
-					);
-				}
-			} else {
-				alert(`${values.name} created successfully!`);
-			}
+			alert(`${values.name} created successfully!`);
 			navigate(`/a/${response.data.assistant_id}`);
 		} else {
 			const confirmed = confirm(
@@ -690,34 +677,33 @@ export function AgentCreateForm() {
 						/>
 					</div>
 
-					{/* Public Toggle */}
-					<FormField
-						control={form.control}
-						name="public"
-						render={({ field }) => (
-							<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mt-4">
-								<div className="space-y-0.5">
-									<FormLabel className="text-base flex items-center gap-2">
-										{field.value ? (
-											<Globe className="h-4 w-4" />
-										) : (
-											<Lock className="h-4 w-4" />
-										)}
-										{field.value ? "Public" : "Private"}
-									</FormLabel>
-									<FormDescription>
-										{field.value
-											? "Anyone can view and use this agent via share link"
-											: "Only you can view and use this agent"}
-									</FormDescription>
-								</div>
-								<FormControl>
-									<Switch
-										checked={field.value}
-										onCheckedChange={async (checked) => {
-											field.onChange(checked);
-											// If agent exists, call publish/unpublish API
-											if (agent.id) {
+					{/* Public Toggle - Only show for existing agents */}
+					{agent.id && (
+						<FormField
+							control={form.control}
+							name="public"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 mt-4">
+									<div className="space-y-0.5">
+										<FormLabel className="text-base flex items-center gap-2">
+											{field.value ? (
+												<Globe className="h-4 w-4" />
+											) : (
+												<Lock className="h-4 w-4" />
+											)}
+											{field.value ? "Public" : "Private"}
+										</FormLabel>
+										<FormDescription>
+											{field.value
+												? "Anyone can view and use this agent via share link"
+												: "Only you can view and use this agent"}
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											checked={field.value}
+											onCheckedChange={async (checked) => {
+												field.onChange(checked);
 												try {
 													if (checked) {
 														await agentService.publish(agent.id);
@@ -734,14 +720,14 @@ export function AgentCreateForm() {
 														"Failed to update visibility. Please try again.",
 													);
 												}
-											}
-										}}
-										disabled={!isEditing}
-									/>
-								</FormControl>
-							</FormItem>
-						)}
-					/>
+											}}
+											disabled={!isEditing}
+										/>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+					)}
 				</div>
 
 				<div className="border border-border rounded-lg p-6">
