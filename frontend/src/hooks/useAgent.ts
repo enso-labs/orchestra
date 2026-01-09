@@ -39,6 +39,7 @@ export function useAgent() {
 	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
 	const [agents, setAgents] = useState<Agent[]>([]);
 	const [publicAgents, setPublicAgents] = useState<Agent[]>([]);
+	const [isLoadingAgents, setIsLoadingAgents] = useState(false);
 	const [isLoadingPublicAgents, setIsLoadingPublicAgents] = useState(false);
 	const [webSearchCheck, setWebSearchCheck] = useState<Checked>(() => {
 		const saved = localStorage.getItem("enso:tool:search");
@@ -111,8 +112,16 @@ export function useAgent() {
 	};
 
 	const handleGetAgents = async () => {
-		const response = await agentService.search();
-		setAgents(response.data.assistants);
+		setIsLoadingAgents(true);
+		try {
+			const response = await agentService.search();
+			setAgents(response.data.assistants);
+		} catch (error) {
+			console.error("Failed to fetch agents:", error);
+			setAgents([]);
+		} finally {
+			setIsLoadingAgents(false);
+		}
 	};
 
 	const handleGetPublicAgents = async (limit = 50, offset = 0) => {
@@ -137,10 +146,7 @@ export function useAgent() {
 				},
 			});
 			if (response.data.assistants && response.data.assistants.length > 0) {
-				setAgent({
-					...response.data.assistants[0],
-					system: response.data.assistants[0].prompt,
-				});
+				setAgent(response.data.assistants[0]);
 				updateQueryStateModel(response.data.assistants[0].model);
 				return;
 			}
@@ -152,15 +158,15 @@ export function useAgent() {
 		try {
 			const publicResponse = await agentService.getPublic(id);
 			if (publicResponse.data.assistant) {
-				// PublicAssistant doesn't include tools, mcp, a2a etc. for security
+				// PublicAssistant excludes system_prompt, tools, mcp, a2a, subagents for security
 				// Set defaults for fields that the UI expects
 				setAgent({
 					...publicResponse.data.assistant,
-					system: publicResponse.data.assistant.prompt,
-					tools: publicResponse.data.assistant.tools || [],
-					mcp: publicResponse.data.assistant.mcp || {},
-					a2a: publicResponse.data.assistant.a2a || {},
-					subagents: publicResponse.data.assistant.subagents || [],
+					system_prompt: publicResponse.data.assistant.system_prompt ?? "",
+					tools: publicResponse.data.assistant.tools ?? [],
+					mcp: publicResponse.data.assistant.mcp ?? {},
+					a2a: publicResponse.data.assistant.a2a ?? {},
+					subagents: publicResponse.data.assistant.subagents ?? [],
 				});
 				updateQueryStateModel(publicResponse.data.assistant.model);
 			}
@@ -221,6 +227,7 @@ export function useAgent() {
 		setAgentSystemMessage,
 		agents,
 		publicAgents,
+		isLoadingAgents,
 		isLoadingPublicAgents,
 		handleGetAgents,
 		handleGetPublicAgents,

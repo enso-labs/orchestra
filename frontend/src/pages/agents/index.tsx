@@ -40,6 +40,7 @@ function AgentIndexPage() {
 	const {
 		agents,
 		publicAgents,
+		isLoadingAgents,
 		isLoadingPublicAgents,
 		useEffectGetAgents,
 		useEffectGetPublicAgents,
@@ -90,12 +91,20 @@ function AgentIndexPage() {
 	};
 
 	// Helper to render agent card (reused for both tabs)
-	const renderAgentCard = (agent: Agent, isPublicView: boolean = false) => (
-		<Card
-			key={agent.id}
-			className="cursor-pointer hover:shadow-lg transition-shadow duration-200 group"
-			onClick={() => handleAgentClick(agent.id || "")}
-		>
+	const renderAgentCard = (agent: Agent, isPublicView: boolean = false) => {
+		const id = agent.id;
+		const clickable = Boolean(id);
+		return (
+			<Card
+				key={id ?? `${agent.name}-${agent.created_at ?? "unknown"}`}
+				className={[
+					"hover:shadow-lg transition-shadow duration-200 group",
+					clickable ? "cursor-pointer" : "opacity-60 cursor-not-allowed",
+				].join(" ")}
+				onClick={() => {
+					if (id) handleAgentClick(id);
+				}}
+			>
 			<CardHeader className="pb-3">
 				<div className="flex items-start justify-between">
 					<Computer className="h-5 w-5 text-primary flex-shrink-0" />
@@ -204,16 +213,17 @@ function AgentIndexPage() {
 						</div>
 					</div>
 
-					{/* Model info */}
-					{agent.model && (
-						<div className="text-xs text-muted-foreground">
-							Model: {agent.model}
-						</div>
-					)}
-				</div>
-			</CardContent>
+				{/* Model info */}
+				{agent.model && (
+					<div className="text-xs text-muted-foreground">
+						Model: {agent.model}
+					</div>
+				)}
+			</div>
+		</CardContent>
 		</Card>
-	);
+		);
+	};
 
 	// Helper to render empty state
 	const renderEmptyState = (isPublic: boolean) => (
@@ -243,14 +253,31 @@ function AgentIndexPage() {
 	);
 
 	// Helper to render loading state
-	const renderLoadingState = () => (
+	const renderLoadingState = (message: string) => (
 		<div className="flex items-center justify-center py-12">
 			<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-			<span className="ml-3 text-muted-foreground">
-				Loading public agents...
-			</span>
+			<span className="ml-3 text-muted-foreground">{message}</span>
 		</div>
 	);
+
+	// Helper to get results summary text
+	const getResultsSummary = () => {
+		if (activeTab === "my-agents") {
+			if (isLoadingAgents) {
+				return "Loading agents...";
+			}
+			return filteredAgents.length === agents.length
+				? `Showing all ${filteredAgents.length} agents`
+				: `Found ${filteredAgents.length} agents matching "${searchQuery}"`;
+		} else {
+			if (isLoadingPublicAgents) {
+				return "Loading public agents...";
+			}
+			return filteredPublicAgents.length === publicAgents.length
+				? `Showing all ${filteredPublicAgents.length} public agents`
+				: `Found ${filteredPublicAgents.length} public agents matching "${searchQuery}"`;
+		}
+	};
 
 	return (
 		<ChatLayout>
@@ -321,45 +348,41 @@ function AgentIndexPage() {
 										</TabsTrigger>
 									</TabsList>
 
-									{/* Results summary */}
-									<p className="text-sm text-muted-foreground">
-										{activeTab === "my-agents"
-											? filteredAgents.length === agents.length
-												? `Showing all ${filteredAgents.length} agents`
-												: `Found ${filteredAgents.length} agents matching "${searchQuery}"`
-											: filteredPublicAgents.length === publicAgents.length
-												? `Showing all ${filteredPublicAgents.length} public agents`
-												: `Found ${filteredPublicAgents.length} public agents matching "${searchQuery}"`}
-									</p>
+								{/* Results summary */}
+								<p className="text-sm text-muted-foreground">
+									{getResultsSummary()}
+								</p>
 								</div>
 
-								{/* My Agents Tab */}
-								<TabsContent value="my-agents" className="flex-1 min-h-0 mt-0">
-									<ScrollArea className="h-full">
-										<div className="pb-4">
-											{filteredAgents.length > 0 ? (
-												<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
-													{filteredAgents.map((agent: Agent) =>
-														renderAgentCard(agent, false),
-													)}
-												</div>
-											) : (
-												renderEmptyState(false)
-											)}
-										</div>
-									</ScrollArea>
-								</TabsContent>
+							{/* My Agents Tab */}
+							<TabsContent value="my-agents" className="flex-1 min-h-0 mt-0">
+								<ScrollArea className="h-full">
+									<div className="pb-4">
+										{isLoadingAgents ? (
+											renderLoadingState("Loading agents...")
+										) : filteredAgents.length > 0 ? (
+											<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
+												{filteredAgents.map((agent: Agent) =>
+													renderAgentCard(agent, false),
+												)}
+											</div>
+										) : (
+											renderEmptyState(false)
+										)}
+									</div>
+								</ScrollArea>
+							</TabsContent>
 
-								{/* Public Agents Tab */}
-								<TabsContent
-									value="public-agents"
-									className="flex-1 min-h-0 mt-0"
-								>
-									<ScrollArea className="h-full">
-										<div className="pb-4">
-											{isLoadingPublicAgents ? (
-												renderLoadingState()
-											) : filteredPublicAgents.length > 0 ? (
+							{/* Public Agents Tab */}
+							<TabsContent
+								value="public-agents"
+								className="flex-1 min-h-0 mt-0"
+							>
+								<ScrollArea className="h-full">
+									<div className="pb-4">
+										{isLoadingPublicAgents ? (
+											renderLoadingState("Loading public agents...")
+										) : filteredPublicAgents.length > 0 ? (
 												<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
 													{filteredPublicAgents.map((agent: Agent) =>
 														renderAgentCard(agent, true),
