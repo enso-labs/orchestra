@@ -216,6 +216,18 @@ async def stream_generator(
                 service_context=service_context,
             )
             input.messages[-1].model = agent.model
+            # Send metadata event with thread_id at the start of the stream
+            metadata_event = ujson.dumps(
+                (
+                    "metadata",
+                    {
+                        "thread_id": config["configurable"].get("thread_id"),
+                        "assistant_id": config["configurable"].get("assistant_id"),
+                        "project_id": config["configurable"].get("project_id"),
+                    },
+                )
+            )
+            yield f"data: {metadata_event}\n\n"
             async for chunk in agent.astream(
                 input,
                 stream_mode=["messages", "values"],
