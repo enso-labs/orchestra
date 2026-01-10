@@ -56,6 +56,7 @@
 		"query-string": "^9.2.0",
 		"react": "^18.3.1",
 		"react-chrono": "^3.2.1",
+		"react-complex-tree": "^2.6.1",
 		"react-dom": "^18.3.1",
 		"react-hook-form": "^7.63.0",
 		"react-icons": "^5.4.0",
