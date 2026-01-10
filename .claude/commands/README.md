@@ -6,6 +6,7 @@ Command files (.md) in this directory define reusable workflows that automate co
 
 | Command | Invocation | Purpose | Arguments |
 |---------|-----------|---------|-----------|
+| **announce-pr** | `/announce-pr [pr]` | Generate social media posts for PRs | PR number, URL, branch, or empty (current) |
 | **build** | `/build [target]` | Build backend, frontend, or all | `backend`, `frontend`, `all` (default) |
 | **plan** | `/plan [task]` | Create implementation plan in .plans/ | Task description |
 | **prime** | `/prime` | Understand project structure | None |
@@ -155,6 +156,33 @@ Every command must:
 - [ ] Follow existing patterns in this directory
 
 ## Available Commands
+
+### announce-pr.md
+**Purpose**: Generate social media announcements (LinkedIn and X.com) for pull requests
+
+**Usage**:
+```
+/announce-pr              # Current branch/commit
+/announce-pr 651          # Specific PR number
+/announce-pr https://github.com/ruska-ai/orchestra/pull/651  # PR URL
+/announce-pr feat/650-file-treeview-sidebar  # Specific branch
+```
+
+**Workflow**:
+1. Determine PR source (number, URL, branch, or current)
+2. Fetch PR information and diff using gh CLI or git
+3. Analyze changes (features, fixes, impact, affected areas)
+4. Generate LinkedIn post (1300-3000 chars, professional)
+5. Generate X.com post (<280 chars, concise)
+6. Format output with character counts and copy instructions
+
+**Output**:
+- PR information summary
+- LinkedIn post (ready to copy)
+- X.com post (ready to copy)
+- Copy instructions
+
+---
 
 ### build.md
 **Purpose**: Build Orchestra application (backend/frontend/all)
