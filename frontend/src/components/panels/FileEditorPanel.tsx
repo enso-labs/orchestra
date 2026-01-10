@@ -16,8 +16,14 @@ import {
 	Folder,
 	Mic,
 	Square,
+	PanelLeft,
 } from "lucide-react";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
+import {
+	Panel,
+	PanelGroup,
+	PanelResizeHandle,
+} from "react-resizable-panels";
 import apiClient from "@/lib/utils/apiClient";
 import { MainToolTip } from "../tooltips/MainToolTip";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -47,10 +53,7 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-
-interface FileEditorPanelProps {
-	filesMap: Map<string, any>;
-}
+import { FileTreeSidebar } from "./FileTree";
 
 interface BreadcrumbSegment {
 	label: string;
@@ -58,12 +61,27 @@ interface BreadcrumbSegment {
 	isLast: boolean;
 }
 
-export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
-	const { addFile, updateFileContent, removeFile, renameFile, setViewMode } =
-		useChatContext();
+export default function FileEditorPanel() {
+	// Use new fileSystem with proper tab semantics
+	const { 
+		fileSystem,
+		openTabs,
+		activeFile,
+		dirtyFiles,
+		createFile,
+		updateFile,
+		deleteFile,
+		renameFile: renameFileAction,
+		openTab,
+		closeTab,
+		selectTab,
+		markDirty,
+		markClean,
+		setViewMode,
+	} = useChatContext();
+	
 	const [copied, setCopied] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
-	const [dirtyFiles, setDirtyFiles] = useState<Set<string>>(new Set());
 
 	// Dialog states
 	const [showNewFileDialog, setShowNewFileDialog] = useState(false);
@@ -83,6 +101,9 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	// Debounce timer ref
 	const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+	// Tree sidebar state
+	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
+
 	// Voice recording state
 	const [isRecording, setIsRecording] = useState(false);
 	const recorderControls = useVoiceVisualizer();
@@ -100,17 +121,11 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		[],
 	);
 
-	// Flatten all files from all messages
-	const allFiles = useMemo(() => {
-		const files: Record<string, any> = {};
-		filesMap.forEach((messageFiles) => {
-			Object.assign(files, messageFiles);
-		});
-		return files;
-	}, [filesMap]);
-
-	const fileNames = Object.keys(allFiles);
-	const [selectedFile, setSelectedFile] = useState(fileNames[0]);
+	// Get all file paths from fileSystem for validation
+	const allFilePaths = useMemo(() => Array.from(fileSystem.keys()), [fileSystem]);
+	
+	// Use activeFile from context (no local selectedFile state needed)
+	const selectedFile = activeFile;
 
 	// Parse selected file path into breadcrumb segments
 	const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
@@ -125,22 +140,15 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		}));
 	}, [selectedFile]);
 
-	// Reset selected file when filesMap changes
+	// Reset preview when switching to non-previewable file
 	useEffect(() => {
-		if (fileNames.length > 0) {
-			if (!fileNames.includes(selectedFile)) {
-				const firstFile = fileNames[0];
-				setSelectedFile(firstFile);
-				if (
-					!isMarkdownFile(firstFile) &&
-					!isHtmlFile(firstFile) &&
-					!isMermaidFile(firstFile)
-				) {
-					setShowPreview(false);
-				}
-			}
+		if (selectedFile && 
+			!isMarkdownFile(selectedFile) && 
+			!isHtmlFile(selectedFile) && 
+			!isMermaidFile(selectedFile)) {
+			setShowPreview(false);
 		}
-	}, [fileNames, selectedFile]);
+	}, [selectedFile]);
 
 	// Track recording state changes
 	useEffect(() => {
@@ -171,23 +179,17 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 					const newContent = currentContent
 						? `${currentContent}\n${transcribedText}`
 						: transcribedText;
-					updateFileContent(selectedFile, newContent);
+					updateFile(selectedFile, newContent);
 				}
 			})
 			.catch((error) => {
 				console.error("Error transcribing audio:", error);
 			});
-	}, [recordedBlob, selectedFile, updateFileContent]);
+	}, [recordedBlob, selectedFile, updateFile]);
 
 	const handleFileSelect = (filename: string) => {
-		setSelectedFile(filename);
-		if (
-			!isMarkdownFile(filename) &&
-			!isHtmlFile(filename) &&
-			!isMermaidFile(filename)
-		) {
-			setShowPreview(false);
-		}
+		// Use selectTab which opens the tab if not already open
+		selectTab(filename);
 	};
 
 	// Voice recording handlers
@@ -236,7 +238,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	};
 
 	const getFileContent = (filename: string): string => {
-		const file = allFiles[filename];
+		const file = fileSystem.get(filename);
 		if (!file) return "";
 		return Array.isArray(file.content) ? file.content.join("\n") : file.content;
 	};
@@ -260,7 +262,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		if (!path.startsWith("/")) return "Path must start with /";
 		if (!/^\/[a-zA-Z0-9_\-./]+$/.test(path))
 			return "Invalid characters in path";
-		if (fileNames.includes(path) && path !== excludePath)
+		if (allFilePaths.includes(path) && path !== excludePath)
 			return "File already exists";
 		return "";
 	};
@@ -277,24 +279,20 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 			if (!selectedFile || value === undefined) return;
 
 			// Mark as dirty immediately
-			setDirtyFiles((prev) => new Set(prev).add(selectedFile));
+			markDirty(selectedFile);
 
 			// Debounce the actual update
 			if (debounceRef.current) clearTimeout(debounceRef.current);
 			debounceRef.current = setTimeout(() => {
-				updateFileContent(selectedFile, value);
+				updateFile(selectedFile, value);
 				// Clear dirty state after save
-				setDirtyFiles((prev) => {
-					const next = new Set(prev);
-					next.delete(selectedFile);
-					return next;
-				});
+				markClean(selectedFile);
 			}, 300);
 		},
-		[selectedFile, updateFileContent],
+		[selectedFile, updateFile, markDirty, markClean],
 	);
 
-	// Create new file
+	// Create new file (createFile auto-opens tab and selects)
 	const handleCreateFile = () => {
 		const normalizedPath = normalizePath(newFilePath);
 		const error = validatePath(normalizedPath);
@@ -302,28 +300,22 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 			setPathError(error);
 			return;
 		}
-		addFile(normalizedPath, "");
-		setSelectedFile(normalizedPath);
+		createFile(normalizedPath, "");
 		setShowNewFileDialog(false);
 		setNewFilePath("");
 		setPathError("");
 	};
 
-	// Delete file
+	// Delete file (deleteFile handles tab closing and selection)
 	const handleDeleteFile = () => {
 		if (!fileToDelete) return;
-		removeFile(fileToDelete);
+		deleteFile(fileToDelete);
 		setShowDeleteDialog(false);
 		setFileToDelete(null);
 		// If this was the last file, reset to chat mode
-		if (fileNames.length === 1) {
+		if (allFilePaths.length === 1) {
 			setViewMode("chat");
-			return;
 		}
-		// Select adjacent file
-		const idx = fileNames.indexOf(fileToDelete);
-		const nextFile = fileNames[idx + 1] || fileNames[idx - 1];
-		if (nextFile) setSelectedFile(nextFile);
 	};
 
 	// Start delete flow
@@ -333,7 +325,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		setShowDeleteDialog(true);
 	};
 
-	// Rename file
+	// Rename file (renameFileAction handles tab and selection update)
 	const handleRenameFile = () => {
 		if (!fileToRename) return;
 		const normalizedPath = normalizePath(renamePath);
@@ -342,8 +334,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 			setPathError(error);
 			return;
 		}
-		renameFile(fileToRename, normalizedPath);
-		setSelectedFile(normalizedPath);
+		renameFileAction(fileToRename, normalizedPath);
 		setShowRenameDialog(false);
 		setFileToRename(null);
 		setRenamePath("");
@@ -369,8 +360,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 		const normalizedPath = normalizePath(inlineRenamePath);
 		const error = validatePath(normalizedPath, inlineRenaming);
 		if (!error && normalizedPath !== inlineRenaming) {
-			renameFile(inlineRenaming, normalizedPath);
-			setSelectedFile(normalizedPath);
+			renameFileAction(inlineRenaming, normalizedPath);
 		}
 		setInlineRenaming(null);
 		setInlineRenamePath("");
@@ -416,7 +406,7 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 	// Download all files as ZIP
 	const handleDownloadAllAsZip = async () => {
 		const zip = new JSZip();
-		fileNames.forEach((filename) => {
+		allFilePaths.forEach((filename) => {
 			const content = getFileContent(filename);
 			zip.file(filename, content);
 		});
@@ -478,245 +468,299 @@ export default function FileEditorPanel({ filesMap }: FileEditorPanelProps) {
 			role="main"
 			aria-label="File editor"
 		>
-			{/* File Tabs (VSCode-like) */}
-			<div className="flex items-center border-b border-border bg-muted/30">
-				<ScrollArea className="flex-1">
-					<div className="flex">
-						{fileNames.map((filename) => (
-							<ContextMenu key={filename}>
-								<ContextMenuTrigger asChild>
-									<button
-										onClick={() => handleFileSelect(filename)}
-										onDoubleClick={() => handleDoubleClick(filename)}
-										className={`
-											px-3 py-2 text-sm border-r border-border
-											flex items-center gap-1.5 min-w-fit whitespace-nowrap
-											hover:bg-accent transition-colors group relative
-											${
-												selectedFile === filename
-													? "bg-background text-foreground border-b-2 border-b-primary"
-													: "text-muted-foreground"
-											}
-										`}
-									>
-										<FileText className="h-3 w-3 flex-shrink-0" />
-										{inlineRenaming === filename ? (
-											<input
-												ref={renameInputRef}
-												value={inlineRenamePath}
-												onChange={(e) => setInlineRenamePath(e.target.value)}
-												onBlur={handleInlineRenameSubmit}
-												onKeyDown={handleInlineRenameKeyDown}
-												onClick={(e) => e.stopPropagation()}
-												className="bg-transparent border border-primary rounded px-1 text-sm w-32 focus:outline-none"
-											/>
-										) : (
-											<>
-												{dirtyFiles.has(filename) && (
-													<span className="text-primary text-xs">•</span>
-												)}
-												<span>{filename.split("/").pop()}</span>
-											</>
-										)}
-										{/* Close button */}
-										<button
-											onClick={(e) => initiateDelete(filename, e)}
-											className="ml-1 p-1 md:p-0.5 rounded hover:bg-destructive/20 opacity-0 group-hover:opacity-100 transition-opacity"
-											title="Close file"
-											aria-label={`Close ${filename}`}
-										>
-											<X className="h-4 w-4 md:h-3 md:w-3 hover:text-destructive" />
-										</button>
-									</button>
-								</ContextMenuTrigger>
-								<ContextMenuContent>
-									<ContextMenuItem onClick={() => initiateRename(filename)}>
-										Rename
-									</ContextMenuItem>
-									<ContextMenuItem
-										onClick={() => initiateDelete(filename)}
-										className="text-destructive"
-									>
-										Delete
-									</ContextMenuItem>
-								</ContextMenuContent>
-							</ContextMenu>
-						))}
-						{/* New File Button */}
-						<button
-							onClick={() => setShowNewFileDialog(true)}
-							className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-							title="New File"
-							aria-label="Create new file"
-						>
-							<Plus className="h-4 w-4" />
-						</button>
-					</div>
-					<ScrollBar orientation="horizontal" />
-				</ScrollArea>
-
-				{/* Actions */}
-				<div className="flex items-center gap-1 px-2 border-l border-border">
-					{/* Dictation button */}
-					{selectedFile && (
-						<MainToolTip
-							content={isRecording ? "Stop dictation" : "Start dictation"}
-							delayDuration={500}
-						>
-							<Button
-								variant={isRecording ? "destructive" : "ghost"}
-								size="sm"
-								onClick={
-									isRecording ? handleStopRecording : handleStartRecording
-								}
-								className="h-8 gap-2"
-								aria-label={isRecording ? "Stop dictation" : "Start dictation"}
-							>
-								{isRecording ? (
-									<Square className="h-4 w-4" />
-								) : (
-									<Mic className="h-4 w-4" />
-								)}
-							</Button>
-						</MainToolTip>
-					)}
-
-					{selectedFile &&
-						(isMarkdownFile(selectedFile) ||
-							isHtmlFile(selectedFile) ||
-							isMermaidFile(selectedFile)) && (
-							<Button
-								variant={showPreview ? "secondary" : "ghost"}
-								size="sm"
-								onClick={() => setShowPreview(!showPreview)}
-								className="h-8 gap-2"
-								title={
-									showPreview
-										? "Show code"
-										: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
-								}
-								aria-label={
-									showPreview
-										? "Show code"
-										: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
-								}
-							>
-								<Eye className="h-4 w-4" />
-							</Button>
-						)}
-
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={handleCopy}
-						className="h-8 gap-2"
-						title="Copy current file"
-						aria-label="Copy file content to clipboard"
-					>
-						{copied ? (
-							<Check className="h-4 w-4 text-green-500" />
-						) : (
-							<Copy className="h-4 w-4" />
-						)}
-					</Button>
-
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={handleDownloadFile}
-						className="h-8 gap-2"
-						title="Download current file"
-						aria-label="Download current file"
-					>
-						<Download className="h-4 w-4" />
-					</Button>
-
-					{fileNames.length > 1 && (
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={handleDownloadAllAsZip}
-							className="h-8 gap-2 text-xs"
-							title="Download all as ZIP"
-							aria-label="Download all files as ZIP"
-						>
-							<Download className="h-4 w-4" />
-							All
-						</Button>
-					)}
-				</div>
-			</div>
-
-			{/* File Path Breadcrumb */}
-			<FileBreadcrumb />
-
-			{/* Voice Visualizer - only show when recording */}
-			{isRecording && (
-				<div className="px-4 py-2 bg-background border-b border-border">
-					<VoiceVisualizer
-						controls={recorderControls}
-						height={35}
-						width="100%"
-						isControlPanelShown={false}
-						isDefaultUIShown={false}
-						onlyRecording={true}
-						speed={1}
-						barWidth={2}
+			<PanelGroup direction="horizontal" className="flex-1">
+				{/* Tree Sidebar Panel */}
+				<Panel
+					defaultSize={20}
+					minSize={15}
+					maxSize={35}
+					collapsible
+					collapsedSize={0}
+					onCollapse={() => setIsTreeCollapsed(true)}
+					onExpand={() => setIsTreeCollapsed(false)}
+					className={isTreeCollapsed ? "hidden" : ""}
+				>
+					<FileTreeSidebar
+						selectedFile={selectedFile}
+						dirtyFiles={dirtyFiles}
+						onFileSelect={handleFileSelect}
+						onNewFile={() => setShowNewFileDialog(true)}
+						onRename={initiateRename}
+						onDelete={(filename) => initiateDelete(filename)}
+						isCollapsed={isTreeCollapsed}
+						onToggleCollapse={() => setIsTreeCollapsed(!isTreeCollapsed)}
 					/>
-				</div>
-			)}
+				</Panel>
 
-			{/* Editor Area */}
-			<div className="flex-1 overflow-hidden">
-				{selectedFile && allFiles[selectedFile] ? (
-					<>
-						{showPreview && isMarkdownFile(selectedFile) ? (
-							<ScrollArea className="h-full">
-								<div className="p-6 max-w-4xl mx-auto">
-									<MarkdownCard content={getFileContent(selectedFile)} />
+				{/* Resize Handle */}
+				{!isTreeCollapsed && (
+					<PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize" />
+				)}
+
+				{/* Editor Panel */}
+				<Panel defaultSize={80}>
+					<div className="h-full flex flex-col">
+						{/* File Tabs (VSCode-like) */}
+						<div className="flex items-center border-b border-border bg-muted/30">
+							{/* Toggle tree button when collapsed */}
+							{isTreeCollapsed && (
+								<MainToolTip content="Show file explorer" delayDuration={300}>
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => setIsTreeCollapsed(false)}
+										className="h-9 px-2 border-r border-border rounded-none"
+										aria-label="Show file explorer"
+									>
+										<PanelLeft className="h-4 w-4" />
+									</Button>
+								</MainToolTip>
+							)}
+
+							<ScrollArea className="flex-1">
+								<div className="flex">
+									{/* Iterate over openTabs (VSCode-like: only show open tabs) */}
+									{openTabs.map((filename: string) => (
+										<ContextMenu key={filename}>
+											<ContextMenuTrigger asChild>
+												<button
+													onClick={() => handleFileSelect(filename)}
+													onDoubleClick={() => handleDoubleClick(filename)}
+													className={`
+														px-3 py-2 text-sm border-r border-border
+														flex items-center gap-1.5 min-w-fit whitespace-nowrap
+														hover:bg-accent transition-colors group relative
+														${
+															selectedFile === filename
+																? "bg-background text-foreground border-b-2 border-b-primary"
+																: "text-muted-foreground"
+														}
+													`}
+												>
+													<FileText className="h-3 w-3 flex-shrink-0" />
+													{inlineRenaming === filename ? (
+														<input
+															ref={renameInputRef}
+															value={inlineRenamePath}
+															onChange={(e) => setInlineRenamePath(e.target.value)}
+															onBlur={handleInlineRenameSubmit}
+															onKeyDown={handleInlineRenameKeyDown}
+															onClick={(e) => e.stopPropagation()}
+															className="bg-transparent border border-primary rounded px-1 text-sm w-32 focus:outline-none"
+														/>
+													) : (
+														<>
+															{dirtyFiles.has(filename) && (
+																<span className="text-primary text-xs">•</span>
+															)}
+															<span>{filename.split("/").pop()}</span>
+														</>
+													)}
+													{/* Close tab button - CLOSES TAB, does NOT delete file */}
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															closeTab(filename);
+														}}
+														className="ml-1 p-1 md:p-0.5 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+														title="Close tab"
+														aria-label={`Close ${filename} tab`}
+													>
+														<X className="h-4 w-4 md:h-3 md:w-3" />
+													</button>
+												</button>
+											</ContextMenuTrigger>
+											<ContextMenuContent>
+												<ContextMenuItem onClick={() => initiateRename(filename)}>
+													Rename
+												</ContextMenuItem>
+												<ContextMenuItem
+													onClick={() => initiateDelete(filename)}
+													className="text-destructive"
+												>
+													Delete
+												</ContextMenuItem>
+											</ContextMenuContent>
+										</ContextMenu>
+									))}
+									{/* New File Button */}
+									<button
+										onClick={() => setShowNewFileDialog(true)}
+										className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+										title="New File"
+										aria-label="Create new file"
+									>
+										<Plus className="h-4 w-4" />
+									</button>
 								</div>
+								<ScrollBar orientation="horizontal" />
 							</ScrollArea>
-						) : showPreview && isHtmlFile(selectedFile) ? (
-							<iframe
-								srcDoc={getFileContent(selectedFile)}
-								sandbox="allow-same-origin"
-								className="w-full h-full border-0 bg-white"
-								title={`Preview of ${selectedFile}`}
-							/>
-						) : showPreview && isMermaidFile(selectedFile) ? (
-							<ScrollArea className="h-full">
-								<div className="p-6 max-w-4xl mx-auto">
-									<MarkdownCard
-										content={`\`\`\`mermaid\n${getFileContent(selectedFile)}\n\`\`\``}
-									/>
-								</div>
-							</ScrollArea>
-						) : (
-							<MonacoEditor
-								key={selectedFile}
-								value={getFileContent(selectedFile)}
-								language={getLanguage(selectedFile)}
-								handleChange={handleContentChange}
-								height="100%"
-								options={monacoOptions}
-							/>
+
+							{/* Actions */}
+							<div className="flex items-center gap-1 px-2 border-l border-border">
+								{/* Dictation button */}
+								{selectedFile && (
+									<MainToolTip
+										content={isRecording ? "Stop dictation" : "Start dictation"}
+										delayDuration={500}
+									>
+										<Button
+											variant={isRecording ? "destructive" : "ghost"}
+											size="sm"
+											onClick={
+												isRecording ? handleStopRecording : handleStartRecording
+											}
+											className="h-8 gap-2"
+											aria-label={isRecording ? "Stop dictation" : "Start dictation"}
+										>
+											{isRecording ? (
+												<Square className="h-4 w-4" />
+											) : (
+												<Mic className="h-4 w-4" />
+											)}
+										</Button>
+									</MainToolTip>
+								)}
+
+								{selectedFile &&
+									(isMarkdownFile(selectedFile) ||
+										isHtmlFile(selectedFile) ||
+										isMermaidFile(selectedFile)) && (
+										<Button
+											variant={showPreview ? "secondary" : "ghost"}
+											size="sm"
+											onClick={() => setShowPreview(!showPreview)}
+											className="h-8 gap-2"
+											title={
+												showPreview
+													? "Show code"
+													: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
+											}
+											aria-label={
+												showPreview
+													? "Show code"
+													: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
+											}
+										>
+											<Eye className="h-4 w-4" />
+										</Button>
+									)}
+
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={handleCopy}
+									className="h-8 gap-2"
+									title="Copy current file"
+									aria-label="Copy file content to clipboard"
+								>
+									{copied ? (
+										<Check className="h-4 w-4 text-green-500" />
+									) : (
+										<Copy className="h-4 w-4" />
+									)}
+								</Button>
+
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={handleDownloadFile}
+									className="h-8 gap-2"
+									title="Download current file"
+									aria-label="Download current file"
+								>
+									<Download className="h-4 w-4" />
+								</Button>
+
+								{allFilePaths.length > 1 && (
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={handleDownloadAllAsZip}
+										className="h-8 gap-2 text-xs"
+										title="Download all as ZIP"
+										aria-label="Download all files as ZIP"
+									>
+										<Download className="h-4 w-4" />
+										All
+									</Button>
+								)}
+							</div>
+						</div>
+
+						{/* File Path Breadcrumb */}
+						<FileBreadcrumb />
+
+						{/* Voice Visualizer - only show when recording */}
+						{isRecording && (
+							<div className="px-4 py-2 bg-background border-b border-border">
+								<VoiceVisualizer
+									controls={recorderControls}
+									height={35}
+									width="100%"
+									isControlPanelShown={false}
+									isDefaultUIShown={false}
+									onlyRecording={true}
+									speed={1}
+									barWidth={2}
+								/>
+							</div>
 						)}
-					</>
-				) : fileNames.length === 0 ? (
-					<div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
-						<FileText className="h-12 w-12 opacity-50" />
-						<p>No files yet</p>
-						<Button
-							variant="outline"
-							onClick={() => setShowNewFileDialog(true)}
-							className="gap-2"
-						>
-							<Plus className="h-4 w-4" />
-							Create File
-						</Button>
+
+						{/* Editor Area */}
+						<div className="flex-1 overflow-hidden">
+							{selectedFile && fileSystem.has(selectedFile) ? (
+								<>
+									{showPreview && isMarkdownFile(selectedFile) ? (
+										<ScrollArea className="h-full">
+											<div className="p-6 max-w-4xl mx-auto">
+												<MarkdownCard content={getFileContent(selectedFile)} />
+											</div>
+										</ScrollArea>
+									) : showPreview && isHtmlFile(selectedFile) ? (
+										<iframe
+											srcDoc={getFileContent(selectedFile)}
+											sandbox="allow-same-origin"
+											className="w-full h-full border-0 bg-white"
+											title={`Preview of ${selectedFile}`}
+										/>
+									) : showPreview && isMermaidFile(selectedFile) ? (
+										<ScrollArea className="h-full">
+											<div className="p-6 max-w-4xl mx-auto">
+												<MarkdownCard
+													content={`\`\`\`mermaid\n${getFileContent(selectedFile)}\n\`\`\``}
+												/>
+											</div>
+										</ScrollArea>
+									) : (
+										<MonacoEditor
+											key={selectedFile}
+											value={getFileContent(selectedFile)}
+											language={getLanguage(selectedFile)}
+											handleChange={handleContentChange}
+											height="100%"
+											options={monacoOptions}
+										/>
+									)}
+								</>
+							) : allFilePaths.length === 0 ? (
+								<div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+									<FileText className="h-12 w-12 opacity-50" />
+									<p>No files yet</p>
+									<Button
+										variant="outline"
+										onClick={() => setShowNewFileDialog(true)}
+										className="gap-2"
+									>
+										<Plus className="h-4 w-4" />
+										Create File
+									</Button>
+								</div>
+							) : null}
+						</div>
 					</div>
-				) : null}
-			</div>
+				</Panel>
+			</PanelGroup>
 
 			{/* New File Dialog */}
 			<Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>

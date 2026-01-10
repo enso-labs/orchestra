@@ -142,7 +142,7 @@ export default function ThreadPage() {
 							className="hidden md:flex flex-1"
 						>
 							<ResizablePanel defaultSize={60} minSize={50} maxSize={80}>
-								<FileEditorPanel filesMap={filesMap} />
+								<FileEditorPanel />
 							</ResizablePanel>
 
 							<ResizableHandle withHandle />
@@ -213,7 +213,7 @@ export default function ThreadPage() {
 
 										{/* Editor content */}
 										<div className="flex-1 overflow-hidden">
-											<FileEditorPanel filesMap={filesMap} />
+											<FileEditorPanel />
 										</div>
 									</SheetContent>
 								</Sheet>

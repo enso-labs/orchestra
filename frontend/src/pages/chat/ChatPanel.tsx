@@ -76,7 +76,7 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 					>
 						{/* LEFT: File Editor Panel */}
 						<ResizablePanel defaultSize={60} minSize={50} maxSize={80}>
-							<FileEditorPanel filesMap={filesMap} />
+							<FileEditorPanel />
 						</ResizablePanel>
 
 						<ResizableHandle withHandle />
@@ -140,7 +140,7 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 
 									{/* Editor content */}
 									<div className="flex-1 overflow-hidden">
-										<FileEditorPanel filesMap={filesMap} />
+										<FileEditorPanel />
 									</div>
 								</SheetContent>
 							</Sheet>

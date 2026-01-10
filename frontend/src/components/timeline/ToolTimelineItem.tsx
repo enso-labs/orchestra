@@ -54,7 +54,9 @@ function ToolContent({
 	let messageArtifact: any = null;
 	try {
 		messageArtifact = JSON.parse(message.artifact);
-	} catch {}
+	} catch {
+		// Ignore JSON parse errors - artifact may not be valid JSON
+	}
 
 	if (messageArtifact?.data && messageArtifact?.layout) {
 		return {
