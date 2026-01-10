@@ -5,16 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.0.2-rc140
+## v0.0.2-rc141
 
 ### Changed
   - feat/650-file-treeview-sidebar (2026-01-10)
   - feat/633-public-agents-display (2026-01-08)
   - feat/471-public-agents (2026-01-08)
-- FEAT: Render the todos state from useThread in Session
-- FEAT: Not Required to pass assistant to ruska chat
-- FEAT: CLI Should have Command for getting current version info and heath info
-- FEAT: Truncate Tool Calls. Allow extension (cli) #54
+  - FEAT: Render the todos state from useThread in Session
+  - FEAT: Not Required to pass assistant to ruska chat
+  - FEAT: CLI Should have Command for getting current version info and heath info
+  - FEAT: Truncate Tool Calls. Allow extension (cli) #54
 
 ### Fixed
 
