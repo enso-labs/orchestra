@@ -1,5 +1,6 @@
 import Editor from "@monaco-editor/react";
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "@/hooks/useTheme";
 
 interface Props {
 	value: string;
@@ -27,6 +28,16 @@ function MonacoEditor({
 	const [error, setError] = useState("");
 	const [editorValue, setEditorValue] = useState(value);
 	const prevValueRef = useRef(value);
+	const { theme } = useTheme();
+
+	// Select Monaco theme based on current app theme
+	const getEditorTheme = () => {
+		if (theme === "light") {
+			return "light";
+		}
+		// Use dark theme for both "dark" and "gray" themes, and system default
+		return "vs-dark";
+	};
 
 	// Only update editor value when the external value prop changes (not when editorValue changes)
 	useEffect(() => {
@@ -91,7 +102,7 @@ function MonacoEditor({
 					onChange={onChange}
 					defaultLanguage={language || "json"}
 					height={height || "80vh"}
-					theme="vs-dark"
+					theme={getEditorTheme()}
 					options={{
 						fontSize: options?.fontSize || 12,
 						tabSize: options?.tabSize || 2,
