@@ -40,7 +40,6 @@ export default function ProjectPage() {
 		useListCheckpointsEffect,
 		useModelsEffect,
 		viewMode,
-		filesMap,
 	} = useChatContext();
 
 	const [project, setProject] = useState<Project | null>(null);

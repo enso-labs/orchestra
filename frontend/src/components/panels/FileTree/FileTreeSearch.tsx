@@ -47,7 +47,7 @@ export function FileTreeSearch({ items, onFilterChange }: FileTreeSearchProps) {
 		const filtered: Record<string, FileTreeItem> = {
 			root: {
 				...items.root,
-				children: items.root.children.filter((c) => matching.has(c)),
+				children: (items.root.children || []).filter((c) => matching.has(String(c))),
 			},
 		};
 
@@ -55,7 +55,7 @@ export function FileTreeSearch({ items, onFilterChange }: FileTreeSearchProps) {
 			if (items[path] && path !== "root") {
 				filtered[path] = {
 					...items[path],
-					children: items[path].children.filter((c) => matching.has(c)),
+					children: (items[path].children || []).filter((c) => matching.has(String(c))),
 				};
 			}
 		}

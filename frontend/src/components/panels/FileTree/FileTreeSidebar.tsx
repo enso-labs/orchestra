@@ -116,10 +116,18 @@ export function FileTreeSidebar({
 		const isSelected = selectedFile === itemKey;
 		const isDirty = dirtyFiles.has(itemKey);
 
+		// Normalize item for FileTreeNode (ensure string types)
+		const normalizedItem = {
+			index: String(item.index),
+			data: item.data,
+			isFolder: item.isFolder,
+			children: (item.children || []).map((c) => String(c)),
+		};
+
 		return (
 			<div key={itemKey}>
 				<FileTreeNode
-					item={item}
+					item={normalizedItem}
 					depth={depth}
 					isSelected={isSelected}
 					isDirty={isDirty}
@@ -132,10 +140,10 @@ export function FileTreeSidebar({
 				/>
 
 				{/* Render children if folder is expanded */}
-				{item.isFolder && isExpanded && item.children.length > 0 && (
+				{item.isFolder && isExpanded && (item.children || []).length > 0 && (
 					<div role="group" aria-label={`Contents of ${item.data.name}`}>
-						{item.children.map((childKey) =>
-							renderTreeNode(childKey, depth + 1),
+						{(item.children || []).map((childKey) =>
+							renderTreeNode(String(childKey), depth + 1),
 						)}
 					</div>
 				)}
@@ -200,8 +208,8 @@ export function FileTreeSidebar({
 			{/* Tree content */}
 			<ScrollArea className="flex-1">
 				<div className="py-1" role="group" aria-label="Files">
-					{displayItems.root?.children.map((childKey) =>
-						renderTreeNode(childKey, 0),
+					{(displayItems.root?.children || []).map((childKey) =>
+						renderTreeNode(String(childKey), 0),
 					)}
 				</div>
 			</ScrollArea>

@@ -72,13 +72,26 @@ export default function FileEditorPanel() {
 		updateFile,
 		deleteFile,
 		renameFile: renameFileAction,
-		openTab,
 		closeTab,
 		selectTab,
 		markDirty,
 		markClean,
 		setViewMode,
-	} = useChatContext();
+	} = useChatContext() as {
+		fileSystem: Map<string, { content: string[]; created_at: string; modified_at: string; source?: string }>;
+		openTabs: string[];
+		activeFile: string | null;
+		dirtyFiles: Set<string>;
+		createFile: (path: string, content?: string) => void;
+		updateFile: (path: string, content: string) => void;
+		deleteFile: (path: string) => void;
+		renameFile: (oldPath: string, newPath: string) => void;
+		closeTab: (path: string) => void;
+		selectTab: (path: string) => void;
+		markDirty: (path: string) => void;
+		markClean: (path: string) => void;
+		setViewMode: (mode: string) => void;
+	};
 	
 	const [copied, setCopied] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
@@ -133,7 +146,7 @@ export default function FileEditorPanel() {
 
 		const parts = selectedFile.replace(/^\//, "").split("/").filter(Boolean);
 
-		return parts.map((part, index) => ({
+		return parts.map((part: string, index: number) => ({
 			label: part,
 			path: "/" + parts.slice(0, index + 1).join("/"),
 			isLast: index === parts.length - 1,
@@ -406,8 +419,8 @@ export default function FileEditorPanel() {
 	// Download all files as ZIP
 	const handleDownloadAllAsZip = async () => {
 		const zip = new JSZip();
-		allFilePaths.forEach((filename) => {
-			const content = getFileContent(filename);
+		allFilePaths.forEach((filename: string) => {
+			const content = getFileContent(filename) || "";
 			zip.file(filename, content);
 		});
 		try {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import useFileSystem, { type FileData } from "@/hooks/useFileSystem";
 
@@ -98,8 +98,6 @@ describe("useFileSystem", () => {
 			act(() => {
 				result.current.createFile("/test.txt", "original");
 			});
-
-			const originalModified = result.current.fileSystem.get("/test.txt")?.modified_at;
 
 			// Wait a tiny bit to ensure timestamp difference
 			act(() => {

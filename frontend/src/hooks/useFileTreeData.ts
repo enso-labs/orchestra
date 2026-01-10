@@ -157,7 +157,7 @@ export function useFileTreeData(fileSystem: Map<string, FileData>) {
 		// Tree is empty if it only has the root node with no children
 		return (
 			Object.keys(treeItems).length <= 1 ||
-			(treeItems.root && treeItems.root.children.length === 0)
+			(treeItems.root && (treeItems.root.children || []).length === 0)
 		);
 	}, [treeItems]);
 

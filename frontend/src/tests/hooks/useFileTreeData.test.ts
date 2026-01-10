@@ -76,7 +76,7 @@ describe("useFileTreeData", () => {
 			const tree = buildTreeFromPaths(fileSystem);
 
 			// Folder /zzz should come before files
-			const rootChildren = tree.root.children;
+			const rootChildren = tree.root.children || [];
 			const zzzIndex = rootChildren.indexOf("/zzz");
 			const aaaIndex = rootChildren.indexOf("/aaa.txt");
 			const bbbIndex = rootChildren.indexOf("/bbb.txt");

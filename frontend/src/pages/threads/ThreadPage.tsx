@@ -45,7 +45,6 @@ export default function ThreadPage() {
 		useListCheckpointsEffect,
 		useModelsEffect,
 		viewMode,
-		filesMap,
 		setTodos,
 		useLoadThreadEffect,
 		threadLoading,
