@@ -22,15 +22,16 @@ export default function ChatProvider({
 	const threadHooks = useThread();
 	const fileSystemHooks = useFileSystem();
 
-	// Track previous filesMap size to detect changes
+	// Track previous filesMap to detect changes
 	const prevFilesMapRef = useRef<Map<string, unknown>>(new Map());
+
+	// Destructure stable references needed for the sync effect
+	const { filesMap } = chatHooks;
+	const { importFiles, dirtyFiles } = fileSystemHooks;
 
 	// Sync filesMap (legacy nested structure) → fileSystem (flat structure)
 	// This bridges the SSE handler output to the new fileSystem state
 	useEffect(() => {
-		const { filesMap } = chatHooks;
-		const { importFiles, fileSystem } = fileSystemHooks;
-
 		// Skip if filesMap hasn't changed
 		if (filesMap === prevFilesMapRef.current) return;
 		prevFilesMapRef.current = filesMap;
@@ -43,8 +44,8 @@ export default function ChatProvider({
 			if (!messageFiles || typeof messageFiles !== "object") return;
 
 			Object.entries(messageFiles).forEach(([path, data]: [string, unknown]) => {
-				// Skip if already in fileSystem (don't overwrite user edits)
-				if (fileSystem.has(path)) return;
+				// Skip only user-modified files (dirty), allow SSE to update non-dirty existing files
+				if (dirtyFiles.has(path)) return;
 
 				const fileData = data as { content?: string | string[]; created_at?: string; modified_at?: string };
 				flatFiles.set(path, {
@@ -62,14 +63,18 @@ export default function ChatProvider({
 		if (flatFiles.size > 0) {
 			importFiles(flatFiles);
 		}
-	}, [chatHooks.filesMap, fileSystemHooks]);
+	}, [filesMap, importFiles, dirtyFiles]);
+
+	// Destructure for the clear effect
+	const { clearFileSystem } = fileSystemHooks;
+	const messagesLength = chatHooks.messages.length;
 
 	// Clear fileSystem when messages are cleared
 	useEffect(() => {
-		if (chatHooks.messages.length === 0) {
-			fileSystemHooks.clearFileSystem();
+		if (messagesLength === 0) {
+			clearFileSystem();
 		}
-	}, [chatHooks.messages.length, fileSystemHooks]);
+	}, [messagesLength, clearFileSystem]);
 
 	return (
 		<ChatContext.Provider

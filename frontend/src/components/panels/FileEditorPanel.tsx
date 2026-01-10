@@ -200,10 +200,10 @@ export default function FileEditorPanel() {
 			});
 	}, [recordedBlob, selectedFile, updateFile]);
 
-	const handleFileSelect = (filename: string) => {
+	const handleFileSelect = useCallback((filename: string) => {
 		// Use selectTab which opens the tab if not already open
 		selectTab(filename);
-	};
+	}, [selectTab]);
 
 	// Voice recording handlers
 	const handleStartRecording = () => {
@@ -332,11 +332,11 @@ export default function FileEditorPanel() {
 	};
 
 	// Start delete flow
-	const initiateDelete = (filename: string, e?: React.MouseEvent) => {
+	const initiateDelete = useCallback((filename: string, e?: React.MouseEvent) => {
 		e?.stopPropagation();
 		setFileToDelete(filename);
 		setShowDeleteDialog(true);
-	};
+	}, []);
 
 	// Rename file (renameFileAction handles tab and selection update)
 	const handleRenameFile = () => {
@@ -355,11 +355,28 @@ export default function FileEditorPanel() {
 	};
 
 	// Start rename flow (context menu)
-	const initiateRename = (filename: string) => {
+	const initiateRename = useCallback((filename: string) => {
 		setFileToRename(filename);
 		setRenamePath(filename);
 		setShowRenameDialog(true);
-	};
+	}, []);
+
+	// Stable callbacks for FileTreeSidebar to prevent memo invalidation
+	const handleOpenNewFileDialog = useCallback(() => {
+		setShowNewFileDialog(true);
+	}, []);
+
+	const handleTreeCollapse = useCallback(() => {
+		setIsTreeCollapsed(true);
+	}, []);
+
+	const handleTreeExpand = useCallback(() => {
+		setIsTreeCollapsed(false);
+	}, []);
+
+	const handleToggleTreeCollapse = useCallback(() => {
+		setIsTreeCollapsed((prev) => !prev);
+	}, []);
 
 	// Inline rename on double-click
 	const handleDoubleClick = (filename: string) => {
@@ -489,19 +506,19 @@ export default function FileEditorPanel() {
 					maxSize={35}
 					collapsible
 					collapsedSize={0}
-					onCollapse={() => setIsTreeCollapsed(true)}
-					onExpand={() => setIsTreeCollapsed(false)}
+					onCollapse={handleTreeCollapse}
+					onExpand={handleTreeExpand}
 					className={isTreeCollapsed ? "hidden" : ""}
 				>
 					<FileTreeSidebar
 						selectedFile={selectedFile}
 						dirtyFiles={dirtyFiles}
 						onFileSelect={handleFileSelect}
-						onNewFile={() => setShowNewFileDialog(true)}
+						onNewFile={handleOpenNewFileDialog}
 						onRename={initiateRename}
-						onDelete={(filename) => initiateDelete(filename)}
+						onDelete={initiateDelete}
 						isCollapsed={isTreeCollapsed}
-						onToggleCollapse={() => setIsTreeCollapsed(!isTreeCollapsed)}
+						onToggleCollapse={handleToggleTreeCollapse}
 					/>
 				</Panel>
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useDeferredValue, useEffect } from "react";
+import { useState, useMemo, useDeferredValue, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,15 @@ interface FileTreeSearchProps {
 	onFilterChange: (filteredItems: Record<string, FileTreeItem> | null) => void;
 }
 
+export interface FileTreeSearchHandle {
+	clear: () => void;
+}
+
 /**
  * Search/filter component for the file tree
  * Uses useDeferredValue for smooth filtering of large trees
  */
-export function FileTreeSearch({ items, onFilterChange }: FileTreeSearchProps) {
+export const FileTreeSearch = forwardRef<FileTreeSearchHandle, FileTreeSearchProps>(function FileTreeSearch({ items, onFilterChange }, ref) {
 	const [query, setQuery] = useState("");
 
 	// Defer expensive filtering to avoid blocking UI
@@ -72,6 +76,11 @@ export function FileTreeSearch({ items, onFilterChange }: FileTreeSearchProps) {
 		setQuery("");
 	};
 
+	// Expose clear method to parent via ref
+	useImperativeHandle(ref, () => ({
+		clear: handleClear,
+	}), []);
+
 	return (
 		<div className="px-2 py-1.5">
 			<div className="relative">
@@ -97,4 +106,4 @@ export function FileTreeSearch({ items, onFilterChange }: FileTreeSearchProps) {
 			</div>
 		</div>
 	);
-}
+});

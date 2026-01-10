@@ -120,7 +120,7 @@ describe("useFileTreeData", () => {
 
 			const tree = buildTreeFromPaths(fileSystem);
 
-			// Should sanitize and create safe path
+			// Dangerous paths with directory traversal segments should be rejected/ignored
 			expect(tree["/../../../etc/passwd"]).toBeUndefined();
 		});
 

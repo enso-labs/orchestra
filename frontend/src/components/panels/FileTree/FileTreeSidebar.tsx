@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef } from "react";
-import { FileText, FolderPlus } from "lucide-react";
+import { FileText, FolderPlus, SearchX } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useChatContext } from "@/context/ChatContext";
 import { useFileTreeData, type FileTreeItem } from "@/hooks/useFileTreeData";
 import { FileTreeHeader } from "./FileTreeHeader";
-import { FileTreeSearch } from "./FileTreeSearch";
+import { FileTreeSearch, type FileTreeSearchHandle } from "./FileTreeSearch";
 import { FileTreeNode } from "./FileTreeNode";
 
 interface FileTreeSidebarProps {
@@ -51,6 +51,9 @@ export function FileTreeSidebar({
 
 	// Screen reader announcements
 	const announcerRef = useRef<HTMLDivElement>(null);
+
+	// Search component ref for clearing filter
+	const searchRef = useRef<FileTreeSearchHandle>(null);
 
 	const announce = useCallback((message: string) => {
 		if (announcerRef.current) {
@@ -136,7 +139,7 @@ export function FileTreeSidebar({
 					onToggle={handleToggle}
 					onRename={onRename}
 					onDelete={onDelete}
-					onNewFile={() => onNewFile()}
+					onNewFile={onNewFile}
 				/>
 
 				{/* Render children if folder is expanded */}
@@ -203,15 +206,31 @@ export function FileTreeSidebar({
 			/>
 
 			{/* Search */}
-			<FileTreeSearch items={treeItems} onFilterChange={handleFilterChange} />
+			<FileTreeSearch ref={searchRef} items={treeItems} onFilterChange={handleFilterChange} />
 
 			{/* Tree content */}
 			<ScrollArea className="flex-1">
-				<div className="py-1" role="group" aria-label="Files">
-					{(displayItems.root?.children || []).map((childKey) =>
-						renderTreeNode(String(childKey), 0),
-					)}
-				</div>
+				{/* No matches empty state */}
+				{filteredItems !== null && (displayItems.root?.children || []).length === 0 ? (
+					<div className="flex-1 flex flex-col items-center justify-center p-4 pt-8 text-center">
+						<SearchX className="h-8 w-8 text-muted-foreground/50 mb-3" />
+						<p className="text-sm text-muted-foreground mb-3">No matching files</p>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => searchRef.current?.clear()}
+							className="gap-2"
+						>
+							Clear filter
+						</Button>
+					</div>
+				) : (
+					<div className="py-1" role="group" aria-label="Files">
+						{(displayItems.root?.children || []).map((childKey) =>
+							renderTreeNode(String(childKey), 0),
+						)}
+					</div>
+				)}
 			</ScrollArea>
 
 			{/* Keyboard shortcuts help */}

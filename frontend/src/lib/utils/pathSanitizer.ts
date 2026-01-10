@@ -109,8 +109,11 @@ export function joinPath(base: string, segment: string): string {
  * @returns Extension without dot, or empty string
  */
 export function getExtension(path: string): string {
-	const name = getDisplayName(path);
-	const lastDot = name.lastIndexOf(".");
+	const sanitized = sanitizePath(path);
+	const segments = sanitized.split("/").filter(Boolean);
+	const basename = segments[segments.length - 1] || "";
+	if (!basename) return "";
+	const lastDot = basename.lastIndexOf(".");
 	if (lastDot === -1 || lastDot === 0) return "";
-	return name.slice(lastDot + 1).toLowerCase();
+	return basename.slice(lastDot + 1).toLowerCase();
 }
