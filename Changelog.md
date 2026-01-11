@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc141
 
 ### Changed
+  - feat/637-user-can-persist-files-to-agent (2026-01-10)
   - feat/650-file-treeview-sidebar (2026-01-10)
   - feat/633-public-agents-display (2026-01-08)
   - feat/471-public-agents (2026-01-08)
