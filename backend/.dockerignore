@@ -36,3 +36,4 @@ Makefile
 **/.backups/
 **/pytest*
 **/pysandbox
+**/ralph-loop*
