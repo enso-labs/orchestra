@@ -30,6 +30,7 @@ Enable users to persist files directly to an agent/assistant. Files are stored a
 **Test Framework**: `unittest.IsolatedAsyncioTestCase` with `InMemoryStore`
 
 #### Test 1.1: Assistant model accepts file_system property
+
 ```python
 async def test_assistant_with_file_system_property(self):
     """Test that Assistant model accepts file_system property."""
@@ -48,6 +49,7 @@ async def test_assistant_with_file_system_property(self):
 ```
 
 #### Test 1.2: file_system defaults to empty dict
+
 ```python
 async def test_assistant_file_system_defaults_to_empty_dict(self):
     """Test that file_system defaults to empty dict when not provided."""
@@ -61,6 +63,7 @@ async def test_assistant_file_system_defaults_to_empty_dict(self):
 ```
 
 #### Test 1.3: file_system persists on update
+
 ```python
 async def test_update_persists_file_system(self):
     """Test that file_system is persisted when updating assistant."""
@@ -78,6 +81,7 @@ async def test_update_persists_file_system(self):
 ```
 
 #### Test 1.4: file_system returned on get
+
 ```python
 async def test_get_returns_file_system(self):
     """Test that get() returns assistant with file_system intact."""
@@ -95,6 +99,7 @@ async def test_get_returns_file_system(self):
 ```
 
 #### Test 1.5: file_system syncs to public namespace on publish
+
 ```python
 async def test_publish_syncs_file_system_to_public(self):
     """Test that publishing syncs file_system to public namespace."""
@@ -120,6 +125,7 @@ async def test_publish_syncs_file_system_to_public(self):
 **Test Framework**: `pytest` with `AsyncClient`
 
 #### Test 2.1: Create assistant with file_system via API
+
 ```python
 @pytest.mark.asyncio
 async def test_create_assistant_with_file_system(async_client: AsyncClient):
@@ -166,6 +172,7 @@ async def test_create_assistant_with_file_system(async_client: AsyncClient):
 ```
 
 #### Test 2.2: Update assistant file_system via API
+
 ```python
 @pytest.mark.asyncio
 async def test_update_assistant_file_system(async_client: AsyncClient):
@@ -199,6 +206,7 @@ async def test_update_assistant_file_system(async_client: AsyncClient):
 ```
 
 #### Test 2.3: Public assistant excludes file_system (owner-only)
+
 ```python
 @pytest.mark.asyncio
 async def test_public_assistant_excludes_file_system(async_client: AsyncClient):
@@ -222,70 +230,78 @@ async def test_public_assistant_excludes_file_system(async_client: AsyncClient):
 **Test Framework**: Vitest with `@testing-library/react`
 
 #### Test 3.1: Convert FileData to backend format
+
 ```typescript
 describe("Backend Sync", () => {
-  describe("toBackendFormat", () => {
-    it("should convert FileData map to Dict[str, str]", () => {
-      const { result } = renderHook(() => useFileSystem());
+    describe("toBackendFormat", () => {
+        it("should convert FileData map to Dict[str, str]", () => {
+            const { result } = renderHook(() => useFileSystem());
 
-      act(() => {
-        result.current.createFile("/test.txt", "line1\nline2");
-        result.current.createFile("/app.py", "print('hi')");
-      });
+            act(() => {
+                result.current.createFile("/test.txt", "line1\nline2");
+                result.current.createFile("/app.py", "print('hi')");
+            });
 
-      // New function to implement
-      const backendFormat = result.current.toBackendFormat();
+            // New function to implement
+            const backendFormat = result.current.toBackendFormat();
 
-      expect(backendFormat["/test.txt"]).toBe("line1\nline2");
-      expect(backendFormat["/app.py"]).toBe("print('hi')");
+            expect(backendFormat["/test.txt"]).toBe("line1\nline2");
+            expect(backendFormat["/app.py"]).toBe("print('hi')");
+        });
     });
-  });
 });
 ```
 
 #### Test 3.2: Import from backend format
+
 ```typescript
 describe("fromBackendFormat", () => {
-  it("should convert Dict[str, str] to FileData map", () => {
-    const { result } = renderHook(() => useFileSystem());
+    it("should convert Dict[str, str] to FileData map", () => {
+        const { result } = renderHook(() => useFileSystem());
 
-    const backendData = {
-      "/test.txt": "line1\nline2",
-      "/app.py": "print('hi')",
-    };
+        const backendData = {
+            "/test.txt": "line1\nline2",
+            "/app.py": "print('hi')",
+        };
 
-    act(() => {
-      // New function to implement
-      result.current.fromBackendFormat(backendData);
+        act(() => {
+            // New function to implement
+            result.current.fromBackendFormat(backendData);
+        });
+
+        expect(result.current.fileSystem.has("/test.txt")).toBe(true);
+        expect(result.current.fileSystem.get("/test.txt")?.content).toEqual([
+            "line1",
+            "line2",
+        ]);
+        expect(result.current.fileSystem.get("/app.py")?.content).toEqual([
+            "print('hi')",
+        ]);
     });
-
-    expect(result.current.fileSystem.has("/test.txt")).toBe(true);
-    expect(result.current.fileSystem.get("/test.txt")?.content).toEqual(["line1", "line2"]);
-    expect(result.current.fileSystem.get("/app.py")?.content).toEqual(["print('hi')"]);
-  });
 });
 ```
 
 #### Test 3.3: Round-trip conversion preserves content
+
 ```typescript
 it("should preserve content through round-trip conversion", () => {
-  const { result } = renderHook(() => useFileSystem());
+    const { result } = renderHook(() => useFileSystem());
 
-  const originalContent = "function hello() {\n  return 'world';\n}";
+    const originalContent = "function hello() {\n  return 'world';\n}";
 
-  act(() => {
-    result.current.createFile("/index.js", originalContent);
-  });
+    act(() => {
+        result.current.createFile("/index.js", originalContent);
+    });
 
-  const backendFormat = result.current.toBackendFormat();
+    const backendFormat = result.current.toBackendFormat();
 
-  act(() => {
-    result.current.clearFileSystem();
-    result.current.fromBackendFormat(backendFormat);
-  });
+    act(() => {
+        result.current.clearFileSystem();
+        result.current.fromBackendFormat(backendFormat);
+    });
 
-  const file = result.current.fileSystem.get("/index.js");
-  expect(file?.content.join("\n")).toBe(originalContent);
+    const file = result.current.fileSystem.get("/index.js");
+    expect(file?.content.join("\n")).toBe(originalContent);
 });
 ```
 
@@ -295,42 +311,43 @@ it("should preserve content through round-trip conversion", () => {
 
 ### TDD Execution Order
 
-| Order | Test File | Test Name | Status |
-|-------|-----------|-----------|--------|
-| 1 | `test_assistant_service.py` | `test_assistant_with_file_system_property` | [x] |
-| 2 | `test_assistant_service.py` | `test_assistant_file_system_defaults_to_empty_dict` | [x] |
-| 3 | `test_assistant_service.py` | `test_update_persists_file_system` | [x] |
-| 4 | `test_assistant_service.py` | `test_get_returns_file_system` | [x] |
-| 5 | `test_assistant_service.py` | `test_publish_syncs_file_system_to_public` | [x] |
-| 6 | `test_public_assistants.py` | `test_create_assistant_with_file_system` | [x] |
-| 7 | `test_public_assistants.py` | `test_update_assistant_file_system` | [x] |
-| 8 | `useFileSystem.test.ts` | `toBackendFormat` | [x] |
-| 9 | `useFileSystem.test.ts` | `fromBackendFormat` | [x] |
-| 10 | `useFileSystem.test.ts` | `round-trip conversion` | [x] |
+| Order | Test File                   | Test Name                                           | Status |
+| ----- | --------------------------- | --------------------------------------------------- | ------ |
+| 1     | `test_assistant_service.py` | `test_assistant_with_file_system_property`          | [x]    |
+| 2     | `test_assistant_service.py` | `test_assistant_file_system_defaults_to_empty_dict` | [x]    |
+| 3     | `test_assistant_service.py` | `test_update_persists_file_system`                  | [x]    |
+| 4     | `test_assistant_service.py` | `test_get_returns_file_system`                      | [x]    |
+| 5     | `test_assistant_service.py` | `test_publish_syncs_file_system_to_public`          | [x]    |
+| 6     | `test_public_assistants.py` | `test_create_assistant_with_file_system`            | [x]    |
+| 7     | `test_public_assistants.py` | `test_update_assistant_file_system`                 | [x]    |
+| 8     | `useFileSystem.test.ts`     | `toBackendFormat`                                   | [x]    |
+| 9     | `useFileSystem.test.ts`     | `fromBackendFormat`                                 | [x]    |
+| 10    | `useFileSystem.test.ts`     | `round-trip conversion`                             | [x]    |
 
 ---
 
 ## User Stories
 
-- As a user, I want to attach files to my agent so that the agent has persistent context across conversations.
-- As a user, I want to edit files associated with my agent so that I can update the agent's file-based knowledge.
-- As a developer, I want to retrieve files from an agent so that I can display or manipulate them in the UI.
+-   As a user, I want to attach files to my agent so that the agent has persistent context across conversations.
+-   As a user, I want to edit files associated with my agent so that I can update the agent's file-based knowledge.
+-   As a developer, I want to retrieve files from an agent so that I can display or manipulate them in the UI.
 
 ## Acceptance Criteria
 
-- [x] Backend: `Assistant` model includes `file_system: Dict[str, str]` property (path -> content)
-- [x] Backend: `AssistantService.update()` persists `file_system` to the store
-- [x] Frontend: `useFileSystem` hook can sync files to/from the assistant's `file_system`
-- [x] API: Create/Update assistant endpoints accept and persist `file_system` data
-- [x] API: Search/Get assistant endpoints return `file_system` data (owner-only)
-- [x] API: Public assistant endpoints do NOT expose `file_system` (owner-only data)
-- [x] Files persist across sessions when associated with an assistant
+-   [x] Backend: `Assistant` model includes `file_system: Dict[str, str]` property (path -> content)
+-   [x] Backend: `AssistantService.update()` persists `file_system` to the store
+-   [x] Frontend: `useFileSystem` hook can sync files to/from the assistant's `file_system`
+-   [x] API: Create/Update assistant endpoints accept and persist `file_system` data
+-   [x] API: Search/Get assistant endpoints return `file_system` data (owner-only)
+-   [x] API: Public assistant endpoints do NOT expose `file_system` (owner-only data)
+-   [x] Files persist across sessions when associated with an assistant
 
 ## Technical Requirements
 
 ### Backend Schema (`backend/src/schemas/entities/llm.py`)
 
 The `Assistant` model now includes:
+
 ```python
 file_system: Optional[Dict[str, str]] = Field(
     default_factory=dict,
@@ -340,23 +357,25 @@ file_system: Optional[Dict[str, str]] = Field(
 
 ### Backend Service (`backend/src/services/assistant.py`)
 
-- `AssistantService.update()` already handles arbitrary dict data via `assistant.model_dump()`
-- Files are stored in the LangGraph store under the assistant's namespace
-- Public assistants sync `file_system` to the public namespace when published
+-   `AssistantService.update()` already handles arbitrary dict data via `assistant.model_dump()`
+-   Files are stored in the LangGraph store under the assistant's namespace
+-   Public assistants sync `file_system` to the public namespace when published
 
 ### Frontend Hook (`frontend/src/hooks/useFileSystem.ts`)
 
 Existing `FileData` interface:
+
 ```typescript
 interface FileData {
-  content: string[];      // Lines of file content
-  created_at: string;
-  modified_at: string;
-  source?: string;        // Message ID that generated this file
+    content: string[]; // Lines of file content
+    created_at: string;
+    modified_at: string;
+    source?: string; // Message ID that generated this file
 }
 ```
 
 New functions needed:
+
 ```typescript
 // Convert frontend format to backend format
 toBackendFormat(): Record<string, string>
@@ -367,16 +386,17 @@ fromBackendFormat(data: Record<string, string>): void
 
 ### API Routes (`backend/src/routes/v0/assistant.py`)
 
-- `POST /assistants` - Create with `file_system`
-- `PUT /assistants/{id}` - Update with `file_system`
-- `POST /assistants/search` - Returns `file_system` in response
+-   `POST /assistants` - Create with `file_system`
+-   `PUT /assistants/{id}` - Update with `file_system`
+-   `POST /assistants/search` - Returns `file_system` in response
 
 ## Implementation Notes
 
 1. **Data Flow**:
-   - Frontend collects files via `useFileSystem.toBackendFormat()`
-   - API persists `file_system` dict on assistant
-   - On load, `useFileSystem.fromBackendFormat()` converts back
+
+    - Frontend collects files via `useFileSystem.toBackendFormat()`
+    - API persists `file_system` dict on assistant
+    - On load, `useFileSystem.fromBackendFormat()` converts back
 
 2. **Storage**: Uses LangGraph's `AsyncPostgresStore` with namespace `(user_id, "assistants")`
 
@@ -384,37 +404,37 @@ fromBackendFormat(data: Record<string, string>): void
 
 ## Dependencies
 
-- LangGraph store infrastructure (already in place)
-- Frontend `useFileSystem` hook (already implemented)
-- Backend `AssistantService` (already implemented)
+-   LangGraph store infrastructure (already in place)
+-   Frontend `useFileSystem` hook (already implemented)
+-   Backend `AssistantService` (already implemented)
 
 ## Out of Scope
 
-- Binary file support (images, PDFs, etc.)
-- File versioning/history
-- File size limits enforcement
-- Shared file systems between assistants
-- File compression or chunking
+-   Binary file support (images, PDFs, etc.)
+-   File versioning/history
+-   File size limits enforcement
+-   Shared file systems between assistants
+-   File compression or chunking
 
 ## Success Metrics
 
-- Users can save files to an assistant and retrieve them in subsequent sessions
-- File data round-trips correctly between frontend and backend
-- No performance degradation for assistants with reasonable file counts
+-   Users can save files to an assistant and retrieve them in subsequent sessions
+-   File data round-trips correctly between frontend and backend
+-   No performance degradation for assistants with reasonable file counts
 
 ## Additional Context
 
 ### Existing Code Locations
 
-| Component | Path |
-|-----------|------|
-| Assistant Model | `backend/src/schemas/entities/llm.py:92` |
-| Assistant Service | `backend/src/services/assistant.py:18` |
-| Assistant Routes | `backend/src/routes/v0/assistant.py` |
-| useFileSystem Hook | `frontend/src/hooks/useFileSystem.ts` |
-| Backend Unit Tests | `backend/tests/unit/services/test_assistant_service.py` |
-| Backend Integration Tests | `backend/tests/integration/test_public_assistants.py` |
-| Frontend Hook Tests | `frontend/src/tests/hooks/useFileSystem.test.ts` |
+| Component                 | Path                                                    |
+| ------------------------- | ------------------------------------------------------- |
+| Assistant Model           | `backend/src/schemas/entities/llm.py:92`                |
+| Assistant Service         | `backend/src/services/assistant.py:18`                  |
+| Assistant Routes          | `backend/src/routes/v0/assistant.py`                    |
+| useFileSystem Hook        | `frontend/src/hooks/useFileSystem.ts`                   |
+| Backend Unit Tests        | `backend/tests/unit/services/test_assistant_service.py` |
+| Backend Integration Tests | `backend/tests/integration/test_public_assistants.py`   |
+| Frontend Hook Tests       | `frontend/src/tests/hooks/useFileSystem.test.ts`        |
 
 ### Related Frontend State
 

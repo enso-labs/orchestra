@@ -23,6 +23,8 @@ When invoked, generate a markdown file containing the following template structu
 ```markdown
 # Feature: [SHORTDESC] ([ISSUE_NUMBER])
 
+> **⚠️ IMPORTANT**: Before implementing this feature, READ `/CLAUDE.md` first.
+
 ## Summary
 
 _A concise summary of the feature and its purpose._
@@ -60,6 +62,12 @@ _How will we measure success?_
 ## Additional Context
 
 _Mockups, references, or related discussion._
+
+---
+
+## Completion
+
+Output `<promise>DONE</promise>` when all tests green. --max-iterations 50 --completion-promise "DONE"
 ```
 
 ---
