@@ -146,13 +146,8 @@ export default function FileEditorPanel() {
 	);
 
 	// Inference dictation hook
-	const {
-		inferenceMode,
-		toggleInferenceMode,
-		isGenerating,
-		setIsGenerating,
-		buildPayload,
-	} = useInferenceDictation({
+	const { inferenceMode, toggleInferenceMode, isGenerating, setIsGenerating } =
+		useInferenceDictation({
 		activeFile: activeFile || undefined,
 		fileContent: activeFile ? getFileContent(activeFile) : undefined,
 	});
