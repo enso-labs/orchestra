@@ -121,6 +121,9 @@ export default function FileEditorPanel() {
 	// Debounce timer ref
 	const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+	// Track processed blobs to prevent re-processing
+	const processedBlobRef = useRef<Blob | null>(null);
+
 	// Tree sidebar state
 	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
 
@@ -206,7 +209,12 @@ export default function FileEditorPanel() {
 
 	// Handle recorded blob - transcribe and optionally send to LLM for inference
 	useEffect(() => {
+		// Skip if no blob, no file, or if we've already processed this blob
 		if (!recordedBlob || !selectedFile) return;
+		if (processedBlobRef.current === recordedBlob) return;
+
+		// Mark this blob as being processed
+		processedBlobRef.current = recordedBlob;
 
 		const formData = new FormData();
 		formData.append("file", recordedBlob, "recording.webm");
@@ -229,7 +237,19 @@ export default function FileEditorPanel() {
 					// Inference mode: send to LLM for file generation
 					setIsGenerating(true);
 					try {
-						const payload = buildPayload(transcribedText);
+						// Get current file content for context (fresh at inference time)
+						const currentFileContent = getFileContent(selectedFile);
+
+						// Build payload with current file context
+						const payload = {
+							input: {
+								messages: [{ role: "user", content: transcribedText }],
+							},
+							generate_files: true,
+							target_file: selectedFile,
+							file_context: currentFileContent || undefined,
+						};
+
 						const streamResponse = await apiClient.post(
 							"/llm/stream",
 							payload,
@@ -332,17 +352,10 @@ export default function FileEditorPanel() {
 			.catch((error) => {
 				console.error("Error transcribing audio:", error);
 			});
-	}, [
-		recordedBlob,
-		selectedFile,
-		updateFile,
-		createFile,
-		inferenceMode,
-		buildPayload,
-		setIsGenerating,
-		getFileContent,
-		fileSystem,
-	]);
+		// Note: fileSystem is intentionally excluded from deps to prevent re-triggering
+		// The processedBlobRef prevents duplicate processing of the same blob
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [recordedBlob, selectedFile, inferenceMode]);
 
 	const handleFileSelect = useCallback(
 		(filename: string) => {
