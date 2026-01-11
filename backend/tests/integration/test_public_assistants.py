@@ -265,3 +265,165 @@ async def test_publish_requires_ownership(async_client: AsyncClient):
     )
     assert response.status_code == 404
     assert "Assistant not found" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_create_assistant_with_file_system(async_client: AsyncClient):
+    """Test creating assistant with file_system via API."""
+    # Login
+    login_data = {"email": "admin@example.com", "password": "test1234"}
+    response = await async_client.post("/api/auth/login", json=login_data)
+    if response.status_code != 200:
+        pytest.skip("Login failed")
+
+    token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create with file_system
+    assistant_data = {
+        "name": "File System Test Agent",
+        "description": "Has files",
+        "tools": [],
+        "file_system": {
+            "/config.json": '{"key": "value"}',
+            "/script.py": "print('hello')",
+        },
+    }
+
+    response = await async_client.post(
+        "/api/assistants", json=assistant_data, headers=headers
+    )
+    assert response.status_code == 200
+    assistant_id = response.json()["assistant_id"]
+
+    try:
+        # Verify by fetching
+        response = await async_client.post(
+            "/api/assistants/search",
+            json={"filter": {"id": assistant_id}},
+            headers=headers,
+        )
+        assert response.status_code == 200
+        assistants = response.json()["assistants"]
+        assert len(assistants) == 1
+        assert assistants[0]["file_system"]["/config.json"] == '{"key": "value"}'
+        assert assistants[0]["file_system"]["/script.py"] == "print('hello')"
+    finally:
+        await async_client.delete(f"/api/assistants/{assistant_id}", headers=headers)
+
+
+@pytest.mark.asyncio
+async def test_update_assistant_file_system(async_client: AsyncClient):
+    """Test updating assistant's file_system via API."""
+    # Login
+    login_data = {"email": "admin@example.com", "password": "test1234"}
+    response = await async_client.post("/api/auth/login", json=login_data)
+    if response.status_code != 200:
+        pytest.skip("Login failed")
+
+    token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create initial assistant
+    assistant_data = {
+        "name": "Update Test Agent",
+        "description": "Initial description",
+        "tools": [],
+    }
+
+    response = await async_client.post(
+        "/api/assistants", json=assistant_data, headers=headers
+    )
+    assert response.status_code == 200
+    assistant_id = response.json()["assistant_id"]
+
+    try:
+        # Update file_system
+        updated_data = {
+            "name": "Updated Agent",
+            "description": "Updated",
+            "tools": [],
+            "file_system": {
+                "/new_file.txt": "new content",
+            },
+        }
+
+        response = await async_client.put(
+            f"/api/assistants/{assistant_id}",
+            json=updated_data,
+            headers=headers,
+        )
+        assert response.status_code == 200
+
+        # Verify update
+        response = await async_client.post(
+            "/api/assistants/search",
+            json={"filter": {"id": assistant_id}},
+            headers=headers,
+        )
+        assert (
+            response.json()["assistants"][0]["file_system"]["/new_file.txt"]
+            == "new content"
+        )
+    finally:
+        await async_client.delete(f"/api/assistants/{assistant_id}", headers=headers)
+
+
+@pytest.mark.asyncio
+async def test_public_assistant_excludes_file_system(async_client: AsyncClient):
+    """Test that public assistants do NOT expose file_system to non-owners."""
+    # Login
+    login_data = {"email": "admin@example.com", "password": "test1234"}
+    response = await async_client.post("/api/auth/login", json=login_data)
+    if response.status_code != 200:
+        pytest.skip("Login failed")
+
+    token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create with file_system
+    assistant_data = {
+        "name": "Public File System Agent",
+        "description": "Has owner-only files",
+        "tools": [],
+        "file_system": {
+            "/readme.md": "# Secret Documentation",
+            "/secrets.txt": "API_KEY=sk-secret-12345",
+        },
+    }
+
+    response = await async_client.post(
+        "/api/assistants", json=assistant_data, headers=headers
+    )
+    assert response.status_code == 200
+    assistant_id = response.json()["assistant_id"]
+
+    try:
+        # Publish
+        response = await async_client.post(
+            f"/api/assistants/{assistant_id}/publish", headers=headers
+        )
+        assert response.status_code == 200
+
+        # Get public assistant - file_system must NOT be exposed (owner-only data)
+        response = await async_client.get(f"/api/assistants/public/{assistant_id}")
+        assert response.status_code == 200
+        data = response.json()["assistant"]
+        # CRITICAL: file_system is owner-only and must NOT be exposed publicly
+        assert "file_system" not in data
+
+        # But owner can still see file_system via authenticated search
+        response = await async_client.post(
+            "/api/assistants/search",
+            json={"filter": {"id": assistant_id}},
+            headers=headers,
+        )
+        assert response.status_code == 200
+        owner_data = response.json()["assistants"][0]
+        assert "file_system" in owner_data
+        assert owner_data["file_system"]["/readme.md"] == "# Secret Documentation"
+    finally:
+        await async_client.delete(
+            f"/api/assistants/{assistant_id}/publish", headers=headers
+        )
+        await async_client.delete(f"/api/assistants/{assistant_id}", headers=headers)

@@ -113,6 +113,10 @@ class Assistant(BaseModel):
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
+    file_system: Optional[Dict[str, str]] = Field(
+        default_factory=dict,
+        description="File system storage for the assistant. Key is the file path, value is the file content.",
+    )
     metadata: dict = {}
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
@@ -173,6 +177,7 @@ class PublicAssistant(BaseModel):
     published_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
+    # NOTE: file_system is intentionally excluded - it's owner-only data
 
     @classmethod
     def from_assistant(cls, assistant: Assistant) -> "PublicAssistant":

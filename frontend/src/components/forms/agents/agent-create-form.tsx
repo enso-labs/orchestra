@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAgentContext } from "@/context/AgentContext";
+import { useChatContext } from "@/context/ChatContext";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,7 @@ export function AgentCreateForm() {
 		isAgentSelected,
 		updateQueryStateModel,
 	} = useAgentContext();
+	const { toBackendFormat } = useChatContext();
 	const [isEditing, setIsEditing] = useState(!agentId);
 	const [originalAgent, setOriginalAgent] = useState<Agent | null>(null);
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
@@ -118,6 +120,9 @@ export function AgentCreateForm() {
 	};
 
 	const onSubmit = async (values: z.infer<typeof formSchema>) => {
+		// Collect file_system from fileSystem hook
+		const fileSystemData = toBackendFormat();
+
 		const configData: Agent = {
 			name: values.name.trim(),
 			description: values.description.trim(),
@@ -126,6 +131,10 @@ export function AgentCreateForm() {
 			a2a: agent.a2a,
 			tools: agent.tools,
 			subagents: agent.subagents,
+			// Include file_system only if there are files
+			...(Object.keys(fileSystemData).length > 0 && {
+				file_system: fileSystemData,
+			}),
 		};
 
 		if (promptMode === "instructions") {

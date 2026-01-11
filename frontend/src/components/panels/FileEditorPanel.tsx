@@ -19,11 +19,7 @@ import {
 	PanelLeft,
 } from "lucide-react";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
-import {
-	Panel,
-	PanelGroup,
-	PanelResizeHandle,
-} from "react-resizable-panels";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import apiClient from "@/lib/utils/apiClient";
 import { MainToolTip } from "../tooltips/MainToolTip";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -63,7 +59,7 @@ interface BreadcrumbSegment {
 
 export default function FileEditorPanel() {
 	// Use new fileSystem with proper tab semantics
-	const { 
+	const {
 		fileSystem,
 		openTabs,
 		activeFile,
@@ -78,7 +74,15 @@ export default function FileEditorPanel() {
 		markClean,
 		setViewMode,
 	} = useChatContext() as {
-		fileSystem: Map<string, { content: string[]; created_at: string; modified_at: string; source?: string }>;
+		fileSystem: Map<
+			string,
+			{
+				content: string[];
+				created_at: string;
+				modified_at: string;
+				source?: string;
+			}
+		>;
 		openTabs: string[];
 		activeFile: string | null;
 		dirtyFiles: Set<string>;
@@ -92,7 +96,7 @@ export default function FileEditorPanel() {
 		markClean: (path: string) => void;
 		setViewMode: (mode: string) => void;
 	};
-	
+
 	const [copied, setCopied] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
 
@@ -135,8 +139,11 @@ export default function FileEditorPanel() {
 	);
 
 	// Get all file paths from fileSystem for validation
-	const allFilePaths = useMemo(() => Array.from(fileSystem.keys()), [fileSystem]);
-	
+	const allFilePaths = useMemo(
+		() => Array.from(fileSystem.keys()),
+		[fileSystem],
+	);
+
 	// Use activeFile from context (no local selectedFile state needed)
 	const selectedFile = activeFile;
 
@@ -155,10 +162,12 @@ export default function FileEditorPanel() {
 
 	// Reset preview when switching to non-previewable file
 	useEffect(() => {
-		if (selectedFile && 
-			!isMarkdownFile(selectedFile) && 
-			!isHtmlFile(selectedFile) && 
-			!isMermaidFile(selectedFile)) {
+		if (
+			selectedFile &&
+			!isMarkdownFile(selectedFile) &&
+			!isHtmlFile(selectedFile) &&
+			!isMermaidFile(selectedFile)
+		) {
 			setShowPreview(false);
 		}
 	}, [selectedFile]);
@@ -200,10 +209,13 @@ export default function FileEditorPanel() {
 			});
 	}, [recordedBlob, selectedFile, updateFile]);
 
-	const handleFileSelect = useCallback((filename: string) => {
-		// Use selectTab which opens the tab if not already open
-		selectTab(filename);
-	}, [selectTab]);
+	const handleFileSelect = useCallback(
+		(filename: string) => {
+			// Use selectTab which opens the tab if not already open
+			selectTab(filename);
+		},
+		[selectTab],
+	);
 
 	// Voice recording handlers
 	const handleStartRecording = () => {
@@ -332,11 +344,14 @@ export default function FileEditorPanel() {
 	};
 
 	// Start delete flow
-	const initiateDelete = useCallback((filename: string, e?: React.MouseEvent) => {
-		e?.stopPropagation();
-		setFileToDelete(filename);
-		setShowDeleteDialog(true);
-	}, []);
+	const initiateDelete = useCallback(
+		(filename: string, e?: React.MouseEvent) => {
+			e?.stopPropagation();
+			setFileToDelete(filename);
+			setShowDeleteDialog(true);
+		},
+		[],
+	);
 
 	// Rename file (renameFileAction handles tab and selection update)
 	const handleRenameFile = () => {
@@ -572,7 +587,9 @@ export default function FileEditorPanel() {
 														<input
 															ref={renameInputRef}
 															value={inlineRenamePath}
-															onChange={(e) => setInlineRenamePath(e.target.value)}
+															onChange={(e) =>
+																setInlineRenamePath(e.target.value)
+															}
 															onBlur={handleInlineRenameSubmit}
 															onKeyDown={handleInlineRenameKeyDown}
 															onClick={(e) => e.stopPropagation()}
@@ -601,7 +618,9 @@ export default function FileEditorPanel() {
 												</button>
 											</ContextMenuTrigger>
 											<ContextMenuContent>
-												<ContextMenuItem onClick={() => initiateRename(filename)}>
+												<ContextMenuItem
+													onClick={() => initiateRename(filename)}
+												>
 													Rename
 												</ContextMenuItem>
 												<ContextMenuItem
@@ -641,7 +660,9 @@ export default function FileEditorPanel() {
 												isRecording ? handleStopRecording : handleStartRecording
 											}
 											className="h-8 gap-2"
-											aria-label={isRecording ? "Stop dictation" : "Start dictation"}
+											aria-label={
+												isRecording ? "Stop dictation" : "Start dictation"
+											}
 										>
 											{isRecording ? (
 												<Square className="h-4 w-4" />

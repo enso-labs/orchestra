@@ -40,6 +40,10 @@ export interface FileSystemActions {
 	clearFileSystem: () => void;
 	getFilesForSubmission: () => Record<string, FileData>;
 
+	// Backend sync operations
+	toBackendFormat: () => Record<string, string>;
+	fromBackendFormat: (data: Record<string, string>) => void;
+
 	// Dirty tracking
 	markDirty: (path: string) => void;
 	markClean: (path: string) => void;
@@ -81,6 +85,7 @@ export function useFileSystem(): FileSystemHook {
 			content: content.split("\n"),
 			created_at: now,
 			modified_at: now,
+			source: "__user_files__", // Mark as user-created for filesMap sync
 		};
 
 		setFileSystem((prev) => {
@@ -166,9 +171,7 @@ export function useFileSystem(): FileSystemHook {
 			});
 
 			// Update tabs
-			setOpenTabs((prev) =>
-				prev.map((p) => (p === oldPath ? newPath : p)),
-			);
+			setOpenTabs((prev) => prev.map((p) => (p === oldPath ? newPath : p)));
 
 			// Update active
 			if (activeFile === oldPath) {
@@ -293,6 +296,50 @@ export function useFileSystem(): FileSystemHook {
 		return result;
 	}, [fileSystem]);
 
+	/**
+	 * Convert frontend format to backend format (Dict[str, str])
+	 * Joins content lines back into a single string
+	 */
+	const toBackendFormat = useCallback((): Record<string, string> => {
+		const result: Record<string, string> = {};
+		for (const [path, data] of fileSystem) {
+			result[path] = data.content.join("\n");
+		}
+		return result;
+	}, [fileSystem]);
+
+	/**
+	 * Import from backend format (Dict[str, str])
+	 * Converts string content to array of lines and creates FileData entries
+	 */
+	const fromBackendFormat = useCallback((data: Record<string, string>) => {
+		if (!data || Object.keys(data).length === 0) return;
+
+		const now = new Date().toISOString();
+		setFileSystem((prev) => {
+			const next = new Map(prev);
+			for (const [path, content] of Object.entries(data)) {
+				next.set(path, {
+					content: content.split("\n"),
+					created_at: now,
+					modified_at: now,
+					source: "__backend_sync__",
+				});
+			}
+			return next;
+		});
+
+		// Auto-open all imported files as tabs
+		const paths = Object.keys(data);
+		setOpenTabs((prev) => {
+			const newTabs = paths.filter((p) => !prev.includes(p));
+			return [...prev, ...newTabs];
+		});
+
+		// Set first imported file as active if nothing selected
+		setActiveFile((prev) => prev || paths[0] || null);
+	}, []);
+
 	// =========================================================================
 	// Dirty Tracking
 	// =========================================================================
@@ -337,6 +384,9 @@ export function useFileSystem(): FileSystemHook {
 			importFiles,
 			clearFileSystem,
 			getFilesForSubmission,
+			// Backend sync
+			toBackendFormat,
+			fromBackendFormat,
 			// Dirty tracking
 			markDirty,
 			markClean,
@@ -356,6 +406,8 @@ export function useFileSystem(): FileSystemHook {
 			importFiles,
 			clearFileSystem,
 			getFilesForSubmission,
+			toBackendFormat,
+			fromBackendFormat,
 			markDirty,
 			markClean,
 		],

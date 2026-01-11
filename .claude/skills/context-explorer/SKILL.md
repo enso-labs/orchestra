@@ -1,129 +1,129 @@
 ---
 name: context-explorer
 description: |
-  Systematically extract context from git history, diffs, commits, and documentation to
-  understand development intent and create complete specifications. Use when you need to
-  understand what a PR/branch is trying to accomplish, extract requirements from changes,
-  or build a specification from existing code changes.
+  Systematically explore codebases using search and LSP to understand code structure,
+  intent, and behavior. READ_ONLY mode - no file modifications.
 ---
 
 # Context Explorer
 
-Systematically extract context from git history, diffs, commits, and documentation to understand development intent and create complete specifications from code changes.
+Explore codebases using search and LSP to understand code structure and create complete specifications.
+
+**MODE: READ_ONLY** - Cannot modify files.
 
 ## Instructions
 
 ### Prerequisites
 
-- Git repository with commit history
-- Access to diff outputs, commit messages, documentation files
-- Understanding of the 14-slot completeness model
+- Access to codebase files
+- Search tools (Grep, Glob)
+- LSP navigation
+- Understanding of 14-slot completeness model
 
 ### Workflow
 
-1. **Initial Triage**: Scan available evidence sources (diffs, commits, docs)
-2. **Intent Extraction**: Extract developer intent from commits and changes
-3. **Documentation Analysis**: Scan for specification signals in doc changes
-4. **Completeness Check**: Compare findings against 14-slot model
-5. **Gap Identification**: Identify missing critical details
-6. **Evidence Planning**: Generate targeted probe plan for gaps
-7. **Synthesis**: Compile end-state specification with confidence levels
+1. **Scope**: Define focus area and search terms
+2. **Discover**: Find relevant files using Glob and Grep
+3. **Extract**: Analyze tests, types, and docs
+4. **Verify**: Cross-reference evidence
+5. **Regress**: Check completeness against 14-slot model
+6. **Plan**: Generate probes for gaps
+7. **Emit**: Produce specification with evidence
 
 ### Core Skills
 
-This skill orchestrates 8 sub-skills:
+This skill orchestrates these sub-skills:
 
-1. **diff-triage**: Prioritize diffs by signal value
-2. **commit-intent-extraction**: Extract intent from commit messages
-3. **doc-delta-scan**: Find specification signals in docs
-4. **end-state-spec**: Synthesize complete specification
+1. **codebase-search**: Find files and patterns
+2. **type-analysis**: Analyze type definitions
+3. **test-analysis**: Extract behavior from tests
+4. **end-state-spec**: Synthesize specification
 5. **acceptance-criteria**: Extract testable criteria
 6. **risk-gaps**: Identify risks and gaps
-7. **missing-details-regression**: Compare against completeness model
-8. **evidence-plan**: Generate targeted evidence-gathering plan
+7. **missing-details-regression**: Check completeness
+8. **evidence-plan**: Generate probe plan
 
 ## Examples
 
-### Example 1: Analyze PR for Context
+### Example 1: Understand a Feature
 
-User: "What is this PR trying to accomplish?"
-Assistant: I'll analyze the PR to extract context.
-1. Triaging diffs for signal value
-2. Extracting intent from commits
-3. Scanning documentation changes
-4. Checking completeness against model
-5. Generating evidence plan for gaps
+```
+User: "How does authentication work?"
 
-[Provides complete specification with confidence levels]
+Agent:
+1. Glob: **/auth/**/*.py
+2. Grep: "authenticate|login|token"
+3. Read test files for expected behavior
+4. Read type definitions for contracts
+5. Check completeness: 10/14 slots filled
+6. Generate probes for gaps
 
-### Example 2: Build Specification from Branch
+Output: Specification with evidence
+```
 
-User: "Build a spec from the changes in feature/auth"
-Assistant: I'll extract the specification from the branch changes.
-1. Reading commit history and diffs
-2. Extracting behavioral signals
-3. Identifying acceptance criteria
-4. Checking for gaps in understanding
-5. Generating evidence plan
+### Example 2: Find Implementation
 
-[Provides specification with risk assessment]
+```
+User: "Where is the user service implemented?"
+
+Agent:
+1. Grep: "class.*UserService"
+2. LSP: Go to definition
+3. LSP: Find references
+4. Read related tests
+5. Document interfaces
+
+Output: Implementation map with dependencies
+```
 
 ## 14-Slot Completeness Model
 
-Every specification must address:
+| # | Slot | Evidence Sources |
+|---|------|------------------|
+| 1 | Goal/Outcome | Docs, README, tests |
+| 2 | User Persona | Docs, API design |
+| 3 | Scope | File structure, exports |
+| 4 | Constraints | Config, dependencies |
+| 5 | Interfaces | API definitions, imports |
+| 6 | Data Shape | Types, schemas |
+| 7 | Business Logic | Tests, service code |
+| 8 | Performance | Tests, docs |
+| 9 | Reliability | Error handling |
+| 10 | Security | Auth code, validation |
+| 11 | Observability | Logging, metrics |
+| 12 | Acceptance Criteria | Test files |
+| 13 | Rollout Plan | Scripts, docs |
+| 14 | Risks | TODOs, FIXMEs |
 
-1. **Goal/Outcome**: What are we trying to achieve?
-2. **User Persona/Stakeholder**: Who is this for?
-3. **Scope (In/Out)**: What's included/excluded?
-4. **Constraints**: Technical, time, compliance, cost limits
-5. **Interfaces & Integrations**: What systems connect?
-6. **Data Shape/Schemas/Contracts**: What data structures?
-7. **Behavioral Rules/Business Logic**: What are the rules?
-8. **Performance Expectations**: Speed, scale, efficiency
-9. **Reliability Expectations**: Uptime, error handling
-10. **Security/Privacy Requirements**: Auth, data protection
-11. **Observability Requirements**: Logging, monitoring, metrics
-12. **Acceptance Criteria**: Testable success conditions
-13. **Rollout/Migration Plan**: How to deploy safely
-14. **Risks & Unknowns**: What could go wrong?
-
-Each slot must have:
-- **Status**: FILLED | EMPTY | VAGUE | CONFLICTING
-- **Current Value/Hypothesis**: What we know or assume
-- **Evidence Source(s)**: Where this came from
-- **Confidence Level**: High/Medium/Low
-- **If not FILLED**: Evidence needed + cheapest probe + impact if wrong
+**Status Values**: FILLED | EMPTY | VAGUE | CONFLICTING
 
 ## Guidelines
 
-- Start with high-signal sources (commit messages, doc changes)
-- Use deterministic extraction patterns
-- Always check completeness against 14-slot model
-- Generate specific evidence-gathering probes, not vague questions
-- Track confidence levels for all findings
-- Identify conflicting signals explicitly
-- Prioritize P0 gaps that block understanding
+- **READ_ONLY**: Never modify files
+- Start with tests and types (highest signal)
+- Use LSP for navigation
+- Check completeness against 14-slot model
+- Generate specific probes, not vague questions
+- Track confidence levels
+- Flag conflicts explicitly
 
-## Reference
+## Evidence Priority
 
-### Evidence Source Types
+| Source | Priority | Value |
+|--------|----------|-------|
+| Tests | P0 | Very High |
+| Types/Schemas | P0 | Very High |
+| API definitions | P1 | High |
+| Documentation | P1 | High |
+| Implementation | P2 | Medium |
+| Comments | P3 | Low |
 
-| Type | Value | Cost | Signal Quality |
-|------|-------|------|----------------|
-| Commit message | High | Low | High if well-written |
-| Doc changes | High | Low | High for intent |
-| Test changes | High | Medium | High for behavior |
-| Type definitions | Medium | Low | Medium for contracts |
-| File diffs | Medium | High | Variable |
-| File tree changes | Low | Low | Low for new files |
+## Probe Types
 
-### Probe Types
-
-| Probe | When to Use | Example |
-|-------|-------------|---------|
-| `diff` | Check specific file changes | `git diff main...HEAD -- path/to/file` |
-| `commit` | Extract commit details | `git log --format=full` |
-| `doc` | Read documentation | `Read PROPOSAL.md` |
-| `file` | Read source code | `Read src/module.ts` |
-| `test` | Check test coverage | `Grep "describe" --glob "*.test.ts"` |
-| `ask` | Query developer (last resort) | "What is the performance target?" |
+| Probe | Tool | Example |
+|-------|------|---------|
+| Find files | Glob | `**/*.service.ts` |
+| Find patterns | Grep | `"class.*Controller"` |
+| Go to definition | LSP | Navigate to symbol |
+| Find references | LSP | Find all usages |
+| Read file | Read | `path/to/file.ts` |

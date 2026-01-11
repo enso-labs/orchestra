@@ -255,5 +255,87 @@ class TestPublicAssistantModel(unittest.TestCase):
         self.assertFalse(hasattr(public, "subagents"))
 
 
+class TestAssistantServiceFileSystem(unittest.IsolatedAsyncioTestCase):
+    """Tests for file_system property on assistants."""
+
+    async def asyncSetUp(self):
+        """Set up test fixtures."""
+        self.store = InMemoryStore()
+        self.user_id = str(uuid4())
+        self.service = AssistantService(user_id=self.user_id, store=self.store)
+        self.assistant_data = {
+            "name": "Test Assistant",
+            "description": "A test assistant for unit testing",
+            "tools": ["web_search"],
+            "system_prompt": "You are a helpful assistant.",
+            "instructions": None,
+        }
+
+    async def test_assistant_with_file_system_property(self):
+        """Test that Assistant model accepts file_system property."""
+        assistant_data = {
+            "name": "Test Assistant",
+            "description": "Test",
+            "tools": [],
+            "file_system": {
+                "/README.md": "# Hello World",
+                "/src/main.py": "print('hello')",
+            },
+        }
+        assistant = Assistant(**assistant_data)
+        self.assertEqual(assistant.file_system["/README.md"], "# Hello World")
+        self.assertEqual(assistant.file_system["/src/main.py"], "print('hello')")
+
+    async def test_assistant_file_system_defaults_to_empty_dict(self):
+        """Test that file_system defaults to empty dict when not provided."""
+        assistant_data = {
+            "name": "Test Assistant",
+            "description": "Test",
+            "tools": [],
+        }
+        assistant = Assistant(**assistant_data)
+        self.assertEqual(assistant.file_system, {})
+
+    async def test_update_persists_file_system(self):
+        """Test that file_system is persisted when updating assistant."""
+        assistant_id = str(uuid4())
+        assistant_data = {
+            **self.assistant_data,
+            "file_system": {"/test.txt": "test content"},
+        }
+
+        await self.service.update(assistant_id, assistant_data)
+
+        retrieved = await self.service.get(assistant_id)
+        self.assertIsNotNone(retrieved)
+        self.assertEqual(retrieved.file_system["/test.txt"], "test content")
+
+    async def test_get_returns_file_system(self):
+        """Test that get() returns assistant with file_system intact."""
+        assistant_id = str(uuid4())
+        files = {
+            "/app.py": "import flask",
+            "/requirements.txt": "flask==2.0",
+        }
+        assistant_data = {**self.assistant_data, "file_system": files}
+
+        await self.service.update(assistant_id, assistant_data)
+        retrieved = await self.service.get(assistant_id)
+
+        self.assertEqual(retrieved.file_system, files)
+
+    async def test_publish_syncs_file_system_to_public(self):
+        """Test that publishing syncs file_system to public namespace."""
+        assistant_id = str(uuid4())
+        files = {"/public.md": "# Public Docs"}
+        assistant_data = {**self.assistant_data, "file_system": files}
+
+        await self.service.update(assistant_id, assistant_data)
+        await self.service.publish(assistant_id)
+
+        public_assistant = await self.service.get_public(assistant_id)
+        self.assertEqual(public_assistant.file_system, files)
+
+
 if __name__ == "__main__":
     unittest.main()
