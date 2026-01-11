@@ -31,6 +31,8 @@ function AgentThreadPage() {
 		setMetadata,
 		setFilesMap,
 		setTodos,
+		fromBackendFormat,
+		clearFileSystem,
 	} = useChatContext();
 
 	useEffectGetAgent(agentId);
@@ -80,8 +82,16 @@ function AgentThreadPage() {
 		return () => {
 			setSearchParams(new URLSearchParams());
 			setAgent(INIT_AGENT_STATE.agent);
+			clearFileSystem();
 		};
 	}, []);
+
+	// Sync agent.file_system to fileSystem when agent loads
+	useEffect(() => {
+		if (agent?.file_system && Object.keys(agent.file_system).length > 0) {
+			fromBackendFormat(agent.file_system);
+		}
+	}, [agent?.id, fromBackendFormat]);
 
 	return (
 		<ChatLayout>

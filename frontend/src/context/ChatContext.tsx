@@ -119,6 +119,28 @@ export default function ChatProvider({
 			return;
 		}
 
+		// Deep equality check to avoid unnecessary state updates
+		const currentUserFiles = filesMap.get("__user_files__");
+		if (currentUserFiles) {
+			const newKeys = Object.keys(userFiles);
+			const currentKeys = Object.keys(currentUserFiles);
+			if (newKeys.length === currentKeys.length) {
+				const isEqual = newKeys.every((key) => {
+					const newFile = userFiles[key];
+					const currentFile = currentUserFiles[key];
+					if (!currentFile) return false;
+					return (
+						newFile.created_at === currentFile.created_at &&
+						newFile.modified_at === currentFile.modified_at &&
+						newFile.source === currentFile.source &&
+						newFile.content.length === currentFile.content.length &&
+						newFile.content.every((line, i) => line === currentFile.content[i])
+					);
+				});
+				if (isEqual) return; // No-op: userFiles unchanged
+			}
+		}
+
 		// Ensure __user_files__ is last so it overwrites on path collisions during merging.
 		const next = new Map(filesMap);
 		next.delete("__user_files__");
