@@ -57,7 +57,7 @@ export type ChatContextType = {
 		rate: number | null;
 	} | null;
 	filesMap: Map<string, any>;
-	setFilesMap: (map: Map<string, any>) => void;
+	setFilesMap: React.Dispatch<React.SetStateAction<Map<string, any>>>;
 	todos: Todo[];
 	setTodos: (todos: Todo[]) => void;
 	viewMode: "chat" | "editor";
