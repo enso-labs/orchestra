@@ -136,3 +136,50 @@ When the server is running:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
+
+## API Validation on Completion
+
+**IMPORTANT**: When completing tasks that involve API changes, provide curl request examples for manual validation BEFORE marking the task as done.
+
+### Required curl Examples
+
+For any new or modified endpoints, include:
+
+1. **Authentication** (if endpoint requires auth):
+```bash
+# Login to get token
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@example.com", "password": "test1234"}'
+```
+
+2. **Endpoint under test** with all relevant scenarios:
+```bash
+# Example: Create resource
+curl -X POST http://localhost:8000/api/<endpoint> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"field": "value"}'
+
+# Example: Get resource
+curl -X GET http://localhost:8000/api/<endpoint>/<id> \
+  -H "Authorization: Bearer <token>"
+
+# Example: Update resource
+curl -X PUT http://localhost:8000/api/<endpoint>/<id> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"field": "updated_value"}'
+
+# Example: Delete resource
+curl -X DELETE http://localhost:8000/api/<endpoint>/<id> \
+  -H "Authorization: Bearer <token>"
+```
+
+### Validation Checklist
+
+Before outputting `<promise>DONE</promise>`:
+- [ ] All tests pass (`make test`)
+- [ ] Provide curl examples for each modified/new endpoint
+- [ ] Include expected response format in comments
+- [ ] Cover success and error cases where applicable

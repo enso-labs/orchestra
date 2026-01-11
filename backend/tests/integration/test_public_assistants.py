@@ -370,8 +370,8 @@ async def test_update_assistant_file_system(async_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_public_assistant_includes_file_system(async_client: AsyncClient):
-    """Test that public assistants include file_system."""
+async def test_public_assistant_excludes_file_system(async_client: AsyncClient):
+    """Test that public assistants do NOT expose file_system to non-owners."""
     # Login
     login_data = {"email": "admin@example.com", "password": "test1234"}
     response = await async_client.post("/api/auth/login", json=login_data)
@@ -384,10 +384,11 @@ async def test_public_assistant_includes_file_system(async_client: AsyncClient):
     # Create with file_system
     assistant_data = {
         "name": "Public File System Agent",
-        "description": "Has public files",
+        "description": "Has owner-only files",
         "tools": [],
         "file_system": {
-            "/readme.md": "# Public Documentation",
+            "/readme.md": "# Secret Documentation",
+            "/secrets.txt": "API_KEY=sk-secret-12345",
         },
     }
 
@@ -404,13 +405,23 @@ async def test_public_assistant_includes_file_system(async_client: AsyncClient):
         )
         assert response.status_code == 200
 
-        # Get public assistant - file_system should be included
+        # Get public assistant - file_system must NOT be exposed (owner-only data)
         response = await async_client.get(f"/api/assistants/public/{assistant_id}")
         assert response.status_code == 200
         data = response.json()["assistant"]
-        # file_system is included for public assistants (it's part of their context)
-        assert "file_system" in data
-        assert data["file_system"]["/readme.md"] == "# Public Documentation"
+        # CRITICAL: file_system is owner-only and must NOT be exposed publicly
+        assert "file_system" not in data
+
+        # But owner can still see file_system via authenticated search
+        response = await async_client.post(
+            "/api/assistants/search",
+            json={"filter": {"id": assistant_id}},
+            headers=headers,
+        )
+        assert response.status_code == 200
+        owner_data = response.json()["assistants"][0]
+        assert "file_system" in owner_data
+        assert owner_data["file_system"]["/readme.md"] == "# Secret Documentation"
     finally:
         await async_client.delete(
             f"/api/assistants/{assistant_id}/publish", headers=headers

@@ -198,18 +198,17 @@ async def test_update_assistant_file_system(async_client: AsyncClient):
     assert response.json()["assistants"][0]["file_system"]["/new_file.txt"] == "new content"
 ```
 
-#### Test 2.3: Public assistant includes file_system (if desired)
+#### Test 2.3: Public assistant excludes file_system (owner-only)
 ```python
 @pytest.mark.asyncio
-async def test_public_assistant_includes_file_system(async_client: AsyncClient):
-    """Test that public assistants include file_system."""
+async def test_public_assistant_excludes_file_system(async_client: AsyncClient):
+    """Test that public assistants do NOT expose file_system to non-owners."""
     # Create, add file_system, publish...
 
     response = await async_client.get(f"/api/assistants/public/{assistant_id}")
     assert response.status_code == 200
-    # Note: Decide if file_system should be exposed publicly
-    # If yes: assert "file_system" in response.json()["assistant"]
-    # If no: assert "file_system" not in response.json()["assistant"]
+    # file_system is owner-only data and must NOT be exposed publicly
+    assert "file_system" not in response.json()["assistant"]
 ```
 
 **Run command**: `cd backend && uv run pytest tests/integration/test_public_assistants.py -v`
@@ -323,7 +322,8 @@ it("should preserve content through round-trip conversion", () => {
 - [x] Backend: `AssistantService.update()` persists `file_system` to the store
 - [x] Frontend: `useFileSystem` hook can sync files to/from the assistant's `file_system`
 - [x] API: Create/Update assistant endpoints accept and persist `file_system` data
-- [x] API: Search/Get assistant endpoints return `file_system` data
+- [x] API: Search/Get assistant endpoints return `file_system` data (owner-only)
+- [x] API: Public assistant endpoints do NOT expose `file_system` (owner-only data)
 - [x] Files persist across sessions when associated with an assistant
 
 ## Technical Requirements

@@ -98,21 +98,33 @@ export default function ChatProvider({
 		// Only sync files that don't have a source (i.e., user-created, not from SSE)
 		const userFiles: Record<string, FileData> = {};
 		fileSystem.forEach((data, path) => {
-			// Include files without source (user-created) or with __user_files__ source
+			// Include user-created files. Consider also including user-edited sourced files
+			// (e.g. dirty) if submissions still read from filesMap.
 			if (!data.source || data.source === "__user_files__") {
 				userFiles[path] = data;
 			}
 		});
 
-		// Update filesMap with user files if any exist
-		if (Object.keys(userFiles).length > 0) {
-			setFilesMap((prev: Map<string, unknown>) => {
-				const newMap = new Map(prev);
-				newMap.set("__user_files__", userFiles);
-				return newMap;
-			});
+		// Always reconcile __user_files__ to avoid stale submissions
+		const hasUserFiles = Object.keys(userFiles).length > 0;
+		const prevHasKey = filesMap.has("__user_files__");
+
+		// No user files: drop the key if it exists; otherwise no-op.
+		if (!hasUserFiles) {
+			if (prevHasKey) {
+				const next = new Map(filesMap);
+				next.delete("__user_files__");
+				setFilesMap(next);
+			}
+			return;
 		}
-	}, [fileSystem, setFilesMap]);
+
+		// Ensure __user_files__ is last so it overwrites on path collisions during merging.
+		const next = new Map(filesMap);
+		next.delete("__user_files__");
+		next.set("__user_files__", userFiles);
+		setFilesMap(next);
+	}, [fileSystem, filesMap, setFilesMap]);
 
 	// Clear fileSystem when messages are cleared
 	useEffect(() => {
