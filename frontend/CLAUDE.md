@@ -28,32 +28,35 @@ cp .example.env ~/.env/orchestra/.env.frontend
 ### 3. Start the Application
 
 **Default (port 5173):**
+
 ```bash
 npm run dev
 ```
 
 **For Claude/AI development (port 8030, all interfaces):**
+
 ```bash
 npm run dev:claude
 ```
 
 **With explicit port:**
+
 ```bash
 npx vite --port 3000
 ```
 
 ## Common Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server on port 5173 |
-| `npm run dev:claude` | Start dev server on port 8030 (0.0.0.0) |
-| `npm run build` | Build for production (outputs to `../backend/src/public`) |
-| `npm run format` | Format code with Prettier |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run all tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:coverage` | Run tests with coverage report |
+| Command                 | Description                                               |
+| ----------------------- | --------------------------------------------------------- |
+| `npm run dev`           | Start dev server on port 5173                             |
+| `npm run dev:claude`    | Start dev server on port 8030 (0.0.0.0)                   |
+| `npm run build`         | Build for production (outputs to `../backend/src/public`) |
+| `npm run format`        | Format code with Prettier                                 |
+| `npm run lint`          | Run ESLint                                                |
+| `npm run test`          | Run all tests                                             |
+| `npm run test:watch`    | Run tests in watch mode                                   |
+| `npm run test:coverage` | Run tests with coverage report                            |
 
 ## Project Structure
 
@@ -129,12 +132,14 @@ frontend/
 ## Code Style
 
 ### File Naming
+
 - Components: `PascalCase.tsx` (e.g., `ChatMessage.tsx`)
 - Hooks: `camelCase.ts` with `use` prefix (e.g., `useChat.ts`)
 - Services: `camelCase.ts` with `Service` suffix (e.g., `agentService.ts`)
 - Tests: `*.test.ts` or `*.test.tsx` suffix
 
 ### Component Structure
+
 ```tsx
 // Imports
 import { useState } from "react";
@@ -142,25 +147,27 @@ import { Button } from "@/components/ui/button";
 
 // Types (if needed)
 interface MyComponentProps {
-  title: string;
-  onAction?: () => void;
+	title: string;
+	onAction?: () => void;
 }
 
 // Component
 export function MyComponent({ title, onAction }: MyComponentProps) {
-  const [state, setState] = useState(false);
-  
-  return (
-    <div>
-      <h1>{title}</h1>
-      <Button onClick={onAction}>Click</Button>
-    </div>
-  );
+	const [state, setState] = useState(false);
+
+	return (
+		<div>
+			<h1>{title}</h1>
+			<Button onClick={onAction}>Click</Button>
+		</div>
+	);
 }
 ```
 
 ### Import Aliases
+
 Use `@/` alias for src imports:
+
 ```tsx
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -168,6 +175,7 @@ import { agentService } from "@/lib/services";
 ```
 
 ### Styling Guidelines
+
 - Use Tailwind CSS utility classes
 - Use CSS variables from `src/styles/globals.css` for theming
 - shadcn/ui components are in `src/components/ui/`
@@ -190,11 +198,13 @@ npx vitest run src/hooks/useModelVisibility.test.ts
 ```
 
 ### Test File Locations
+
 - Hook tests: `src/tests/hooks/` or co-located (e.g., `useModelVisibility.test.ts`)
 - Service tests: `src/tests/services/`
 - Component tests: Co-located with component or in `src/tests/`
 
 ### Testing Guidelines
+
 - Use Testing Library for component tests
 - Test observable behavior, not implementation details
 - Mock API calls using `src/tests/mocks/`
@@ -203,7 +213,9 @@ npx vitest run src/hooks/useModelVisibility.test.ts
 ## API Integration
 
 ### Service Layer
+
 All API calls go through service files in `src/lib/services/`:
+
 - `authService.ts` - Authentication
 - `agentService.ts` - Agent CRUD
 - `threadService.ts` - Thread management
@@ -216,7 +228,9 @@ All API calls go through service files in `src/lib/services/`:
 - `toolService.ts` - Tool management
 
 ### API Client
+
 Use `src/lib/utils/apiClient.ts` for HTTP requests:
+
 ```tsx
 import { apiClient } from "@/lib/utils/apiClient";
 
@@ -224,11 +238,13 @@ const response = await apiClient.get("/api/agents");
 ```
 
 ### Streaming
+
 For SSE/streaming responses, use `src/lib/utils/streamClient.ts`.
 
 ## Development Proxy
 
 The Vite dev server proxies `/api` requests to the backend:
+
 ```ts
 // vite.config.ts
 proxy: {
@@ -258,14 +274,18 @@ npm run preview
 When asked to plan or design a frontend feature:
 
 ### Preferred: Playwright MCP (if available)
+
 Use Playwright MCP tools for visual validation and design planning:
+
 1. Navigate to relevant pages
 2. Take snapshots/screenshots of current UI state
 3. Validate designs against existing patterns
 4. Test interactions and capture results
 
 ### Fallback: TDD-First Research
+
 If Playwright MCP is not working or unavailable:
+
 1. **Research the codebase** - Start by exploring existing patterns
 2. **Write tests first** - Define expected behavior via tests
 3. **Implement to pass tests** - Build the feature to satisfy test cases
@@ -278,6 +298,7 @@ If Playwright MCP is not working or unavailable:
 ### Validation Checklist
 
 Before marking a UI task complete:
+
 - [ ] All tests pass (`npm run test`)
 - [ ] No console errors in browser
 - [ ] UI renders correctly at different viewport sizes

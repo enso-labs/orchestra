@@ -183,7 +183,7 @@ def init_config(
             "thread_id": metadata.get("thread_id"),
             "assistant_id": metadata.get("assistant_id", None),
             "project_id": metadata.get("project_id", None),
-            "files": params.input.files or {},
+            "files": params.input.file_system or {},
         },
         max_concurrency=max_concurrency,
         recursion_limit=recursion_limit,

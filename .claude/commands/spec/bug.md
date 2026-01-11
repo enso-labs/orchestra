@@ -73,6 +73,31 @@ Output `<promise>DONE</promise>` when all tests green. --max-iterations 50 --com
 
 ---
 
+## Definition of Done
+
+Before the bug spec is considered complete and ready for implementation, verify:
+
+### Required Fields
+
+-   [ ] **Summary** contains a clear, concise description of the bug and its impact
+-   [ ] **Steps to Reproduce** has numbered, actionable steps (minimum 2)
+-   [ ] **Expected Behavior** clearly states what should happen
+-   [ ] **Actual Behavior** clearly states what is happening instead
+
+### Optional but Recommended
+
+-   [ ] **Screenshots / Logs** attached if the bug is visual or produces error output
+-   [ ] **Environment** details filled in (OS, browser, version)
+-   [ ] **Additional Context** includes any relevant links, related issues, or prior attempts
+
+### Quality Checks
+
+-   [ ] Steps to reproduce are reproducible by someone unfamiliar with the codebase
+-   [ ] Bug is isolated to a specific behavior (not multiple issues bundled)
+-   [ ] Impact/severity is implicitly clear from the summary
+
+---
+
 ## Report
 
 Confirm:

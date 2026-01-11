@@ -17,6 +17,8 @@ import {
 	Mic,
 	Square,
 	PanelLeft,
+	Sparkles,
+	Loader2,
 } from "lucide-react";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -50,6 +52,7 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { FileTreeSidebar } from "./FileTree";
+import useInferenceDictation from "@/hooks/useInferenceDictation";
 
 interface BreadcrumbSegment {
 	label: string;
@@ -118,6 +121,9 @@ export default function FileEditorPanel() {
 	// Debounce timer ref
 	const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+	// Track processed blobs to prevent re-processing
+	const processedBlobRef = useRef<Blob | null>(null);
+
 	// Tree sidebar state
 	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
 
@@ -126,6 +132,25 @@ export default function FileEditorPanel() {
 	const recorderControls = useVoiceVisualizer();
 	const { startRecording, stopRecording, isRecordingInProgress, recordedBlob } =
 		recorderControls;
+
+	// Get file content for inference dictation context
+	const getFileContent = useCallback(
+		(filename: string): string => {
+			const file = fileSystem.get(filename);
+			if (!file) return "";
+			return Array.isArray(file.content)
+				? file.content.join("\n")
+				: file.content;
+		},
+		[fileSystem],
+	);
+
+	// Inference dictation hook
+	const { inferenceMode, toggleInferenceMode, isGenerating, setIsGenerating } =
+		useInferenceDictation({
+		activeFile: activeFile || undefined,
+		fileContent: activeFile ? getFileContent(activeFile) : undefined,
+	});
 
 	// Memoized Monaco options to prevent re-initialization
 	const monacoOptions = useMemo(
@@ -177,9 +202,14 @@ export default function FileEditorPanel() {
 		setIsRecording(isRecordingInProgress);
 	}, [isRecordingInProgress]);
 
-	// Handle recorded blob - transcribe and insert into editor
+	// Handle recorded blob - transcribe and optionally send to LLM for inference
 	useEffect(() => {
+		// Skip if no blob, no file, or if we've already processed this blob
 		if (!recordedBlob || !selectedFile) return;
+		if (processedBlobRef.current === recordedBlob) return;
+
+		// Mark this blob as being processed
+		processedBlobRef.current = recordedBlob;
 
 		const formData = new FormData();
 		formData.append("file", recordedBlob, "recording.webm");
@@ -194,9 +224,127 @@ export default function FileEditorPanel() {
 					"Content-Type": "multipart/form-data",
 				},
 			})
-			.then((response) => {
+			.then(async (response) => {
 				const transcribedText = response.data.transcript.text;
-				if (transcribedText && selectedFile) {
+				if (!transcribedText || !selectedFile) return;
+
+				if (inferenceMode) {
+					// Inference mode: send to LLM for file generation
+					setIsGenerating(true);
+					try {
+						// Get current file content for context (fresh at inference time)
+						const currentFileContent = getFileContent(selectedFile);
+
+						// Build files map with current file for LLM access
+						const filesMap: Record<string, string> = {};
+						if (currentFileContent) {
+							filesMap[selectedFile] = currentFileContent;
+						}
+
+						// Build payload with file_system in input for LLM agent access
+						const payload = {
+							input: {
+								messages: [{ role: "user", content: transcribedText }],
+								file_system:
+									Object.keys(filesMap).length > 0 ? filesMap : undefined,
+							},
+							generate_files: true,
+							target_file: selectedFile,
+							file_context: currentFileContent || undefined,
+						};
+
+						const streamResponse = await apiClient.post(
+							"/llm/stream",
+							payload,
+							{
+								responseType: "text",
+								headers: {
+									Accept: "text/event-stream",
+								},
+							},
+						);
+
+						// Parse SSE response for file content
+						// Response format: data: ["stream_type", {payload}]
+						const lines = streamResponse.data.split("\n");
+						let generatedContent = "";
+
+						for (const line of lines) {
+							if (line.startsWith("data:")) {
+								try {
+									const data = JSON.parse(line.slice(5).trim());
+
+									// Stream response is a tuple: [type, payload]
+									if (Array.isArray(data) && data.length === 2) {
+										const [streamType, payload] = data;
+
+										// Handle "values" events which contain files
+										if (streamType === "values" && payload?.files) {
+											Object.entries(payload.files).forEach(
+												([filePath, content]) => {
+													if (typeof content === "string") {
+														if (fileSystem.has(filePath)) {
+															updateFile(filePath, content);
+														} else {
+															createFile(filePath, content);
+														}
+													}
+												},
+											);
+										}
+
+										// Handle "values" events to get AI response content
+										if (streamType === "values" && payload?.messages) {
+											// Get the last AI message content as generated content
+											for (const msg of payload.messages) {
+												if (msg.type === "ai" || msg.role === "assistant") {
+													if (typeof msg.content === "string") {
+														generatedContent = msg.content;
+													}
+												}
+											}
+										}
+
+										// Handle "messages" events for streaming content
+										if (streamType === "messages") {
+											const [msgData] = Array.isArray(payload)
+												? payload
+												: [payload];
+											if (
+												msgData?.type === "ai" ||
+												msgData?.role === "assistant"
+											) {
+												if (typeof msgData.content === "string") {
+													generatedContent += msgData.content;
+												}
+											}
+										}
+									}
+								} catch {
+									// Ignore non-JSON lines
+								}
+							}
+						}
+
+						// If we have generated content and a target file, write it
+						if (generatedContent && selectedFile) {
+							// Extract code blocks if present, otherwise use raw content
+							const codeBlockMatch = generatedContent.match(
+								/```(?:\w+)?\n([\s\S]*?)```/,
+							);
+							const contentToWrite = codeBlockMatch
+								? codeBlockMatch[1].trim()
+								: generatedContent;
+
+							updateFile(selectedFile, contentToWrite);
+						}
+					} catch (error) {
+						console.error("Error generating content:", error);
+					} finally {
+						setIsGenerating(false);
+					}
+				} else {
+					// Normal mode: insert transcribed text into editor
 					const currentContent = getFileContent(selectedFile);
 					const newContent = currentContent
 						? `${currentContent}\n${transcribedText}`
@@ -207,7 +355,10 @@ export default function FileEditorPanel() {
 			.catch((error) => {
 				console.error("Error transcribing audio:", error);
 			});
-	}, [recordedBlob, selectedFile, updateFile]);
+		// Note: fileSystem is intentionally excluded from deps to prevent re-triggering
+		// The processedBlobRef prevents duplicate processing of the same blob
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [recordedBlob, selectedFile, inferenceMode]);
 
 	const handleFileSelect = useCallback(
 		(filename: string) => {
@@ -260,12 +411,6 @@ export default function FileEditorPanel() {
 			kt: "kotlin",
 		};
 		return langMap[ext || ""] || "plaintext";
-	};
-
-	const getFileContent = (filename: string): string => {
-		const file = fileSystem.get(filename);
-		if (!file) return "";
-		return Array.isArray(file.content) ? file.content.join("\n") : file.content;
 	};
 
 	const isMarkdownFile = (filename: string): boolean => {
@@ -647,10 +792,46 @@ export default function FileEditorPanel() {
 
 							{/* Actions */}
 							<div className="flex items-center gap-1 px-2 border-l border-border">
+								{/* Inference Mode Toggle */}
+								{selectedFile && (
+									<MainToolTip
+										content={
+											inferenceMode
+												? "Inference mode ON: Voice will generate content via LLM"
+												: "Inference mode OFF: Voice will insert text directly"
+										}
+										delayDuration={300}
+									>
+										<Button
+											variant={inferenceMode ? "secondary" : "ghost"}
+											size="sm"
+											onClick={toggleInferenceMode}
+											className={`h-8 gap-1 ${inferenceMode ? "bg-primary/20 text-primary" : ""}`}
+											aria-label="Toggle inference mode"
+											disabled={isRecording || isGenerating}
+										>
+											<Sparkles className="h-4 w-4" />
+											{inferenceMode && (
+												<span className="text-xs hidden sm:inline">
+													Generate
+												</span>
+											)}
+										</Button>
+									</MainToolTip>
+								)}
+
 								{/* Dictation button */}
 								{selectedFile && (
 									<MainToolTip
-										content={isRecording ? "Stop dictation" : "Start dictation"}
+										content={
+											isGenerating
+												? "Generating content..."
+												: isRecording
+													? "Stop dictation"
+													: inferenceMode
+														? "Start voice prompt for LLM generation"
+														: "Start dictation"
+										}
 										delayDuration={500}
 									>
 										<Button
@@ -663,8 +844,11 @@ export default function FileEditorPanel() {
 											aria-label={
 												isRecording ? "Stop dictation" : "Start dictation"
 											}
+											disabled={isGenerating}
 										>
-											{isRecording ? (
+											{isGenerating ? (
+												<Loader2 className="h-4 w-4 animate-spin" />
+											) : isRecording ? (
 												<Square className="h-4 w-4" />
 											) : (
 												<Mic className="h-4 w-4" />
@@ -755,6 +939,16 @@ export default function FileEditorPanel() {
 									speed={1}
 									barWidth={2}
 								/>
+							</div>
+						)}
+
+						{/* Generating Indicator - only show when generating */}
+						{isGenerating && (
+							<div className="px-4 py-3 bg-primary/5 border-b border-border flex items-center gap-3">
+								<Loader2 className="h-4 w-4 animate-spin text-primary" />
+								<span className="text-sm text-muted-foreground">
+									Generating content from voice prompt...
+								</span>
 							</div>
 						)}
 

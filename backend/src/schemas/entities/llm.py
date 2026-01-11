@@ -1,12 +1,14 @@
 from uuid import uuid4
 from datetime import datetime
 from typing import Dict, List, Any, Literal, Optional
+from pathlib import PurePosixPath
 from pydantic import (
     BaseModel,
     Field,
     ConfigDict,
     computed_field,
     field_serializer,
+    field_validator,
     model_validator,
 )
 from langchain_core.messages import (
@@ -60,7 +62,7 @@ class LLMInput(BaseModel):
         content: str | List[Any] = Field(examples=["Weather in Dallas?"])
 
     messages: List[ChatMessage]
-    files: Optional[Dict[str, Any]] = Field(default=None)
+    file_system: Optional[Dict[str, Any]] = Field(default=None)
 
     def to_langchain_messages(self) -> "LLMInput":
         # Convert API messages to LangChain message objects
@@ -212,6 +214,20 @@ class LLMRequest(BaseModel):
     metadata: Optional[Config] = Field(
         default_factory=Config, description="LangGraph configuration"
     )
+    # Inference dictation parameters
+    generate_files: Optional[bool] = Field(
+        default=False,
+        description="When True, the LLM will generate file content from the prompt",
+    )
+    target_file: Optional[str] = Field(
+        default=None,
+        description="Target file path for generated content",
+    )
+    file_context: Optional[str] = Field(
+        default=None,
+        max_length=10000,
+        description="Existing file content to provide as context for generation",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -224,3 +240,28 @@ class LLMRequest(BaseModel):
             elif isinstance(meta, dict):
                 values["metadata"] = Config(**meta)
         return values
+
+    @field_validator("target_file")
+    @classmethod
+    def validate_target_file(cls, v: Optional[str]) -> Optional[str]:
+        """Validate target_file path: reject path traversal and normalize."""
+        if v is None:
+            return v
+
+        # Check for path traversal attempts
+        path = PurePosixPath(v)
+        for part in path.parts:
+            if part == "..":
+                raise ValueError(
+                    "Path traversal is not allowed: '..' segments are forbidden"
+                )
+
+        # Normalize the path while preserving leading '/'
+        had_leading_slash = v.startswith("/")
+        normalized = str(PurePosixPath(v))
+
+        # PurePosixPath removes leading '/' for relative paths, restore if needed
+        if had_leading_slash and not normalized.startswith("/"):
+            normalized = "/" + normalized
+
+        return normalized

@@ -1,9 +1,9 @@
 ---
 active: true
-iteration: 4
+iteration: 1
 max_iterations: 0
 completion_promise: null
-started_at: "2026-01-11T02:02:14Z"
+started_at: "2026-01-11T05:34:23Z"
 ---
 
-@.claude/specs/feature-637-persist-files-to-agent.md
+@.claude/specs/feature-654-inference-dictation.md

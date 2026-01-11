@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc142
 
 ### Changed
+  - feat/654-inference-dication (2026-01-10)
   - feat/637-user-can-persist-files-to-agent (2026-01-10)
 
 ## v0.0.2-rc141
