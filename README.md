@@ -28,7 +28,7 @@ Steerable Harnesses for [DeepAgents](https://docs.langchain.com/oss/python/deepa
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![DCO](https://img.shields.io/badge/DCO-1.1-yellow)](DCO)
 
-<img src="https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true">
+<!-- <img src="https://github.com/ryaneggz/static/blob/main/enso/landing-page-light.gif?raw=true"> -->
 
 </div>
 

@@ -7,8 +7,8 @@ Generate a bug spec template file for a new issue. The output should be saved to
 
 ## Input
 
-- **ISSUE_NUMBER**: The numeric identifier for the bug (required)
-- **SHORTDESC**: A short description of the bug (kebab-case, required)
+-   **ISSUE_NUMBER**: The numeric identifier for the bug (required)
+-   **SHORTDESC**: A short description of the bug (kebab-case, required)
 
 Example:  
 Input: `456-menu-invisible`  
@@ -29,9 +29,9 @@ _A concise summary of the bug and impact._
 
 ## Steps to Reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behavior
 
@@ -47,8 +47,8 @@ _If applicable._
 
 ## Environment
 
-- OS:
-- Browser / Version (if relevant):
+-   OS:
+-   Browser / Version (if relevant):
 
 ## Additional Context
 
@@ -65,8 +65,34 @@ _Anything else?_
 
 ---
 
+## Definition of Done
+
+Before the bug spec is considered complete and ready for implementation, verify:
+
+### Required Fields
+
+-   [ ] **Summary** contains a clear, concise description of the bug and its impact
+-   [ ] **Steps to Reproduce** has numbered, actionable steps (minimum 2)
+-   [ ] **Expected Behavior** clearly states what should happen
+-   [ ] **Actual Behavior** clearly states what is happening instead
+
+### Optional but Recommended
+
+-   [ ] **Screenshots / Logs** attached if the bug is visual or produces error output
+-   [ ] **Environment** details filled in (OS, browser, version)
+-   [ ] **Additional Context** includes any relevant links, related issues, or prior attempts
+
+### Quality Checks
+
+-   [ ] Steps to reproduce are reproducible by someone unfamiliar with the codebase
+-   [ ] Bug is isolated to a specific behavior (not multiple issues bundled)
+-   [ ] Impact/severity is implicitly clear from the summary
+
+---
+
 ## Report
 
 Confirm:
-- Template file created at correct path
-- ISSUE_NUMBER and SHORTDESC substituted into title
+
+-   Template file created at correct path
+-   ISSUE_NUMBER and SHORTDESC substituted into title
