@@ -242,46 +242,57 @@ export default function FileEditorPanel() {
 						);
 
 						// Parse SSE response for file content
+						// Response format: data: ["stream_type", {payload}]
 						const lines = streamResponse.data.split("\n");
+						let generatedContent = "";
+
 						for (const line of lines) {
 							if (line.startsWith("data:")) {
 								try {
-									const data = JSON.parse(line.slice(5));
-									// Handle files in the response
-									if (data.files && typeof data.files === "object") {
-										Object.entries(data.files).forEach(
-											([filePath, content]) => {
-												if (typeof content === "string") {
-													if (fileSystem.has(filePath)) {
-														updateFile(filePath, content);
-													} else {
-														createFile(filePath, content);
+									const data = JSON.parse(line.slice(5).trim());
+
+									// Stream response is a tuple: [type, payload]
+									if (Array.isArray(data) && data.length === 2) {
+										const [streamType, payload] = data;
+
+										// Handle "values" events which contain files
+										if (streamType === "values" && payload?.files) {
+											Object.entries(payload.files).forEach(
+												([filePath, content]) => {
+													if (typeof content === "string") {
+														if (fileSystem.has(filePath)) {
+															updateFile(filePath, content);
+														} else {
+															createFile(filePath, content);
+														}
+													}
+												},
+											);
+										}
+
+										// Handle "values" events to get AI response content
+										if (streamType === "values" && payload?.messages) {
+											// Get the last AI message content as generated content
+											for (const msg of payload.messages) {
+												if (msg.type === "ai" || msg.role === "assistant") {
+													if (typeof msg.content === "string") {
+														generatedContent = msg.content;
 													}
 												}
-											},
-										);
-									}
-									// Handle messages with tool outputs that contain files
-									if (data.messages) {
-										for (const msg of data.messages) {
-											if (msg.tool_outputs) {
-												for (const output of msg.tool_outputs) {
-													if (
-														output.files &&
-														typeof output.files === "object"
-													) {
-														Object.entries(output.files).forEach(
-															([filePath, content]) => {
-																if (typeof content === "string") {
-																	if (fileSystem.has(filePath)) {
-																		updateFile(filePath, content);
-																	} else {
-																		createFile(filePath, content);
-																	}
-																}
-															},
-														);
-													}
+											}
+										}
+
+										// Handle "messages" events for streaming content
+										if (streamType === "messages") {
+											const [msgData] = Array.isArray(payload)
+												? payload
+												: [payload];
+											if (
+												msgData?.type === "ai" ||
+												msgData?.role === "assistant"
+											) {
+												if (typeof msgData.content === "string") {
+													generatedContent += msgData.content;
 												}
 											}
 										}
@@ -290,6 +301,19 @@ export default function FileEditorPanel() {
 									// Ignore non-JSON lines
 								}
 							}
+						}
+
+						// If we have generated content and a target file, write it
+						if (generatedContent && selectedFile) {
+							// Extract code blocks if present, otherwise use raw content
+							const codeBlockMatch = generatedContent.match(
+								/```(?:\w+)?\n([\s\S]*?)```/,
+							);
+							const contentToWrite = codeBlockMatch
+								? codeBlockMatch[1].trim()
+								: generatedContent;
+
+							updateFile(selectedFile, contentToWrite);
 						}
 					} catch (error) {
 						console.error("Error generating content:", error);
