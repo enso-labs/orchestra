@@ -212,6 +212,19 @@ class LLMRequest(BaseModel):
     metadata: Optional[Config] = Field(
         default_factory=Config, description="LangGraph configuration"
     )
+    # Inference dictation parameters
+    generate_files: Optional[bool] = Field(
+        default=False,
+        description="When True, the LLM will generate file content from the prompt",
+    )
+    target_file: Optional[str] = Field(
+        default=None,
+        description="Target file path for generated content",
+    )
+    file_context: Optional[str] = Field(
+        default=None,
+        description="Existing file content to provide as context for generation",
+    )
 
     @model_validator(mode="before")
     @classmethod

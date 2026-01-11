@@ -392,3 +392,5 @@ The current dictation flow:
 ### Related Branch
 
 `origin/feat/646-add-dictation-file-panel` - Contains initial dictation implementation
+
+Output <promise>DONE</promise> when all tests green." --max-iterations 50 --completion-promise "DONE"

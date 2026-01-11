@@ -17,6 +17,8 @@ import {
 	Mic,
 	Square,
 	PanelLeft,
+	Sparkles,
+	Loader2,
 } from "lucide-react";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -50,6 +52,7 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { FileTreeSidebar } from "./FileTree";
+import useInferenceDictation from "@/hooks/useInferenceDictation";
 
 interface BreadcrumbSegment {
 	label: string;
@@ -127,6 +130,30 @@ export default function FileEditorPanel() {
 	const { startRecording, stopRecording, isRecordingInProgress, recordedBlob } =
 		recorderControls;
 
+	// Get file content for inference dictation context
+	const getFileContent = useCallback(
+		(filename: string): string => {
+			const file = fileSystem.get(filename);
+			if (!file) return "";
+			return Array.isArray(file.content)
+				? file.content.join("\n")
+				: file.content;
+		},
+		[fileSystem],
+	);
+
+	// Inference dictation hook
+	const {
+		inferenceMode,
+		toggleInferenceMode,
+		isGenerating,
+		setIsGenerating,
+		buildPayload,
+	} = useInferenceDictation({
+		activeFile: activeFile || undefined,
+		fileContent: activeFile ? getFileContent(activeFile) : undefined,
+	});
+
 	// Memoized Monaco options to prevent re-initialization
 	const monacoOptions = useMemo(
 		() => ({
@@ -177,7 +204,7 @@ export default function FileEditorPanel() {
 		setIsRecording(isRecordingInProgress);
 	}, [isRecordingInProgress]);
 
-	// Handle recorded blob - transcribe and insert into editor
+	// Handle recorded blob - transcribe and optionally send to LLM for inference
 	useEffect(() => {
 		if (!recordedBlob || !selectedFile) return;
 
@@ -194,9 +221,83 @@ export default function FileEditorPanel() {
 					"Content-Type": "multipart/form-data",
 				},
 			})
-			.then((response) => {
+			.then(async (response) => {
 				const transcribedText = response.data.transcript.text;
-				if (transcribedText && selectedFile) {
+				if (!transcribedText || !selectedFile) return;
+
+				if (inferenceMode) {
+					// Inference mode: send to LLM for file generation
+					setIsGenerating(true);
+					try {
+						const payload = buildPayload(transcribedText);
+						const streamResponse = await apiClient.post(
+							"/llm/stream",
+							payload,
+							{
+								responseType: "text",
+								headers: {
+									Accept: "text/event-stream",
+								},
+							},
+						);
+
+						// Parse SSE response for file content
+						const lines = streamResponse.data.split("\n");
+						for (const line of lines) {
+							if (line.startsWith("data:")) {
+								try {
+									const data = JSON.parse(line.slice(5));
+									// Handle files in the response
+									if (data.files && typeof data.files === "object") {
+										Object.entries(data.files).forEach(
+											([filePath, content]) => {
+												if (typeof content === "string") {
+													if (fileSystem.has(filePath)) {
+														updateFile(filePath, content);
+													} else {
+														createFile(filePath, content);
+													}
+												}
+											},
+										);
+									}
+									// Handle messages with tool outputs that contain files
+									if (data.messages) {
+										for (const msg of data.messages) {
+											if (msg.tool_outputs) {
+												for (const output of msg.tool_outputs) {
+													if (
+														output.files &&
+														typeof output.files === "object"
+													) {
+														Object.entries(output.files).forEach(
+															([filePath, content]) => {
+																if (typeof content === "string") {
+																	if (fileSystem.has(filePath)) {
+																		updateFile(filePath, content);
+																	} else {
+																		createFile(filePath, content);
+																	}
+																}
+															},
+														);
+													}
+												}
+											}
+										}
+									}
+								} catch {
+									// Ignore non-JSON lines
+								}
+							}
+						}
+					} catch (error) {
+						console.error("Error generating content:", error);
+					} finally {
+						setIsGenerating(false);
+					}
+				} else {
+					// Normal mode: insert transcribed text into editor
 					const currentContent = getFileContent(selectedFile);
 					const newContent = currentContent
 						? `${currentContent}\n${transcribedText}`
@@ -207,7 +308,17 @@ export default function FileEditorPanel() {
 			.catch((error) => {
 				console.error("Error transcribing audio:", error);
 			});
-	}, [recordedBlob, selectedFile, updateFile]);
+	}, [
+		recordedBlob,
+		selectedFile,
+		updateFile,
+		createFile,
+		inferenceMode,
+		buildPayload,
+		setIsGenerating,
+		getFileContent,
+		fileSystem,
+	]);
 
 	const handleFileSelect = useCallback(
 		(filename: string) => {
@@ -260,12 +371,6 @@ export default function FileEditorPanel() {
 			kt: "kotlin",
 		};
 		return langMap[ext || ""] || "plaintext";
-	};
-
-	const getFileContent = (filename: string): string => {
-		const file = fileSystem.get(filename);
-		if (!file) return "";
-		return Array.isArray(file.content) ? file.content.join("\n") : file.content;
 	};
 
 	const isMarkdownFile = (filename: string): boolean => {
@@ -647,10 +752,46 @@ export default function FileEditorPanel() {
 
 							{/* Actions */}
 							<div className="flex items-center gap-1 px-2 border-l border-border">
+								{/* Inference Mode Toggle */}
+								{selectedFile && (
+									<MainToolTip
+										content={
+											inferenceMode
+												? "Inference mode ON: Voice will generate content via LLM"
+												: "Inference mode OFF: Voice will insert text directly"
+										}
+										delayDuration={300}
+									>
+										<Button
+											variant={inferenceMode ? "secondary" : "ghost"}
+											size="sm"
+											onClick={toggleInferenceMode}
+											className={`h-8 gap-1 ${inferenceMode ? "bg-primary/20 text-primary" : ""}`}
+											aria-label="Toggle inference mode"
+											disabled={isRecording || isGenerating}
+										>
+											<Sparkles className="h-4 w-4" />
+											{inferenceMode && (
+												<span className="text-xs hidden sm:inline">
+													Generate
+												</span>
+											)}
+										</Button>
+									</MainToolTip>
+								)}
+
 								{/* Dictation button */}
 								{selectedFile && (
 									<MainToolTip
-										content={isRecording ? "Stop dictation" : "Start dictation"}
+										content={
+											isGenerating
+												? "Generating content..."
+												: isRecording
+													? "Stop dictation"
+													: inferenceMode
+														? "Start voice prompt for LLM generation"
+														: "Start dictation"
+										}
 										delayDuration={500}
 									>
 										<Button
@@ -663,8 +804,11 @@ export default function FileEditorPanel() {
 											aria-label={
 												isRecording ? "Stop dictation" : "Start dictation"
 											}
+											disabled={isGenerating}
 										>
-											{isRecording ? (
+											{isGenerating ? (
+												<Loader2 className="h-4 w-4 animate-spin" />
+											) : isRecording ? (
 												<Square className="h-4 w-4" />
 											) : (
 												<Mic className="h-4 w-4" />
@@ -755,6 +899,16 @@ export default function FileEditorPanel() {
 									speed={1}
 									barWidth={2}
 								/>
+							</div>
+						)}
+
+						{/* Generating Indicator - only show when generating */}
+						{isGenerating && (
+							<div className="px-4 py-3 bg-primary/5 border-b border-border flex items-center gap-3">
+								<Loader2 className="h-4 w-4 animate-spin text-primary" />
+								<span className="text-sm text-muted-foreground">
+									Generating content from voice prompt...
+								</span>
 							</div>
 						)}
 
