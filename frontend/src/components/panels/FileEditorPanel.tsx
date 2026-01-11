@@ -240,10 +240,18 @@ export default function FileEditorPanel() {
 						// Get current file content for context (fresh at inference time)
 						const currentFileContent = getFileContent(selectedFile);
 
-						// Build payload with current file context
+						// Build files map with current file for LLM access
+						const filesMap: Record<string, string> = {};
+						if (currentFileContent) {
+							filesMap[selectedFile] = currentFileContent;
+						}
+
+						// Build payload with file_system in input for LLM agent access
 						const payload = {
 							input: {
 								messages: [{ role: "user", content: transcribedText }],
+								file_system:
+									Object.keys(filesMap).length > 0 ? filesMap : undefined,
 							},
 							generate_files: true,
 							target_file: selectedFile,

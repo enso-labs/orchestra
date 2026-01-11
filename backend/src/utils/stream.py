@@ -183,7 +183,7 @@ async def stream_generator(
     service_context: ServiceContext,
     instructions: str = None,
 ):
-    files_map = config["metadata"].get("files", {}) or input.files or {}
+    files_map = config["metadata"].get("files", {}) or input.file_system or {}
     todos_list = config["metadata"].get("todos", [])
     async with get_checkpoint_db() as checkpointer:
         try:
