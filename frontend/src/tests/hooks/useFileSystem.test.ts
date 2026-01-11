@@ -72,7 +72,20 @@ describe("useFileSystem", () => {
 				result.current.createFile("/test.txt", "new content");
 			});
 
-			expect(result.current.openTabs.filter((t) => t === "/test.txt").length).toBe(1);
+			expect(
+				result.current.openTabs.filter((t) => t === "/test.txt").length,
+			).toBe(1);
+		});
+
+		it("should mark file with __user_files__ source for filesMap sync", () => {
+			const { result } = renderHook(() => useFileSystem());
+
+			act(() => {
+				result.current.createFile("/test.txt", "user content");
+			});
+
+			const file = result.current.fileSystem.get("/test.txt");
+			expect(file?.source).toBe("__user_files__");
 		});
 	});
 
@@ -104,7 +117,8 @@ describe("useFileSystem", () => {
 				result.current.updateFile("/test.txt", "updated");
 			});
 
-			const newModified = result.current.fileSystem.get("/test.txt")?.modified_at;
+			const newModified =
+				result.current.fileSystem.get("/test.txt")?.modified_at;
 			expect(newModified).toBeDefined();
 			// Note: In fast tests, timestamps might be the same
 		});
@@ -220,7 +234,9 @@ describe("useFileSystem", () => {
 
 			expect(result.current.fileSystem.has("/old.txt")).toBe(false);
 			expect(result.current.fileSystem.has("/new.txt")).toBe(true);
-			expect(result.current.fileSystem.get("/new.txt")?.content).toEqual(["content"]);
+			expect(result.current.fileSystem.get("/new.txt")?.content).toEqual([
+				"content",
+			]);
 		});
 
 		it("should update openTabs with new path", () => {
@@ -324,7 +340,9 @@ describe("useFileSystem", () => {
 				expect(result.current.openTabs).not.toContain("/test.txt");
 				// But file should still exist in fileSystem
 				expect(result.current.fileSystem.has("/test.txt")).toBe(true);
-				expect(result.current.fileSystem.get("/test.txt")?.content).toEqual(["content"]);
+				expect(result.current.fileSystem.get("/test.txt")?.content).toEqual([
+					"content",
+				]);
 			});
 
 			it("should select adjacent tab when closing active", () => {
@@ -406,8 +424,22 @@ describe("useFileSystem", () => {
 				const { result } = renderHook(() => useFileSystem());
 
 				const files = new Map<string, FileData>([
-					["/file1.txt", { content: ["content1"], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-					["/file2.txt", { content: ["content2"], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+					[
+						"/file1.txt",
+						{
+							content: ["content1"],
+							created_at: "2024-01-01",
+							modified_at: "2024-01-01",
+						},
+					],
+					[
+						"/file2.txt",
+						{
+							content: ["content2"],
+							created_at: "2024-01-01",
+							modified_at: "2024-01-01",
+						},
+					],
 				]);
 
 				act(() => {
@@ -422,8 +454,22 @@ describe("useFileSystem", () => {
 				const { result } = renderHook(() => useFileSystem());
 
 				const files = new Map<string, FileData>([
-					["/file1.txt", { content: ["content1"], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-					["/file2.txt", { content: ["content2"], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+					[
+						"/file1.txt",
+						{
+							content: ["content1"],
+							created_at: "2024-01-01",
+							modified_at: "2024-01-01",
+						},
+					],
+					[
+						"/file2.txt",
+						{
+							content: ["content2"],
+							created_at: "2024-01-01",
+							modified_at: "2024-01-01",
+						},
+					],
 				]);
 
 				act(() => {
@@ -438,7 +484,14 @@ describe("useFileSystem", () => {
 				const { result } = renderHook(() => useFileSystem());
 
 				const files = new Map<string, FileData>([
-					["/file1.txt", { content: ["content1"], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+					[
+						"/file1.txt",
+						{
+							content: ["content1"],
+							created_at: "2024-01-01",
+							modified_at: "2024-01-01",
+						},
+					],
 				]);
 
 				act(() => {
@@ -456,7 +509,14 @@ describe("useFileSystem", () => {
 				});
 
 				const files = new Map<string, FileData>([
-					["/new.txt", { content: ["content"], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+					[
+						"/new.txt",
+						{
+							content: ["content"],
+							created_at: "2024-01-01",
+							modified_at: "2024-01-01",
+						},
+					],
 				]);
 
 				act(() => {
@@ -502,6 +562,208 @@ describe("useFileSystem", () => {
 				expect(submission["/file1.txt"]).toBeDefined();
 				expect(submission["/file2.txt"]).toBeDefined();
 				expect(submission["/file1.txt"].content).toEqual(["content1"]);
+			});
+		});
+	});
+
+	describe("Backend Sync", () => {
+		describe("toBackendFormat", () => {
+			it("should convert FileData map to Dict[str, str]", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				act(() => {
+					result.current.createFile("/test.txt", "line1\nline2");
+					result.current.createFile("/app.py", "print('hi')");
+				});
+
+				const backendFormat = result.current.toBackendFormat();
+
+				expect(backendFormat["/test.txt"]).toBe("line1\nline2");
+				expect(backendFormat["/app.py"]).toBe("print('hi')");
+			});
+
+			it("should return empty object when no files exist", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				const backendFormat = result.current.toBackendFormat();
+
+				expect(Object.keys(backendFormat).length).toBe(0);
+			});
+
+			it("should preserve multiline content correctly", () => {
+				const { result } = renderHook(() => useFileSystem());
+				const content = "function hello() {\n  return 'world';\n}";
+
+				act(() => {
+					result.current.createFile("/index.js", content);
+				});
+
+				const backendFormat = result.current.toBackendFormat();
+				expect(backendFormat["/index.js"]).toBe(content);
+			});
+		});
+
+		describe("fromBackendFormat", () => {
+			it("should convert Dict[str, str] to FileData map", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				const backendData = {
+					"/test.txt": "line1\nline2",
+					"/app.py": "print('hi')",
+				};
+
+				act(() => {
+					result.current.fromBackendFormat(backendData);
+				});
+
+				expect(result.current.fileSystem.has("/test.txt")).toBe(true);
+				expect(result.current.fileSystem.get("/test.txt")?.content).toEqual([
+					"line1",
+					"line2",
+				]);
+				expect(result.current.fileSystem.get("/app.py")?.content).toEqual([
+					"print('hi')",
+				]);
+			});
+
+			it("should auto-open imported files as tabs", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				const backendData = {
+					"/file1.txt": "content1",
+					"/file2.txt": "content2",
+				};
+
+				act(() => {
+					result.current.fromBackendFormat(backendData);
+				});
+
+				expect(result.current.openTabs).toContain("/file1.txt");
+				expect(result.current.openTabs).toContain("/file2.txt");
+			});
+
+			it("should set first imported file as active if none selected", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				const backendData = {
+					"/first.txt": "content",
+				};
+
+				act(() => {
+					result.current.fromBackendFormat(backendData);
+				});
+
+				expect(result.current.activeFile).toBe("/first.txt");
+			});
+
+			it("should not change activeFile if one is already selected", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				act(() => {
+					result.current.createFile("/existing.txt");
+				});
+
+				const backendData = {
+					"/new.txt": "content",
+				};
+
+				act(() => {
+					result.current.fromBackendFormat(backendData);
+				});
+
+				expect(result.current.activeFile).toBe("/existing.txt");
+			});
+
+			it("should handle empty data gracefully", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				act(() => {
+					result.current.fromBackendFormat({});
+				});
+
+				expect(result.current.fileSystem.size).toBe(0);
+			});
+
+			it("should mark files with __backend_sync__ source", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				act(() => {
+					result.current.fromBackendFormat({ "/sync.txt": "content" });
+				});
+
+				expect(result.current.fileSystem.get("/sync.txt")?.source).toBe(
+					"__backend_sync__",
+				);
+			});
+		});
+
+		describe("round-trip conversion", () => {
+			it("should preserve content through round-trip conversion", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				const originalContent = "function hello() {\n  return 'world';\n}";
+
+				act(() => {
+					result.current.createFile("/index.js", originalContent);
+				});
+
+				const backendFormat = result.current.toBackendFormat();
+
+				act(() => {
+					result.current.clearFileSystem();
+					result.current.fromBackendFormat(backendFormat);
+				});
+
+				const file = result.current.fileSystem.get("/index.js");
+				expect(file?.content.join("\n")).toBe(originalContent);
+			});
+
+			it("should preserve multiple files through round-trip", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				act(() => {
+					result.current.createFile("/file1.txt", "content1\nline2");
+					result.current.createFile(
+						"/file2.py",
+						"print('hello')\nprint('world')",
+					);
+				});
+
+				const backendFormat = result.current.toBackendFormat();
+
+				act(() => {
+					result.current.clearFileSystem();
+					result.current.fromBackendFormat(backendFormat);
+				});
+
+				expect(result.current.fileSystem.get("/file1.txt")?.content).toEqual([
+					"content1",
+					"line2",
+				]);
+				expect(result.current.fileSystem.get("/file2.py")?.content).toEqual([
+					"print('hello')",
+					"print('world')",
+				]);
+			});
+
+			it("should handle empty content correctly", () => {
+				const { result } = renderHook(() => useFileSystem());
+
+				act(() => {
+					result.current.createFile("/empty.txt", "");
+				});
+
+				const backendFormat = result.current.toBackendFormat();
+				expect(backendFormat["/empty.txt"]).toBe("");
+
+				act(() => {
+					result.current.clearFileSystem();
+					result.current.fromBackendFormat(backendFormat);
+				});
+
+				expect(result.current.fileSystem.get("/empty.txt")?.content).toEqual([
+					"",
+				]);
 			});
 		});
 	});

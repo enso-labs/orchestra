@@ -105,123 +105,123 @@ function AgentIndexPage() {
 					if (id) handleAgentClick(id);
 				}}
 			>
-			<CardHeader className="pb-3">
-				<div className="flex items-start justify-between">
-					<Computer className="h-5 w-5 text-primary flex-shrink-0" />
-					<div className="flex items-center gap-2">
-						{agent.public && !isPublicView && (
-							<Button
-								variant="ghost"
-								size="icon"
-								className="h-6 w-6"
-								onClick={(e) => {
-									e.stopPropagation();
-									navigator.clipboard.writeText(
-										`${window.location.origin}/a/${agent.id}`,
-									);
-									alert("Share link copied to clipboard!");
-								}}
-								title="Copy share link"
-							>
-								<Share2 className="h-3 w-3" />
-							</Button>
-						)}
-						<div className="flex items-center gap-1 text-xs text-muted-foreground">
-							<Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+				<CardHeader className="pb-3">
+					<div className="flex items-start justify-between">
+						<Computer className="h-5 w-5 text-primary flex-shrink-0" />
+						<div className="flex items-center gap-2">
+							{agent.public && !isPublicView && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-6 w-6"
+									onClick={(e) => {
+										e.stopPropagation();
+										navigator.clipboard.writeText(
+											`${window.location.origin}/a/${agent.id}`,
+										);
+										alert("Share link copied to clipboard!");
+									}}
+									title="Copy share link"
+								>
+									<Share2 className="h-3 w-3" />
+								</Button>
+							)}
+							<div className="flex items-center gap-1 text-xs text-muted-foreground">
+								<Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+							</div>
 						</div>
 					</div>
-				</div>
-				<CardTitle className="text-base group-hover:text-primary transition-colors line-clamp-2">
-					{agent.name}
-				</CardTitle>
-				<CardDescription className="text-xs line-clamp-3">
-					{agent.description}
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="pt-0">
-				<div className="space-y-2">
-					{/* Public/Private & MCP, A2A & Subagents Indicators */}
-					<div className="flex flex-wrap gap-1">
-						{isPublicView ? (
-							<Badge variant="default" className="text-xs gap-1">
-								<Globe className="h-3 w-3" />
-								Public
-							</Badge>
-						) : agent.public ? (
-							<Badge variant="default" className="text-xs gap-1">
-								<Globe className="h-3 w-3" />
-								Public
-							</Badge>
-						) : (
-							<Badge variant="outline" className="text-xs gap-1">
-								<Lock className="h-3 w-3" />
-								Private
-							</Badge>
-						)}
-						{agent.mcp && Object.keys(agent.mcp).length > 0 && (
-							<Badge variant="secondary" className="text-xs gap-1">
-								<Zap className="h-3 w-3" />
-								MCP
-							</Badge>
-						)}
-						{agent.a2a && Object.keys(agent.a2a).length > 0 && (
-							<Badge variant="secondary" className="text-xs gap-1">
-								<Network className="h-3 w-3" />
-								A2A
-							</Badge>
-						)}
-						{agent.subagents && agent.subagents.length > 0 && (
-							<Badge variant="outline" className="text-xs gap-1">
-								<UserCog className="h-3 w-3" />
-								{agent.subagents.length}{" "}
-								{agent.subagents.length === 1 ? "Subagent" : "Subagents"}
-							</Badge>
-						)}
-					</div>
-
-					{/* Categories */}
-					{agent.tools && agent.tools.length > 0 && (
+					<CardTitle className="text-base group-hover:text-primary transition-colors line-clamp-2">
+						{agent.name}
+					</CardTitle>
+					<CardDescription className="text-xs line-clamp-3">
+						{agent.description}
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="pt-0">
+					<div className="space-y-2">
+						{/* Public/Private & MCP, A2A & Subagents Indicators */}
 						<div className="flex flex-wrap gap-1">
-							{agent.tools.slice(0, 2).map((tool) => (
-								<span
-									key={tool}
-									className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-secondary text-secondary-foreground"
-								>
-									{tool}
-								</span>
-							))}
-							{agent.tools.length > 2 && (
-								<span className="text-xs text-muted-foreground">
-									+{agent.tools.length - 2}
-								</span>
+							{isPublicView ? (
+								<Badge variant="default" className="text-xs gap-1">
+									<Globe className="h-3 w-3" />
+									Public
+								</Badge>
+							) : agent.public ? (
+								<Badge variant="default" className="text-xs gap-1">
+									<Globe className="h-3 w-3" />
+									Public
+								</Badge>
+							) : (
+								<Badge variant="outline" className="text-xs gap-1">
+									<Lock className="h-3 w-3" />
+									Private
+								</Badge>
+							)}
+							{agent.mcp && Object.keys(agent.mcp).length > 0 && (
+								<Badge variant="secondary" className="text-xs gap-1">
+									<Zap className="h-3 w-3" />
+									MCP
+								</Badge>
+							)}
+							{agent.a2a && Object.keys(agent.a2a).length > 0 && (
+								<Badge variant="secondary" className="text-xs gap-1">
+									<Network className="h-3 w-3" />
+									A2A
+								</Badge>
+							)}
+							{agent.subagents && agent.subagents.length > 0 && (
+								<Badge variant="outline" className="text-xs gap-1">
+									<UserCog className="h-3 w-3" />
+									{agent.subagents.length}{" "}
+									{agent.subagents.length === 1 ? "Subagent" : "Subagents"}
+								</Badge>
 							)}
 						</div>
-					)}
 
-					{/* Stats */}
-					<div className="flex items-center justify-between text-xs text-muted-foreground">
-						<div className="flex items-center gap-1">
-							<Users className="h-3 w-3" />
-						</div>
-						<div className="flex items-center gap-1">
-							<Calendar className="h-3 w-3" />
-							<span>
-								{agent.created_at
-									? formatDate(agent.created_at)
-									: "Invalid date"}
-							</span>
-						</div>
-					</div>
+						{/* Categories */}
+						{agent.tools && agent.tools.length > 0 && (
+							<div className="flex flex-wrap gap-1">
+								{agent.tools.slice(0, 2).map((tool) => (
+									<span
+										key={tool}
+										className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-secondary text-secondary-foreground"
+									>
+										{tool}
+									</span>
+								))}
+								{agent.tools.length > 2 && (
+									<span className="text-xs text-muted-foreground">
+										+{agent.tools.length - 2}
+									</span>
+								)}
+							</div>
+						)}
 
-				{/* Model info */}
-				{agent.model && (
-					<div className="text-xs text-muted-foreground">
-						Model: {agent.model}
+						{/* Stats */}
+						<div className="flex items-center justify-between text-xs text-muted-foreground">
+							<div className="flex items-center gap-1">
+								<Users className="h-3 w-3" />
+							</div>
+							<div className="flex items-center gap-1">
+								<Calendar className="h-3 w-3" />
+								<span>
+									{agent.created_at
+										? formatDate(agent.created_at)
+										: "Invalid date"}
+								</span>
+							</div>
+						</div>
+
+						{/* Model info */}
+						{agent.model && (
+							<div className="text-xs text-muted-foreground">
+								Model: {agent.model}
+							</div>
+						)}
 					</div>
-				)}
-			</div>
-		</CardContent>
-		</Card>
+				</CardContent>
+			</Card>
 		);
 	};
 
@@ -348,41 +348,41 @@ function AgentIndexPage() {
 										</TabsTrigger>
 									</TabsList>
 
-								{/* Results summary */}
-								<p className="text-sm text-muted-foreground">
-									{getResultsSummary()}
-								</p>
+									{/* Results summary */}
+									<p className="text-sm text-muted-foreground">
+										{getResultsSummary()}
+									</p>
 								</div>
 
-							{/* My Agents Tab */}
-							<TabsContent value="my-agents" className="flex-1 min-h-0 mt-0">
-								<ScrollArea className="h-full">
-									<div className="pb-4">
-										{isLoadingAgents ? (
-											renderLoadingState("Loading agents...")
-										) : filteredAgents.length > 0 ? (
-											<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
-												{filteredAgents.map((agent: Agent) =>
-													renderAgentCard(agent, false),
-												)}
-											</div>
-										) : (
-											renderEmptyState(false)
-										)}
-									</div>
-								</ScrollArea>
-							</TabsContent>
+								{/* My Agents Tab */}
+								<TabsContent value="my-agents" className="flex-1 min-h-0 mt-0">
+									<ScrollArea className="h-full">
+										<div className="pb-4">
+											{isLoadingAgents ? (
+												renderLoadingState("Loading agents...")
+											) : filteredAgents.length > 0 ? (
+												<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
+													{filteredAgents.map((agent: Agent) =>
+														renderAgentCard(agent, false),
+													)}
+												</div>
+											) : (
+												renderEmptyState(false)
+											)}
+										</div>
+									</ScrollArea>
+								</TabsContent>
 
-							{/* Public Agents Tab */}
-							<TabsContent
-								value="public-agents"
-								className="flex-1 min-h-0 mt-0"
-							>
-								<ScrollArea className="h-full">
-									<div className="pb-4">
-										{isLoadingPublicAgents ? (
-											renderLoadingState("Loading public agents...")
-										) : filteredPublicAgents.length > 0 ? (
+								{/* Public Agents Tab */}
+								<TabsContent
+									value="public-agents"
+									className="flex-1 min-h-0 mt-0"
+								>
+									<ScrollArea className="h-full">
+										<div className="pb-4">
+											{isLoadingPublicAgents ? (
+												renderLoadingState("Loading public agents...")
+											) : filteredPublicAgents.length > 0 ? (
 												<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
 													{filteredPublicAgents.map((agent: Agent) =>
 														renderAgentCard(agent, true),

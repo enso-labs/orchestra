@@ -91,7 +91,9 @@ export const FileTreeNode = memo(function FileTreeNode({
 	}, [item.data.path, onDelete]);
 
 	const handleNewFile = useCallback(() => {
-		const parentPath = isFolder ? item.data.path : item.data.path.split("/").slice(0, -1).join("/") || "/";
+		const parentPath = isFolder
+			? item.data.path
+			: item.data.path.split("/").slice(0, -1).join("/") || "/";
 		onNewFile?.(parentPath);
 	}, [isFolder, item.data.path, onNewFile]);
 
@@ -138,7 +140,10 @@ export const FileTreeNode = memo(function FileTreeNode({
 
 					{/* Dirty indicator */}
 					{isDirty && (
-						<span className="text-primary shrink-0" aria-label="Unsaved changes">
+						<span
+							className="text-primary shrink-0"
+							aria-label="Unsaved changes"
+						>
 							•
 						</span>
 					)}
@@ -150,14 +155,20 @@ export const FileTreeNode = memo(function FileTreeNode({
 					<>
 						<ContextMenuItem onClick={handleNewFile}>New File</ContextMenuItem>
 						<ContextMenuItem onClick={handleRename}>Rename</ContextMenuItem>
-						<ContextMenuItem onClick={handleDelete} className="text-destructive">
+						<ContextMenuItem
+							onClick={handleDelete}
+							className="text-destructive"
+						>
 							Delete
 						</ContextMenuItem>
 					</>
 				) : (
 					<>
 						<ContextMenuItem onClick={handleRename}>Rename</ContextMenuItem>
-						<ContextMenuItem onClick={handleDelete} className="text-destructive">
+						<ContextMenuItem
+							onClick={handleDelete}
+							className="text-destructive"
+						>
 							Delete
 						</ContextMenuItem>
 					</>

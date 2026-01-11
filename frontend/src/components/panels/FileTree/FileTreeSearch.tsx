@@ -1,4 +1,11 @@
-import { useState, useMemo, useDeferredValue, useEffect, forwardRef, useImperativeHandle } from "react";
+import {
+	useState,
+	useMemo,
+	useDeferredValue,
+	useEffect,
+	forwardRef,
+	useImperativeHandle,
+} from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,7 +24,10 @@ export interface FileTreeSearchHandle {
  * Search/filter component for the file tree
  * Uses useDeferredValue for smooth filtering of large trees
  */
-export const FileTreeSearch = forwardRef<FileTreeSearchHandle, FileTreeSearchProps>(function FileTreeSearch({ items, onFilterChange }, ref) {
+export const FileTreeSearch = forwardRef<
+	FileTreeSearchHandle,
+	FileTreeSearchProps
+>(function FileTreeSearch({ items, onFilterChange }, ref) {
 	const [query, setQuery] = useState("");
 
 	// Defer expensive filtering to avoid blocking UI
@@ -51,7 +61,9 @@ export const FileTreeSearch = forwardRef<FileTreeSearchHandle, FileTreeSearchPro
 		const filtered: Record<string, FileTreeItem> = {
 			root: {
 				...items.root,
-				children: (items.root.children || []).filter((c) => matching.has(String(c))),
+				children: (items.root.children || []).filter((c) =>
+					matching.has(String(c)),
+				),
 			},
 		};
 
@@ -59,7 +71,9 @@ export const FileTreeSearch = forwardRef<FileTreeSearchHandle, FileTreeSearchPro
 			if (items[path] && path !== "root") {
 				filtered[path] = {
 					...items[path],
-					children: (items[path].children || []).filter((c) => matching.has(String(c))),
+					children: (items[path].children || []).filter((c) =>
+						matching.has(String(c)),
+					),
 				};
 			}
 		}
@@ -77,9 +91,13 @@ export const FileTreeSearch = forwardRef<FileTreeSearchHandle, FileTreeSearchPro
 	};
 
 	// Expose clear method to parent via ref
-	useImperativeHandle(ref, () => ({
-		clear: handleClear,
-	}), []);
+	useImperativeHandle(
+		ref,
+		() => ({
+			clear: handleClear,
+		}),
+		[],
+	);
 
 	return (
 		<div className="px-2 py-1.5">

@@ -171,7 +171,12 @@ export function FileTreeSidebar({
 				<div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
 					<FileText className="h-10 w-10 text-muted-foreground/50 mb-3" />
 					<p className="text-sm text-muted-foreground mb-3">No files yet</p>
-					<Button variant="outline" size="sm" onClick={onNewFile} className="gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={onNewFile}
+						className="gap-2"
+					>
 						<FolderPlus className="h-4 w-4" />
 						Create File
 					</Button>
@@ -206,15 +211,22 @@ export function FileTreeSidebar({
 			/>
 
 			{/* Search */}
-			<FileTreeSearch ref={searchRef} items={treeItems} onFilterChange={handleFilterChange} />
+			<FileTreeSearch
+				ref={searchRef}
+				items={treeItems}
+				onFilterChange={handleFilterChange}
+			/>
 
 			{/* Tree content */}
 			<ScrollArea className="flex-1">
 				{/* No matches empty state */}
-				{filteredItems !== null && (displayItems.root?.children || []).length === 0 ? (
+				{filteredItems !== null &&
+				(displayItems.root?.children || []).length === 0 ? (
 					<div className="flex-1 flex flex-col items-center justify-center p-4 pt-8 text-center">
 						<SearchX className="h-8 w-8 text-muted-foreground/50 mb-3" />
-						<p className="text-sm text-muted-foreground mb-3">No matching files</p>
+						<p className="text-sm text-muted-foreground mb-3">
+							No matching files
+						</p>
 						<Button
 							variant="outline"
 							size="sm"

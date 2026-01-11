@@ -7,7 +7,11 @@ import useModel from "@/hooks/useModel";
 import useFileSystem, { type FileData } from "@/hooks/useFileSystem";
 
 // Re-export FileData type for consumers
-export type { FileData, FileSystemState, FileSystemActions } from "@/hooks/useFileSystem";
+export type {
+	FileData,
+	FileSystemState,
+	FileSystemActions,
+} from "@/hooks/useFileSystem";
 
 export const ChatContext = createContext({});
 export default function ChatProvider({
@@ -40,24 +44,34 @@ export default function ChatProvider({
 		const flatFiles = new Map<string, FileData>();
 		const now = new Date().toISOString();
 
-		filesMap.forEach((messageFiles: Record<string, unknown>, messageId: string) => {
-			if (!messageFiles || typeof messageFiles !== "object") return;
+		filesMap.forEach(
+			(messageFiles: Record<string, unknown>, messageId: string) => {
+				if (!messageFiles || typeof messageFiles !== "object") return;
 
-			Object.entries(messageFiles).forEach(([path, data]: [string, unknown]) => {
-				// Skip only user-modified files (dirty), allow SSE to update non-dirty existing files
-				if (dirtyFiles.has(path)) return;
+				Object.entries(messageFiles).forEach(
+					([path, data]: [string, unknown]) => {
+						// Skip only user-modified files (dirty), allow SSE to update non-dirty existing files
+						if (dirtyFiles.has(path)) return;
 
-				const fileData = data as { content?: string | string[]; created_at?: string; modified_at?: string };
-				flatFiles.set(path, {
-					content: Array.isArray(fileData.content) 
-						? fileData.content 
-						: (typeof fileData.content === "string" ? fileData.content.split("\n") : []),
-					created_at: fileData.created_at || now,
-					modified_at: fileData.modified_at || now,
-					source: messageId,
-				});
-			});
-		});
+						const fileData = data as {
+							content?: string | string[];
+							created_at?: string;
+							modified_at?: string;
+						};
+						flatFiles.set(path, {
+							content: Array.isArray(fileData.content)
+								? fileData.content
+								: typeof fileData.content === "string"
+									? fileData.content.split("\n")
+									: [],
+							created_at: fileData.created_at || now,
+							modified_at: fileData.modified_at || now,
+							source: messageId,
+						});
+					},
+				);
+			},
+		);
 
 		// Import new files if any
 		if (flatFiles.size > 0) {
@@ -65,9 +79,40 @@ export default function ChatProvider({
 		}
 	}, [filesMap, importFiles, dirtyFiles]);
 
-	// Destructure for the clear effect
-	const { clearFileSystem } = fileSystemHooks;
+	// Destructure for the reverse sync and clear effects
+	const { clearFileSystem, fileSystem } = fileSystemHooks;
+	const { setFilesMap } = chatHooks;
 	const messagesLength = chatHooks.messages.length;
+
+	// Track previous fileSystem to detect user-initiated changes
+	const prevFileSystemRef = useRef<Map<string, FileData>>(new Map());
+
+	// Reverse sync: fileSystem → filesMap
+	// This ensures user-created files in FileEditorPanel are included in API submissions
+	useEffect(() => {
+		// Skip if fileSystem hasn't changed
+		if (fileSystem === prevFileSystemRef.current) return;
+		prevFileSystemRef.current = fileSystem;
+
+		// Convert fileSystem entries to filesMap format under __user_files__ key
+		// Only sync files that don't have a source (i.e., user-created, not from SSE)
+		const userFiles: Record<string, FileData> = {};
+		fileSystem.forEach((data, path) => {
+			// Include files without source (user-created) or with __user_files__ source
+			if (!data.source || data.source === "__user_files__") {
+				userFiles[path] = data;
+			}
+		});
+
+		// Update filesMap with user files if any exist
+		if (Object.keys(userFiles).length > 0) {
+			setFilesMap((prev: Map<string, unknown>) => {
+				const newMap = new Map(prev);
+				newMap.set("__user_files__", userFiles);
+				return newMap;
+			});
+		}
+	}, [fileSystem, setFilesMap]);
 
 	// Clear fileSystem when messages are cleared
 	useEffect(() => {

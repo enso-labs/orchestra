@@ -113,6 +113,10 @@ class Assistant(BaseModel):
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
+    file_system: Optional[Dict[str, str]] = Field(
+        default_factory=dict,
+        description="File system storage for the assistant. Key is the file path, value is the file content.",
+    )
     metadata: dict = {}
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
@@ -173,6 +177,10 @@ class PublicAssistant(BaseModel):
     published_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
+    file_system: Optional[Dict[str, str]] = Field(
+        default_factory=dict,
+        description="File system storage for the assistant. Key is the file path, value is the file content.",
+    )
 
     @classmethod
     def from_assistant(cls, assistant: Assistant) -> "PublicAssistant":
@@ -187,6 +195,7 @@ class PublicAssistant(BaseModel):
             published_at=assistant.published_at,
             updated_at=assistant.updated_at,
             created_at=assistant.created_at,
+            file_system=assistant.file_system,
         )
 
     @field_serializer("created_at", "updated_at", "published_at")

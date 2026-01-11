@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { useFileTreeData, buildTreeFromPaths, getEmptyTree } from "@/hooks/useFileTreeData";
+import {
+	useFileTreeData,
+	buildTreeFromPaths,
+	getEmptyTree,
+} from "@/hooks/useFileTreeData";
 import type { FileData } from "@/hooks/useFileSystem";
 
 describe("useFileTreeData", () => {
@@ -28,7 +32,14 @@ describe("useFileTreeData", () => {
 
 		it("should build tree for single file at root", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/test.txt", { content: ["content"], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/test.txt",
+					{
+						content: ["content"],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const tree = buildTreeFromPaths(fileSystem);
@@ -42,7 +53,14 @@ describe("useFileTreeData", () => {
 
 		it("should build tree for nested file structure", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/src/components/Button.tsx", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/src/components/Button.tsx",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const tree = buildTreeFromPaths(fileSystem);
@@ -58,7 +76,9 @@ describe("useFileTreeData", () => {
 			// /src/components should be a folder with the file
 			expect(tree["/src/components"]).toBeDefined();
 			expect(tree["/src/components"].isFolder).toBe(true);
-			expect(tree["/src/components"].children).toContain("/src/components/Button.tsx");
+			expect(tree["/src/components"].children).toContain(
+				"/src/components/Button.tsx",
+			);
 
 			// The file should exist
 			expect(tree["/src/components/Button.tsx"]).toBeDefined();
@@ -68,9 +88,30 @@ describe("useFileTreeData", () => {
 
 		it("should sort folders before files", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/aaa.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-				["/zzz/file.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-				["/bbb.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/aaa.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
+				[
+					"/zzz/file.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
+				[
+					"/bbb.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const tree = buildTreeFromPaths(fileSystem);
@@ -87,9 +128,30 @@ describe("useFileTreeData", () => {
 
 		it("should sort items alphabetically within same type", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/zebra.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-				["/apple.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-				["/mango.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/zebra.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
+				[
+					"/apple.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
+				[
+					"/mango.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const tree = buildTreeFromPaths(fileSystem);
@@ -100,9 +162,30 @@ describe("useFileTreeData", () => {
 
 		it("should handle multiple files in same directory", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/src/index.ts", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-				["/src/utils.ts", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
-				["/src/types.ts", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/src/index.ts",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
+				[
+					"/src/utils.ts",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
+				[
+					"/src/types.ts",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const tree = buildTreeFromPaths(fileSystem);
@@ -115,7 +198,14 @@ describe("useFileTreeData", () => {
 
 		it("should skip dangerous path segments", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/../../../etc/passwd", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/../../../etc/passwd",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const tree = buildTreeFromPaths(fileSystem);
@@ -126,7 +216,14 @@ describe("useFileTreeData", () => {
 
 		it("should handle paths without leading slash", () => {
 			const fileSystem = new Map<string, FileData>([
-				["test.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"test.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const tree = buildTreeFromPaths(fileSystem);
@@ -146,7 +243,14 @@ describe("useFileTreeData", () => {
 
 		it("should return isEmpty false when files exist", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/test.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/test.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			const { result } = renderHook(() => useFileTreeData(fileSystem));
@@ -156,10 +260,19 @@ describe("useFileTreeData", () => {
 
 		it("should memoize tree items", () => {
 			const fileSystem = new Map<string, FileData>([
-				["/test.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/test.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
-			const { result, rerender } = renderHook(() => useFileTreeData(fileSystem));
+			const { result, rerender } = renderHook(() =>
+				useFileTreeData(fileSystem),
+			);
 
 			const firstItems = result.current.items;
 
@@ -173,20 +286,33 @@ describe("useFileTreeData", () => {
 
 		it("should rebuild tree when fileSystem changes", () => {
 			let fileSystem = new Map<string, FileData>([
-				["/test.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/test.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
-			const { result, rerender } = renderHook(
-				({ fs }) => useFileTreeData(fs),
-				{ initialProps: { fs: fileSystem } }
-			);
+			const { result, rerender } = renderHook(({ fs }) => useFileTreeData(fs), {
+				initialProps: { fs: fileSystem },
+			});
 
 			const firstItems = result.current.items;
 			expect(firstItems["/test.txt"]).toBeDefined();
 
 			// Create new fileSystem with different file
 			fileSystem = new Map<string, FileData>([
-				["/other.txt", { content: [""], created_at: "2024-01-01", modified_at: "2024-01-01" }],
+				[
+					"/other.txt",
+					{
+						content: [""],
+						created_at: "2024-01-01",
+						modified_at: "2024-01-01",
+					},
+				],
 			]);
 
 			rerender({ fs: fileSystem });
