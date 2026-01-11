@@ -7,8 +7,8 @@ Generate a bug spec template file for a new issue. The output should be saved to
 
 ## Input
 
-- **ISSUE_NUMBER**: The numeric identifier for the bug (required)
-- **SHORTDESC**: A short description of the bug (kebab-case, required)
+-   **ISSUE_NUMBER**: The numeric identifier for the bug (required)
+-   **SHORTDESC**: A short description of the bug (kebab-case, required)
 
 Example:  
 Input: `456-menu-invisible`  
@@ -23,15 +23,17 @@ When invoked, generate a markdown file containing the following template structu
 ```markdown
 # Bug Report: [SHORTDESC] ([ISSUE_NUMBER])
 
+> **⚠️ IMPORTANT**: Before implementing this bug fix, READ `/CLAUDE.md` first.
+
 ## Summary
 
 _A concise summary of the bug and impact._
 
 ## Steps to Reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behavior
 
@@ -47,12 +49,18 @@ _If applicable._
 
 ## Environment
 
-- OS:
-- Browser / Version (if relevant):
+-   OS:
+-   Browser / Version (if relevant):
 
 ## Additional Context
 
 _Anything else?_
+
+---
+
+## Completion
+
+Output `<promise>DONE</promise>` when all tests green. --max-iterations 50 --completion-promise "DONE"
 ```
 
 ---
@@ -68,5 +76,6 @@ _Anything else?_
 ## Report
 
 Confirm:
-- Template file created at correct path
-- ISSUE_NUMBER and SHORTDESC substituted into title
+
+-   Template file created at correct path
+-   ISSUE_NUMBER and SHORTDESC substituted into title
