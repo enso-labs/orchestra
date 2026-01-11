@@ -23,6 +23,8 @@ When invoked, generate a markdown file containing the following template structu
 ```markdown
 # Bug Report: [SHORTDESC] ([ISSUE_NUMBER])
 
+> **⚠️ IMPORTANT**: Before implementing this bug fix, READ `/CLAUDE.md` first.
+
 ## Summary
 
 _A concise summary of the bug and impact._
@@ -53,6 +55,12 @@ _If applicable._
 ## Additional Context
 
 _Anything else?_
+
+---
+
+## Completion
+
+Output `<promise>DONE</promise>` when all tests green. --max-iterations 50 --completion-promise "DONE"
 ```
 
 ---
