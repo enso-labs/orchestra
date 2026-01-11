@@ -1,12 +1,14 @@
 from uuid import uuid4
 from datetime import datetime
 from typing import Dict, List, Any, Literal, Optional
+from pathlib import PurePosixPath
 from pydantic import (
     BaseModel,
     Field,
     ConfigDict,
     computed_field,
     field_serializer,
+    field_validator,
     model_validator,
 )
 from langchain_core.messages import (
@@ -223,6 +225,7 @@ class LLMRequest(BaseModel):
     )
     file_context: Optional[str] = Field(
         default=None,
+        max_length=10000,
         description="Existing file content to provide as context for generation",
     )
 
@@ -237,3 +240,28 @@ class LLMRequest(BaseModel):
             elif isinstance(meta, dict):
                 values["metadata"] = Config(**meta)
         return values
+
+    @field_validator("target_file")
+    @classmethod
+    def validate_target_file(cls, v: Optional[str]) -> Optional[str]:
+        """Validate target_file path: reject path traversal and normalize."""
+        if v is None:
+            return v
+
+        # Check for path traversal attempts
+        path = PurePosixPath(v)
+        for part in path.parts:
+            if part == "..":
+                raise ValueError(
+                    "Path traversal is not allowed: '..' segments are forbidden"
+                )
+
+        # Normalize the path while preserving leading '/'
+        had_leading_slash = v.startswith("/")
+        normalized = str(PurePosixPath(v))
+
+        # PurePosixPath removes leading '/' for relative paths, restore if needed
+        if had_leading_slash and not normalized.startswith("/"):
+            normalized = "/" + normalized
+
+        return normalized
