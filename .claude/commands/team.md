@@ -10,11 +10,7 @@
 
 ## Phase 0: Initialize Context (MANDATORY FIRST STEP)
 
-**⚠️ CRITICAL: Before ANY action, you MUST read the project plan:**
-
-```
-Read the file at $PROJECT_ROOT/.claude/commands/plan.md
-```
+**⚠️ IMPORTANT**: Before implementing this feature, READ `**/CLAUDE.md` first.
 
 Store the contents as `INITIAL_REPORT`. This context MUST be provided to all subagents in Phase 1. Do NOT proceed without completing this step.
 
