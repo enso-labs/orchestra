@@ -1369,3 +1369,81 @@ ENVIRONMENT=pytest uv run pytest tests/unit/workers/ tests/integration/test_dist
 ## Completion
 
 Output `<promise>DONE</promise>` when all tests green. --max-iterations 200 --completion-promise "DONE"
+
+---
+
+## Implementation Reflections
+
+### Issues Encountered and Resolutions
+
+#### 1. TaskIQ Worker Discovery Error
+**Problem**: Running `taskiq worker src.workers.tasks:broker --fs-discover` caused import errors because `--fs-discover` scanned the `.venv` directory and found unrelated task files, triggering:
+```
+TypeError: the 'package' argument is required to perform a relative import for '.venv.lib.python3.12.site-packages.fastmcp.cli.tasks'
+```
+
+**Resolution**: Remove the `--fs-discover` flag. The module path `src.workers.tasks:broker` directly specifies where tasks are registered, making filesystem discovery unnecessary.
+
+**Corrected command**:
+```bash
+REDIS_URL=redis://localhost:6379/0 uv run taskiq worker src.workers.tasks:broker
+```
+
+#### 2. GET Endpoint Authentication Dependency
+**Problem**: The `GET /threads/{thread_id}/stream` endpoint used `Depends(get_optional_user)`, but `get_optional_user` requires a `params: LLMRequest` body parameter, causing 422 validation errors on GET requests:
+```json
+{"detail":[{"type":"missing","loc":["body"],"msg":"Field required","input":null}]}
+```
+
+**Resolution**: Created a new `get_optional_user_from_token()` dependency function in `src/utils/auth.py` that works for GET endpoints without a request body. This function only checks Bearer token or API key headers.
+
+**Files changed**:
+- `backend/src/utils/auth.py` - Added `get_optional_user_from_token()`
+- `backend/src/routes/v0/thread.py` - Use new dependency for stream endpoint
+
+#### 3. Existing Test Compatibility
+**Problem**: Three existing tests in `tests/integration/test_llm_routes.py` expected status code 200 but received 202 when `DISTRIBUTED_WORKERS=true`:
+```
+FAILED test_stream_accepts_generate_files_flag - assert 202 == 200
+FAILED test_stream_accepts_target_file_parameter - assert 202 == 200
+FAILED test_stream_accepts_file_context_parameter - assert 202 == 200
+```
+
+**Resolution**: Updated assertions to accept both status codes since the tests verify parameter acceptance, not streaming mode:
+```python
+assert response.status_code in [200, 202]  # Sync (200) or distributed (202)
+```
+
+### Lessons Learned
+
+1. **Auth dependencies are mode-specific**: FastAPI dependencies that work for POST (with body) may not work for GET endpoints. Create separate auth helpers for different HTTP methods.
+
+2. **TaskIQ doesn't need --fs-discover**: When tasks are explicitly registered via `@broker.task`, the module path is sufficient. Avoid `--fs-discover` in projects with virtual environments.
+
+3. **Test assertions should be environment-agnostic**: When a feature introduces multiple valid code paths (sync vs distributed), tests for shared functionality should accept all valid outcomes.
+
+4. **Stream consumer imports matter**: The `stream_from_redis()` function imports Redis client lazily to avoid circular imports and ensure `REDIS_URL` is available at runtime.
+
+### Validated Curl Examples
+
+```bash
+# Step 1: Submit task (returns immediately with thread_id)
+curl -X POST http://localhost:8000/api/llm/stream \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"input": {"messages": [{"role": "user", "content": "Say hello"}]}, "model": "openai:gpt-4.1-mini"}'
+# Response: {"thread_id":"abc-123","distributed":true}
+
+# Step 2: Stream results from worker
+curl -N http://localhost:8000/api/threads/abc-123/stream \
+  -H "x-api-key: YOUR_API_KEY"
+# Response: SSE stream with data: [...] events ending in data: [DONE]
+```
+
+### Final Test Results
+
+```
+111 passed, 2 skipped in 5.55s
+```
+
+All 59 distributed worker tests pass alongside 52 existing tests.
