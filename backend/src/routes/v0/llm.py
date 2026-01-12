@@ -1,3 +1,4 @@
+import os
 from typing import Any, List
 from uuid import uuid4
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -32,6 +33,9 @@ from src.flows import init_config
 from src.services.db import get_store
 from src.utils.rate_limit import limiter
 from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
+
+# Distributed workers mode - when true, tasks are enqueued to TaskIQ workers
+DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -71,6 +75,7 @@ async def llm_invoke(
     "/stream",
     responses={status.HTTP_200_OK: MockResponse.STREAM_RESPONSE},
     name="Stream Graph",
+    response_model=None,  # Allow multiple response types (SSE or JSON)
 )
 @limiter.limit(TIME_LIMIT)
 async def llm_stream(
@@ -78,13 +83,47 @@ async def llm_stream(
     params: LLMRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
     user: ProtectedUser = Depends(get_optional_user),
     store: BaseStore = Depends(get_store),
-) -> StreamingResponse:
+):
     """
     Streams LLM output as server-sent events (SSE).
+
+    When DISTRIBUTED_WORKERS=true, the task is enqueued to a worker and
+    returns {thread_id, distributed: true}. The client should then poll
+    GET /threads/{thread_id}/stream to receive the SSE stream.
     """
     try:
         user_id = user.id if user else None
+        thread_id = (
+            params.metadata.thread_id
+            if params.metadata and params.metadata.thread_id
+            else str(uuid4())
+        )
         config = init_config(params, user_id=user_id)
+
+        # Distributed mode: enqueue task and return thread_id for polling
+        if DISTRIBUTED_WORKERS:
+            from src.workers.tasks import run_agent_stream
+
+            # Ensure thread_id is set in metadata
+            if params.metadata:
+                params.metadata.thread_id = thread_id
+
+            await run_agent_stream.kiq(
+                task_dict=params.model_dump(),
+                user_id=str(user_id) if user_id else "",
+                thread_id=thread_id,
+                config_dict=dict(config),
+            )
+
+            logger.info(f"Enqueued distributed task for thread: {thread_id}")
+
+            return JSONResponse(
+                content={"thread_id": thread_id, "distributed": True},
+                status_code=status.HTTP_202_ACCEPTED,
+                headers={"Cache-Control": "no-cache"},
+            )
+
+        # Sync mode: direct streaming (existing behavior)
         llm_controller = LLMController(user_id=user_id, store=store, config=config)
         assistant = await llm_controller.llm_stream(params)
         return StreamingResponse(

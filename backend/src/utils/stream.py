@@ -286,3 +286,61 @@ async def stream_generator(
                 )
                 # Log the update for debugging
                 logger.info(f"checkpoint: {ujson.dumps(configurable)}")
+
+
+###########################################################################
+## Distributed Stream Consumer
+###########################################################################
+async def stream_from_redis(thread_id: str):
+    """
+    Consume Redis stream and yield SSE events for distributed workers.
+
+    This function reads from a Redis Stream that the worker is writing to,
+    and yields SSE-formatted events for the client.
+
+    Args:
+        thread_id: The thread ID to stream results for.
+
+    Yields:
+        SSE-formatted strings in the form "data: {...}\\n\\n"
+    """
+    import redis.asyncio as redis
+    from src.workers.broker import REDIS_URL
+
+    stream_key = f"agent:stream:{thread_id}"
+    redis_client = redis.from_url(REDIS_URL)
+    last_id = "0"
+
+    try:
+        while True:
+            # Block for up to 30 seconds waiting for messages
+            messages = await redis_client.xread(
+                {stream_key: last_id},
+                block=30000,  # 30 second timeout
+            )
+
+            if not messages:
+                # No messages yet, yield a keep-alive comment
+                yield ": keep-alive\n\n"
+                continue
+
+            for stream, entries in messages:
+                for entry_id, data in entries:
+                    last_id = entry_id
+
+                    if b"done" in data:
+                        yield "data: [DONE]\n\n"
+                        return
+                    if b"error" in data:
+                        error_msg = data[b"error"].decode()
+                        yield f"data: {{\"error\": \"{error_msg}\"}}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
+                    if b"data" in data:
+                        yield f"data: {data[b'data'].decode()}\n\n"
+    except Exception as e:
+        logger.exception(f"Error in stream_from_redis: {e}")
+        yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+        yield "data: [DONE]\n\n"
+    finally:
+        await redis_client.aclose()

@@ -54,11 +54,14 @@ dependencies = [
     "yfinance>=0.2.66",
     "fastapi-cache2>=0.2.2",
     "fastmcp>=2.14.1",
+    "taskiq-redis>=1.0.0",
+    "redis>=5.0.0",
 ]
 
 [dependency-groups]
 dev = [
     "faker>=37.6.0",
+    "fakeredis>=2.26.0",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
     "pytest-mock>=3.14.0",
