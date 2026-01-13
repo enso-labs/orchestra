@@ -13,6 +13,7 @@ from src.services.db import get_async_db, get_store, get_store_db, get_checkpoin
 from src.repos.user_repo import UserRepo
 from src.schemas.models import User
 from langgraph.store.memory import InMemoryStore
+from taskiq import InMemoryBroker
 
 
 def ensure_database_exists(db_uri: str) -> None:
@@ -300,3 +301,45 @@ async def mock_external_services():
 #     assert response.status_code == 200, f"Login failed: {response.text}"
 #     token = response.json()["access_token"]
 #     return {"Authorization": f"Bearer {token}", "accept": "application/json"}
+
+
+###############################################################################
+# TaskIQ / Redis Fixtures for Distributed Workers Testing
+###############################################################################
+@pytest.fixture
+def in_memory_broker():
+    """Provide an InMemoryBroker for testing tasks without Redis."""
+    return InMemoryBroker()
+
+
+@pytest.fixture
+async def fake_redis():
+    """Provide a FakeRedis async client for testing Redis streams."""
+    import fakeredis.aioredis
+
+    client = fakeredis.aioredis.FakeRedis(decode_responses=False)
+    yield client
+    await client.flushall()
+    await client.aclose()
+
+
+@pytest.fixture
+def sample_llm_request_dict():
+    """Provide a sample LLMRequest as dict for task testing."""
+    return {
+        "input": {"messages": [{"role": "user", "content": "Hello, test!"}]},
+        "model": "openai:gpt-4.1-mini",
+        "metadata": {"user_id": None, "thread_id": None},
+    }
+
+
+@pytest.fixture
+def sample_config_dict():
+    """Provide a sample config dict for task testing."""
+    return {
+        "configurable": {
+            "thread_id": "test-thread-123",
+            "assistant_id": "test-assistant",
+        },
+        "metadata": {"files": {}, "todos": []},
+    }

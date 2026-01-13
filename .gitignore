@@ -22,3 +22,4 @@ backend/src/public
 **/openspec/
 **/node_modules/
 **/.old/
+**/ralph-loop*

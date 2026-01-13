@@ -5,12 +5,14 @@ import {
 	formatMultimodalPayload,
 	formatMessages,
 } from "@/lib/utils/format";
-import { streamThread } from "@/lib/services";
+import { streamThread, initiateStream } from "@/lib/services";
 import apiClient from "@/lib/utils/apiClient";
 import { getAuthToken } from "@/lib/utils/auth";
 import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
 import type { Todo } from "@/components/lists/TodoList";
+import type { StreamEvent } from "@/lib/entities/stream";
+import type { StreamSource } from "@/lib/utils/streamSource";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -129,6 +131,143 @@ export default function useChat(): ChatContextType {
 		return true;
 	};
 
+	/**
+	 * Converts a StreamEvent to the legacy payload format for handleMessages().
+	 * This allows reusing the existing message handling logic.
+	 */
+	const convertEventToLegacy = (event: StreamEvent): any[] | null => {
+		switch (event.type) {
+			case "metadata":
+				return ["metadata", event.data];
+			case "messages":
+				return ["messages", event.data];
+			case "values":
+				return ["values", event.data];
+			case "error":
+				return ["error", event.data.error];
+			case "done":
+				return null; // Handled separately
+			default:
+				return null;
+		}
+	};
+
+	/**
+	 * Handles SSE using the new unified stream abstraction.
+	 * Supports both sync mode (direct SSE) and distributed mode (polling).
+	 */
+	const handleSSEUnified = async (
+		query: string,
+		images: File[],
+	): Promise<{ controller: AbortController; stream: StreamSource }> => {
+		// Optimistic UI: Add user message immediately
+		const userMessage = {
+			id: `user-${Date.now()}`,
+			model: agent.model,
+			content: query,
+			role: "user",
+			type: "user",
+		};
+
+		const updatedMessages = [...messages, userMessage];
+		setMessages(updatedMessages);
+
+		clearContent();
+		const formatedMessages = await formatMultimodalPayload(query, images);
+		const enrichedMetadata = getMetadata();
+
+		// Collect files from filesMap for submission
+		const filesToSubmit: Record<string, any> = {};
+		filesMap.forEach((files) => {
+			Object.assign(filesToSubmit, files);
+		});
+
+		// Build payload based on agent type
+		const payload = agent.public
+			? {
+					input: {
+						messages: formatedMessages,
+					},
+					metadata: enrichedMetadata,
+					model: "",
+				}
+			: {
+					system_prompt: agent.prompt,
+					input: {
+						messages: formatedMessages,
+						...(Object.keys(filesToSubmit).length > 0 && {
+							files: filesToSubmit,
+						}),
+					},
+					model: agent.model,
+					metadata: enrichedMetadata,
+					tools: agent.tools,
+					a2a: agent.a2a,
+					mcp: agent.mcp,
+					subagents: agent.subagents,
+					presidio: {
+						analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
+						anonymize:
+							localStorage.getItem("enso:tool:pii_anonymize") === "true",
+					},
+				};
+
+		// Show processing state for distributed mode
+		setLoadingMessage("Processing request...");
+
+		// Get unified stream source (handles both sync and distributed)
+		const stream = await initiateStream(payload);
+
+		// Create abort controller for cleanup
+		const controller = new AbortController();
+
+		// Handle events from the stream
+		stream.onEvent((event: StreamEvent) => {
+			if (event.type === "done") {
+				setLoading(false);
+				setController(null);
+				return;
+			}
+
+			// Convert to legacy format and process
+			const legacyPayload = convertEventToLegacy(event);
+			if (legacyPayload) {
+				sseHandler(legacyPayload, in_mem_messages);
+			}
+		});
+
+		stream.onError((error: Error) => {
+			console.error("Stream error:", error);
+			alert(error.message);
+			setLoading(false);
+			setController(null);
+
+			// Restore last message for retry
+			const lastMessageIndex =
+				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
+			if (lastMessageIndex >= 0) {
+				setQuery(in_mem_messages[lastMessageIndex].content);
+				clearMessages(lastMessageIndex);
+			}
+		});
+
+		stream.onClose(() => {
+			console.log("Stream connection closed");
+		});
+
+		// Handle abort
+		controller.signal.addEventListener("abort", () => {
+			console.log("Aborting stream connection");
+			stream.close();
+			setLoading(false);
+		});
+
+		// Start the stream
+		stream.start();
+
+		return { controller, stream };
+	};
+
 	const handleSSE = async (
 		query: string,
 		images: File[],
@@ -191,9 +330,22 @@ export default function useChat(): ChatContextType {
 		source.stream();
 
 		source.addEventListener("message", function (e: any) {
-			// Assuming we receive JSON-encoded data payloads:
-			const payload = JSON.parse(e.data);
-			sseHandler(payload, in_mem_messages);
+			// Check for [DONE] signal first (not valid JSON)
+			if (e.data === "[DONE]") {
+				console.log("Stream complete: [DONE] received");
+				source.close();
+				setController(null);
+				setLoading(false);
+				return;
+			}
+
+			// Parse JSON-encoded data payloads
+			try {
+				const payload = JSON.parse(e.data);
+				sseHandler(payload, in_mem_messages);
+			} catch (parseError) {
+				console.warn("Failed to parse SSE message:", e.data);
+			}
 		});
 
 		// Close handling
@@ -235,8 +387,20 @@ export default function useChat(): ChatContextType {
 		const now = Date.now();
 		submitStartTimeRef.current = now;
 		setSubmitStartTime(now);
-		const { controller } = await handleSSE(argQuery || query, images);
-		setController(controller);
+
+		const queryToSubmit = argQuery || query;
+
+		try {
+			// Try unified handler (supports both sync and distributed modes)
+			const { controller } = await handleSSEUnified(queryToSubmit, images);
+			setController(controller);
+		} catch (error) {
+			// Fallback to legacy SSE handler if unified fails
+			console.warn("Unified stream failed, falling back to legacy SSE:", error);
+			const { controller } = await handleSSE(queryToSubmit, images);
+			setController(controller);
+		}
+
 		setQuery("");
 	};
 
@@ -291,6 +455,19 @@ export default function useChat(): ChatContextType {
 			alert("Error on stream: " + payload[1]);
 			setLoading(false);
 			setController(null);
+			return;
+		}
+
+		// Handle metadata events (first event in distributed mode stream)
+		// This captures thread_id early for multi-turn conversations
+		if (streamMode === "metadata") {
+			const metadataPayload = payload[1];
+			setMetadata((prev: any) => ({
+				...prev,
+				thread_id: metadataPayload.thread_id,
+				assistant_id: metadataPayload.assistant_id,
+				project_id: metadataPayload.project_id,
+			}));
 			return;
 		}
 
@@ -387,10 +564,9 @@ export default function useChat(): ChatContextType {
 			// This ensures consistency with checkpoint reload behavior
 			const normalizedHistory = formatMessages(streamHandler.history);
 			setMessagesState(normalizedHistory);
-			if (streamHandler.streamStop(response)) {
-				setLoading(false);
-				setController(null);
-			}
+			// NOTE: Stream stop is now handled by the [DONE] signal in the event handler
+			// The unified handler (handleSSEUnified) and legacy handler both check for [DONE]
+			// Do NOT stop here based on streamStop() - wait for explicit [DONE] signal
 		}
 	};
 
