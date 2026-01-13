@@ -9,7 +9,7 @@ vi.mock("@/context/AppContext", () => ({
 }));
 
 describe("useDocumentTitle", () => {
-	const DEFAULT_TITLE = "Ruska AI";
+	const DEFAULT_TITLE = "Ruska AI - Orchestra";
 	const STREAMING_TITLE = "[Streaming...] Ruska AI";
 	const DONE_TITLE = "[Done] Ruska AI";
 

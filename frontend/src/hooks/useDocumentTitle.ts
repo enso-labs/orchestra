@@ -3,13 +3,13 @@ import { useAppContext } from "@/context/AppContext";
 
 export type TitleStatus = "idle" | "streaming" | "done";
 
-const DEFAULT_TITLE = "Ruska AI";
+const DEFAULT_TITLE = "Ruska AI - Orchestra";
 const DONE_TIMEOUT_MS = 3000;
 
 const TITLE_MAP: Record<TitleStatus, string> = {
 	idle: DEFAULT_TITLE,
-	streaming: `[Streaming...] ${DEFAULT_TITLE}`,
-	done: `[Done] ${DEFAULT_TITLE}`,
+	streaming: `[Streaming...] Ruska AI`,
+	done: `[Done] Ruska AI`,
 };
 
 /**
