@@ -3,6 +3,7 @@
 Phase 5 TDD: End-to-end tests for the distributed workers feature,
 verifying the full flow from API to worker to SSE consumer.
 """
+
 import os
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
@@ -77,7 +78,6 @@ class TestLLMStreamWithDistributedWorkers:
                     assert "task_dict" in kwargs
                     assert "user_id" in kwargs
                     assert "thread_id" in kwargs
-                    assert "config_dict" in kwargs
 
 
 class TestThreadStreamEndpoint:
@@ -89,7 +89,9 @@ class TestThreadStreamEndpoint:
         thread_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+            with patch(
+                "src.routes.v0.thread.get_optional_user_from_token"
+            ) as mock_auth:
                 mock_auth.return_value = None  # No authentication required
 
                 async def mock_gen():
@@ -110,7 +112,9 @@ class TestThreadStreamEndpoint:
         thread_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+            with patch(
+                "src.routes.v0.thread.get_optional_user_from_token"
+            ) as mock_auth:
                 mock_auth.return_value = None
 
                 async def mock_gen():
@@ -132,7 +136,9 @@ class TestThreadStreamEndpoint:
         thread_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+            with patch(
+                "src.routes.v0.thread.get_optional_user_from_token"
+            ) as mock_auth:
                 mock_auth.return_value = None
 
                 async def mock_gen():
@@ -174,9 +180,7 @@ class TestBackwardCompatibility:
 
                 # The sync path would try to create an LLM controller and stream
                 # For this test, we're just verifying the routing logic
-                with patch(
-                    "src.routes.v0.llm.LLMController"
-                ) as mock_controller_class:
+                with patch("src.routes.v0.llm.LLMController") as mock_controller_class:
                     mock_controller = MagicMock()
 
                     async def mock_stream():

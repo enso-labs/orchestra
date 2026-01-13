@@ -3,6 +3,7 @@
 Phase 1 TDD: These tests verify the existing `handle_multi_mode` output format
 before any distributed changes. The function is IMMUTABLE and should not be modified.
 """
+
 import pytest
 from langchain_core.messages import AIMessageChunk, ToolMessage, HumanMessage
 
@@ -116,7 +117,9 @@ class TestHandleMultiModeMessagesFormat:
                 AIMessageChunk(
                     content="",
                     id="test-id",
-                    tool_call_chunks=[{"name": "search", "args": "{}", "id": "call-1", "index": 0}],
+                    tool_call_chunks=[
+                        {"name": "search", "args": "{}", "id": "call-1", "index": 0}
+                    ],
                 ),
                 {"user_id": "123"},
             ],

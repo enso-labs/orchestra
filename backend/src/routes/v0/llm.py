@@ -112,7 +112,6 @@ async def llm_stream(
                 task_dict=params.model_dump(),
                 user_id=str(user_id) if user_id else "",
                 thread_id=thread_id,
-                config_dict=dict(config),
             )
 
             logger.info(f"Enqueued distributed task for thread: {thread_id}")

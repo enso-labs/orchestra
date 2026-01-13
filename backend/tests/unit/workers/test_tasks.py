@@ -2,6 +2,7 @@
 
 Phase 3-4 TDD: Tests for task definitions ensuring proper registration and behavior.
 """
+
 import pytest
 from uuid import uuid4
 

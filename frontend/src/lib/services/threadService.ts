@@ -9,6 +9,13 @@ import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
 import { SSE, SSEOptions } from "sse.js";
 import { Agent } from "./agentService";
+import {
+	StreamSource,
+	SyncStreamSource,
+	DistributedStreamSource,
+	type DistributedStreamOptions,
+} from "@/lib/utils/streamSource";
+import { isDistributedResponse } from "@/lib/entities/stream";
 
 const SYSTEM_PROMPT = `GOAL:
 Generate a system prompt for an AI Agent.
@@ -141,6 +148,74 @@ export const streamThread = (payload: StreamThreadPayload): SSE => {
 		throw error;
 	}
 };
+
+/**
+ * Initiates a stream request. Handles both sync and distributed modes.
+ * Returns a unified StreamSource interface.
+ *
+ * @param payload - Stream request payload
+ * @returns StreamSource that can be used to read events
+ * @throws Error on network/auth failures
+ */
+export async function initiateStream(
+	payload: StreamThreadPayload,
+): Promise<StreamSource> {
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Accept: "text/event-stream",
+	};
+
+	const token = getAuthToken();
+	if (token) {
+		headers["Authorization"] = `Bearer ${token}`;
+	}
+
+	// Clean up empty system prompt
+	if (payload.system_prompt?.trim() === "") {
+		delete payload.system_prompt;
+	}
+
+	const response = await fetch(`${VITE_API_URL}/llm/stream`, {
+		method: "POST",
+		headers,
+		body: JSON.stringify(payload),
+	});
+
+	// Distributed mode: 202 Accepted
+	if (response.status === 202) {
+		const data = await response.json();
+
+		if (!isDistributedResponse(data)) {
+			throw new Error("Invalid distributed response format");
+		}
+
+		// Detect if this is a first turn (no existing thread_id) or follow-up
+		// For first turn, we can skip the initial delay since there's no stale stream
+		// For follow-up, we need the delay to avoid race condition with worker startup
+		const isFirstTurn = !payload.metadata?.thread_id;
+		const options: DistributedStreamOptions = {
+			skipInitialDelay: isFirstTurn,
+		};
+
+		return new DistributedStreamSource(data.thread_id, options);
+	}
+
+	// Sync mode: 200 OK
+	if (response.status === 200) {
+		return new SyncStreamSource(response);
+	}
+
+	// Error responses
+	if (response.status === 401) {
+		throw new Error("Authentication required");
+	}
+
+	if (response.status === 429) {
+		throw new Error("Rate limit exceeded");
+	}
+
+	throw new Error(`Unexpected response: ${response.status}`);
+}
 
 export const searchThreads = async (
 	action: "list_threads" | "list_checkpoints" | "get_checkpoint",

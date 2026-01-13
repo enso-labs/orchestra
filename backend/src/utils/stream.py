@@ -1,3 +1,4 @@
+import os
 from deepagents.backends import StoreBackend
 from langchain.agents.middleware import PIIDetectionError
 from langchain.tools import ToolRuntime
@@ -24,6 +25,9 @@ from langchain_core.messages import (
 )
 from src.utils.logger import log_to_file, logger
 from src.utils.format import get_time
+
+# Configurable stream timeout (default 60 seconds)
+STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
 
 
 ###########################################################################
@@ -313,10 +317,10 @@ async def stream_from_redis(thread_id: str):
 
     try:
         while True:
-            # Block for up to 30 seconds waiting for messages
+            # Block for configurable time waiting for messages (default 60s)
             messages = await redis_client.xread(
                 {stream_key: last_id},
-                block=30000,  # 30 second timeout
+                block=STREAM_TIMEOUT_MS,
             )
 
             if not messages:
@@ -333,14 +337,14 @@ async def stream_from_redis(thread_id: str):
                         return
                     if b"error" in data:
                         error_msg = data[b"error"].decode()
-                        yield f"data: {{\"error\": \"{error_msg}\"}}\n\n"
+                        yield f'data: {{"error": "{error_msg}"}}\n\n'
                         yield "data: [DONE]\n\n"
                         return
                     if b"data" in data:
                         yield f"data: {data[b'data'].decode()}\n\n"
     except Exception as e:
         logger.exception(f"Error in stream_from_redis: {e}")
-        yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+        yield f'data: {{"error": "{str(e)}"}}\n\n'
         yield "data: [DONE]\n\n"
     finally:
         await redis_client.aclose()

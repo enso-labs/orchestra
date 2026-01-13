@@ -2,6 +2,7 @@
 
 Phase 3-4 TDD: Tests for broker configuration ensuring proper setup.
 """
+
 import os
 import pytest
 from unittest.mock import patch

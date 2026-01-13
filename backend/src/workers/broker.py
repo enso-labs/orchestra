@@ -6,6 +6,7 @@ task queuing and result storage.
 Environment Variables:
     REDIS_URL: Redis connection URL (default: redis://localhost:6379/0)
 """
+
 import os
 from taskiq_redis import RedisStreamBroker, RedisAsyncResultBackend
 

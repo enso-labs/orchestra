@@ -10,6 +10,7 @@ Pattern mirrors existing `scheduled_llm_invoke` in services/schedule.py:
 - Uses handle_multi_mode for LangGraph format consistency
 - Writes streaming output to Redis stream
 """
+
 import ujson
 import redis.asyncio as redis
 from src.workers.broker import broker, REDIS_URL
@@ -20,7 +21,6 @@ async def run_agent_stream(
     task_dict: dict,
     user_id: str,
     thread_id: str,
-    config_dict: dict,
 ) -> dict:
     """
     Execute agent and stream results via Redis Streams.
@@ -36,14 +36,15 @@ async def run_agent_stream(
         task_dict: Serialized LLMRequest as dict
         user_id: User ID for context
         thread_id: Thread ID for the conversation
-        config_dict: Configuration dict for the agent
 
     Returns:
         dict with status and stream_key
     """
+    from deepagents.backends import StoreBackend
+    from langchain.tools import ToolRuntime
     from src.schemas.entities import LLMRequest
     from src.schemas.contexts import ContextSchema
-    from src.flows import construct_agent, init_config
+    from src.flows import construct_agent, init_config, init_backend
     from src.services.db import get_checkpoint_db, get_store_db
     from src.contexts.service import ServiceContext
     from src.utils.stream import handle_multi_mode  # CRITICAL: Use existing formatter
@@ -52,6 +53,10 @@ async def run_agent_stream(
 
     stream_key = f"agent:stream:{thread_id}"
     redis_client = redis.from_url(REDIS_URL)
+
+    # Clear any existing stream from previous turns on this thread
+    # This prevents the consumer from reading stale data
+    await redis_client.delete(stream_key)
 
     try:
         # Reconstruct request from dict (same pattern as scheduled_llm_invoke)
@@ -80,6 +85,23 @@ async def run_agent_stream(
             # Get assistant config if needed
             params = await service_context.llm_service.assistant(params)
 
+            # Initialize ToolRuntime and Backend (CRITICAL: mirrors sync path in stream.py)
+            ctx_schema = ContextSchema(model=params.model or "", user_id=user_id)
+            runtime = ToolRuntime(
+                state={"messages": [], "files": files_map},
+                context=ctx_schema,
+                tool_call_id="tc_worker",
+                store=service_context.store,
+                stream_writer=lambda _: None,
+                config=config,
+            )
+            store_backend = StoreBackend(runtime)
+            routes = {
+                f"/users/{user_id}/memories/": store_backend,
+                f"/users/{user_id}/config/": store_backend,
+            }
+            backend = init_backend(runtime, routes=routes)
+
             agent = await construct_agent(
                 instructions=params.instructions,
                 system_prompt=params.system_prompt,
@@ -88,17 +110,9 @@ async def run_agent_stream(
                 subagents=params.subagents,
                 checkpointer=checkpointer,
                 service_context=service_context,
+                backend=backend,
             )
             params.input.messages[-1].model = agent.model
-
-            # Convert input to langchain messages if needed
-            try:
-                if not hasattr(params.input.messages[-1], "type"):
-                    params.input = params.input.to_langchain_messages()
-            except Exception:
-                params.input = params.input.to_langchain_messages()
-
-            ctx_schema = ContextSchema(model=params.model, user_id=user_id)
 
             # Send metadata event first
             metadata_event = ujson.dumps(
@@ -142,6 +156,13 @@ async def run_agent_stream(
             # Update thread state (same as stream_generator finally block)
             if service_context.user_id and checkpointer:
                 final_state = await agent.graph.aget_state(config)
+
+                # Validate checkpoint state before update
+                if not final_state or not final_state.values.get("messages"):
+                    logger.warning(
+                        f"Checkpoint update resulted in empty state for thread {thread_id}"
+                    )
+
                 configurable = {
                     **final_state.config.get("configurable", {}),
                     **config["configurable"],
@@ -170,8 +191,13 @@ async def run_agent_stream(
 
     except Exception as e:
         logger.exception(f"Task failed for thread {thread_id}: {e}")
-        await redis_client.xadd(stream_key, {"error": str(e), "done": "true"})
-        await redis_client.expire(stream_key, 300)  # 5 min TTL even on error
+        try:
+            await redis_client.xadd(stream_key, {"error": str(e), "done": "true"})
+            await redis_client.expire(stream_key, 300)  # 5 min TTL even on error
+        except Exception as redis_err:
+            logger.error(
+                f"Failed to send error to Redis for thread {thread_id}: {redis_err}"
+            )
         raise
     finally:
         await redis_client.aclose()

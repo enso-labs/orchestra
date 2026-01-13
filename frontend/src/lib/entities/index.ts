@@ -13,6 +13,7 @@ export interface ThreadPayload {
 }
 
 export * from "./thread";
+export * from "./stream";
 
 export type Agent = {
 	id: string;

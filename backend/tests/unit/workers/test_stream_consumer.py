@@ -3,6 +3,7 @@
 Phase 3-4 TDD: Tests for the stream_from_redis function that consumes
 Redis streams and yields SSE events.
 """
+
 import pytest
 from uuid import uuid4
 
