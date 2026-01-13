@@ -148,9 +148,9 @@ export default function FileEditorPanel() {
 	// Inference dictation hook
 	const { inferenceMode, toggleInferenceMode, isGenerating, setIsGenerating } =
 		useInferenceDictation({
-		activeFile: activeFile || undefined,
-		fileContent: activeFile ? getFileContent(activeFile) : undefined,
-	});
+			activeFile: activeFile || undefined,
+			fileContent: activeFile ? getFileContent(activeFile) : undefined,
+		});
 
 	// Memoized Monaco options to prevent re-initialization
 	const monacoOptions = useMemo(
