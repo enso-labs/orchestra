@@ -105,8 +105,27 @@ jobs:
                       -p 8005:8000 \
                       $GHCR_IMAGE:$TAG
 
+                    echo '--- Stopping and removing old worker container if it exists ---'
+                    docker stop graphchat_worker 2>/dev/null || true
+                    docker rm graphchat_worker 2>/dev/null || true
+
+                    echo '--- Starting worker container ---'
+                    docker run -d \
+                      --name graphchat_worker \
+                      --network graphchat_default \
+                      --restart always \
+                      --env-file ./backend/.env \
+                      -e DISTRIBUTED_WORKERS=true \
+                      -e REDIS_URL=redis://redis:6379/0 \
+                      --memory=1g \
+                      --cpus=1 \
+                      $GHCR_IMAGE:$TAG \
+                      uv run taskiq worker src.workers.tasks:broker
+
+                    echo '--- Worker deployment complete ---'
+
                     echo '--- Cleaning up old images ---'
                     docker system prune -a --filter "until=24h" -f
-                    
+
                     echo '--- Deployment successful! ---'
                   "
