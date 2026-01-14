@@ -24,6 +24,7 @@ dependencies = [
     "langchain-mcp-adapters>=0.2.1",
     "langchain-ollama>=0.3.7",
     "langchain-openai>=1.1.6",
+    "langchain-tavily>=0.2.16",
     "langchain-xai>=1.1.0",
     "langgraph==1.0.5",
     "langgraph-checkpoint-postgres>=3.0.2",

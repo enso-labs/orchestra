@@ -200,13 +200,74 @@ Engines = Literal[
 ]
 
 
+# -----------------------------
+# Search Provider Helpers
+# -----------------------------
+async def _search_with_searx(
+    query: str, num_results: int, searx_url: str
+) -> tuple[list, Exception | None]:
+    """
+    Execute search using SearXNG.
+    Returns (results, error) tuple for clean error handling.
+    """
+    try:
+        searx = SearxSearchWrapper(searx_host=searx_url)
+        results = await searx.aresults(query=query, num_results=num_results)
+        return results, None
+    except Exception as e:
+        return [], e
+
+
+def _normalize_tavily_results(tavily_response: dict) -> list:
+    """
+    Convert Tavily response format to match SearXNG result format.
+    Ensures consistent return structure for downstream consumers.
+    """
+    normalized = []
+    raw_results = tavily_response.get("results", [])
+
+    for item in raw_results:
+        normalized.append(
+            {
+                "title": item.get("title", ""),
+                "link": item.get("url", ""),
+                "snippet": item.get("content", ""),
+                "score": item.get("score", 0.0),
+                "source": "tavily",
+            }
+        )
+
+    return normalized
+
+
+async def _search_with_tavily(
+    query: str, num_results: int, api_key: str
+) -> tuple[list, Exception | None]:
+    """
+    Execute search using Tavily API.
+    Returns (results, error) tuple for clean error handling.
+    """
+    try:
+        from langchain_tavily import TavilySearch
+
+        tavily = TavilySearch(
+            max_results=num_results,
+            tavily_api_key=api_key,
+        )
+        # TavilySearch returns dict with 'results' key
+        response = await tavily.ainvoke({"query": query})
+
+        # Normalize response format to match SearXNG output
+        results = _normalize_tavily_results(response)
+        return results, None
+    except Exception as e:
+        return [], e
+
+
 @tool
 async def web_search(
     query: str,
     num_results: Optional[int] = 5,
-    # engines: Optional[List[Engines]] = ["google"],
-    # categories: Optional[List[Categories]] = [],
-    # language: Optional[str] = "en",
 ) -> list:
     """
     Title: Web Search
@@ -216,6 +277,7 @@ async def web_search(
         - Be specific with dates (e.g., "September 7, 2025" instead of "recent" or "today").
         - Use exact timeframes when searching for current or time-sensitive events.
         - Think critically before searching to ensure accuracy and relevance.
+        - Automatically falls back to Tavily API if primary search yields no results.
 
     Example Queries:
         - site:<domain> latest news about <topic> September 7, 2025
@@ -225,37 +287,60 @@ async def web_search(
     Args:
         query (str): The search query string.
         num_results (int, optional): Number of results to return. Default is 5.
-        engines (list, optional): List of search engines to use. Default is None.
-        categories (list, optional): List of search categories to use. Default is None.
-        language (str, optional): Search language. Default is None.
 
     Returns:
-    list: A list of search results.
+        list: A list of search results.
     """
-    from src.constants import SEARX_SEARCH_HOST_URL
+    from src.constants import SEARX_SEARCH_HOST_URL, TAVILY_API_KEY
 
-    # Check if SEARX_SEARCH_HOST_URL is provided.
-    if not SEARX_SEARCH_HOST_URL:
-        raise ToolException("No SEARX_SEARCH_HOST_URL provided")
+    # Default num_results if None
+    num_results = num_results or 5
 
-    # Create a SearxSearchWrapper instance.
-    searx = SearxSearchWrapper(searx_host=SEARX_SEARCH_HOST_URL)
+    logger.info(f"[Search] Searching for '{query}' with max {num_results} results")
 
-    logger.info(f"Searching for {query} with {num_results} results")
-
-    try:
-        results = await searx.aresults(
+    # Phase 1: Try primary search provider (SearXNG)
+    if SEARX_SEARCH_HOST_URL:
+        results, searx_error = await _search_with_searx(
             query=query,
             num_results=num_results,
-            # engines=engines,
-            # categories=categories,
-            # language=language,
+            searx_url=SEARX_SEARCH_HOST_URL,
         )
-        logger.info(f"Found {len(results)} results")
-        return results
-    except Exception as e:
-        logger.error(f"Error searching for {query}: {e}")
-        raise ToolException(f"Error searching for {query}: {e}")
+
+        if results:
+            logger.info(f"[SearXNG] Found {len(results)} results")
+            return results
+
+        if searx_error:
+            logger.warning(f"[SearXNG] Search failed: {searx_error}")
+        else:
+            logger.warning(f"[SearXNG] No results returned for: {query}")
+
+    # Phase 2: Fallback to Tavily if available
+    if TAVILY_API_KEY:
+        logger.info("[Tavily] Attempting fallback search")
+        results, tavily_error = await _search_with_tavily(
+            query=query,
+            num_results=num_results,
+            api_key=TAVILY_API_KEY,
+        )
+
+        if results:
+            logger.info(f"[Tavily] Fallback returned {len(results)} results")
+            return results
+
+        if tavily_error:
+            logger.warning(f"[Tavily] Fallback also failed: {tavily_error}")
+
+    # Phase 3: All providers exhausted
+    if not SEARX_SEARCH_HOST_URL and not TAVILY_API_KEY:
+        raise ToolException(
+            "No search providers configured. "
+            "Set SEARX_SEARCH_HOST_URL or TAVILY_API_KEY."
+        )
+
+    # Return empty rather than throwing to prevent agent loops
+    logger.warning(f"[Search] All providers returned no results for: {query}")
+    return []
 
 
 @tool
