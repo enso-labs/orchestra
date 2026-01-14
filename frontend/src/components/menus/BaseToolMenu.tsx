@@ -26,7 +26,7 @@ const DEFAULT_AGENT_TOOLS = [
 	"web_scrape",
 	"math_calculator",
 	"think_tool",
-	"python_sandbox",
+	// "python_sandbox",
 ];
 
 export function BaseToolMenu() {
