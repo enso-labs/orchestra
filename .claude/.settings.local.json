@@ -5,7 +5,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "./claude/hooks/notify_slack.py"
+                        "command": "${HOME}/rusk-ai/orchestra/.claude/hooks/notify_slack.py"
                     }
                 ]
             }
@@ -16,7 +16,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "./claude/hooks/notify_slack.py"
+                        "command": "${HOME}/rusk-ai/orchestra/.claude/hooks/notify_slack.py"
                     }
                 ]
             },
@@ -25,7 +25,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "./claude/hooks/notify_slack.py"
+                        "command": "${HOME}/rusk-ai/orchestra/.claude/hooks/notify_slack.py"
                     }
                 ]
             }

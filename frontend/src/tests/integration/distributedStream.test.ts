@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { initiateStream } from "@/lib/services/threadService";
-import { SyncStreamSource, DistributedStreamSource } from "@/lib/utils/streamSource";
+import {
+	SyncStreamSource,
+	DistributedStreamSource,
+} from "@/lib/utils/streamSource";
 import type { StreamEvent } from "@/lib/entities/stream";
 
 // Mock dependencies
@@ -247,9 +250,7 @@ describe("Distributed Stream Integration", () => {
 
 			const turn1Payload = {
 				input: {
-					messages: [
-						{ role: "user" as const, content: "My name is Alice" },
-					],
+					messages: [{ role: "user" as const, content: "My name is Alice" }],
 				},
 				model: "openai:gpt-4.1-mini",
 				metadata: {},
@@ -280,9 +281,7 @@ describe("Distributed Stream Integration", () => {
 
 			const turn2Payload = {
 				input: {
-					messages: [
-						{ role: "user" as const, content: "What is my name?" },
-					],
+					messages: [{ role: "user" as const, content: "What is my name?" }],
 				},
 				model: "openai:gpt-4.1-mini",
 				metadata: { thread_id: threadId }, // Include thread_id
