@@ -49,18 +49,24 @@ class ChatModels(str, Enum):
         GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b"
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
     if AWS_BEDROCK_REGION:
-        # Claude models via Bedrock
+        # Claude 4.5 models via Bedrock (default/recommended)
+        BEDROCK_CLAUDE_4_5_SONNET = (
+            "bedrock_converse:anthropic.claude-sonnet-4-5-20250929-v1:0"
+        )
+        BEDROCK_CLAUDE_4_5_HAIKU = (
+            "bedrock_converse:anthropic.claude-haiku-4-5-20251001-v1:0"
+        )
+        BEDROCK_CLAUDE_4_5_OPUS = (
+            "bedrock_converse:anthropic.claude-opus-4-5-20251101-v1:0"
+        )
+        # Moonshot Kimi K2 (deep reasoning with tool use)
+        BEDROCK_KIMI_K2_THINKING = "bedrock_converse:moonshot.kimi-k2-thinking"
+        # Claude 3.5 models via Bedrock (legacy)
         BEDROCK_CLAUDE_3_5_SONNET = (
             "bedrock_converse:anthropic.claude-3-5-sonnet-20241022-v2:0"
         )
         BEDROCK_CLAUDE_3_5_HAIKU = (
             "bedrock_converse:anthropic.claude-3-5-haiku-20241022-v1:0"
-        )
-        BEDROCK_CLAUDE_3_SONNET = (
-            "bedrock_converse:anthropic.claude-3-sonnet-20240229-v1:0"
-        )
-        BEDROCK_CLAUDE_3_HAIKU = (
-            "bedrock_converse:anthropic.claude-3-haiku-20240307-v1:0"
         )
         # Amazon Titan
         BEDROCK_TITAN_TEXT_PREMIER = "bedrock_converse:amazon.titan-text-premier-v1:0"
