@@ -78,8 +78,13 @@ class LLMService:
         tool_models = filter_tool_call_models(provider_models)
         logger.info(f"Found {len(tool_models)} tool calling models for {provider}")
 
-        # Normalize provider name
-        normalized_provider = "google_genai" if provider == "google" else provider
+        # Normalize provider name for LangChain init_chat_model compatibility
+        if provider == "google":
+            normalized_provider = "google_genai"
+        elif provider == "amazon-bedrock":
+            normalized_provider = "bedrock_converse"
+        else:
+            normalized_provider = provider
 
         return [f"{normalized_provider}:{model}" for model in tool_models]
 
