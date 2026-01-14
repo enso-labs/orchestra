@@ -105,6 +105,9 @@ jobs:
                       -p 8005:8000 \
                       $GHCR_IMAGE:$TAG
 
+                    echo '--- Ensuring redis7 is on graphchat_default network ---'
+                    docker network connect graphchat_default redis7 2>/dev/null || echo 'redis7 already on network or not found'
+
                     echo '--- Stopping and removing old worker container if it exists ---'
                     docker stop graphchat_worker 2>/dev/null || true
                     docker rm graphchat_worker 2>/dev/null || true
@@ -116,7 +119,7 @@ jobs:
                       --restart always \
                       --env-file ./backend/.env \
                       -e DISTRIBUTED_WORKERS=true \
-                      -e REDIS_URL=redis://redis:6379/0 \
+                      -e REDIS_URL=redis://redis7:6379/0 \
                       --memory=1g \
                       --cpus=1 \
                       --entrypoint uv \
