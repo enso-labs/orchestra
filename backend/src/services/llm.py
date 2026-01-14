@@ -86,6 +86,10 @@ class LLMService:
         else:
             normalized_provider = provider
 
+        # For Bedrock, prefix model IDs with "us." for cross-region inference profiles
+        if provider == "amazon-bedrock":
+            return [f"{normalized_provider}:us.{model}" for model in tool_models]
+
         return [f"{normalized_provider}:{model}" for model in tool_models]
 
     async def init_tools(self, tools: list[str], a2a: dict, mcp: dict):
