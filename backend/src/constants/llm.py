@@ -7,6 +7,7 @@ from src.constants import (
     GROQ_API_KEY,
     GOOGLE_API_KEY,
     XAI_API_KEY,
+    AWS_BEDROCK_REGION,
 )
 from src.utils.logger import logger
 
@@ -47,6 +48,26 @@ class ChatModels(str, Enum):
     if GROQ_API_KEY:
         GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b"
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
+    if AWS_BEDROCK_REGION:
+        # Claude models via Bedrock
+        BEDROCK_CLAUDE_3_5_SONNET = (
+            "bedrock_converse:anthropic.claude-3-5-sonnet-20241022-v2:0"
+        )
+        BEDROCK_CLAUDE_3_5_HAIKU = (
+            "bedrock_converse:anthropic.claude-3-5-haiku-20241022-v1:0"
+        )
+        BEDROCK_CLAUDE_3_SONNET = (
+            "bedrock_converse:anthropic.claude-3-sonnet-20240229-v1:0"
+        )
+        BEDROCK_CLAUDE_3_HAIKU = (
+            "bedrock_converse:anthropic.claude-3-haiku-20240307-v1:0"
+        )
+        # Amazon Titan
+        BEDROCK_TITAN_TEXT_PREMIER = "bedrock_converse:amazon.titan-text-premier-v1:0"
+        # Meta Llama
+        BEDROCK_LLAMA_3_2_90B = "bedrock_converse:meta.llama3-2-90b-instruct-v1:0"
+        # Mistral
+        BEDROCK_MISTRAL_LARGE = "bedrock_converse:mistral.mistral-large-2407-v1:0"
 
 
 def get_ollama_models():
@@ -82,6 +103,8 @@ def get_all_models():
         models.extend(llm_service.model_by_provider(provider="groq"))
     if XAI_API_KEY:
         models.extend(llm_service.model_by_provider(provider="xai"))
+    if AWS_BEDROCK_REGION:
+        models.extend(llm_service.model_by_provider(provider="amazon-bedrock"))
     if OLLAMA_BASE_URL:
         models.extend(get_ollama_models())
     return sorted(models)
