@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { FetchStreamReader, ResponseBodyReader } from "@/lib/utils/fetchStreamReader";
+import {
+	FetchStreamReader,
+	ResponseBodyReader,
+} from "@/lib/utils/fetchStreamReader";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -28,10 +31,7 @@ function createMockStream(lines: string[]): ReadableStream<Uint8Array> {
 /**
  * Creates a mock Response with a ReadableStream body.
  */
-function createMockResponse(
-	lines: string[],
-	status = 200,
-): Response {
+function createMockResponse(lines: string[], status = 200): Response {
 	return {
 		ok: status >= 200 && status < 300,
 		status,

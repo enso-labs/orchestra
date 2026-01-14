@@ -16,6 +16,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { SiAnthropic, SiOpenai, SiOllama, SiGoogle } from "react-icons/si";
+import { FaAws } from "react-icons/fa";
 import GroqIcon from "@/components/icons/GroqIcon";
 import XAIIcon from "../icons/XAIIcon";
 import { getAuthToken } from "@/lib/utils/auth";
@@ -63,6 +64,9 @@ function SelectModel({
 			modelValue.startsWith("google-vertexai:")
 		) {
 			return <SiGoogle className="h-4 w-4" />;
+		}
+		if (modelValue.startsWith("bedrock_converse:")) {
+			return <FaAws className="h-4 w-4" />;
 		}
 		return null;
 	};

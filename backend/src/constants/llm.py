@@ -7,6 +7,7 @@ from src.constants import (
     GROQ_API_KEY,
     GOOGLE_API_KEY,
     XAI_API_KEY,
+    AWS_BEARER_TOKEN_BEDROCK,
 )
 from src.utils.logger import logger
 
@@ -47,6 +48,33 @@ class ChatModels(str, Enum):
     if GROQ_API_KEY:
         GROQ_OPENAI_GPT_OSS_120B = "groq:openai/gpt-oss-120b"
         GROQ_LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
+    if AWS_BEARER_TOKEN_BEDROCK:
+        # Claude 4.5 models via Bedrock - require inference profiles (us. prefix for US region)
+        # See: https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html
+        BEDROCK_CLAUDE_4_5_SONNET = (
+            "bedrock_converse:us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+        )
+        BEDROCK_CLAUDE_4_5_HAIKU = (
+            "bedrock_converse:us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        )
+        BEDROCK_CLAUDE_4_5_OPUS = (
+            "bedrock_converse:us.anthropic.claude-opus-4-5-20251101-v1:0"
+        )
+        # Moonshot Kimi K2 (deep reasoning with tool use)
+        BEDROCK_KIMI_K2_THINKING = "bedrock_converse:us.moonshot.kimi-k2-thinking"
+        # Claude 3.5 models via Bedrock (legacy - direct model IDs still work)
+        BEDROCK_CLAUDE_3_5_SONNET = (
+            "bedrock_converse:us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+        )
+        BEDROCK_CLAUDE_3_5_HAIKU = (
+            "bedrock_converse:us.anthropic.claude-3-5-haiku-20241022-v1:0"
+        )
+        # Amazon Titan
+        BEDROCK_TITAN_TEXT_PREMIER = "bedrock_converse:amazon.titan-text-premier-v1:0"
+        # Meta Llama
+        BEDROCK_LLAMA_3_2_90B = "bedrock_converse:us.meta.llama3-2-90b-instruct-v1:0"
+        # Mistral
+        BEDROCK_MISTRAL_LARGE = "bedrock_converse:us.mistral.mistral-large-2407-v1:0"
 
 
 def get_ollama_models():
@@ -82,6 +110,8 @@ def get_all_models():
         models.extend(llm_service.model_by_provider(provider="groq"))
     if XAI_API_KEY:
         models.extend(llm_service.model_by_provider(provider="xai"))
+    if AWS_BEARER_TOKEN_BEDROCK:
+        models.extend(llm_service.model_by_provider(provider="amazon-bedrock"))
     if OLLAMA_BASE_URL:
         models.extend(get_ollama_models())
     return sorted(models)

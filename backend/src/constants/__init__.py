@@ -53,6 +53,7 @@ class UserTokenKey(Enum):
     GOOGLE_API_KEY = "GOOGLE_API_KEY"
     XAI_API_KEY = "XAI_API_KEY"
     OLLAMA_BASE_URL = "OLLAMA_BASE_URL"
+    AWS_BEARER_TOKEN_BEDROCK = "AWS_BEARER_TOKEN_BEDROCK"
     ## TOOLS
     SHELL_EXEC_SERVER_URL = "SHELL_EXEC_SERVER_URL"
     SEARX_SEARCH_HOST_URL = "SEARX_SEARCH_HOST_URL"
@@ -72,6 +73,7 @@ GROQ_API_KEY = os.getenv(UserTokenKey.GROQ_API_KEY.value)
 GEMINI_API_KEY = os.getenv(UserTokenKey.GEMINI_API_KEY.value)
 GOOGLE_API_KEY = os.getenv(UserTokenKey.GOOGLE_API_KEY.value)
 XAI_API_KEY = os.getenv(UserTokenKey.XAI_API_KEY.value)
+AWS_BEARER_TOKEN_BEDROCK = os.getenv(UserTokenKey.AWS_BEARER_TOKEN_BEDROCK.value)
 ARCADE_API_KEY = os.getenv(UserTokenKey.ARCADE_API_KEY.value)
 # Tools
 SHELL_EXEC_SERVER_URL = os.getenv(
