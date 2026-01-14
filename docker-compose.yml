@@ -29,6 +29,57 @@ services:
             - postgres
 
     ##############################################
+    ## Redis (Message Broker for Distributed Workers)
+    ##############################################
+    redis:
+        image: redis:7-alpine
+        container_name: redis
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        command: redis-server --appendonly yes
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    ##############################################
+    ## TaskIQ Worker (Distributed Agent Execution)
+    ##############################################
+    worker:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        environment:
+            - REDIS_URL=redis://redis:6379/0
+            - DISTRIBUTED_WORKERS=true
+        entrypoint: ["uv", "run", "taskiq", "worker", "src.workers.tasks:broker"]
+        command: []
+        depends_on:
+            redis:
+                condition: service_healthy
+            postgres:
+                condition: service_started
+        deploy:
+            replicas: 1
+            resources:
+                limits:
+                    cpus: '1.0'
+                    memory: 1G
+                reservations:
+                    cpus: '0.25'
+                    memory: 256M
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "pgrep", "-f", "taskiq"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+
+    ##############################################
     ## Minio (File Storage)
     ##############################################
     minio:
@@ -122,3 +173,4 @@ services:
 
 volumes:
     ollama:
+    redis_data:

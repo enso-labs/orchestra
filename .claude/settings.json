@@ -1,6 +1,39 @@
 {
-  "enabledPlugins": {
-    "ralph-wiggum@claude-code-plugins": true,
-    "pyright@claude-code-lsps": true
-  }
+    "enabledPlugins": {
+        "ralph-wiggum@claude-code-plugins": true,
+        "pyright@claude-code-lsps": true
+    },
+
+    "hooks": {
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "~/.claude/hooks/notify_slack.py"
+                    }
+                ]
+            }
+        ],
+        "Notification": [
+            {
+                "matcher": "permission_prompt",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "~/.claude/hooks/notify_slack.py"
+                    }
+                ]
+            },
+            {
+                "matcher": "idle_prompt",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "~/.claude/hooks/notify_slack.py"
+                    }
+                ]
+            }
+        ]
+    }
 }

@@ -1,7 +1,7 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 import uuid
 from fastapi import APIRouter, Body, HTTPException, Depends, status
-from fastapi.responses import Response, UJSONResponse
+from fastapi.responses import Response, UJSONResponse, StreamingResponse
 from fastapi_cache.decorator import cache
 from langgraph.graph.state import RunnableConfig
 from src.schemas.entities.store import Thread
@@ -11,7 +11,7 @@ from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store, get_checkpoint_db
-from src.utils.auth import verify_credentials
+from src.utils.auth import verify_credentials, get_optional_user_from_token
 from langgraph.store.postgres import AsyncPostgresStore
 from langgraph.checkpoint.base import (
     empty_checkpoint,
@@ -20,6 +20,7 @@ from langgraph.checkpoint.base import (
 )
 
 from src.utils.messages import from_message_to_dict
+from src.utils.stream import stream_from_redis
 
 router = APIRouter(tags=["Thread"])
 
@@ -220,6 +221,47 @@ async def get_thread(
         logger.exception(f"Error getting thread: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from e
+
+
+@router.get(
+    "/threads/{thread_id}/stream",
+    name="Stream Thread Results",
+    operation_id="ruska_stream_thread",
+    tags=["Thread"],
+)
+async def stream_thread(
+    thread_id: str,
+    user: ProtectedUser = Depends(get_optional_user_from_token),
+):
+    """
+    Stream results from a distributed worker via SSE.
+
+    Use this endpoint after POST /llm/stream returns {"distributed": true}.
+    The client should connect to this endpoint to receive the streaming
+    response from the background worker.
+
+    Args:
+        thread_id: The thread ID returned from the distributed /llm/stream call.
+
+    Returns:
+        StreamingResponse with SSE events containing the agent output.
+    """
+    try:
+        return StreamingResponse(
+            stream_from_redis(thread_id),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # Disable nginx buffering
+            },
+        )
+    except Exception as e:
+        logger.exception(f"Error streaming thread {thread_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
         ) from e
 
 

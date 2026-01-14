@@ -28,8 +28,8 @@ async def test_stream_accepts_generate_files_flag(async_client: AsyncClient):
     async with async_client.stream(
         "POST", "/api/llm/stream", json=payload, headers=headers
     ) as response:
-        # Should accept the request and start streaming
-        assert response.status_code == 200
+        # Should accept the request and start streaming (200) or queue for distributed (202)
+        assert response.status_code in [200, 202]
 
 
 @pytest.mark.asyncio
@@ -56,7 +56,8 @@ async def test_stream_accepts_target_file_parameter(async_client: AsyncClient):
     async with async_client.stream(
         "POST", "/api/llm/stream", json=payload, headers=headers
     ) as response:
-        assert response.status_code == 200
+        # Should accept the request and start streaming (200) or queue for distributed (202)
+        assert response.status_code in [200, 202]
 
 
 @pytest.mark.asyncio
@@ -84,7 +85,8 @@ async def test_stream_accepts_file_context_parameter(async_client: AsyncClient):
     async with async_client.stream(
         "POST", "/api/llm/stream", json=payload, headers=headers
     ) as response:
-        assert response.status_code == 200
+        # Should accept the request and start streaming (200) or queue for distributed (202)
+        assert response.status_code in [200, 202]
 
 
 @pytest.mark.asyncio

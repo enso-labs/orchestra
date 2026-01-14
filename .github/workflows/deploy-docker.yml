@@ -105,8 +105,33 @@ jobs:
                       -p 8005:8000 \
                       $GHCR_IMAGE:$TAG
 
+                    echo '--- Ensuring redis7 is on graphchat_default network ---'
+                    docker network connect graphchat_default redis7 2>/dev/null || echo 'redis7 already on network or not found'
+
+                    echo '--- Stopping and removing old worker container if it exists ---'
+                    docker stop graphchat_worker 2>/dev/null || true
+                    docker rm graphchat_worker 2>/dev/null || true
+
+                    echo '--- Starting worker container ---'
+                    docker run -d \
+                      --name graphchat_worker \
+                      --network graphchat_default \
+                      --restart always \
+                      --env-file ./backend/.env \
+                      -e DISTRIBUTED_WORKERS=true \
+                      -e REDIS_URL=redis://redis7:6379/0 \
+                      -e DB_POOL_MIN_SIZE=1 \
+                      -e DB_POOL_MAX_SIZE=5 \
+                      --memory=1g \
+                      --cpus=1 \
+                      --entrypoint uv \
+                      $GHCR_IMAGE:$TAG \
+                      run taskiq worker src.workers.tasks:broker
+
+                    echo '--- Worker deployment complete ---'
+
                     echo '--- Cleaning up old images ---'
                     docker system prune -a --filter "until=24h" -f
-                    
+
                     echo '--- Deployment successful! ---'
                   "

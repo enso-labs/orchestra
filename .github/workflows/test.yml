@@ -91,6 +91,7 @@ jobs:
             POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@localhost:5432/lg_template_test
             OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+            REDIS_URL: redis://localhost:6379/0
         services:
             postgres:
                 image: pgvector/pgvector:pg16
@@ -105,15 +106,15 @@ jobs:
                     --health-interval 10s
                     --health-timeout 5s
                     --health-retries 5
-            # redis:
-            #   image: redis:alpine
-            #   ports:
-            #     - 6379:6379
-            #   options: >-
-            #     --health-cmd "redis-cli ping"
-            #     --health-interval 10s
-            #     --health-timeout 5s
-            #     --health-retries 5
+            redis:
+                image: redis:alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
