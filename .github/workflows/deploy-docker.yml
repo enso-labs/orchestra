@@ -119,8 +119,9 @@ jobs:
                       -e REDIS_URL=redis://redis:6379/0 \
                       --memory=1g \
                       --cpus=1 \
+                      --entrypoint uv \
                       $GHCR_IMAGE:$TAG \
-                      uv run taskiq worker src.workers.tasks:broker
+                      run taskiq worker src.workers.tasks:broker
 
                     echo '--- Worker deployment complete ---'
 
