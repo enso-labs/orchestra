@@ -62,6 +62,7 @@ export class FetchStreamReader {
 		} catch (error) {
 			if (error instanceof Error && error.name !== "AbortError") {
 				this.errorHandler?.(error);
+				throw error;
 			}
 		} finally {
 			if (!this.aborted) {

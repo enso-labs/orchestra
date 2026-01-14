@@ -262,7 +262,7 @@ async def stream_thread(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
-        )
+        ) from e
 
 
 @router.patch(

@@ -4,9 +4,9 @@ import { VITE_API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/utils/auth";
 import { isRetryableError, classifyError } from "./streamError";
 
-// Retry configuration
-const MAX_RETRIES = 3;
+// Retry configuration - MAX_ATTEMPTS derived from RETRY_DELAYS length
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff in ms
+const MAX_ATTEMPTS = RETRY_DELAYS.length;
 
 // Initial delay before polling in distributed mode
 // This gives the worker time to pick up the task and start the stream
@@ -14,9 +14,22 @@ const INITIAL_POLL_DELAY_MS = 500;
 
 /**
  * Delays execution for specified milliseconds.
+ * Supports optional AbortSignal for early cancellation.
  */
-function delay(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+	return new Promise((resolve, reject) => {
+		if (signal?.aborted)
+			return reject(new DOMException("Aborted", "AbortError"));
+		const t = setTimeout(resolve, ms);
+		signal?.addEventListener(
+			"abort",
+			() => {
+				clearTimeout(t);
+				reject(new DOMException("Aborted", "AbortError"));
+			},
+			{ once: true },
+		);
+	});
 }
 
 /**
@@ -90,7 +103,6 @@ export class DistributedStreamSource implements StreamSource {
 	private errorHandler: ((error: Error) => void) | null = null;
 	private closeHandler: (() => void) | null = null;
 	private threadId: string;
-	private retryCount = 0;
 	private skipInitialDelay: boolean;
 
 	constructor(threadId: string, options: DistributedStreamOptions = {}) {
@@ -115,33 +127,38 @@ export class DistributedStreamSource implements StreamSource {
 		// Apply initial delay for follow-up messages to avoid race condition
 		// where the stream returns stale data from the previous turn
 		if (!this.skipInitialDelay) {
-			await delay(INITIAL_POLL_DELAY_MS);
+			await delay(INITIAL_POLL_DELAY_MS, this.abortController.signal);
 		}
 		await this.startWithRetry();
 	}
 
 	private async startWithRetry(): Promise<void> {
-		while (this.retryCount <= MAX_RETRIES) {
+		const maxAttempts = MAX_ATTEMPTS;
+		let attempt = 0;
+
+		while (attempt < maxAttempts) {
 			try {
 				await this.createAndStartReader();
 				return; // Success, exit retry loop
 			} catch (error) {
-				if (
-					error instanceof Error &&
-					isRetryableError(error) &&
-					this.retryCount < MAX_RETRIES
-				) {
-					const delayMs = RETRY_DELAYS[this.retryCount];
+				const isError = error instanceof Error;
+				const canRetry =
+					isError && isRetryableError(error) && attempt < maxAttempts - 1;
+
+				if (canRetry) {
+					const delayMs = RETRY_DELAYS[attempt];
 					console.warn(
-						`Stream error (attempt ${this.retryCount + 1}/${MAX_RETRIES}), retrying in ${delayMs}ms:`,
+						`Stream error (attempt ${attempt + 1}/${maxAttempts}), retrying in ${delayMs}ms:`,
 						error.message,
 					);
-					this.retryCount++;
-					await delay(delayMs);
+					await delay(delayMs, this.abortController.signal);
+					attempt++;
 				} else {
 					// Non-retryable or max retries exceeded
-					const classified = classifyError(error as Error);
-					this.errorHandler?.(new Error(classified.message));
+					if (this.errorHandler && isError) {
+						const classified = classifyError(error);
+						this.errorHandler(new Error(classified.message));
+					}
 					return;
 				}
 			}
@@ -170,11 +187,12 @@ export class DistributedStreamSource implements StreamSource {
 		if (this.closeHandler) {
 			this.reader.onClose(this.closeHandler);
 		}
-
-		// For errors during streaming, we don't retry - just propagate
-		this.reader.onError((error) => {
-			this.errorHandler?.(error);
-		});
+		if (this.errorHandler) {
+			// Wire error handler so start() can dispatch errors before re-throwing.
+			// startWithRetry catches the re-thrown error for retry logic, but does
+			// not dispatch again (avoiding double-reporting).
+			this.reader.onError(this.errorHandler);
+		}
 
 		await this.reader.start();
 	}

@@ -5,62 +5,84 @@ Redis streams and yields SSE events.
 """
 
 import pytest
+from unittest.mock import patch
 from uuid import uuid4
+
+from src.utils.stream import stream_from_redis
 
 
 class TestStreamFromRedis:
-    """Tests for the stream_from_redis function."""
+    """Tests for the stream_from_redis async generator."""
 
     @pytest.mark.asyncio
-    async def test_yields_data_events(self, fake_redis):
-        """Consumer yields data as SSE events."""
+    async def test_yields_sse_formatted_data_events(self, fake_redis):
+        """Consumer yields data as SSE-formatted events."""
         thread_id = str(uuid4())
         stream_key = f"agent:stream:{thread_id}"
 
+        # Seed the stream with data and done marker
         await fake_redis.xadd(stream_key, {"data": b'{"test": "chunk"}'})
         await fake_redis.xadd(stream_key, {"done": b"true"})
 
-        messages = await fake_redis.xread({stream_key: "0"})
-        assert len(messages) > 0
+        # Mock redis.from_url to return our fake_redis
+        with patch("redis.asyncio.from_url", return_value=fake_redis):
+            events = []
+            async for event in stream_from_redis(thread_id):
+                events.append(event)
+
+        # Verify SSE format: "data: {...}\n\n"
+        assert len(events) == 2
+        assert events[0] == 'data: {"test": "chunk"}\n\n'
+        assert events[1] == "data: [DONE]\n\n"
 
     @pytest.mark.asyncio
-    async def test_yields_done_signal(self, fake_redis):
-        """Consumer yields [DONE] on completion."""
+    async def test_done_record_finishes_generator(self, fake_redis):
+        """Consumer generator finishes when done record is received."""
         thread_id = str(uuid4())
         stream_key = f"agent:stream:{thread_id}"
 
         await fake_redis.xadd(stream_key, {"done": b"true"})
 
-        messages = await fake_redis.xread({stream_key: "0"})
-        _, entries = messages[0]
-        _, data = entries[0]
-        assert b"done" in data
+        with patch("redis.asyncio.from_url", return_value=fake_redis):
+            events = [event async for event in stream_from_redis(thread_id)]
+
+        assert len(events) == 1
+        assert events[0] == "data: [DONE]\n\n"
 
     @pytest.mark.asyncio
-    async def test_tracks_last_id_correctly(self, fake_redis):
-        """Consumer tracks last_id for incremental reads."""
+    async def test_yields_multiple_data_events_in_order(self, fake_redis):
+        """Consumer yields multiple data events in order before done."""
         thread_id = str(uuid4())
         stream_key = f"agent:stream:{thread_id}"
 
-        id1 = await fake_redis.xadd(stream_key, {"data": b"chunk1"})
-        await fake_redis.xadd(stream_key, {"data": b"chunk2"})
+        await fake_redis.xadd(stream_key, {"data": b'{"chunk": 1}'})
+        await fake_redis.xadd(stream_key, {"data": b'{"chunk": 2}'})
+        await fake_redis.xadd(stream_key, {"data": b'{"chunk": 3}'})
+        await fake_redis.xadd(stream_key, {"done": b"true"})
 
-        messages = await fake_redis.xread({stream_key: id1})
-        assert len(messages[0][1]) == 1  # Only second chunk
+        with patch("redis.asyncio.from_url", return_value=fake_redis):
+            events = [event async for event in stream_from_redis(thread_id)]
+
+        assert len(events) == 4
+        assert events[0] == 'data: {"chunk": 1}\n\n'
+        assert events[1] == 'data: {"chunk": 2}\n\n'
+        assert events[2] == 'data: {"chunk": 3}\n\n'
+        assert events[3] == "data: [DONE]\n\n"
 
     @pytest.mark.asyncio
-    async def test_handles_error_messages(self, fake_redis):
-        """Consumer yields error messages correctly."""
+    async def test_error_message_yields_error_and_done(self, fake_redis):
+        """Consumer yields error message in SSE format and then [DONE]."""
         thread_id = str(uuid4())
         stream_key = f"agent:stream:{thread_id}"
 
-        await fake_redis.xadd(stream_key, {"error": b"Test error", "done": b"true"})
+        await fake_redis.xadd(stream_key, {"error": b"Test error"})
 
-        messages = await fake_redis.xread({stream_key: "0"})
-        _, entries = messages[0]
-        _, data = entries[0]
-        assert b"error" in data
-        assert data[b"error"] == b"Test error"
+        with patch("redis.asyncio.from_url", return_value=fake_redis):
+            events = [event async for event in stream_from_redis(thread_id)]
+
+        assert len(events) == 2
+        assert events[0] == 'data: {"error": "Test error"}\n\n'
+        assert events[1] == "data: [DONE]\n\n"
 
 
 class TestSSEFormatting:
