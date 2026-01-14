@@ -180,21 +180,24 @@ export class DistributedStreamSource implements StreamSource {
 			},
 		);
 
-		// Wire up handlers
+		// Wire up handlers for events and close only.
+		// Error handling is done in startWithRetry to avoid double-reporting
+		// during retries.
 		if (this.eventHandler) {
 			this.reader.onEvent(this.eventHandler);
 		}
 		if (this.closeHandler) {
 			this.reader.onClose(this.closeHandler);
 		}
-		if (this.errorHandler) {
-			// Wire error handler so start() can dispatch errors before re-throwing.
-			// startWithRetry catches the re-thrown error for retry logic, but does
-			// not dispatch again (avoiding double-reporting).
-			this.reader.onError(this.errorHandler);
-		}
+		// Note: We intentionally do NOT wire this.errorHandler to the reader.
+		// The reader.lastError is checked after start() and handled by startWithRetry.
 
 		await this.reader.start();
+
+		// Check if an error occurred during the stream
+		if (this.reader.lastError) {
+			throw this.reader.lastError;
+		}
 	}
 
 	close(): void {

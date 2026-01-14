@@ -17,11 +17,20 @@ export class FetchStreamReader {
 	private errorHandler: ((error: Error) => void) | null = null;
 	private closeHandler: (() => void) | null = null;
 	private aborted = false;
+	private _lastError: Error | null = null;
 
 	constructor(
 		private url: string,
 		private options: FetchStreamReaderOptions = {},
 	) {}
+
+	/**
+	 * Returns the last error that occurred during streaming, if any.
+	 * Used by DistributedStreamSource for retry logic.
+	 */
+	get lastError(): Error | null {
+		return this._lastError;
+	}
 
 	onEvent(handler: (event: StreamEvent) => void): this {
 		this.eventHandler = handler;
@@ -61,8 +70,8 @@ export class FetchStreamReader {
 			await this.readLoop();
 		} catch (error) {
 			if (error instanceof Error && error.name !== "AbortError") {
+				this._lastError = error;
 				this.errorHandler?.(error);
-				throw error;
 			}
 		} finally {
 			if (!this.aborted) {
