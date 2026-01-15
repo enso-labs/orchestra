@@ -22,6 +22,7 @@ function ShareButton() {
 	const [copied, setCopied] = useState(false);
 	const [shareUrl, setShareUrl] = useState<string | null>(null);
 	const [allowFollowUp, setAllowFollowUp] = useState(true);
+	const [showFiles, setShowFiles] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const handleCreateShare = async () => {
@@ -34,6 +35,7 @@ function ShareButton() {
 		try {
 			const response = await shareService.createShare(threadId, {
 				allow_follow_up: allowFollowUp,
+				show_files: showFiles,
 			});
 
 			const fullUrl = `${window.location.origin}/share/${response.token}`;
@@ -105,6 +107,20 @@ function ShareButton() {
 								id="allow-follow-up"
 								checked={allowFollowUp}
 								onCheckedChange={setAllowFollowUp}
+							/>
+						</div>
+
+						<div className="flex items-center justify-between">
+							<div className="space-y-0.5">
+								<Label htmlFor="show-files">Show files</Label>
+								<p className="text-sm text-muted-foreground">
+									Include attached files in the shared view
+								</p>
+							</div>
+							<Switch
+								id="show-files"
+								checked={showFiles}
+								onCheckedChange={setShowFiles}
 							/>
 						</div>
 

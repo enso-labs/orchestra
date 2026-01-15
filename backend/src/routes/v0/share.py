@@ -66,6 +66,7 @@ async def create_share(
                 share_url=f"/share/{token}",
                 expires_at=share.expires_at,
                 allow_follow_up=share.allow_follow_up,
+                show_files=share.show_files,
             )
     except ValueError as e:
         raise HTTPException(
@@ -131,6 +132,7 @@ async def get_shared_thread(
                 "config": {
                     "allow_follow_up": share.allow_follow_up,
                     "follow_up_model": share.follow_up_model,
+                    "show_files": share.show_files,
                 },
             }
     except HTTPException:
@@ -219,6 +221,7 @@ async def list_shares(
                         "thread_id": s.thread_id,
                         "share_url": f"/share/[token]",  # Don't expose full token
                         "allow_follow_up": s.allow_follow_up,
+                        "show_files": s.show_files,
                         "expires_at": s.expires_at.isoformat()
                         if s.expires_at
                         else None,

@@ -86,6 +86,7 @@ class ShareService:
             owner_id=self.user_id,
             allow_follow_up=request.allow_follow_up,
             follow_up_model=follow_up_model,
+            show_files=request.show_files,
             expires_at=expires_at,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
@@ -153,12 +154,16 @@ class ShareService:
         # Increment view count asynchronously (fire and forget)
         asyncio.create_task(temp_repo.increment_view_count(share.id, share.owner_id))
 
-        # Build response
+        # Build response - conditionally include files based on share settings
+        files_data = None
+        if share.show_files and hasattr(thread, "files"):
+            files_data = thread.files
+
         shared_response = SharedThreadResponse(
             thread_id=share.thread_id,
             title=thread.title if hasattr(thread, "title") else None,
             messages=messages,
-            files=thread.files if hasattr(thread, "files") else None,
+            files=files_data,
             todos=thread.todos if hasattr(thread, "todos") else None,
             shared_at=share.created_at,
             allow_follow_up=share.allow_follow_up,

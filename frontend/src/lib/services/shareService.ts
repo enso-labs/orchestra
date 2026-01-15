@@ -11,6 +11,7 @@ export interface ShareOptions {
 	expires_in_hours?: number;
 	allow_follow_up?: boolean;
 	follow_up_model?: string;
+	show_files?: boolean;
 }
 
 export interface ShareResponse {
@@ -20,6 +21,7 @@ export interface ShareResponse {
 	share_url: string;
 	expires_at: string | null;
 	allow_follow_up: boolean;
+	show_files: boolean;
 }
 
 export interface SharedThread {
@@ -38,6 +40,7 @@ export interface SharedThreadResponse {
 	config: {
 		allow_follow_up: boolean;
 		follow_up_model: string | null;
+		show_files: boolean;
 	};
 }
 
@@ -46,6 +49,7 @@ export interface ShareListItem {
 	thread_id: string;
 	share_url: string;
 	allow_follow_up: boolean;
+	show_files: boolean;
 	expires_at: string | null;
 	view_count: number;
 	created_at: string | null;

@@ -77,12 +77,12 @@
 - [x] All backend tests passing
 - [x] All frontend tests passing
 - [x] Linting/formatting clean (`make format`)
-- [ ] Manual test: Create share, access via URL, verify content
-- [ ] Ready for PR
+- [x] Manual test: Create share, access via URL, verify content
+- [x] Ready for PR
 
 ## Completion Signature
 - Total Tasks: 16
-- Completed: 14
+- Completed: 16
 - Dependencies: None (uses existing LangGraph store)
 
 ---
@@ -100,3 +100,10 @@
 - All backend tests pass (120 passed)
 - All frontend tests pass (163 passed)
 - Code formatted with Ruff and Prettier
+- Manual E2E test completed via Playwright MCP:
+  - Logged in as admin@example.com
+  - Opened thread "Who won the 2001 world series?"
+  - Created share link (shr_JHUDp2xHnOHKurkfFMHYntqRogle8PVs5MIe8_lJtt8)
+  - Logged out and accessed share URL as anonymous user
+  - Verified shared conversation displayed correctly with messages, tool calls, and CTA
+  - Screenshot saved: .playwright-mcp/share-thread-anonymous-view.png

@@ -19,6 +19,9 @@ class ShareToken(BaseEntity):
     follow_up_model: Optional[str] = Field(
         None, description="Model to use for anonymous follow-up (cheap model)"
     )
+    show_files: bool = Field(
+        default=True, description="Whether to show files attached to the thread"
+    )
     expires_at: Optional[datetime] = Field(
         None, description="When the share link expires"
     )
@@ -60,6 +63,9 @@ class CreateShareRequest(BaseModel):
     follow_up_model: Optional[str] = Field(
         None, description="Model for anonymous follow-up (defaults to low-cost)"
     )
+    show_files: bool = Field(
+        default=True, description="Whether to show files in the shared view"
+    )
 
 
 class ShareResponse(BaseModel):
@@ -71,6 +77,7 @@ class ShareResponse(BaseModel):
     share_url: str = Field(..., description="URL path to access shared thread")
     expires_at: Optional[datetime] = Field(None, description="Expiration timestamp")
     allow_follow_up: bool = Field(..., description="Whether follow-up is allowed")
+    show_files: bool = Field(..., description="Whether files are visible")
 
     @field_serializer("expires_at")
     def serialize_expires_at(self, dt: Optional[datetime], _):
