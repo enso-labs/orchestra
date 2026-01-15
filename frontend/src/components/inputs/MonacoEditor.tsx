@@ -14,6 +14,13 @@ interface Props {
 		wordWrap?: "on" | "off" | "wordWrapColumn" | "bounded";
 		fontSize?: number;
 		tabSize?: number;
+		scrollBeyondLastLine?: boolean;
+		folding?: boolean;
+		renderLineHighlight?: "none" | "gutter" | "line" | "all";
+		scrollbar?: {
+			vertical?: "auto" | "visible" | "hidden";
+			horizontal?: "auto" | "visible" | "hidden";
+		};
 	};
 }
 
@@ -121,6 +128,10 @@ function MonacoEditor({
 									: options?.lineNumbers || "on",
 						wordWrap: options?.wordWrap || "off",
 						readOnly: readOnly || false,
+						scrollBeyondLastLine: options?.scrollBeyondLastLine ?? true,
+						folding: options?.folding ?? true,
+						renderLineHighlight: options?.renderLineHighlight || "line",
+						scrollbar: options?.scrollbar,
 					}}
 				/>
 			</div>
