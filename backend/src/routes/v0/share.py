@@ -1,5 +1,7 @@
 """API routes for thread sharing functionality."""
 
+from typing import Any, Callable
+
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, status, Request
 from fastapi.responses import Response
 from fastapi_cache.decorator import cache
@@ -19,9 +21,16 @@ router = APIRouter(tags=["Share"])
 
 
 def share_cache_key_builder(
-    func, namespace: str = "", request=None, response=None, args=(), kwargs={}
-):
+    func: Callable[..., Any],
+    namespace: str = "",
+    request: Request | None = None,
+    response: Response | None = None,
+    args: tuple[Any, ...] = (),
+    kwargs: dict[str, Any] | None = None,
+) -> str:
     """Cache key builder for shared threads - uses token only (no user isolation)."""
+    if kwargs is None:
+        kwargs = {}
     token = kwargs.get("token", "")
     return f"share:{func.__name__}:{token}"
 

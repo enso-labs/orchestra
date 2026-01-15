@@ -23,19 +23,23 @@ export default function SharedThreadPage() {
 		null
 	);
 	const [formattedMessages, setFormattedMessages] = useState<any[]>([]);
-	const hasFetchedRef = useRef(false);
+	const lastFetchedTokenRef = useRef<string | null>(null);
 	const isMobile = useIsMobile();
 
 	const { setFilesMap, setViewMode } = useChatContext();
 
 	useEffect(() => {
 		async function fetchSharedThread() {
-			if (!shareToken || hasFetchedRef.current) return;
-			hasFetchedRef.current = true;
+			// Skip if no token or if we've already fetched this token
+			if (!shareToken || lastFetchedTokenRef.current === shareToken) return;
+
+			setLoading(true);
+			setError(null);
 
 			try {
 				const data = await shareService.getSharedThread(shareToken);
 				setSharedData(data);
+				lastFetchedTokenRef.current = shareToken;
 
 				// Format and set messages locally
 				if (data.thread.messages && data.thread.messages.length > 0) {
@@ -58,6 +62,7 @@ export default function SharedThreadPage() {
 				setError(
 					err.response?.data?.detail || "This shared link is not available"
 				);
+				lastFetchedTokenRef.current = null;
 			} finally {
 				setLoading(false);
 			}
