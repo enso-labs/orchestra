@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc142
 
 ### Changed
+  - feat/613-monaco-editor-tool-input (2026-01-14)
   - feat/663-auth-user-share-private-thread-link-anon (2026-01-14)
   - feat/666-suport-aws-models (2026-01-14)
   - feat/658-site-title-status (2026-01-13)
