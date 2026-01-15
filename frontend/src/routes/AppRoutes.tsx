@@ -19,6 +19,7 @@ import AgentCreatePage from "@/pages/agents/create";
 import AgentIndexPage from "@/pages/agents";
 import AgentEditPage from "@/pages/agents/edit";
 import PublicAgentPage from "@/pages/agents/public";
+import SharedThreadPage from "@/pages/share/SharedThreadPage";
 import SchedulesIndexPage from "@/pages/schedules";
 import PromptsIndexPage from "@/pages/prompts";
 import PromptCreatePage from "@/pages/prompts/create";
@@ -66,6 +67,9 @@ const AppRoutes: React.FC = () => {
 
 					{/* Public Agent Route - accessible without auth */}
 					<Route path="/a/:agentId" element={<PublicAgentPage />} />
+
+					{/* Public Share Route - accessible without auth */}
+					<Route path="/share/:shareToken" element={<SharedThreadPage />} />
 
 					{/* Private Routes */}
 					<Route
