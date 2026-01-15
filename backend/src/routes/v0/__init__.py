@@ -15,6 +15,7 @@ from .schedule import router as schedule
 from .prompt import router as prompt
 from .project import router as project
 from .api_tokens import router as api_tokens
+from .share import router as share
 
 
 def create_api_router(app: FastAPI, prefix: str = "/api"):
@@ -33,6 +34,7 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
         app.include_router(rag, prefix=prefix)
     app.include_router(storage, prefix=prefix)
     app.include_router(api_tokens, prefix=prefix)
+    app.include_router(share, prefix=prefix)
     return app
 
 
