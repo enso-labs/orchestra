@@ -1631,6 +1631,21 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-tavily"
+version = "0.2.16"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "langchain" },
+    { name = "langchain-core" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/57/06/b3fa1e9ace328cb628128198132455dcc672fa0bbd9b2cc142925101e269/langchain_tavily-0.2.16.tar.gz", hash = "sha256:25d11ebc0ed270c88ff5007276ba2fb74215e125062b7d5e3733faa014f99b78", size = 25282 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/05/ea818ce483daf6973e0aabf8e2d9ea38d7b162a48e47a6ef86aa395cf8a9/langchain_tavily-0.2.16-py3-none-any.whl", hash = "sha256:3cae3551d690069fe204ef719e53bb8353cb12e7449b16e8a7588a16e1a6304e", size = 30715 },
+]
+
+[[package]]
 name = "langchain-text-splitters"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2637,6 +2652,7 @@ dependencies = [
     { name = "langchain-ollama" },
     { name = "langchain-openai" },
     { name = "langchain-sandbox" },
+    { name = "langchain-tavily" },
     { name = "langchain-xai" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
@@ -2700,6 +2716,7 @@ requires-dist = [
     { name = "langchain-ollama", specifier = ">=0.3.7" },
     { name = "langchain-openai", specifier = ">=1.1.6" },
     { name = "langchain-sandbox", specifier = ">=0.0.3" },
+    { name = "langchain-tavily", specifier = ">=0.2.16" },
     { name = "langchain-xai", specifier = ">=1.1.0" },
     { name = "langgraph", specifier = "==1.0.5" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.2" },

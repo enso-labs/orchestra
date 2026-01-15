@@ -38,16 +38,53 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
    - RUN `mkdir -p ./.worktrees/<prefix>-<number>/.claude/specs/<prefix>-<number>-<short-name>` to create spec folder
    - _STORE_ spec folder path for later reference
 
-6. _PREPARE_ team query from issue:
+6. _GENERATE_ user stories from issue:
+   - _ANALYZE_ issue title, body, and labels to derive user stories
+   - _FORMAT_ user stories using standard template:
+     ```markdown
+     # User Stories
+
+     ## Issue #<number>: <title>
+
+     ### Story 1: <Primary User Story>
+     **As a** <user type>,
+     **I want** <capability/feature>,
+     **So that** <benefit/value>.
+
+     **Acceptance Criteria:**
+     - [ ] <Criterion 1>
+     - [ ] <Criterion 2>
+     - [ ] <Criterion 3>
+
+     ### Story 2: <Secondary User Story> (if applicable)
+     ...
+
+     ## Notes
+     - <Any edge cases or considerations from the issue>
+     ```
+   - _DERIVE_ stories by:
+     - Identifying the primary user persona (developer, end-user, admin, etc.)
+     - Extracting the core capability being requested
+     - Inferring the business value or user benefit
+     - Converting issue requirements into testable acceptance criteria
+   - _WRITE_ user stories to `.claude/specs/<prefix>-<number>-<short-name>/USER_STORIES.md`
+   - _REPORT_ "Generated <N> user stories for PR review"
+
+7. _PREPARE_ team query from issue with user stories:
    - _COMPOSE_ query string:
      ```
      GitHub Issue #<number>: <title>
 
+     ## Description
      <body>
-     ```
-   - _ENSURE_ full issue context is captured for team analysis
 
-7. _INVOKE_ team workflow from worktree:
+     ## User Stories
+     <content from USER_STORIES.md>
+     ```
+   - _ENSURE_ full issue context AND user stories are captured for team analysis
+   - User stories provide clear acceptance criteria for agent proposals
+
+8. _INVOKE_ team workflow from worktree:
    - RUN `cd ./.worktrees/<prefix>-<number>` to change to worktree directory
    - _EXECUTE_ `/team query="<composed-query>" subagents=$SUBAGENTS output_dir=".claude/specs/<prefix>-<number>-<short-name>/"` to run multi-agent implementation workflow
    - The team workflow will generate artifacts into `.claude/specs/<prefix>-<number>-<short-name>/`:
@@ -59,7 +96,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
      - Phase 5: Testing and validation → Updates `TASKS.md` with validation results
    - _MONITOR_ team workflow progress through all phases
 
-8. _VERIFY_ implementation completion:
+9. _VERIFY_ implementation completion:
    - _CHECK_ that `.claude/specs/<prefix>-<number>-<short-name>/TASKS.md` shows all tasks completed
    - _CHECK_ that validation phase passed successfully
    - RUN `cd ./.worktrees/<prefix>-<number> && git status` to confirm all changes committed
@@ -73,7 +110,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
      EOF
      )"` to commit with attribution
 
-9. _CREATE_ pull request:
+10. _CREATE_ pull request:
    - RUN `cd ./.worktrees/<prefix>-<number> && git push -u origin <branch-name>` to push branch to remote
    - _GENERATE_ PR body from spec folder artifacts:
      ```markdown
@@ -81,6 +118,11 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
      Resolves #<issue-number>
 
      <Brief summary from .claude/specs/<prefix>-<number>-<short-name>/REVIEW.md>
+
+     ## User Stories
+     <Include user stories from .claude/specs/<prefix>-<number>-<short-name>/USER_STORIES.md>
+
+     **Reviewer:** Use these acceptance criteria to validate the implementation.
 
      ## Implementation
      <Key implementation points from .claude/specs/<prefix>-<number>-<short-name>/TASKS.md>
@@ -96,13 +138,14 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
      )"` to create pull request targeting development branch
    - _CAPTURE_ PR URL from command output
 
-10. _REPORT_ workflow completion:
+11. _REPORT_ workflow completion:
    - Issue processed: #<number> - <title>
    - Worktree location: `./.worktrees/<prefix>-<number>`
    - Spec folder: `.claude/specs/<prefix>-<number>-<short-name>/`
    - Branch name: `<branch-name>`
    - Pull request created: <PR-URL>
    - Team workflow artifacts (in spec folder):
+     - `USER_STORIES.md` (Step 6 - Acceptance criteria for PR review)
      - `PROPOSAL_ARCHITECT.md` (Phase 1 - System design perspective)
      - `PROPOSAL_CRAFTSMAN.md` (Phase 1 - Clean code perspective)
      - `PROPOSAL_GUARDIAN.md` (Phase 1 - Testing/security perspective)
@@ -134,6 +177,7 @@ Confirm workflow completion with:
 - Worktree path: `./.worktrees/<prefix>-<number>`
 - Spec folder: `.claude/specs/<prefix>-<number>-<short-name>/`
 - Branch name: `<prefix>/<number>-<short-name>`
+- User stories generated: <N> stories with acceptance criteria
 - Team workflow completion status (all 5 phases)
 - Pull request URL
-- Next steps: Review PR at <URL> and merge when approved
+- Next steps: Review PR at <URL> using user story acceptance criteria to validate implementation

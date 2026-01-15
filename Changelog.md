@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - feat/666-suport-aws-models (2026-01-14)
   - feat/658-site-title-status (2026-01-13)
   - feat/656-distro-workers-taskiq (2026-01-11)
+  - feat/634-web-search-tavily-fallback (2026-01-13)
   - feat/654-inference-dication (2026-01-10)
   - feat/637-user-can-persist-files-to-agent (2026-01-10)
 

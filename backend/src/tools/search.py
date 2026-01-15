@@ -200,62 +200,180 @@ Engines = Literal[
 ]
 
 
+# -----------------------------
+# Search Provider Helpers
+# -----------------------------
+async def _search_with_searx(
+    query: str, num_results: int, searx_url: str
+) -> tuple[list, Exception | None]:
+    """
+    Execute search using SearXNG.
+    Returns (results, error) tuple for clean error handling.
+    """
+    try:
+        searx = SearxSearchWrapper(searx_host=searx_url)
+        results = await searx.aresults(query=query, num_results=num_results, engines=['google', 'bing'])
+        return results, None
+    except Exception as e:
+        return [], e
+
+
+def _normalize_tavily_results(tavily_response: dict) -> list:
+    """
+    Convert Tavily response format to match SearXNG result format.
+    Ensures consistent return structure for downstream consumers.
+    """
+    normalized = []
+    raw_results = tavily_response.get("results", [])
+
+    for item in raw_results:
+        normalized.append(
+            {
+                "title": item.get("title", ""),
+                "link": item.get("url", ""),
+                "snippet": item.get("content", ""),
+                "score": item.get("score", 0.0),
+                "source": "tavily",
+            }
+        )
+
+    return normalized
+
+
+async def _search_with_tavily(
+    query: str, num_results: int, api_key: str
+) -> tuple[list, Exception | None]:
+    """
+    Execute search using Tavily API.
+    Returns (results, error) tuple for clean error handling.
+    """
+    try:
+        from langchain_tavily import TavilySearch
+
+        tavily = TavilySearch(
+            max_results=num_results,
+            tavily_api_key=api_key,
+        )
+        # TavilySearch returns dict with 'results' key
+        response = await tavily.ainvoke({"query": query})
+
+        # Normalize response format to match SearXNG output
+        results = _normalize_tavily_results(response)
+        return results, None
+    except Exception as e:
+        return [], e
+
+
 @tool
 async def web_search(
     query: str,
     num_results: Optional[int] = 5,
-    # engines: Optional[List[Engines]] = ["google"],
-    # categories: Optional[List[Categories]] = [],
-    # language: Optional[str] = "en",
 ) -> list:
     """
-    Title: Web Search
-    Toolkit: Search
-    Description: Perform a targeted web search for the provided query.
-        - Always refine the query with the most relevant keywords.
-        - Be specific with dates (e.g., "September 7, 2025" instead of "recent" or "today").
-        - Use exact timeframes when searching for current or time-sensitive events.
-        - Think critically before searching to ensure accuracy and relevance.
+    Execute a web search and return high-signal results for expert-level research.
 
-    Example Queries:
-        - site:<domain> latest news about <topic> September 7, 2025
-        - <company> earnings report Q2 2025
-        - election results Nevada November 2024
+    This tool performs a single search execution using the provided query.
+    It does not reformulate, retry, or broaden queries internally.
 
-    Args:
-        query (str): The search query string.
-        num_results (int, optional): Number of results to return. Default is 5.
-        engines (list, optional): List of search engines to use. Default is None.
-        categories (list, optional): List of search categories to use. Default is None.
-        language (str, optional): Search language. Default is None.
+    Parameters
+    ----------
+    query : str
+        A well-formed search query using clear keywords and common operators
+        (e.g., quotes, OR, -, site:, intitle:, filetype:) when appropriate.
+    num_results : int | None, optional
+        Maximum number of results to return. Defaults to 5 if None.
 
-    Returns:
-    list: A list of search results.
+    Returns
+    -------
+    list
+        A list of search result objects. Each result SHOULD include:
+        - title : str
+            The page or document title.
+        - url : str
+            The canonical URL of the result.
+        - snippet : str
+            A short, relevant summary or excerpt.
+
+        An empty list ([]) explicitly indicates that no results were returned
+        by the configured search providers.
+
+    Tool Usage Constraint (MANDATORY)
+    --------------------------------
+    - An agent MUST NOT invoke this tool more than three (3) times consecutively
+      without calling `think_tool` in between.
+    - After three invocations, the agent MUST pause to reassess strategy,
+      refine assumptions, or change the research approach before continuing.
+    - Violating this rule is considered incorrect tool usage.
+
+    Loop-Safety Contract
+    --------------------
+    - Returning an empty list ([]) is a terminal signal for the given query.
+    - Repeated empty results for the same research task SHOULD be treated
+      by the calling agent as an exit condition.
+    - The calling agent is responsible for stopping, changing strategy,
+      or reporting that no results were found.
+
+    Notes
+    -----
+    - This tool may use multiple providers internally.
+    - Results are raw search outputs and are not validated conclusions.
+    - The tool maintains no internal state across calls.
+
+    Raises
+    ------
+    ToolException
+        If no search providers are configured.
     """
-    from src.constants import SEARX_SEARCH_HOST_URL
+    from src.constants import SEARX_SEARCH_HOST_URL, TAVILY_API_KEY
 
-    # Check if SEARX_SEARCH_HOST_URL is provided.
-    if not SEARX_SEARCH_HOST_URL:
-        raise ToolException("No SEARX_SEARCH_HOST_URL provided")
+    # Default num_results if None
+    num_results = num_results or 5
 
-    # Create a SearxSearchWrapper instance.
-    searx = SearxSearchWrapper(searx_host=SEARX_SEARCH_HOST_URL)
+    logger.info(f"[Search] Searching for '{query}' with max {num_results} results")
 
-    logger.info(f"Searching for {query} with {num_results} results")
-
-    try:
-        results = await searx.aresults(
+    # Phase 1: Try primary search provider (SearXNG)
+    if SEARX_SEARCH_HOST_URL:
+        results, searx_error = await _search_with_searx(
             query=query,
             num_results=num_results,
-            # engines=engines,
-            # categories=categories,
-            # language=language,
+            searx_url=SEARX_SEARCH_HOST_URL,
         )
-        logger.info(f"Found {len(results)} results")
-        return results
-    except Exception as e:
-        logger.error(f"Error searching for {query}: {e}")
-        raise ToolException(f"Error searching for {query}: {e}")
+
+        if results:
+            logger.info(f"[SearXNG] Found {len(results)} results")
+            return results
+
+        if searx_error:
+            logger.warning(f"[SearXNG] Search failed: {searx_error}")
+        else:
+            logger.warning(f"[SearXNG] No results returned for: {query}")
+
+    # Phase 2: Fallback to Tavily if available
+    if TAVILY_API_KEY:
+        logger.info("[Tavily] Attempting fallback search")
+        results, tavily_error = await _search_with_tavily(
+            query=query,
+            num_results=num_results,
+            api_key=TAVILY_API_KEY,
+        )
+
+        if results:
+            logger.info(f"[Tavily] Fallback returned {len(results)} results")
+            return results
+
+        if tavily_error:
+            logger.warning(f"[Tavily] Fallback also failed: {tavily_error}")
+
+    # Phase 3: All providers exhausted
+    if not SEARX_SEARCH_HOST_URL and not TAVILY_API_KEY:
+        raise ToolException(
+            "No search providers configured. "
+            "Set SEARX_SEARCH_HOST_URL or TAVILY_API_KEY."
+        )
+
+    # Return empty rather than throwing to prevent agent loops
+    logger.warning(f"[Search] All providers returned no results for: {query}")
+    return []
 
 
 @tool
