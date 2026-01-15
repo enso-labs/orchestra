@@ -25,7 +25,7 @@ function ShareButton() {
 	const [error, setError] = useState<string | null>(null);
 
 	const handleCreateShare = async () => {
-		const { threadId } = payload;
+		const threadId = payload?.threadId;
 		if (!threadId) return;
 
 		setLoading(true);
@@ -68,7 +68,7 @@ function ShareButton() {
 		}
 	};
 
-	const { threadId } = payload;
+	const threadId = payload?.threadId;
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
