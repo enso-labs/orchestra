@@ -248,7 +248,7 @@ class Orchestra:
         tools: list[BaseTool],
         subagents: Optional[list[SubAgent]] = None,
         model: str = DEFAULT_CHAT_MODEL,
-        system_prompt: str = "You are a helpful assistant.",
+        system_prompt: str | None = None,
         # config: RunnableConfig = None,
         context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
