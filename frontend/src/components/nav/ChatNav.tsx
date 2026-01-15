@@ -1,6 +1,7 @@
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import SelectModel from "../lists/SelectModel";
 import NewThreadButton from "../buttons/NewThreadButton";
+import ShareButton from "../buttons/thread-share-button";
 import { LayoutGrid, MessageSquare } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export function ChatNav({
 								<SelectModel />
 							</div>
 						)}
+						<ShareButton />
 						<NewThreadButton />
 						<div className="w-9">
 							<ColorModeButton />
