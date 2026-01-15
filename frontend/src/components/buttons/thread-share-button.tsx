@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 
 function ShareButton() {
-	const { payload } = useChatContext();
+	const { metadata } = useChatContext();
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [copied, setCopied] = useState(false);
@@ -25,7 +25,7 @@ function ShareButton() {
 	const [error, setError] = useState<string | null>(null);
 
 	const handleCreateShare = async () => {
-		const threadId = payload?.threadId;
+		const threadId = metadata?.thread_id;
 		if (!threadId) return;
 
 		setLoading(true);
@@ -68,7 +68,7 @@ function ShareButton() {
 		}
 	};
 
-	const threadId = payload?.threadId;
+	const threadId = metadata?.thread_id;
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
