@@ -13,6 +13,7 @@ import {
 	ResizablePanel,
 	ResizableHandle,
 } from "@/components/ui/resizable";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function SharedThreadPage() {
 	const { shareToken } = useParams<{ shareToken: string }>();
@@ -23,6 +24,7 @@ export default function SharedThreadPage() {
 	);
 	const [formattedMessages, setFormattedMessages] = useState<any[]>([]);
 	const hasFetchedRef = useRef(false);
+	const isMobile = useIsMobile();
 
 	const { setFilesMap, setViewMode } = useChatContext();
 
@@ -98,11 +100,29 @@ export default function SharedThreadPage() {
 
 	// Header component to reuse in both layouts
 	const Header = () => (
-		<div className="flex items-center gap-2 p-4 border-b border-border shrink-0">
-			<Share2 className="h-5 w-5 text-muted-foreground" />
-			<h1 className="text-lg font-semibold">
-				{thread.title || "Shared Conversation"}
-			</h1>
+		<div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+			<div className="flex items-center gap-4">
+				{/* Branding */}
+				<Link to="/" className="flex items-center gap-0.5">
+					<img
+						src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+						alt="Logo"
+						className="w-8 h-8 rounded-full"
+					/>
+					<h1 className="text-2xl font-bold text-foreground italic">
+						RCHESTRA
+					</h1>
+				</Link>
+				{/* Separator */}
+				<div className="h-6 w-px bg-border" />
+				{/* Share info */}
+				<div className="flex items-center gap-2">
+					<Share2 className="h-4 w-4 text-muted-foreground" />
+					<span className="text-sm text-muted-foreground">
+						{thread.title || "Shared Conversation"}
+					</span>
+				</div>
+			</div>
 		</div>
 	);
 
@@ -128,22 +148,34 @@ export default function SharedThreadPage() {
 	);
 
 	// If files are present and should be shown, use split panel layout
+	// On mobile: vertical layout (stacked), on desktop: horizontal layout (side-by-side)
 	if (hasFiles) {
 		return (
 			<NoAuthLayout showModelSelector={false}>
 				<div className="flex flex-col w-full h-[calc(100vh-8rem)]">
 					<Header />
 					<div className="flex-1 min-h-0">
-						<ResizablePanelGroup direction="horizontal" className="h-full">
-							{/* LEFT: File Editor Panel */}
-							<ResizablePanel defaultSize={60} minSize={30} maxSize={80}>
+						<ResizablePanelGroup
+							direction={isMobile ? "vertical" : "horizontal"}
+							className="h-full"
+						>
+							{/* File Editor Panel - TOP on mobile, LEFT on desktop */}
+							<ResizablePanel
+								defaultSize={isMobile ? 50 : 60}
+								minSize={isMobile ? 20 : 30}
+								maxSize={isMobile ? 80 : 80}
+							>
 								<FileEditorPanel />
 							</ResizablePanel>
 
 							<ResizableHandle withHandle />
 
-							{/* RIGHT: Chat Messages */}
-							<ResizablePanel defaultSize={40} minSize={20} maxSize={70}>
+							{/* Chat Messages - BOTTOM on mobile, RIGHT on desktop */}
+							<ResizablePanel
+								defaultSize={isMobile ? 50 : 40}
+								minSize={isMobile ? 20 : 20}
+								maxSize={isMobile ? 80 : 70}
+							>
 								<div className="flex flex-col h-full overflow-hidden">
 									<div className="flex-1 overflow-y-auto p-4 min-h-0">
 										{formattedMessages.length > 0 ? (

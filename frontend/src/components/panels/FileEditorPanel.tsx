@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { FileTreeSidebar } from "./FileTree";
 import useInferenceDictation from "@/hooks/useInferenceDictation";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface BreadcrumbSegment {
 	label: string;
@@ -124,8 +125,16 @@ export default function FileEditorPanel() {
 	// Track processed blobs to prevent re-processing
 	const processedBlobRef = useRef<Blob | null>(null);
 
-	// Tree sidebar state
+	// Tree sidebar state - auto-collapse on mobile
+	const isMobile = useIsMobile();
 	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
+
+	// Auto-collapse tree sidebar on mobile
+	useEffect(() => {
+		if (isMobile) {
+			setIsTreeCollapsed(true);
+		}
+	}, [isMobile]);
 
 	// Voice recording state
 	const [isRecording, setIsRecording] = useState(false);
