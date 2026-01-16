@@ -56,6 +56,19 @@ export default class ProjectService {
 		}
 	}
 
+	static async update(projectId: string, project: Partial<Project>) {
+		try {
+			const response = await apiClient.put(
+				`${this.BASE_URL}/${projectId}`,
+				project,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to update project:", error);
+			throw error;
+		}
+	}
+
 	static async getSources(projectId: string) {
 		try {
 			const response = await apiClient.get(

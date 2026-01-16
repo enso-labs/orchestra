@@ -41,6 +41,35 @@ class ProjectRepo(BaseRepo):
             logger.error(f"Error adding source: {e}")
             raise e
 
+    async def update(self, project_id: str, data: dict) -> Project:
+        """Update an existing project with new data."""
+        try:
+            existing = await self._get(project_id)
+            if not existing:
+                raise ValueError(f"Project {project_id} not found")
+
+            # Merge with existing data
+            current_project = Project.model_validate(existing.value)
+            updated_data = current_project.model_dump(exclude_none=True)
+
+            # Only allow specific fields to be updated
+            allowed_fields = {"name", "description"}
+            for key, value in data.items():
+                if key in allowed_fields:
+                    updated_data[key] = value
+
+            # Update timestamp
+            updated_data["updated_at"] = datetime.now()
+
+            updated_project = Project.model_validate(updated_data)
+            await self._set(key=project_id, value=updated_project)
+            return updated_project
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.error(f"Error updating project: {e}")
+            raise e
+
     ##################################################################
     ## Source Repo Methods
     ##################################################################

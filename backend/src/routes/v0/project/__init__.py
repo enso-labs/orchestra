@@ -110,6 +110,38 @@ async def get_project(
 
 
 ################################################################################
+### Update Project
+################################################################################
+@router.put(
+    "/{project_id}",
+    name="Update Project",
+    operation_id="ruska_update_project",
+    tags=["mcp"],
+)
+async def update_project(
+    project_id: str,
+    project: Project = Body(openapi_examples=Examples.PROJECT_EXAMPLES),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Update project name and/or description."""
+    service_context = ServiceContext(user_id=user.id, store=store)
+    try:
+        updated_project: Project = await service_context.project_service.update(
+            project_id,
+            {"name": project.name, "description": project.description},
+        )
+        return {"project": updated_project.model_dump(exclude_none=True)}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        logger.exception(f"Error updating project {project_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+################################################################################
 ### Delete Project
 ################################################################################
 @router.delete(
