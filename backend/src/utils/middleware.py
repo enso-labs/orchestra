@@ -1,7 +1,14 @@
 from typing import Awaitable, Callable
-from deepagents.backends.utils import format_content_with_line_numbers, sanitize_tool_call_id
+from deepagents.backends.utils import (
+    format_content_with_line_numbers,
+    sanitize_tool_call_id,
+)
 from deepagents.graph import AgentMiddleware, BackendProtocol
-from deepagents.middleware.filesystem import TOO_LARGE_TOOL_MSG, TOOL_GENERATORS, FileData
+from deepagents.middleware.filesystem import (
+    TOO_LARGE_TOOL_MSG,
+    TOOL_GENERATORS,
+    FileData,
+)
 from langchain.agents import AgentState
 from langchain.chat_models import init_chat_model
 from langchain.tools import ToolRuntime
@@ -128,17 +135,20 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
     request.model = init_chat_model(model)
     return await handler(request)
 
+
 class AutoEvictMiddleware(AgentMiddleware):
     def __init__(
-        self, 
-        backend, 
-        tool_token_limit_before_evict: int = 10000, 
-        evict_dir: str = "/large_tool_results"
+        self,
+        backend,
+        tool_token_limit_before_evict: int = 10000,
+        evict_dir: str = "/large_tool_results",
     ):
-        self.backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = backend
+        self.backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = (
+            backend
+        )
         self.evict_dir = evict_dir
         self.tool_token_limit_before_evict = tool_token_limit_before_evict
-        
+
     def _get_backend(self, runtime: ToolRuntime) -> BackendProtocol:
         """Get the resolved backend instance from backend or factory.
 
@@ -151,14 +161,17 @@ class AutoEvictMiddleware(AgentMiddleware):
         if callable(self.backend):
             return self.backend(runtime)
         return self.backend
-        
+
     def _process_large_message(
         self,
         message: ToolMessage,
         resolved_backend: BackendProtocol,
     ) -> tuple[ToolMessage, dict[str, FileData] | None]:
         content = message.content
-        if not isinstance(content, str) or len(content) <= 4 * self.tool_token_limit_before_evict:
+        if (
+            not isinstance(content, str)
+            or len(content) <= 4 * self.tool_token_limit_before_evict
+        ):
             return message, None
 
         sanitized_id = sanitize_tool_call_id(message.tool_call_id)
@@ -166,7 +179,9 @@ class AutoEvictMiddleware(AgentMiddleware):
         result = resolved_backend.write(file_path, content)
         if result.error:
             return message, None
-        content_sample = format_content_with_line_numbers([line[:1000] for line in content.splitlines()[:10]], start_line=1)
+        content_sample = format_content_with_line_numbers(
+            [line[:1000] for line in content.splitlines()[:10]], start_line=1
+        )
         processed_message = ToolMessage(
             TOO_LARGE_TOOL_MSG.format(
                 tool_call_id=message.tool_call_id,
@@ -176,10 +191,17 @@ class AutoEvictMiddleware(AgentMiddleware):
             tool_call_id=message.tool_call_id,
         )
         return processed_message, result.files_update
-        
-    def _intercept_large_tool_result(self, tool_result: ToolMessage | Command, runtime: ToolRuntime) -> ToolMessage | Command:
-        if isinstance(tool_result, ToolMessage) and isinstance(tool_result.content, str):
-            if not (self.tool_token_limit_before_evict and len(tool_result.content) > 4 * self.tool_token_limit_before_evict):
+
+    def _intercept_large_tool_result(
+        self, tool_result: ToolMessage | Command, runtime: ToolRuntime
+    ) -> ToolMessage | Command:
+        if isinstance(tool_result, ToolMessage) and isinstance(
+            tool_result.content, str
+        ):
+            if not (
+                self.tool_token_limit_before_evict
+                and len(tool_result.content) > 4 * self.tool_token_limit_before_evict
+            ):
                 return tool_result
             resolved_backend = self._get_backend(runtime)
             processed_message, files_update = self._process_large_message(
@@ -221,7 +243,13 @@ class AutoEvictMiddleware(AgentMiddleware):
                 processed_messages.append(processed_message)
                 if files_update is not None:
                     accumulated_file_updates.update(files_update)
-            return Command(update={**update, "messages": processed_messages, "files": accumulated_file_updates})
+            return Command(
+                update={
+                    **update,
+                    "messages": processed_messages,
+                    "files": accumulated_file_updates,
+                }
+            )
 
         return tool_result
 
@@ -239,7 +267,10 @@ class AutoEvictMiddleware(AgentMiddleware):
         Returns:
             The raw ToolMessage, or a pseudo tool message with the ToolResult in state.
         """
-        if self.tool_token_limit_before_evict is None or request.tool_call["name"] in TOOL_GENERATORS:
+        if (
+            self.tool_token_limit_before_evict is None
+            or request.tool_call["name"] in TOOL_GENERATORS
+        ):
             return await handler(request)
 
         tool_result = await handler(request)
@@ -247,7 +278,7 @@ class AutoEvictMiddleware(AgentMiddleware):
 
 
 def init_default_middleware(
-    backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = None
+    backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = None,
 ) -> list[Callable]:
     """Initialize the default middleware.
 
@@ -258,8 +289,8 @@ def init_default_middleware(
         The default middleware.
     """
     return [
-        add_ai_message_metadata, 
-        retry_model, 
+        add_ai_message_metadata,
+        retry_model,
         *pii_middleware(),
         AutoEvictMiddleware(backend=backend),
     ]

@@ -205,11 +205,6 @@ export default function useChat(): ChatContextType {
 					a2a: agent.a2a,
 					mcp: agent.mcp,
 					subagents: agent.subagents,
-					presidio: {
-						analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
-						anonymize:
-							localStorage.getItem("enso:tool:pii_anonymize") === "true",
-					},
 				};
 
 		// Show processing state for distributed mode
@@ -318,12 +313,6 @@ export default function useChat(): ChatContextType {
 					a2a: agent.a2a,
 					mcp: agent.mcp,
 					subagents: agent.subagents,
-					presidio: {
-						analyze: localStorage.getItem("enso:tool:pii_analyze") === "true",
-						anonymize:
-							localStorage.getItem("enso:tool:pii_anonymize") === "true",
-						// redact: false,
-					},
 				};
 
 		const source = streamThread(payload);
