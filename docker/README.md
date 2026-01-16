@@ -94,6 +94,8 @@ The API will be available at `http://localhost:8000`
 | `search_engine` | 8080      | SearXNG search engine              |
 | `exec_server`   | 3005      | Shell execution server             |
 | `ollama`        | 11434     | Local LLM inference (requires GPU) |
+| `redis`         | 6379      | Redis message broker (for workers) |
+| `worker`        | -         | TaskIQ worker (no exposed port)    |
 
 ## 🧱 Docker Compose Example
 
@@ -187,13 +189,14 @@ docker build -t orchestra:local .
 | `SHELL_EXEC_SERVER_URL` | Shell execution endpoint | `http://localhost:3005/exec` |
 | `TAVILY_API_KEY`        | Tavily search API key    | -                            |
 
-### Services (Alpha)
+### Distributed Workers (Optional)
 
-| Variable                  | Description                 | Default |
-| ------------------------- | --------------------------- | ------- |
-| `PRESIDIO_ANALYZE_HOST`   | Presidio analyze endpoint   | -       |
-| `PRESIDIO_ANONYMIZE_HOST` | Presidio anonymize endpoint | -       |
-| `PRESIDIO_API_KEY`        | Presidio API key            | -       |
+| Variable              | Description                    | Default |
+| --------------------- | ------------------------------ | ------- |
+| `REDIS_URL`           | Redis connection for task queue | -       |
+| `DISTRIBUTED_WORKERS` | Enable distributed worker mode | `false` |
+
+> **Note**: When enabled, run the worker process separately: `make dev.worker`
 
 ### Storage
 
