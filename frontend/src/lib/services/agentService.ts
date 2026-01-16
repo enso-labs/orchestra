@@ -24,7 +24,7 @@ export type Agent = {
 			agent_card_path: string;
 		};
 	};
-	file_system?: Record<string, string>; // Persisted files (path -> content)
+	files?: Record<string, string>; // Persisted files (path -> content)
 	metadata?: object;
 	presidio?: {
 		analyze?: boolean;

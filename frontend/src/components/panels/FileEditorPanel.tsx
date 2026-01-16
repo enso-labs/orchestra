@@ -254,7 +254,7 @@ export default function FileEditorPanel() {
 						const payload = {
 							input: {
 								messages: [{ role: "user", content: transcribedText }],
-								file_system:
+								files:
 									Object.keys(filesMap).length > 0 ? filesMap : undefined,
 							},
 							generate_files: true,

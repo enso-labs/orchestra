@@ -379,8 +379,36 @@ async def web_search(
     return []
 
 
+# @tool
+# async def web_scrape(urls: List[str], runtime: ToolRuntime) -> str:
+#     """
+#     Title: Web Scrape
+#     Toolkit: Search
+#     Description: Retrieve content from a list of URLs
+#     Args:
+#         urls (List[str]): A list of URLs to scrape
+#     Returns:
+#         str: A string of the scraped content in markdown format
+#     """
+#     logger.info(f"Scraping {len(urls)} URLs START")
+#     result = await urls_to_markdown(urls, concurrency=5, timeout_s=30.0)
+#     logger.info(f"Scraping {len(urls)} URLs DONE")
+#     if len(str(result)) > 10000:
+#         filename = f"/large_tool_results/{runtime.tool_call_id}/search.txt"
+#         return Command(
+#             update={
+#                 "files": {filename: {'content': result}},
+#                 "messages": [
+#                     ToolMessage(content=f"Output is too large ({len(result)} chars). Use read_file('{filename}') to access.", tool_call_id=runtime.tool_call_id)
+#                 ]
+#             },
+#             resume=True
+#         )
+#     else:
+#         return result
+
 @tool
-async def web_scrape(urls: List[str], runtime: ToolRuntime) -> str:
+async def web_scrape(urls: List[str]) -> str:
     """
     Title: Web Scrape
     Toolkit: Search
@@ -393,19 +421,7 @@ async def web_scrape(urls: List[str], runtime: ToolRuntime) -> str:
     logger.info(f"Scraping {len(urls)} URLs START")
     result = await urls_to_markdown(urls, concurrency=5, timeout_s=30.0)
     logger.info(f"Scraping {len(urls)} URLs DONE")
-    if len(str(result)) > 10000:
-        filename = f"/large_tool_results/{runtime.tool_call_id}/search.txt"
-        return Command(
-            update={
-                "files": {filename: {'content': result}},
-                "messages": [
-                    ToolMessage(content=f"Output is too large ({len(result)} chars). Use read_file('{filename}') to access.", tool_call_id=runtime.tool_call_id)
-                ]
-            },
-            resume=True
-        )
-    else:
-        return result
+    return result
 
 
 SEARCH_TOOLS = [
