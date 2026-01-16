@@ -48,6 +48,11 @@ export function EditProjectModal({
 	const handleSubmit = async () => {
 		setError(null);
 
+		if (!project.id) {
+			setError("Project ID is missing");
+			return;
+		}
+
 		if (!name.trim()) {
 			setError("Project name is required");
 			return;
@@ -66,13 +71,17 @@ export function EditProjectModal({
 		};
 
 		setSaving(true);
-		const result = await onUpdate(project.id!, updates);
-		setSaving(false);
-
-		if (result) {
-			handleClose();
-		} else {
+		try {
+			const result = await onUpdate(project.id, updates);
+			if (result) {
+				handleClose();
+			} else {
+				setError("Failed to update project");
+			}
+		} catch {
 			setError("Failed to update project");
+		} finally {
+			setSaving(false);
 		}
 	};
 

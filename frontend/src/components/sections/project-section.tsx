@@ -52,6 +52,7 @@ export function ProjectSection({
 						size="icon"
 						onClick={() => setIsEditModalOpen(true)}
 						title="Edit project settings"
+						aria-label="Edit project settings"
 					>
 						<Settings className="h-5 w-5" />
 					</Button>
