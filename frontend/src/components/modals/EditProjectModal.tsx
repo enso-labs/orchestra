@@ -53,19 +53,17 @@ export function EditProjectModal({
 			return;
 		}
 
-		// Only send changed fields
-		const updates: Partial<Project> = {};
-		if (name.trim() !== project.name) {
-			updates.name = name.trim();
-		}
-		if ((description?.trim() || "") !== (project.description || "")) {
-			updates.description = description.trim() || undefined;
-		}
-
-		if (Object.keys(updates).length === 0) {
+		// Check if there are changes
+		if (!hasChanges) {
 			handleClose();
 			return;
 		}
+
+		// Always send both fields (PUT semantics - full resource replacement)
+		const updates: Partial<Project> = {
+			name: name.trim(),
+			description: description.trim() || undefined,
+		};
 
 		setSaving(true);
 		const result = await onUpdate(project.id!, updates);
