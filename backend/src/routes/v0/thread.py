@@ -19,7 +19,6 @@ from langgraph.checkpoint.base import (
     ChannelVersions,
 )
 
-from src.utils.messages import from_message_to_dict
 from src.utils.stream import stream_from_redis
 
 router = APIRouter(tags=["Thread"])
@@ -54,7 +53,7 @@ async def search_threads(
                 thread: Thread = await service_context.thread_service.get(
                     search_filter.filter["thread_id"]
                 )
-                if thread:
+                if thread and len(checkpoints) > 0:
                     checkpoints[0]["metadata"]["files"] = thread.files
                     checkpoints[0]["metadata"]["todos"] = thread.todos
                 return {"checkpoints": checkpoints}

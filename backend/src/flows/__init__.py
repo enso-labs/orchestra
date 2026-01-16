@@ -12,7 +12,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.cache.memory import InMemoryCache
 from deepagents import SubAgent, create_deep_agent
-from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
+from deepagents.backends import CompositeBackend, StateBackend
 
 
 from src.constants import APP_ENV
