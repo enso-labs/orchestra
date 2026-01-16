@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - FEAT: Truncate Tool Calls. Allow extension (cli) #54
 
 ### Fixed
+  - bug/677-nonetype-items-attributeerror (2026-01-16)
 
 # v0.0.2-rc138
 

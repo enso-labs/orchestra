@@ -30,7 +30,7 @@ class LLMController:
 
     def _init_runtime(self, request: LLMRequest) -> ToolRuntime:
         return ToolRuntime(
-            state={"messages": [], "files": request.input.file_system},
+            state={"messages": [], "files": request.input.files or {}},
             context=self._init_context(request),
             tool_call_id="tc_runtime_init",
             store=self.store,
