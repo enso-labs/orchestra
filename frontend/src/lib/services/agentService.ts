@@ -26,11 +26,6 @@ export type Agent = {
 	};
 	files?: Record<string, string>; // Persisted files (path -> content)
 	metadata?: object;
-	presidio?: {
-		analyze?: boolean;
-		anonymize?: boolean;
-		redact?: boolean;
-	};
 	schedules?: Schedule[]; // Agent's associated schedules
 	created_at?: string;
 	updated_at?: string;

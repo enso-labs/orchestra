@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc142
 
 ### Changed
+  - feat/675-cleanup-presidio-service (2026-01-16)
   - feat/673-web-scrape-dump-tool-results (2026-01-15)
   - feat/663-auth-user-share-private-thread-link-anon (2026-01-14)
   - feat/666-suport-aws-models (2026-01-14)

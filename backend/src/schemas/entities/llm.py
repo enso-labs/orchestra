@@ -22,15 +22,6 @@ from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
 from src.utils.format import slugify
 
 
-class PresidioRequest(BaseModel):
-    analyze: Optional[bool] = Field(
-        default=False, description="Whether to analyze the text"
-    )
-    anonymize: Optional[bool] = Field(
-        default=False, description="Whether to anonymize the text"
-    )
-
-
 class Config(BaseModel):
     model_config = ConfigDict(extra="allow")  # ✅ allow arbitrary extra fields
 
@@ -210,7 +201,6 @@ class LLMRequest(BaseModel):
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
-    presidio: Optional[PresidioRequest] = Field(default_factory=PresidioRequest)
     metadata: Optional[Config] = Field(
         default_factory=Config, description="LangGraph configuration"
     )

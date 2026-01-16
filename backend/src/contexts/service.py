@@ -9,7 +9,6 @@ from src.services.thread import ThreadService
 from src.services.assistant import AssistantService
 from src.services.prompt import PromptService
 from langgraph.store.base import BaseStore
-from src.services.presidio import PresidioService
 from src.utils.logger import logger
 from src.services.memory import MemoryService
 from src.services.tool import ToolService
@@ -39,7 +38,6 @@ class ServiceContext:
         self.project_service = ProjectService(user_id=self.user_id, store=store)
         self.schedule_service = ScheduleService(user_id=self.user_id, store=store)
         self.assistant_service = AssistantService(user_id=self.user_id, store=store)
-        self.presidio_service = PresidioService()
         self.llm_service = LLMService(
             user_id=self.user_id,
             store=store,

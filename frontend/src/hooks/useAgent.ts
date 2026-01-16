@@ -22,11 +22,6 @@ export const INIT_AGENT_STATE: AgentState = {
 		mcp: {},
 		a2a: {},
 		subagents: [],
-		presidio: {
-			analyze: true,
-			anonymize: true,
-			redact: false,
-		},
 	},
 	agents: [],
 	publicAgents: [],
@@ -45,32 +40,12 @@ export function useAgent() {
 		const saved = localStorage.getItem("enso:tool:search");
 		return saved !== null ? JSON.parse(saved) : true;
 	});
-	const [piiAnalyzeCheck, setPiiAnalyzeCheck] = useState<Checked>(() => {
-		const saved = localStorage.getItem("enso:tool:pii_analyze");
-		return saved !== null ? JSON.parse(saved) : true;
-	});
-	const [piiAnonymizeCheck, setPiiAnonymizeCheck] = useState<Checked>(() => {
-		const saved = localStorage.getItem("enso:tool:pii_anonymize");
-		return saved !== null ? JSON.parse(saved) : true;
-	});
 
 	useEffect(() => {
 		if (model && agent.model !== model) {
 			setAgent({ ...agent, model: model });
 		}
 	}, [model]);
-
-	useEffect(() => {
-		setAgent({
-			...agent,
-			model: model ?? "",
-			presidio: {
-				analyze: piiAnalyzeCheck ? true : false,
-				anonymize: piiAnonymizeCheck ? true : false,
-				redact: false,
-			},
-		});
-	}, [piiAnalyzeCheck, piiAnonymizeCheck, model]);
 
 	const setAgentSystemMessage = (system: string) => {
 		setAgent({ ...agent, prompt: system });
@@ -244,10 +219,6 @@ export function useAgent() {
 		isAgentSelected,
 		webSearchCheck,
 		setWebSearchCheck,
-		piiAnalyzeCheck,
-		setPiiAnalyzeCheck,
-		piiAnonymizeCheck,
-		setPiiAnonymizeCheck,
 		setAgentTools,
 	};
 }

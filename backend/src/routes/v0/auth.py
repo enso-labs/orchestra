@@ -4,7 +4,6 @@ from fastapi.responses import UJSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from src.constants import PRESIDIO_ANALYZE_HOST, PRESIDIO_ANONYMIZE_HOST
 from src.constants.mock import MockResponse
 from src.repos.user_repo import UserRepo
 from src.services.airtable import AirtableService
@@ -124,10 +123,6 @@ async def login(
 async def read_user_details(user: User = Depends(verify_credentials)):
     return {
         "user": user.model_dump(),
-        "env": {
-            "PRESIDIO_ANALYZE_HOST": bool(PRESIDIO_ANALYZE_HOST),
-            "PRESIDIO_ANONYMIZE_HOST": bool(PRESIDIO_ANONYMIZE_HOST),
-        },
     }
 
 

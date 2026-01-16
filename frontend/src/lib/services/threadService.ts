@@ -102,11 +102,6 @@ type A2A = { [key: string]: any };
 type MCP = { [key: string]: any };
 type Tools = string[];
 type Subagents = Agent[];
-type Presidio = {
-	analyze?: boolean;
-	anonymize?: boolean;
-	redact?: boolean;
-};
 type Files = Record<
 	string,
 	{ content: string[]; created_at: string; modified_at: string }
@@ -120,7 +115,6 @@ interface StreamThreadPayload {
 	mcp?: MCP;
 	tools?: Tools;
 	subagents?: Subagents;
-	presidio?: Presidio;
 }
 
 export const streamThread = (payload: StreamThreadPayload): SSE => {

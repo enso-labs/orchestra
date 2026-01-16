@@ -19,7 +19,6 @@ from langmem.prompts.types import (
 )
 from src.controllers.llm import LLMController
 from src.services.llm import llm_service
-from src.services.presidio import PresidioException
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.constants import GROQ_API_KEY
 from src.schemas.models import ProtectedUser
@@ -128,14 +127,6 @@ async def llm_stream(
         return StreamingResponse(
             assistant,
             media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
-        )
-    except PresidioException as e:
-        logger.warning(f"Sensitive data detected in the query: {e.results}")
-        return JSONResponse(
-            content={"error": e.message, "results": e.results},
-            media_type="application/json",
-            status_code=status.HTTP_400_BAD_REQUEST,
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
         )
     except Exception as e:

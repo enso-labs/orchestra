@@ -215,7 +215,9 @@ async def _search_with_searx(
     """
     try:
         searx = SearxSearchWrapper(searx_host=searx_url)
-        results = await searx.aresults(query=query, num_results=num_results, engines=['google', 'bing'])
+        results = await searx.aresults(
+            query=query, num_results=num_results, engines=["google", "bing"]
+        )
         return results, None
     except Exception as e:
         return [], e
@@ -377,6 +379,7 @@ async def web_search(
     # Return empty rather than throwing to prevent agent loops
     logger.warning(f"[Search] All providers returned no results for: {query}")
     return []
+
 
 @tool
 async def web_scrape(urls: List[str]) -> str:
