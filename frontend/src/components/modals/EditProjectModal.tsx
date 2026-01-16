@@ -67,7 +67,7 @@ export function EditProjectModal({
 		// Always send both fields (PUT semantics - full resource replacement)
 		const updates: Partial<Project> = {
 			name: name.trim(),
-			description: description.trim() || undefined,
+			description: description.trim() || "",
 		};
 
 		setSaving(true);
