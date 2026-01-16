@@ -1,6 +1,16 @@
 import apiClient from "@/lib/utils/apiClient";
 import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
 
+export type InterruptConfig = {
+	enabled: boolean;
+	tools_requiring_approval: string[];
+	timeout_seconds: number;
+	default_action: "approve" | "reject" | "timeout";
+	allow_approve: boolean;
+	allow_edit: boolean;
+	allow_reject: boolean;
+};
+
 export type Agent = {
 	id?: string;
 	name: string;
@@ -33,6 +43,8 @@ export type Agent = {
 	public?: boolean;
 	owner_id?: string;
 	published_at?: string;
+	// HITL Configuration
+	interrupt_config?: InterruptConfig;
 };
 
 export default class AgentService {

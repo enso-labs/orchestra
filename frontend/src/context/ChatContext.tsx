@@ -5,6 +5,7 @@ import useChat from "@/hooks/useChat";
 import useThread from "@/hooks/useThread";
 import useModel from "@/hooks/useModel";
 import useFileSystem, { type FileData } from "@/hooks/useFileSystem";
+import useInterrupt from "@/hooks/useInterrupt";
 
 // Re-export FileData type for consumers
 export type {
@@ -12,6 +13,9 @@ export type {
 	FileSystemState,
 	FileSystemActions,
 } from "@/hooks/useFileSystem";
+
+// Re-export interrupt types for consumers
+export type { InterruptContextType } from "@/lib/entities/interrupt";
 
 export const ChatContext = createContext({});
 export default function ChatProvider({
@@ -25,6 +29,7 @@ export default function ChatProvider({
 	const configHooks = useConfigHook();
 	const threadHooks = useThread();
 	const fileSystemHooks = useFileSystem();
+	const interruptHooks = useInterrupt();
 
 	// Track previous filesMap to detect changes
 	const prevFilesMapRef = useRef<Map<string, unknown>>(new Map());
@@ -164,6 +169,7 @@ export default function ChatProvider({
 				...threadHooks,
 				...modelsHooks,
 				...fileSystemHooks,
+				...interruptHooks,
 			}}
 		>
 			{children}

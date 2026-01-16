@@ -20,6 +20,7 @@ from langchain_core.messages import (
 )
 from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
 from src.utils.format import slugify
+from src.schemas.entities.interrupt import InterruptConfig
 
 
 class Config(BaseModel):
@@ -106,6 +107,10 @@ class Assistant(BaseModel):
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
+    hitl: Optional[InterruptConfig] = Field(
+        default=None,
+        description="Human-in-the-loop configuration for tool approval requirements",
+    )
     file_system: Optional[Dict[str, str]] = Field(
         default_factory=dict,
         description="File system storage for the assistant. Key is the file path, value is the file content.",

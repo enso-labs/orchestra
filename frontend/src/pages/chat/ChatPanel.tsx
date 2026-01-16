@@ -15,6 +15,7 @@ import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { InterruptApprovalDialog } from "@/components/modals/InterruptApprovalDialog";
 
 interface ChatPanelProps {
 	agent?: Agent;
@@ -25,8 +26,28 @@ interface ChatPanelProps {
 
 function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 	const { appVersion } = useAppContext();
-	const { messages, viewMode, setViewMode, filesMap } = useChatContext();
+	const {
+		messages,
+		viewMode,
+		setViewMode,
+		filesMap,
+		pendingInterrupt,
+		showDialog,
+		isLoading: interruptLoading,
+		submitDecision,
+		setShowDialog,
+	} = useChatContext();
 	const isMobile = useMediaQuery("(max-width: 768px)");
+
+	// Handle interrupt decision submission
+	const handleInterruptDecision = async (request: Parameters<typeof submitDecision>[0]) => {
+		await submitDecision(request);
+	};
+
+	// Handle dialog close
+	const handleInterruptClose = () => {
+		setShowDialog(false);
+	};
 
 	// Check if there are any files in the filesMap
 	const hasFiles = filesMap.size > 0;
@@ -148,6 +169,15 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 					</div>
 				</>
 			)}
+
+			{/* HITL Interrupt Approval Dialog */}
+			<InterruptApprovalDialog
+				interrupt={pendingInterrupt}
+				isOpen={showDialog}
+				isLoading={interruptLoading}
+				onDecision={handleInterruptDecision}
+				onClose={handleInterruptClose}
+			/>
 		</div>
 	);
 }

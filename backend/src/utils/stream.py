@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta, timezone
 from deepagents.backends import StoreBackend
 from langchain.agents.middleware import PIIDetectionError
 from langchain.tools import ToolRuntime
@@ -6,14 +7,14 @@ import ujson
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
-import ujson
-from typing import List
+from typing import List, Optional
 from langgraph.types import StreamMode
 from deepagents import SubAgent
 
 from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
+from src.schemas.entities.interrupt import InterruptConfig, InterruptEventData
 from src.constants import APP_LOG_LEVEL
 from src.flows import construct_agent, init_backend
 from src.services.db import get_checkpoint_db
@@ -28,6 +29,70 @@ from src.utils.format import get_time
 
 # Configurable stream timeout (default 60 seconds)
 STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
+
+# Default HITL timeout (5 minutes)
+DEFAULT_HITL_TIMEOUT_SECONDS = 300
+
+
+def create_interrupt_event(
+    thread_id: str,
+    checkpoint_id: str,
+    tool_name: str,
+    tool_args: dict,
+    tool_call_id: str,
+    tool_description: Optional[str] = None,
+    reason: str = "Requires human approval",
+    timeout_seconds: int = DEFAULT_HITL_TIMEOUT_SECONDS,
+) -> InterruptEventData:
+    """Create an interrupt event for SSE emission.
+
+    Args:
+        thread_id: The thread where the interrupt occurred
+        checkpoint_id: The checkpoint at the time of interrupt
+        tool_name: Name of the tool requiring approval
+        tool_args: Arguments the tool was called with
+        tool_call_id: The LangChain tool call ID
+        tool_description: Optional description of the tool
+        reason: Why the interrupt was triggered
+        timeout_seconds: How long until the interrupt expires
+
+    Returns:
+        InterruptEventData ready for SSE emission
+    """
+    now = datetime.now(timezone.utc)
+    return InterruptEventData(
+        thread_id=thread_id,
+        checkpoint_id=checkpoint_id,
+        tool_name=tool_name,
+        tool_args=tool_args,
+        tool_call_id=tool_call_id,
+        tool_description=tool_description,
+        reason=reason,
+        timeout_at=now + timedelta(seconds=timeout_seconds),
+        created_at=now,
+    )
+
+
+def check_for_interrupt(chunk: dict, hitl_config: Optional[InterruptConfig]) -> bool:
+    """Check if a stream chunk contains an interrupt that should be handled.
+
+    Args:
+        chunk: The stream chunk to check
+        hitl_config: The HITL configuration for the assistant
+
+    Returns:
+        True if this chunk represents an interrupt that needs human review
+    """
+    if not hitl_config or not hitl_config.enabled:
+        return False
+
+    # Check for __interrupt__ in the chunk structure
+    if isinstance(chunk, tuple) and len(chunk) >= 2:
+        chunk_type, chunk_data = chunk[0], chunk[1]
+        if chunk_type == "__interrupt__" or "__interrupt__" in str(chunk_data):
+            return True
+
+    return False
 
 
 ###########################################################################
@@ -186,6 +251,7 @@ async def stream_generator(
     config: RunnableConfig,
     service_context: ServiceContext,
     instructions: str = None,
+    hitl_config: Optional[InterruptConfig] = None,
 ):
     files_map = config["metadata"].get("files", {}) or input.file_system or {}
     todos_list = config["metadata"].get("todos", [])

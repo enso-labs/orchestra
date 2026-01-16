@@ -7,6 +7,19 @@ from langgraph.graph.state import RunnableConfig
 from src.schemas.entities.store import Thread
 from src.contexts.service import ServiceContext
 from src.schemas.entities import SearchFilter, ThreadSemanticSearchRequest
+from src.schemas.entities.interrupt import (
+    InterruptRequest,
+    InterruptResponse,
+    InterruptList,
+    Interrupt,
+)
+from src.services.interrupt import (
+    InterruptService,
+    InterruptNotFoundError,
+    InterruptExpiredError,
+    InterruptAuthorizationError,
+    InterruptValidationError,
+)
 from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
@@ -357,3 +370,114 @@ async def delete_thread(
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# -----------------------------------------------------------------------------
+# Human-In-The-Loop (HITL) Endpoints
+# -----------------------------------------------------------------------------
+
+
+@router.post(
+    "/threads/{thread_id}/resume",
+    name="Resume Thread After HITL Interrupt",
+    operation_id="ruska_resume_thread",
+    tags=["HITL"],
+    response_model=InterruptResponse,
+)
+async def resume_thread(
+    thread_id: str,
+    request: InterruptRequest = Body(...),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Resume a paused thread after a human-in-the-loop interrupt decision.
+
+    This endpoint is called when a user approves, edits, or rejects a pending
+    tool call that required human approval.
+
+    Args:
+        thread_id: The thread ID to resume
+        request: The interrupt decision (approve, edit, reject, or respond)
+
+    Returns:
+        InterruptResponse with the resolution status
+
+    Raises:
+        404: Interrupt not found
+        403: User doesn't own this thread
+        400: Invalid request (expired, already resolved, validation failed)
+    """
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+
+            # Get the interrupt service (graph would be loaded for actual resume)
+            interrupt_service = InterruptService(user_id=user.id)
+
+            # Handle the decision
+            await interrupt_service.handle_decision(request)
+
+            return InterruptResponse(
+                status="resumed",
+                interrupt_id=request.interrupt_id,
+                thread_id=thread_id,
+                message=f"Thread resumed with action: {request.action.value}",
+            )
+
+    except InterruptNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except InterruptExpiredError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except InterruptAuthorizationError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except InterruptValidationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.exception(f"Error resuming thread {thread_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.get(
+    "/threads/{thread_id}/interrupts",
+    name="Get Pending Interrupts for Thread",
+    operation_id="ruska_get_thread_interrupts",
+    tags=["HITL"],
+    response_model=InterruptList,
+)
+async def get_thread_interrupts(
+    thread_id: str,
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Get all pending interrupts for a thread.
+
+    Use this endpoint to check for pending approval requests when reconnecting
+    to a thread after a connection drop, or to poll for interrupt status.
+
+    Args:
+        thread_id: The thread ID to get interrupts for
+
+    Returns:
+        InterruptList containing all pending interrupts for the thread
+    """
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+
+            # Get pending interrupts for this thread
+            interrupt_service = InterruptService(user_id=user.id)
+            pending = interrupt_service.get_pending_interrupts(thread_id)
+
+            return InterruptList(interrupts=pending)
+
+    except Exception as e:
+        logger.exception(f"Error getting interrupts for thread {thread_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )

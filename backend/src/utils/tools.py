@@ -20,12 +20,32 @@ def tool_ctx() -> ContextSchema:
         return runtime.context
 
 
+class InterruptValidationError(Exception):
+    """Raised when edited arguments fail schema validation."""
+
+    pass
+
+
 def add_human_in_the_loop(
     tool: Callable | BaseTool,
     *,
     interrupt_config: HumanInterruptConfig = None,
 ) -> BaseTool:
-    """Wrap a tool to support human-in-the-loop review."""
+    """Wrap a tool to support human-in-the-loop review.
+
+    When the tool is invoked, it will trigger an interrupt that pauses execution
+    until a human makes a decision (accept, edit, or respond).
+
+    Security: Edited arguments are validated against the tool's args_schema
+    before execution to prevent injection of invalid/malicious arguments.
+
+    Args:
+        tool: The tool to wrap (function or BaseTool)
+        interrupt_config: Configuration for what actions are allowed
+
+    Returns:
+        A wrapped BaseTool that supports human-in-the-loop review
+    """
     if not isinstance(tool, BaseTool):
         tool = create_tool(tool)
 
@@ -44,17 +64,36 @@ def add_human_in_the_loop(
             "description": "Please review the tool call",
         }
         response = interrupt([request])[0]
+
         # approve the tool call
         if response["type"] == "accept":
             tool_response = tool.invoke(tool_input, config)
-        # update tool call args
+
+        # update tool call args - SECURITY FIX: validate edited args against schema
         elif response["type"] == "edit":
-            tool_input = response["args"]["args"]
-            tool_response = tool.invoke(tool_input, config)
+            edited_args = response["args"]["args"]
+
+            # Re-validate edited args against the tool's schema before execution
+            if tool.args_schema:
+                try:
+                    validated_args = tool.args_schema(**edited_args).model_dump()
+                except Exception as e:
+                    logger.error(
+                        f"Edited args validation failed for tool {tool.name}: {e}"
+                    )
+                    raise InterruptValidationError(
+                        f"Edited arguments failed validation for tool '{tool.name}': {e}"
+                    )
+            else:
+                validated_args = edited_args
+
+            tool_response = tool.invoke(validated_args, config)
+
         # respond to the LLM with user feedback
         elif response["type"] == "response":
             user_feedback = response["args"]
             tool_response = user_feedback
+
         else:
             raise ValueError(f"Unsupported interrupt response type: {response['type']}")
 

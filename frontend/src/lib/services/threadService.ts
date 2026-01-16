@@ -3,6 +3,9 @@ import {
 	SemanticThread,
 	ThreadPayload,
 	ThreadSearchRequest,
+	InterruptRequest,
+	InterruptResponse,
+	InterruptList,
 } from "@/lib/entities";
 import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
 import { VITE_API_URL } from "@/lib/config";
@@ -339,5 +342,61 @@ export const searchThreadsSemantic = async (
 	} catch (error: any) {
 		console.error("Error searching threads semantically:", error);
 		throw new Error(error.response?.data?.detail || "Failed to search threads");
+	}
+};
+
+// -----------------------------------------------------------------------------
+// Human-In-The-Loop (HITL) Interrupt Functions
+// -----------------------------------------------------------------------------
+
+/**
+ * Resume a thread after making a decision on an interrupt
+ * @param threadId - The thread ID to resume
+ * @param request - The interrupt decision request
+ * @returns The interrupt response
+ */
+export const resumeThread = async (
+	threadId: string,
+	request: InterruptRequest,
+): Promise<InterruptResponse> => {
+	try {
+		const response = await apiClient.post(
+			`/threads/${threadId}/resume`,
+			request,
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			},
+		);
+		return response.data;
+	} catch (error: any) {
+		console.error("Error resuming thread:", error);
+		throw new Error(error.response?.data?.detail || "Failed to resume thread");
+	}
+};
+
+/**
+ * Get all pending interrupts for a thread
+ * Use this when reconnecting to a thread to check for pending approval requests
+ * @param threadId - The thread ID to get interrupts for
+ * @returns List of pending interrupts
+ */
+export const getThreadInterrupts = async (
+	threadId: string,
+): Promise<InterruptList> => {
+	try {
+		const response = await apiClient.get(`/threads/${threadId}/interrupts`, {
+			headers: {
+				Authorization: `Bearer ${getAuthToken()}`,
+			},
+		});
+		return response.data;
+	} catch (error: any) {
+		console.error("Error getting thread interrupts:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to get thread interrupts",
+		);
 	}
 };

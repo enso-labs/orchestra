@@ -19,6 +19,8 @@ import {
 	Ban,
 	Globe,
 	Lock,
+	ShieldCheck,
+	Clock,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
@@ -35,6 +37,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	Dialog,
 	DialogContent,
@@ -65,6 +74,11 @@ const formSchema = z.object({
 		message: "Model must be at least 2 characters.",
 	}),
 	public: z.boolean(),
+	// HITL Configuration
+	hitl_enabled: z.boolean().optional(),
+	hitl_tools: z.array(z.string()).optional(),
+	hitl_timeout: z.number().min(30).max(3600).optional(),
+	hitl_default_action: z.enum(["approve", "reject", "timeout"]).optional(),
 });
 
 export function AgentCreateForm() {
@@ -100,6 +114,10 @@ export function AgentCreateForm() {
 			systemMessage: "",
 			instructions: "",
 			public: false,
+			hitl_enabled: false,
+			hitl_tools: [],
+			hitl_timeout: 300,
+			hitl_default_action: "timeout",
 		},
 	});
 
@@ -134,6 +152,18 @@ export function AgentCreateForm() {
 			// Include file_system only if there are files
 			...(Object.keys(fileSystemData).length > 0 && {
 				files: fileSystemData,
+			}),
+			// HITL Configuration
+			...(values.hitl_enabled && {
+				interrupt_config: {
+					enabled: values.hitl_enabled,
+					tools_requiring_approval: values.hitl_tools || [],
+					timeout_seconds: values.hitl_timeout || 300,
+					default_action: values.hitl_default_action || "timeout",
+					allow_approve: true,
+					allow_edit: true,
+					allow_reject: true,
+				},
 			}),
 		};
 
@@ -256,6 +286,26 @@ export function AgentCreateForm() {
 		form.setValue("description", agent.description);
 		form.setValue("model", agent.model);
 		form.setValue("public", agent.public || false);
+
+		// HITL Configuration
+		const interruptConfig = agent.interrupt_config;
+		if (interruptConfig) {
+			form.setValue("hitl_enabled", interruptConfig.enabled || false);
+			form.setValue(
+				"hitl_tools",
+				interruptConfig.tools_requiring_approval || [],
+			);
+			form.setValue("hitl_timeout", interruptConfig.timeout_seconds || 300);
+			form.setValue(
+				"hitl_default_action",
+				interruptConfig.default_action || "timeout",
+			);
+		} else {
+			form.setValue("hitl_enabled", false);
+			form.setValue("hitl_tools", []);
+			form.setValue("hitl_timeout", 300);
+			form.setValue("hitl_default_action", "timeout");
+		}
 
 		// Determine mode and set values
 		if (
@@ -797,6 +847,199 @@ export function AgentCreateForm() {
 							No tools selected. Click "Manage Tools" to add tools.
 						</p>
 					)}
+				</div>
+
+				{/* HITL Configuration Section */}
+				<div className="border border-border rounded-lg p-6">
+					<div className="flex items-center gap-3 mb-6">
+						<ShieldCheck className="h-5 w-5 text-foreground" />
+						<div>
+							<h2 className="text-lg font-semibold text-foreground">
+								Human-In-The-Loop (HITL)
+							</h2>
+							<p className="text-sm text-muted-foreground">
+								Require human approval before executing specific tools
+							</p>
+						</div>
+					</div>
+
+					<div className="space-y-4">
+						{/* Enable HITL Toggle */}
+						<FormField
+							control={form.control}
+							name="hitl_enabled"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+									<div className="space-y-0.5">
+										<FormLabel className="text-base flex items-center gap-2">
+											<ShieldCheck className="h-4 w-4" />
+											Enable Human Approval
+										</FormLabel>
+										<FormDescription>
+											When enabled, selected tools will require human approval
+											before execution
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											checked={field.value}
+											onCheckedChange={field.onChange}
+											disabled={!isEditing}
+										/>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+
+						{/* Show additional HITL settings only when enabled */}
+						{form.watch("hitl_enabled") && (
+							<div className="space-y-4 pt-4 border-t border-border">
+								{/* Tools requiring approval */}
+								<div className="space-y-2">
+									<FormLabel
+										className={!isEditing ? "text-muted-foreground/70" : ""}
+									>
+										Tools Requiring Approval
+									</FormLabel>
+									<p className="text-xs text-muted-foreground">
+										Select tools that require human approval before execution.
+										If empty, all tools will require approval.
+									</p>
+
+									{/* Available tools */}
+									{agent.tools && agent.tools.length > 0 ? (
+										<div className="flex flex-wrap gap-2 mt-2">
+											{agent.tools.map((tool: string) => {
+												const hitlTools = form.watch("hitl_tools") || [];
+												const isSelected = hitlTools.includes(tool);
+												return (
+													<button
+														key={tool}
+														type="button"
+														disabled={!isEditing}
+														onClick={() => {
+															const current = form.getValues("hitl_tools") || [];
+															if (isSelected) {
+																form.setValue(
+																	"hitl_tools",
+																	current.filter((t) => t !== tool),
+																);
+															} else {
+																form.setValue("hitl_tools", [...current, tool]);
+															}
+														}}
+														className={cn(
+															"inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all",
+															isSelected
+																? "bg-amber-500/20 border border-amber-500/40 text-amber-700 dark:text-amber-300"
+																: "bg-muted border border-border text-muted-foreground",
+															!isEditing && "opacity-60 cursor-not-allowed",
+															isEditing && "hover:opacity-80 cursor-pointer",
+														)}
+													>
+														{isSelected && <Check className="h-3 w-3" />}
+														{tool}
+													</button>
+												);
+											})}
+										</div>
+									) : (
+										<p className="text-sm text-muted-foreground italic">
+											No tools available. Add tools first to configure HITL.
+										</p>
+									)}
+								</div>
+
+								{/* Timeout configuration */}
+								<FormField
+									control={form.control}
+									name="hitl_timeout"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel
+												className={
+													!isEditing
+														? "text-muted-foreground/70"
+														: "flex items-center gap-2"
+												}
+											>
+												<Clock className="h-4 w-4" />
+												Approval Timeout (seconds)
+											</FormLabel>
+											<FormControl>
+												<Input
+													type="number"
+													min={30}
+													max={3600}
+													disabled={!isEditing}
+													placeholder="300"
+													className={cn(
+														"w-32",
+														!isEditing &&
+															"opacity-60 bg-muted/50 cursor-not-allowed",
+													)}
+													{...field}
+													onChange={(e) =>
+														field.onChange(parseInt(e.target.value) || 300)
+													}
+												/>
+											</FormControl>
+											<FormDescription>
+												How long to wait for human approval (30-3600 seconds).
+												Default: 300 seconds (5 minutes).
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								{/* Default action */}
+								<FormField
+									control={form.control}
+									name="hitl_default_action"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel
+												className={!isEditing ? "text-muted-foreground/70" : ""}
+											>
+												Default Action on Timeout
+											</FormLabel>
+											<Select
+												disabled={!isEditing}
+												onValueChange={field.onChange}
+												value={field.value}
+											>
+												<FormControl>
+													<SelectTrigger
+														className={cn(
+															"w-48",
+															!isEditing &&
+																"opacity-60 bg-muted/50 cursor-not-allowed",
+														)}
+													>
+														<SelectValue placeholder="Select action" />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													<SelectItem value="timeout">
+														Timeout (Reject)
+													</SelectItem>
+													<SelectItem value="approve">
+														Auto-Approve
+													</SelectItem>
+													<SelectItem value="reject">Reject</SelectItem>
+												</SelectContent>
+											</Select>
+											<FormDescription>
+												What happens when the approval timeout is reached.
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</div>
+						)}
+					</div>
 				</div>
 
 				<div className="border border-border rounded-lg p-6">
