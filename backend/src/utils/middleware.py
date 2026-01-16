@@ -135,7 +135,7 @@ class AutoEvictMiddleware(AgentMiddleware):
         tool_token_limit_before_evict: int = 10000, 
         evict_dir: str = "/large_tool_results"
     ):
-        self.backend = backend
+        self.backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = backend
         self.evict_dir = evict_dir
         self.tool_token_limit_before_evict = tool_token_limit_before_evict
         
@@ -246,4 +246,20 @@ class AutoEvictMiddleware(AgentMiddleware):
         return self._intercept_large_tool_result(tool_result, request.runtime)
 
 
-DEFAULT_MIDDLEWARE = [add_ai_message_metadata, retry_model] + pii_middleware()
+def init_default_middleware(
+    backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = None
+) -> list[Callable]:
+    """Initialize the default middleware.
+
+    Args:
+        backend: The backend to use for the AutoEvictMiddleware.
+
+    Returns:
+        The default middleware.
+    """
+    return [
+        add_ai_message_metadata, 
+        retry_model, 
+        *pii_middleware(),
+        AutoEvictMiddleware(backend=backend),
+    ]

@@ -26,7 +26,7 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
-from src.utils.middleware import DEFAULT_MIDDLEWARE, AutoEvictMiddleware
+from src.utils.middleware import init_default_middleware
 from src.tools import default_tools
 
 
@@ -81,8 +81,6 @@ def graph_builder(
             store=store,
         )
 
-    if backend:
-        middleware.append(AutoEvictMiddleware(backend))
     deep_agent = create_deep_agent(
         model=llm,
         tools=tools,
@@ -90,7 +88,7 @@ def graph_builder(
         system_prompt=system_prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
-        middleware=DEFAULT_MIDDLEWARE + middleware,
+        middleware=init_default_middleware(backend=backend) + middleware,
         store=store,
         cache=CACHE_LLM,
         backend=backend,
