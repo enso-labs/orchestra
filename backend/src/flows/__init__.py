@@ -26,7 +26,7 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
-from src.utils.middleware import DEFAULT_MIDDLEWARE
+from src.utils.middleware import DEFAULT_MIDDLEWARE, AutoEvictMiddleware
 from src.tools import default_tools
 
 
@@ -81,6 +81,8 @@ def graph_builder(
             store=store,
         )
 
+    if backend:
+        middleware.append(AutoEvictMiddleware(backend))
     deep_agent = create_deep_agent(
         model=llm,
         tools=tools,
@@ -183,7 +185,7 @@ def init_config(
             "thread_id": metadata.get("thread_id"),
             "assistant_id": metadata.get("assistant_id", None),
             "project_id": metadata.get("project_id", None),
-            "files": params.input.file_system or {},
+            "files": params.input.files or {},
         },
         max_concurrency=max_concurrency,
         recursion_limit=recursion_limit,

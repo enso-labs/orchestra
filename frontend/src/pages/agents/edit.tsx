@@ -69,8 +69,8 @@ function AgentEditPage() {
 
 	// Sync agent.file_system to fileSystem when agent loads
 	useEffect(() => {
-		if (agent?.file_system && Object.keys(agent.file_system).length > 0) {
-			fromBackendFormat(agent.file_system);
+		if (agent?.files && Object.keys(agent.files).length > 0) {
+			fromBackendFormat(agent.files);
 		}
 	}, [agent?.id, fromBackendFormat]);
 

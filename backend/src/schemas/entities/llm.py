@@ -62,7 +62,7 @@ class LLMInput(BaseModel):
         content: str | List[Any] = Field(examples=["Weather in Dallas?"])
 
     messages: List[ChatMessage]
-    file_system: Optional[Dict[str, Any]] = Field(default=None)
+    files: Optional[Dict[str, Any]] = Field(default=None)
 
     def to_langchain_messages(self) -> "LLMInput":
         # Convert API messages to LangChain message objects

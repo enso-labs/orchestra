@@ -68,8 +68,8 @@ async def run_agent_stream(
 
         # Initialize config
         config = init_config(params, user_id)
-        files_map = config["metadata"].get("files", {})
-        todos_list = config["metadata"].get("todos", [])
+        files_map = config["configurable"].get("files", {})
+        todos_list = config["configurable"].get("todos", [])
 
         async with (
             get_store_db() as store,
@@ -139,7 +139,7 @@ async def run_agent_stream(
                 if stream_chunk:
                     stream_type = stream_chunk[0]
                     chunk_data = stream_chunk[1]
-                    if stream_type == "values" and "files" in chunk_data:
+                    if stream_type == "values" and chunk_data.get("files"):
                         files_map = {**files_map, **chunk_data["files"]}
                     if stream_type == "values" and "todos" in chunk_data:
                         todos_list = chunk_data["todos"]

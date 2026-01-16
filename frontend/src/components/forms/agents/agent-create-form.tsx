@@ -133,7 +133,7 @@ export function AgentCreateForm() {
 			subagents: agent.subagents,
 			// Include file_system only if there are files
 			...(Object.keys(fileSystemData).length > 0 && {
-				file_system: fileSystemData,
+				files: fileSystemData,
 			}),
 		};
 
