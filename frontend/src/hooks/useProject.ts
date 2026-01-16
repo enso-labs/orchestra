@@ -77,6 +77,38 @@ export function useProject() {
 		}
 	};
 
+	const handleUpdateProject = async (
+		projectId: string,
+		updates: Partial<Project>,
+	): Promise<Project | null> => {
+		setLoading(true);
+		setError(null);
+		try {
+			const response = await ProjectService.update(projectId, updates);
+			const updatedProject = response.data.project;
+
+			// Update local state
+			setProjects((prev) =>
+				prev.map((p) =>
+					p.id === projectId ? { ...p, ...updatedProject } : p,
+				),
+			);
+
+			// Update selected project if it's the one being edited
+			if (selectedProject?.id === projectId) {
+				setSelectedProject({ ...selectedProject, ...updatedProject });
+			}
+
+			return updatedProject;
+		} catch (err: any) {
+			setError(err.message || "Failed to update project");
+			console.error("Failed to update project:", err);
+			return null;
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const handleAddSource = async (
 		projectId: string,
 		source: Source,
@@ -132,6 +164,7 @@ export function useProject() {
 		handleGetProjects,
 		handleCreateProject,
 		handleDeleteProject,
+		handleUpdateProject,
 		handleAddSource,
 		useEffectGetProjects,
 	};

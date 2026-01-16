@@ -29,7 +29,7 @@ export default function ProjectPage() {
 	const navigate = useNavigate();
 	const { loading, appVersion } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
-	const { selectProject } = useProjectContext();
+	const { selectProject, handleUpdateProject, loading: projectLoading2 } = useProjectContext();
 	const {
 		messages,
 		setViewMode,
@@ -127,7 +127,16 @@ export default function ProjectPage() {
 				<div className="flex-1 flex flex-col bg-background overflow-hidden">
 					{/* Centered Project Section */}
 					<div className="flex flex-col items-center justify-center p-6 flex-1">
-						<ProjectSection project={project} showAgentMenu={true} />
+						<ProjectSection
+							project={project}
+							showAgentMenu={true}
+							onProjectUpdated={(updatedProject) => {
+								setProject(updatedProject);
+								selectProject(updatedProject);
+							}}
+							onUpdate={handleUpdateProject}
+							loading={projectLoading2}
+						/>
 					</div>
 
 					{/* Project Threads Section */}

@@ -46,6 +46,10 @@ class ProjectService:
         finally:
             logger.info(f"Project {project_id} deleted successfully")
 
+    async def update(self, project_id: str, data: dict) -> Project:
+        """Update project name and/or description."""
+        return await self.project_repo.update(project_id, data)
+
     ##########################################################################
     # Source Service Methods
     ##########################################################################

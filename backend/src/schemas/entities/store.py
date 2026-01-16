@@ -34,6 +34,13 @@ class Project(BaseEntity):
     sources: Optional[list[Source]] = None
 
 
+class ProjectUpdate(BaseModel):
+    """Schema for partial project updates. All fields are optional."""
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
 class Thread(BaseEntity):
     title: Optional[str] = None
     messages: list[Union[BaseMessage, dict]] = Field(default_factory=list)
