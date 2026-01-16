@@ -71,6 +71,19 @@ docker pull ghcr.io/ruska-ai/orchestra:latest
 
 ## 🛠️ Development
 
+### Quick Reference
+
+| Command           | Description                      |
+|-------------------|----------------------------------|
+| `make dev`        | Start backend server (port 8000) |
+| `make dev.worker` | Start TaskIQ worker              |
+| `make test`       | Run all backend tests            |
+| `make format`     | Format code with Ruff            |
+| `make seeds.user` | Seed default users               |
+| `make migrate.up` | Apply all pending migrations     |
+
+For all commands, see `backend/Makefile`.
+
 1. **Environment Variables:**
 
     Create a `.env` file in the root directory and add your API key(s):
@@ -98,24 +111,24 @@ docker pull ghcr.io/ruska-ai/orchestra:latest
 
 3. **Setup Server Environment**
 
-    Assumes you're using [astral uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation). See `./backend/scripts` directory for other dev utilities.
+    ```bash
+    cd <project-root>/backend
+    make dev
+    ```
+
+    <details>
+    <summary>Manual setup (if Makefile unavailable)</summary>
+
+    Assumes you're using [astral uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation).
 
     ```bash
-    # Change directory
     cd <project-root>/backend
-
-    # Generate virtualenv
     uv venv
-
-    # Activate
     source .venv/bin/activate
-
-    # Install
     uv sync
-
-    # Run
-    bash scripts/dev.sh # Select "no" when prompted.
+    bash scripts/dev.sh
     ```
+    </details>
 
 4. **Setup Client Environment**
 
@@ -284,6 +297,8 @@ The API will be available at `http://localhost:8000`
 | `search_engine` | 8080      | SearXNG search engine              |
 | `exec_server`   | 3005      | Shell execution server             |
 | `ollama`        | 11434     | Local LLM inference (requires GPU) |
+| `redis`         | 6379      | Redis message broker (for workers) |
+| `worker`        | -         | TaskIQ worker (no exposed port)    |
 
 ### 🧱 Docker Compose Example
 
@@ -377,13 +392,14 @@ docker build -t orchestra:local .
 | `SHELL_EXEC_SERVER_URL` | Shell execution endpoint | `http://localhost:3005/exec` |
 | `TAVILY_API_KEY`        | Tavily search API key    | -                            |
 
-#### Services (Alpha)
+#### Distributed Workers (Optional)
 
-| Variable                  | Description                 | Default |
-| ------------------------- | --------------------------- | ------- |
-| `PRESIDIO_ANALYZE_HOST`   | Presidio analyze endpoint   | -       |
-| `PRESIDIO_ANONYMIZE_HOST` | Presidio anonymize endpoint | -       |
-| `PRESIDIO_API_KEY`        | Presidio API key            | -       |
+| Variable              | Description                    | Default |
+| --------------------- | ------------------------------ | ------- |
+| `REDIS_URL`           | Redis connection for task queue | -       |
+| `DISTRIBUTED_WORKERS` | Enable distributed worker mode | `false` |
+
+> **Note**: When enabled, run the worker process separately: `make dev.worker`
 
 #### Storage
 
