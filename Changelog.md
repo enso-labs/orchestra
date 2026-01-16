@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc142
 
 ### Changed
+  - feat/336-add-human-in-the-loop (2026-01-16)
   - feat/680-update-readme-out-of-sync (2026-01-16)
   - feat/664-edit-project-information-settings (2026-01-16)
   - feat/675-cleanup-presidio-service (2026-01-16)
