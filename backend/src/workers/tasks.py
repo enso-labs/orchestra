@@ -13,7 +13,25 @@ Pattern mirrors existing `scheduled_llm_invoke` in services/schedule.py:
 
 import ujson
 import redis.asyncio as redis
+from langgraph.types import Interrupt
 from src.workers.broker import broker, REDIS_URL
+
+
+def contains_interrupt(obj):
+    """Recursively check if an object contains an Interrupt instance."""
+    if isinstance(obj, Interrupt):
+        return obj
+    if isinstance(obj, dict):
+        for v in obj.values():
+            result = contains_interrupt(v)
+            if result:
+                return result
+    if isinstance(obj, (list, tuple)):
+        for item in obj:
+            result = contains_interrupt(item)
+            if result:
+                return result
+    return None
 
 
 @broker.task(task_name="run_agent_stream")
@@ -134,9 +152,42 @@ async def run_agent_stream(
                 config=config,
                 context=ctx_schema,
             ):
+                # Check if chunk contains an Interrupt (HITL)
+                if isinstance(chunk, Interrupt):
+                    # Convert Interrupt to JSON-serializable format
+                    interrupt_data = {
+                        "type": "interrupt",
+                        "interrupt_id": chunk.id,
+                        "value": chunk.value,
+                        "thread_id": thread_id,
+                        "checkpoint_id": config["configurable"].get("checkpoint_id"),
+                    }
+                    data = ujson.dumps(("interrupt", interrupt_data))
+                    await redis_client.xadd(stream_key, {"data": data})
+                    logger.info(f"🛑 HITL interrupt sent for thread: {thread_id}")
+                    continue
+
                 # CRITICAL: Use handle_multi_mode to maintain LangGraph format
                 stream_chunk = handle_multi_mode(chunk)
                 if stream_chunk:
+                    # Check for nested Interrupt objects (HITL)
+                    nested_interrupt = contains_interrupt(stream_chunk)
+                    if nested_interrupt:
+                        # Convert nested Interrupt to JSON-serializable format
+                        interrupt_data = {
+                            "type": "interrupt",
+                            "interrupt_id": nested_interrupt.id,
+                            "value": nested_interrupt.value,
+                            "thread_id": thread_id,
+                            "checkpoint_id": config["configurable"].get(
+                                "checkpoint_id"
+                            ),
+                        }
+                        data = ujson.dumps(("interrupt", interrupt_data))
+                        await redis_client.xadd(stream_key, {"data": data})
+                        logger.info(f"🛑 HITL interrupt sent for thread: {thread_id}")
+                        continue
+
                     stream_type = stream_chunk[0]
                     chunk_data = stream_chunk[1]
                     if stream_type == "values" and chunk_data.get("files"):

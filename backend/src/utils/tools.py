@@ -57,7 +57,7 @@ def add_human_in_the_loop(
         }
 
     @create_tool(tool.name, description=tool.description, args_schema=tool.args_schema)
-    def call_tool_with_interrupt(config: RunnableConfig, **tool_input):
+    async def call_tool_with_interrupt(config: RunnableConfig, **tool_input):
         request: HumanInterrupt = {
             "action_request": {"action": tool.name, "args": tool_input},
             "config": interrupt_config,
@@ -67,7 +67,7 @@ def add_human_in_the_loop(
 
         # approve the tool call
         if response["type"] == "accept":
-            tool_response = tool.invoke(tool_input, config)
+            tool_response = await tool.ainvoke(tool_input, config)
 
         # update tool call args - SECURITY FIX: validate edited args against schema
         elif response["type"] == "edit":
@@ -87,7 +87,7 @@ def add_human_in_the_loop(
             else:
                 validated_args = edited_args
 
-            tool_response = tool.invoke(validated_args, config)
+            tool_response = await tool.ainvoke(validated_args, config)
 
         # respond to the LLM with user feedback
         elif response["type"] == "response":

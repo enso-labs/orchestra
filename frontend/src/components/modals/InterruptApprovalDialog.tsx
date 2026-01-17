@@ -289,9 +289,7 @@ export function InterruptApprovalDialog({
 									}}
 									className={cn(
 										"min-h-[100px]",
-										activeTab === "respond" &&
-											parseError &&
-											"border-red-500",
+										activeTab === "respond" && parseError && "border-red-500",
 									)}
 									placeholder="Provide instructions or information for the agent..."
 								/>

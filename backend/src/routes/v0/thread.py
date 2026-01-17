@@ -34,6 +34,14 @@ from langgraph.checkpoint.base import (
 
 from src.utils.stream import stream_from_redis
 
+# Imports for graph reconstruction in resume_thread
+from deepagents.backends import StoreBackend
+from langchain.tools import ToolRuntime
+from src.schemas.entities import LLMRequest
+from src.schemas.entities.llm import LLMInput, Config as LLMConfig
+from src.schemas.contexts import ContextSchema
+from src.flows import construct_agent, init_config, init_backend
+
 router = APIRouter(tags=["Thread"])
 
 
@@ -393,7 +401,8 @@ async def resume_thread(
     """Resume a paused thread after a human-in-the-loop interrupt decision.
 
     This endpoint is called when a user approves, edits, or rejects a pending
-    tool call that required human approval.
+    tool call that required human approval. The agent graph is reconstructed
+    to handle the interrupt decision and resume execution.
 
     Args:
         thread_id: The thread ID to resume
@@ -403,7 +412,7 @@ async def resume_thread(
         InterruptResponse with the resolution status
 
     Raises:
-        404: Interrupt not found
+        404: Interrupt not found or thread/assistant not found
         403: User doesn't own this thread
         400: Invalid request (expired, already resolved, validation failed)
     """
@@ -413,11 +422,119 @@ async def resume_thread(
                 user_id=user.id, store=store, checkpointer=checkpointer
             )
 
-            # Get the interrupt service (graph would be loaded for actual resume)
-            interrupt_service = InterruptService(user_id=user.id)
+            # Step 1: Get thread data to find assistant_id
+            thread_data = await service_context.thread_service.get(thread_id)
+            if not thread_data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Thread {thread_id} not found",
+                )
 
-            # Handle the decision
-            await interrupt_service.handle_decision(request)
+            # Extract assistant_id from thread metadata or checkpoint
+            assistant_id = None
+            if thread_data.metadata:
+                assistant_id = thread_data.metadata.get("assistant_id")
+
+            # If not in thread metadata, check checkpoint metadata
+            if not assistant_id:
+                checkpoints = await service_context.checkpoint_service.list_checkpoints(
+                    thread_id=thread_id, limit=1
+                )
+                if checkpoints and checkpoints[0].get("metadata"):
+                    assistant_id = checkpoints[0]["metadata"].get("assistant_id")
+
+            if not assistant_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot resume thread: no assistant_id found in thread or checkpoint data",
+                )
+
+            # Step 2: Load assistant configuration
+            assistant = await service_context.assistant_service.get(assistant_id)
+            if not assistant:
+                # Try public namespace
+                assistant = await service_context.assistant_service.get_public(
+                    assistant_id
+                )
+            if not assistant:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Assistant {assistant_id} not found",
+                )
+
+            # Step 3: Build LLMRequest from assistant config
+            llm_input = LLMInput(messages=[])
+            llm_config = LLMConfig(
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+                user_id=user.id,
+            )
+            params = LLMRequest(
+                input=llm_input,
+                metadata=llm_config,
+                model=assistant.model,
+                system_prompt=assistant.system_prompt,
+                instructions=assistant.instructions,
+                tools=assistant.tools or [],
+                subagents=assistant.subagents or [],
+            )
+
+            # Step 4: Initialize config
+            config = init_config(params, user.id)
+
+            # Step 5: Create a new ServiceContext WITH the config for LLM operations
+            service_context_with_config = ServiceContext(
+                user_id=user.id,
+                store=store,
+                checkpointer=checkpointer,
+                config=config,
+            )
+
+            # Step 6: Process assistant to get initialized tools
+            params = await service_context_with_config.llm_service.assistant(params)
+
+            # Step 7: Initialize runtime and backend (following tasks.py pattern)
+            files_map = config["configurable"].get("files", {})
+            ctx_schema = ContextSchema(model=params.model or "", user_id=user.id)
+            runtime = ToolRuntime(
+                state={"messages": [], "files": files_map},
+                context=ctx_schema,
+                tool_call_id="tc_resume",
+                store=service_context_with_config.store,
+                stream_writer=lambda _: None,
+                config=config,
+            )
+            store_backend = StoreBackend(runtime)
+            routes = {
+                f"/users/{user.id}/memories/": store_backend,
+                f"/users/{user.id}/config/": store_backend,
+            }
+            backend = init_backend(runtime, routes=routes)
+
+            # Step 8: Construct the agent graph
+            agent = await construct_agent(
+                instructions=params.instructions,
+                system_prompt=params.system_prompt,
+                tools=params.tools,
+                model=params.model,
+                subagents=params.subagents,
+                checkpointer=checkpointer,
+                service_context=service_context_with_config,
+                backend=backend,
+            )
+
+            # Step 9: Create interrupt service WITH the graph
+            interrupt_service = InterruptService(
+                user_id=user.id,
+                graph=agent.graph,
+            )
+
+            # Step 10: Handle the decision (pass thread_id for fallback lookup)
+            await interrupt_service.handle_decision(request, thread_id=thread_id)
+
+            logger.info(
+                f"Thread {thread_id} resumed with action: {request.action.value}"
+            )
 
             return InterruptResponse(
                 status="resumed",
@@ -434,10 +551,17 @@ async def resume_thread(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except InterruptValidationError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Error resuming thread {thread_id}: {e}")
+        # Include error details for debugging (TODO: remove in production)
+        import traceback
+
+        error_details = f"{type(e).__name__}: {str(e)}"
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_details,
         )
 
 

@@ -65,18 +65,14 @@ export interface ShareListItem {
  */
 export async function createShare(
 	threadId: string,
-	options: ShareOptions = {}
+	options: ShareOptions = {},
 ): Promise<ShareResponse> {
-	const response = await apiClient.post(
-		`/threads/${threadId}/share`,
-		options,
-		{
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${getAuthToken()}`,
-			},
-		}
-	);
+	const response = await apiClient.post(`/threads/${threadId}/share`, options, {
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${getAuthToken()}`,
+		},
+	});
 	return response.data;
 }
 
@@ -87,7 +83,7 @@ export async function createShare(
  * @returns Shared thread data including messages and files
  */
 export async function getSharedThread(
-	token: string
+	token: string,
 ): Promise<SharedThreadResponse> {
 	const response = await apiClient.get(`/shares/${token}`);
 	return response.data;

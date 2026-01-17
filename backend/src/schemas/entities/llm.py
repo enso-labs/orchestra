@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Literal, Optional
 from pathlib import PurePosixPath
 from pydantic import (
+    AliasChoices,
     BaseModel,
     Field,
     ConfigDict,
@@ -110,6 +111,7 @@ class Assistant(BaseModel):
     hitl: Optional[InterruptConfig] = Field(
         default=None,
         description="Human-in-the-loop configuration for tool approval requirements",
+        validation_alias=AliasChoices("hitl", "interrupt_config"),
     )
     file_system: Optional[Dict[str, str]] = Field(
         default_factory=dict,
@@ -160,6 +162,7 @@ class Assistant(BaseModel):
             subagents=self.subagents,
             metadata=metadata or self.metadata,
             input=input,
+            hitl=self.hitl,
         )
 
 
@@ -222,6 +225,11 @@ class LLMRequest(BaseModel):
         default=None,
         max_length=10000,
         description="Existing file content to provide as context for generation",
+    )
+    hitl: Optional[InterruptConfig] = Field(
+        default=None,
+        description="Human-in-the-loop configuration for tool approval requirements",
+        validation_alias=AliasChoices("hitl", "interrupt_config"),
     )
 
     @model_validator(mode="before")

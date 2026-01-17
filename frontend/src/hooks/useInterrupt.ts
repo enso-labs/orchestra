@@ -52,11 +52,9 @@ export default function useInterrupt(): InterruptContextType {
 	 * Converts SSE event data to a full Interrupt object
 	 */
 	const handleInterruptEvent = useCallback((data: InterruptEventData) => {
-		// Generate a unique ID for this interrupt
-		const interruptId = `${data.thread_id}-${data.tool_call_id}-${Date.now()}`;
-
+		// Use the backend-provided interrupt_id and nonce for proper tracking
 		const interrupt: Interrupt = {
-			id: interruptId,
+			id: data.interrupt_id,
 			thread_id: data.thread_id,
 			user_id: "", // Will be filled by backend
 			checkpoint_id: data.checkpoint_id,
@@ -66,7 +64,7 @@ export default function useInterrupt(): InterruptContextType {
 			tool_description: data.tool_description,
 			reason: data.reason,
 			status: "pending",
-			nonce: crypto.randomUUID(),
+			nonce: data.nonce,
 			created_at: data.created_at,
 			expires_at: data.timeout_at,
 		};

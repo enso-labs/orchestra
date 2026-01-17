@@ -918,7 +918,8 @@ export function AgentCreateForm() {
 														type="button"
 														disabled={!isEditing}
 														onClick={() => {
-															const current = form.getValues("hitl_tools") || [];
+															const current =
+																form.getValues("hitl_tools") || [];
 															if (isSelected) {
 																form.setValue(
 																	"hitl_tools",
@@ -1024,9 +1025,7 @@ export function AgentCreateForm() {
 													<SelectItem value="timeout">
 														Timeout (Reject)
 													</SelectItem>
-													<SelectItem value="approve">
-														Auto-Approve
-													</SelectItem>
+													<SelectItem value="approve">Auto-Approve</SelectItem>
 													<SelectItem value="reject">Reject</SelectItem>
 												</SelectContent>
 											</Select>

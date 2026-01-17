@@ -109,6 +109,7 @@ class LLMController:
             config=self.service_context.config,
             service_context=self.service_context,
             instructions=assistant.instructions,
+            hitl_config=assistant.hitl,
         )
 
     async def llm_task(self, job: ScheduleCreate):

@@ -11,8 +11,9 @@ import { getAuthToken } from "@/lib/utils/auth";
 import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
 import type { Todo } from "@/components/lists/TodoList";
-import type { StreamEvent } from "@/lib/entities/stream";
+import type { StreamEvent, InterruptEvent } from "@/lib/entities/stream";
 import type { StreamSource } from "@/lib/utils/streamSource";
+import type { InterruptEventData } from "@/lib/entities/interrupt";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -72,6 +73,10 @@ export type ChatContextType = {
 	removeFile: (path: string) => void;
 	renameFile: (oldPath: string, newPath: string) => void;
 	getFilesForSubmission: () => Record<string, any>;
+	// Interrupt callback for HITL
+	setOnInterrupt: (
+		callback: ((data: InterruptEventData) => void) | null,
+	) => void;
 };
 
 export default function useChat(): ChatContextType {
@@ -118,6 +123,16 @@ export default function useChat(): ChatContextType {
 	const [ttft, setTtft] = useState<number | null>(null);
 	const [submitStartTime, setSubmitStartTime] = useState<number | null>(null);
 	const submitStartTimeRef = useRef<number | null>(null);
+	// HITL interrupt callback ref (allows dynamic callback without re-renders)
+	const onInterruptRef = useRef<((data: InterruptEventData) => void) | null>(
+		null,
+	);
+	const setOnInterrupt = useCallback(
+		(callback: ((data: InterruptEventData) => void) | null) => {
+			onInterruptRef.current = callback;
+		},
+		[],
+	);
 
 	const abortQuery = () => {
 		if (controller) {
@@ -134,6 +149,7 @@ export default function useChat(): ChatContextType {
 	/**
 	 * Converts a StreamEvent to the legacy payload format for handleMessages().
 	 * This allows reusing the existing message handling logic.
+	 * Note: Interrupt events are handled separately via onInterruptRef callback.
 	 */
 	const convertEventToLegacy = (event: StreamEvent): any[] | null => {
 		switch (event.type) {
@@ -145,6 +161,25 @@ export default function useChat(): ChatContextType {
 				return ["values", event.data];
 			case "error":
 				return ["error", event.data.error];
+			case "interrupt":
+				// Handle HITL interrupt event via callback
+				if (onInterruptRef.current) {
+					const interruptData: InterruptEventData = {
+						interrupt_id: event.data.interrupt_id,
+						thread_id: event.data.thread_id,
+						checkpoint_id: event.data.checkpoint_id,
+						tool_name: event.data.tool_name,
+						tool_args: event.data.tool_args,
+						tool_call_id: event.data.tool_call_id,
+						tool_description: event.data.tool_description,
+						reason: event.data.reason,
+						timeout_at: event.data.timeout_at,
+						nonce: event.data.nonce,
+						created_at: event.data.created_at,
+					};
+					onInterruptRef.current(interruptData);
+				}
+				return null; // Interrupts don't go through legacy handler
 			case "done":
 				return null; // Handled separately
 			default:
@@ -740,6 +775,8 @@ export default function useChat(): ChatContextType {
 		setViewMode,
 		ttft,
 		submitStartTime,
+		// HITL interrupt callback
+		setOnInterrupt,
 		// File CRUD
 		addFile,
 		updateFileContent,

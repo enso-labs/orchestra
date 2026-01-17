@@ -304,6 +304,50 @@ async def stream_generator(
                 config=config,
                 context=ctx,
             ):
+                # Check for interrupt event (HITL)
+                if check_for_interrupt(chunk, hitl_config):
+                    # Extract interrupt data from the chunk
+                    try:
+                        interrupt_data = chunk[1] if isinstance(chunk, tuple) else chunk
+                        if isinstance(interrupt_data, list) and len(interrupt_data) > 0:
+                            interrupt_info = interrupt_data[0]
+                            if isinstance(interrupt_info, dict):
+                                action_request = interrupt_info.get(
+                                    "action_request", {}
+                                )
+                                tool_name = action_request.get("action", "unknown")
+                                tool_args = action_request.get("args", {})
+                                interrupt_event = create_interrupt_event(
+                                    thread_id=config["configurable"].get("thread_id"),
+                                    checkpoint_id=config["configurable"].get(
+                                        "checkpoint_id", ""
+                                    ),
+                                    tool_name=tool_name,
+                                    tool_args=tool_args,
+                                    tool_call_id=interrupt_info.get("tool_call_id", ""),
+                                    tool_description=interrupt_info.get(
+                                        "description", ""
+                                    ),
+                                    reason=interrupt_info.get(
+                                        "description", "Requires human approval"
+                                    ),
+                                    timeout_seconds=hitl_config.timeout_seconds
+                                    if hitl_config
+                                    else DEFAULT_HITL_TIMEOUT_SECONDS,
+                                )
+                                interrupt_sse = ujson.dumps(
+                                    ("interrupt", interrupt_event.model_dump())
+                                )
+                                logger.info(
+                                    f"Emitting interrupt event for tool: {tool_name}"
+                                )
+                                yield f"data: {interrupt_sse}\n\n"
+                                # Don't continue processing - wait for resume
+                                return
+                    except Exception as e:
+                        logger.exception(f"Error processing interrupt: {e}")
+                        continue
+
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
                 if stream_chunk:

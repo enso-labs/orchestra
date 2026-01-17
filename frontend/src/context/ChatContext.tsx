@@ -31,6 +31,16 @@ export default function ChatProvider({
 	const fileSystemHooks = useFileSystem();
 	const interruptHooks = useInterrupt();
 
+	// Wire up interrupt event handler from useChat to useInterrupt
+	const { setOnInterrupt } = chatHooks;
+	const { handleInterruptEvent } = interruptHooks;
+	useEffect(() => {
+		setOnInterrupt(handleInterruptEvent);
+		return () => {
+			setOnInterrupt(null);
+		};
+	}, [setOnInterrupt, handleInterruptEvent]);
+
 	// Track previous filesMap to detect changes
 	const prevFilesMapRef = useRef<Map<string, unknown>>(new Map());
 

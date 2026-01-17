@@ -10,8 +10,10 @@ from src.schemas.entities.a2a import A2AServers
 from src.services.db import get_store_in_memory
 from src.schemas.entities.llm import LLMRequest
 from src.services.assistant import AssistantService, Assistant
+from src.services.interrupt import should_interrupt_tool
 from src.utils.llm import filter_tool_call_models
 from src.utils.logger import logger
+from src.utils.tools import add_human_in_the_loop
 from src.tools import init_tool_library
 
 
@@ -156,6 +158,16 @@ class LLMService:
                 assistant.tools = await self.init_tools(
                     assistant.tools, assistant.a2a, assistant.mcp
                 )
+                # Wrap tools with HITL if configured
+                if assistant.hitl and assistant.hitl.enabled:
+                    wrapped_tools = []
+                    for tool in assistant.tools:
+                        if should_interrupt_tool(tool.name, assistant.hitl):
+                            logger.info(f"Wrapping tool '{tool.name}' with HITL")
+                            wrapped_tools.append(add_human_in_the_loop(tool))
+                        else:
+                            wrapped_tools.append(tool)
+                    assistant.tools = wrapped_tools
                 return assistant.to_llm_request(
                     input=params.input,
                     model=params.model,

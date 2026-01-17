@@ -28,7 +28,12 @@ export function isDistributedResponse(
 }
 
 // SSE Event types
-export type SSEEventType = "metadata" | "messages" | "values" | "error";
+export type SSEEventType =
+	| "metadata"
+	| "messages"
+	| "values"
+	| "error"
+	| "interrupt";
 
 export interface MetadataEvent {
 	type: "metadata";
@@ -58,7 +63,29 @@ export interface ErrorEvent {
 	data: { error: string };
 }
 
-export type SSEEvent = MetadataEvent | MessagesEvent | ValuesEvent | ErrorEvent;
+export interface InterruptEvent {
+	type: "interrupt";
+	data: {
+		interrupt_id: string;
+		thread_id: string;
+		checkpoint_id: string;
+		tool_name: string;
+		tool_args: Record<string, unknown>;
+		tool_call_id: string;
+		tool_description?: string;
+		reason: string;
+		timeout_at: string;
+		nonce: string;
+		created_at: string;
+	};
+}
+
+export type SSEEvent =
+	| MetadataEvent
+	| MessagesEvent
+	| ValuesEvent
+	| ErrorEvent
+	| InterruptEvent;
 
 export interface DoneSignal {
 	type: "done";

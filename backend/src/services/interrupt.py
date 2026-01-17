@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Command
 from pydantic import ValidationError
 
 from src.schemas.entities.interrupt import (
@@ -79,12 +80,15 @@ class ApproveHandler(InterruptHandler):
         config: RunnableConfig,
     ) -> Dict[str, Any]:
         """Approve the tool call and proceed with original arguments."""
-        logger.info(f"Approving interrupt {interrupt.id} for tool {interrupt.tool_name}")
-        return await graph.aupdate_state(
-            config,
-            values={"type": "accept"},
-            as_node="__interrupt__",
+        logger.info(
+            f"Approving interrupt {interrupt.id} for tool {interrupt.tool_name}"
         )
+        # Use Command(resume=...) to provide the response back to the interrupt() call
+        # Note: interrupt() was called with a list, so resume must also be a list
+        result = await graph.ainvoke(
+            Command(resume=[{"type": "accept"}]), config=config
+        )
+        return {"status": "approved", "result": result}
 
 
 class EditHandler(InterruptHandler):
@@ -119,11 +123,13 @@ class EditHandler(InterruptHandler):
             f"Editing interrupt {interrupt.id} for tool {interrupt.tool_name} "
             f"with args: {validated_args}"
         )
-        return await graph.aupdate_state(
-            config,
-            values={"type": "edit", "args": {"args": validated_args}},
-            as_node="__interrupt__",
+        # Use Command(resume=...) to provide the response back to the interrupt() call
+        # Note: interrupt() was called with a list, so resume must also be a list
+        result = await graph.ainvoke(
+            Command(resume=[{"type": "edit", "args": {"args": validated_args}}]),
+            config=config,
         )
+        return {"status": "edited", "result": result}
 
 
 class RejectHandler(InterruptHandler):
@@ -141,11 +147,13 @@ class RejectHandler(InterruptHandler):
         logger.info(
             f"Rejecting interrupt {interrupt.id} for tool {interrupt.tool_name}: {feedback}"
         )
-        return await graph.aupdate_state(
-            config,
-            values={"type": "response", "args": feedback},
-            as_node="__interrupt__",
+        # Use Command(resume=...) to provide the response back to the interrupt() call
+        # Note: interrupt() was called with a list, so resume must also be a list
+        result = await graph.ainvoke(
+            Command(resume=[{"type": "response", "args": feedback}]),
+            config=config,
         )
+        return {"status": "rejected", "result": result}
 
 
 class RespondHandler(InterruptHandler):
@@ -163,11 +171,13 @@ class RespondHandler(InterruptHandler):
         logger.info(
             f"Responding to interrupt {interrupt.id} for tool {interrupt.tool_name}: {feedback}"
         )
-        return await graph.aupdate_state(
-            config,
-            values={"type": "response", "args": feedback},
-            as_node="__interrupt__",
+        # Use Command(resume=...) to provide the response back to the interrupt() call
+        # Note: interrupt() was called with a list, so resume must also be a list
+        result = await graph.ainvoke(
+            Command(resume=[{"type": "response", "args": feedback}]),
+            config=config,
         )
+        return {"status": "responded", "result": result}
 
 
 # -----------------------------------------------------------------------------
@@ -278,13 +288,15 @@ class InterruptService:
             if i.thread_id == thread_id and i.is_pending()
         ]
 
-    def validate_nonce(self, interrupt_id: str, nonce: str) -> bool:
-        """Validate that a nonce hasn't been used before (replay protection)."""
+    def check_nonce(self, interrupt_id: str, nonce: str) -> bool:
+        """Check if a nonce has been used before (without consuming it)."""
         nonce_key = f"{interrupt_id}:{nonce}"
-        if nonce_key in self._used_nonces:
-            return False
+        return nonce_key not in self._used_nonces
+
+    def consume_nonce(self, interrupt_id: str, nonce: str) -> None:
+        """Mark a nonce as used after successful operation."""
+        nonce_key = f"{interrupt_id}:{nonce}"
         self._used_nonces.add(nonce_key)
-        return True
 
     def validate_ownership(self, interrupt: Interrupt) -> bool:
         """Validate that the current user owns the interrupt's thread."""
@@ -317,16 +329,138 @@ class InterruptService:
                 f"Edited arguments failed validation: {e.errors()}"
             )
 
+    async def _get_interrupt_from_graph_state(
+        self,
+        thread_id: str,
+    ) -> Optional[Interrupt]:
+        """Extract interrupt info from the graph's current state.
+
+        This is used as a fallback when the interrupt is not found in
+        _pending_interrupts (e.g., distributed worker scenario).
+
+        Args:
+            thread_id: The thread ID to get state for
+
+        Returns:
+            Interrupt object if a pending interrupt is found, None otherwise
+        """
+        if not self.graph:
+            return None
+
+        try:
+            config = RunnableConfig(configurable={"thread_id": thread_id})
+            state = await self.graph.aget_state(config)
+
+            if not state or not state.values:
+                return None
+
+            # Check state.tasks for active interrupts (the proper way to detect pending interrupts)
+            # StateSnapshot.tasks contains PregelTask objects with 'interrupts' attribute
+            has_pending_interrupt = False
+            interrupt_value = None
+
+            if hasattr(state, "tasks") and state.tasks:
+                for task in state.tasks:
+                    task_interrupts = getattr(task, "interrupts", None)
+                    if task_interrupts:
+                        has_pending_interrupt = True
+                        # Get the first interrupt's value
+                        if task_interrupts:
+                            interrupt_value = getattr(task_interrupts[0], "value", None)
+                        break
+
+            if not has_pending_interrupt:
+                logger.debug(
+                    f"No pending interrupts found in graph state for thread {thread_id}"
+                )
+                return None
+
+            # Get messages from state to find the tool call info
+            messages = state.values.get("messages", [])
+            if not messages:
+                return None
+
+            # Find the last AI message with tool_calls
+            last_ai_message = None
+            for msg in reversed(messages):
+                msg_type = (
+                    msg.get("type")
+                    if isinstance(msg, dict)
+                    else getattr(msg, "type", None)
+                )
+                if msg_type in ("ai", "AIMessage", "AIMessageChunk"):
+                    last_ai_message = msg
+                    break
+
+            if not last_ai_message:
+                return None
+
+            # Extract tool_calls
+            tool_calls = (
+                last_ai_message.get("tool_calls", [])
+                if isinstance(last_ai_message, dict)
+                else getattr(last_ai_message, "tool_calls", [])
+            )
+
+            if not tool_calls:
+                return None
+
+            # Use the first pending tool call
+            tool_call = tool_calls[0]
+            tool_name = (
+                tool_call.get("name")
+                if isinstance(tool_call, dict)
+                else getattr(tool_call, "name", "")
+            )
+            tool_args = (
+                tool_call.get("args", {})
+                if isinstance(tool_call, dict)
+                else getattr(tool_call, "args", {})
+            )
+            tool_call_id = (
+                tool_call.get("id")
+                if isinstance(tool_call, dict)
+                else getattr(tool_call, "id", "")
+            )
+
+            # Get checkpoint_id from state config
+            checkpoint_id = state.config.get("configurable", {}).get(
+                "checkpoint_id", ""
+            )
+
+            # Construct an Interrupt object
+            now = datetime.now(timezone.utc)
+            return Interrupt(
+                id=f"synth_{thread_id}_{tool_call_id}",
+                thread_id=thread_id,
+                user_id=self.user_id,
+                checkpoint_id=checkpoint_id,
+                tool_name=tool_name or "",
+                tool_args=tool_args,
+                tool_call_id=tool_call_id or "",
+                tool_description=None,
+                reason="Reconstructed from graph state",
+                status=InterruptStatus.PENDING,
+                nonce="",
+                created_at=now,
+                expires_at=now + timedelta(seconds=300),
+            )
+        except Exception as e:
+            logger.warning(f"Failed to get interrupt from graph state: {e}")
+            return None
+
     async def handle_decision(
         self,
         request: InterruptRequest,
         tool_schema: Optional[type] = None,
+        thread_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Handle a user's decision on a pending interrupt.
 
         Args:
             request: The interrupt decision request
             tool_schema: Optional Pydantic schema for validating edited args
+            thread_id: Optional thread_id for fallback interrupt lookup from graph state
 
         Returns:
             The result of the state update
@@ -340,8 +474,17 @@ class InterruptService:
         if not self.graph:
             raise ValueError("Graph is required to handle interrupt decisions")
 
-        # Get the interrupt
+        # Get the interrupt from in-memory cache
         interrupt = self.get_interrupt(request.interrupt_id)
+
+        # Fallback: try to reconstruct from graph state (for distributed workers)
+        if not interrupt and thread_id:
+            logger.info(
+                f"Interrupt {request.interrupt_id} not in cache, "
+                f"reconstructing from graph state for thread {thread_id}"
+            )
+            interrupt = await self._get_interrupt_from_graph_state(thread_id)
+
         if not interrupt:
             raise InterruptNotFoundError(f"Interrupt {request.interrupt_id} not found")
 
@@ -356,8 +499,8 @@ class InterruptService:
                 f"User {self.user_id} does not own interrupt {request.interrupt_id}"
             )
 
-        # Validate nonce for replay protection
-        if request.nonce and not self.validate_nonce(request.interrupt_id, request.nonce):
+        # Check nonce for replay protection (don't consume yet - only after success)
+        if request.nonce and not self.check_nonce(request.interrupt_id, request.nonce):
             raise InterruptValidationError(
                 f"Nonce for interrupt {request.interrupt_id} has already been used"
             )
@@ -384,8 +527,20 @@ class InterruptService:
         # Handle the decision
         result = await handler.handle(interrupt, request, self.graph, config)
 
-        # Update interrupt status
-        interrupt.status = InterruptStatus[request.action.value.upper()]
+        # Only consume nonce after successful operation
+        if request.nonce:
+            self.consume_nonce(request.interrupt_id, request.nonce)
+
+        # Update interrupt status - map DecisionType to InterruptStatus
+        decision_to_status = {
+            DecisionType.APPROVE: InterruptStatus.APPROVED,
+            DecisionType.EDIT: InterruptStatus.EDITED,
+            DecisionType.REJECT: InterruptStatus.REJECTED,
+            DecisionType.RESPOND: InterruptStatus.REJECTED,  # RESPOND maps to REJECTED
+        }
+        interrupt.status = decision_to_status.get(
+            request.action, InterruptStatus.APPROVED
+        )
         interrupt.resolved_at = datetime.now(timezone.utc)
         interrupt.decision = {
             "action": request.action.value,

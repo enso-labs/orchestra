@@ -143,6 +143,8 @@ export class FetchStreamReader {
 				return { type: "values", data: payload };
 			case "error":
 				return { type: "error", data: payload };
+			case "interrupt":
+				return { type: "interrupt", data: payload };
 			default:
 				return null;
 		}
@@ -261,6 +263,8 @@ export class ResponseBodyReader {
 				return { type: "values", data: payload };
 			case "error":
 				return { type: "error", data: payload };
+			case "interrupt":
+				return { type: "interrupt", data: payload };
 			default:
 				return null;
 		}

@@ -40,7 +40,9 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	// Handle interrupt decision submission
-	const handleInterruptDecision = async (request: Parameters<typeof submitDecision>[0]) => {
+	const handleInterruptDecision = async (
+		request: Parameters<typeof submitDecision>[0],
+	) => {
 		await submitDecision(request);
 	};
 

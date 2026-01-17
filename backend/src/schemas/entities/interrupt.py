@@ -130,7 +130,9 @@ class InterruptEventData(BaseModel):
         default_factory=lambda: f"int_{uuid4().hex[:12]}",
         description="Unique identifier for this interrupt",
     )
-    thread_id: str = Field(..., description="The thread ID where the interrupt occurred")
+    thread_id: str = Field(
+        ..., description="The thread ID where the interrupt occurred"
+    )
     checkpoint_id: str = Field(
         ..., description="The checkpoint ID at the time of interrupt"
     )
@@ -146,9 +148,7 @@ class InterruptEventData(BaseModel):
         default="Requires human approval",
         description="Reason for the interrupt",
     )
-    timeout_at: datetime = Field(
-        ..., description="When this interrupt will expire"
-    )
+    timeout_at: datetime = Field(..., description="When this interrupt will expire")
     nonce: str = Field(
         default_factory=lambda: uuid4().hex,
         description="One-time-use token for replay protection",
@@ -169,7 +169,9 @@ class Interrupt(BaseModel):
         default_factory=lambda: f"int_{uuid4().hex[:12]}",
         description="Unique identifier for this interrupt",
     )
-    thread_id: str = Field(..., description="The thread ID where the interrupt occurred")
+    thread_id: str = Field(
+        ..., description="The thread ID where the interrupt occurred"
+    )
     user_id: str = Field(..., description="The user ID who owns this thread")
     checkpoint_id: str = Field(
         ..., description="The checkpoint ID at the time of interrupt"
@@ -198,9 +200,7 @@ class Interrupt(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="When this interrupt was created",
     )
-    expires_at: datetime = Field(
-        ..., description="When this interrupt will expire"
-    )
+    expires_at: datetime = Field(..., description="When this interrupt will expire")
     resolved_at: Optional[datetime] = Field(
         default=None, description="When this interrupt was resolved"
     )

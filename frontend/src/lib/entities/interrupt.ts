@@ -72,6 +72,7 @@ export interface InterruptResponse {
  * Interrupt event data received via SSE
  */
 export interface InterruptEventData {
+	interrupt_id: string;
 	thread_id: string;
 	checkpoint_id: string;
 	tool_name: string;
@@ -80,6 +81,7 @@ export interface InterruptEventData {
 	tool_description?: string;
 	reason: string;
 	timeout_at: string;
+	nonce: string;
 	created_at: string;
 }
 

@@ -41,7 +41,9 @@ def add_ai_message_metadata(
     if state["messages"]:
         last_msg = state["messages"][-1]
         if isinstance(last_msg, AIMessage) and not last_msg.tool_calls:
-            last_msg.model = runtime.context.model
+            # Guard against None context (e.g., during HITL resume)
+            if runtime.context is not None:
+                last_msg.model = runtime.context.model
     return None
 
 
