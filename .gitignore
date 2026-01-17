@@ -25,3 +25,5 @@ backend/src/public
 **/ralph-loop*
 # Ralph config (may contain API key)
 .cursor/ralph-config.json
+**/progress.txt
+**/prd.json
