@@ -1,4 +1,3 @@
-import uuid
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.graph.state import CompiledStateGraph
@@ -14,6 +13,7 @@ from langchain_core.messages import BaseMessage
 from src.utils.logger import logger
 from src.utils.messages import from_message_to_dict
 from src.utils.retry import retry_db_operation
+from src.schemas.entities.hitl import InterruptInfo, InterruptConfig, DecisionType
 
 
 IN_MEMORY_CHECKPOINTER = InMemorySaver()
@@ -128,6 +128,79 @@ class CheckpointService:
         except Exception as e:
             logger.exception(f"Error deleting checkpoints for thread: {e}")
             return False
+
+    async def get_interrupts(self, thread_id: str) -> list[InterruptInfo]:
+        """
+        Get pending interrupts for a thread from its checkpoint state.
+
+        Args:
+            thread_id: The thread ID to check for interrupts
+
+        Returns:
+            List of InterruptInfo objects representing pending interrupts.
+            Returns empty list when no graph/checkpoint exists or no interrupts pending.
+        """
+        if self.graph is None:
+            logger.debug(
+                f"No graph configured for interrupt detection on thread {thread_id}"
+            )
+            return []
+
+        try:
+            config = RunnableConfig(configurable={"thread_id": thread_id})
+            state: StateSnapshot = await self.graph.aget_state(config)
+
+            if not state or not state.interrupts:  # type: ignore[attr-defined]
+                return []
+
+            interrupts: list[InterruptInfo] = []
+            for interrupt in state.interrupts:  # type: ignore[attr-defined]
+                # The interrupt.value contains the HumanInterrupt data
+                # Structure: {"action_request": {"action": str, "args": dict}, "config": {...}, "description": str}
+                interrupt_value = interrupt.value
+
+                # Handle both list and single interrupt value formats
+                if isinstance(interrupt_value, list):
+                    interrupt_data = interrupt_value[0] if interrupt_value else {}
+                else:
+                    interrupt_data = interrupt_value
+
+                # Extract tool info from action_request
+                action_request = interrupt_data.get("action_request", {})
+                tool_name = action_request.get("action", "unknown")
+                tool_args = action_request.get("args", {})
+
+                # Extract description
+                description = interrupt_data.get("description")
+
+                # Extract config for allowed actions
+                raw_config = interrupt_data.get("config", {})
+                allowed_actions: list[DecisionType] = []
+
+                if raw_config.get("allow_accept", False):
+                    allowed_actions.append(DecisionType.ACCEPT)
+                if raw_config.get("allow_edit", False):
+                    allowed_actions.append(DecisionType.EDIT)
+                if raw_config.get("allow_respond", False):
+                    allowed_actions.append(DecisionType.RESPONSE)
+                # REJECT is always allowed as a safety measure
+                allowed_actions.append(DecisionType.REJECT)
+
+                interrupt_config = InterruptConfig(allowed_actions=allowed_actions)
+
+                interrupt_info = InterruptInfo(
+                    tool_name=tool_name,
+                    tool_args=tool_args,
+                    description=description,
+                    config=interrupt_config,
+                )
+                interrupts.append(interrupt_info)
+
+            return interrupts
+
+        except Exception as e:
+            logger.exception(f"Error getting interrupts for thread {thread_id}: {e}")
+            return []
 
 
 checkpoint_service = CheckpointService()
