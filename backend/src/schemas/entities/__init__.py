@@ -7,6 +7,15 @@ from pydantic import BaseModel, Field
 from src.schemas.entities.llm import *
 from src.schemas.entities.store import Thread
 from src.schemas.entities.auth import ApiToken
+from src.schemas.entities.hitl import (
+    DecisionType,
+    HumanDecision,
+    InterruptConfig,
+    InterruptInfo,
+    InterruptListResponse,
+    ResumeRequest,
+    ResumeResponse,
+)
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,
