@@ -7,6 +7,3 @@
 [submodule "wiki"]
 	path = wiki
 	url = git@github.com:ruska-ai/wiki.git
-[submodule ".ralph"]
-	path = .ralph
-	url = https://github.com/snarktank/ralph.git
