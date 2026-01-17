@@ -5,8 +5,9 @@ This module provides the stream_generator function for SSE streaming
 and the stream_from_redis consumer for distributed workers.
 """
 
+import asyncio
 import os
-from typing import Optional
+from typing import Awaitable, Callable, Optional, Union
 
 from deepagents import SubAgent
 from langchain.agents.middleware import PIIDetectionError
@@ -29,6 +30,10 @@ STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
 _formatter = StreamFormatter()
 
 
+# Type alias for disconnect checker - supports both sync and async
+DisconnectChecker = Union[Callable[[], bool], Callable[[], Awaitable[bool]]]
+
+
 async def stream_generator(
     input: LLMInput,
     model: str,
@@ -38,6 +43,7 @@ async def stream_generator(
     config: RunnableConfig,
     service_context: ServiceContext,
     instructions: Optional[str] = None,
+    is_disconnected: Optional[DisconnectChecker] = None,
 ):
     """
     Generate SSE stream events for LLM streaming.
@@ -47,12 +53,18 @@ async def stream_generator(
     2. Metadata - Send initial metadata event
     3. Stream - Process and yield message/values events
     4. Finalize - Update store with final state
+
+    Args:
+        is_disconnected: Optional callable that returns True if client disconnected.
+                        Supports both sync and async callables.
+                        Used to detect early disconnection and clean up resources.
     """
     # --- SETUP PHASE ---
     metadata = config.get("metadata", {}) or {}
     files_map = metadata.get("files", {}) or input.file_system or {}
     todos_list = metadata.get("todos", [])
     configurable = config.get("configurable", {}) or {}
+    thread_id = configurable.get("thread_id", "unknown")
 
     streaming_service = StreamingService(
         user_id=service_context.user_id or "",
@@ -91,6 +103,20 @@ async def stream_generator(
             async for chunk in agent.astream(
                 input, stream_mode=["messages", "values"], config=config, context=ctx
             ):
+                # Check for client disconnect
+                if is_disconnected:
+                    result = is_disconnected()
+                    # Handle both sync and async disconnect checkers
+                    if asyncio.iscoroutine(result):
+                        disconnected = await result
+                    else:
+                        disconnected = result
+                    if disconnected:
+                        logger.info(
+                            f"Client disconnected during stream: thread_id={thread_id}"
+                        )
+                        break
+
                 event = _formatter.format_chunk(chunk)
                 if event:
                     if hasattr(event, "files") and event.files:
@@ -102,6 +128,10 @@ async def stream_generator(
                     ) and APP_LOG_LEVEL == "DEBUG"
                     yield event.to_sse()
 
+        except asyncio.CancelledError:
+            logger.info(f"Stream cancelled: thread_id={thread_id}")
+            raise  # Re-raise to propagate cancellation
+
         except PIIDetectionError as e:
             logger.warning(f"Sensitive data detected: {e}")
             yield ErrorEvent(message=str(e), code="PII_DETECTED").to_sse()
@@ -112,6 +142,7 @@ async def stream_generator(
 
         finally:
             # --- FINALIZE PHASE ---
+            # Always update store, even on cancellation
             if service_context.user_id and agent:
                 await streaming_service.update_store(
                     agent=agent, config=config, files=files_map, todos=todos_list

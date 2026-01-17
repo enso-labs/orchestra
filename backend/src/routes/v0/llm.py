@@ -123,7 +123,9 @@ async def llm_stream(
 
         # Sync mode: direct streaming (existing behavior)
         llm_controller = LLMController(user_id=user_id, store=store, config=config)
-        assistant = await llm_controller.llm_stream(params)
+        assistant = await llm_controller.llm_stream(
+            params, is_disconnected=request.is_disconnected
+        )
         return StreamingResponse(
             assistant,
             media_type="text/event-stream",

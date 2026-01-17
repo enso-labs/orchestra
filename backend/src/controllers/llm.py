@@ -1,3 +1,5 @@
+from typing import Awaitable, Callable, Optional, Union
+
 from langgraph.store.base import BaseStore
 from langchain_core.runnables import RunnableConfig
 
@@ -64,7 +66,21 @@ class LLMController:
                 if agent and config:
                     await self.streaming_service.update_store(agent, config)
 
-    async def llm_stream(self, params: LLMRequest):
+    async def llm_stream(
+        self,
+        params: LLMRequest,
+        is_disconnected: Optional[
+            Union[Callable[[], bool], Callable[[], Awaitable[bool]]]
+        ] = None,
+    ):
+        """
+        Stream LLM responses as SSE events.
+
+        Args:
+            params: The LLM request parameters.
+            is_disconnected: Optional callable that returns True if client disconnected.
+                            Supports both sync and async callables.
+        """
         assistant = await self.service_context.llm_service.assistant(params)
         return stream_generator(
             input=assistant.input,
@@ -75,6 +91,7 @@ class LLMController:
             config=self.service_context.config,
             service_context=self.service_context,
             instructions=assistant.instructions,
+            is_disconnected=is_disconnected,
         )
 
     async def llm_task(self, job: ScheduleCreate):
