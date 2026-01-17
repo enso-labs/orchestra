@@ -57,18 +57,18 @@ class HumanDecision(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": {
-                "accept": {"decision_type": "accept"},
-                "edit": {
+            "examples": [
+                {"decision_type": "accept"},
+                {
                     "decision_type": "edit",
                     "edited_args": {"url": "https://safe-api.example.com/data"},
                 },
-                "response": {
+                {
                     "decision_type": "response",
                     "response_content": "Please proceed with caution",
                 },
-                "reject": {"decision_type": "reject"},
-            }
+                {"decision_type": "reject"},
+            ]
         }
     }
 
