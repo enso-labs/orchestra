@@ -7,11 +7,14 @@ from langgraph.graph.state import RunnableConfig
 from src.schemas.entities.store import Thread
 from src.contexts.service import ServiceContext
 from src.schemas.entities import SearchFilter, ThreadSemanticSearchRequest
+from src.schemas.entities.hitl import InterruptListResponse
 from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store, get_checkpoint_db
+from src.services.checkpoint import CheckpointService
 from src.utils.auth import verify_credentials, get_optional_user_from_token
+from src.flows import graph_builder
 from langgraph.store.postgres import AsyncPostgresStore
 from langgraph.checkpoint.base import (
     empty_checkpoint,
@@ -357,3 +360,71 @@ async def delete_thread(
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+################################################################################
+### HITL Endpoints
+################################################################################
+@router.get(
+    "/threads/{thread_id}/interrupts",
+    response_model=InterruptListResponse,
+    name="Get Thread Interrupts",
+    operation_id="ruska_get_thread_interrupts",
+    tags=["HITL"],
+)
+async def get_thread_interrupts(
+    thread_id: str,
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """
+    Get pending interrupts for a thread.
+
+    Returns interrupt information including tool name, arguments, and allowed actions
+    for human-in-the-loop approval workflows.
+    """
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+
+            # First, verify the thread exists
+            thread = await service_context.thread_service.get(thread_id)
+            if not thread:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Thread {thread_id} not found",
+                )
+
+            # Create a minimal graph to query interrupt state
+            # The graph needs the checkpointer to access state
+            graph = graph_builder(
+                tools=[],
+                checkpointer=checkpointer,
+                store=store,
+            )
+
+            # Create checkpoint service with the graph
+            checkpoint_service = CheckpointService(
+                user_id=user.id,
+                checkpointer=checkpointer,
+                graph=graph,
+            )
+
+            # Get interrupts from the checkpoint state
+            interrupts = await checkpoint_service.get_interrupts(thread_id)
+
+            return InterruptListResponse(
+                thread_id=thread_id,
+                has_interrupts=len(interrupts) > 0,
+                interrupts=interrupts,
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting interrupts for thread {thread_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
