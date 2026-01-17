@@ -85,11 +85,19 @@ Refactor the FastAPI LLM streaming endpoints (`/api/llm/stream` and `/api/thread
 37. [ ] Test sync stream returns valid SSE format
 38. [ ] Test metadata event is first event
 39. [ ] Test cancellation cleans up properly
+40. [ ] All tests pass
+41. [ ] CURL validation: `POST /api/llm/stream` returns SSE with Content-Type: text/event-stream
+42. [ ] CURL validation: metadata event is first in stream response
+43. [ ] Document CURL examples in task notes
 
 ### US-011: Integration Tests for Distributed Stream
-40. [ ] Create `backend/tests/integration/test_distributed_stream.py`
-41. [ ] Test `/stream/distributed` returns 202 with thread_id
-42. [ ] Test `/threads/{thread_id}/stream` consumes Redis stream
+44. [ ] Create `backend/tests/integration/test_distributed_stream.py`
+45. [ ] Test `/stream/distributed` returns 202 with thread_id
+46. [ ] Test `/threads/{thread_id}/stream` consumes Redis stream
+47. [ ] All tests pass
+48. [ ] CURL validation: `POST /api/llm/stream/distributed` returns 202 with thread_id and poll_url
+49. [ ] CURL validation: `GET /api/threads/{thread_id}/stream` returns SSE stream
+50. [ ] Document CURL examples in task notes
 
 ## File Changes Summary
 
