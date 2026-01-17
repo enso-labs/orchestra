@@ -7,7 +7,11 @@ from langgraph.graph.state import RunnableConfig
 from src.schemas.entities.store import Thread
 from src.contexts.service import ServiceContext
 from src.schemas.entities import SearchFilter, ThreadSemanticSearchRequest
-from src.schemas.entities.hitl import InterruptListResponse
+from src.schemas.entities.hitl import (
+    InterruptListResponse,
+    ResumeRequest,
+    ResumeResponse,
+)
 from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.schemas.models import ProtectedUser
@@ -48,7 +52,7 @@ async def search_threads(
             )
             if (
                 "thread_id" in search_filter.filter
-                and not "checkpoint_id" in search_filter.filter
+                and "checkpoint_id" not in search_filter.filter
             ):
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
                     thread_id=search_filter.filter["thread_id"]
@@ -425,6 +429,102 @@ async def get_thread_interrupts(
         raise
     except Exception as e:
         logger.exception(f"Error getting interrupts for thread {thread_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.post(
+    "/threads/{thread_id}/resume",
+    response_model=ResumeResponse,
+    name="Resume Thread with Decision",
+    operation_id="ruska_resume_thread",
+    tags=["HITL"],
+)
+async def resume_thread(
+    thread_id: str,
+    request: ResumeRequest = Body(...),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """
+    Resume an interrupted thread with a human decision.
+
+    Submits a decision (accept, edit, response, or reject) to resume a paused
+    thread. The decision must be one of the allowed actions for the current interrupt.
+    """
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(
+                user_id=user.id, store=store, checkpointer=checkpointer
+            )
+
+            # First, verify the thread exists
+            thread = await service_context.thread_service.get(thread_id)
+            if not thread:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Thread {thread_id} not found",
+                )
+
+            # Create a minimal graph to interact with the thread state
+            graph = graph_builder(
+                tools=[],
+                checkpointer=checkpointer,
+                store=store,
+            )
+
+            # Create checkpoint service with the graph
+            checkpoint_service = CheckpointService(
+                user_id=user.id,
+                checkpointer=checkpointer,
+                graph=graph,
+            )
+
+            # Get current interrupts to validate decision_type
+            interrupts = await checkpoint_service.get_interrupts(thread_id)
+
+            if not interrupts:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"No pending interrupt for thread {thread_id}",
+                )
+
+            # Validate each decision against the interrupt's allowed_actions
+            for i, decision in enumerate(request.decisions):
+                if i < len(interrupts):
+                    interrupt = interrupts[i]
+                    if decision.decision_type not in interrupt.config.allowed_actions:
+                        allowed = [a.value for a in interrupt.config.allowed_actions]
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Decision type '{decision.decision_type.value}' not allowed. Allowed actions: {allowed}",
+                        )
+
+            # Resume the thread with the provided decisions
+            result = await checkpoint_service.resume_with_decision(
+                thread_id=thread_id,
+                decisions=request.decisions,
+            )
+
+            if not result.success:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=result.message,
+                )
+
+            return result
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # Handle case where resume_with_decision raises ValueError
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.exception(f"Error resuming thread {thread_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
