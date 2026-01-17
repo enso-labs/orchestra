@@ -8,7 +8,6 @@ and the stream_from_redis consumer for distributed workers.
 import os
 from typing import Optional
 
-import ujson
 from deepagents import SubAgent
 from langchain.agents.middleware import PIIDetectionError
 from langchain_core.runnables import RunnableConfig
@@ -17,7 +16,7 @@ from langchain_core.tools import BaseTool
 from src.constants import APP_LOG_LEVEL
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
-from src.schemas.events.stream import MetadataEvent
+from src.schemas.events.stream import ErrorEvent, MetadataEvent
 from src.services.db import get_checkpoint_db
 from src.services.streaming import StreamingService
 from src.utils.logger import log_to_file, logger
@@ -43,12 +42,17 @@ async def stream_generator(
     """
     Generate SSE stream events for LLM streaming.
 
-    Uses StreamingService for runtime/backend initialization and store updates,
-    ensuring consistent behavior between controller and stream module.
+    Lifecycle phases:
+    1. Setup - Initialize services and construct agent
+    2. Metadata - Send initial metadata event
+    3. Stream - Process and yield message/values events
+    4. Finalize - Update store with final state
     """
+    # --- SETUP PHASE ---
     metadata = config.get("metadata", {}) or {}
     files_map = metadata.get("files", {}) or input.file_system or {}
     todos_list = metadata.get("todos", [])
+    configurable = config.get("configurable", {}) or {}
 
     streaming_service = StreamingService(
         user_id=service_context.user_id or "",
@@ -61,9 +65,7 @@ async def stream_generator(
     async with get_checkpoint_db() as checkpointer:
         try:
             runtime = streaming_service.init_runtime(
-                model=model,
-                files=files_map,
-                tool_call_id="tc",
+                model=model, files=files_map, tool_call_id="tc"
             )
             backend = streaming_service.init_backend(runtime)
             agent = await streaming_service.construct_agent(
@@ -77,56 +79,42 @@ async def stream_generator(
             )
             input.messages[-1].model = agent.model
 
-            # Send metadata event with thread_id at the start of the stream
-            configurable = config.get("configurable", {}) or {}
-            metadata_event = MetadataEvent(
+            # --- METADATA PHASE ---
+            yield MetadataEvent(
                 thread_id=configurable.get("thread_id"),
                 assistant_id=configurable.get("assistant_id"),
                 project_id=configurable.get("project_id"),
-            )
-            yield metadata_event.to_sse()
+            ).to_sse()
 
+            # --- STREAM PHASE ---
             ctx = streaming_service.init_context(model)
             async for chunk in agent.astream(
-                input,
-                stream_mode=["messages", "values"],
-                config=config,
-                context=ctx,
+                input, stream_mode=["messages", "values"], config=config, context=ctx
             ):
-                # Format chunk using StreamFormatter
                 event = _formatter.format_chunk(chunk)
                 if event:
-                    # Extract files and todos from values events
                     if hasattr(event, "files") and event.files:
                         files_map = {**files_map, **event.files}
                     if hasattr(event, "todos") and event.todos:
                         todos_list = event.todos
-
-                    # Yield the SSE-formatted event
-                    sse_data = event.to_sse()
-                    log_to_file(sse_data, agent.model) and APP_LOG_LEVEL == "DEBUG"
-                    logger.debug(f"stream: {sse_data}")
-                    yield sse_data
+                    log_to_file(
+                        event.to_sse(), agent.model
+                    ) and APP_LOG_LEVEL == "DEBUG"
+                    yield event.to_sse()
 
         except PIIDetectionError as e:
-            # Yield error as SSE if streaming fails
-            logger.warning(f"Sensitive data detected in the query: {e}")
-            error_msg = ujson.dumps(("error", str(e)))
-            yield f"data: {error_msg}\n\n"
+            logger.warning(f"Sensitive data detected: {e}")
+            yield ErrorEvent(message=str(e), code="PII_DETECTED").to_sse()
 
         except Exception as e:
-            # Yield error as SSE if streaming fails
             logger.exception("Error in stream_generator: %s", e)
-            error_msg = ujson.dumps(("error", str(e)))
-            yield f"data: {error_msg}\n\n"
+            yield ErrorEvent(message=str(e)).to_sse()
 
         finally:
+            # --- FINALIZE PHASE ---
             if service_context.user_id and agent:
                 await streaming_service.update_store(
-                    agent=agent,
-                    config=config,
-                    files=files_map,
-                    todos=todos_list,
+                    agent=agent, config=config, files=files_map, todos=todos_list
                 )
 
 
