@@ -23,3 +23,5 @@ backend/src/public
 **/node_modules/
 **/.old/
 **/ralph-loop*
+# Ralph config (may contain API key)
+.cursor/ralph-config.json
