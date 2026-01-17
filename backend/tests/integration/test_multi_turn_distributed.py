@@ -1,7 +1,7 @@
 """Integration tests for multi-turn messaging in distributed workers.
 
 These tests validate that multi-turn conversations work correctly when
-using TaskIQ distributed workers. Key scenarios:
+using the /llm/stream/distributed endpoint. Key scenarios:
 1. Sequential messages share context
 2. Rapid consecutive messages complete successfully
 3. Checkpoint grows with turns
@@ -10,7 +10,7 @@ using TaskIQ distributed workers. Key scenarios:
 """
 
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 from uuid import uuid4
 
 
@@ -25,51 +25,50 @@ class TestMultiTurnContextPreservation:
         """
         thread_id = str(uuid4())
 
-        with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
-            with patch("src.workers.tasks.run_agent_stream") as mock_task:
-                mock_task.kiq = AsyncMock()
+        with patch("src.workers.tasks.run_agent_stream") as mock_task:
+            mock_task.kiq = AsyncMock()
 
-                # Turn 1: Initial message
-                payload_turn1 = {
-                    "input": {
-                        "messages": [
-                            {"role": "user", "content": "Remember my name is Alice"}
-                        ]
-                    },
-                    "model": "openai:gpt-4.1-mini",
-                    "metadata": {"thread_id": thread_id},
-                }
-                response1 = await async_client.post(
-                    "/api/llm/stream",
-                    json=payload_turn1,
-                )
+            # Turn 1: Initial message
+            payload_turn1 = {
+                "input": {
+                    "messages": [
+                        {"role": "user", "content": "Remember my name is Alice"}
+                    ]
+                },
+                "model": "openai:gpt-4.1-mini",
+                "metadata": {"thread_id": thread_id},
+            }
+            response1 = await async_client.post(
+                "/api/llm/stream/distributed",
+                json=payload_turn1,
+            )
 
-                assert response1.status_code == 202
-                data1 = response1.json()
-                assert data1["thread_id"] == thread_id
+            assert response1.status_code == 202
+            data1 = response1.json()
+            assert data1["thread_id"] == thread_id
 
-                # Turn 2: Follow-up message with same thread_id
-                payload_turn2 = {
-                    "input": {
-                        "messages": [{"role": "user", "content": "What is my name?"}]
-                    },
-                    "model": "openai:gpt-4.1-mini",
-                    "metadata": {"thread_id": thread_id},
-                }
-                response2 = await async_client.post(
-                    "/api/llm/stream",
-                    json=payload_turn2,
-                )
+            # Turn 2: Follow-up message with same thread_id
+            payload_turn2 = {
+                "input": {
+                    "messages": [{"role": "user", "content": "What is my name?"}]
+                },
+                "model": "openai:gpt-4.1-mini",
+                "metadata": {"thread_id": thread_id},
+            }
+            response2 = await async_client.post(
+                "/api/llm/stream/distributed",
+                json=payload_turn2,
+            )
 
-                assert response2.status_code == 202
-                data2 = response2.json()
-                assert data2["thread_id"] == thread_id
+            assert response2.status_code == 202
+            data2 = response2.json()
+            assert data2["thread_id"] == thread_id
 
-                # Verify both calls used the same thread_id
-                calls = mock_task.kiq.call_args_list
-                assert len(calls) == 2
-                assert calls[0].kwargs["thread_id"] == thread_id
-                assert calls[1].kwargs["thread_id"] == thread_id
+            # Verify both calls used the same thread_id
+            calls = mock_task.kiq.call_args_list
+            assert len(calls) == 2
+            assert calls[0].kwargs["thread_id"] == thread_id
+            assert calls[1].kwargs["thread_id"] == thread_id
 
     @pytest.mark.asyncio
     async def test_rapid_consecutive_messages(self, async_client):
@@ -79,30 +78,31 @@ class TestMultiTurnContextPreservation:
         """
         thread_id = str(uuid4())
 
-        with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
-            with patch("src.workers.tasks.run_agent_stream") as mock_task:
-                mock_task.kiq = AsyncMock()
+        with patch("src.workers.tasks.run_agent_stream") as mock_task:
+            mock_task.kiq = AsyncMock()
 
-                # Send both messages rapidly (simulate rapid user input)
-                payload = {
-                    "input": {
-                        "messages": [{"role": "user", "content": "Quick message"}]
-                    },
-                    "model": "openai:gpt-4.1-mini",
-                    "metadata": {"thread_id": thread_id},
-                }
+            # Send both messages rapidly (simulate rapid user input)
+            payload = {
+                "input": {"messages": [{"role": "user", "content": "Quick message"}]},
+                "model": "openai:gpt-4.1-mini",
+                "metadata": {"thread_id": thread_id},
+            }
 
-                # Fire both requests concurrently
-                response1 = await async_client.post("/api/llm/stream", json=payload)
-                response2 = await async_client.post("/api/llm/stream", json=payload)
+            # Fire both requests concurrently
+            response1 = await async_client.post(
+                "/api/llm/stream/distributed", json=payload
+            )
+            response2 = await async_client.post(
+                "/api/llm/stream/distributed", json=payload
+            )
 
-                # Both should succeed with 202 Accepted
-                assert response1.status_code == 202
-                assert response2.status_code == 202
+            # Both should succeed with 202 Accepted
+            assert response1.status_code == 202
+            assert response2.status_code == 202
 
-                # Both should reference the same thread
-                assert response1.json()["thread_id"] == thread_id
-                assert response2.json()["thread_id"] == thread_id
+            # Both should reference the same thread
+            assert response1.json()["thread_id"] == thread_id
+            assert response2.json()["thread_id"] == thread_id
 
     @pytest.mark.asyncio
     async def test_new_thread_created_when_no_thread_id_provided(self, async_client):
@@ -110,27 +110,26 @@ class TestMultiTurnContextPreservation:
         Test: Send message without thread_id.
         Acceptance: A new thread_id is generated and returned.
         """
-        with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
-            with patch("src.workers.tasks.run_agent_stream") as mock_task:
-                mock_task.kiq = AsyncMock()
+        with patch("src.workers.tasks.run_agent_stream") as mock_task:
+            mock_task.kiq = AsyncMock()
 
-                payload = {
-                    "input": {
-                        "messages": [
-                            {"role": "user", "content": "Start new conversation"}
-                        ]
-                    },
-                    "model": "openai:gpt-4.1-mini",
-                }
+            payload = {
+                "input": {
+                    "messages": [{"role": "user", "content": "Start new conversation"}]
+                },
+                "model": "openai:gpt-4.1-mini",
+            }
 
-                response = await async_client.post("/api/llm/stream", json=payload)
+            response = await async_client.post(
+                "/api/llm/stream/distributed", json=payload
+            )
 
-                assert response.status_code == 202
-                data = response.json()
-                assert "thread_id" in data
-                assert data["thread_id"] is not None
-                # UUID format validation
-                assert len(data["thread_id"]) == 36
+            assert response.status_code == 202
+            data = response.json()
+            assert "thread_id" in data
+            assert data["thread_id"] is not None
+            # UUID format validation
+            assert len(data["thread_id"]) == 36
 
 
 class TestCheckpointManagement:
@@ -145,34 +144,35 @@ class TestCheckpointManagement:
         thread_id = str(uuid4())
         task_dicts = []
 
-        with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
-            with patch("src.workers.tasks.run_agent_stream") as mock_task:
+        with patch("src.workers.tasks.run_agent_stream") as mock_task:
 
-                async def capture_task(**kwargs):
-                    task_dicts.append(kwargs.get("task_dict"))
+            async def capture_task(**kwargs):
+                task_dicts.append(kwargs.get("task_dict"))
 
-                mock_task.kiq = AsyncMock(side_effect=capture_task)
+            mock_task.kiq = AsyncMock(side_effect=capture_task)
 
-                for i in range(3):
-                    payload = {
-                        "input": {
-                            "messages": [
-                                {"role": "user", "content": f"Turn {i + 1} message"}
-                            ]
-                        },
-                        "model": "openai:gpt-4.1-mini",
-                        "metadata": {"thread_id": thread_id},
-                    }
+            for i in range(3):
+                payload = {
+                    "input": {
+                        "messages": [
+                            {"role": "user", "content": f"Turn {i + 1} message"}
+                        ]
+                    },
+                    "model": "openai:gpt-4.1-mini",
+                    "metadata": {"thread_id": thread_id},
+                }
 
-                    response = await async_client.post("/api/llm/stream", json=payload)
-                    assert response.status_code == 202
+                response = await async_client.post(
+                    "/api/llm/stream/distributed", json=payload
+                )
+                assert response.status_code == 202
 
-                # Verify all 3 turns were enqueued
-                assert mock_task.kiq.call_count == 3
+            # Verify all 3 turns were enqueued
+            assert mock_task.kiq.call_count == 3
 
-                # All tasks should use the same thread_id
-                for call in mock_task.kiq.call_args_list:
-                    assert call.kwargs["thread_id"] == thread_id
+            # All tasks should use the same thread_id
+            for call in mock_task.kiq.call_args_list:
+                assert call.kwargs["thread_id"] == thread_id
 
 
 class TestErrorHandling:
@@ -186,26 +186,29 @@ class TestErrorHandling:
         """
         thread_id = str(uuid4())
 
-        with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
-            with patch("src.workers.tasks.run_agent_stream") as mock_task:
-                # First call succeeds, second fails
-                mock_task.kiq = AsyncMock(
-                    side_effect=[None, Exception("Task enqueue failed")]
-                )
+        with patch("src.workers.tasks.run_agent_stream") as mock_task:
+            # First call succeeds, second fails
+            mock_task.kiq = AsyncMock(
+                side_effect=[None, Exception("Task enqueue failed")]
+            )
 
-                payload = {
-                    "input": {"messages": [{"role": "user", "content": "Test"}]},
-                    "model": "openai:gpt-4.1-mini",
-                    "metadata": {"thread_id": thread_id},
-                }
+            payload = {
+                "input": {"messages": [{"role": "user", "content": "Test"}]},
+                "model": "openai:gpt-4.1-mini",
+                "metadata": {"thread_id": thread_id},
+            }
 
-                # Turn 1 should succeed
-                response1 = await async_client.post("/api/llm/stream", json=payload)
-                assert response1.status_code == 202
+            # Turn 1 should succeed
+            response1 = await async_client.post(
+                "/api/llm/stream/distributed", json=payload
+            )
+            assert response1.status_code == 202
 
-                # Turn 2 should fail with 500
-                response2 = await async_client.post("/api/llm/stream", json=payload)
-                assert response2.status_code == 500
+            # Turn 2 should fail with 500
+            response2 = await async_client.post(
+                "/api/llm/stream/distributed", json=payload
+            )
+            assert response2.status_code == 500
 
 
 class TestStreamConsumer:
@@ -290,22 +293,21 @@ class TestBackendInitialization:
         """
         thread_id = str(uuid4())
 
-        with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
-            with patch("src.workers.tasks.run_agent_stream") as mock_task:
-                mock_task.kiq = AsyncMock()
+        with patch("src.workers.tasks.run_agent_stream") as mock_task:
+            mock_task.kiq = AsyncMock()
 
-                payload = {
-                    "input": {"messages": [{"role": "user", "content": "Test"}]},
-                    "model": "openai:gpt-4.1-mini",
-                    "metadata": {"thread_id": thread_id},
-                }
+            payload = {
+                "input": {"messages": [{"role": "user", "content": "Test"}]},
+                "model": "openai:gpt-4.1-mini",
+                "metadata": {"thread_id": thread_id},
+            }
 
-                await async_client.post("/api/llm/stream", json=payload)
+            await async_client.post("/api/llm/stream/distributed", json=payload)
 
-                call_args = mock_task.kiq.call_args
-                assert "user_id" in call_args.kwargs
-                # user_id should be empty string when no auth (get_optional_user returns None)
-                assert call_args.kwargs["user_id"] == ""
+            call_args = mock_task.kiq.call_args
+            assert "user_id" in call_args.kwargs
+            # user_id should be empty string when no auth (get_optional_user returns None)
+            assert call_args.kwargs["user_id"] == ""
 
     @pytest.mark.asyncio
     async def test_task_dict_contains_model_info(self, async_client):
@@ -315,19 +317,18 @@ class TestBackendInitialization:
         """
         thread_id = str(uuid4())
 
-        with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
-            with patch("src.workers.tasks.run_agent_stream") as mock_task:
-                mock_task.kiq = AsyncMock()
+        with patch("src.workers.tasks.run_agent_stream") as mock_task:
+            mock_task.kiq = AsyncMock()
 
-                payload = {
-                    "input": {"messages": [{"role": "user", "content": "Test"}]},
-                    "model": "openai:gpt-4.1-mini",
-                    "metadata": {"thread_id": thread_id},
-                }
+            payload = {
+                "input": {"messages": [{"role": "user", "content": "Test"}]},
+                "model": "openai:gpt-4.1-mini",
+                "metadata": {"thread_id": thread_id},
+            }
 
-                await async_client.post("/api/llm/stream", json=payload)
+            await async_client.post("/api/llm/stream/distributed", json=payload)
 
-                call_args = mock_task.kiq.call_args
-                task_dict = call_args.kwargs["task_dict"]
-                assert "model" in task_dict
-                assert task_dict["model"] == "openai:gpt-4.1-mini"
+            call_args = mock_task.kiq.call_args
+            task_dict = call_args.kwargs["task_dict"]
+            assert "model" in task_dict
+            assert task_dict["model"] == "openai:gpt-4.1-mini"

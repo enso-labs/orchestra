@@ -1,5 +1,4 @@
-import os
-from typing import Any, List
+from typing import Any
 from uuid import uuid4
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi import (
@@ -32,9 +31,6 @@ from src.flows import init_config
 from src.services.db import get_store
 from src.utils.rate_limit import limiter
 from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
-
-# Distributed workers mode - when true, tasks are enqueued to TaskIQ workers
-DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 
@@ -74,7 +70,7 @@ async def llm_invoke(
     "/stream",
     responses={status.HTTP_200_OK: MockResponse.STREAM_RESPONSE},
     name="Stream Graph",
-    response_model=None,  # Allow multiple response types (SSE or JSON)
+    response_model=None,
 )
 @limiter.limit(TIME_LIMIT)
 async def llm_stream(
@@ -86,42 +82,13 @@ async def llm_stream(
     """
     Streams LLM output as server-sent events (SSE).
 
-    When DISTRIBUTED_WORKERS=true, the task is enqueued to a worker and
-    returns {thread_id, distributed: true}. The client should then poll
-    GET /threads/{thread_id}/stream to receive the SSE stream.
+    This endpoint performs synchronous streaming directly to the client.
+    For distributed/async streaming, use POST /llm/stream/distributed.
     """
     try:
         user_id = user.id if user else None
-        thread_id = (
-            params.metadata.thread_id
-            if params.metadata and params.metadata.thread_id
-            else str(uuid4())
-        )
         config = init_config(params, user_id=user_id)
 
-        # Distributed mode: enqueue task and return thread_id for polling
-        if DISTRIBUTED_WORKERS:
-            from src.workers.tasks import run_agent_stream
-
-            # Ensure thread_id is set in metadata
-            if params.metadata:
-                params.metadata.thread_id = thread_id
-
-            await run_agent_stream.kiq(
-                task_dict=params.model_dump(),
-                user_id=str(user_id) if user_id else "",
-                thread_id=thread_id,
-            )
-
-            logger.info(f"Enqueued distributed task for thread: {thread_id}")
-
-            return JSONResponse(
-                content={"thread_id": thread_id, "distributed": True},
-                status_code=status.HTTP_202_ACCEPTED,
-                headers={"Cache-Control": "no-cache"},
-            )
-
-        # Sync mode: direct streaming (existing behavior)
         llm_controller = LLMController(user_id=user_id, store=store, config=config)
         assistant = await llm_controller.llm_stream(
             params, is_disconnected=request.is_disconnected
@@ -133,6 +100,80 @@ async def llm_stream(
         )
     except Exception as e:
         logger.exception(f"Error in llm_stream: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+################################################################################
+### Stream Graph (Distributed)
+################################################################################
+@llm_router.post(
+    "/stream/distributed",
+    responses={
+        status.HTTP_202_ACCEPTED: {
+            "description": "Task enqueued for distributed processing",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "thread_id": "abc-123",
+                        "poll_url": "/api/threads/abc-123/stream",
+                    }
+                }
+            },
+        }
+    },
+    name="Stream Graph (Distributed)",
+    response_model=None,
+)
+@limiter.limit(TIME_LIMIT)
+async def llm_stream_distributed(
+    request: Request,
+    params: LLMRequest = Body(openapi_examples=Examples.LLM_STREAM_EXAMPLES),
+    user: ProtectedUser = Depends(get_optional_user),
+):
+    """
+    Enqueues an LLM streaming task to a distributed worker.
+
+    Returns immediately with HTTP 202 and a thread_id + poll_url.
+    The client should then connect to the poll_url (GET /api/threads/{thread_id}/stream)
+    to receive the SSE stream from the background worker.
+
+    This endpoint is for async/distributed streaming scenarios where the
+    task is processed by a separate worker process.
+    """
+    try:
+        from src.workers.tasks import run_agent_stream
+
+        user_id = user.id if user else None
+        thread_id = (
+            params.metadata.thread_id
+            if params.metadata and params.metadata.thread_id
+            else str(uuid4())
+        )
+
+        # Ensure thread_id is set in metadata
+        if params.metadata:
+            params.metadata.thread_id = thread_id
+
+        await run_agent_stream.kiq(
+            task_dict=params.model_dump(),
+            user_id=str(user_id) if user_id else "",
+            thread_id=thread_id,
+        )
+
+        logger.info(f"Enqueued distributed task for thread: {thread_id}")
+
+        return JSONResponse(
+            content={
+                "thread_id": thread_id,
+                "poll_url": f"/api/threads/{thread_id}/stream",
+            },
+            status_code=status.HTTP_202_ACCEPTED,
+            headers={"Cache-Control": "no-cache"},
+        )
+    except Exception as e:
+        logger.exception(f"Error in llm_stream_distributed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

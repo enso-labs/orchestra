@@ -1,6 +1,7 @@
 """Integration tests for LLM routes with inference dictation feature."""
 
 import pytest
+from unittest.mock import patch, AsyncMock, MagicMock
 from httpx import AsyncClient
 
 
@@ -24,12 +25,22 @@ async def test_stream_accepts_generate_files_flag(async_client: AsyncClient):
         "generate_files": True,
     }
 
-    # Use stream() context manager to handle streaming response
-    async with async_client.stream(
-        "POST", "/api/llm/stream", json=payload, headers=headers
-    ) as response:
-        # Should accept the request and start streaming (200) or queue for distributed (202)
-        assert response.status_code in [200, 202]
+    # Mock the LLMController to avoid running actual stream generation
+    with patch("src.routes.v0.llm.LLMController") as mock_controller_class:
+        mock_controller = MagicMock()
+
+        async def mock_stream():
+            yield "data: test\n\n"
+
+        mock_controller.llm_stream = AsyncMock(return_value=mock_stream())
+        mock_controller_class.return_value = mock_controller
+
+        # Use stream() context manager to handle streaming response
+        async with async_client.stream(
+            "POST", "/api/llm/stream", json=payload, headers=headers
+        ) as response:
+            # Sync stream endpoint always returns 200 (streaming response)
+            assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -53,11 +64,21 @@ async def test_stream_accepts_target_file_parameter(async_client: AsyncClient):
         "target_file": "/README.md",
     }
 
-    async with async_client.stream(
-        "POST", "/api/llm/stream", json=payload, headers=headers
-    ) as response:
-        # Should accept the request and start streaming (200) or queue for distributed (202)
-        assert response.status_code in [200, 202]
+    # Mock the LLMController to avoid running actual stream generation
+    with patch("src.routes.v0.llm.LLMController") as mock_controller_class:
+        mock_controller = MagicMock()
+
+        async def mock_stream():
+            yield "data: test\n\n"
+
+        mock_controller.llm_stream = AsyncMock(return_value=mock_stream())
+        mock_controller_class.return_value = mock_controller
+
+        async with async_client.stream(
+            "POST", "/api/llm/stream", json=payload, headers=headers
+        ) as response:
+            # Sync stream endpoint always returns 200 (streaming response)
+            assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -82,11 +103,21 @@ async def test_stream_accepts_file_context_parameter(async_client: AsyncClient):
         "file_context": "def hello():\n    print('hello world')",
     }
 
-    async with async_client.stream(
-        "POST", "/api/llm/stream", json=payload, headers=headers
-    ) as response:
-        # Should accept the request and start streaming (200) or queue for distributed (202)
-        assert response.status_code in [200, 202]
+    # Mock the LLMController to avoid running actual stream generation
+    with patch("src.routes.v0.llm.LLMController") as mock_controller_class:
+        mock_controller = MagicMock()
+
+        async def mock_stream():
+            yield "data: test\n\n"
+
+        mock_controller.llm_stream = AsyncMock(return_value=mock_stream())
+        mock_controller_class.return_value = mock_controller
+
+        async with async_client.stream(
+            "POST", "/api/llm/stream", json=payload, headers=headers
+        ) as response:
+            # Sync stream endpoint always returns 200 (streaming response)
+            assert response.status_code == 200
 
 
 @pytest.mark.asyncio
