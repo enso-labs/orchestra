@@ -7,25 +7,34 @@ providing a single source of truth for:
 - Backend initialization (CompositeBackend)
 - Agent construction orchestration
 - Store update logic for persisting thread state
+- Redis stream consumer configuration
 """
 
+import os
 from typing import Any, Dict, List, Optional
+
+import ujson
+from deepagents import SubAgent
 from deepagents.backends import CompositeBackend, StoreBackend
 from langchain.tools import ToolRuntime
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
-from deepagents import SubAgent
-import ujson
 
 from src.contexts.service import ServiceContext
-from src.flows import construct_agent as _construct_agent, init_backend as _init_backend
 from src.flows import Orchestra
+from src.flows import construct_agent as _construct_agent
+from src.flows import init_backend as _init_backend
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities import LLMRequest
 from src.utils.format import get_time
 from src.utils.logger import logger
+
+
+# Redis stream consumer configuration (milliseconds)
+REDIS_STREAM_TIMEOUT_MS = int(os.getenv("REDIS_STREAM_TIMEOUT_MS", "60000"))
+REDIS_KEEPALIVE_INTERVAL_MS = int(os.getenv("REDIS_KEEPALIVE_INTERVAL_MS", "30000"))
 
 
 class StreamingService:
@@ -226,3 +235,16 @@ class StreamingService:
             store=store,
             config=config,
         )
+
+    @staticmethod
+    def get_redis_stream_config() -> dict:
+        """
+        Get Redis stream consumer configuration.
+
+        Returns:
+            Dict with timeout_ms and keepalive_ms settings for Redis stream consumer.
+        """
+        return {
+            "timeout_ms": REDIS_STREAM_TIMEOUT_MS,
+            "keepalive_ms": REDIS_KEEPALIVE_INTERVAL_MS,
+        }

@@ -81,7 +81,8 @@ class TestStreamFromRedis:
             events = [event async for event in stream_from_redis(thread_id)]
 
         assert len(events) == 2
-        assert events[0] == 'data: {"error": "Test error"}\n\n'
+        # ErrorEvent uses tuple format: ("error", "message") - ujson doesn't add space after comma
+        assert events[0] == 'data: ["error","Test error"]\n\n'
         assert events[1] == "data: [DONE]\n\n"
 
 

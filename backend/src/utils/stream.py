@@ -6,7 +6,6 @@ and the stream_from_redis consumer for distributed workers.
 """
 
 import asyncio
-import os
 from typing import Awaitable, Callable, Optional, Union
 
 from deepagents import SubAgent
@@ -22,9 +21,6 @@ from src.services.db import get_checkpoint_db
 from src.services.streaming import StreamingService
 from src.utils.logger import log_to_file, logger
 from src.utils.stream_formatter import StreamFormatter
-
-# Configurable stream timeout (default 60 seconds)
-STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
 
 # Module-level formatter instance
 _formatter = StreamFormatter()
@@ -157,7 +153,12 @@ async def stream_from_redis(thread_id: str):
     Consume Redis stream and yield SSE events for distributed workers.
 
     This function reads from a Redis Stream that the worker is writing to,
-    and yields SSE-formatted events for the client.
+    and yields SSE-formatted events for the client. Uses StreamEvent types
+    for consistency with sync streaming.
+
+    Configuration is obtained from StreamingService.get_redis_stream_config():
+    - timeout_ms: How long to block waiting for messages (default 60s)
+    - keepalive_ms: Interval for keep-alive comments (default 30s)
 
     Args:
         thread_id: The thread ID to stream results for.
@@ -167,7 +168,14 @@ async def stream_from_redis(thread_id: str):
     """
     import redis.asyncio as redis
 
+    from src.schemas.events.stream import DoneEvent, ErrorEvent
+    from src.services.streaming import StreamingService
     from src.workers.broker import REDIS_URL
+
+    # Get configuration from StreamingService
+    config = StreamingService.get_redis_stream_config()
+    timeout_ms = config["timeout_ms"]
+    keepalive_ms = config["keepalive_ms"]
 
     stream_key = f"agent:stream:{thread_id}"
     redis_client = redis.from_url(REDIS_URL)
@@ -175,10 +183,10 @@ async def stream_from_redis(thread_id: str):
 
     try:
         while True:
-            # Block for configurable time waiting for messages (default 60s)
+            # Block for configured timeout waiting for messages
             messages = await redis_client.xread(
                 {stream_key: last_id},
-                block=STREAM_TIMEOUT_MS,
+                block=keepalive_ms,  # Use keepalive interval for block timeout
             )
 
             if not messages:
@@ -191,18 +199,20 @@ async def stream_from_redis(thread_id: str):
                     last_id = entry_id
 
                     if b"done" in data:
-                        yield "data: [DONE]\n\n"
+                        yield DoneEvent().to_sse()
                         return
                     if b"error" in data:
                         error_msg = data[b"error"].decode()
-                        yield f'data: {{"error": "{error_msg}"}}\n\n'
-                        yield "data: [DONE]\n\n"
+                        # Use ErrorEvent for consistent error format
+                        yield ErrorEvent(message=error_msg).to_sse()
+                        yield DoneEvent().to_sse()
                         return
                     if b"data" in data:
                         yield f"data: {data[b'data'].decode()}\n\n"
     except Exception as e:
         logger.exception(f"Error in stream_from_redis: {e}")
-        yield f'data: {{"error": "{str(e)}"}}\n\n'
-        yield "data: [DONE]\n\n"
+        # Use ErrorEvent for consistent error format
+        yield ErrorEvent(message=str(e)).to_sse()
+        yield DoneEvent().to_sse()
     finally:
         await redis_client.aclose()
