@@ -1,20 +1,26 @@
-"""Unit tests for handle_multi_mode - verifies LangGraph stream format.
+"""Unit tests for StreamFormatter - verifies LangGraph stream format processing.
 
-Phase 1 TDD: These tests verify the existing `handle_multi_mode` output format
-before any distributed changes. The function is IMMUTABLE and should not be modified.
+These tests verify StreamFormatter correctly processes agent.astream chunks
+and returns typed StreamEvent objects.
 """
 
 import pytest
-from langchain_core.messages import AIMessageChunk, ToolMessage, HumanMessage
+import ujson
+from langchain_core.messages import AIMessageChunk, HumanMessage, ToolMessage
+
+from src.schemas.events.stream import MessageEvent, ValuesEvent
+from src.utils.stream_formatter import StreamFormatter
 
 
-class TestHandleMultiModeMessagesFormat:
-    """Tests for messages mode output format."""
+class TestStreamFormatterMessagesFormat:
+    """Tests for messages mode formatting."""
 
-    def test_returns_tuple_for_ai_message_with_content(self):
-        """AI message with content returns (stream_type, (message_dict, metadata))."""
-        from src.utils.stream import handle_multi_mode
+    @pytest.fixture
+    def formatter(self):
+        return StreamFormatter()
 
+    def test_returns_message_event_for_ai_message_with_content(self, formatter):
+        """AI message with content returns MessageEvent."""
         chunk = (
             "messages",
             [
@@ -23,18 +29,15 @@ class TestHandleMultiModeMessagesFormat:
             ],
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
 
         assert result is not None
-        assert result[0] == "messages"
-        assert isinstance(result[1], tuple)
-        assert result[1][0]["content"] == "Hello"
-        assert result[1][1]["user_id"] == "123"
+        assert isinstance(result, MessageEvent)
+        assert result.message["content"] == "Hello"
+        assert result.metadata["user_id"] == "123"
 
-    def test_returns_none_for_empty_ai_message(self):
+    def test_returns_none_for_empty_ai_message(self, formatter):
         """AI message without content/tool_calls/stop returns None."""
-        from src.utils.stream import handle_multi_mode
-
         chunk = (
             "messages",
             [
@@ -43,13 +46,11 @@ class TestHandleMultiModeMessagesFormat:
             ],
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
         assert result is None
 
-    def test_returns_tuple_for_tool_message(self):
-        """ToolMessage returns serialized format."""
-        from src.utils.stream import handle_multi_mode
-
+    def test_returns_message_event_for_tool_message(self, formatter):
+        """ToolMessage returns MessageEvent."""
         chunk = (
             "messages",
             [
@@ -58,16 +59,14 @@ class TestHandleMultiModeMessagesFormat:
             ],
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
 
         assert result is not None
-        assert result[0] == "messages"
-        assert result[1][0]["type"] == "tool"
+        assert isinstance(result, MessageEvent)
+        assert result.message["type"] == "tool"
 
-    def test_returns_tuple_for_ai_message_with_tool_calls(self):
-        """AI message with tool_calls returns tuple."""
-        from src.utils.stream import handle_multi_mode
-
+    def test_returns_message_event_for_ai_message_with_tool_calls(self, formatter):
+        """AI message with tool_calls returns MessageEvent."""
         chunk = (
             "messages",
             [
@@ -80,37 +79,34 @@ class TestHandleMultiModeMessagesFormat:
             ],
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
         assert result is not None
+        assert isinstance(result, MessageEvent)
 
-    def test_returns_tuple_for_finish_reason(self):
-        """AI message with finish_reason returns tuple."""
-        from src.utils.stream import handle_multi_mode
-
+    def test_returns_message_event_for_finish_reason(self, formatter):
+        """AI message with finish_reason returns MessageEvent."""
         msg = AIMessageChunk(content="", id="test-id")
         msg.response_metadata = {"finish_reason": "stop"}
 
         chunk = ("messages", [msg, {"user_id": "123"}])
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
         assert result is not None
+        assert isinstance(result, MessageEvent)
 
-    def test_returns_tuple_for_stop_reason(self):
-        """AI message with stop_reason returns tuple."""
-        from src.utils.stream import handle_multi_mode
-
+    def test_returns_message_event_for_stop_reason(self, formatter):
+        """AI message with stop_reason returns MessageEvent."""
         msg = AIMessageChunk(content="", id="test-id")
         msg.response_metadata = {"stop_reason": "end_turn"}
 
         chunk = ("messages", [msg, {"user_id": "123"}])
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
         assert result is not None
+        assert isinstance(result, MessageEvent)
 
-    def test_returns_tuple_for_tool_call_chunks(self):
-        """AI message with tool_call_chunks returns tuple."""
-        from src.utils.stream import handle_multi_mode
-
+    def test_returns_message_event_for_tool_call_chunks(self, formatter):
+        """AI message with tool_call_chunks returns MessageEvent."""
         chunk = (
             "messages",
             [
@@ -125,17 +121,20 @@ class TestHandleMultiModeMessagesFormat:
             ],
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
         assert result is not None
+        assert isinstance(result, MessageEvent)
 
 
-class TestHandleMultiModeValuesFormat:
-    """Tests for values mode output format."""
+class TestStreamFormatterValuesFormat:
+    """Tests for values mode formatting."""
 
-    def test_returns_values_chunk_with_messages_converted(self):
-        """Values mode chunks pass through with messages converted."""
-        from src.utils.stream import handle_multi_mode
+    @pytest.fixture
+    def formatter(self):
+        return StreamFormatter()
 
+    def test_returns_values_event_with_messages_converted(self, formatter):
+        """Values mode chunks return ValuesEvent with messages converted."""
         chunk = (
             "values",
             {
@@ -145,40 +144,41 @@ class TestHandleMultiModeValuesFormat:
             },
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
 
         assert result is not None
-        assert result[0] == "values"
+        assert isinstance(result, ValuesEvent)
         # Messages should be converted to dicts
-        assert isinstance(result[1]["messages"], list)
+        assert isinstance(result.messages, list)
+        assert len(result.messages) == 1
+        assert result.messages[0]["content"] == "Hi"
 
 
-class TestHandleMultiModeEdgeCases:
-    """Edge case tests for handle_multi_mode."""
+class TestStreamFormatterEdgeCases:
+    """Edge case tests for StreamFormatter."""
 
-    def test_handles_invalid_chunk_gracefully(self):
+    @pytest.fixture
+    def formatter(self):
+        return StreamFormatter()
+
+    def test_handles_invalid_chunk_gracefully(self, formatter):
         """Invalid chunks return None without raising."""
-        from src.utils.stream import handle_multi_mode
-
-        result = handle_multi_mode({"invalid": "chunk"})
+        result = formatter.format_chunk({"invalid": "chunk"})
         assert result is None
 
-    def test_handles_anthropic_reasoning_content(self):
+    def test_handles_anthropic_reasoning_content(self, formatter):
         """Anthropic extended thinking with reasoning_content works."""
-        from src.utils.stream import handle_multi_mode
-
         msg = AIMessageChunk(content="", id="test-id")
         msg.additional_kwargs = {"reasoning_content": "Thinking..."}
 
         chunk = ("messages", [msg, {"ls_provider": "anthropic"}])
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
         assert result is not None
+        assert isinstance(result, MessageEvent)
 
-    def test_metadata_preserved_in_output(self):
-        """Metadata from chunk is preserved in output."""
-        from src.utils.stream import handle_multi_mode
-
+    def test_metadata_preserved_in_output(self, formatter):
+        """Metadata from chunk is preserved in MessageEvent."""
         metadata = {
             "user_id": "user-123",
             "thread_id": "thread-456",
@@ -193,16 +193,14 @@ class TestHandleMultiModeEdgeCases:
             ],
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
 
         assert result is not None
-        assert result[1][1] == metadata
+        assert isinstance(result, MessageEvent)
+        assert result.metadata == metadata
 
-    def test_output_is_json_serializable(self):
-        """handle_multi_mode output can be serialized to JSON."""
-        import ujson
-        from src.utils.stream import handle_multi_mode
-
+    def test_output_is_json_serializable(self, formatter):
+        """StreamEvent output can be serialized to JSON via to_sse()."""
         chunk = (
             "messages",
             [
@@ -211,20 +209,21 @@ class TestHandleMultiModeEdgeCases:
             ],
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
 
-        # Should not raise
-        serialized = ujson.dumps(result)
-        assert isinstance(serialized, str)
+        # to_sse() should not raise
+        sse_output = result.to_sse()
+        assert isinstance(sse_output, str)
+        assert sse_output.startswith("data: ")
+        assert sse_output.endswith("\n\n")
 
-        # Should round-trip
-        deserialized = ujson.loads(serialized)
-        assert deserialized[0] == "messages"
+        # Parse the SSE data
+        data_str = sse_output[6:-2]  # Remove "data: " prefix and "\n\n" suffix
+        parsed = ujson.loads(data_str)
+        assert parsed[0] == "messages"
 
-    def test_values_with_empty_messages(self):
+    def test_values_with_empty_messages(self, formatter):
         """Values mode with empty messages list works."""
-        from src.utils.stream import handle_multi_mode
-
         chunk = (
             "values",
             {
@@ -234,8 +233,8 @@ class TestHandleMultiModeEdgeCases:
             },
         )
 
-        result = handle_multi_mode(chunk)
+        result = formatter.format_chunk(chunk)
 
         assert result is not None
-        assert result[0] == "values"
-        assert result[1]["messages"] == []
+        assert isinstance(result, ValuesEvent)
+        assert result.messages == []
