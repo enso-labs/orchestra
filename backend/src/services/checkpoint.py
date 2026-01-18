@@ -38,14 +38,23 @@ class CheckpointService:
 
     @staticmethod
     def _collect_messages(checkpoint: CheckpointTuple) -> list[BaseMessage]:
-        messages = (
-            checkpoint.checkpoint["channel_values"]
-            .get("__start__", {})
-            .get("messages", [])
-            or checkpoint.checkpoint["channel_values"].get("messages", [])
-            or []
-        )
-        return messages
+        channel_values = checkpoint.checkpoint.get("channel_values", {})
+        start_value = channel_values.get("__start__")
+
+        # Handle LLMInput Pydantic model (current) or dict (legacy)
+        if start_value is not None:
+            if hasattr(start_value, "messages"):
+                # Pydantic model with messages attribute
+                messages = start_value.messages
+            elif isinstance(start_value, dict):
+                # Legacy dict format
+                messages = start_value.get("messages", [])
+            else:
+                messages = []
+        else:
+            messages = channel_values.get("messages", []) or []
+
+        return messages if messages else []
 
     async def list_checkpoints_from_graph(self, thread_id: str):
         config = RunnableConfig(configurable={"thread_id": thread_id})

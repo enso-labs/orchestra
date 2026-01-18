@@ -53,7 +53,13 @@ class LLMInput(BaseModel):
         content: str | List[Any] = Field(examples=["Weather in Dallas?"])
 
     messages: List[ChatMessage]
-    files: Optional[Dict[str, Any]] = Field(default=None)
+    files: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+    @field_validator("files", mode="before")
+    @classmethod
+    def ensure_files_not_none(cls, v):
+        """Ensure files is never None - deepagents reducer requires a dict."""
+        return v if v is not None else {}
 
     def to_langchain_messages(self) -> "LLMInput":
         # Convert API messages to LangChain message objects
@@ -106,7 +112,7 @@ class Assistant(BaseModel):
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
-    file_system: Optional[Dict[str, str]] = Field(
+    files: Optional[Dict[str, str]] = Field(
         default_factory=dict,
         description="File system storage for the assistant. Key is the file path, value is the file content.",
     )
