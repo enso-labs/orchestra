@@ -166,13 +166,12 @@ def get_system_prompt():
 
 def get_default_chat_model():
     """Get the default chat model based on available API keys."""
-    if OPENAI_API_KEY:
-        return ChatModels.OPENAI_GPT_4_1_MINI.value
     if GOOGLE_API_KEY:
         return ChatModels.GOOGLE_GEMINI_3_FLASH_PREVIEW.value
+    if OPENAI_API_KEY:
+        return ChatModels.OPENAI_GPT_4_1_MINI.value
     if XAI_API_KEY:
         return ChatModels.XAI_GROK_4_1_FAST.value
-
     if ANTHROPIC_API_KEY:
         return ChatModels.ANTHROPIC_CLAUDE_4_5_HAIKU.value
     if GROQ_API_KEY:

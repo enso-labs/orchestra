@@ -13,6 +13,18 @@ from langchain_core.messages import BaseMessage
 from src.utils.logger import logger
 from src.utils.messages import from_message_to_dict
 from src.utils.retry import retry_db_operation
+from src.services.errors import is_retryable_error, CheckpointConnectionError
+import psycopg
+
+
+# Exception types that should trigger checkpoint retry
+CHECKPOINT_EXCEPTIONS = (
+    psycopg.OperationalError,
+    psycopg.InterfaceError,
+    ConnectionError,
+    OSError,
+    CheckpointConnectionError,
+)
 from src.schemas.entities.hitl import (
     InterruptInfo,
     InterruptConfig,
@@ -92,6 +104,13 @@ class CheckpointService:
             logger.exception(f"Error listing checkpoints: {e}")
             return []
 
+    @retry_db_operation(
+        tries=3,
+        delay=1,
+        backoff=2,
+        exceptions=CHECKPOINT_EXCEPTIONS,
+        classify_error=is_retryable_error,
+    )
     async def create_checkpoint(
         self,
         thread_id: str,
@@ -114,6 +133,13 @@ class CheckpointService:
         )
         return checkpoint
 
+    @retry_db_operation(
+        tries=3,
+        delay=1,
+        backoff=2,
+        exceptions=CHECKPOINT_EXCEPTIONS,
+        classify_error=is_retryable_error,
+    )
     async def get_checkpoint(
         self,
         thread_id: str,
@@ -136,6 +162,13 @@ class CheckpointService:
     async def update_checkpoint_state(self, config: RunnableConfig, values: dict):
         return await self.graph.aupdate_state(config=config, values=values)
 
+    @retry_db_operation(
+        tries=3,
+        delay=1,
+        backoff=2,
+        exceptions=CHECKPOINT_EXCEPTIONS,
+        classify_error=is_retryable_error,
+    )
     async def delete_checkpoints_for_thread(self, thread_id: str) -> bool:
         try:
             await self.checkpointer.adelete_thread(thread_id)
