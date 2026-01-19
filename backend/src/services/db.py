@@ -32,7 +32,7 @@ ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
 # See: https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#prepared-statement-cache
 async_engine = create_async_engine(
     ASYNC_DB_URI,
-    connect_args={"statement_cache_size": 0},
+    connect_args={"statement_cache_size": 0, 'ssl': False},
 )
 AsyncSessionLocal = async_sessionmaker(
     autocommit=False, autoflush=False, bind=async_engine
