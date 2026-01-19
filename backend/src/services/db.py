@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from fastapi import Request
 from typing import AsyncGenerator, Generator, AsyncIterator
@@ -5,6 +7,8 @@ from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import IndexConfig
 from langgraph.store.postgres.base import PostgresIndexConfig
 from langchain.embeddings import init_embeddings
+from psycopg import AsyncConnection
+from psycopg.rows import dict_row
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -24,7 +28,12 @@ engine = create_engine(DB_URI)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
-async_engine = create_async_engine(ASYNC_DB_URI)
+# Disable statement cache for pgbouncer/connection pooler compatibility
+# See: https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#prepared-statement-cache
+async_engine = create_async_engine(
+    ASYNC_DB_URI,
+    connect_args={"statement_cache_size": 0},
+)
 AsyncSessionLocal = async_sessionmaker(
     autocommit=False, autoflush=False, bind=async_engine
 )
@@ -94,8 +103,23 @@ def get_store_in_memory(
     return InMemoryStore()
 
 
-def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
-    return AsyncPostgresSaver.from_conn_string(conn_string=DB_URI)
+@asynccontextmanager
+async def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
+    """
+    Create an AsyncPostgresSaver with explicit connection kwargs.
+
+    Uses the solution from: https://github.com/langchain-ai/langgraph/issues/2755
+    - autocommit=True: Required for checkpoint operations
+    - prepare_threshold=0: Disables prepared statements for connection pooler compatibility
+    - row_factory=dict_row: Required by AsyncPostgresSaver
+    """
+    async with await AsyncConnection.connect(
+        DB_URI,
+        autocommit=True,
+        prepare_threshold=None,  # MUST be 0 for pgbouncer
+        row_factory=dict_row,
+    ) as conn:
+        yield AsyncPostgresSaver(conn)
 
 
 def get_store_db(
@@ -103,12 +127,21 @@ def get_store_db(
     dims: int = 1536,
     fields: list[str] = [],
 ) -> AsyncIterator[AsyncPostgresStore]:
+    """
+    Create an AsyncPostgresStore with connection pooling.
+
+    Note: Explicitly passing prepare_threshold=0 in kwargs to ensure
+    prepared statements are disabled for pgbouncer compatibility.
+    """
     return AsyncPostgresStore.from_conn_string(
         conn_string=DB_URI,
         pool_config=PoolConfig(
             min_size=DB_POOL_MIN_SIZE,
             max_size=DB_POOL_MAX_SIZE,
             max_lifetime=DB_POOL_MAX_LIFETIME,
+            kwargs={
+                "prepare_threshold": None,
+            },
         ),
         index=PostgresIndexConfig(
             embed=init_embeddings(embed),
