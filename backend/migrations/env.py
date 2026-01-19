@@ -1,4 +1,5 @@
 from logging.config import fileConfig
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -15,15 +16,16 @@ if env_file:
 else:
     load_dotenv()
 
-from sqlalchemy import engine_from_config, create_engine, text
+from sqlalchemy import engine_from_config, text
 from sqlalchemy import pool
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from src.services.db import get_db_base
 from src.constants import DB_URI
 
 
-def ensure_database_exists(db_uri: str) -> None:
+async def ensure_database_exists(db_uri: str) -> None:
     """Create the database if it doesn't exist."""
     # Parse the database name from the URI
     # Format: postgresql://user:pass@host:port/dbname
@@ -36,25 +38,32 @@ def ensure_database_exists(db_uri: str) -> None:
         db_name = db_name.split("?")[0]
 
     # Connect to the default 'postgres' database to create the target db
-    postgres_uri = f"{base_uri}/postgres"
+    # Convert to asyncpg format for async engine
+    postgres_uri = f"{base_uri}/postgres".replace(
+        "postgresql://", "postgresql+asyncpg://"
+    )
 
     try:
-        engine = create_engine(postgres_uri, isolation_level="AUTOCOMMIT")
-        with engine.connect() as conn:
+        engine = create_async_engine(
+            postgres_uri,
+            isolation_level="AUTOCOMMIT",
+            connect_args={"ssl": False},
+        )
+        async with engine.connect() as conn:
             # Check if database exists
-            result = conn.execute(
+            result = await conn.execute(
                 text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
                 {"dbname": db_name},
             )
             if not result.fetchone():
-                conn.execute(text(f'CREATE DATABASE "{db_name}"'))
-        engine.dispose()
+                await conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+        await engine.dispose()
     except (OperationalError, ProgrammingError):
         # If we can't connect to postgres db or create, the main connection will fail with a clearer error
         pass
 
 
-ensure_database_exists(DB_URI)
+asyncio.get_event_loop().run_until_complete(ensure_database_exists(DB_URI))
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DB_URI)

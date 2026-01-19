@@ -2,16 +2,15 @@ from contextlib import asynccontextmanager
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from fastapi import Request
-from typing import AsyncGenerator, Generator, AsyncIterator
+from typing import AsyncGenerator, AsyncIterator
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import IndexConfig
 from langgraph.store.postgres.base import PostgresIndexConfig
 from langchain.embeddings import init_embeddings
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
-from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from src.constants import (
     DB_URI,
@@ -23,16 +22,13 @@ from langgraph.store.postgres import AsyncPostgresStore, PoolConfig
 
 MAX_CONNECTION_POOL_SIZE = None
 
-# SQLAlchemy engines
-engine = create_engine(DB_URI)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+# SQLAlchemy async engine
 ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
 # Disable statement cache for pgbouncer/connection pooler compatibility
 # See: https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#prepared-statement-cache
 async_engine = create_async_engine(
     ASYNC_DB_URI,
-    connect_args={"statement_cache_size": 0, 'ssl': False},
+    connect_args={"statement_cache_size": 0, "ssl": False},
 )
 AsyncSessionLocal = async_sessionmaker(
     autocommit=False, autoflush=False, bind=async_engine
@@ -60,16 +56,6 @@ def load_models():
 
 DEFAULT_EMBED = "openai:text-embedding-3-small"
 DEFAULT_FIELDS = ["page_content", "metadata"]
-
-
-# Session context managers
-def get_db() -> Generator[SessionLocal, None, None]:  # type: ignore
-    """Get a SQLAlchemy database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 async def get_async_db() -> AsyncGenerator[AsyncSession, None]:

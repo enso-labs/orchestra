@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -17,63 +18,71 @@ else:
     # When imported as a module, load default .env
     load_dotenv()
 
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from src.constants import DB_URI
 from src.schemas.models import User
 
-engine = create_engine(DB_URI)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
+engine = create_async_engine(
+    ASYNC_DB_URI,
+    connect_args={"ssl": False},
+)
+AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def seed_admin():
-    db = SessionLocal()
-    try:
-        result = db.execute(select(User).filter(User.email == "admin@example.com"))
-        admin = result.scalar_one_or_none()
-        if admin:
-            print("Admin exists, skipping seeding")
-            return
-        admin = User(
-            username="admin",
-            email="admin@example.com",
-            name="Admin User",
-            hashed_password=User.get_password_hash("test1234"),
-        )
-        db.add(admin)
-        db.commit()
-        print("Admin user created successfully!")
-    except Exception as e:
-        print(f"Error creating admin user: {e}")
-        db.rollback()
-    finally:
-        db.close()
+async def seed_admin():
+    async with AsyncSessionLocal() as db:
+        try:
+            result = await db.execute(
+                select(User).filter(User.email == "admin@example.com")
+            )
+            admin = result.scalar_one_or_none()
+            if admin:
+                print("Admin exists, skipping seeding")
+                return
+            admin = User(
+                username="admin",
+                email="admin@example.com",
+                name="Admin User",
+                hashed_password=User.get_password_hash("test1234"),
+            )
+            db.add(admin)
+            await db.commit()
+            print("Admin user created successfully!")
+        except Exception as e:
+            print(f"Error creating admin user: {e}")
+            await db.rollback()
 
 
-def seed_user():
-    db = SessionLocal()
-    try:
-        result = db.execute(select(User).filter(User.email == "user@example.com"))
-        user = result.scalar_one_or_none()
-        if user:
-            print("User exists, skipping seeding")
-            return
-        user = User(
-            username="user",
-            email="user@example.com",
-            name="Test User",
-            hashed_password=User.get_password_hash("test1234"),
-        )
-        db.add(user)
-        db.commit()
-        print("Test user created successfully!")
-    except Exception as e:
-        print(f"Error creating test user: {e}")
-        db.rollback()
-    finally:
-        db.close()
+async def seed_user():
+    async with AsyncSessionLocal() as db:
+        try:
+            result = await db.execute(
+                select(User).filter(User.email == "user@example.com")
+            )
+            user = result.scalar_one_or_none()
+            if user:
+                print("User exists, skipping seeding")
+                return
+            user = User(
+                username="user",
+                email="user@example.com",
+                name="Test User",
+                hashed_password=User.get_password_hash("test1234"),
+            )
+            db.add(user)
+            await db.commit()
+            print("Test user created successfully!")
+        except Exception as e:
+            print(f"Error creating test user: {e}")
+            await db.rollback()
+
+
+async def main():
+    await seed_admin()
+    await seed_user()
 
 
 if __name__ == "__main__":
-    seed_admin()
-    seed_user()
+    asyncio.run(main())

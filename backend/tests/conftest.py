@@ -3,7 +3,7 @@ import asyncio
 import respx
 from httpx import AsyncClient, ASGITransport
 from main import app
-from sqlalchemy import text, create_engine
+from sqlalchemy import text
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -16,7 +16,7 @@ from langgraph.store.memory import InMemoryStore
 from taskiq import InMemoryBroker
 
 
-def ensure_database_exists(db_uri: str) -> None:
+async def ensure_database_exists(db_uri: str) -> None:
     """Create the database if it doesn't exist."""
     if "/" not in db_uri:
         return
@@ -25,24 +25,31 @@ def ensure_database_exists(db_uri: str) -> None:
     if "?" in db_name:
         db_name = db_name.split("?")[0]
 
-    postgres_uri = f"{base_uri}/postgres"
+    # Convert to asyncpg format for async engine
+    postgres_uri = f"{base_uri}/postgres".replace(
+        "postgresql://", "postgresql+asyncpg://"
+    )
 
     try:
-        engine = create_engine(postgres_uri, isolation_level="AUTOCOMMIT")
-        with engine.connect() as conn:
-            result = conn.execute(
+        engine = create_async_engine(
+            postgres_uri,
+            isolation_level="AUTOCOMMIT",
+            connect_args={"ssl": False},
+        )
+        async with engine.connect() as conn:
+            result = await conn.execute(
                 text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
                 {"dbname": db_name},
             )
             if not result.fetchone():
-                conn.execute(text(f'CREATE DATABASE "{db_name}"'))
-        engine.dispose()
+                await conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+        await engine.dispose()
     except (OperationalError, ProgrammingError):
         pass
 
 
 # Ensure database exists before tests run
-ensure_database_exists(DB_URI)
+asyncio.get_event_loop().run_until_complete(ensure_database_exists(DB_URI))
 
 
 class TestInMemoryStore(InMemoryStore):
