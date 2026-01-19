@@ -255,8 +255,8 @@ class TestPublicAssistantModel(unittest.TestCase):
         self.assertFalse(hasattr(public, "subagents"))
 
 
-class TestAssistantServiceFileSystem(unittest.IsolatedAsyncioTestCase):
-    """Tests for file_system property on assistants."""
+class TestAssistantServiceFiles(unittest.IsolatedAsyncioTestCase):
+    """Tests for files property on assistants."""
 
     async def asyncSetUp(self):
         """Set up test fixtures."""
@@ -271,70 +271,78 @@ class TestAssistantServiceFileSystem(unittest.IsolatedAsyncioTestCase):
             "instructions": None,
         }
 
-    async def test_assistant_with_file_system_property(self):
-        """Test that Assistant model accepts file_system property."""
+    async def test_assistant_with_files_property(self):
+        """Test that Assistant model accepts files property."""
         assistant_data = {
             "name": "Test Assistant",
             "description": "Test",
             "tools": [],
-            "file_system": {
+            "files": {
                 "/README.md": "# Hello World",
                 "/src/main.py": "print('hello')",
             },
         }
         assistant = Assistant(**assistant_data)
-        self.assertEqual(assistant.file_system["/README.md"], "# Hello World")
-        self.assertEqual(assistant.file_system["/src/main.py"], "print('hello')")
+        self.assertEqual(assistant.files["/README.md"], "# Hello World")
+        self.assertEqual(assistant.files["/src/main.py"], "print('hello')")
 
-    async def test_assistant_file_system_defaults_to_empty_dict(self):
-        """Test that file_system defaults to empty dict when not provided."""
+    async def test_assistant_files_defaults_to_empty_dict(self):
+        """Test that files defaults to empty dict when not provided."""
         assistant_data = {
             "name": "Test Assistant",
             "description": "Test",
             "tools": [],
         }
         assistant = Assistant(**assistant_data)
-        self.assertEqual(assistant.file_system, {})
+        self.assertEqual(assistant.files, {})
 
-    async def test_update_persists_file_system(self):
-        """Test that file_system is persisted when updating assistant."""
+    async def test_update_persists_files(self):
+        """Test that files is persisted when updating assistant."""
         assistant_id = str(uuid4())
         assistant_data = {
             **self.assistant_data,
-            "file_system": {"/test.txt": "test content"},
+            "files": {"/test.txt": "test content"},
         }
 
         await self.service.update(assistant_id, assistant_data)
 
         retrieved = await self.service.get(assistant_id)
         self.assertIsNotNone(retrieved)
-        self.assertEqual(retrieved.file_system["/test.txt"], "test content")
+        self.assertEqual(retrieved.files["/test.txt"], "test content")
 
-    async def test_get_returns_file_system(self):
-        """Test that get() returns assistant with file_system intact."""
+    async def test_get_returns_files(self):
+        """Test that get() returns assistant with files intact."""
         assistant_id = str(uuid4())
         files = {
             "/app.py": "import flask",
             "/requirements.txt": "flask==2.0",
         }
-        assistant_data = {**self.assistant_data, "file_system": files}
+        assistant_data = {**self.assistant_data, "files": files}
 
         await self.service.update(assistant_id, assistant_data)
         retrieved = await self.service.get(assistant_id)
 
-        self.assertEqual(retrieved.file_system, files)
+        self.assertEqual(retrieved.files, files)
 
-    async def test_publish_syncs_file_system_to_public(self):
-        """Test that publishing syncs file_system to public namespace."""
+    async def test_publish_preserves_files_in_public_namespace(self):
+        """Test that publishing preserves files data in the public namespace.
+
+        Note: The get_public method returns a full Assistant model.
+        PublicAssistant (used for API responses) would strip sensitive fields.
+        """
         assistant_id = str(uuid4())
-        files = {"/public.md": "# Public Docs"}
-        assistant_data = {**self.assistant_data, "file_system": files}
+        files = {"/readme.md": "# Public Readme"}
+        assistant_data = {**self.assistant_data, "files": files}
 
         await self.service.update(assistant_id, assistant_data)
         await self.service.publish(assistant_id)
 
         public_assistant = await self.service.get_public(assistant_id)
-        self.assertEqual(public_assistant.file_system, files)
+        # get_public returns Assistant model (full data)
+        # API endpoint should convert to PublicAssistant to strip sensitive fields
+        self.assertIsNotNone(public_assistant)
+        self.assertTrue(public_assistant.public)
+        self.assertEqual(public_assistant.files, files)
 
 
 if __name__ == "__main__":
