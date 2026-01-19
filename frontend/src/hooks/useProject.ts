@@ -89,9 +89,7 @@ export function useProject() {
 
 			// Update local state
 			setProjects((prev) =>
-				prev.map((p) =>
-					p.id === projectId ? { ...p, ...updatedProject } : p,
-				),
+				prev.map((p) => (p.id === projectId ? { ...p, ...updatedProject } : p)),
 			);
 
 			// Update selected project if it's the one being edited

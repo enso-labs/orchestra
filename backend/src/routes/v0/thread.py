@@ -271,6 +271,56 @@ async def stream_thread(
         ) from e
 
 
+@router.post(
+    "/threads/{thread_id}/abort",
+    name="Abort Thread Task",
+    operation_id="ruska_abort_thread",
+    tags=["Thread"],
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def abort_thread(
+    thread_id: str,
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """
+    Send abort signal to a running distributed worker task.
+
+    The worker will gracefully terminate at the next iteration checkpoint,
+    sending an 'aborted' event before closing the stream.
+
+    Security:
+    - Requires authentication
+    - Verifies user owns the thread before signaling abort
+    - Logs abort request for audit trail
+
+    Args:
+        thread_id: The thread ID of the running task
+
+    Returns:
+        202 Accepted: Abort signal sent (worker may not receive immediately)
+        403 Forbidden: User does not own this thread
+        404 Not Found: Thread does not exist
+    """
+    from src.services.abort import AbortService
+
+    abort_service = AbortService(user_id=user.id, store=store)
+
+    try:
+        result = await abort_service.request_abort(thread_id)
+        return {"status": "accepted", "thread_id": thread_id, "message": result}
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        logger.exception(f"Error aborting thread {thread_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
+
 @router.patch(
     "/threads/{thread_id}",
     name="Update Thread",

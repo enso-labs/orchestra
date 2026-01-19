@@ -119,11 +119,26 @@ export default function useChat(): ChatContextType {
 	const [submitStartTime, setSubmitStartTime] = useState<number | null>(null);
 	const submitStartTimeRef = useRef<number | null>(null);
 
-	const abortQuery = () => {
+	const abortQuery = async () => {
+		// Send abort signal to backend for distributed mode (fire-and-forget for responsive UX)
+		const threadId = metadata?.thread_id;
+		if (threadId) {
+			import("@/lib/services/threadService")
+				.then(({ abortThread }) => abortThread(threadId))
+				.then(() => console.log("Backend abort signal sent"))
+				.catch((err) =>
+					console.warn("Failed to send backend abort signal:", err),
+				);
+		}
+
+		// Immediately close local connection for responsive UX
 		if (controller) {
 			controller.abort();
 			setController(null);
 		}
+
+		setLoading(false);
+		setLoadingMessage("");
 	};
 
 	const sseHandler = (payload: any, messages: any[]) => {
@@ -145,6 +160,8 @@ export default function useChat(): ChatContextType {
 				return ["values", event.data];
 			case "error":
 				return ["error", event.data.error];
+			case "aborted":
+				return ["aborted", event.data];
 			case "done":
 				return null; // Handled separately
 			default:
@@ -442,6 +459,14 @@ export default function useChat(): ChatContextType {
 
 		if (streamMode === "error") {
 			alert("Error on stream: " + payload[1]);
+			setLoading(false);
+			setController(null);
+			return;
+		}
+
+		// Handle aborted events from distributed workers
+		if (streamMode === "aborted") {
+			console.log("Stream aborted by server:", payload[1]?.reason);
 			setLoading(false);
 			setController(null);
 			return;

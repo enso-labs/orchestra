@@ -28,7 +28,12 @@ export function isDistributedResponse(
 }
 
 // SSE Event types
-export type SSEEventType = "metadata" | "messages" | "values" | "error";
+export type SSEEventType =
+	| "metadata"
+	| "messages"
+	| "values"
+	| "error"
+	| "aborted";
 
 export interface MetadataEvent {
 	type: "metadata";
@@ -58,7 +63,17 @@ export interface ErrorEvent {
 	data: { error: string };
 }
 
-export type SSEEvent = MetadataEvent | MessagesEvent | ValuesEvent | ErrorEvent;
+export interface AbortedEvent {
+	type: "aborted";
+	data: { reason: string };
+}
+
+export type SSEEvent =
+	| MetadataEvent
+	| MessagesEvent
+	| ValuesEvent
+	| ErrorEvent
+	| AbortedEvent;
 
 export interface DoneSignal {
 	type: "done";
