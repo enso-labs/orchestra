@@ -63,7 +63,16 @@ async def ensure_database_exists(db_uri: str) -> None:
         pass
 
 
-asyncio.run(ensure_database_exists(DB_URI))
+# Handle both sync (tests) and async (app lifespan) contexts
+try:
+    asyncio.get_running_loop()
+    # Already in an async context - run in a separate thread with its own loop
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        pool.submit(asyncio.run, ensure_database_exists(DB_URI)).result()
+except RuntimeError:
+    # No running loop - safe to use asyncio.run() directly
+    asyncio.run(ensure_database_exists(DB_URI))
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DB_URI)
