@@ -61,14 +61,22 @@ def get_db_uri_session():
 DB_URI_SESSION = get_db_uri_session()
 
 # TCP Keepalive Settings for long-running checkpoint connections
-DB_KEEPALIVE_IDLE = int(os.getenv("DB_KEEPALIVE_IDLE", "60"))  # seconds before first probe
-DB_KEEPALIVE_INTERVAL = int(os.getenv("DB_KEEPALIVE_INTERVAL", "15"))  # seconds between probes
-DB_KEEPALIVE_COUNT = int(os.getenv("DB_KEEPALIVE_COUNT", "4"))  # failed probes before dead
+DB_KEEPALIVE_IDLE = int(
+    os.getenv("DB_KEEPALIVE_IDLE", "60")
+)  # seconds before first probe
+DB_KEEPALIVE_INTERVAL = int(
+    os.getenv("DB_KEEPALIVE_INTERVAL", "15")
+)  # seconds between probes
+DB_KEEPALIVE_COUNT = int(
+    os.getenv("DB_KEEPALIVE_COUNT", "4")
+)  # failed probes before dead
 
 # Checkpoint Resilience Settings
 CHECKPOINT_MAX_RETRIES = int(os.getenv("CHECKPOINT_MAX_RETRIES", "3"))
 CHECKPOINT_RETRY_DELAY = float(os.getenv("CHECKPOINT_RETRY_DELAY", "1.0"))  # seconds
-CHECKPOINT_MAX_DELAY = float(os.getenv("CHECKPOINT_MAX_DELAY", "30.0"))  # max backoff cap
+CHECKPOINT_MAX_DELAY = float(
+    os.getenv("CHECKPOINT_MAX_DELAY", "30.0")
+)  # max backoff cap
 CHECKPOINT_JITTER = float(os.getenv("CHECKPOINT_JITTER", "0.1"))  # randomization factor
 CHECKPOINT_HEALTH_CHECK_INTERVAL = int(
     os.getenv("CHECKPOINT_HEALTH_CHECK_INTERVAL", "30")

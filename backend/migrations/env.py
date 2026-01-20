@@ -63,7 +63,7 @@ async def ensure_database_exists(db_uri: str) -> None:
         pass
 
 
-asyncio.get_event_loop().run_until_complete(ensure_database_exists(DB_URI))
+asyncio.run(ensure_database_exists(DB_URI))
 
 config = context.config
 config.set_main_option("sqlalchemy.url", DB_URI)

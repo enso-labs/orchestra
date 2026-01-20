@@ -2,7 +2,6 @@
 
 import os
 import unittest
-import asyncio
 
 from langgraph.store.base import SearchItem
 from tests import get_test_user
@@ -14,15 +13,19 @@ from src.repos.user_repo import UserRepo
 
 
 class TestSourceService(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Run synchronous setup once before any tests."""
         os.environ["APP_ENV"] = "test"
         run_migrations()
         seed_admin()
+
+    async def asyncSetUp(self) -> None:
+        """Async-specific setup for each test."""
         self.user = await get_test_user()
         self.source_service = SourceService(user_id=self.user.id)
 
-    # @unittest.skip("Skipping vector search test")
-    async def test_source_lifecycle(self):
+    async def test_source_lifecycle(self) -> None:
         VALID_SOURCES = [
             Source(
                 type="web_scrape",

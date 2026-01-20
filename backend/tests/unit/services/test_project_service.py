@@ -14,10 +14,13 @@ from langchain_core.documents import Document
 
 
 class TestProjectService(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
+    @classmethod
+    def setUpClass(cls):
         os.environ["APP_ENV"] = "test"
         run_migrations()
-        seed_admin()
+
+    async def asyncSetUp(self):
+        await seed_admin()
         self.project_id = "test-project-id"
         self.user = await get_test_user()
         self.project_service = ProjectService(

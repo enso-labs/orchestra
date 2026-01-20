@@ -37,7 +37,11 @@ class TestSearchWithSearx:
         mock_searx_class.return_value = mock_searx
 
         results, error = await _search_with_searx(
-            query="test query", num_results=5, searx_url="http://searx:8080"
+            query="test query",
+            num_results=5,
+            searx_url="http://searx:8080",
+            engines=["google"],
+            categories=["general"],
         )
 
         assert len(results) == 1
@@ -53,7 +57,11 @@ class TestSearchWithSearx:
         mock_searx_class.return_value = mock_searx
 
         results, error = await _search_with_searx(
-            query="test query", num_results=5, searx_url="http://searx:8080"
+            query="test query",
+            num_results=5,
+            searx_url="http://searx:8080",
+            engines=["google"],
+            categories=["general"],
         )
 
         assert results == []
@@ -68,7 +76,11 @@ class TestSearchWithSearx:
         mock_searx_class.return_value = mock_searx
 
         results, error = await _search_with_searx(
-            query="test query", num_results=5, searx_url="http://searx:8080"
+            query="test query",
+            num_results=5,
+            searx_url="http://searx:8080",
+            engines=["google"],
+            categories=["general"],
         )
 
         assert results == []

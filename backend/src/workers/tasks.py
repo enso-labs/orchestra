@@ -36,6 +36,7 @@ async def run_agent_stream(
     4. Constructs and runs the agent
     5. Streams each chunk to a Redis stream for SSE consumption
     6. Signals completion with a done marker
+    7. Checks for abort signals before and during execution
 
     Args:
         task_dict: Serialized LLMRequest as dict
@@ -57,12 +58,35 @@ async def run_agent_stream(
     from src.utils.format import get_time
     from src.constants import CHECKPOINT_USE_RESILIENT
     from src.services.errors import CheckpointConnectionError
+    from src.services.abort import AbortService
 
     stream_key = f"agent:stream:{thread_id}"
     redis_client = redis.from_url(REDIS_URL)
 
     # Clear any existing stream from previous turns on this thread
     await redis_client.delete(stream_key)
+
+    # Pre-start abort check: Handle race condition where abort arrives before task starts
+    if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
+        logger.info(
+            "task_pre_aborted",
+            extra={
+                "event": "task_pre_aborted",
+                "thread_id": thread_id,
+                "user_id": user_id,
+            },
+        )
+        # Write abort marker to stream for any listening clients
+        await redis_client.xadd(
+            stream_key,
+            {"data": ujson.dumps(("aborted", {"reason": "pre_aborted"}))},
+        )
+        await redis_client.xadd(stream_key, {"done": "true"})
+        await redis_client.expire(stream_key, 300)
+        # Clear the abort signal
+        await AbortService.clear_abort_signal(thread_id)
+        await redis_client.aclose()
+        return {"status": "aborted", "stream_key": stream_key}
 
     try:
         # Reconstruct request from dict
@@ -169,9 +193,10 @@ async def _execute_agent_stream(
     stream_key,
     redis_client,
 ) -> dict:
-    """Execute the agent stream logic.
+    """Execute the agent stream logic with abort signal checking.
 
     Extracted to reduce duplication between resilient and legacy modes.
+    Checks for abort signals on every chunk for responsive cancellation.
     """
     from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
@@ -181,6 +206,7 @@ async def _execute_agent_stream(
     from src.utils.format import get_time
     from src.utils.logger import logger
     from src.services.errors import CheckpointConnectionError
+    from src.services.abort import AbortService
 
     # Get assistant config if needed
     params = await service_context.llm_service.assistant(params)
@@ -234,6 +260,27 @@ async def _execute_agent_stream(
         config=config,
         context=ctx_schema,
     ):
+        # Check for abort signal on every chunk for responsive cancellation
+        if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
+            logger.info(
+                "task_aborted_by_user",
+                extra={
+                    "event": "task_aborted_by_user",
+                    "thread_id": thread_id,
+                    "user_id": user_id,
+                },
+            )
+            # Send abort acknowledgment to client
+            await redis_client.xadd(
+                stream_key,
+                {"data": ujson.dumps(("aborted", {"reason": "user_requested"}))},
+            )
+            await redis_client.xadd(stream_key, {"done": "true"})
+            await redis_client.expire(stream_key, 300)
+            # Clear abort signal
+            await AbortService.clear_abort_signal(thread_id)
+            return {"status": "aborted", "stream_key": stream_key}
+
         stream_chunk = handle_multi_mode(chunk)
         if stream_chunk:
             stream_type = stream_chunk[0]

@@ -181,25 +181,25 @@ async def urls_to_markdown(
 
 Categories = Literal[
     "general",
-    "images",
+    # "images",
     "videos",
     "news",
     "map",
-    "music",
+    # "music",
     "it",
     "science",
     "files",
-    "social media",
+    # "social media",
 ]
 Engines = Literal[
     "duckduckgo",
     "google",
     "bing",
     "github",
-    "wikipedia",
+    # "wikipedia",
     "reuters",
     "arxiv",
-    "adobe_stock",
+    # "adobe_stock",
 ]
 
 
@@ -207,7 +207,11 @@ Engines = Literal[
 # Search Provider Helpers
 # -----------------------------
 async def _search_with_searx(
-    query: str, num_results: int, searx_url: str
+    query: str,
+    num_results: int,
+    searx_url: str,
+    engines: List[Literal[Engines]],
+    categories: List[Literal[Categories]],
 ) -> tuple[list, Exception | None]:
     """
     Execute search using SearXNG.
@@ -216,7 +220,10 @@ async def _search_with_searx(
     try:
         searx = SearxSearchWrapper(searx_host=searx_url)
         results = await searx.aresults(
-            query=query, num_results=num_results, engines=["google", "bing"]
+            query=query,
+            num_results=num_results,
+            engines=engines,
+            categories=categories,
         )
         return results, None
     except Exception as e:
@@ -273,6 +280,8 @@ async def _search_with_tavily(
 async def web_search(
     query: str,
     num_results: Optional[int] = 5,
+    engines: Optional[List[Literal[Engines]]] = ["google"],
+    categories: Optional[List[Literal[Categories]]] = ["general"],
 ) -> list:
     """
     Execute a web search and return high-signal results for expert-level research.
@@ -342,6 +351,8 @@ async def web_search(
             query=query,
             num_results=num_results,
             searx_url=SEARX_SEARCH_HOST_URL,
+            engines=engines,
+            categories=categories,
         )
 
         if results:

@@ -29,7 +29,11 @@ export default function ProjectPage() {
 	const navigate = useNavigate();
 	const { loading, appVersion } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
-	const { selectProject, handleUpdateProject, loading: projectLoading2 } = useProjectContext();
+	const {
+		selectProject,
+		handleUpdateProject,
+		loading: projectLoading2,
+	} = useProjectContext();
 	const {
 		messages,
 		setViewMode,

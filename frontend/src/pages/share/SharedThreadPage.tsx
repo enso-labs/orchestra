@@ -2,7 +2,10 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import NoAuthLayout from "@/layouts/NoAuthLayout";
 import { MessageSquare, AlertCircle, Share2 } from "lucide-react";
-import { shareService, SharedThreadResponse } from "@/lib/services/shareService";
+import {
+	shareService,
+	SharedThreadResponse,
+} from "@/lib/services/shareService";
 import { formatMessages } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import ChatMessages from "@/components/lists/ChatMessages";
@@ -20,7 +23,7 @@ export default function SharedThreadPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [sharedData, setSharedData] = useState<SharedThreadResponse | null>(
-		null
+		null,
 	);
 	const [formattedMessages, setFormattedMessages] = useState<any[]>([]);
 	const lastFetchedTokenRef = useRef<string | null>(null);
@@ -60,7 +63,7 @@ export default function SharedThreadPage() {
 			} catch (err: any) {
 				console.error("Error loading shared thread:", err);
 				setError(
-					err.response?.data?.detail || "This shared link is not available"
+					err.response?.data?.detail || "This shared link is not available",
 				);
 				lastFetchedTokenRef.current = null;
 			} finally {
@@ -101,7 +104,8 @@ export default function SharedThreadPage() {
 	}
 
 	const { thread, config } = sharedData;
-	const hasFiles = thread.files && Object.keys(thread.files).length > 0 && config.show_files;
+	const hasFiles =
+		thread.files && Object.keys(thread.files).length > 0 && config.show_files;
 
 	// Header component to reuse in both layouts
 	const Header = () => (

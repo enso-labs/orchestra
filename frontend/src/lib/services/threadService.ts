@@ -341,3 +341,38 @@ export const searchThreadsSemantic = async (
 		throw new Error(error.response?.data?.detail || "Failed to search threads");
 	}
 };
+
+/**
+ * Sends an abort signal to a running distributed worker task.
+ * The worker will gracefully terminate at the next iteration checkpoint.
+ *
+ * @param threadId - The thread ID of the running task
+ * @returns Promise resolving to abort response with status and message
+ * @throws Error on auth failure (401), not found (404), or forbidden (403)
+ */
+export const abortThread = async (
+	threadId: string,
+): Promise<{ status: string; thread_id: string; message: string }> => {
+	try {
+		const response = await apiClient.post(
+			`/threads/${threadId}/abort`,
+			{},
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${getAuthToken()}`,
+				},
+			},
+		);
+		return response.data;
+	} catch (error: any) {
+		console.error("Error aborting thread:", error);
+		if (error.response?.status === 403) {
+			throw new Error("Not authorized to abort this thread");
+		}
+		if (error.response?.status === 404) {
+			throw new Error("Thread not found");
+		}
+		throw new Error(error.response?.data?.detail || "Failed to abort thread");
+	}
+};

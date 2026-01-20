@@ -431,7 +431,9 @@ class ResilientAsyncPostgresSaver:
 
         async def _op():
             if self._saver:
-                return await self._saver.aput(config, checkpoint, metadata, new_versions)
+                return await self._saver.aput(
+                    config, checkpoint, metadata, new_versions
+                )
             return config
 
         result = await self._execute_with_retry("aput", _op)

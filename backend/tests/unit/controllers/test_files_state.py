@@ -12,15 +12,19 @@ import pytest
 class TestFilesStateInitialization:
     """Test files state initialization with edge cases."""
 
-    def test_llm_input_files_defaults_to_none(self):
-        """Test that LLMInput.files defaults to None (Optional field)."""
+    def test_llm_input_files_defaults_to_empty_dict(self):
+        """Test that LLMInput.files defaults to empty dict.
+
+        The schema uses default_factory=dict to ensure files is never None,
+        which prevents AttributeError in _file_data_reducer (GitHub Issue #677).
+        """
         from src.schemas.entities.llm import LLMInput
 
         input_data = {"messages": [{"role": "user", "content": "Hello"}]}
         llm_input = LLMInput(**input_data)
 
-        # files field defaults to None per schema definition
-        assert llm_input.files is None
+        # files field defaults to {} per schema definition (not None)
+        assert llm_input.files == {}
 
     def test_llm_input_files_accepts_valid_dict(self):
         """Test that LLMInput.files accepts a valid dict."""
@@ -34,10 +38,11 @@ class TestFilesStateInitialization:
 
         assert llm_input.files == {"/test.txt": "content"}
 
-    def test_llm_input_files_none_handled_with_null_coalescing(self):
-        """Test that None for files is handled gracefully with null coalescing.
+    def test_llm_input_files_none_converted_to_empty_dict(self):
+        """Test that None for files is converted to empty dict by the validator.
 
-        Even if files is None, downstream code handles it with `or {}`.
+        The schema has a field_validator that ensures files is never None,
+        converting None to {} automatically.
         """
         from src.schemas.entities.llm import LLMInput
 
@@ -47,10 +52,9 @@ class TestFilesStateInitialization:
         }
         llm_input = LLMInput(**input_data)
 
-        # When files is None, the `or {}` pattern should handle it
-        files = llm_input.files or {}
-        assert isinstance(files, dict)
-        assert files == {}
+        # The validator ensures files is always a dict, never None
+        assert llm_input.files == {}
+        assert isinstance(llm_input.files, dict)
 
 
 class TestLLMControllerFilesState:
