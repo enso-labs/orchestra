@@ -14,10 +14,14 @@ Design:
 - Uses Redis keys with TTL for automatic cleanup
 - Signal pattern: abort:signal:{thread_id}
 - Workers poll this key during streaming
+- Abort signals store structured JSON with requester identity
+- Workers validate expected_user_id matches stored requester
 """
 
+import json
 import redis.asyncio as redis
 from datetime import datetime, timezone
+from typing import Optional
 from langgraph.store.base import BaseStore
 
 from src.workers.broker import REDIS_URL
@@ -145,6 +149,10 @@ class AbortService:
     async def _set_abort_signal(self, thread_id: str) -> None:
         """Set abort signal in Redis for worker to poll.
 
+        Stores structured JSON data including the requesting user's ID,
+        allowing workers to validate that the abort request came from the
+        expected user.
+
         Args:
             thread_id: The thread ID to set abort signal for
         """
@@ -155,27 +163,59 @@ class AbortService:
                 "requested_by": self.user_id,
                 "requested_at": datetime.now(timezone.utc).isoformat(),
             }
-            await redis_client.set(key, str(signal_data), ex=ABORT_SIGNAL_TTL)
+            await redis_client.set(key, json.dumps(signal_data), ex=ABORT_SIGNAL_TTL)
         finally:
             await redis_client.aclose()
 
     @staticmethod
-    async def check_abort_signal(thread_id: str) -> bool:
-        """Check if an abort signal exists for a thread.
+    async def check_abort_signal(
+        thread_id: str, expected_user_id: Optional[str] = None
+    ) -> bool:
+        """Check if an abort signal exists for a thread from the expected user.
 
         Used by workers to poll for abort requests. This is a static method
         so it can be called without user context from worker tasks.
 
+        When expected_user_id is provided, validates that the stored abort
+        signal was requested by that user, preventing unauthorized callers
+        from triggering aborts.
+
         Args:
             thread_id: Thread ID to check
+            expected_user_id: If provided, only return True if the abort
+                signal was requested by this user
 
         Returns:
-            True if abort signal exists, False otherwise
+            True if abort signal exists and (if expected_user_id is provided)
+            the stored requester matches, False otherwise
         """
         redis_client = redis.from_url(REDIS_URL)
         try:
             key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-            return await redis_client.exists(key) > 0
+            stored_data = await redis_client.get(key)
+
+            if not stored_data:
+                return False
+
+            # If no expected_user_id provided, just check existence (legacy behavior)
+            if expected_user_id is None:
+                return True
+
+            # Parse stored JSON and validate requester
+            try:
+                signal = json.loads(stored_data)
+                return signal.get("requested_by") == expected_user_id
+            except (json.JSONDecodeError, TypeError):
+                # Invalid JSON stored - treat as no valid signal
+                logger.warning(
+                    "abort_signal_invalid_json",
+                    extra={
+                        "event": "abort_signal_invalid_json",
+                        "thread_id": thread_id,
+                    },
+                )
+                return False
+
         except Exception as e:
             # Log but don't fail - worker continues if check fails
             logger.warning(

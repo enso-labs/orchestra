@@ -67,7 +67,7 @@ async def run_agent_stream(
     await redis_client.delete(stream_key)
 
     # Pre-start abort check: Handle race condition where abort arrives before task starts
-    if await AbortService.check_abort_signal(thread_id):
+    if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
         logger.info(
             "task_pre_aborted",
             extra={
@@ -261,7 +261,7 @@ async def _execute_agent_stream(
         context=ctx_schema,
     ):
         # Check for abort signal on every chunk for responsive cancellation
-        if await AbortService.check_abort_signal(thread_id):
+        if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
             logger.info(
                 "task_aborted_by_user",
                 extra={
