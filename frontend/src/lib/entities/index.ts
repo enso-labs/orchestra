@@ -14,6 +14,7 @@ export interface ThreadPayload {
 
 export * from "./thread";
 export * from "./stream";
+export * from "./queue";
 
 export type Agent = {
 	id: string;

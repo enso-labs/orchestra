@@ -25,7 +25,7 @@ export type ChatContextType = {
 	setQuery: (query: string) => void;
 	appendToQuery: (text: string) => void;
 	inputRef: React.RefObject<HTMLTextAreaElement>;
-	handleSubmit: (query: string) => void;
+	handleSubmit: (query?: string, images?: File[]) => Promise<void>;
 	sseHandler: (
 		payload: any,
 		messages: any[],

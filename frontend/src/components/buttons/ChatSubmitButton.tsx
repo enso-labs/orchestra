@@ -8,18 +8,29 @@ import apiClient from "../../lib/utils/apiClient";
 
 interface ChatSubmitButtonProps {
 	abortQuery: () => void;
-	handleSubmit: (query: string, images: File[]) => void;
+	/** @deprecated Use enqueue from context instead */
+	handleSubmit?: (query: string, images: File[]) => void;
 	onRecordingChange?: (isRecording: boolean) => void;
 	recorderControls?: any;
 }
 
 function ChatSubmitButton({
 	abortQuery,
-	handleSubmit,
+	handleSubmit: _handleSubmit,
 	onRecordingChange,
 	recorderControls,
 }: ChatSubmitButtonProps) {
-	const { controller, query, images, setQuery } = useChatContext();
+	// _handleSubmit is kept for backward compatibility but enqueue from context is used instead
+	void _handleSubmit;
+	const { controller, query, images, setQuery, setImages, enqueue } =
+		useChatContext();
+
+	// Helper to enqueue and clear input
+	const handleEnqueue = () => {
+		enqueue(query, images);
+		setQuery("");
+		setImages([]);
+	};
 
 	const { startRecording, stopRecording, isRecordingInProgress, recordedBlob } =
 		recorderControls || {};
@@ -96,17 +107,39 @@ function ChatSubmitButton({
 		}
 	};
 
+	// During streaming, show abort button and optionally submit-to-queue button
 	if (controller) {
+		const hasContent = query.trim() !== "" || images.length > 0;
+
 		return (
-			<MainToolTip content="Abort" delayDuration={500}>
-				<Button
-					onClick={abortQuery}
-					size="icon"
-					className="w-10 h-10 rounded-full m-1 bg-red-500"
-				>
-					<FaStop className="h-7 w-7" />
-				</Button>
-			</MainToolTip>
+			<div className="flex items-center gap-1">
+				{/* Submit-to-queue button (when there's content during streaming) */}
+				{hasContent && (
+					<MainToolTip content="Add to queue" delayDuration={500}>
+						<Button
+							onClick={(e) => {
+								e.stopPropagation();
+								handleEnqueue();
+							}}
+							size="icon"
+							className="w-10 h-10 rounded-full m-1"
+						>
+							<ArrowUp className="h-7 w-7" />
+						</Button>
+					</MainToolTip>
+				)}
+
+				{/* Abort button */}
+				<MainToolTip content="Abort" delayDuration={500}>
+					<Button
+						onClick={abortQuery}
+						size="icon"
+						className="w-10 h-10 rounded-full m-1 bg-red-500"
+					>
+						<FaStop className="h-7 w-7" />
+					</Button>
+				</MainToolTip>
+			</div>
 		);
 	}
 
@@ -151,7 +184,8 @@ function ChatSubmitButton({
 			<Button
 				onClick={(e) => {
 					e.stopPropagation();
-					handleSubmit(query, images);
+					// Use enqueue for consistency with queue system
+					handleEnqueue();
 				}}
 				disabled={false}
 				size="icon"
