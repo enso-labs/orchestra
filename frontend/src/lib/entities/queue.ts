@@ -15,6 +15,8 @@ export interface QueuedMessage {
 	images: File[];
 	/** Timestamp when the message was queued */
 	queuedAt: number;
+	/** Number of times this message has been retried after failure */
+	retryCount: number;
 }
 
 /**
@@ -42,8 +44,8 @@ export interface UseMessageQueueReturn {
 	editingId: string | null;
 
 	// Actions (stable via useCallback)
-	/** Add a new message to the queue */
-	enqueue: (query: string, images?: File[]) => void;
+	/** Add a new message to the queue. Returns true if added successfully. */
+	enqueue: (query: string, images?: File[]) => boolean;
 	/** Remove a specific message from the queue by ID */
 	dequeue: (id: string) => void;
 	/** Clear all messages from the queue */

@@ -144,7 +144,7 @@ export function QueuePanel() {
 					<QueueItem
 						key={item.id}
 						item={item}
-						index={index}
+						index={index + 1}
 						onEdit={updateQueuedMessage}
 						onRemove={dequeue}
 						onEditingChange={setEditingId}

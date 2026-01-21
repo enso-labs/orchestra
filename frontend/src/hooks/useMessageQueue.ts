@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import type {
 	QueuedMessage,
 	UseMessageQueueConfig,
 	UseMessageQueueReturn,
 } from "@/lib/entities/queue";
+
+/** Maximum number of retry attempts before dropping a message */
+const MAX_RETRIES = 3;
+
+/** Maximum number of messages allowed in the queue */
+const MAX_QUEUE_SIZE = 10;
 
 /**
  * Custom hook for managing a frontend message queue.
@@ -71,6 +78,10 @@ export function useMessageQueue(
 	 * Process the next message in the queue.
 	 * Internal function - not exposed in return value.
 	 * Skips processing if the first message is currently being edited.
+	 * 
+	 * Only removes the message from the queue after successful submission.
+	 * On failure, increments retryCount and re-attempts on next cycle.
+	 * Drops the message and notifies the user if maxRetries is exceeded.
 	 */
 	const processNext = useCallback(async () => {
 		// Guard against concurrent processing
@@ -83,20 +94,53 @@ export function useMessageQueue(
 			return;
 		}
 
+		// Check if message has exceeded max retries before attempting
+		if (firstMessage.retryCount >= MAX_RETRIES) {
+			// Drop the message and notify user
+			const [, ...rest] = queueRef.current;
+			queueRef.current = rest;
+			setQueueLength(rest.length);
+			setQueuedItems([...rest]);
+			
+			toast.error("Message dropped after max retries", {
+				description: `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`,
+			});
+			
+			// Continue processing next message if any
+			if (rest.length > 0) {
+				setTimeout(() => processNext(), 100);
+			}
+			return;
+		}
+
 		processingRef.current = true;
 		setIsProcessing(true);
 
-		// Pop the first message from the queue
-		const [nextMessage, ...rest] = queueRef.current;
-		queueRef.current = rest;
-		setQueueLength(rest.length);
-		setQueuedItems([...rest]);
-
 		try {
-			await executeSubmit(nextMessage.query, nextMessage.images);
+			await executeSubmit(firstMessage.query, firstMessage.images);
+			
+			// Success - remove the message from the queue
+			const [, ...rest] = queueRef.current;
+			queueRef.current = rest;
+			setQueueLength(rest.length);
+			setQueuedItems([...rest]);
 		} catch (error) {
 			console.error("Error processing queued message:", error);
-			// On error, preserve the queue (don't lose remaining messages)
+			
+			// Increment retry count on the message at the front of the queue
+			const updatedMessage: QueuedMessage = {
+				...firstMessage,
+				retryCount: firstMessage.retryCount + 1,
+			};
+			queueRef.current = [updatedMessage, ...queueRef.current.slice(1)];
+			setQueuedItems([...queueRef.current]);
+			
+			// Notify user of retry
+			if (updatedMessage.retryCount < MAX_RETRIES) {
+				toast.warning(`Message will retry (${updatedMessage.retryCount}/${MAX_RETRIES})`, {
+					description: `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`,
+				});
+			}
 		} finally {
 			processingRef.current = false;
 			setIsProcessing(false);
@@ -114,14 +158,33 @@ export function useMessageQueue(
 	/**
 	 * Add a message to the queue.
 	 * If not currently streaming, processes immediately.
+	 * Enforces MAX_QUEUE_SIZE limit by dropping oldest messages if necessary.
+	 *
+	 * @returns true if message was added successfully, false if rejected
 	 */
 	const enqueue = useCallback(
-		(query: string, images: File[] = []) => {
+		(query: string, images: File[] = []): boolean => {
+			// Enforce MAX_QUEUE_SIZE: drop oldest messages to make room
+			if (queueRef.current.length >= MAX_QUEUE_SIZE) {
+				const droppedCount = queueRef.current.length - MAX_QUEUE_SIZE + 1;
+				const droppedMessages = queueRef.current.slice(0, droppedCount);
+
+				// Remove oldest message(s) to make room
+				queueRef.current = queueRef.current.slice(droppedCount);
+
+				// Log warning for dropped messages
+				console.warn(
+					`[MessageQueue] Queue full (${MAX_QUEUE_SIZE}). Dropped ${droppedCount} oldest message(s):`,
+					droppedMessages.map((m) => m.query.slice(0, 50)),
+				);
+			}
+
 			const newMessage: QueuedMessage = {
 				id: generateId(),
 				query,
 				images,
 				queuedAt: Date.now(),
+				retryCount: 0,
 			};
 
 			queueRef.current = [...queueRef.current, newMessage];
@@ -131,6 +194,8 @@ export function useMessageQueue(
 			if (!isStreaming && !processingRef.current) {
 				processNext();
 			}
+
+			return true;
 		},
 		[generateId, isStreaming, processNext, syncQueueState],
 	);
@@ -179,13 +244,21 @@ export function useMessageQueue(
 		const wasStreaming = prevStreamingRef.current;
 		prevStreamingRef.current = isStreaming;
 
+		let timerId: ReturnType<typeof setTimeout> | undefined;
+
 		// Stream just completed - process next if queue has items
 		if (wasStreaming && !isStreaming && queueRef.current.length > 0) {
 			// Small delay to ensure stream is fully closed
-			setTimeout(() => {
+			timerId = setTimeout(() => {
 				processNext();
 			}, 100);
 		}
+
+		return () => {
+			if (timerId !== undefined) {
+				clearTimeout(timerId);
+			}
+		};
 	}, [isStreaming, processNext]);
 
 	/**
@@ -196,13 +269,21 @@ export function useMessageQueue(
 		const wasEditing = prevEditingIdRef.current;
 		prevEditingIdRef.current = editingId;
 
+		let timerId: ReturnType<typeof setTimeout> | undefined;
+
 		// Editing just ended - process next if not streaming and queue has items
 		if (wasEditing !== null && editingId === null && !isStreaming && queueRef.current.length > 0) {
 			// Small delay to ensure edit state is fully updated
-			setTimeout(() => {
+			timerId = setTimeout(() => {
 				processNext();
 			}, 100);
 		}
+
+		return () => {
+			if (timerId !== undefined) {
+				clearTimeout(timerId);
+			}
+		};
 	}, [editingId, isStreaming, processNext]);
 
 	/**
