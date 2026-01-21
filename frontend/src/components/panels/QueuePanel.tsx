@@ -25,6 +25,7 @@ function QueueItem({
 	const [editValue, setEditValue] = useState(item.query);
 
 	const startEditing = () => {
+		setEditValue(item.query);
 		setIsEditing(true);
 		onEditingChange(item.id);
 	};
