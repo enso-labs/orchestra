@@ -5,6 +5,7 @@ import useChat from "@/hooks/useChat";
 import useThread from "@/hooks/useThread";
 import useModel from "@/hooks/useModel";
 import useFileSystem, { type FileData } from "@/hooks/useFileSystem";
+import useMessageQueue from "@/hooks/useMessageQueue";
 
 // Re-export FileData type for consumers
 export type {
@@ -25,6 +26,12 @@ export default function ChatProvider({
 	const configHooks = useConfigHook();
 	const threadHooks = useThread();
 	const fileSystemHooks = useFileSystem();
+
+	// Message queue for queueing messages during streaming
+	const queueHooks = useMessageQueue({
+		isStreaming: !!chatHooks.controller,
+		executeSubmit: chatHooks.handleSubmit,
+	});
 
 	// Track previous filesMap to detect changes
 	const prevFilesMapRef = useRef<Map<string, unknown>>(new Map());
@@ -148,12 +155,16 @@ export default function ChatProvider({
 		setFilesMap(next);
 	}, [fileSystem, filesMap, setFilesMap]);
 
-	// Clear fileSystem when messages are cleared
+	// Destructure clearQueue for the clear effect
+	const { clearQueue } = queueHooks;
+
+	// Clear fileSystem and queue when messages are cleared
 	useEffect(() => {
 		if (messagesLength === 0) {
 			clearFileSystem();
+			clearQueue();
 		}
-	}, [messagesLength, clearFileSystem]);
+	}, [messagesLength, clearFileSystem, clearQueue]);
 
 	return (
 		<ChatContext.Provider
@@ -164,6 +175,7 @@ export default function ChatProvider({
 				...threadHooks,
 				...modelsHooks,
 				...fileSystemHooks,
+				...queueHooks,
 			}}
 		>
 			{children}

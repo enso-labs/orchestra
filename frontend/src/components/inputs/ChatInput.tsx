@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 import useAppHook from "@/hooks/useAppHook";
 import ChatSubmitButton from "../buttons/ChatSubmitButton";
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
-import { useAppContext } from "@/context/AppContext";
 import BaseToolMenu from "../menus/BaseToolMenu";
 import AgentMenu from "../menus/AgentMenu";
 import { useProjectContext } from "@/context/ProjectContext";
 import { X, Folder, FolderCode } from "lucide-react";
 import { Button } from "../ui/button";
+import QueuePanel from "../panels/QueuePanel";
 
 export default function ChatInput({
 	showAgentMenu = false,
@@ -18,13 +18,14 @@ export default function ChatInput({
 	showAgentMenu?: boolean;
 }) {
 	const [isRecording, setIsRecording] = useState(false);
-	const { loading } = useAppContext();
 	const { isLikelyMobile } = useAppHook();
 	const { selectedProject, selectProject } = useProjectContext();
 	const {
 		query,
+		setQuery,
 		abortQuery,
 		images,
+		setImages,
 		previewImage,
 		previewImageIndex,
 		removeImage,
@@ -40,7 +41,15 @@ export default function ChatInput({
 		setViewMode,
 		filesMap,
 		inputRef,
+		enqueue,
 	} = useChatContext();
+
+	// Helper to enqueue and clear input
+	const handleEnqueue = (q: string, imgs: File[]) => {
+		enqueue(q, imgs);
+		setQuery("");
+		setImages([]);
+	};
 
 	const handleResetProject = () => {
 		selectProject(null);
@@ -72,6 +81,9 @@ export default function ChatInput({
 
 	return (
 		<div className="flex flex-col w-full">
+			{/* Queue Panel - shows queued messages above input */}
+			<QueuePanel />
+
 			{images.length > 0 && (
 				<div className="px-4 py-2">
 					<ImagePreview
@@ -116,7 +128,8 @@ export default function ChatInput({
 						query.length > 0
 					) {
 						e.preventDefault();
-						if (!loading && !isLikelyMobile()) handleSubmit(query, images);
+						// Use enqueue instead of direct handleSubmit - queue handles timing
+						if (!isLikelyMobile()) handleEnqueue(query, images);
 					}
 				}}
 			/>
