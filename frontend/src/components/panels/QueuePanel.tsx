@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useChatContext } from "@/context/ChatContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ListOrdered, Pencil, X, Check } from "lucide-react";
 import type { QueuedMessage } from "@/lib/entities/queue";
 
@@ -44,7 +44,9 @@ function QueueItem({
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter") {
+		if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+			// Ctrl/Cmd + Enter to save (allows regular Enter for newlines)
+			e.preventDefault();
 			handleSave();
 		} else if (e.key === "Escape") {
 			handleCancel();
@@ -61,16 +63,17 @@ function QueueItem({
 			{/* Message content */}
 			<div className="flex-1 min-w-0">
 				{isEditing ? (
-					<Input
+					<Textarea
 						value={editValue}
 						onChange={(e) => setEditValue(e.target.value)}
 						onKeyDown={handleKeyDown}
 						onBlur={handleCancel}
 						autoFocus
-						className="h-8"
+						className="min-h-[60px] max-h-[120px] text-sm resize-none"
+						placeholder="Enter your message..."
 					/>
 				) : (
-					<p className="text-sm truncate">{item.query}</p>
+					<p className="text-sm whitespace-pre-wrap line-clamp-3">{item.query}</p>
 				)}
 				<Badge variant="secondary" className="mt-1 text-xs">
 					Pending
