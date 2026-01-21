@@ -168,6 +168,9 @@ export function useMessageQueue(
 		[syncQueueState],
 	);
 
+	// Track previous editingId for edge detection
+	const prevEditingIdRef = useRef<string | null>(null);
+
 	/**
 	 * Auto-process effect - fires when stream completes (isStreaming: true -> false).
 	 * Uses edge detection to only trigger on the transition, not continuously.
@@ -184,6 +187,23 @@ export function useMessageQueue(
 			}, 100);
 		}
 	}, [isStreaming, processNext]);
+
+	/**
+	 * Resume processing when editing ends (editingId changes from value to null).
+	 * If user was editing the first item and stops, we should process it now.
+	 */
+	useEffect(() => {
+		const wasEditing = prevEditingIdRef.current;
+		prevEditingIdRef.current = editingId;
+
+		// Editing just ended - process next if not streaming and queue has items
+		if (wasEditing !== null && editingId === null && !isStreaming && queueRef.current.length > 0) {
+			// Small delay to ensure edit state is fully updated
+			setTimeout(() => {
+				processNext();
+			}, 100);
+		}
+	}, [editingId, isStreaming, processNext]);
 
 	/**
 	 * Navigation warning - warn user before leaving with queued messages.
