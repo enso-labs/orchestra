@@ -7,6 +7,7 @@ from src.tools.code import PYTHON_CODE_INTERPRETER_TOOLS
 from src.tools.finance import FINANCE_TOOLS
 from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
 from src.tools.api import API_TOOLS
+from src.tools.bash_tool import BASH_TOOLS
 
 
 def default_tools() -> list[BaseTool]:
@@ -30,12 +31,25 @@ def auth_tools(user_id: str) -> list[BaseTool]:
     return auth_tools
 
 
-def init_tool_library(user_id: str = None, default: bool = True) -> list[BaseTool]:
+def optional_tools() -> list[BaseTool]:
+    """Tools that are available when explicitly requested but not enabled by default.
+
+    These tools are included in the tool library but NOT in default_tools().
+    They must be explicitly requested via the tools array in the API request.
+    """
+    return [
+        *BASH_TOOLS,  # CLI-side execution, requires --bash flag on CLI
+    ]
+
+
+def init_tool_library(user_id: str | None = None, default: bool = True) -> list[BaseTool]:
     tool_lib = []
     if default:
         tool_lib.extend(default_tools())
     if user_id:
         tool_lib.extend(auth_tools(user_id))
+    # Always include optional tools so they can be requested by name
+    tool_lib.extend(optional_tools())
 
     return tool_lib
 
