@@ -14,7 +14,7 @@ def _get_fernet() -> Fernet:
     if not key:
         raise ValueError(
             "APP_SECRET_KEY is not set. It must be a Fernet key (e.g. generated via "
-            "`python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"`)."
+            '`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`).'
         )
 
     try:

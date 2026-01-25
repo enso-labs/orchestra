@@ -155,12 +155,11 @@ def handle_multi_mode(chunk: dict):
         if "messages" in chunk:
             i0, i1 = chunk[0], chunk[1]
             msg = i1[0]
-            
-            if agent_name := dict(msg).get("lc_agent_name"):  
-                if agent_name != current_agent:  
-                    logger.warning(f"🤖 {agent_name}: ")  
-                    current_agent = agent_name  
 
+            if agent_name := dict(msg).get("lc_agent_name"):
+                if agent_name != current_agent:
+                    logger.warning(f"🤖 {agent_name}: ")
+                    current_agent = agent_name
 
             if isinstance(msg, ToolMessage):
                 return (i0, (_to_dict(msg), i1[1] or None))
@@ -243,7 +242,7 @@ async def stream_generator(
                 stream_mode=["messages", "values"],
                 config=config,
                 context=ctx,
-                subgraphs=True, 
+                subgraphs=True,
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
@@ -302,12 +301,13 @@ async def stream_generator(
 ###########################################################################
 ## Distributed Stream Consumer
 ###########################################################################
-async def stream_from_redis(thread_id: str):
+async def stream_from_postgres(thread_id: str):
     """
-    Consume Redis stream and yield SSE events for distributed workers.
+    Consume PostgreSQL stream and yield SSE events for distributed workers.
 
-    This function reads from a Redis Stream that the worker is writing to,
-    and yields SSE-formatted events for the client.
+    This function reads from a PostgreSQL table that the worker is writing to,
+    using LISTEN/NOTIFY for real-time updates, and yields SSE-formatted events
+    for the client.
 
     Args:
         thread_id: The thread ID to stream results for.
@@ -315,43 +315,65 @@ async def stream_from_redis(thread_id: str):
     Yields:
         SSE-formatted strings in the form "data: {...}\\n\\n"
     """
-    import redis.asyncio as redis
-    from src.workers.broker import REDIS_URL
+    import asyncio
+    import asyncpg
+    from src.workers.broker import POSTGRES_DSN
 
-    stream_key = f"agent:stream:{thread_id}"
-    redis_client = redis.from_url(REDIS_URL)
-    last_id = "0"
+    conn = await asyncpg.connect(POSTGRES_DSN)
+    last_id = 0
+    channel_name = f"stream_{thread_id.replace('-', '_')}"
 
     try:
+        # Set up listener for notifications
+        await conn.add_listener(channel_name, lambda *args: None)
+
         while True:
-            # Block for configurable time waiting for messages (default 60s)
-            messages = await redis_client.xread(
-                {stream_key: last_id},
-                block=STREAM_TIMEOUT_MS,
+            # Query for new events
+            rows = await conn.fetch(
+                """
+                SELECT id, data, error, done FROM taskiq_stream_events
+                WHERE thread_id = $1 AND id > $2
+                ORDER BY id ASC
+                """,
+                thread_id,
+                last_id,
             )
 
-            if not messages:
-                # No messages yet, yield a keep-alive comment
-                yield ": keep-alive\n\n"
+            if not rows:
+                # No new messages, wait for notification or timeout
+                try:
+                    await asyncio.wait_for(
+                        asyncio.sleep(STREAM_TIMEOUT_MS / 1000),
+                        timeout=STREAM_TIMEOUT_MS / 1000,
+                    )
+                    yield ": keep-alive\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"
                 continue
 
-            for stream, entries in messages:
-                for entry_id, data in entries:
-                    last_id = entry_id
+            for row in rows:
+                last_id = row["id"]
 
-                    if b"done" in data:
-                        yield "data: [DONE]\n\n"
-                        return
-                    if b"error" in data:
-                        error_msg = data[b"error"].decode()
-                        yield f'data: {{"error": "{error_msg}"}}\n\n'
-                        yield "data: [DONE]\n\n"
-                        return
-                    if b"data" in data:
-                        yield f"data: {data[b'data'].decode()}\n\n"
+                if row["done"]:
+                    if row["error"]:
+                        yield f'data: {{"error": "{row["error"]}"}}\n\n'
+                    yield "data: [DONE]\n\n"
+                    return
+                if row["error"]:
+                    yield f'data: {{"error": "{row["error"]}"}}\n\n'
+                    yield "data: [DONE]\n\n"
+                    return
+                if row["data"]:
+                    yield f"data: {row['data']}\n\n"
+
     except Exception as e:
-        logger.exception(f"Error in stream_from_redis: {e}")
+        logger.exception(f"Error in stream_from_postgres: {e}")
         yield f'data: {{"error": "{str(e)}"}}\n\n'
         yield "data: [DONE]\n\n"
     finally:
-        await redis_client.aclose()
+        await conn.remove_listener(channel_name, lambda *args: None)
+        await conn.close()
+
+
+# Alias for backwards compatibility
+stream_from_redis = stream_from_postgres

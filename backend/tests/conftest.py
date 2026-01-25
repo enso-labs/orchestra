@@ -311,23 +311,12 @@ async def mock_external_services():
 
 
 ###############################################################################
-# TaskIQ / Redis Fixtures for Distributed Workers Testing
+# TaskIQ Fixtures for Distributed Workers Testing
 ###############################################################################
 @pytest.fixture
 def in_memory_broker():
-    """Provide an InMemoryBroker for testing tasks without Redis."""
+    """Provide an InMemoryBroker for testing tasks without PostgreSQL."""
     return InMemoryBroker()
-
-
-@pytest.fixture
-async def fake_redis():
-    """Provide a FakeRedis async client for testing Redis streams."""
-    import fakeredis.aioredis
-
-    client = fakeredis.aioredis.FakeRedis(decode_responses=False)
-    yield client
-    await client.flushall()
-    await client.aclose()
 
 
 @pytest.fixture

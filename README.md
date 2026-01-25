@@ -297,7 +297,6 @@ The API will be available at `http://localhost:8000`
 | `search_engine` | 8080      | SearXNG search engine              |
 | `exec_server`   | 3005      | Shell execution server             |
 | `ollama`        | 11434     | Local LLM inference (requires GPU) |
-| `redis`         | 6379      | Redis message broker (for workers) |
 | `worker`        | -         | TaskIQ worker (no exposed port)    |
 
 ### 🧱 Docker Compose Example
@@ -396,7 +395,6 @@ docker build -t orchestra:local .
 
 | Variable              | Description                    | Default |
 | --------------------- | ------------------------------ | ------- |
-| `REDIS_URL`           | Redis connection for task queue | -       |
 | `DISTRIBUTED_WORKERS` | Enable distributed worker mode | `false` |
 
 > **Note**: When enabled, run the worker process separately: `make dev.worker`

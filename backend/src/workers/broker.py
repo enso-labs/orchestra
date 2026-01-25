@@ -1,28 +1,34 @@
-"""TaskIQ Redis broker configuration for distributed workers.
+"""TaskIQ PostgreSQL broker configuration for distributed workers.
 
-This module configures the TaskIQ broker with Redis Streams for reliable
-task queuing and result storage.
+This module configures the TaskIQ broker with PostgreSQL for reliable
+task queuing and result storage. Also provides PostgreSQL DSN for
+stream pub/sub and abort signal coordination.
 
 Environment Variables:
-    REDIS_URL: Redis connection URL (default: redis://localhost:6379/0)
+    POSTGRES_CONNECTION_STRING: PostgreSQL connection URL
 """
 
-import os
-from taskiq_redis import RedisStreamBroker, RedisAsyncResultBackend
+from taskiq.serializers.json_serializer import JSONSerializer
+from taskiq_pg import AsyncpgBroker, AsyncpgResultBackend
 
-# Redis connection URL from environment
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+from src.constants import DB_URI
 
-# Result backend with 5-minute TTL for task results
-result_backend = RedisAsyncResultBackend(
-    redis_url=REDIS_URL,
-    result_ex_time=300,  # 5 minute TTL for results
+# Export DSN for other modules (stream, abort service)
+POSTGRES_DSN = DB_URI
+
+# Result backend with PostgreSQL
+result_backend = AsyncpgResultBackend(
+    dsn=DB_URI,
+    serializer=JSONSerializer(),
+    keep_results=False,  # Clean up results after retrieval
+    table_name="taskiq_results",
 )
 
-# Redis Stream broker for task distribution
-broker = RedisStreamBroker(
-    url=REDIS_URL,
-    queue_name="orchestra_tasks",
+# PostgreSQL broker for task distribution
+broker = AsyncpgBroker(
+    dsn=DB_URI,
+    channel_name="orchestra_tasks",
+    table_name="taskiq_messages",
 ).with_result_backend(result_backend)
 
 

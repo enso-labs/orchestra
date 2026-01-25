@@ -29,23 +29,6 @@ services:
             - postgres
 
     ##############################################
-    ## Redis (Message Broker for Distributed Workers)
-    ##############################################
-    redis:
-        image: redis:7-alpine
-        container_name: redis
-        ports:
-            - "6379:6379"
-        volumes:
-            - redis_data:/data
-        command: redis-server --appendonly yes
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
-
-    ##############################################
     ## TaskIQ Worker (Distributed Agent Execution)
     ##############################################
     worker:
@@ -53,13 +36,10 @@ services:
             context: ./backend
             dockerfile: Dockerfile
         environment:
-            - REDIS_URL=redis://redis:6379/0
             - DISTRIBUTED_WORKERS=true
         entrypoint: ["uv", "run", "taskiq", "worker", "src.workers.tasks:broker"]
         command: []
         depends_on:
-            redis:
-                condition: service_healthy
             postgres:
                 condition: service_started
         deploy:
@@ -173,4 +153,3 @@ services:
 
 volumes:
     ollama:
-    redis_data:

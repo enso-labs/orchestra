@@ -2,13 +2,13 @@
 
 This module defines background tasks that can be executed by TaskIQ workers.
 The main task is `run_agent_stream` which handles agent execution and streams
-results to Redis for SSE consumption.
+results to PostgreSQL for SSE consumption.
 
 Pattern mirrors existing `scheduled_llm_invoke` in services/schedule.py:
 - Reconstructs all objects from serializable dicts
 - Creates fresh DB connections inside the task (or uses worker-level checkpointer)
 - Uses handle_multi_mode for LangGraph format consistency
-- Writes streaming output to Redis stream
+- Writes streaming output to PostgreSQL table with NOTIFY
 
 When CHECKPOINT_USE_RESILIENT is enabled:
 - Uses worker-level checkpointer singleton for better connection reuse
@@ -16,10 +16,10 @@ When CHECKPOINT_USE_RESILIENT is enabled:
 """
 
 import ujson
-import redis.asyncio as redis
+import asyncpg
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
-from src.workers.broker import broker, REDIS_URL
+from src.workers.broker import broker, POSTGRES_DSN
 
 
 @broker.task(task_name="run_agent_stream")
@@ -29,14 +29,14 @@ async def run_agent_stream(
     thread_id: str,
 ) -> dict:
     """
-    Execute agent and stream results via Redis Streams.
+    Execute agent and stream results via PostgreSQL.
 
     This task is designed to run in a separate worker process. It:
     1. Reconstructs the LLMRequest from the serialized dict
     2. Gets checkpointer (worker-level if resilient mode, per-task otherwise)
     3. Creates fresh store connection per task
     4. Constructs and runs the agent
-    5. Streams each chunk to a Redis stream for SSE consumption
+    5. Streams each chunk to a PostgreSQL table with NOTIFY for SSE consumption
     6. Signals completion with a done marker
     7. Checks for abort signals before and during execution
 
@@ -58,10 +58,13 @@ async def run_agent_stream(
     from src.services.abort import AbortService
 
     stream_key = f"agent:stream:{thread_id}"
-    redis_client = redis.from_url(REDIS_URL)
+    pg_conn = await asyncpg.connect(POSTGRES_DSN)
 
     # Clear any existing stream from previous turns on this thread
-    await redis_client.delete(stream_key)
+    await pg_conn.execute(
+        "DELETE FROM taskiq_stream_events WHERE thread_id = $1",
+        thread_id,
+    )
 
     # Pre-start abort check: Handle race condition where abort arrives before task starts
     if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
@@ -74,15 +77,13 @@ async def run_agent_stream(
             },
         )
         # Write abort marker to stream for any listening clients
-        await redis_client.xadd(
-            stream_key,
-            {"data": ujson.dumps(("aborted", {"reason": "pre_aborted"}))},
+        await _publish_stream_event(
+            pg_conn, thread_id, ujson.dumps(("aborted", {"reason": "pre_aborted"}))
         )
-        await redis_client.xadd(stream_key, {"done": "true"})
-        await redis_client.expire(stream_key, 300)
+        await _publish_stream_event(pg_conn, thread_id, None, done=True)
         # Clear the abort signal
         await AbortService.clear_abort_signal(thread_id)
-        await redis_client.aclose()
+        await pg_conn.close()
         return {"status": "aborted", "stream_key": stream_key}
 
     try:
@@ -122,7 +123,7 @@ async def run_agent_stream(
                     user_id=user_id,
                     thread_id=thread_id,
                     stream_key=stream_key,
-                    redis_client=redis_client,
+                    pg_conn=pg_conn,
                 )
         else:
             # Legacy mode: per-task checkpointer
@@ -146,7 +147,7 @@ async def run_agent_stream(
                     user_id=user_id,
                     thread_id=thread_id,
                     stream_key=stream_key,
-                    redis_client=redis_client,
+                    pg_conn=pg_conn,
                 )
 
     except CheckpointConnectionError as e:
@@ -158,24 +159,46 @@ async def run_agent_stream(
                 "error": str(e),
             },
         )
-        await redis_client.xadd(
-            stream_key, {"error": f"Checkpoint error: {e}", "done": "true"}
+        await _publish_stream_event(
+            pg_conn, thread_id, None, error=f"Checkpoint error: {e}", done=True
         )
-        await redis_client.expire(stream_key, 300)
         raise
 
     except Exception as e:
         logger.exception(f"Task failed for thread {thread_id}: {e}")
         try:
-            await redis_client.xadd(stream_key, {"error": str(e), "done": "true"})
-            await redis_client.expire(stream_key, 300)
-        except Exception as redis_err:
+            await _publish_stream_event(
+                pg_conn, thread_id, None, error=str(e), done=True
+            )
+        except Exception as pg_err:
             logger.error(
-                f"Failed to send error to Redis for thread {thread_id}: {redis_err}"
+                f"Failed to send error to PostgreSQL for thread {thread_id}: {pg_err}"
             )
         raise
     finally:
-        await redis_client.aclose()
+        await pg_conn.close()
+
+
+async def _publish_stream_event(
+    conn: asyncpg.Connection,
+    thread_id: str,
+    data: str | None,
+    error: str | None = None,
+    done: bool = False,
+) -> None:
+    """Publish a stream event to PostgreSQL and notify listeners."""
+    await conn.execute(
+        """
+        INSERT INTO taskiq_stream_events (thread_id, data, error, done)
+        VALUES ($1, $2, $3, $4)
+        """,
+        thread_id,
+        data,
+        error,
+        done,
+    )
+    # Notify listeners about the new event
+    await conn.execute(f"NOTIFY stream_{thread_id.replace('-', '_')}")
 
 
 async def _execute_agent_stream(
@@ -188,7 +211,7 @@ async def _execute_agent_stream(
     user_id,
     thread_id,
     stream_key,
-    redis_client,
+    pg_conn: asyncpg.Connection,
 ) -> dict:
     """Execute the agent stream logic with abort signal checking.
 
@@ -248,9 +271,9 @@ async def _execute_agent_stream(
             },
         )
     )
-    await redis_client.xadd(stream_key, {"data": metadata_event})
+    await _publish_stream_event(pg_conn, thread_id, metadata_event)
 
-    # Stream to Redis using handle_multi_mode for format consistency
+    # Stream to PostgreSQL using handle_multi_mode for format consistency
     async for chunk in agent.astream(
         params.input,
         stream_mode=["messages", "values"],
@@ -268,12 +291,12 @@ async def _execute_agent_stream(
                 },
             )
             # Send abort acknowledgment to client
-            await redis_client.xadd(
-                stream_key,
-                {"data": ujson.dumps(("aborted", {"reason": "user_requested"}))},
+            await _publish_stream_event(
+                pg_conn,
+                thread_id,
+                ujson.dumps(("aborted", {"reason": "user_requested"})),
             )
-            await redis_client.xadd(stream_key, {"done": "true"})
-            await redis_client.expire(stream_key, 300)
+            await _publish_stream_event(pg_conn, thread_id, None, done=True)
             # Clear abort signal
             await AbortService.clear_abort_signal(thread_id)
             return {"status": "aborted", "stream_key": stream_key}
@@ -286,13 +309,12 @@ async def _execute_agent_stream(
                 files_map = {**files_map, **chunk_data["files"]}
             if stream_type == "values" and "todos" in chunk_data:
                 todos_list = chunk_data["todos"]
-            # Serialize to JSON and push to Redis stream
+            # Serialize to JSON and push to PostgreSQL
             data = ujson.dumps(stream_chunk)
-            await redis_client.xadd(stream_key, {"data": data})
+            await _publish_stream_event(pg_conn, thread_id, data)
 
     # Signal completion
-    await redis_client.xadd(stream_key, {"done": "true"})
-    await redis_client.expire(stream_key, 300)
+    await _publish_stream_event(pg_conn, thread_id, None, done=True)
 
     logger.info(f"Distributed agent task completed for thread: {thread_id}")
 

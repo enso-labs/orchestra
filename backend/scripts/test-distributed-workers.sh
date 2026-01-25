@@ -4,7 +4,7 @@
 #
 # Prerequisites:
 #   Terminal 1: DISTRIBUTED_WORKERS=true make dev
-#   Terminal 2: REDIS_URL=redis://localhost:6379/0 uv run taskiq worker src.workers.tasks:broker
+#   Terminal 2: uv run taskiq worker src.workers.tasks:broker
 
 set -e
 

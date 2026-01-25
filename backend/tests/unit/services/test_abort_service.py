@@ -1,12 +1,12 @@
 """Unit tests for AbortService."""
 
-import json
 import pytest
+from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 from langgraph.store.memory import InMemoryStore
 
-from src.services.abort import AbortService, ABORT_SIGNAL_PREFIX
+from src.services.abort import AbortService, ABORT_SIGNAL_TTL
 
 
 class TestAbortServiceInit:
@@ -199,133 +199,100 @@ class TestAbortServiceVerifyOwnershipIfExists:
 class TestAbortServiceSetSignal:
     """Tests for AbortService._set_abort_signal method."""
 
-    async def test_set_abort_signal_sets_redis_key(self, fake_redis):
-        """Test that _set_abort_signal sets Redis key correctly."""
+    async def test_set_abort_signal_executes_insert(self):
+        """Test that _set_abort_signal executes correct PostgreSQL insert."""
         store = InMemoryStore()
         user_id = str(uuid4())
         thread_id = str(uuid4())
         service = AbortService(user_id=user_id, store=store)
 
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock()
+        mock_conn.close = AsyncMock()
+
+        with patch("asyncpg.connect", return_value=mock_conn):
             await service._set_abort_signal(thread_id)
 
-        key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-        assert await fake_redis.exists(key) > 0
-
-    async def test_set_abort_signal_includes_user_and_timestamp(self, fake_redis):
-        """Test that _set_abort_signal includes user and timestamp data as valid JSON."""
-        store = InMemoryStore()
-        user_id = str(uuid4())
-        thread_id = str(uuid4())
-        service = AbortService(user_id=user_id, store=store)
-
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
-            await service._set_abort_signal(thread_id)
-
-        key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-        value = await fake_redis.get(key)
-        assert value is not None
-        value_str = value.decode() if isinstance(value, bytes) else value
-
-        # Should be valid JSON
-        signal_data = json.loads(value_str)
-        assert signal_data["requested_by"] == user_id
-        assert "requested_at" in signal_data
+        mock_conn.execute.assert_called_once()
+        call_args = mock_conn.execute.call_args
+        # Check that thread_id and user_id were passed
+        assert thread_id in call_args[0]
+        assert user_id in call_args[0]
 
 
 @pytest.mark.asyncio
 class TestAbortServiceCheckSignal:
     """Tests for AbortService.check_abort_signal static method."""
 
-    async def test_check_abort_signal_returns_true_when_exists_no_user_check(
-        self, fake_redis
-    ):
+    async def test_check_abort_signal_returns_true_when_exists_no_user_check(self):
         """Test that check_abort_signal returns True when signal exists (legacy behavior)."""
         thread_id = str(uuid4())
         user_id = str(uuid4())
-        key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
-        # Set signal with valid JSON
-        signal_data = json.dumps({"requested_by": user_id, "requested_at": "2024-01-01"})
-        await fake_redis.set(key, signal_data)
+        mock_conn = AsyncMock()
+        mock_conn.fetchrow = AsyncMock(return_value={"requested_by": user_id})
+        mock_conn.close = AsyncMock()
 
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
+        with patch("asyncpg.connect", return_value=mock_conn):
             result = await AbortService.check_abort_signal(thread_id)
 
         assert result is True
 
-    async def test_check_abort_signal_returns_true_when_user_matches(self, fake_redis):
+    async def test_check_abort_signal_returns_true_when_user_matches(self):
         """Test that check_abort_signal returns True when expected_user_id matches."""
         thread_id = str(uuid4())
         user_id = str(uuid4())
-        key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
-        # Set signal with user_id
-        signal_data = json.dumps({"requested_by": user_id, "requested_at": "2024-01-01"})
-        await fake_redis.set(key, signal_data)
+        mock_conn = AsyncMock()
+        mock_conn.fetchrow = AsyncMock(return_value={"requested_by": user_id})
+        mock_conn.close = AsyncMock()
 
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
+        with patch("asyncpg.connect", return_value=mock_conn):
             result = await AbortService.check_abort_signal(
                 thread_id, expected_user_id=user_id
             )
 
         assert result is True
 
-    async def test_check_abort_signal_returns_false_when_user_mismatch(self, fake_redis):
+    async def test_check_abort_signal_returns_false_when_user_mismatch(self):
         """Test that check_abort_signal returns False when expected_user_id doesn't match."""
         thread_id = str(uuid4())
         user_id = str(uuid4())
         other_user_id = str(uuid4())
-        key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
-        # Set signal with different user_id
-        signal_data = json.dumps(
-            {"requested_by": other_user_id, "requested_at": "2024-01-01"}
-        )
-        await fake_redis.set(key, signal_data)
+        mock_conn = AsyncMock()
+        mock_conn.fetchrow = AsyncMock(return_value={"requested_by": other_user_id})
+        mock_conn.close = AsyncMock()
 
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
+        with patch("asyncpg.connect", return_value=mock_conn):
             result = await AbortService.check_abort_signal(
                 thread_id, expected_user_id=user_id
             )
 
         assert result is False
 
-    async def test_check_abort_signal_returns_false_when_not_exists(self, fake_redis):
+    async def test_check_abort_signal_returns_false_when_not_exists(self):
         """Test that check_abort_signal returns False when signal doesn't exist."""
         thread_id = str(uuid4())
 
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
+        mock_conn = AsyncMock()
+        mock_conn.fetchrow = AsyncMock(return_value=None)
+        mock_conn.close = AsyncMock()
+
+        with patch("asyncpg.connect", return_value=mock_conn):
             result = await AbortService.check_abort_signal(thread_id)
 
         assert result is False
 
-    async def test_check_abort_signal_returns_false_when_invalid_json(self, fake_redis):
-        """Test that check_abort_signal returns False when stored data is invalid JSON."""
-        thread_id = str(uuid4())
-        user_id = str(uuid4())
-        key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-
-        # Set signal with invalid JSON
-        await fake_redis.set(key, "not_valid_json{")
-
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
-            result = await AbortService.check_abort_signal(
-                thread_id, expected_user_id=user_id
-            )
-
-        assert result is False
-
     async def test_check_abort_signal_returns_false_on_error(self):
-        """Test that check_abort_signal returns False on Redis error."""
+        """Test that check_abort_signal returns False on PostgreSQL error."""
         thread_id = str(uuid4())
 
-        # Mock redis to raise an exception
-        mock_redis = AsyncMock()
-        mock_redis.get = AsyncMock(side_effect=Exception("Redis connection failed"))
-        mock_redis.aclose = AsyncMock()
+        mock_conn = AsyncMock()
+        mock_conn.fetchrow = AsyncMock(side_effect=Exception("Connection failed"))
+        mock_conn.close = AsyncMock()
 
-        with patch("src.services.abort.redis.from_url", return_value=mock_redis):
+        with patch("asyncpg.connect", return_value=mock_conn):
             result = await AbortService.check_abort_signal(thread_id)
 
         assert result is False
@@ -335,37 +302,30 @@ class TestAbortServiceCheckSignal:
 class TestAbortServiceClearSignal:
     """Tests for AbortService.clear_abort_signal static method."""
 
-    async def test_clear_abort_signal_removes_key(self, fake_redis):
-        """Test that clear_abort_signal removes Redis key."""
-        thread_id = str(uuid4())
-        key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-
-        # Set signal first
-        await fake_redis.set(key, "test_signal")
-        assert await fake_redis.exists(key) > 0
-
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
-            await AbortService.clear_abort_signal(thread_id)
-
-        assert await fake_redis.exists(key) == 0
-
-    async def test_clear_abort_signal_handles_nonexistent_key(self, fake_redis):
-        """Test that clear_abort_signal handles non-existent key gracefully."""
+    async def test_clear_abort_signal_deletes_row(self):
+        """Test that clear_abort_signal executes delete query."""
         thread_id = str(uuid4())
 
-        # Should not raise
-        with patch("src.services.abort.redis.from_url", return_value=fake_redis):
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock()
+        mock_conn.close = AsyncMock()
+
+        with patch("asyncpg.connect", return_value=mock_conn):
             await AbortService.clear_abort_signal(thread_id)
+
+        mock_conn.execute.assert_called_once()
+        call_args = mock_conn.execute.call_args
+        assert "DELETE" in call_args[0][0]
+        assert thread_id in call_args[0]
 
     async def test_clear_abort_signal_handles_error_gracefully(self):
         """Test that clear_abort_signal handles errors gracefully."""
         thread_id = str(uuid4())
 
-        # Mock redis to raise an exception
-        mock_redis = AsyncMock()
-        mock_redis.delete = AsyncMock(side_effect=Exception("Redis connection failed"))
-        mock_redis.aclose = AsyncMock()
+        mock_conn = AsyncMock()
+        mock_conn.execute = AsyncMock(side_effect=Exception("Connection failed"))
+        mock_conn.close = AsyncMock()
 
         # Should not raise
-        with patch("src.services.abort.redis.from_url", return_value=mock_redis):
+        with patch("asyncpg.connect", return_value=mock_conn):
             await AbortService.clear_abort_signal(thread_id)

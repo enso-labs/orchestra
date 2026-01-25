@@ -1,7 +1,7 @@
 """Abort signal service for distributed worker coordination.
 
 This service provides a clean interface for sending and checking abort signals
-via Redis. It follows the Single Responsibility Principle by handling only
+via PostgreSQL. It follows the Single Responsibility Principle by handling only
 abort signal management.
 
 Security considerations:
@@ -11,26 +11,25 @@ Security considerations:
 - Rate limiting via existing limiter middleware
 
 Design:
-- Uses Redis keys with TTL for automatic cleanup
-- Signal pattern: abort:signal:{thread_id}
-- Workers poll this key during streaming
+- Uses PostgreSQL table with expiration for automatic cleanup
+- Signal pattern: stored in taskiq_abort_signals table
+- Workers poll the table during streaming
 - Abort signals store structured JSON with requester identity
 - Workers validate expected_user_id matches stored requester
 """
 
 import json
-import redis.asyncio as redis
-from datetime import datetime, timezone
+import asyncpg
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from langgraph.store.base import BaseStore
 
-from src.workers.broker import REDIS_URL
+from src.workers.broker import POSTGRES_DSN
 from src.services.thread import ThreadService
 from src.utils.logger import logger
 
 # TTL for abort signals (5 minutes) - matches stream TTL
 ABORT_SIGNAL_TTL = 300
-ABORT_SIGNAL_PREFIX = "abort:signal:"
 
 
 class AbortService:
@@ -147,25 +146,36 @@ class AbortService:
                 raise PermissionError(f"Not authorized to abort thread {thread_id}")
 
     async def _set_abort_signal(self, thread_id: str) -> None:
-        """Set abort signal in Redis for worker to poll.
+        """Set abort signal in PostgreSQL for worker to poll.
 
-        Stores structured JSON data including the requesting user's ID,
+        Stores structured data including the requesting user's ID,
         allowing workers to validate that the abort request came from the
         expected user.
 
         Args:
             thread_id: The thread ID to set abort signal for
         """
-        redis_client = redis.from_url(REDIS_URL)
+        conn = await asyncpg.connect(POSTGRES_DSN)
         try:
-            key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-            signal_data = {
-                "requested_by": self.user_id,
-                "requested_at": datetime.now(timezone.utc).isoformat(),
-            }
-            await redis_client.set(key, json.dumps(signal_data), ex=ABORT_SIGNAL_TTL)
+            expires_at = datetime.now(timezone.utc) + timedelta(
+                seconds=ABORT_SIGNAL_TTL
+            )
+            await conn.execute(
+                """
+                INSERT INTO taskiq_abort_signals (thread_id, requested_by, requested_at, expires_at)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (thread_id) DO UPDATE SET
+                    requested_by = EXCLUDED.requested_by,
+                    requested_at = EXCLUDED.requested_at,
+                    expires_at = EXCLUDED.expires_at
+                """,
+                thread_id,
+                self.user_id,
+                datetime.now(timezone.utc),
+                expires_at,
+            )
         finally:
-            await redis_client.aclose()
+            await conn.close()
 
     @staticmethod
     async def check_abort_signal(
@@ -189,32 +199,25 @@ class AbortService:
             True if abort signal exists and (if expected_user_id is provided)
             the stored requester matches, False otherwise
         """
-        redis_client = redis.from_url(REDIS_URL)
+        conn = await asyncpg.connect(POSTGRES_DSN)
         try:
-            key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-            stored_data = await redis_client.get(key)
+            row = await conn.fetchrow(
+                """
+                SELECT requested_by FROM taskiq_abort_signals
+                WHERE thread_id = $1 AND expires_at > NOW()
+                """,
+                thread_id,
+            )
 
-            if not stored_data:
+            if not row:
                 return False
 
             # If no expected_user_id provided, just check existence (legacy behavior)
             if expected_user_id is None:
                 return True
 
-            # Parse stored JSON and validate requester
-            try:
-                signal = json.loads(stored_data)
-                return signal.get("requested_by") == expected_user_id
-            except (json.JSONDecodeError, TypeError):
-                # Invalid JSON stored - treat as no valid signal
-                logger.warning(
-                    "abort_signal_invalid_json",
-                    extra={
-                        "event": "abort_signal_invalid_json",
-                        "thread_id": thread_id,
-                    },
-                )
-                return False
+            # Validate requester matches
+            return row["requested_by"] == expected_user_id
 
         except Exception as e:
             # Log but don't fail - worker continues if check fails
@@ -228,7 +231,7 @@ class AbortService:
             )
             return False
         finally:
-            await redis_client.aclose()
+            await conn.close()
 
     @staticmethod
     async def clear_abort_signal(thread_id: str) -> None:
@@ -240,10 +243,12 @@ class AbortService:
         Args:
             thread_id: Thread ID to clear abort signal for
         """
-        redis_client = redis.from_url(REDIS_URL)
+        conn = await asyncpg.connect(POSTGRES_DSN)
         try:
-            key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
-            await redis_client.delete(key)
+            await conn.execute(
+                "DELETE FROM taskiq_abort_signals WHERE thread_id = $1",
+                thread_id,
+            )
             logger.debug(
                 "abort_signal_cleared",
                 extra={
@@ -262,4 +267,4 @@ class AbortService:
                 },
             )
         finally:
-            await redis_client.aclose()
+            await conn.close()
