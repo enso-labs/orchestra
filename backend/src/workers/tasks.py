@@ -17,6 +17,8 @@ When CHECKPOINT_USE_RESILIENT is enabled:
 
 import ujson
 import redis.asyncio as redis
+from src.contexts.service import ServiceContext
+from src.schemas.entities import LLMRequest
 from src.workers.broker import broker, REDIS_URL
 
 
@@ -46,16 +48,11 @@ async def run_agent_stream(
     Returns:
         dict with status and stream_key
     """
-    from deepagents.backends import StoreBackend
-    from langchain.tools import ToolRuntime
     from src.schemas.entities import LLMRequest
-    from src.schemas.contexts import ContextSchema
-    from src.flows import construct_agent, init_config, init_backend
+    from src.agents import init_config
     from src.services.db import get_checkpoint_db, get_store_db
     from src.contexts.service import ServiceContext
-    from src.utils.stream import handle_multi_mode
     from src.utils.logger import logger
-    from src.utils.format import get_time
     from src.constants import CHECKPOINT_USE_RESILIENT
     from src.services.errors import CheckpointConnectionError
     from src.services.abort import AbortService
@@ -182,11 +179,11 @@ async def run_agent_stream(
 
 
 async def _execute_agent_stream(
-    params,
+    params: LLMRequest,
     config,
     files_map,
     todos_list,
-    service_context,
+    service_context: ServiceContext,
     checkpointer,
     user_id,
     thread_id,
@@ -201,7 +198,7 @@ async def _execute_agent_stream(
     from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
     from src.schemas.contexts import ContextSchema
-    from src.flows import construct_agent, init_backend
+    from src.agents import construct_agent, init_backend
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger

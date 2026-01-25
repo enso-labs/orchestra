@@ -15,7 +15,7 @@ from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
-from src.flows import construct_agent, init_backend
+from src.agents import construct_agent, init_backend
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
@@ -155,6 +155,12 @@ def handle_multi_mode(chunk: dict):
         if "messages" in chunk:
             i0, i1 = chunk[0], chunk[1]
             msg = i1[0]
+            
+            if agent_name := dict(msg).get("lc_agent_name"):  
+                if agent_name != current_agent:  
+                    logger.warning(f"🤖 {agent_name}: ")  
+                    current_agent = agent_name  
+
 
             if isinstance(msg, ToolMessage):
                 return (i0, (_to_dict(msg), i1[1] or None))
@@ -237,6 +243,7 @@ async def stream_generator(
                 stream_mode=["messages", "values"],
                 config=config,
                 context=ctx,
+                subgraphs=True, 
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)

@@ -18,7 +18,7 @@ from src.schemas.models import ProtectedUser
 from src.services.db import get_store, get_checkpoint_db
 from src.services.checkpoint import CheckpointService
 from src.utils.auth import verify_credentials, get_optional_user_from_token
-from src.flows import graph_builder
+from src.agents import init_graph
 from langgraph.store.postgres import AsyncPostgresStore
 from langgraph.checkpoint.base import (
     empty_checkpoint,
@@ -453,7 +453,7 @@ async def get_thread_interrupts(
 
             # Create a minimal graph to query interrupt state
             # The graph needs the checkpointer to access state
-            graph = graph_builder(
+            graph = init_graph(
                 tools=[],
                 checkpointer=checkpointer,
                 store=store,
@@ -518,7 +518,7 @@ async def resume_thread(
                 )
 
             # Create a minimal graph to interact with the thread state
-            graph = graph_builder(
+            graph = init_graph(
                 tools=[],
                 checkpointer=checkpointer,
                 store=store,

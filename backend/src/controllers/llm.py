@@ -9,10 +9,10 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.schedule import ScheduleCreate
 from src.schemas.entities import LLMRequest
 from src.contexts.service import ServiceContext
-from src.flows import construct_agent, init_config
+from src.agents import construct_agent, init_config
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
-from src.flows import Orchestra
+from src.agents import Orchestra
 from src.utils.logger import logger
 from src.utils.format import get_time
 
