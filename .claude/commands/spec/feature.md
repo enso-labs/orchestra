@@ -1,7 +1,7 @@
 # Feature Spec Template Generator
 
-Generate a feature spec template file for a new issue. The output should be saved to:  
-`$PROJECT_ROOT/.claude/specs/feature-[ISSUE_NUMBER]-[SHORTDESC]/SPEC.md`
+Generate a feature spec template file for a new issue. The output should be saved to:
+`$PROJECT_ROOT/.claude/specs/feat-[ISSUE_NUMBER]-[SHORTDESC]/SPEC.md`
 
 ---
 
@@ -10,9 +10,9 @@ Generate a feature spec template file for a new issue. The output should be save
 -   **ISSUE_NUMBER**: The numeric identifier for the feature (required)
 -   **SHORTDESC**: A short description of the feature (kebab-case, required)
 
-Example:  
-Input: `123-user-dashboard`  
-Template file path: `.claude/specs/feature-123-user-dashboard/SPEC.md`
+Example:
+Input: `123-user-dashboard`
+Template file path: `.claude/specs/feat-123-user-dashboard/SPEC.md`
 
 ---
 
@@ -21,53 +21,48 @@ Template file path: `.claude/specs/feature-123-user-dashboard/SPEC.md`
 When invoked, generate a markdown file containing the following template structure:
 
 ```markdown
-# Feature: [SHORTDESC] ([ISSUE_NUMBER])
+---
+task: [SHORTDESC] (Feature #[ISSUE_NUMBER])
+test_command: "[REPLACE: command to verify feature works]"
+---
+
+# Task: [SHORTDESC] (Feature #[ISSUE_NUMBER])
 
 > **⚠️ IMPORTANT**: Before implementing this feature, READ `/CLAUDE.md` first.
 
-## Summary
-
 _A concise summary of the feature and its purpose._
 
-## User Stories
+## Requirements
 
--   As a [user type], I want [goal] so that [benefit].
+1. [Requirement 1]
+2. [Requirement 2]
+3. [Requirement 3]
 
-## Acceptance Criteria
+## Success Criteria
 
--   [ ]
--   [ ]
--   [ ]
+1. [ ] [Testable criterion 1]
+2. [ ] [Testable criterion 2]
+3. [ ] [Testable criterion 3]
+4. [ ] [Testable criterion 4]
+5. [ ] [Testable criterion 5]
+6. [ ] [Testable criterion 6]
 
-## Technical Requirements
+## Example Output
 
-_Key technical considerations, constraints, or dependencies._
-
-## Implementation Notes
-
-_High-level approach or architecture decisions._
-
-## Dependencies
-
--   _List any blocking issues, APIs, or services._
-
-## Out of Scope
-
-_What is explicitly NOT part of this feature._
-
-## Success Metrics
-
-_How will we measure success?_
-
-## Additional Context
-
-_Mockups, references, or related discussion._
+\`\`\`
+[Expected output or behavior demonstration]
+\`\`\`
 
 ---
 
-## Completion
+## Ralph Instructions
 
-Output `<promise>DONE</promise>` when all tests green. --max-iterations 50 --completion-promise "DONE"
+1. Work on the next incomplete criterion (marked [ ])
+2. Check off completed criteria (change [ ] to [x])
+3. Run tests after changes
+4. Commit your changes frequently
+5. When ALL criteria are [x], output: `<ralph>COMPLETE</ralph>`
+6. If stuck on the same issue 3+ times, output: `<ralph>GUTTER</ralph>`
 ```
 
 ---
@@ -75,7 +70,7 @@ Output `<promise>DONE</promise>` when all tests green. --max-iterations 50 --com
 ## Workflow
 
 1. _PARSE_ input into `ISSUE_NUMBER` and `SHORTDESC`
-2. _GENERATE_ a new markdown file at `.claude/specs/feature-[ISSUE_NUMBER]-[SHORTDESC]/SPEC.md` containing the template above (substitute in the values)
+2. _GENERATE_ a new markdown file at `.claude/specs/feat-[ISSUE_NUMBER]-[SHORTDESC]/SPEC.md` containing the template above (substitute in the values)
 3. _CONFIRM_ file creation and path
 
 ---
@@ -87,27 +82,21 @@ Before the feature spec is considered complete and ready for implementation, ver
 ### Required Fields
 
 -   [ ] **Summary** clearly articulates what the feature does and why it matters
--   [ ] **User Stories** has at least one complete user story (As a [user], I want [goal], so that [benefit])
--   [ ] **Acceptance Criteria** has 3+ testable, unambiguous criteria (checkbox format)
--   [ ] **Technical Requirements** lists key constraints, APIs, or architectural decisions
-
-### Scope Definition
-
--   [ ] **Out of Scope** explicitly states what is NOT part of this feature
--   [ ] **Dependencies** lists any blocking issues, external services, or prerequisite work
+-   [ ] **Requirements** has at least 3 specific implementation requirements
+-   [ ] **Success Criteria** has 3+ testable, unambiguous criteria (numbered checkbox format)
+-   [ ] **test_command** in frontmatter specifies a valid verification command
 
 ### Quality Checks
 
--   [ ] Acceptance criteria are verifiable (can be tested yes/no)
+-   [ ] Success criteria are verifiable (can be tested yes/no)
 -   [ ] Feature scope is achievable in a single PR or sprint
 -   [ ] No ambiguous language ("should work", "might need", "probably")
--   [ ] Success metrics are measurable
+-   [ ] Example output demonstrates expected behavior
 
 ### Optional but Recommended
 
--   [ ] **Implementation Notes** sketches the high-level approach
--   [ ] **Additional Context** includes mockups, references, or discussion links
--   [ ] **Success Metrics** defines how success will be measured post-launch
+-   [ ] **Example Output** shows concrete expected behavior
+-   [ ] Success criteria are numbered for easy reference
 
 ---
 
@@ -115,5 +104,6 @@ Before the feature spec is considered complete and ready for implementation, ver
 
 Confirm:
 
--   Template file created at correct path
--   ISSUE_NUMBER and SHORTDESC substituted into title
+-   Template file created at correct path: `.claude/specs/feat-[ISSUE_NUMBER]-[SHORTDESC]/SPEC.md`
+-   ISSUE_NUMBER and SHORTDESC substituted into YAML frontmatter and title
+-   Ralph Instructions section included for autonomous execution
