@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orchestra - AI Agent Orchestration Platform</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/monokai.min.css">
+  <style>
+    :root {
+      --r-heading-color: #42affa;
+      --r-link-color: #42affa;
+    }
+    .reveal .slides section .fragment.fade-up {
+      transform: translateY(40px);
+      opacity: 0;
+    }
+    .reveal .slides section .fragment.fade-up.visible {
+      transform: translateY(0);
+      opacity: 1;
+      transition: all 0.5s ease;
+    }
+    .reveal h1 {
+      font-size: 2.5em;
+    }
+    .tech-stack {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .tech-item {
+      background: rgba(66, 175, 250, 0.1);
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      border: 1px solid rgba(66, 175, 250, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- Title Slide -->
+      <section data-auto-animate>
+        <h1>Orchestra</h1>
+        <p>Open-Source AI Agent Orchestration Platform</p>
+      </section>
+
+      <!-- Title Slide Expanded -->
+      <section data-auto-animate>
+        <h1>Orchestra</h1>
+        <p>Open-Source AI Agent Orchestration Platform</p>
+        <p style="color: #42affa; margin-top: 1rem;">Self-hosted | LangGraph | MCP | A2A</p>
+        <p style="font-size: 0.6em; margin-top: 2rem;">
+          <a href="https://ruska.ai">ruska.ai</a> |
+          <a href="https://chat.ruska.ai">chat.ruska.ai</a> |
+          <a href="https://docs.ruska.ai">docs.ruska.ai</a>
+        </p>
+      </section>
+
+      <!-- Problem Statement -->
+      <section data-background="#1a1a2e" data-transition="zoom">
+        <h2>The Challenge</h2>
+        <p class="fragment fade-up">AI agents are powerful, but...</p>
+        <ul>
+          <li class="fragment fade-up">Complex to orchestrate at scale</li>
+          <li class="fragment fade-up">Hard to self-host securely</li>
+          <li class="fragment fade-up">Long-running tasks need infrastructure</li>
+          <li class="fragment fade-up">Agent-to-agent communication is fragmented</li>
+        </ul>
+      </section>
+
+      <!-- Solution -->
+      <section>
+        <h2>Orchestra Solves This</h2>
+        <div class="tech-stack">
+          <div class="tech-item fragment fade-up">LangGraph Core</div>
+          <div class="tech-item fragment fade-up">MCP Protocol</div>
+          <div class="tech-item fragment fade-up">A2A Support</div>
+        </div>
+        <p class="fragment fade-up" style="margin-top: 2rem;">One platform for all your AI agent needs</p>
+      </section>
+
+      <!-- Architecture - Nested Slides -->
+      <section>
+        <section>
+          <h2>Architecture</h2>
+          <p>Press <span style="color: #42affa;">down arrow</span> for details</p>
+        </section>
+
+        <section data-auto-animate>
+          <h3>Backend Stack</h3>
+          <pre data-id="backend-code"><code data-trim data-line-numbers class="language-yaml">
+backend:
+  stack: Python, FastAPI, LangChain
+  features:
+    - REST API
+    - WebSocket support
+    - PostgreSQL persistence
+          </code></pre>
+        </section>
+
+        <section data-auto-animate>
+          <h3>Backend Stack</h3>
+          <pre data-id="backend-code"><code data-trim data-line-numbers class="language-yaml">
+backend:
+  stack: Python, FastAPI, LangChain
+  features:
+    - REST API
+    - WebSocket support
+    - PostgreSQL persistence
+  deployment: https://chat.ruska.ai/docs
+          </code></pre>
+        </section>
+
+        <section data-auto-animate>
+          <h3>Frontend Stack</h3>
+          <pre data-id="frontend-code"><code data-trim data-line-numbers class="language-yaml">
+frontend:
+  stack: TypeScript, Vite, React
+  ui: shadcn + Tailwind CSS
+  deployment: https://chat.ruska.ai
+          </code></pre>
+        </section>
+
+        <section>
+          <h3>Full Stack Overview</h3>
+          <pre><code data-trim class="language-text">
++------------------+     +------------------+
+|    Frontend      |     |    CLI Client    |
+|  React + Vite    |     |   React-Ink      |
++--------+---------+     +--------+---------+
+         |                        |
+         +------------+-----------+
+                      |
+              +-------v-------+
+              |   Backend     |
+              |   FastAPI     |
+              |   LangChain   |
+              +-------+-------+
+                      |
+              +-------v-------+
+              |  PostgreSQL   |
+              +---------------+
+          </code></pre>
+        </section>
+      </section>
+
+      <!-- Key Features -->
+      <section>
+        <h2>Key Features</h2>
+        <ul>
+          <li class="fragment fade-up"><strong>Self-Hosting</strong> - Full control over your data</li>
+          <li class="fragment fade-up"><strong>Long-Running Tasks</strong> - Built-in job infrastructure</li>
+          <li class="fragment fade-up"><strong>MCP Protocol</strong> - Model Context Protocol support</li>
+          <li class="fragment fade-up"><strong>A2A Communication</strong> - Agent-to-Agent messaging</li>
+          <li class="fragment fade-up"><strong>Multi-Provider</strong> - OpenAI, Anthropic, and more</li>
+        </ul>
+      </section>
+
+      <!-- Quick Start - Code Example -->
+      <section>
+        <section>
+          <h2>Quick Start</h2>
+          <p>Get running in minutes</p>
+        </section>
+
+        <section data-auto-animate>
+          <h3>Clone the Repository</h3>
+          <pre data-id="quickstart"><code data-trim class="language-bash">
+git clone https://github.com/ruska-ai/orchestra
+cd orchestra
+          </code></pre>
+        </section>
+
+        <section data-auto-animate>
+          <h3>Start with Docker</h3>
+          <pre data-id="quickstart"><code data-trim class="language-bash">
+git clone https://github.com/ruska-ai/orchestra
+cd orchestra
+
+# Start the database
+docker compose up postgres pgadmin
+          </code></pre>
+        </section>
+
+        <section data-auto-animate>
+          <h3>Run the Backend</h3>
+          <pre data-id="quickstart"><code data-trim class="language-bash">
+git clone https://github.com/ruska-ai/orchestra
+cd orchestra
+
+# Start the database
+docker compose up postgres pgadmin
+
+# Backend setup
+uv venv && source .venv/bin/activate
+uv sync
+make dev
+          </code></pre>
+        </section>
+
+        <section data-auto-animate>
+          <h3>Run the Frontend</h3>
+          <pre data-id="quickstart"><code data-trim class="language-bash">
+# In a new terminal
+cd frontend
+npm install
+npm run dev
+          </code></pre>
+          <p style="margin-top: 1rem; color: #42affa;">Visit http://localhost:5173</p>
+        </section>
+      </section>
+
+      <!-- Development Commands -->
+      <section data-background="#0d1117">
+        <h2>Development Commands</h2>
+        <div style="text-align: left; max-width: 600px; margin: 0 auto;">
+          <p class="fragment fade-up"><code>make dev</code> - Run dev server</p>
+          <p class="fragment fade-up"><code>make test</code> - Run all tests</p>
+          <p class="fragment fade-up"><code>make format</code> - Format code</p>
+          <p class="fragment fade-up"><code>make seeds.user</code> - Seed users</p>
+        </div>
+      </section>
+
+      <!-- Documentation -->
+      <section>
+        <h2>Documentation</h2>
+        <div class="tech-stack">
+          <div class="tech-item">
+            <p><strong>API Docs</strong></p>
+            <a href="https://chat.ruska.ai/docs">chat.ruska.ai/docs</a>
+          </div>
+          <div class="tech-item">
+            <p><strong>Wiki</strong></p>
+            <a href="https://docs.ruska.ai">docs.ruska.ai</a>
+          </div>
+          <div class="tech-item">
+            <p><strong>Website</strong></p>
+            <a href="https://ruska.ai">ruska.ai</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Call to Action -->
+      <section data-background-gradient="linear-gradient(to bottom, #1a1a2e, #16213e)" data-transition="zoom">
+        <h2>Get Started Today</h2>
+        <p style="font-size: 1.2em; margin: 2rem 0;">
+          <a href="https://github.com/ruska-ai/orchestra" style="color: #42affa;">
+            github.com/ruska-ai/orchestra
+          </a>
+        </p>
+        <p class="fragment fade-up">Star the repo | Open an issue | Submit a PR</p>
+        <p class="fragment fade-up" style="margin-top: 2rem; font-size: 0.8em; color: #888;">
+          MIT Licensed | Community Driven
+        </p>
+      </section>
+
+      <!-- Thank You -->
+      <section data-auto-animate>
+        <h1>Thank You</h1>
+      </section>
+
+      <section data-auto-animate>
+        <h1>Thank You</h1>
+        <p style="color: #42affa;">Questions?</p>
+        <p style="font-size: 0.7em; margin-top: 2rem;">
+          Press <kbd>S</kbd> for speaker notes |
+          <kbd>O</kbd> for overview |
+          <kbd>?</kbd> for help
+        </p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/markdown/markdown.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      transition: 'slide',
+      autoAnimateEasing: 'ease-out',
+      autoAnimateDuration: 0.8,
+      plugins: [RevealHighlight, RevealNotes, RevealMarkdown]
+    });
+  </script>
+</body>
+</html>
