@@ -63,6 +63,7 @@ dependencies = [
 dev = [
     "faker>=37.6.0",
     "fakeredis>=2.26.0",
+    "ipykernel>=7.1.0",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
     "pytest-mock>=3.14.0",
