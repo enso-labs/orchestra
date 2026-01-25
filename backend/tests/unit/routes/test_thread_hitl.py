@@ -69,7 +69,7 @@ class TestGetThreadInterruptsEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             # Setup context manager for checkpointer
@@ -118,7 +118,7 @@ class TestGetThreadInterruptsEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             mock_checkpointer = MagicMock()
@@ -215,7 +215,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             mock_checkpointer = MagicMock()
@@ -279,7 +279,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             mock_checkpointer = MagicMock()
@@ -323,7 +323,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             mock_checkpointer = MagicMock()
@@ -423,7 +423,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             mock_checkpointer = MagicMock()
@@ -495,7 +495,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             mock_checkpointer = MagicMock()
@@ -558,7 +558,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
             patch("src.routes.v0.thread.ServiceContext") as mock_service_context_cls,
-            patch("src.routes.v0.thread.graph_builder") as mock_graph_builder,
+            patch("src.routes.v0.thread.init_graph") as mock_graph_builder,
             patch("src.routes.v0.thread.CheckpointService") as mock_cp_service_cls,
         ):
             mock_checkpointer = MagicMock()

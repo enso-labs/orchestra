@@ -15,7 +15,7 @@ from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
-from src.flows import construct_agent, init_backend
+from src.agents import construct_agent, init_backend
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (

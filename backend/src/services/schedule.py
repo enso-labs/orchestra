@@ -55,7 +55,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     """
     from uuid import uuid4
     from src.schemas.entities import LLMRequest
-    from src.flows import construct_agent, Orchestra, init_config
+    from src.agents import construct_agent, Orchestra, init_config
     from src.services.db import get_checkpoint_db, get_store_db
     from src.contexts.service import ServiceContext
 

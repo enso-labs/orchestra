@@ -4,7 +4,7 @@ from fastapi_cache.decorator import cache
 from langgraph.store.base import BaseStore
 
 from src.controllers.llm import LLMController
-from src.flows import init_config
+from src.agents import init_config
 from src.services.db import get_store
 from src.services.schedule import schedule_service
 from src.schemas.models import ProtectedUser

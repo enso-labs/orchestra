@@ -56,30 +56,20 @@ async def add_memories_to_system():
     )
 
 
-def graph_builder(
+def init_graph(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
-    system_prompt: str = "You are a helpful assistant.",
+    system_prompt: str = None,
     model: str = DEFAULT_CHAT_MODEL,
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
     middleware: list[Callable] = None,
     backend: CompositeBackend = None,
-    graph_id: Literal["deepagent", "react"] = "deepagent",
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
 
     llm = init_chat_model(model=model)
-    if graph_id in ["react", "create_react_agent", "create_agent"] and not subagents:
-        return create_agent(
-            model=llm,
-            tools=tools,
-            system_prompt=system_prompt,
-            checkpointer=checkpointer,
-            context_schema=context_schema,
-            store=store,
-        )
 
     deep_agent = create_deep_agent(
         model=llm,
@@ -93,7 +83,6 @@ def graph_builder(
         cache=CACHE_LLM,
         backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
-        name="orchestra",
     )
     return deep_agent
 
@@ -250,7 +239,6 @@ class Orchestra:
         subagents: Optional[list[SubAgent]] = None,
         model: str = DEFAULT_CHAT_MODEL,
         system_prompt: str | None = None,
-        # config: RunnableConfig = None,
         context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,
@@ -261,12 +249,11 @@ class Orchestra:
         self.tools = tools
         self.model = model
         self.system_prompt = system_prompt
-        # self.config = config
         self.context_schema = context_schema
         self.store = store
         self.checkpointer = checkpointer
         self.subagents = subagents
-        self.graph = graph_builder(
+        self.graph = init_graph(
             tools=self.tools,
             subagents=self.subagents,
             model=self.model,
@@ -274,7 +261,6 @@ class Orchestra:
             context_schema=self.context_schema,
             checkpointer=self.checkpointer,
             store=self.store,
-            graph_id=graph_id,
             middleware=middleware,
             backend=backend,
         )
