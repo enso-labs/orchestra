@@ -138,11 +138,16 @@ export default function ChatInput({
 					<div className="flex gap-1">
 						{/* <ImageUpload /> */}
 						<BaseToolMenu />
+						{showAgentMenu && (
+							<div className="max-w-62">
+								<AgentMenu />
+							</div>
+						)}
 						{/* File toggle button */}
 						<Button
-							variant={viewMode === "editor" ? "secondary" : "ghost"}
+							variant={viewMode === "editor" ? "secondary" : "default"}
 							size="sm"
-							className="h-8 px-2 gap-1 relative"
+							className="rounded-xl h-9 px-2 gap-1 relative w-9 p-0 justify-center"
 							onClick={toggleViewMode}
 							title={viewMode === "editor" ? "Back to Chat" : "Manage Files"}
 						>
@@ -154,11 +159,7 @@ export default function ChatInput({
 							)}
 						</Button>
 					</div>
-					{showAgentMenu && (
-						<div className="max-w-62">
-							<AgentMenu />
-						</div>
-					)}
+
 					{metadata?.project_id && selectedProject && (
 						<Button
 							variant="ghost"

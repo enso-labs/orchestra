@@ -68,6 +68,9 @@ def init_graph(
     backend: CompositeBackend = None,
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
+    
+    if not model:
+        model = DEFAULT_CHAT_MODEL
 
     llm = init_chat_model(model=model)
 
