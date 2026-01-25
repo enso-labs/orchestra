@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Optional, Sequence
 
 from langgraph.checkpoint.base import (
+    BaseCheckpointSaver,
     ChannelVersions,
     Checkpoint,
     CheckpointMetadata,
@@ -52,7 +53,7 @@ from src.services.errors import (
 from src.utils.logger import logger
 
 
-class ResilientAsyncPostgresSaver:
+class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
     """Resilient wrapper around AsyncPostgresSaver for Supabase compatibility.
 
     This class maintains a single connection and AsyncPostgresSaver instance,

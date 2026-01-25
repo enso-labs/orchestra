@@ -93,6 +93,7 @@ def graph_builder(
         cache=CACHE_LLM,
         backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
+        name="orchestra",
     )
     return deep_agent
 
