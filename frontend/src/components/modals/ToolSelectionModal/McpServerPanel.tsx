@@ -44,6 +44,12 @@ const MCP_TEMPLATES = {
 		url: "https://mcp.github.com/sse",
 		headers: { Authorization: "Bearer " },
 	},
+	zoho_mail: {
+		name: "Zoho Mail MCP",
+		transport: "sse" as const,
+		url: "https://mcp.composio.dev/zoho_mail/sse",
+		headers: { "x-api-key": "" },
+	},
 };
 
 export function McpServerPanel({
