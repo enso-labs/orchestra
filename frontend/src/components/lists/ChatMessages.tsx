@@ -30,7 +30,7 @@ export const Message = memo(
 		isLatest?: boolean;
 		messages: any[];
 		streamingRate?: { rate: number; count: number } | null;
-		handleSubmit: (content: string) => Promise<void>;
+		handleSubmit: (content: string, images?: File[], metadataOverrides?: Record<string, any>) => Promise<void>;
 		loading: boolean;
 		filesMap: Map<string, any>;
 		viewMode: string;
@@ -67,15 +67,15 @@ export const Message = memo(
 			}, 0);
 		};
 
-		// Handle save
-		const handleSave = async (e: React.MouseEvent) => {
-			e.stopPropagation();
-			// TODO: Implement save functionality to persist edited message
-			console.log("Saving edited message:", editedContent);
-			await handleSubmit(editedContent);
-			setIsEditingText(false);
-			setIsEditing(false);
-		};
+	// Handle save
+	const handleSave = async (e: React.MouseEvent) => {
+		e.stopPropagation();
+		// Pass checkpoint_id directly to handleSubmit for branching from this message
+		console.log("Saving edited message with checkpoint_id:", message.id);
+		await handleSubmit(editedContent, [], { checkpoint_id: message.id });
+		setIsEditingText(false);
+		setIsEditing(false);
+	};
 
 		// Handle cancel
 		const handleCancel = (e: React.MouseEvent) => {

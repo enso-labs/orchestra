@@ -25,7 +25,7 @@ export type ChatContextType = {
 	setQuery: (query: string) => void;
 	appendToQuery: (text: string) => void;
 	inputRef: React.RefObject<HTMLTextAreaElement>;
-	handleSubmit: (query?: string, images?: File[]) => Promise<void>;
+	handleSubmit: (query?: string, images?: File[], metadataOverrides?: Record<string, any>) => Promise<void>;
 	sseHandler: (
 		payload: any,
 		messages: any[],
@@ -176,6 +176,7 @@ export default function useChat(): ChatContextType {
 	const handleSSEUnified = async (
 		query: string,
 		images: File[],
+		metadataOverrides?: Record<string, any>,
 	): Promise<{ controller: AbortController; stream: StreamSource }> => {
 		// Optimistic UI: Add user message immediately
 		const userMessage = {
@@ -191,7 +192,7 @@ export default function useChat(): ChatContextType {
 
 		clearContent();
 		const formatedMessages = await formatMultimodalPayload(query, images);
-		const enrichedMetadata = getMetadata();
+		const enrichedMetadata = { ...getMetadata(), ...metadataOverrides };
 
 		// Collect files from filesMap for submission
 		const filesToSubmit: Record<string, any> = {};
@@ -284,6 +285,7 @@ export default function useChat(): ChatContextType {
 		query: string,
 		images: File[],
 		abortController: AbortController | null = null,
+		metadataOverrides?: Record<string, any>,
 	) => {
 		// Add user message to the existing messages state
 		const userMessage = {
@@ -300,7 +302,7 @@ export default function useChat(): ChatContextType {
 		clearContent();
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
-		const enrichedMetadata = getMetadata();
+		const enrichedMetadata = { ...getMetadata(), ...metadataOverrides };
 		// Collect files from filesMap for submission
 		const filesToSubmit: Record<string, any> = {};
 		filesMap.forEach((files) => {
@@ -386,7 +388,7 @@ export default function useChat(): ChatContextType {
 		return { controller, source };
 	};
 
-	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
+	const handleSubmit = async (argQuery?: string, images: File[] = [], metadataOverrides?: Record<string, any>) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
 		setTtft(null);
@@ -398,12 +400,12 @@ export default function useChat(): ChatContextType {
 
 		try {
 			// Try unified handler (supports both sync and distributed modes)
-			const { controller } = await handleSSEUnified(queryToSubmit, images);
+			const { controller } = await handleSSEUnified(queryToSubmit, images, metadataOverrides);
 			setController(controller);
 		} catch (error) {
 			// Fallback to legacy SSE handler if unified fails
 			console.warn("Unified stream failed, falling back to legacy SSE:", error);
-			const { controller } = await handleSSE(queryToSubmit, images);
+			const { controller } = await handleSSE(queryToSubmit, images, null, metadataOverrides);
 			setController(controller);
 		}
 
@@ -485,11 +487,23 @@ export default function useChat(): ChatContextType {
 			return;
 		}
 
-		if (streamMode === "values") {
-			const valuesData = payload[1];
+	if (streamMode === "values") {
+		const valuesData = payload[1];
 
-			// Store files with message association
-			if (valuesData.files && Object.keys(valuesData.files).length > 0) {
+		// Get latest user message from valuesData.messages and history
+		const latestUserFromValues = valuesData.messages
+			?.slice()
+			.reverse()
+			.find((msg: any) => ["user", "human"].includes(msg.type ?? msg.role));
+
+		const lastUserIndex = history.findLastIndex((item) => item.role === "user");
+
+		if (latestUserFromValues && lastUserIndex !== -1) {
+			history[lastUserIndex] = latestUserFromValues;
+		}
+
+		// Store files with message association
+		if (valuesData.files && Object.keys(valuesData.files).length > 0) {
 				// Associate files with the latest AI or tool message
 				const latestAiMessage = history
 					.slice()
