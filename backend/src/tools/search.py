@@ -206,6 +206,34 @@ Engines = Literal[
 # -----------------------------
 # Search Provider Helpers
 # -----------------------------
+async def _search_with_exa(
+    query: str, num_results: int, api_key: str
+) -> tuple[list, Exception | None]:
+    """
+    Execute search using Exa API.
+    Returns (results, error) tuple for clean error handling.
+    """
+    try:
+        from exa_py import Exa
+    except ImportError as e:
+        logger.warning("[Exa] exa-py not installed, skipping Exa search")
+        return [], e
+
+    try:
+        exa = Exa(api_key=api_key)
+        response = await asyncio.to_thread(
+            exa.search_and_contents,
+            query,
+            num_results=num_results,
+            highlights=True,
+        )
+        results = _normalize_exa_results(response.results)
+        return results, None
+    except Exception as e:
+        logger.warning(f"[Exa] Search failed: {e}")
+        return [], e
+
+
 async def _search_with_searx(
     query: str,
     num_results: int,
@@ -230,6 +258,33 @@ async def _search_with_searx(
         return [], e
 
 
+def _normalize_exa_results(exa_results) -> list:
+    """
+    Convert Exa search response to the canonical search result format.
+    Maps Exa fields to {title, link, snippet, engines, score, source}.
+    """
+    normalized = []
+    for item in exa_results:
+        # Use first highlight if available, otherwise truncate text
+        snippet = ""
+        if hasattr(item, "highlights") and item.highlights:
+            snippet = item.highlights[0]
+        elif hasattr(item, "text") and item.text:
+            snippet = item.text[:300]
+
+        normalized.append(
+            {
+                "title": getattr(item, "title", ""),
+                "link": getattr(item, "url", ""),
+                "snippet": snippet,
+                "engines": ["exa"],
+                "score": getattr(item, "score", 0.0),
+                "source": "exa",
+            }
+        )
+    return normalized
+
+
 def _normalize_tavily_results(tavily_response: dict) -> list:
     """
     Convert Tavily response format to match SearXNG result format.
@@ -244,6 +299,7 @@ def _normalize_tavily_results(tavily_response: dict) -> list:
                 "title": item.get("title", ""),
                 "link": item.get("url", ""),
                 "snippet": item.get("content", ""),
+                "engines": ["tavily"],
                 "score": item.get("score", 0.0),
                 "source": "tavily",
             }
@@ -338,14 +394,31 @@ async def web_search(
     ToolException
         If no search providers are configured.
     """
-    from src.constants import SEARX_SEARCH_HOST_URL, TAVILY_API_KEY
+    from src.constants import EXA_API_KEY, SEARX_SEARCH_HOST_URL, TAVILY_API_KEY
 
     # Default num_results if None
     num_results = num_results or 5
 
     logger.info(f"[Search] Searching for '{query}' with max {num_results} results")
 
-    # Phase 1: Try primary search provider (SearXNG)
+    # Phase 1: Try primary search provider (Exa)
+    if EXA_API_KEY:
+        results, exa_error = await _search_with_exa(
+            query=query,
+            num_results=num_results,
+            api_key=EXA_API_KEY,
+        )
+
+        if results:
+            logger.info(f"[Exa] Found {len(results)} results")
+            return results
+
+        if exa_error:
+            logger.warning(f"[Exa] Search failed: {exa_error}")
+        else:
+            logger.warning(f"[Exa] No results returned for: {query}")
+
+    # Phase 2: Fallback to SearXNG
     if SEARX_SEARCH_HOST_URL:
         results, searx_error = await _search_with_searx(
             query=query,
@@ -364,7 +437,7 @@ async def web_search(
         else:
             logger.warning(f"[SearXNG] No results returned for: {query}")
 
-    # Phase 2: Fallback to Tavily if available
+    # Phase 3: Fallback to Tavily
     if TAVILY_API_KEY:
         logger.info("[Tavily] Attempting fallback search")
         results, tavily_error = await _search_with_tavily(
@@ -380,11 +453,11 @@ async def web_search(
         if tavily_error:
             logger.warning(f"[Tavily] Fallback also failed: {tavily_error}")
 
-    # Phase 3: All providers exhausted
-    if not SEARX_SEARCH_HOST_URL and not TAVILY_API_KEY:
+    # Phase 4: All providers exhausted
+    if not EXA_API_KEY and not SEARX_SEARCH_HOST_URL and not TAVILY_API_KEY:
         raise ToolException(
             "No search providers configured. "
-            "Set SEARX_SEARCH_HOST_URL or TAVILY_API_KEY."
+            "Set EXA_API_KEY, SEARX_SEARCH_HOST_URL, or TAVILY_API_KEY."
         )
 
     # Return empty rather than throwing to prevent agent loops

@@ -1,0 +1,37 @@
+{
+  "title": "Exa Primary Search with SearXNG Fallback",
+  "branchName": "ralph/search-fallback-exa-searxng",
+  "prdSource": "tasks/prd-search-fallback-exa-searxng.md",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Add exa-py dependency and EXA_API_KEY constant",
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "Normalize Exa search results",
+      "passes": false
+    },
+    {
+      "id": "US-003",
+      "title": "Search with Exa as primary provider",
+      "passes": false
+    },
+    {
+      "id": "US-004",
+      "title": "Reorder fallback chain to Exa -> SearXNG -> Tavily",
+      "passes": false
+    },
+    {
+      "id": "US-005",
+      "title": "Fix Tavily normalizer missing engines field",
+      "passes": false
+    },
+    {
+      "id": "US-006",
+      "title": "Add defensive guard on engines in frontend",
+      "passes": false
+    }
+  ]
+}

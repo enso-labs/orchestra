@@ -1,0 +1,18 @@
+## Codebase Patterns
+- Search providers return `(results, error)` tuple pattern
+- Tavily uses inline import inside the helper function
+- Constants are in `backend/src/constants/__init__.py` with `UserTokenKey` enum + module-level `os.getenv()`
+- Search tools are in `backend/src/tools/search.py`
+- Frontend search component at `frontend/src/components/tools/SearchEngine.tsx`
+
+---
+
+## 2026-01-29 - US-001
+Thread: (initial commit)
+- Added `exa-py` to pyproject.toml dependencies
+- Added `EXA_API_KEY` to `UserTokenKey` enum and module-level env var
+- Added `EXA_API_KEY=` to `backend/.example.env`
+- **Learnings for future iterations:**
+  - Constants follow pattern: add to enum, then add module-level `os.getenv()` below
+  - `.example.env` groups keys by section (Tools section)
+---
