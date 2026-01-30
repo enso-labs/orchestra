@@ -11,27 +11,27 @@
     {
       "id": "US-002",
       "title": "Normalize Exa search results",
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-003",
       "title": "Search with Exa as primary provider",
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-004",
       "title": "Reorder fallback chain to Exa -> SearXNG -> Tavily",
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-005",
       "title": "Fix Tavily normalizer missing engines field",
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-006",
       "title": "Add defensive guard on engines in frontend",
-      "passes": false
+      "passes": true
     }
   ]
 }
