@@ -855,6 +855,24 @@ wheels = [
 ]
 
 [[package]]
+name = "exa-py"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpcore" },
+    { name = "httpx" },
+    { name = "openai" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7a/01/aa85d5c8c2ed7452816313eb4db865a9d17b2102fdbc33792182f94a94e6/exa_py-2.2.0.tar.gz", hash = "sha256:0e075705b1bc07bebcdc99935f01567706c72e78359a4d427c313fd382e817b4", size = 47542 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/03/3f/69a5fed1b12489124aad1cdd9a38e094f13c7891df73df6a9c7e4c6d5c52/exa_py-2.2.0-py3-none-any.whl", hash = "sha256:a0f7c7c4d0d5dc8162e69e5fc4d3ff2067442b9abf2ebdef4dbe329f093822c9", size = 62763 },
+]
+
+[[package]]
 name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2816,6 +2834,7 @@ dependencies = [
     { name = "bs4" },
     { name = "cryptography" },
     { name = "deepagents" },
+    { name = "exa-py" },
     { name = "fastapi" },
     { name = "fastapi-cache2" },
     { name = "fastmcp" },
@@ -2881,6 +2900,7 @@ requires-dist = [
     { name = "bs4", specifier = ">=0.0.2" },
     { name = "cryptography", specifier = ">=45.0.7" },
     { name = "deepagents", specifier = "==0.3.8" },
+    { name = "exa-py", specifier = ">=1.0.0" },
     { name = "fastapi", specifier = ">=0.116.1" },
     { name = "fastapi-cache2", specifier = ">=0.2.2" },
     { name = "fastmcp", specifier = ">=2.14.1" },

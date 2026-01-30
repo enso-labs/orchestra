@@ -246,7 +246,9 @@ class TestAbortServiceCheckSignal:
         key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
         # Set signal with valid JSON
-        signal_data = json.dumps({"requested_by": user_id, "requested_at": "2024-01-01"})
+        signal_data = json.dumps(
+            {"requested_by": user_id, "requested_at": "2024-01-01"}
+        )
         await fake_redis.set(key, signal_data)
 
         with patch("src.services.abort.redis.from_url", return_value=fake_redis):
@@ -261,7 +263,9 @@ class TestAbortServiceCheckSignal:
         key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
         # Set signal with user_id
-        signal_data = json.dumps({"requested_by": user_id, "requested_at": "2024-01-01"})
+        signal_data = json.dumps(
+            {"requested_by": user_id, "requested_at": "2024-01-01"}
+        )
         await fake_redis.set(key, signal_data)
 
         with patch("src.services.abort.redis.from_url", return_value=fake_redis):
@@ -271,7 +275,9 @@ class TestAbortServiceCheckSignal:
 
         assert result is True
 
-    async def test_check_abort_signal_returns_false_when_user_mismatch(self, fake_redis):
+    async def test_check_abort_signal_returns_false_when_user_mismatch(
+        self, fake_redis
+    ):
         """Test that check_abort_signal returns False when expected_user_id doesn't match."""
         thread_id = str(uuid4())
         user_id = str(uuid4())

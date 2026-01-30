@@ -155,12 +155,11 @@ def handle_multi_mode(chunk: dict):
         if "messages" in chunk:
             i0, i1 = chunk[0], chunk[1]
             msg = i1[0]
-            
-            if agent_name := dict(msg).get("lc_agent_name"):  
-                if agent_name != current_agent:  
-                    logger.warning(f"🤖 {agent_name}: ")  
-                    current_agent = agent_name  
 
+            if agent_name := dict(msg).get("lc_agent_name"):
+                if agent_name != current_agent:
+                    logger.warning(f"🤖 {agent_name}: ")
+                    current_agent = agent_name
 
             if isinstance(msg, ToolMessage):
                 return (i0, (_to_dict(msg), i1[1] or None))
@@ -243,7 +242,7 @@ async def stream_generator(
                 stream_mode=["messages", "values"],
                 config=config,
                 context=ctx,
-                subgraphs=True, 
+                subgraphs=True,
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)

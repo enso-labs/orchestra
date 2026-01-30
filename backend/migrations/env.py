@@ -68,6 +68,7 @@ try:
     asyncio.get_running_loop()
     # Already in an async context - run in a separate thread with its own loop
     import concurrent.futures
+
     with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.submit(asyncio.run, ensure_database_exists(DB_URI)).result()
 except RuntimeError:

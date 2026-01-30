@@ -42,7 +42,9 @@ def optional_tools() -> list[BaseTool]:
     ]
 
 
-def init_tool_library(user_id: str | None = None, default: bool = True) -> list[BaseTool]:
+def init_tool_library(
+    user_id: str | None = None, default: bool = True
+) -> list[BaseTool]:
     tool_lib = []
     if default:
         tool_lib.extend(default_tools())

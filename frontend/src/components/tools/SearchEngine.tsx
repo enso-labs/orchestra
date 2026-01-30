@@ -30,7 +30,7 @@ export default function SearchEngineTool({
 										{result.snippet}
 									</p>
 									<div className="flex gap-2 mt-2">
-										{result.engines.map(
+										{(result.engines ?? []).map(
 											(engine: string, engineIndex: number) => (
 												<span
 													key={engineIndex}
