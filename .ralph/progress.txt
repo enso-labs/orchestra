@@ -21,6 +21,7 @@
 - Assistant.to_llm_request() bridges assistant config into LLMRequest for inference
 - Routes needing both assistant + server data require dual Depends: get_store (LangGraph) + get_async_db (SQL)
 - To update assistant fields: assistant.model_dump() → modify dict → assistant_service.update(id, dict)
+- When SQL access needed outside route handlers: use `AsyncSessionLocal()` as async context manager directly
 
 ---
 
@@ -104,4 +105,18 @@
   - Server assignment is stored as server_ids list on the Assistant Pydantic model in the LangGraph store
   - To update an assistant field, use assistant.model_dump(), modify the dict, then call assistant_service.update(id, data)
   - The _server_to_response helper pattern (pulling _decrypted_config) is duplicated from server routes - could be consolidated
+---
+
+## 2026-01-31 - US-007
+- Added _resolve_server_ids() method to LLMService that resolves saved server UUIDs to MCP config dicts
+- Updated init_tools() to accept optional server_ids parameter, resolve them, and merge with inline mcp configs
+- Both assistant path and direct LLMRequest path now pass server_ids through to init_tools()
+- Uses AsyncSessionLocal to create a short-lived DB session for server lookups (ServiceContext doesn't hold SQL sessions)
+- Files changed:
+  - backend/src/services/llm.py (added _resolve_server_ids, updated init_tools and call sites)
+- **Learnings for future iterations:**
+  - ServiceContext uses LangGraph store only, not SQL sessions — use AsyncSessionLocal directly when SQL access is needed in services
+  - Server._decrypted_config can be a JSON string — need to json.loads() it before extracting headers
+  - MultiServerMCPClient expects dict[str, McpServer] format: {name: {transport, url, headers}}
+  - Resolved server configs are keyed by slug (or name fallback) to avoid collisions with inline mcp keys
 ---

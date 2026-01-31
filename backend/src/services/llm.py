@@ -1,5 +1,8 @@
+import json
 import time
+import uuid
 import requests
+from typing import Optional
 from uuid import uuid4
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.store.base import BaseStore
@@ -7,9 +10,10 @@ from langgraph.store.base import BaseStore
 from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.services.tool import ToolService
 from src.schemas.entities.a2a import A2AServers
-from src.services.db import get_store_in_memory
+from src.services.db import get_store_in_memory, AsyncSessionLocal
 from src.schemas.entities.llm import LLMRequest
 from src.services.assistant import AssistantService, Assistant
+from src.services.server import ServerService
 from src.utils.llm import filter_tool_call_models
 from src.utils.logger import logger
 from src.tools import init_tool_library
@@ -92,7 +96,58 @@ class LLMService:
 
         return [f"{normalized_provider}:{model}" for model in tool_models]
 
-    async def init_tools(self, tools: list[str], a2a: dict, mcp: dict):
+    async def _resolve_server_ids(
+        self, server_ids: Optional[list[str]]
+    ) -> dict[str, dict]:
+        """Resolve saved server UUIDs to MCP config dicts."""
+        if not server_ids or not self.user_id:
+            return {}
+
+        mcp_configs: dict[str, dict] = {}
+        async with AsyncSessionLocal() as db:
+            server_service = ServerService(db, self.user_id)
+            for sid in server_ids:
+                try:
+                    server = await server_service.get_by_id(uuid.UUID(sid))
+                except (ValueError, AttributeError):
+                    logger.warning(f"Invalid server_id: {sid}")
+                    continue
+                if not server:
+                    logger.warning(f"Server {sid} not found for user {self.user_id}")
+                    continue
+
+                # Build MCP config matching MultiServerMCPClient format
+                config: dict[str, dict] = {}
+                decrypted = getattr(server, "_decrypted_config", None)
+                if decrypted:
+                    try:
+                        config = (
+                            json.loads(decrypted)
+                            if isinstance(decrypted, str)
+                            else decrypted
+                        )
+                    except (json.JSONDecodeError, TypeError):
+                        config = {}
+
+                headers = config.get("headers", {}) if isinstance(config, dict) else {}
+                mcp_configs[server.slug or server.name] = {
+                    "transport": server.transport.value,
+                    "url": server.url,
+                    "headers": headers,
+                }
+        return mcp_configs
+
+    async def init_tools(
+        self,
+        tools: list[str],
+        a2a: dict,
+        mcp: dict,
+        server_ids: Optional[list[str]] = None,
+    ):
+        # Resolve saved server configs and merge with inline MCP configs
+        resolved_mcp = await self._resolve_server_ids(server_ids)
+        merged_mcp = {**(mcp or {}), **resolved_mcp}
+
         tool_map = {
             t.name: t for t in init_tool_library(user_id=self.user_id)
         }  # O(n) index
@@ -100,7 +155,7 @@ class LLMService:
             A2AServers(a2a=a2a).fetch_agent_cards_as_tools(
                 self.config["configurable"].get("thread_id")
             )
-            + await self.tool_service.mcp_tools(mcp)
+            + await self.tool_service.mcp_tools(merged_mcp)
             + [tool_map[name] for name in (tools or ()) if name in tool_map]
         )
         if self.user_id:
@@ -154,7 +209,10 @@ class LLMService:
             if assistant:
                 assistant.system_prompt = self.default_system_prompt(assistant)
                 assistant.tools = await self.init_tools(
-                    assistant.tools, assistant.a2a, assistant.mcp
+                    assistant.tools,
+                    assistant.a2a,
+                    assistant.mcp,
+                    server_ids=assistant.server_ids,
                 )
                 return assistant.to_llm_request(
                     input=params.input,
@@ -168,7 +226,9 @@ class LLMService:
 
         ### Collect all tools
         params.system_prompt = self.default_system_prompt(params)
-        params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)
+        params.tools = await self.init_tools(
+            params.tools, params.a2a, params.mcp, server_ids=params.server_ids
+        )
         return params
 
 

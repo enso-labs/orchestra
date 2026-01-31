@@ -103,8 +103,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added _resolve_server_ids() to LLMService that fetches Server records from DB via ServerService, decrypts config, and builds MCP config dicts. init_tools() now accepts optional server_ids, resolves them, and merges with inline mcp configs before calling MultiServerMCPClient. Both assistant and direct LLMRequest paths pass server_ids."
     },
     {
       "id": "US-008",
