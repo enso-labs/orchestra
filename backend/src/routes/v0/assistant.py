@@ -1,4 +1,6 @@
 import uuid
+from typing import List
+
 from fastapi import (
     APIRouter,
     Body,
@@ -10,13 +12,17 @@ from fastapi import (
     Query,
 )
 from fastapi_cache.decorator import cache
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langgraph.store.postgres import AsyncPostgresStore
 
 from src.contexts.service import ServiceContext
 from src.constants.examples import Examples
+from src.schemas.entities.server import ServerResponse
 from src.schemas.models import ProtectedUser
-from src.services.db import get_store
+from src.services.db import get_async_db, get_store
+from src.services.server import ServerService
 from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 from src.services.assistant import (
@@ -26,6 +32,14 @@ from src.services.assistant import (
     ASSISTANT_EXAMPLES,
 )
 from src.schemas.entities.llm import PublicAssistant
+
+
+class ServerAssignmentRequest(BaseModel):
+    """Request body for assigning servers to an assistant."""
+
+    server_ids: List[str] = Field(
+        ..., description="List of server configuration UUIDs to assign"
+    )
 
 
 ################################################################################
@@ -268,3 +282,164 @@ async def unpublish_assistant(
     except Exception as e:
         logger.exception(f"Error unpublishing assistant: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+################################################################################
+### Server Assignment Routes
+################################################################################
+
+
+def _server_to_response(server: object) -> dict:
+    """Convert a Server ORM instance to a ServerResponse-compatible dict."""
+    config = getattr(server, "_decrypted_config", None)
+    return {
+        "id": server.id,  # type: ignore[attr-defined]
+        "name": server.name,  # type: ignore[attr-defined]
+        "slug": server.slug,  # type: ignore[attr-defined]
+        "url": server.url,  # type: ignore[attr-defined]
+        "transport": server.transport,  # type: ignore[attr-defined]
+        "config": config,
+        "user_id": server.user_id,  # type: ignore[attr-defined]
+        "created_at": server.created_at,  # type: ignore[attr-defined]
+        "updated_at": server.updated_at,  # type: ignore[attr-defined]
+    }
+
+
+@router.post(
+    "/{assistant_id}/servers",
+    name="Assign Servers to Assistant",
+    operation_id="ruska_assign_servers_to_assistant",
+)
+async def assign_servers(
+    assistant_id: str = Path(..., description="The ID of the assistant"),
+    body: ServerAssignmentRequest = Body(...),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Assign server configurations to an assistant."""
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service_context = ServiceContext(user_id=user.id, store=store)
+    assistant = await service_context.assistant_service.get(assistant_id)
+    if not assistant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found"
+        )
+
+    # Validate that all server_ids belong to the user
+    server_service = ServerService(db, user.id)
+    for sid in body.server_ids:
+        try:
+            server_uuid = uuid.UUID(sid, version=4)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid server ID format: {sid}",
+            )
+        server = await server_service.get_by_id(server_uuid)
+        if not server:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Server not found: {sid}",
+            )
+
+    # Update assistant with new server_ids
+    assistant_data = assistant.model_dump()
+    assistant_data["server_ids"] = body.server_ids
+    await service_context.assistant_service.update(assistant_id, assistant_data)
+
+    return {"assistant_id": assistant_id, "server_ids": body.server_ids}
+
+
+@router.get(
+    "/{assistant_id}/servers",
+    name="List Assistant Servers",
+    operation_id="ruska_list_assistant_servers",
+    response_model=list[ServerResponse],
+)
+async def list_assistant_servers(
+    assistant_id: str = Path(..., description="The ID of the assistant"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """List all servers assigned to an assistant."""
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service_context = ServiceContext(user_id=user.id, store=store)
+    assistant = await service_context.assistant_service.get(assistant_id)
+    if not assistant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found"
+        )
+
+    server_ids = assistant.server_ids or []
+    if not server_ids:
+        return []
+
+    server_service = ServerService(db, user.id)
+    servers = []
+    for sid in server_ids:
+        try:
+            server = await server_service.get_by_id(uuid.UUID(sid))
+        except ValueError:
+            continue
+        if server:
+            servers.append(ServerResponse(**_server_to_response(server)))
+
+    return servers
+
+
+@router.delete(
+    "/{assistant_id}/servers/{server_id}",
+    name="Unassign Server from Assistant",
+    operation_id="ruska_unassign_server_from_assistant",
+)
+async def unassign_server(
+    assistant_id: str = Path(..., description="The ID of the assistant"),
+    server_id: str = Path(..., description="The ID of the server to unassign"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Remove a server assignment from an assistant. Does not delete the server config."""
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service_context = ServiceContext(user_id=user.id, store=store)
+    assistant = await service_context.assistant_service.get(assistant_id)
+    if not assistant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found"
+        )
+
+    current_ids = assistant.server_ids or []
+    if server_id not in current_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Server not assigned to this assistant",
+        )
+
+    updated_ids = [sid for sid in current_ids if sid != server_id]
+    assistant_data = assistant.model_dump()
+    assistant_data["server_ids"] = updated_ids
+    await service_context.assistant_service.update(assistant_id, assistant_data)
+
+    return {"assistant_id": assistant_id, "server_ids": updated_ids}

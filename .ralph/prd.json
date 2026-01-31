@@ -88,8 +88,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added POST/GET/DELETE endpoints for server assignment on assistants. POST assigns server_ids (validates ownership), GET lists full server details, DELETE removes single assignment. All in src/routes/v0/assistant.py."
     },
     {
       "id": "US-007",

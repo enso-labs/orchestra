@@ -19,6 +19,8 @@
 - Server router registered in `src/routes/v0/__init__.py` via `app.include_router(server, prefix=prefix)`
 - Assistants use LangGraph store (not SQL) — adding fields = update Pydantic model only, no migration needed
 - Assistant.to_llm_request() bridges assistant config into LLMRequest for inference
+- Routes needing both assistant + server data require dual Depends: get_store (LangGraph) + get_async_db (SQL)
+- To update assistant fields: assistant.model_dump() → modify dict → assistant_service.update(id, dict)
 
 ---
 
@@ -88,4 +90,18 @@
   - Assistant data is stored as JSON in the store, so adding fields to the Pydantic model is sufficient (no migration)
   - AssistantService uses store.aput/aget/adelete with namespace tuples like (user_id, "assistants")
   - The Assistant.to_llm_request() method bridges assistant config to LLMRequest for inference
+---
+
+## 2026-01-31 - US-006
+- Added server assignment endpoints to assistant routes: POST, GET, DELETE for /api/assistants/{id}/servers
+- POST validates all server_ids belong to the user before assigning
+- GET fetches full server details (with decrypted config) for assigned server_ids
+- DELETE removes a single server_id from the assistant without deleting the server config
+- Files changed:
+  - backend/src/routes/v0/assistant.py (added server assignment endpoints + ServerAssignmentRequest model)
+- **Learnings for future iterations:**
+  - Assistant routes need both LangGraph store (for assistant data) and SQL AsyncSession (for server lookups) as dependencies
+  - Server assignment is stored as server_ids list on the Assistant Pydantic model in the LangGraph store
+  - To update an assistant field, use assistant.model_dump(), modify the dict, then call assistant_service.update(id, data)
+  - The _server_to_response helper pattern (pulling _decrypted_config) is duplicated from server routes - could be consolidated
 ---
