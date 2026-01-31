@@ -8,9 +8,11 @@
 
 from abc import ABC, abstractmethod
 
-from langchain_core.messages import BaseMessage, SystemMessage
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from src.constants.llm import (
+    DEFAULT_COMPACTION_MODEL,
     DEFAULT_COMPACTION_RECENT_MESSAGES,
     DEFAULT_COMPACTION_TOKEN_THRESHOLD,
 )
@@ -86,3 +88,65 @@ class CompactingMiddleware(ABC):
         middle = non_system_msgs[: -self.recent_messages]
         recent = non_system_msgs[-self.recent_messages :]
         return system_msgs, middle, recent
+
+
+class SummarizationMiddleware(CompactingMiddleware):
+    """Compaction middleware that summarizes older messages using an LLM.
+
+    When the estimated token count exceeds the threshold, older messages
+    (excluding system prompts and recent messages) are summarized into a
+    single SystemMessage with a [CONVERSATION SUMMARY] prefix.
+    """
+
+    def __init__(
+        self,
+        token_threshold: int = DEFAULT_COMPACTION_TOKEN_THRESHOLD,
+        recent_messages: int = DEFAULT_COMPACTION_RECENT_MESSAGES,
+        model: str | None = DEFAULT_COMPACTION_MODEL,
+    ) -> None:
+        super().__init__(
+            token_threshold=token_threshold, recent_messages=recent_messages
+        )
+        self.model = model
+
+    async def compact(self, messages: list[BaseMessage]) -> list[BaseMessage]:
+        """Summarize older messages when token count exceeds threshold.
+
+        Returns the original messages unchanged if under threshold.
+        """
+        if not self.should_compact(messages):
+            return messages
+
+        system_msgs, middle_msgs, recent_msgs = self.split_messages(messages)
+
+        if not middle_msgs:
+            return messages
+
+        # Build the conversation text for summarization
+        conversation_text = "\n".join(
+            f"{msg.type}: {msg.content if isinstance(msg.content, str) else str(msg.content)}"
+            for msg in middle_msgs
+        )
+
+        llm = init_chat_model(self.model)
+        summary_response = await llm.ainvoke(
+            [
+                SystemMessage(
+                    content="You are a conversation summarizer. Provide a concise summary of the following conversation, preserving key facts, decisions, and context."
+                ),
+                HumanMessage(content=conversation_text),
+            ]
+        )
+
+        summary_content = (
+            summary_response.content
+            if isinstance(summary_response.content, str)
+            else str(summary_response.content)
+        )
+
+        summary_message = SystemMessage(
+            content=f"[CONVERSATION SUMMARY] {summary_content}",
+            metadata={"compacted": True, "original_count": len(middle_msgs)},
+        )
+
+        return system_msgs + [summary_message] + recent_msgs
