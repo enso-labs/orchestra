@@ -1,6 +1,7 @@
 import asyncio
 import re
 import unicodedata
+from dataclasses import dataclass
 from typing import Literal, List, Optional, Tuple, Union
 
 import httpx
@@ -76,23 +77,64 @@ def clean_markdown(md_text: str) -> str:
 # -----------------------------
 # Fetch + convert
 # -----------------------------
-async def fetch_html(client: httpx.AsyncClient, url: str) -> str:
+@dataclass
+class FetchResult:
+    """Result of fetching a URL with its detected content type category."""
+
+    text: str
+    content_type: str
+
+
+ALLOWED_TEXT_TYPES: dict[str, str] = {
+    "text/html": "html",
+    "text/plain": "plain",
+    "text/csv": "csv",
+    "text/markdown": "markdown",
+    "text/xml": "xml",
+    "application/json": "json",
+    "application/xml": "xml",
+    "application/xhtml+xml": "html",
+    "application/rss+xml": "xml",
+    "application/atom+xml": "xml",
+}
+
+
+def _resolve_content_type(raw: str) -> str:
+    """Strip charset/parameters and match against ALLOWED_TEXT_TYPES.
+
+    Returns the category string (e.g. "html", "plain") or raises ValueError.
     """
-    Fetch HTML content from a URL safely.
+    if not raw:
+        raise ValueError("Non-text content-type: unknown")
+
+    # Strip parameters like "; charset=utf-8"
+    mime = raw.split(";")[0].strip().lower()
+
+    # Check explicit allowlist first
+    if mime in ALLOWED_TEXT_TYPES:
+        return ALLOWED_TEXT_TYPES[mime]
+
+    # Accept any text/* not in the allowlist as a fallback
+    if mime.startswith("text/"):
+        return "plain"
+
+    raise ValueError(f"Non-text content-type: {raw}")
+
+
+async def fetch_content(client: httpx.AsyncClient, url: str) -> FetchResult:
+    """
+    Fetch text-based content from a URL safely.
 
     Key protections:
-    - Reject non-HTML content-types (PDFs/images/zips/etc.)
+    - Reject non-text content-types (PDFs/images/zips/etc.)
     - Reject likely-binary payloads
-    - Robust decode from bytes (don’t trust server charset headers)
+    - Robust decode from bytes (don't trust server charset headers)
     """
     r = await client.get(url)
     r.raise_for_status()
 
     ctype = (r.headers.get("content-type") or "").lower()
-
-    # Only accept HTML-ish responses
-    if ("text/html" not in ctype) and ("application/xhtml+xml" not in ctype):
-        raise ValueError(f"Non-HTML content-type: {ctype or 'unknown'}")
+    category = _resolve_content_type(ctype)
 
     data = r.content
 
@@ -101,16 +143,39 @@ async def fetch_html(client: httpx.AsyncClient, url: str) -> str:
         raise ValueError("Response looks binary/compressed; refusing to decode as text")
 
     # Robust decode (handles missing/wrong charset)
-    html = str(from_bytes(data).best())
+    decoded = str(from_bytes(data).best())
 
     # Final safety
-    return strip_control_chars(html)
+    return FetchResult(text=strip_control_chars(decoded), content_type=category)
 
 
 async def html_to_markdown(html: str) -> str:
     """Convert HTML to clean markdown."""
     md_text = await asyncio.to_thread(md, html, heading_style="ATX")
     return clean_markdown(md_text)
+
+
+async def content_to_markdown(result: FetchResult) -> str:
+    """Route fetched content to the appropriate markdown converter based on content type."""
+    ct = result.content_type
+
+    if ct == "html":
+        return await html_to_markdown(result.text)
+
+    if ct in ("plain", "markdown"):
+        return clean_markdown(result.text)
+
+    if ct == "json":
+        return f"```json\n{result.text}\n```"
+
+    if ct == "xml":
+        return f"```xml\n{result.text}\n```"
+
+    if ct == "csv":
+        return f"```csv\n{result.text}\n```"
+
+    # Unknown text types fall back to clean_markdown
+    return clean_markdown(result.text)
 
 
 async def url_to_markdown(
@@ -121,8 +186,8 @@ async def url_to_markdown(
     """Fetch a URL and convert to markdown with concurrency control."""
     try:
         async with sem:
-            html = await fetch_html(client, url)
-            md_text = await html_to_markdown(html)
+            result = await fetch_content(client, url)
+            md_text = await content_to_markdown(result)
             return url, md_text
     except Exception as e:
         return url, e
@@ -146,8 +211,8 @@ async def urls_to_markdown(
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/131.0.0.0 Safari/537.36"
             ),
-            # Prefer HTML; still allow */* so some sites respond, but we gate by Content-Type anyway
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            # Prefer HTML but accept plain text and other text types too
+            "Accept": "text/html,application/xhtml+xml,text/plain,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
             # IMPORTANT: avoid brotli unless your runtime supports it
             "Accept-Encoding": "gzip, deflate",
@@ -167,8 +232,8 @@ async def urls_to_markdown(
                     f"<!-- SOURCE: {url} -->\n\n"
                     f"## Fetch/convert failed\n\n"
                     f"**Error:** `{type(outcome).__name__}: {outcome}`\n\n"
-                    f"> Tip: This often happens when the URL returns a PDF/image, "
-                    f"> or the payload is compressed/binary."
+                    f"> Tip: This often happens when the URL returns a PDF, image, "
+                    f"> or other binary/compressed content."
                 )
             )
             continue
