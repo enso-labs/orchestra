@@ -3,6 +3,8 @@ from src.constants import (
     ANTHROPIC_API_KEY,
     GROQ_API_KEY,
     GEMINI_API_KEY,
+    XAI_API_KEY,
+    UserTokenKey,
 )
 from groq import Groq
 from groq.types.audio.translation import Translation
@@ -19,6 +21,49 @@ def get_api_key(model_name: str):
         return GEMINI_API_KEY
     else:
         raise ValueError(f"Provider {model_name} not supported")
+
+
+# Mapping from model provider prefix to UserTokenKey enum value
+_PROVIDER_PREFIX_TO_KEY: dict[str, UserTokenKey] = {
+    "openai": UserTokenKey.OPENAI_API_KEY,
+    "anthropic": UserTokenKey.ANTHROPIC_API_KEY,
+    "google_genai": UserTokenKey.GEMINI_API_KEY,
+    "xai": UserTokenKey.XAI_API_KEY,
+    "groq": UserTokenKey.GROQ_API_KEY,
+}
+
+# System-level env vars keyed by UserTokenKey value
+_SYSTEM_KEYS: dict[str, str | None] = {
+    UserTokenKey.OPENAI_API_KEY.value: OPENAI_API_KEY,
+    UserTokenKey.ANTHROPIC_API_KEY.value: ANTHROPIC_API_KEY,
+    UserTokenKey.GEMINI_API_KEY.value: GEMINI_API_KEY,
+    UserTokenKey.XAI_API_KEY.value: XAI_API_KEY,
+    UserTokenKey.GROQ_API_KEY.value: GROQ_API_KEY,
+}
+
+
+def resolve_api_key(model: str, user_keys: dict[str, str] | None) -> str | None:
+    """Resolve the API key for a given model string.
+
+    Checks user-provided keys first, then falls back to system env keys.
+    Returns None if the provider is unknown.
+    """
+    # Find matching provider prefix
+    token_key: UserTokenKey | None = None
+    for prefix, key in _PROVIDER_PREFIX_TO_KEY.items():
+        if prefix in model:
+            token_key = key
+            break
+
+    if token_key is None:
+        return None
+
+    # Check user key first
+    if user_keys and token_key.value in user_keys:
+        return user_keys[token_key.value]
+
+    # Fall back to system key
+    return _SYSTEM_KEYS.get(token_key.value)
 
 
 def audio_to_text(
