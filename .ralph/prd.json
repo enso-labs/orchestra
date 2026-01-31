@@ -64,7 +64,7 @@
         "File is valid markdown with no syntax errors"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
