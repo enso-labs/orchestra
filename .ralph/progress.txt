@@ -1,0 +1,45 @@
+## Codebase Patterns
+- Backend format: `uvx ruff format` (run from backend dir)
+- Backend lint: `uvx ruff check` (pre-existing unused import warnings exist)
+- Cannot import backend modules directly without env vars (POSTGRES_CONNECTION_STRING etc.) — use `python -c "import ast; ast.parse(...)"` for syntax checks
+- `backend/src/tools/search.py` contains the web scraping pipeline: fetch → convert → combine
+- The `urls_to_markdown` function is the main entry point called by the `web_scrape` tool
+- Running tests requires: `POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@localhost:5432/lg_template_test" OPENAI_API_KEY="sk-test" uv run pytest`
+- Pre-existing bug: ChatModels.OPENAI_GPT_5_2 requires OPENAI_API_KEY to be set at import time
+- `.ralph/` is gitignored — use `git add -f` to commit ralph files
+
+---
+
+## 2026-01-31 - US-001
+- Implemented FetchResult dataclass and ALLOWED_TEXT_TYPES mapping
+- Renamed fetch_html → fetch_content returning FetchResult
+- Added _resolve_content_type helper that strips charset params and validates against allowlist
+- All text/* types accepted; specific application/* types allowlisted
+- Updated url_to_markdown to use fetch_content
+- Files changed: backend/src/tools/search.py
+- **Learnings for future iterations:**
+  - The content-type gate was the single point blocking plain text — only needed to broaden the check
+  - charset_normalizer's `from_bytes` works fine for all text types, not just HTML
+  - Pre-existing ruff lint warnings (unused imports) exist and should not block commits
+---
+
+## 2026-01-31 - US-002
+- Added content_to_markdown routing function (HTML→html_to_markdown, plain/markdown→clean_markdown, JSON/XML/CSV→fenced code blocks)
+- Updated url_to_markdown to call fetch_content then content_to_markdown
+- Updated Accept header to include text/plain
+- Updated error tip message to remove plain text mention
+- Files changed: backend/src/tools/search.py
+- **Learnings for future iterations:**
+  - content_to_markdown is a simple dispatcher — easy to extend for new types
+  - FetchResult.content_type category string makes routing clean
+---
+
+## 2026-01-31 - US-003
+- Created backend/tests/unit/tools/test_web_scrape.py with 31 tests
+- All tests pass: helpers, _resolve_content_type, fetch_content, content_to_markdown
+- Files changed: backend/tests/unit/tools/test_web_scrape.py
+- **Learnings for future iterations:**
+  - Tests require POSTGRES_CONNECTION_STRING and OPENAI_API_KEY env vars due to conftest.py loading the full app
+  - Use `httpx.Response` with `request=httpx.Request(...)` for mocking fetch responses
+  - Pre-existing ChatModels.OPENAI_GPT_5_2 bug requires OPENAI_API_KEY to be set for imports
+---
