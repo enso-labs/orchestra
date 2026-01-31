@@ -53,6 +53,8 @@ export type Server = {
 	created_at?: string;
 };
 
+export * from "./memory";
+
 export type DashboardTabOption = "agents" | "workflows" | "servers";
 
 export type LLMStreamPayload = {
