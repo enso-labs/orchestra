@@ -93,3 +93,19 @@ Started: Thu Jan 30 23:59:00 MST 2026
   - Toast uses `sonner` library: `import { toast } from "sonner"`; use `toast.success()` / `toast.error()`
 ---
 
+## 2026-01-31 - US-007
+- Created `frontend/src/components/settings/UserApiKeysSettings.tsx`
+- Card component listing configured provider keys with is_set status indicator
+- Add/Update Key dialog with provider selector (Select component) and password input
+- Delete action with confirmation dialog (browser confirm)
+- Keys never displayed — only "Key configured" status shown
+- Toast feedback on all CRUD operations via sonner
+- Follows ApiTokensSettings dialog pattern (Dialog with controlled open state)
+- Files created: `frontend/src/components/settings/UserApiKeysSettings.tsx`
+- **Learnings for future iterations:**
+  - Backend returns ALL UserTokenKey enum values as provider_keys statuses, not just AI providers
+  - PROVIDER_LABELS map gives human-friendly names; providers without labels fall back to raw key name
+  - Select component from shadcn/ui works well for provider picker in dialogs
+  - Filter `providers.filter(p => p.is_set)` to show only configured keys in the list
+---
+
