@@ -9,6 +9,8 @@ Started: Thu Jan 30 23:59:00 MST 2026
 - `encrypt_value(dict) -> str` and `decrypt_value(str) -> dict` in `src/utils/security.py` for Fernet encryption
 - `UserTokenKey` enum in `src/constants/__init__.py` lists all valid provider key names
 - `make format` runs from `backend/` dir, `make test` requires env vars (POSTGRES_CONNECTION_STRING etc.)
+- Vite dev server runs from main worktree, not feat-665 worktree — browser testing needs its own dev server
+- Toast notifications use `sonner`: `import { toast } from "sonner"`
 - Format with `uvx ruff format` from backend directory
 - Routes pattern: `APIRouter(tags=[...])`, endpoints use `Depends(verify_credentials)` + `Depends(get_store)`, register in `__init__.py` `create_api_router`
 - LLM invocation chain: Route → LLMController → LLMService.assistant() → construct_agent → Orchestra → init_graph → init_chat_model
@@ -74,5 +76,20 @@ Started: Thu Jan 30 23:59:00 MST 2026
   - Function-based export pattern (not class-based) is simpler and used by settingService.ts
   - Backend field names use snake_case (api_key, is_set, default_model) — keep same in TS interfaces
   - `npx tsc --noEmit` from frontend dir for typecheck
+---
+
+## 2026-01-31 - US-006
+- Created `frontend/src/components/settings/DefaultModelSettings.tsx`
+- Card with combobox/select for choosing default AI model from visible models list
+- Fetches current default model on mount via `getSettings()`
+- On selection calls `updateDefaultModel()` with toast feedback (sonner)
+- Clear button (X icon) to revert to system default (sends `null`)
+- Uses same Command/Popover combobox pattern as SelectModel component
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Vite dev server runs from main worktree (`/home/ryaneggz/ruska-ai/orchestra/frontend/`), not from feat-665 worktree — browser testing only works if dev server is started from the worktree
+  - `useChatContext().models` provides `{ default, free, models }` — `models.models` is the string array
+  - `useModelsEffect?.()` must be called in settings components to ensure models are loaded
+  - Toast uses `sonner` library: `import { toast } from "sonner"`; use `toast.success()` / `toast.error()`
 ---
 
