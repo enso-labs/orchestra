@@ -42,8 +42,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "ServerService in src/services/server.py with create, get_by_id, list_by_user, update, delete. Config encrypted with Fernet before storage, decrypted on read. Name uniqueness enforced per user. Slug auto-generated from name."
     },
     {
       "id": "US-004",

@@ -13,6 +13,8 @@
 - Commit with `-s` flag for sign-off
 - SSRF validation: use `_is_private_url()` from `src.schemas.entities.server` for URL validation
 - Schema pattern: Create (required), Update (all Optional), Response (with id/timestamps + redaction)
+- Service pattern: constructor takes `AsyncSession` + `user_id`, all queries scoped to user
+- Slug generation: `from src.utils.format import slugify`
 
 ---
 
@@ -42,4 +44,18 @@
   - SSRF validation uses ipaddress module to check private/loopback/link-local/reserved
   - Config redaction happens at the schema level via `@field_validator("config", mode="before")`
   - Schemas exported from entities/__init__.py
+---
+
+## 2026-01-31 - US-003
+- Created ServerService with CRUD operations (create, get_by_id, list_by_user, update, delete)
+- Config secrets encrypted with Fernet before storage, decrypted on read via _decrypt_server_config helper
+- Name uniqueness enforced per user before create/update
+- Slug auto-generated from name using slugify utility
+- Files changed:
+  - backend/src/services/server.py (new)
+- **Learnings for future iterations:**
+  - Service layer pattern: constructor takes AsyncSession + user_id, all queries scoped to user
+  - Decrypted config stored as `_decrypted_config` attribute on Server instance (not on the ORM column)
+  - Existing route file (src/routes/v0/server.py) has a different schema (type/description/public fields) from the new PRD model - will need reconciliation in US-004
+  - slugify function is at `src.utils.format.slugify`
 ---
