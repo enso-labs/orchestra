@@ -155,6 +155,29 @@ async def html_to_markdown(html: str) -> str:
     return clean_markdown(md_text)
 
 
+async def content_to_markdown(result: FetchResult) -> str:
+    """Route fetched content to the appropriate markdown converter based on content type."""
+    ct = result.content_type
+
+    if ct == "html":
+        return await html_to_markdown(result.text)
+
+    if ct in ("plain", "markdown"):
+        return clean_markdown(result.text)
+
+    if ct == "json":
+        return f"```json\n{result.text}\n```"
+
+    if ct == "xml":
+        return f"```xml\n{result.text}\n```"
+
+    if ct == "csv":
+        return f"```csv\n{result.text}\n```"
+
+    # Unknown text types fall back to clean_markdown
+    return clean_markdown(result.text)
+
+
 async def url_to_markdown(
     client: httpx.AsyncClient,
     url: str,
@@ -164,7 +187,7 @@ async def url_to_markdown(
     try:
         async with sem:
             result = await fetch_content(client, url)
-            md_text = await html_to_markdown(result.text)
+            md_text = await content_to_markdown(result)
             return url, md_text
     except Exception as e:
         return url, e
@@ -188,8 +211,8 @@ async def urls_to_markdown(
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/131.0.0.0 Safari/537.36"
             ),
-            # Prefer HTML; still allow */* so some sites respond, but we gate by Content-Type anyway
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            # Prefer HTML but accept plain text and other text types too
+            "Accept": "text/html,application/xhtml+xml,text/plain,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
             # IMPORTANT: avoid brotli unless your runtime supports it
             "Accept-Encoding": "gzip, deflate",
@@ -209,8 +232,8 @@ async def urls_to_markdown(
                     f"<!-- SOURCE: {url} -->\n\n"
                     f"## Fetch/convert failed\n\n"
                     f"**Error:** `{type(outcome).__name__}: {outcome}`\n\n"
-                    f"> Tip: This often happens when the URL returns a PDF/image, "
-                    f"> or the payload is compressed/binary."
+                    f"> Tip: This often happens when the URL returns a PDF, image, "
+                    f"> or other binary/compressed content."
                 )
             )
             continue
