@@ -6,8 +6,12 @@
 - Pyright import errors for langchain/langgraph are expected (env resolution issue), not actual code errors
 - `default_tools()` = always loaded; `auth_tools(user_id)` = requires auth; `optional_tools()` = opt-in by name
 - Can't test Python imports locally without DB env vars (POSTGRES_CONNECTION_STRING required at import time)
+- BaseRepo `_get()` returns Item with `.value` dict or None; `_search()` returns list[SearchItem]
+- When adding new entity types, update `BaseRepo._format()` in base_repo.py to handle the new type
 - `/api/tools/invoke` tries `invoke_default_tool` first, catches `ValueError` to fall back to user tools
 - `runnable_config` for tools must be `{"configurable": {"user_id": ...}}` for memory tools
+- New routes: import in `routes/v0/__init__.py`, add `app.include_router(router, prefix=prefix)` in `create_api_router()`
+- Route auth: `user: ProtectedUser = Depends(verify_credentials)`, store: `store: BaseStore = Depends(get_store)`
 
 ---
 
@@ -73,4 +77,39 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Entity schemas follow BaseModel pattern (not BaseEntity) when they don't need field_serializer for datetime
   - Existing entities like Source, Project use BaseEntity which adds id, metadata, timestamps with serializers
   - For simple schemas without custom serialization needs, plain BaseModel is sufficient
+---
+
+## 2026-01-31 - US-006
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created `MemoryRepo` at `backend/src/repos/memory_repo.py` extending BaseRepo with entity_type="memories"
+- Implements create(), get(), update(), delete(), list() methods
+- create() generates `memory_{uuid}` IDs and sets timestamps
+- get() returns None if not found, update() validates existence before updating
+- delete() returns bool (False if not found), list() returns sorted results with total count
+- Updated `BaseRepo._format()` in `base_repo.py` to handle "memories" entity type
+- Files changed: `backend/src/repos/memory_repo.py`, `backend/src/repos/base_repo.py`
+- **Learnings for future iterations:**
+  - BaseRepo `_get()` returns an Item with `.value` dict, or None if not found
+  - BaseRepo `_search()` returns SearchItem list; use SearchFilter for query/limit/offset
+  - For total count in paginated list, do a separate search with large limit (store doesn't have count API)
+  - Pre-existing F811 lint error in base_repo.py (Document import shadowing) - don't try to fix it
+---
+
+## 2026-01-31 - US-007
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created REST API routes at `backend/src/routes/v0/memory.py` with prefix=/memories, tags=[Memory]
+- GET / returns MemoryListResponse with limit/offset/query params
+- GET /{memory_id} returns Memory or 404
+- POST / returns Memory with status 201
+- PUT /{memory_id} returns Memory or 404
+- DELETE /{memory_id} returns 204 or 404
+- All endpoints require authentication via verify_credentials
+- Router registered in `backend/src/routes/v0/__init__.py`
+- BaseRepo._format already handled memories entity type from US-006
+- Files changed: `backend/src/routes/v0/memory.py`, `backend/src/routes/v0/__init__.py`
+- **Learnings for future iterations:**
+  - Route pattern: use `_get_repo(user, store)` helper for consistent repo instantiation
+  - ProtectedUser (not User) is the type returned by verify_credentials
+  - For 204 responses, return `Response(status_code=status.HTTP_204_NO_CONTENT)` explicitly
+  - `get_store` from `src.services.db` provides the BaseStore dependency
 ---
