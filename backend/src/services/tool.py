@@ -91,18 +91,21 @@ class ToolService:
     #     tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
     #     return tools
 
-    # async def invoke_default_tool(self, name: str, input: dict, config: dict = None):
-    #     tool: StructuredTool = next(
-    #         (tool for tool in TOOL_LIBRARY if tool.name == name), None
-    #     )
-    #     if not tool:
-    #         raise ValueError(f"Tool {name} not found")
-    #     return await tool.ainvoke(
-    #         input=input,
-    #         config={"configurable": {"user_id": self.user_id, **config}}
-    #         if self.user_id
-    #         else None,
-    #     )
+    async def invoke_default_tool(self, name: str, input: dict, config: dict = None):
+        tool_library = init_tool_library(user_id=self.user_id)
+        tool: StructuredTool = next((t for t in tool_library if t.name == name), None)
+        if not tool:
+            raise ValueError(f"Tool {name} not found")
+        runnable_config = None
+        if self.user_id:
+            configurable = {"user_id": self.user_id}
+            if config:
+                configurable.update(config)
+            runnable_config = {"configurable": configurable}
+        return await tool.ainvoke(
+            input=input,
+            config=runnable_config,
+        )
 
     async def invoke_ephemeral_tool(self, name: str, config: dict, input: dict):
         try:
