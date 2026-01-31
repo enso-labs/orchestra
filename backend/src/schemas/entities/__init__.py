@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from src.schemas.entities.llm import *
 from src.schemas.entities.store import Thread
 from src.schemas.entities.auth import ApiToken
+from src.schemas.entities.server import ServerCreate, ServerUpdate, ServerResponse
 from src.schemas.entities.hitl import (
     DecisionType,
     HumanDecision,
