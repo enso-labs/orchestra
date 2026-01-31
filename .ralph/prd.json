@@ -67,8 +67,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented SummarizationMiddleware extending CompactingMiddleware with LLM-based summarization via init_chat_model()."
     },
     {
       "id": "US-005",
@@ -82,8 +82,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created compaction_middleware using @wrap_model_call decorator pattern. Uses singleton SummarizationMiddleware instance."
     },
     {
       "id": "US-006",
@@ -97,8 +97,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added compaction_middleware as FIRST item in init_default_middleware() in backend/src/utils/middleware.py. No breaking changes to existing callers."
     },
     {
       "id": "US-007",
@@ -120,8 +120,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created 19 unit tests covering no-op, compaction trigger, system prompt preservation, recent message preservation, summary prefix, metadata, model configuration, and custom overrides."
     },
     {
       "id": "US-008",
@@ -137,8 +137,8 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created 8 integration tests in backend/tests/unit/utils/test_middleware_integration.py covering: compaction middleware is first in stack, coexists with AutoEvictMiddleware, backward compatibility, and no-op for short contexts."
     }
   ]
 }
