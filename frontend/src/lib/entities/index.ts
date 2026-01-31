@@ -53,6 +53,53 @@ export type Server = {
 	created_at?: string;
 };
 
+/**
+ * MCP Server configuration (new backend schema for saved server configs).
+ * Maps to backend ServerResponse schema.
+ */
+export type McpServerConfig = {
+	id: string;
+	name: string;
+	slug: string;
+	url: string;
+	transport: "sse" | "streamable_http";
+	config?: Record<string, any> | null;
+	user_id: string;
+	created_at?: string;
+	updated_at?: string;
+};
+
+export type McpServerCreate = {
+	name: string;
+	url: string;
+	transport?: "sse" | "streamable_http";
+	config?: Record<string, any> | null;
+};
+
+export type McpServerUpdate = {
+	name?: string;
+	url?: string;
+	transport?: "sse" | "streamable_http";
+	config?: Record<string, any> | null;
+};
+
+export type McpServerTestConnectionRequest = {
+	url: string;
+	transport?: "sse" | "streamable_http";
+	config?: Record<string, any> | null;
+};
+
+export type McpServerTestConnectionResponse = {
+	success: boolean;
+	message: string;
+	tools_count?: number | null;
+};
+
+export type McpServerTool = {
+	name: string;
+	description?: string | null;
+};
+
 export type DashboardTabOption = "agents" | "workflows" | "servers";
 
 export type LLMStreamPayload = {
