@@ -350,8 +350,17 @@ docker build -t orchestra:local .
 | `APP_LOG_LEVEL`  | Logging level                        | `DEBUG`       |
 | `APP_SECRET_KEY` | Application secret key               | -             |
 | `JWT_SECRET_KEY` | JWT signing key                      | -             |
-| `USER_AGENT`     | User agent string for requests       | `ruska-dev`    |
+| `USER_AGENT`     | User agent string for requests       | `ruska-dev`   |
 | `TEST_USER_ID`   | Test user UUID                       | -             |
+
+#### Context Compaction
+
+The middleware automatically summarizes older messages when context exceeds the token threshold, preserving system prompts and recent messages.
+
+| Variable                     | Description                                          | Default   |
+| ---------------------------- | ---------------------------------------------------- | --------- |
+| `COMPACTION_TOKEN_THRESHOLD` | Token count threshold to trigger message compaction  | `170000`  |
+| `COMPACTION_RECENT_MESSAGES` | Number of recent messages to preserve during summary | `6`       |
 
 #### Database
 

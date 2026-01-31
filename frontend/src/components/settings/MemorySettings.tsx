@@ -43,8 +43,8 @@ export function MemorySettings() {
 				limit: 100,
 				query: search || undefined,
 			});
-			setMemories(res.memories);
-			setTotal(res.total);
+			setMemories(res.memories ?? []);
+			setTotal(res.total ?? 0);
 		} catch {
 			toast.error("Failed to load memories");
 		} finally {

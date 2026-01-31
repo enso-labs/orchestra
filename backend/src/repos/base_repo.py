@@ -30,7 +30,7 @@ class BaseRepo:
         await self.store.aput(
             namespace=self._get_namespace(),
             key=key,
-            value=value.model_dump(exclude_none=True),
+            value=value.model_dump(exclude_none=True, mode="json"),
             ttl=ttl,
         )
         logger.info(f"Set {self.entity_type} {key} successfully")

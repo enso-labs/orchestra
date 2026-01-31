@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - feat/442-able-to-edit-memorys (2026-01-31)
+  - feat/555-add-compacting-middleware (2026-01-31)
   - feat/665-allow-user-configure-default-account-settings (2026-01-30)
   - feat/707-ticket-md-ralph-loop (2026-01-30)
   - feat/694-show-subagent-tool-calls (2026-01-24)
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - FEAT: Truncate Tool Calls. Allow extension (cli) #54
 
 ### Fixed
+  - bug/612-web-scrape-cannot-fetch-plain-text-pages (2026-01-31)
   - bug/705-fallback-searxng-from-exa (2026-01-29)
   - bug/662-fix-db-timeout (2026-01-19)
   - bug/677-nonetype-items-attributeerror (2026-01-16)

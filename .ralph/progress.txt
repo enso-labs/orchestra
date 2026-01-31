@@ -101,21 +101,15 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
 
 ## 2026-01-31 - US-007
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- Created REST API routes at `backend/src/routes/v0/memory.py` with prefix=/memories, tags=[Memory]
-- GET / returns MemoryListResponse with limit/offset/query params
-- GET /{memory_id} returns Memory or 404
-- POST / returns Memory with status 201
-- PUT /{memory_id} returns Memory or 404
-- DELETE /{memory_id} returns 204 or 404
-- All endpoints require authentication via verify_credentials
-- Router registered in `backend/src/routes/v0/__init__.py`
-- BaseRepo._format already handled memories entity type from US-006
-- Files changed: `backend/src/routes/v0/memory.py`, `backend/src/routes/v0/__init__.py`
+- Created 19 unit tests in backend/tests/unit/utils/test_compacting.py
+- Tests cover: no-op under threshold, compaction trigger, system prompt preservation, recent message preservation, summary prefix, compacted metadata, original_count metadata, model configuration, custom threshold/recent_messages overrides, token estimation, split_messages logic
+- All tests pass (mocking init_chat_model for LLM calls)
+- Files changed: backend/tests/unit/utils/test_compacting.py
 - **Learnings for future iterations:**
-  - Route pattern: use `_get_repo(user, store)` helper for consistent repo instantiation
-  - ProtectedUser (not User) is the type returned by verify_credentials
-  - For 204 responses, return `Response(status_code=status.HTTP_204_NO_CONTENT)` explicitly
-  - `get_store` from `src.services.db` provides the BaseStore dependency
+  - `make test` from backend/ dir runs all tests including unit tests (requires DB env vars for integration tests but unit tests still execute)
+  - tests/__init__.py imports the app which requires DB; unit tests work because they're collected alongside integration tests
+  - Mock `init_chat_model` at `src.utils.compacting.init_chat_model` path for isolated unit tests
+  - Use `@patch` + `AsyncMock` for async LLM calls in tests
 ---
 
 ## 2026-01-31 - US-008

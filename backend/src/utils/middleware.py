@@ -30,6 +30,7 @@ from langchain.agents.middleware import (
     after_model,
 )
 from src.utils.logger import logger
+from src.utils.compacting import compaction_middleware
 from src.utils.format import format_content
 
 
@@ -289,6 +290,7 @@ def init_default_middleware(
         The default middleware.
     """
     return [
+        compaction_middleware,
         add_ai_message_metadata,
         retry_model,
         *pii_middleware(),
