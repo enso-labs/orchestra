@@ -73,8 +73,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added server_ids Optional[List[str]] field to Assistant and LLMRequest Pydantic models in llm.py. No Alembic migration needed since assistants use LangGraph store (not SQL table). server_ids flows through to_llm_request() into LLMRequest."
     },
     {
       "id": "US-006",

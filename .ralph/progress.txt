@@ -17,6 +17,8 @@
 - Slug generation: `from src.utils.format import slugify`
 - Route pattern: instantiate service per request as `ServerService(db, user.id)`, use `get_async_db` + `verify_credentials` Depends
 - Server router registered in `src/routes/v0/__init__.py` via `app.include_router(server, prefix=prefix)`
+- Assistants use LangGraph store (not SQL) — adding fields = update Pydantic model only, no migration needed
+- Assistant.to_llm_request() bridges assistant config into LLMRequest for inference
 
 ---
 
@@ -73,4 +75,17 @@
   - The old server.py had a completely different schema (type/description/public/config as dict) - full rewrite was needed
   - _to_response helper needed to pull `_decrypted_config` from server instance since ORM column holds encrypted text
   - Pre-existing test failures: file_system, search, project_service tests are unrelated
+---
+
+## 2026-01-31 - US-005
+- Added `server_ids: Optional[List[str]]` field to both Assistant and LLMRequest Pydantic models
+- server_ids flows through `to_llm_request()` method from Assistant into LLMRequest
+- No Alembic migration needed — assistants use LangGraph store (key-value), not a SQL table
+- Files changed:
+  - backend/src/schemas/entities/llm.py (updated Assistant and LLMRequest models)
+- **Learnings for future iterations:**
+  - Assistants are NOT stored in PostgreSQL via SQLAlchemy — they use LangGraph's BaseStore (InMemoryStore or AsyncPostgresStore)
+  - Assistant data is stored as JSON in the store, so adding fields to the Pydantic model is sufficient (no migration)
+  - AssistantService uses store.aput/aget/adelete with namespace tuples like (user_id, "assistants")
+  - The Assistant.to_llm_request() method bridges assistant config to LLMRequest for inference
 ---
