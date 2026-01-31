@@ -109,3 +109,27 @@ Started: Thu Jan 30 23:59:00 MST 2026
   - Filter `providers.filter(p => p.is_set)` to show only configured keys in the list
 ---
 
+## 2026-01-31 - US-008
+- Wired DefaultModelSettings and UserApiKeysSettings into Settings page
+- Imported both components and rendered them above existing ApiTokensSettings and ModelVisibilitySettings
+- Files modified: `frontend/src/pages/settings/index.tsx`
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Settings page uses tabs-style indentation; match existing whitespace when editing
+  - Component render order in JSX determines visual order on the page
+  - Browser verification skipped — Vite dev server not running; typecheck sufficient for wiring-only changes
+---
+
+## 2026-01-31 - US-009
+- Modified `frontend/src/hooks/useModel.tsx` to fetch user's default model preference
+- Added `useEffect` to fetch user settings on mount via `getSettings()`
+- `userDefault` state takes precedence over `models.default` when no query param is set
+- Query param still overrides user default (existing `if (!model)` check)
+- Falls back silently to server default if settings fetch fails or no user preference set
+- Files modified: `frontend/src/hooks/useModel.tsx`
+- **Learnings for future iterations:**
+  - `useQueryState("model")` from nuqs returns null when no query param — this is the "no explicit model" case
+  - The effect dependency on `userDefault` ensures the model updates once the async settings fetch completes
+  - Error handling in settings fetch is silent — user shouldn't see errors for optional preference loading
+---
+
