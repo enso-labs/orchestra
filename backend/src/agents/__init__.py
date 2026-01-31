@@ -66,13 +66,17 @@ def init_graph(
     store: BaseStore | None = None,
     middleware: list[Callable] = None,
     backend: CompositeBackend = None,
+    api_key: str | None = None,
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
 
     if not model:
         model = DEFAULT_CHAT_MODEL
 
-    llm = init_chat_model(model=model)
+    kwargs: dict[str, Any] = {"model": model}
+    if api_key:
+        kwargs["api_key"] = api_key
+    llm = init_chat_model(**kwargs)
 
     deep_agent = create_deep_agent(
         model=llm,
@@ -209,6 +213,7 @@ async def construct_agent(
     backend: CompositeBackend = None,
     checkpointer: BaseCheckpointSaver = None,
     service_context: ServiceContext = None,
+    api_key: str | None = None,
 ):
     try:
         if subagents:
@@ -228,6 +233,7 @@ async def construct_agent(
             middleware=middleware,
             context_schema=ContextSchema,
             backend=backend,
+            api_key=api_key,
         )
         return agent
     except Exception as e:
@@ -248,6 +254,7 @@ class Orchestra:
         middleware: list[Callable] = None,
         graph_id: Literal["react", "deepagent"] = "deepagent",
         backend: CompositeBackend = None,
+        api_key: str | None = None,
     ):
         self.tools = tools
         self.model = model
@@ -266,6 +273,7 @@ class Orchestra:
             store=self.store,
             middleware=middleware,
             backend=backend,
+            api_key=api_key,
         )
 
     async def invoke(

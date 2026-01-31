@@ -1,4 +1,5 @@
 import { listModels, ModelsResponse } from "@/lib/services/modelService";
+import { getSettings } from "@/lib/services/userSettingsService";
 import { useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 
@@ -9,6 +10,7 @@ export function useModel() {
 		free: [],
 		models: [],
 	});
+	const [userDefault, setUserDefault] = useState<string | null>(null);
 
 	const useModelsEffect = () => {
 		useEffect(() => {
@@ -20,15 +22,32 @@ export function useModel() {
 		}, []);
 	};
 
+	// Fetch user's default model preference
+	useEffect(() => {
+		const fetchUserDefault = async () => {
+			try {
+				const settings = await getSettings();
+				setUserDefault(settings.default_model);
+			} catch {
+				// If settings fetch fails, fall back to server default
+			}
+		};
+		fetchUserDefault();
+	}, []);
+
 	const updateQueryStateModel = (model: string) => {
 		setModel(model);
 	};
 
 	useEffect(() => {
 		if (!model) {
-			setModel(models.default);
+			// User default takes precedence over server-wide default
+			const effectiveDefault = userDefault || models.default;
+			if (effectiveDefault) {
+				setModel(effectiveDefault);
+			}
 		}
-	}, [model, models.default]);
+	}, [model, models.default, userDefault]);
 
 	return {
 		model,

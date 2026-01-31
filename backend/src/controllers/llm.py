@@ -13,6 +13,8 @@ from src.agents import construct_agent, init_config
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
+from src.repos.user_settings_repo import UserSettingsRepo
+from src.utils.llm import resolve_api_key
 from src.utils.logger import logger
 from src.utils.format import get_time
 
@@ -68,10 +70,34 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
+    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None]:
+        """Resolve user default model and API key.
+
+        Returns (model, api_key) where model may be overridden by user default
+        and api_key is the resolved key for the provider.
+        """
+        if not self.user_id:
+            return model, None
+
+        settings_repo = UserSettingsRepo(self.user_id, self.store)
+        settings = await settings_repo._get_or_create()
+        user_keys = settings_repo._decrypt_keys(settings)
+
+        # Apply user default model when request has no explicit model
+        if not model and settings.default_model:
+            model = settings.default_model
+
+        api_key = resolve_api_key(model, user_keys if user_keys else None)
+        return model, api_key
+
     async def llm_invoke(self, params: LLMRequest):
         try:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
+
+            # Resolve user-configured API key and default model
+            params.model, api_key = await self._resolve_user_settings(params.model)
+
             async with get_checkpoint_db() as checkpointer:
                 backend = self.init_backend(params)
                 agent: Orchestra = await construct_agent(
@@ -83,6 +109,7 @@ class LLMController:
                     checkpointer=checkpointer,
                     backend=backend,
                     service_context=self.service_context,
+                    api_key=api_key,
                 )
                 response = await agent.invoke(
                     params.input,
@@ -100,6 +127,10 @@ class LLMController:
 
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)
+
+        # Resolve user-configured API key and default model
+        assistant.model, api_key = await self._resolve_user_settings(assistant.model)
+
         return stream_generator(
             input=assistant.input,
             model=assistant.model,
@@ -109,6 +140,7 @@ class LLMController:
             config=self.service_context.config,
             service_context=self.service_context,
             instructions=assistant.instructions,
+            api_key=api_key,
         )
 
     async def llm_task(self, job: ScheduleCreate):

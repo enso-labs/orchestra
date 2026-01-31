@@ -1,5 +1,7 @@
 import { ApiTokensSettings } from "@/components/settings/ApiTokensSettings";
+import { DefaultModelSettings } from "@/components/settings/DefaultModelSettings";
 import { ModelVisibilitySettings } from "@/components/settings/ModelVisibilitySettings";
+import { UserApiKeysSettings } from "@/components/settings/UserApiKeysSettings";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -24,6 +26,8 @@ export default function SettingsPage() {
 									</p>
 								</div>
 
+								<DefaultModelSettings />
+								<UserApiKeysSettings />
 								<ApiTokensSettings />
 								<ModelVisibilitySettings />
 							</div>
