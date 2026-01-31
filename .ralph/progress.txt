@@ -113,3 +113,17 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - For 204 responses, return `Response(status_code=status.HTTP_204_NO_CONTENT)` explicitly
   - `get_store` from `src.services.db` provides the BaseStore dependency
 ---
+
+## 2026-01-31 - US-008
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created unit tests for MemoryRepo at `backend/tests/unit/repos/test_memory_repo.py` (8 test cases)
+- Created route tests at `backend/tests/unit/routes/test_memory_routes.py` (9 test cases)
+- Tests cover: create, get, get_not_found, update, update_not_found, delete, delete_not_found, list_pagination, auth_required
+- All 17 tests pass
+- Files changed: `backend/tests/unit/repos/__init__.py`, `backend/tests/unit/repos/test_memory_repo.py`, `backend/tests/unit/routes/test_memory_routes.py`
+- **Learnings for future iterations:**
+  - Route tests follow the pattern from `test_settings_routes.py`: use `_set_overrides`/`_clear_overrides` with InMemoryStore and mock user
+  - Repo tests use `unittest.IsolatedAsyncioTestCase` with InMemoryStore directly
+  - Must run tests with `make test` (which sources env vars) - `uv run pytest` alone fails without POSTGRES_CONNECTION_STRING
+  - ASGITransport(app=app) uses the main `app` (not `api_app`) for routes prefixed with `/api/`
+---
