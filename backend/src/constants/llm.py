@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 from src.services.prompt import fetch_prompt
 from src.constants import (
@@ -197,6 +198,13 @@ def get_default_low_cost_model():
 DEFAULT_CHAT_MODEL = get_default_chat_model()
 DEFAULT_CHAT_MODEL_BASIC = get_default_low_cost_model()
 DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value
+
+# Compaction middleware constants
+DEFAULT_COMPACTION_TOKEN_THRESHOLD = int(
+    os.getenv("COMPACTION_TOKEN_THRESHOLD", "170000")
+)
+DEFAULT_COMPACTION_RECENT_MESSAGES = int(os.getenv("COMPACTION_RECENT_MESSAGES", "6"))
+DEFAULT_COMPACTION_MODEL = DEFAULT_CHAT_MODEL_BASIC
 
 # Initialize default system prompt with error handling to prevent import-time failures
 try:
