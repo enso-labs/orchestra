@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc142
 
 ### Changed
+  - feat/442-able-to-edit-memorys (2026-01-31)
   - feat/665-allow-user-configure-default-account-settings (2026-01-30)
   - feat/707-ticket-md-ralph-loop (2026-01-30)
   - feat/694-show-subagent-tool-calls (2026-01-24)
