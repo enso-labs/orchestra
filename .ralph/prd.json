@@ -1,0 +1,144 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/555-add-compacting-middleware",
+  "description": "Add Compacting Middleware (#555) - Context compaction middleware for DeepAgents that automatically summarizes older messages when conversation history exceeds ~170k tokens",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Verify Deepagents Internals",
+      "description": "As a developer, I need to determine whether deepagents==0.3.8 already ships internal SummarizationMiddleware so that we avoid double-summarization.",
+      "acceptanceCriteria": [
+        "Inspect deepagents source for internal SummarizationMiddleware in create_deep_agent()",
+        "Document finding (YES/NO) as a code comment in the implementation",
+        "If YES: proceed with Phase 2A (lighter implementation, wire thresholds to deepagents)",
+        "If NO: proceed with Phase 2B (full Orchestra implementation)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "deepagents==0.3.8 does NOT ship SummarizationMiddleware. Proceeding with Phase 2B."
+    },
+    {
+      "id": "US-002",
+      "title": "Add Compaction Constants",
+      "description": "As a developer, I need compaction threshold constants defined so that the middleware and tests can reference them.",
+      "acceptanceCriteria": [
+        "Add DEFAULT_COMPACTION_TOKEN_THRESHOLD = int(os.getenv('COMPACTION_TOKEN_THRESHOLD', '170000')) to backend/src/constants/llm.py",
+        "Add DEFAULT_COMPACTION_RECENT_MESSAGES = int(os.getenv('COMPACTION_RECENT_MESSAGES', '6')) to backend/src/constants/llm.py",
+        "Add DEFAULT_COMPACTION_MODEL constant pointing to DEFAULT_CHAT_MODEL_BASIC",
+        "Constants are importable from backend.src.constants.llm",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create CompactingMiddleware ABC",
+      "description": "As a developer building custom agents, I want an abstract base class for compaction middleware so that I can implement custom compaction strategies.",
+      "acceptanceCriteria": [
+        "Create new file backend/src/utils/compacting.py",
+        "CompactingMiddleware ABC with abstract method compact(messages: list) -> list",
+        "Constructor accepts token_threshold: int and recent_messages: int with defaults from constants",
+        "Helper method estimate_tokens(messages) using len(content) // 4",
+        "Helper method should_compact(messages) returns bool based on threshold",
+        "System prompt messages are identified and excluded from compaction candidates",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement SummarizationMiddleware",
+      "description": "As a developer using DeepAgents for long-horizon tasks, I want automatic context compaction when message history exceeds token limits so that my agent continues operating without hitting context window limits.",
+      "acceptanceCriteria": [
+        "SummarizationMiddleware extends CompactingMiddleware in backend/src/utils/compacting.py",
+        "Estimates tokens via len(content) // 4 (consistent with AutoEvictMiddleware)",
+        "Triggers only when total tokens exceed DEFAULT_COMPACTION_TOKEN_THRESHOLD",
+        "Preserves system prompt messages (never summarized)",
+        "Preserves the N most recent messages (DEFAULT_COMPACTION_RECENT_MESSAGES)",
+        "Summarizes older messages using DEFAULT_CHAT_MODEL_BASIC via init_chat_model()",
+        "Summary is a SystemMessage with [CONVERSATION SUMMARY] prefix",
+        "Summary message has metadata={'compacted': True, 'original_count': N}",
+        "Is a complete no-op when total tokens are under threshold",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Compaction Middleware Decorator",
+      "description": "As a developer, I need a @wrap_model_call decorator that applies the SummarizationMiddleware before model invocation so it integrates with the existing middleware pipeline.",
+      "acceptanceCriteria": [
+        "compaction_middleware function created in backend/src/utils/compacting.py",
+        "Uses @wrap_model_call decorator pattern (consistent with existing middleware)",
+        "Invokes SummarizationMiddleware on the message list before passing to the model handler",
+        "Handles async invocation correctly",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Register Compaction in Middleware Stack",
+      "description": "As a developer, I need the compaction middleware wired into the default middleware stack so it applies automatically to all agent invocations.",
+      "acceptanceCriteria": [
+        "If Phase 2B: Add compaction_middleware as the FIRST item in init_default_middleware() in backend/src/utils/middleware.py",
+        "If Phase 2A: Wire DEFAULT_COMPACTION_TOKEN_THRESHOLD and DEFAULT_COMPACTION_RECENT_MESSAGES through init_graph() in backend/src/agents/__init__.py to create_deep_agent()",
+        "No breaking changes to existing callers of construct_agent()",
+        "Import added to backend/src/utils/middleware.py or backend/src/agents/__init__.py as appropriate",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Unit Tests for Compaction Classes",
+      "description": "As a developer, I need comprehensive unit tests for the compaction middleware to ensure correctness and prevent regressions.",
+      "acceptanceCriteria": [
+        "Create backend/tests/unit/utils/test_compacting.py",
+        "Test: No-op when under token threshold",
+        "Test: Triggers compaction when over threshold",
+        "Test: System prompt is never summarized",
+        "Test: Recent N messages are preserved verbatim",
+        "Test: Summary message has [CONVERSATION SUMMARY] prefix",
+        "Test: Summary message has compacted: True metadata",
+        "Test: Summary message has correct original_count metadata",
+        "Test: Uses DEFAULT_CHAT_MODEL_BASIC for summarization (mock LLM call)",
+        "Test: Custom threshold overrides default",
+        "Test: Custom recent_messages count overrides default",
+        "All tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Integration Tests for Middleware Stack",
+      "description": "As a developer, I need integration tests confirming the compaction middleware coexists correctly with the existing middleware stack.",
+      "acceptanceCriteria": [
+        "Create backend/tests/unit/utils/test_middleware_integration.py",
+        "Test: Compaction middleware is present (and first) in default middleware list (Phase 2B) OR not present if Phase 2A",
+        "Test: Compaction middleware coexists with AutoEvictMiddleware without conflict",
+        "Test: Existing agent construction is backward-compatible (no regressions)",
+        "Test: Middleware is a no-op for short message contexts",
+        "All tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

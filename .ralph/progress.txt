@@ -1,0 +1,23 @@
+## Codebase Patterns
+- Backend middleware lives in `backend/src/utils/middleware.py` using `@wrap_model_call` decorator pattern and `AgentMiddleware` class pattern
+- Constants go in `backend/src/constants/llm.py` - use `DEFAULT_CHAT_MODEL_BASIC` for low-cost model
+- Format/lint with `uvx ruff format` and `uvx ruff check` from worktree root
+- Commits must be signed (`git commit -s`)
+- Phase 2B chosen: full Orchestra implementation (deepagents has no built-in compaction)
+- `init_default_middleware()` returns the middleware list; new middleware should be added there
+- `AutoEvictMiddleware` is a class-based middleware extending `AgentMiddleware` from deepagents
+- `@wrap_model_call` middlewares receive `(request: ModelRequest, handler)` and return `ModelResponse`
+
+---
+
+## 2026-01-31 - US-001
+- Inspected deepagents==0.3.8 source at /home/ryaneggz/ryaneggz/deepagents/src/deepagents/
+- No summarization, compaction, or middleware references found in the package
+- create_deep_agent() in graph.py has no compaction parameters
+- Decision: Phase 2B (full Orchestra implementation)
+- Created backend/src/utils/compacting.py with finding documented as code comment
+- **Learnings for future iterations:**
+  - deepagents package is installed from a local path, not PyPI
+  - The middleware stack uses two patterns: decorator-based (`@wrap_model_call`) and class-based (`AgentMiddleware`)
+  - `init_default_middleware()` in middleware.py is the central registration point
+---
