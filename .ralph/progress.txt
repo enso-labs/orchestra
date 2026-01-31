@@ -61,3 +61,16 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - When a tool raises ValueError during `ainvoke`, the route catches it at the `except ValueError` level and falls back to user tool search
   - Pre-existing test failures in `test_public_assistants.py` and `test_project_service.py`/`test_source_service.py` are unrelated
 ---
+
+## 2026-01-31 - US-005
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created Pydantic schemas for memory entities at `backend/src/schemas/entities/memory.py`
+- Memory model with id, content, metadata, created_at, updated_at fields
+- MemoryCreate and MemoryUpdate models with content (min_length=1) and metadata fields
+- MemoryListResponse model with memories, total, limit, offset fields
+- Files changed: `backend/src/schemas/entities/memory.py`
+- **Learnings for future iterations:**
+  - Entity schemas follow BaseModel pattern (not BaseEntity) when they don't need field_serializer for datetime
+  - Existing entities like Source, Project use BaseEntity which adds id, metadata, timestamps with serializers
+  - For simple schemas without custom serialization needs, plain BaseModel is sufficient
+---
