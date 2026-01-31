@@ -11,6 +11,8 @@ Started: Thu Jan 30 23:59:00 MST 2026
 - `make format` runs from `backend/` dir, `make test` requires env vars (POSTGRES_CONNECTION_STRING etc.)
 - Format with `uvx ruff format` from backend directory
 - Routes pattern: `APIRouter(tags=[...])`, endpoints use `Depends(verify_credentials)` + `Depends(get_store)`, register in `__init__.py` `create_api_router`
+- LLM invocation chain: Route → LLMController → LLMService.assistant() → construct_agent → Orchestra → init_graph → init_chat_model
+- `api_key` kwarg threads through construct_agent → Orchestra → init_graph → init_chat_model for per-user key injection
 
 ---
 
@@ -34,5 +36,31 @@ Started: Thu Jan 30 23:59:00 MST 2026
   - ValueError from repo is caught and re-raised as HTTPException 400 for invalid providers
   - All settings endpoints return full UserSettingsResponse for consistency
   - Ruff formatter splits long decorator lines automatically
+---
+
+## 2026-01-31 - US-003
+- Implemented `resolve_api_key(model, user_keys)` helper in `backend/src/utils/llm.py`
+- Maps provider prefixes (openai, anthropic, google_genai, xai, groq) to `UserTokenKey` enum
+- Checks user-provided keys first, falls back to system env vars, returns None for unknown providers
+- Added `_PROVIDER_PREFIX_TO_KEY` and `_SYSTEM_KEYS` module-level dicts for lookup
+- Files modified: `backend/src/utils/llm.py`
+- **Learnings for future iterations:**
+  - `get_api_key()` already exists in llm.py but raises ValueError for unsupported providers; `resolve_api_key` returns None instead for graceful handling
+  - Model strings contain provider name as substring (e.g. "openai/gpt-4", "anthropic/claude-3")
+  - XAI_API_KEY was not previously imported in llm.py, needed to add it
+---
+
+## 2026-01-31 - US-004
+- Integrated user-configured API keys and default model into LLM invocation path
+- Added `_resolve_user_settings()` method to `LLMController` that fetches user keys once per request
+- Threaded `api_key` parameter through `construct_agent` → `Orchestra` → `init_graph` → `init_chat_model`
+- Updated `stream_generator` to accept and pass `api_key`
+- Added `get_all_decrypted_keys()` method to `UserSettingsRepo`
+- Files modified: `backend/src/controllers/llm.py`, `backend/src/agents/__init__.py`, `backend/src/utils/stream.py`, `backend/src/repos/user_settings_repo.py`
+- **Learnings for future iterations:**
+  - `init_chat_model` accepts `api_key=` kwarg to override env-based key resolution
+  - LLM invocation has two paths: `llm_invoke` (sync) and `llm_stream` (SSE) — both need user key resolution
+  - User settings resolution should happen after `llm_service.assistant()` which may change the model
+  - When `api_key` is None (no user key, no system key), `init_chat_model` falls back to its own env var lookup
 ---
 
