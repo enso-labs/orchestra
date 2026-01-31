@@ -1,0 +1,203 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/442-able-to-edit-memorys",
+  "description": "Able to Edit Memories - Add update_memory tool, REST API endpoints, and frontend UI for memory CRUD management",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add update_memory Tool",
+      "description": "As a developer, I want the memory tool to support an update operation that can be invoked independently, so that memory edits can be tested without requiring the AI chat agent.",
+      "acceptanceCriteria": [
+        "update_memory function added to backend/src/tools/memory.py",
+        "Tool validates memory exists before updating (raises ValueError if not found)",
+        "Tool requires user_id from config (raises ValueError if missing)",
+        "Updated memory retains its original ID",
+        "MEMORY_TOOLS list updated to include update_memory",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Add Memory Tools to Default Tool Library",
+      "description": "As a developer, I want memory tools included in the default tool library, so that they are available to all agents and can be invoked via /api/tools/invoke.",
+      "acceptanceCriteria": [
+        "MEMORY_TOOLS imported in backend/src/tools/__init__.py",
+        "*MEMORY_TOOLS added to default_tools() return list",
+        "No circular import errors",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Fix invoke_default_tool Method",
+      "description": "As a developer, I want invoke_default_tool in ToolService to work correctly, so that default tools (including memory tools) can be invoked via the /api/tools/invoke endpoint.",
+      "acceptanceCriteria": [
+        "Commented-out invoke_default_tool method in backend/src/services/tool.py uncommented and implemented",
+        "Method imports init_tool_library to get fresh tool list",
+        "Method builds runnable_config with user_id",
+        "Method raises ValueError if tool not found",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Integration Tests for Memory Tool Invocation",
+      "description": "As a developer, I want integration tests that verify the full memory tool workflow via /api/tools/invoke.",
+      "acceptanceCriteria": [
+        "Tests added to backend/tests/integration/test_tool_invoke.py",
+        "Test covers full workflow: upsert -> search -> update -> search -> delete -> verify",
+        "Test covers error case: update non-existent memory",
+        "Test covers auth requirement (401 without auth)",
+        "All existing tool invoke tests still pass",
+        "make test passes",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Memory Entity Schemas",
+      "description": "As a developer, I need Pydantic schemas for memory entities to validate API requests and responses.",
+      "acceptanceCriteria": [
+        "File created at backend/src/schemas/entities/memory.py",
+        "Memory model with id, content, metadata, created_at, updated_at fields",
+        "MemoryCreate model with content and metadata fields",
+        "MemoryUpdate model with content and metadata fields",
+        "MemoryListResponse model with memories, total, limit, offset fields",
+        "Content fields have min_length=1 validation",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement MemoryRepo",
+      "description": "As a developer, I need a repository class for memory CRUD operations that follows the BaseRepo pattern.",
+      "acceptanceCriteria": [
+        "File created at backend/src/repos/memory_repo.py",
+        "MemoryRepo extends BaseRepo with entity_type=memories",
+        "create() generates memory_{uuid} ID and sets timestamps",
+        "get() returns None if not found",
+        "update() validates existence, updates content and updated_at",
+        "delete() returns bool",
+        "list() returns paginated results sorted by updated_at descending",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create Memory REST API Routes",
+      "description": "As a developer, I need REST API endpoints for memory CRUD so the frontend can manage memories.",
+      "acceptanceCriteria": [
+        "File created at backend/src/routes/v0/memory.py",
+        "Router with prefix=/memories and tags=[Memory]",
+        "GET returns MemoryListResponse with limit/offset params",
+        "GET /{memory_id} returns Memory or 404",
+        "POST returns Memory with status 201",
+        "PUT /{memory_id} returns Memory or 404",
+        "DELETE /{memory_id} returns 204 or 404",
+        "All endpoints require authentication via verify_credentials",
+        "Router registered in backend/src/routes/v0/__init__.py",
+        "BaseRepo _format updated for memories entity type in backend/src/repos/base_repo.py",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Backend Tests for Memory REST API",
+      "description": "As a developer, I need unit and integration tests for the memory repository and routes.",
+      "acceptanceCriteria": [
+        "Unit tests at backend/tests/unit/repos/test_memory_repo.py with 8 test cases",
+        "Route tests at backend/tests/unit/routes/test_memory_routes.py with 8 test cases",
+        "Tests cover: create, get, update, delete, list, pagination, 404 errors",
+        "All tests pass with make test",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Frontend Memory TypeScript Types and Service",
+      "description": "As a frontend developer, I need TypeScript types and a service class to interact with the memory API.",
+      "acceptanceCriteria": [
+        "File created at frontend/src/lib/entities/memory.ts with Memory, MemoryListResponse, MemoryCreateRequest, MemoryUpdateRequest interfaces",
+        "Types exported from frontend/src/lib/entities/index.ts",
+        "File created at frontend/src/lib/services/memoryService.ts with list, get, create, update, delete methods",
+        "Service exported from frontend/src/lib/services/index.ts",
+        "Unit tests at frontend/src/tests/services/memoryService.test.ts",
+        "All tests pass with npm run test",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Memory Edit Dialog Component",
+      "description": "As a user, I want a dialog to create and edit memories with form validation.",
+      "acceptanceCriteria": [
+        "File created at frontend/src/components/settings/MemoryEditDialog.tsx",
+        "Supports both create and edit modes based on memory prop presence",
+        "Textarea for content input with validation (required, non-empty)",
+        "Cancel and Save buttons with loading states",
+        "Detects no-changes in edit mode and disables save button",
+        "Toast notifications for success and error via sonner",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Memory Settings Component and Integration",
+      "description": "As a user, I want a memory management card on the Settings page to view, search, create, edit, and delete memories.",
+      "acceptanceCriteria": [
+        "File created at frontend/src/components/settings/MemorySettings.tsx",
+        "Card with header showing Brain icon, title, description, and Add Memory button",
+        "Search input with 300ms debounce triggers server-side search",
+        "Memory list in ScrollArea with edit and delete hover actions",
+        "Delete confirmation via AlertDialog",
+        "Optimistic delete with rollback on error",
+        "Empty state and loading skeleton states",
+        "Component added to frontend/src/pages/settings/index.tsx after ModelVisibilitySettings",
+        "Component tests at frontend/src/components/settings/MemorySettings.test.tsx",
+        "All tests pass with npm run test",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

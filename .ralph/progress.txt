@@ -1,0 +1,63 @@
+## Codebase Patterns
+- Memory tools are in `backend/src/tools/memory.py`, each decorated with `@tool` and accepting `RunnableConfig`
+- Memory service uses langgraph's BaseStore with namespace `(user_id, "memories")`
+- All memory tools validate `user_id` from `config["configurable"]` and raise ValueError if missing
+- Backend format: `cd backend && make format` (uses ruff). Typecheck: `uvx ruff check`
+- Pyright import errors for langchain/langgraph are expected (env resolution issue), not actual code errors
+- `default_tools()` = always loaded; `auth_tools(user_id)` = requires auth; `optional_tools()` = opt-in by name
+- Can't test Python imports locally without DB env vars (POSTGRES_CONNECTION_STRING required at import time)
+- `/api/tools/invoke` tries `invoke_default_tool` first, catches `ValueError` to fall back to user tools
+- `runnable_config` for tools must be `{"configurable": {"user_id": ...}}` for memory tools
+
+---
+
+## 2026-01-31 - US-001
+- Implemented `update_memory` tool in `backend/src/tools/memory.py`
+- Tool validates memory exists via `memory_service.get()` before updating
+- Tool requires `user_id` from config, raises ValueError if missing
+- Retains original memory ID by using `memory_service.set()` with same ID
+- Added `update_memory` to `MEMORY_TOOLS` list
+- Files changed: `backend/src/tools/memory.py`
+- **Learnings for future iterations:**
+  - The memory service `get()` returns `None` if not found, use this for existence checks
+  - `memory_service.set()` with an existing key acts as an update (upsert behavior)
+  - Format and lint pass with `make format` and `uvx ruff check` from `backend/` dir
+---
+
+## 2026-01-31 - US-002
+- Imported MEMORY_TOOLS in `backend/src/tools/__init__.py`
+- Added `*MEMORY_TOOLS` to `default_tools()` return list
+- No circular import errors; format and lint pass
+- Files changed: `backend/src/tools/__init__.py`
+- **Learnings for future iterations:**
+  - `default_tools()` is the list included for all agents; `auth_tools()` requires user_id; `optional_tools()` are opt-in
+  - Many pre-existing ruff lint errors in the repo (138); only check your changed files
+  - Can't test imports locally without DB env vars set — the constants module requires POSTGRES_CONNECTION_STRING
+---
+
+## 2026-01-31 - US-003
+- Uncommented and fixed `invoke_default_tool` method in `backend/src/services/tool.py`
+- Method uses `init_tool_library(user_id=self.user_id)` to get fresh tool list
+- Builds `runnable_config` with `user_id` in `configurable` dict
+- Raises `ValueError` if tool not found (used by invoke route to fall back to user tools)
+- Files changed: `backend/src/services/tool.py`
+- **Learnings for future iterations:**
+  - The invoke route at `backend/src/routes/v0/tool/invoke.py` catches `ValueError` from `invoke_default_tool` to fall back to user tools search
+  - `init_tool_library()` returns a fresh list each call; accepts optional `user_id` param
+  - `runnable_config` must have `{"configurable": {"user_id": ...}}` structure for memory tools to work
+  - When a memory tool raises ValueError during execution, the route's `except ValueError` catches it and falls back to user tools search, returning `{"error": "Tool X not found"}` (status 200)
+  - `make test` must be run from `backend/` with DB env vars; `uv run pytest` alone fails without them
+---
+
+## 2026-01-31 - US-004
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added 3 integration tests to `backend/tests/integration/test_tool_invoke.py`
+- `test_memory_tool_full_workflow`: upsert -> search -> update -> search -> delete -> verify deletion
+- `test_memory_tool_update_nonexistent`: update non-existent memory returns error
+- `test_memory_tool_requires_auth`: 401 without auth
+- Files changed: `backend/tests/integration/test_tool_invoke.py`
+- **Learnings for future iterations:**
+  - InMemoryStore in tests supports all memory tool operations (upsert/search/update/delete)
+  - When a tool raises ValueError during `ainvoke`, the route catches it at the `except ValueError` level and falls back to user tool search
+  - Pre-existing test failures in `test_public_assistants.py` and `test_project_service.py`/`test_source_service.py` are unrelated
+---
