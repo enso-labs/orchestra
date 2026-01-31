@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Server, Trash2, Loader2 } from "lucide-react";
+import { Plus, Server, Trash2, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Tool, McpServerConfig } from "./types";
 import { ToolGrid } from "./ToolGrid";
+import { ServerSelectionModal } from "@/components/modals/ServerSelectionModal";
 
 interface McpServerPanelProps {
 	mcpServers: Record<string, McpServerConfig>;
@@ -57,6 +58,7 @@ export function McpServerPanel({
 	isLoading,
 }: McpServerPanelProps) {
 	const [showAddForm, setShowAddForm] = useState(false);
+	const [showImportModal, setShowImportModal] = useState(false);
 	const [serverName, setServerName] = useState("");
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<keyof typeof MCP_TEMPLATES>("custom");
@@ -112,6 +114,25 @@ export function McpServerPanel({
 		await onTestConnection(mcpServers);
 	};
 
+	const handleImportFromSaved = (
+		servers: import("@/lib/entities").McpServerConfig[],
+	) => {
+		servers.forEach((server) => {
+			const headers: Record<string, string> = {};
+			if (server.config && typeof server.config === "object") {
+				const cfg = server.config as Record<string, any>;
+				if (cfg.headers) {
+					Object.assign(headers, cfg.headers);
+				}
+			}
+			onAddServer(server.name, {
+				transport: server.transport as "sse" | "streamable_http" | "stdio",
+				url: server.url,
+				headers,
+			});
+		});
+	};
+
 	const serverCount = Object.keys(mcpServers).length;
 
 	return (
@@ -127,14 +148,24 @@ export function McpServerPanel({
 							Configure Model Context Protocol servers
 						</p>
 					</div>
-					<Button
-						onClick={() => setShowAddForm(!showAddForm)}
-						size="sm"
-						variant={showAddForm ? "outline" : "default"}
-					>
-						<Plus className="h-4 w-4 mr-2" />
-						{showAddForm ? "Cancel" : "Add Server"}
-					</Button>
+					<div className="flex gap-2">
+						<Button
+							onClick={() => setShowImportModal(true)}
+							size="sm"
+							variant="outline"
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Import from Saved
+						</Button>
+						<Button
+							onClick={() => setShowAddForm(!showAddForm)}
+							size="sm"
+							variant={showAddForm ? "outline" : "default"}
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							{showAddForm ? "Cancel" : "Add Server"}
+						</Button>
+					</div>
 				</div>
 
 				{/* Add Server Form */}
@@ -323,6 +354,16 @@ export function McpServerPanel({
 					</div>
 				)}
 			</div>
+
+			<ServerSelectionModal
+				isOpen={showImportModal}
+				onClose={() => setShowImportModal(false)}
+				excludeIds={[]}
+				onSelect={(servers) => {
+					handleImportFromSaved(servers);
+					setShowImportModal(false);
+				}}
+			/>
 		</div>
 	);
 }

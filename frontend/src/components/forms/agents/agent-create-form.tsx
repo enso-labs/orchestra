@@ -19,9 +19,13 @@ import {
 	Ban,
 	Globe,
 	Lock,
+	Server,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
+import { ServerSelectionModal } from "@/components/modals/ServerSelectionModal";
+import { McpServerConfig } from "@/lib/entities";
+import AgentService from "@/lib/services/agentService";
 
 import {
 	Form,
@@ -88,6 +92,8 @@ export function AgentCreateForm() {
 	const [isLoadingFromUrl, setIsLoadingFromUrl] = useState(false);
 	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
 	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+	const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+	const [assignedServers, setAssignedServers] = useState<McpServerConfig[]>([]);
 	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 	const [promptMode, setPromptMode] = useState<
 		"instructions" | "system_prompt"
@@ -107,6 +113,21 @@ export function AgentCreateForm() {
 		setIsEditing(!agentId);
 	}, [agentId]);
 
+	// Load assigned servers when editing an existing agent
+	useEffect(() => {
+		if (agent.id && agent.server_ids && agent.server_ids.length > 0) {
+			AgentService.listAssignedServers(agent.id)
+				.then((response) => {
+					setAssignedServers(response.data || []);
+				})
+				.catch((err) => {
+					console.error("Failed to load assigned servers:", err);
+				});
+		} else {
+			setAssignedServers([]);
+		}
+	}, [agent.id, agent.server_ids]);
+
 	const handleEdit = () => {
 		setOriginalAgent(JSON.parse(JSON.stringify(agent)));
 		setIsEditing(true);
@@ -123,6 +144,7 @@ export function AgentCreateForm() {
 		// Collect file_system from fileSystem hook
 		const fileSystemData = toBackendFormat();
 
+		const serverIds = assignedServers.map((s) => s.id);
 		const configData: Agent = {
 			name: values.name.trim(),
 			description: values.description.trim(),
@@ -131,6 +153,7 @@ export function AgentCreateForm() {
 			a2a: agent.a2a,
 			tools: agent.tools,
 			subagents: agent.subagents,
+			server_ids: serverIds,
 			// Include file_system only if there are files
 			...(Object.keys(fileSystemData).length > 0 && {
 				files: fileSystemData,
@@ -160,6 +183,17 @@ export function AgentCreateForm() {
 		if (!agent.id) {
 			console.log("Saving agent configuration:", configData);
 			const response = await agentService.create(configData);
+			// Assign servers after creation
+			if (serverIds.length > 0) {
+				try {
+					await AgentService.assignServers(
+						response.data.assistant_id,
+						serverIds,
+					);
+				} catch (err) {
+					console.error("Failed to assign servers:", err);
+				}
+			}
 			alert(`${values.name} created successfully!`);
 			navigate(`/a/${response.data.assistant_id}`);
 		} else {
@@ -170,6 +204,14 @@ export function AgentCreateForm() {
 
 			console.log("Updating agent configuration:", configData);
 			await agentService.update(agent.id, configData);
+			// Update server assignments
+			if (serverIds.length > 0) {
+				try {
+					await AgentService.assignServers(agent.id, serverIds);
+				} catch (err) {
+					console.error("Failed to assign servers:", err);
+				}
+			}
 			alert(`${values.name} updated successfully!`);
 			setIsEditing(false);
 			// navigate(`/assistants`);
@@ -800,6 +842,72 @@ export function AgentCreateForm() {
 				</div>
 
 				<div className="border border-border rounded-lg p-6">
+					<div className="flex items-center justify-between mb-4">
+						<div className="flex items-center gap-3">
+							<Server className="h-5 w-5 text-foreground" />
+							<div>
+								<h2 className="text-lg font-semibold text-foreground">
+									MCP Servers
+								</h2>
+								<p className="text-sm text-muted-foreground">
+									Assign saved MCP server configurations
+								</p>
+							</div>
+						</div>
+						<Button
+							type="button"
+							variant="outline"
+							disabled={!isEditing}
+							onClick={() => setIsServerModalOpen(true)}
+						>
+							<Server className="h-4 w-4 mr-2" />
+							Add Servers ({assignedServers.length})
+						</Button>
+					</div>
+
+					{assignedServers.length > 0 ? (
+						<div className="space-y-2">
+							{assignedServers.map((server) => (
+								<div
+									key={server.id}
+									className="flex items-center justify-between p-3 border rounded-lg"
+								>
+									<div className="flex items-center gap-3">
+										<Server className="h-4 w-4 text-muted-foreground" />
+										<div>
+											<p className="text-sm font-medium">{server.name}</p>
+											<p className="text-xs text-muted-foreground">
+												{server.transport === "sse" ? "SSE" : "Streamable HTTP"}{" "}
+												&bull; {server.url}
+											</p>
+										</div>
+									</div>
+									{isEditing && (
+										<button
+											type="button"
+											onClick={() =>
+												setAssignedServers((prev) =>
+													prev.filter((s) => s.id !== server.id),
+												)
+											}
+											className="text-muted-foreground hover:text-foreground transition-colors"
+											aria-label={`Remove ${server.name}`}
+										>
+											<X className="h-4 w-4" />
+										</button>
+									)}
+								</div>
+							))}
+						</div>
+					) : (
+						<p className="text-sm text-muted-foreground">
+							No MCP servers assigned. Click &quot;Add Servers&quot; to assign
+							saved server configurations.
+						</p>
+					)}
+				</div>
+
+				<div className="border border-border rounded-lg p-6">
 					<div className="flex items-center gap-3 mb-6">
 						<Users className="h-5 w-5 text-foreground" />
 						<div>
@@ -1031,6 +1139,17 @@ export function AgentCreateForm() {
 				onApply={(selectedTools) => {
 					setAgent({ ...agent, tools: selectedTools });
 					setIsToolModalOpen(false);
+				}}
+			/>
+
+			{/* Server Selection Modal */}
+			<ServerSelectionModal
+				isOpen={isServerModalOpen}
+				onClose={() => setIsServerModalOpen(false)}
+				excludeIds={assignedServers.map((s) => s.id)}
+				onSelect={(servers) => {
+					setAssignedServers((prev) => [...prev, ...servers]);
+					setIsServerModalOpen(false);
 				}}
 			/>
 

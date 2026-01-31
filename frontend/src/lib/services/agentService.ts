@@ -24,6 +24,7 @@ export type Agent = {
 			agent_card_path: string;
 		};
 	};
+	server_ids?: string[]; // Assigned MCP server configuration IDs
 	files?: Record<string, string>; // Persisted files (path -> content)
 	metadata?: object;
 	schedules?: Schedule[]; // Agent's associated schedules
@@ -131,6 +132,45 @@ export default class AgentService {
 			return response;
 		} catch (error) {
 			console.error("Failed to delete agent schedule:", error);
+			throw error;
+		}
+	}
+
+	// Server assignment methods
+
+	static async assignServers(assistantId: string, serverIds: string[]) {
+		try {
+			const response = await apiClient.post(
+				`${this.BASE_URL}/${assistantId}/servers`,
+				{ server_ids: serverIds },
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to assign servers:", error);
+			throw error;
+		}
+	}
+
+	static async listAssignedServers(assistantId: string) {
+		try {
+			const response = await apiClient.get(
+				`${this.BASE_URL}/${assistantId}/servers`,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to list assigned servers:", error);
+			throw error;
+		}
+	}
+
+	static async unassignServer(assistantId: string, serverId: string) {
+		try {
+			const response = await apiClient.delete(
+				`${this.BASE_URL}/${assistantId}/servers/${serverId}`,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to unassign server:", error);
 			throw error;
 		}
 	}
