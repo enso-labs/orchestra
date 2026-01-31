@@ -30,8 +30,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added all three constants to backend/src/constants/llm.py with os.getenv support."
     },
     {
       "id": "US-003",
@@ -47,8 +47,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created CompactingMiddleware ABC with compact(), estimate_tokens(), should_compact(), is_system_message(), and split_messages() methods."
     },
     {
       "id": "US-004",

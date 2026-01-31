@@ -21,3 +21,23 @@
   - The middleware stack uses two patterns: decorator-based (`@wrap_model_call`) and class-based (`AgentMiddleware`)
   - `init_default_middleware()` in middleware.py is the central registration point
 ---
+
+## 2026-01-31 - US-002
+- Added DEFAULT_COMPACTION_TOKEN_THRESHOLD, DEFAULT_COMPACTION_RECENT_MESSAGES, DEFAULT_COMPACTION_MODEL to backend/src/constants/llm.py
+- Files changed: backend/src/constants/llm.py
+- **Learnings for future iterations:**
+  - Constants module requires DB env vars to import at runtime; use ruff check for validation instead of runtime import test in CI-less environments
+---
+
+## 2026-01-31 - US-003
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created CompactingMiddleware ABC in backend/src/utils/compacting.py
+- Abstract method: compact(messages) -> list[BaseMessage]
+- Helper methods: estimate_tokens(), should_compact(), is_system_message(), split_messages()
+- Constructor accepts token_threshold and recent_messages with defaults from constants
+- System messages are identified via isinstance(msg, SystemMessage) and excluded from compaction candidates
+- Files changed: backend/src/utils/compacting.py
+- **Learnings for future iterations:**
+  - langchain_core.messages.SystemMessage is the correct type for system prompt detection
+  - split_messages() utility separates system/middle/recent for downstream compaction strategies
+---
