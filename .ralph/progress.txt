@@ -15,6 +15,8 @@ Started: Thu Jan 30 23:59:00 MST 2026
 - Routes pattern: `APIRouter(tags=[...])`, endpoints use `Depends(verify_credentials)` + `Depends(get_store)`, register in `__init__.py` `create_api_router`
 - LLM invocation chain: Route → LLMController → LLMService.assistant() → construct_agent → Orchestra → init_graph → init_chat_model
 - `api_key` kwarg threads through construct_agent → Orchestra → init_graph → init_chat_model for per-user key injection
+- Routes are registered on `api_app` then copied to `app`; dependency_overrides must be set on BOTH for test overrides to work
+- `OPENAI_API_KEY` env var required at import time (ChatModels enum is conditional on it)
 
 ---
 
@@ -131,5 +133,18 @@ Started: Thu Jan 30 23:59:00 MST 2026
   - `useQueryState("model")` from nuqs returns null when no query param — this is the "no explicit model" case
   - The effect dependency on `userDefault` ensures the model updates once the async settings fetch completes
   - Error handling in settings fetch is silent — user shouldn't see errors for optional preference loading
+---
+
+## 2026-01-31 - US-010
+- Created unit tests for UserSettingsRepo (13 tests) and settings routes (9 tests)
+- Repo tests: encryption round-trip, CRUD ops (get/set/upsert/delete), invalid provider rejection, get_all_decrypted_keys
+- Route tests: auth required (401), GET empty settings, PUT default-model, PUT/DELETE provider-keys, response masking (no raw keys), invalid provider 400
+- Files created: `backend/tests/unit/repos/test_user_settings_repo.py`, `backend/tests/unit/routes/test_settings_routes.py`
+- All 22 new tests pass; 4 pre-existing test failures unrelated to this feature
+- **Learnings for future iterations:**
+  - `app` and `api_app` are separate FastAPI instances; routes are registered on `api_app` then copied to `app` via `routes=[*api_app.routes]` — dependency_overrides must be set on BOTH apps for route-level overrides to work
+  - Mock `encrypt_value`/`decrypt_value` at `src.repos.user_settings_repo` level to avoid needing APP_SECRET_KEY in tests
+  - `OPENAI_API_KEY` env var must be set for tests to import successfully (ChatModels enum is conditional)
+  - `unittest.IsolatedAsyncioTestCase` with class-level `@patch` decorators works well for repo tests with InMemoryStore
 ---
 
