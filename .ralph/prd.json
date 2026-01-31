@@ -181,8 +181,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "ServerSelectionModal component for browsing/selecting saved servers. MCP Servers section added to agent-create-form between Tools and SubAgents. Import from Saved button added to McpServerPanel. server_ids added to Agent type with assignServers/listAssignedServers/unassignServer API methods. Changes persisted via assignment API on save."
     },
     {
       "id": "US-013",

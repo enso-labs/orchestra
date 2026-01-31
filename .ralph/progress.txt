@@ -30,6 +30,9 @@
 - Frontend hook pattern: useState for list/selected/loading/error; handler methods; useEffect helpers like `useEffectGetServers()`
 - Old Server type (type/description/public) coexists with new McpServerConfig types — don't remove old type
 - Form components: React Hook Form + zodResolver + shadcn Form/FormField pattern, placed in src/components/forms/{entity}/
+- Modal components for selection: use useState for selectedIds Set, useEffect to load data on open, excludeIds pattern for filtering
+- Agent server assignment: server_ids stored on agent in LangGraph, but also call /api/assistants/{id}/servers for backend validation
+- AgentService static methods: class-based with try/catch/rethrow pattern, same as McpServerService
 
 ---
 
@@ -197,4 +200,24 @@
   - Delete confirmation uses window.confirm() (native browser dialog), not custom AlertDialog
   - Dialog component from shadcn used for create/edit modals wrapping existing form components
   - Sidebar nav links added as SidebarGroup with SidebarGroupLabel wrapping a Link component
+---
+
+## 2026-01-31 - US-012
+- Created ServerSelectionModal component for browsing and selecting saved MCP servers
+- Added MCP Servers section to agent-create-form between Tools and SubAgents sections
+- Added "Import from Saved" button to McpServerPanel in ToolSelectionModal
+- Added server_ids field to Agent type in agentService.ts
+- Added assignServers, listAssignedServers, unassignServer API methods to AgentService
+- Server assignments persisted via POST /api/assistants/{id}/servers on agent save
+- Assigned servers loaded on edit via listAssignedServers when agent has server_ids
+- Files changed:
+  - frontend/src/components/modals/ServerSelectionModal.tsx (new)
+  - frontend/src/components/modals/ToolSelectionModal/McpServerPanel.tsx (added Import from Saved)
+  - frontend/src/components/forms/agents/agent-create-form.tsx (added MCP Servers section)
+  - frontend/src/lib/services/agentService.ts (added server_ids + assignment methods)
+- **Learnings for future iterations:**
+  - ServerSelectionModal uses useServer hook to fetch saved servers, excludeIds to filter already-assigned
+  - Import from Saved in McpServerPanel converts McpServerConfig (backend) to local McpServerConfig (transport/url/headers)
+  - Agent.server_ids is persisted in LangGraph store, but actual assignment is via /api/assistants/{id}/servers endpoint
+  - The assignment API validates server ownership before assigning
 ---
