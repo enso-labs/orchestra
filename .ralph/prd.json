@@ -1,76 +1,144 @@
 {
   "project": "Orchestra",
-  "branchName": "bug/612-web-scrape-cannot-fetch-plain-text-pages",
-  "description": "Fix web_scrape to Handle plain/text Pages (Issue #612) - The web_scrape tool fails on text/plain URLs because fetch_html rejects non-HTML content types. Broaden content-type gate and add type-aware markdown conversion.",
+  "branchName": "feat/555-add-compacting-middleware",
+  "description": "Add Compacting Middleware (#555) - Context compaction middleware for DeepAgents that automatically summarizes older messages when conversation history exceeds ~170k tokens",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Refactor fetch_html to Support Text Content Types",
-      "description": "As a developer, I need to refactor the fetch_html function to accept text-based content types so that plain text URLs no longer fail with a ValueError.",
+      "title": "Verify Deepagents Internals",
+      "description": "As a developer, I need to determine whether deepagents==0.3.8 already ships internal SummarizationMiddleware so that we avoid double-summarization.",
       "acceptanceCriteria": [
-        "Add FetchResult dataclass with text: str and content_type: str fields to backend/src/tools/search.py",
-        "Add ALLOWED_TEXT_TYPES dict mapping MIME types to category strings (html, plain, json, xml, csv, markdown)",
-        "Rename fetch_html to fetch_content that returns FetchResult",
-        "Content-type gate accepts all text/* types plus allowlisted application/* types (application/json, application/xml, application/xhtml+xml, application/rss+xml, application/atom+xml)",
-        "Charset parameters are stripped from Content-Type before matching (e.g., text/plain; charset=utf-8 → text/plain)",
-        "Binary content still rejected via existing looks_binary() check",
-        "Missing Content-Type header still rejected as unknown",
-        "Existing HTML scraping path unchanged",
-        "Typecheck passes",
-        "make format passes"
+        "Inspect deepagents source for internal SummarizationMiddleware in create_deep_agent()",
+        "Document finding (YES/NO) as a code comment in the implementation",
+        "If YES: proceed with Phase 2A (lighter implementation, wire thresholds to deepagents)",
+        "If NO: proceed with Phase 2B (full Orchestra implementation)",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "deepagents==0.3.8 does NOT ship SummarizationMiddleware. Proceeding with Phase 2B."
     },
     {
       "id": "US-002",
-      "title": "Add Content-Type-Aware Markdown Conversion",
-      "description": "As a developer, I need a routing function that converts fetched content to markdown based on its content type, so that plain text is not forced through the HTML-to-markdown pipeline.",
+      "title": "Add Compaction Constants",
+      "description": "As a developer, I need compaction threshold constants defined so that the middleware and tests can reference them.",
       "acceptanceCriteria": [
-        "Add content_to_markdown function to backend/src/tools/search.py",
-        "HTML (text/html, application/xhtml+xml) routes through existing html_to_markdown",
-        "Plain text (text/plain) routes through clean_markdown (returned as-is, cleaned)",
-        "Markdown (text/markdown) routes through clean_markdown",
-        "JSON (application/json) wrapped in ```json fenced code block",
-        "XML (text/xml, application/xml, application/rss+xml, application/atom+xml) wrapped in ```xml fenced code block",
-        "CSV (text/csv) wrapped in ```csv fenced code block",
-        "Unknown text types fall back to clean_markdown",
-        "Update url_to_markdown to call fetch_content then content_to_markdown",
-        "Update Accept header in urls_to_markdown to include text/plain",
-        "Update error tip message to no longer mention plain text as a failure cause",
-        "Typecheck passes",
-        "make format passes"
+        "Add DEFAULT_COMPACTION_TOKEN_THRESHOLD = int(os.getenv('COMPACTION_TOKEN_THRESHOLD', '170000')) to backend/src/constants/llm.py",
+        "Add DEFAULT_COMPACTION_RECENT_MESSAGES = int(os.getenv('COMPACTION_RECENT_MESSAGES', '6')) to backend/src/constants/llm.py",
+        "Add DEFAULT_COMPACTION_MODEL constant pointing to DEFAULT_CHAT_MODEL_BASIC",
+        "Constants are importable from backend.src.constants.llm",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": ""
+      "notes": "Added all three constants to backend/src/constants/llm.py with os.getenv support."
     },
     {
       "id": "US-003",
-      "title": "Add Unit Tests for Web Scrape Pipeline",
-      "description": "As a developer, I need unit tests covering the web scraping pipeline so that the fix is verified and regressions are prevented.",
+      "title": "Create CompactingMiddleware ABC",
+      "description": "As a developer building custom agents, I want an abstract base class for compaction middleware so that I can implement custom compaction strategies.",
       "acceptanceCriteria": [
-        "Create backend/tests/unit/tools/test_web_scrape.py",
-        "Test fetch_content with text/html response → accepted, returns FetchResult with content_type=html",
-        "Test fetch_content with text/plain response → accepted, returns FetchResult with content_type=plain",
-        "Test fetch_content with application/json response → accepted",
-        "Test fetch_content with text/plain; charset=utf-8 → charset stripped, accepted as plain",
-        "Test fetch_content with image/png response → raises ValueError",
-        "Test fetch_content with binary payload but text/html header → raises ValueError (binary detection)",
-        "Test fetch_content with missing Content-Type → raises ValueError",
-        "Test content_to_markdown routes HTML through html_to_markdown",
-        "Test content_to_markdown returns cleaned plain text for text/plain",
-        "Test content_to_markdown wraps JSON in fenced code block",
-        "Test content_to_markdown wraps XML in fenced code block",
-        "Test content_to_markdown wraps CSV in fenced code block",
-        "Test helper functions: strip_control_chars, looks_binary, clean_markdown",
-        "All tests pass with make test",
+        "Create new file backend/src/utils/compacting.py",
+        "CompactingMiddleware ABC with abstract method compact(messages: list) -> list",
+        "Constructor accepts token_threshold: int and recent_messages: int with defaults from constants",
+        "Helper method estimate_tokens(messages) using len(content) // 4",
+        "Helper method should_compact(messages) returns bool based on threshold",
+        "System prompt messages are identified and excluded from compaction candidates",
         "Typecheck passes"
       ],
       "priority": 3,
       "passes": true,
-      "notes": ""
+      "notes": "Created CompactingMiddleware ABC with compact(), estimate_tokens(), should_compact(), is_system_message(), and split_messages() methods."
+    },
+    {
+      "id": "US-004",
+      "title": "Implement SummarizationMiddleware",
+      "description": "As a developer using DeepAgents for long-horizon tasks, I want automatic context compaction when message history exceeds token limits so that my agent continues operating without hitting context window limits.",
+      "acceptanceCriteria": [
+        "SummarizationMiddleware extends CompactingMiddleware in backend/src/utils/compacting.py",
+        "Estimates tokens via len(content) // 4 (consistent with AutoEvictMiddleware)",
+        "Triggers only when total tokens exceed DEFAULT_COMPACTION_TOKEN_THRESHOLD",
+        "Preserves system prompt messages (never summarized)",
+        "Preserves the N most recent messages (DEFAULT_COMPACTION_RECENT_MESSAGES)",
+        "Summarizes older messages using DEFAULT_CHAT_MODEL_BASIC via init_chat_model()",
+        "Summary is a SystemMessage with [CONVERSATION SUMMARY] prefix",
+        "Summary message has metadata={'compacted': True, 'original_count': N}",
+        "Is a complete no-op when total tokens are under threshold",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Implemented SummarizationMiddleware extending CompactingMiddleware with LLM-based summarization via init_chat_model()."
+    },
+    {
+      "id": "US-005",
+      "title": "Create Compaction Middleware Decorator",
+      "description": "As a developer, I need a @wrap_model_call decorator that applies the SummarizationMiddleware before model invocation so it integrates with the existing middleware pipeline.",
+      "acceptanceCriteria": [
+        "compaction_middleware function created in backend/src/utils/compacting.py",
+        "Uses @wrap_model_call decorator pattern (consistent with existing middleware)",
+        "Invokes SummarizationMiddleware on the message list before passing to the model handler",
+        "Handles async invocation correctly",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Created compaction_middleware using @wrap_model_call decorator pattern. Uses singleton SummarizationMiddleware instance."
+    },
+    {
+      "id": "US-006",
+      "title": "Register Compaction in Middleware Stack",
+      "description": "As a developer, I need the compaction middleware wired into the default middleware stack so it applies automatically to all agent invocations.",
+      "acceptanceCriteria": [
+        "If Phase 2B: Add compaction_middleware as the FIRST item in init_default_middleware() in backend/src/utils/middleware.py",
+        "If Phase 2A: Wire DEFAULT_COMPACTION_TOKEN_THRESHOLD and DEFAULT_COMPACTION_RECENT_MESSAGES through init_graph() in backend/src/agents/__init__.py to create_deep_agent()",
+        "No breaking changes to existing callers of construct_agent()",
+        "Import added to backend/src/utils/middleware.py or backend/src/agents/__init__.py as appropriate",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Added compaction_middleware as FIRST item in init_default_middleware() in backend/src/utils/middleware.py. No breaking changes to existing callers."
+    },
+    {
+      "id": "US-007",
+      "title": "Unit Tests for Compaction Classes",
+      "description": "As a developer, I need comprehensive unit tests for the compaction middleware to ensure correctness and prevent regressions.",
+      "acceptanceCriteria": [
+        "Create backend/tests/unit/utils/test_compacting.py",
+        "Test: No-op when under token threshold",
+        "Test: Triggers compaction when over threshold",
+        "Test: System prompt is never summarized",
+        "Test: Recent N messages are preserved verbatim",
+        "Test: Summary message has [CONVERSATION SUMMARY] prefix",
+        "Test: Summary message has compacted: True metadata",
+        "Test: Summary message has correct original_count metadata",
+        "Test: Uses DEFAULT_CHAT_MODEL_BASIC for summarization (mock LLM call)",
+        "Test: Custom threshold overrides default",
+        "Test: Custom recent_messages count overrides default",
+        "All tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Created 19 unit tests covering no-op, compaction trigger, system prompt preservation, recent message preservation, summary prefix, metadata, model configuration, and custom overrides."
+    },
+    {
+      "id": "US-008",
+      "title": "Integration Tests for Middleware Stack",
+      "description": "As a developer, I need integration tests confirming the compaction middleware coexists correctly with the existing middleware stack.",
+      "acceptanceCriteria": [
+        "Create backend/tests/unit/utils/test_middleware_integration.py",
+        "Test: Compaction middleware is present (and first) in default middleware list (Phase 2B) OR not present if Phase 2A",
+        "Test: Compaction middleware coexists with AutoEvictMiddleware without conflict",
+        "Test: Existing agent construction is backward-compatible (no regressions)",
+        "Test: Middleware is a no-op for short message contexts",
+        "All tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Created 8 integration tests in backend/tests/unit/utils/test_middleware_integration.py covering: compaction middleware is first in stack, coexists with AutoEvictMiddleware, backward compatibility, and no-op for short contexts."
     }
   ]
 }

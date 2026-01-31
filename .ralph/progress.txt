@@ -1,45 +1,107 @@
 ## Codebase Patterns
-- Backend format: `uvx ruff format` (run from backend dir)
-- Backend lint: `uvx ruff check` (pre-existing unused import warnings exist)
-- Cannot import backend modules directly without env vars (POSTGRES_CONNECTION_STRING etc.) — use `python -c "import ast; ast.parse(...)"` for syntax checks
-- `backend/src/tools/search.py` contains the web scraping pipeline: fetch → convert → combine
-- The `urls_to_markdown` function is the main entry point called by the `web_scrape` tool
-- Running tests requires: `POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@localhost:5432/lg_template_test" OPENAI_API_KEY="sk-test" uv run pytest`
-- Pre-existing bug: ChatModels.OPENAI_GPT_5_2 requires OPENAI_API_KEY to be set at import time
-- `.ralph/` is gitignored — use `git add -f` to commit ralph files
+- Backend middleware lives in `backend/src/utils/middleware.py` using `@wrap_model_call` decorator pattern and `AgentMiddleware` class pattern
+- Constants go in `backend/src/constants/llm.py` - use `DEFAULT_CHAT_MODEL_BASIC` for low-cost model
+- Format/lint with `uvx ruff format` and `uvx ruff check` from worktree root
+- Commits must be signed (`git commit -s`)
+- Phase 2B chosen: full Orchestra implementation (deepagents has no built-in compaction)
+- `init_default_middleware()` returns the middleware list; new middleware should be added there
+- `AutoEvictMiddleware` is a class-based middleware extending `AgentMiddleware` from deepagents
+- `@wrap_model_call` middlewares receive `(request: ModelRequest, handler)` and return `ModelResponse`
+- SystemMessage accepts `metadata` dict in constructor for tagging messages
+- Use `ainvoke` for async LLM calls with init_chat_model instances
+- `@wrap_model_call` decorated functions are NOT `callable()` - they produce middleware objects, not plain functions
 
 ---
 
 ## 2026-01-31 - US-001
-- Implemented FetchResult dataclass and ALLOWED_TEXT_TYPES mapping
-- Renamed fetch_html → fetch_content returning FetchResult
-- Added _resolve_content_type helper that strips charset params and validates against allowlist
-- All text/* types accepted; specific application/* types allowlisted
-- Updated url_to_markdown to use fetch_content
-- Files changed: backend/src/tools/search.py
+- Inspected deepagents==0.3.8 source at /home/ryaneggz/ryaneggz/deepagents/src/deepagents/
+- No summarization, compaction, or middleware references found in the package
+- create_deep_agent() in graph.py has no compaction parameters
+- Decision: Phase 2B (full Orchestra implementation)
+- Created backend/src/utils/compacting.py with finding documented as code comment
 - **Learnings for future iterations:**
-  - The content-type gate was the single point blocking plain text — only needed to broaden the check
-  - charset_normalizer's `from_bytes` works fine for all text types, not just HTML
-  - Pre-existing ruff lint warnings (unused imports) exist and should not block commits
+  - deepagents package is installed from a local path, not PyPI
+  - The middleware stack uses two patterns: decorator-based (`@wrap_model_call`) and class-based (`AgentMiddleware`)
+  - `init_default_middleware()` in middleware.py is the central registration point
 ---
 
 ## 2026-01-31 - US-002
-- Added content_to_markdown routing function (HTML→html_to_markdown, plain/markdown→clean_markdown, JSON/XML/CSV→fenced code blocks)
-- Updated url_to_markdown to call fetch_content then content_to_markdown
-- Updated Accept header to include text/plain
-- Updated error tip message to remove plain text mention
-- Files changed: backend/src/tools/search.py
+- Added DEFAULT_COMPACTION_TOKEN_THRESHOLD, DEFAULT_COMPACTION_RECENT_MESSAGES, DEFAULT_COMPACTION_MODEL to backend/src/constants/llm.py
+- Files changed: backend/src/constants/llm.py
 - **Learnings for future iterations:**
-  - content_to_markdown is a simple dispatcher — easy to extend for new types
-  - FetchResult.content_type category string makes routing clean
+  - Constants module requires DB env vars to import at runtime; use ruff check for validation instead of runtime import test in CI-less environments
 ---
 
 ## 2026-01-31 - US-003
-- Created backend/tests/unit/tools/test_web_scrape.py with 31 tests
-- All tests pass: helpers, _resolve_content_type, fetch_content, content_to_markdown
-- Files changed: backend/tests/unit/tools/test_web_scrape.py
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created CompactingMiddleware ABC in backend/src/utils/compacting.py
+- Abstract method: compact(messages) -> list[BaseMessage]
+- Helper methods: estimate_tokens(), should_compact(), is_system_message(), split_messages()
+- Constructor accepts token_threshold and recent_messages with defaults from constants
+- System messages are identified via isinstance(msg, SystemMessage) and excluded from compaction candidates
+- Files changed: backend/src/utils/compacting.py
 - **Learnings for future iterations:**
-  - Tests require POSTGRES_CONNECTION_STRING and OPENAI_API_KEY env vars due to conftest.py loading the full app
-  - Use `httpx.Response` with `request=httpx.Request(...)` for mocking fetch responses
-  - Pre-existing ChatModels.OPENAI_GPT_5_2 bug requires OPENAI_API_KEY to be set for imports
+  - langchain_core.messages.SystemMessage is the correct type for system prompt detection
+  - split_messages() utility separates system/middle/recent for downstream compaction strategies
+---
+
+## 2026-01-31 - US-004
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented SummarizationMiddleware in backend/src/utils/compacting.py
+- Extends CompactingMiddleware ABC, uses init_chat_model() with DEFAULT_COMPACTION_MODEL
+- No-op when under threshold; summarizes middle messages into SystemMessage with [CONVERSATION SUMMARY] prefix
+- Summary message includes metadata={'compacted': True, 'original_count': N}
+- Uses async ainvoke for LLM call
+- Files changed: backend/src/utils/compacting.py
+- **Learnings for future iterations:**
+  - SystemMessage accepts `metadata` dict directly in constructor
+  - Use `ainvoke` (not `invoke`) for async LLM calls in async methods
+  - `msg.type` gives the role string (e.g., "human", "ai") for BaseMessage subclasses
+---
+
+## 2026-01-31 - US-005
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created `compaction_middleware` function using `@wrap_model_call` decorator in backend/src/utils/compacting.py
+- Uses singleton `_summarization_middleware` instance to avoid re-instantiation per call
+- Compacts `request.state["messages"]` before passing to handler
+- Files changed: backend/src/utils/compacting.py
+- **Learnings for future iterations:**
+  - `@wrap_model_call` decorated functions receive `(request: ModelRequest, handler)` and must return `ModelResponse`
+  - `request.state["messages"]` is the message list to modify before forwarding
+  - Singleton pattern avoids re-creating middleware instances on every call
+---
+
+## 2026-01-31 - US-006
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Registered compaction_middleware as FIRST item in init_default_middleware() in backend/src/utils/middleware.py
+- Added import for compaction_middleware from src.utils.compacting
+- Files changed: backend/src/utils/middleware.py
+- **Learnings for future iterations:**
+  - Middleware ordering matters: compaction should run first to reduce token count before other middleware processes
+  - init_default_middleware() signature unchanged - adding to the list is non-breaking
+---
+
+## 2026-01-31 - US-007
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created 19 unit tests in backend/tests/unit/utils/test_compacting.py
+- Tests cover: no-op under threshold, compaction trigger, system prompt preservation, recent message preservation, summary prefix, compacted metadata, original_count metadata, model configuration, custom threshold/recent_messages overrides, token estimation, split_messages logic
+- All tests pass (mocking init_chat_model for LLM calls)
+- Files changed: backend/tests/unit/utils/test_compacting.py
+- **Learnings for future iterations:**
+  - `make test` from backend/ dir runs all tests including unit tests (requires DB env vars for integration tests but unit tests still execute)
+  - tests/__init__.py imports the app which requires DB; unit tests work because they're collected alongside integration tests
+  - Mock `init_chat_model` at `src.utils.compacting.init_chat_model` path for isolated unit tests
+  - Use `@patch` + `AsyncMock` for async LLM calls in tests
+---
+
+## 2026-01-31 - US-008
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created 8 integration tests in backend/tests/unit/utils/test_middleware_integration.py
+- Tests cover: compaction_middleware is first in default stack, present in stack, AutoEvictMiddleware coexists, stack length, short context no-op, backward compat (no args, backend kwarg), importability
+- All tests pass; pre-existing integration test failures unrelated to compaction
+- Files changed: backend/tests/unit/utils/test_middleware_integration.py
+- **Learnings for future iterations:**
+  - `@wrap_model_call` produces an object that is NOT `callable()` in Python's sense - don't assert `callable()` on decorated middleware
+  - `make test` must be run from `backend/` directory
+  - Pre-existing failures in test_public_assistants.py are unrelated to this feature
 ---

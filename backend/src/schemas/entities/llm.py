@@ -176,7 +176,7 @@ class PublicAssistant(BaseModel):
     published_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
-    # NOTE: file_system is intentionally excluded - it's owner-only data
+    # NOTE: files is intentionally excluded - it's owner-only data
 
     @classmethod
     def from_assistant(cls, assistant: Assistant) -> "PublicAssistant":
