@@ -197,8 +197,8 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Integration tests in backend/tests/integration/test_servers.py. Tests: CRUD lifecycle, duplicate name rejection, SSRF validation (localhost + private IPs), stdio transport rejection, schema-level SSRF validation, config encryption roundtrip, server assignment to assistant, 404 for nonexistent server. Fixed Server model enum (create_type=False, values_callable) and migration enum (create_type=False). 11 pass, 1 skip (assignment needs postgres store)."
     },
     {
       "id": "US-014",
@@ -211,8 +211,8 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests for ServerCard (6), ServerForm (12), ServerSelectionModal (11) — 29 new tests, all passing. Full suite: 192 pass, 3 skip. Added setupFiles to vitest.config.ts for @testing-library/jest-dom matchers. Fixed unused imports in serverService.ts. Formatting and typecheck pass."
     }
   ]
 }

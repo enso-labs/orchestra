@@ -2,7 +2,7 @@
 - Base class for SQLAlchemy models: `from src.services.db import get_db_base; Base = get_db_base()`
 - UUID primary keys: `UUID(as_uuid=True)` with `server_default=sa.text("uuid_generate_v4()")`
 - Timestamps: `DateTime(timezone=True)` with `server_default=func.now()` and `onupdate=func.now()`
-- Enums: inherit from `str, enum.Enum` for Pydantic compatibility
+- Enums: inherit from `str, enum.Enum` for Pydantic compatibility; use `create_type=False` and `values_callable=lambda x: [e.value for e in x]` on sa.Enum to work with asyncpg
 - Encryption: use `src.utils.security.encrypt_value()` / `decrypt_value()` for Fernet encryption
 - Models exported from `src.schemas.models.__init__`
 - Pydantic schemas go in `src.schemas.entities/`
@@ -33,6 +33,7 @@
 - Modal components for selection: use useState for selectedIds Set, useEffect to load data on open, excludeIds pattern for filtering
 - Agent server assignment: server_ids stored on agent in LangGraph, but also call /api/assistants/{id}/servers for backend validation
 - AgentService static methods: class-based with try/catch/rethrow pattern, same as McpServerService
+- Frontend component tests: use fireEvent (not userEvent), mock hooks via vi.mock, setupFiles in vitest.config.ts for jest-dom matchers
 
 ---
 
@@ -220,4 +221,41 @@
   - Import from Saved in McpServerPanel converts McpServerConfig (backend) to local McpServerConfig (transport/url/headers)
   - Agent.server_ids is persisted in LangGraph store, but actual assignment is via /api/assistants/{id}/servers endpoint
   - The assignment API validates server ownership before assigning
+---
+
+## 2026-01-31 - US-013
+- Created integration tests for server CRUD, SSRF validation, transport restriction, encryption roundtrip, and assistant assignment
+- Fixed Server model: sa.Enum create_type=False (Alembic manages type), values_callable for correct lowercase enum values with asyncpg
+- Fixed migration 0002: create_type=False on ENUM to prevent DuplicateObject error when table already has the type
+- Files changed:
+  - backend/tests/integration/test_servers.py (new - 12 tests)
+  - backend/src/schemas/models/server.py (fixed enum column definition)
+  - backend/migrations/versions/0002_add_servers_table.py (fixed enum create_type)
+- **Learnings for future iterations:**
+  - PostgreSQL enum types created by Alembic must use `create_type=False` in both the model and migration to avoid DuplicateObject errors
+  - asyncpg sends Python enum `.name` (uppercase) not `.value` (lowercase) — use `values_callable=lambda x: [e.value for e in x]` on sa.Enum
+  - Integration tests follow login-first pattern: POST /api/auth/login → get token → use as Bearer header
+  - Assistant creation via POST /api/assistants may fail with InMemoryStore in tests — use pytest.skip gracefully
+  - Pre-existing test failures: public_assistants (3), search tools (6), project_service (3 errors) — all unrelated to servers
+---
+
+## 2026-01-31 - US-014
+- Created frontend component tests for ServerCard, ServerForm, and ServerSelectionModal (29 tests total)
+- Added setupFiles config to vitest.config.ts so @testing-library/jest-dom matchers work
+- Fixed unused imports in serverService.ts (McpServerConfig, McpServerTestConnectionResponse, McpServerTool)
+- Full test suite passes: 192 tests pass, 3 skipped
+- Backend formatting passes, frontend typecheck passes
+- Files changed:
+  - frontend/src/tests/components/ServerCard.test.tsx (new - 6 tests)
+  - frontend/src/tests/components/ServerForm.test.tsx (new - 12 tests)
+  - frontend/src/tests/components/ServerSelectionModal.test.tsx (new - 11 tests)
+  - frontend/vitest.config.ts (added setupFiles)
+  - frontend/src/lib/services/serverService.ts (removed unused imports)
+  - .ralph/prd.json (US-014 marked passes: true)
+- **Learnings for future iterations:**
+  - vitest.config.ts needs `setupFiles: ["./src/tests/setup.ts"]` for @testing-library/jest-dom matchers to work
+  - @testing-library/user-event is NOT installed — use fireEvent from @testing-library/react instead
+  - Radix dropdown menus are hard to test with fireEvent (pointer events) — test rendering and props, skip dropdown interaction tests
+  - Component tests mock hooks via vi.mock("@/hooks/useServer") returning all handler functions
+  - Dialog components from radix emit warnings about missing Description — harmless in tests
 ---

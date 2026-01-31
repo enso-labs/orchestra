@@ -1,11 +1,8 @@
 import {
 	Server,
-	McpServerConfig,
 	McpServerCreate,
 	McpServerUpdate,
 	McpServerTestConnectionRequest,
-	McpServerTestConnectionResponse,
-	McpServerTool,
 } from "@/lib/entities";
 import apiClient from "@/lib/utils/apiClient";
 
