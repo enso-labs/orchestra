@@ -59,8 +59,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Rewrote src/routes/v0/server.py to use ServerService and new Pydantic schemas. Routes: POST/GET/GET{id}/PUT{id}/DELETE{id} at /api/servers. Router registered in v0/__init__.py."
     },
     {
       "id": "US-005",

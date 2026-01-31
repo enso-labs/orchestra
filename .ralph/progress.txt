@@ -15,6 +15,8 @@
 - Schema pattern: Create (required), Update (all Optional), Response (with id/timestamps + redaction)
 - Service pattern: constructor takes `AsyncSession` + `user_id`, all queries scoped to user
 - Slug generation: `from src.utils.format import slugify`
+- Route pattern: instantiate service per request as `ServerService(db, user.id)`, use `get_async_db` + `verify_credentials` Depends
+- Server router registered in `src/routes/v0/__init__.py` via `app.include_router(server, prefix=prefix)`
 
 ---
 
@@ -58,4 +60,17 @@
   - Decrypted config stored as `_decrypted_config` attribute on Server instance (not on the ORM column)
   - Existing route file (src/routes/v0/server.py) has a different schema (type/description/public fields) from the new PRD model - will need reconciliation in US-004
   - slugify function is at `src.utils.format.slugify`
+---
+
+## 2026-01-31 - US-004
+- Rewrote src/routes/v0/server.py to use ServerService and new Pydantic schemas (ServerCreate, ServerUpdate, ServerResponse)
+- Removed old inline schemas and direct DB queries; routes now delegate to ServerService
+- Registered server router in src/routes/v0/__init__.py
+- Files changed:
+  - backend/src/routes/v0/server.py (rewritten)
+  - backend/src/routes/v0/__init__.py (added server router import and registration)
+- **Learnings for future iterations:**
+  - The old server.py had a completely different schema (type/description/public/config as dict) - full rewrite was needed
+  - _to_response helper needed to pull `_decrypted_config` from server instance since ORM column holds encrypted text
+  - Pre-existing test failures: file_system, search, project_service tests are unrelated
 ---
