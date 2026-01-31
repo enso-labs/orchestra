@@ -78,7 +78,7 @@ export function useMessageQueue(
 	 * Process the next message in the queue.
 	 * Internal function - not exposed in return value.
 	 * Skips processing if the first message is currently being edited.
-	 * 
+	 *
 	 * Only removes the message from the queue after successful submission.
 	 * On failure, increments retryCount and re-attempts on next cycle.
 	 * Drops the message and notifies the user if maxRetries is exceeded.
@@ -101,11 +101,11 @@ export function useMessageQueue(
 			queueRef.current = rest;
 			setQueueLength(rest.length);
 			setQueuedItems([...rest]);
-			
+
 			toast.error("Message dropped after max retries", {
 				description: `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`,
 			});
-			
+
 			// Continue processing next message if any
 			if (rest.length > 0) {
 				setTimeout(() => processNext(), 100);
@@ -118,7 +118,7 @@ export function useMessageQueue(
 
 		try {
 			await executeSubmit(firstMessage.query, firstMessage.images);
-			
+
 			// Success - remove the message from the queue
 			const [, ...rest] = queueRef.current;
 			queueRef.current = rest;
@@ -126,7 +126,7 @@ export function useMessageQueue(
 			setQueuedItems([...rest]);
 		} catch (error) {
 			console.error("Error processing queued message:", error);
-			
+
 			// Increment retry count on the message at the front of the queue
 			const updatedMessage: QueuedMessage = {
 				...firstMessage,
@@ -134,12 +134,15 @@ export function useMessageQueue(
 			};
 			queueRef.current = [updatedMessage, ...queueRef.current.slice(1)];
 			setQueuedItems([...queueRef.current]);
-			
+
 			// Notify user of retry
 			if (updatedMessage.retryCount < MAX_RETRIES) {
-				toast.warning(`Message will retry (${updatedMessage.retryCount}/${MAX_RETRIES})`, {
-					description: `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`,
-				});
+				toast.warning(
+					`Message will retry (${updatedMessage.retryCount}/${MAX_RETRIES})`,
+					{
+						description: `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`,
+					},
+				);
 			}
 		} finally {
 			processingRef.current = false;
@@ -272,7 +275,12 @@ export function useMessageQueue(
 		let timerId: ReturnType<typeof setTimeout> | undefined;
 
 		// Editing just ended - process next if not streaming and queue has items
-		if (wasEditing !== null && editingId === null && !isStreaming && queueRef.current.length > 0) {
+		if (
+			wasEditing !== null &&
+			editingId === null &&
+			!isStreaming &&
+			queueRef.current.length > 0
+		) {
 			// Small delay to ensure edit state is fully updated
 			timerId = setTimeout(() => {
 				processNext();

@@ -87,10 +87,16 @@ class LLMController:
         if not model and settings.default_model:
             model = settings.default_model
 
+        # Guard against None model before resolving API key
+        if not model:
+            return model, None
+
         api_key = resolve_api_key(model, user_keys if user_keys else None)
         return model, api_key
 
     async def llm_invoke(self, params: LLMRequest):
+        agent = None
+        config = None
         try:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
@@ -119,11 +125,13 @@ class LLMController:
                 return response
         except Exception as e:
             logger.exception(f"Error in llm_invoke: {e}")
-            await self._update_store(agent, config)
+            if agent and config:
+                await self._update_store(agent, config)
             raise e
         finally:
             if self.service_context.user_id and self.service_context.checkpointer:
-                await self._update_store(agent, config)
+                if agent and config:
+                    await self._update_store(agent, config)
 
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)

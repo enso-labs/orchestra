@@ -83,8 +83,8 @@ export function DefaultModelSettings() {
 			<CardHeader>
 				<CardTitle>Default Model</CardTitle>
 				<CardDescription>
-					Choose a default AI model for new conversations. When not
-					set, the system default is used.
+					Choose a default AI model for new conversations. When not set, the
+					system default is used.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -110,9 +110,7 @@ export function DefaultModelSettings() {
 							<Command>
 								<CommandInput placeholder="Search models..." />
 								<CommandList>
-									<CommandEmpty>
-										No model found.
-									</CommandEmpty>
+									<CommandEmpty>No model found.</CommandEmpty>
 									<CommandGroup>
 										{visibleModels.map((modelValue) => (
 											<CommandItem
@@ -123,8 +121,7 @@ export function DefaultModelSettings() {
 												<Check
 													className={cn(
 														"mr-2 h-4 w-4",
-														defaultModel ===
-															modelValue
+														defaultModel === modelValue
 															? "opacity-100"
 															: "opacity-0",
 													)}

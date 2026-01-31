@@ -22,7 +22,7 @@ from src.services.llm import llm_service
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
 from src.constants import GROQ_API_KEY
 from src.schemas.models import ProtectedUser
-from src.utils.auth import get_optional_user
+from src.utils.auth import get_optional_user, get_optional_user_from_token
 from src.utils.logger import logger
 from src.constants.mock import MockResponse
 from src.constants.examples import Examples
@@ -32,6 +32,7 @@ from src.agents import init_config
 from src.services.db import get_store
 from src.utils.rate_limit import limiter
 from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
+from src.repos.user_settings_repo import UserSettingsRepo
 
 # Distributed workers mode - when true, tasks are enqueued to TaskIQ workers
 DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
@@ -203,11 +204,28 @@ async def optimize_prompt(
     operation_id="ruska_list_models",
     tags=["mcp"],
 )
-async def list_models():
+async def list_models(
+    user: ProtectedUser = Depends(get_optional_user_from_token),
+    store: BaseStore = Depends(get_store),
+):
+    # Default to system-wide default
+    default_model = DEFAULT_CHAT_MODEL
+
+    # If user is authenticated, check for their preferred default model
+    if user:
+        try:
+            settings_repo = UserSettingsRepo(user.id, store)
+            settings, _ = await settings_repo.get_settings()
+            if settings.default_model:
+                default_model = settings.default_model
+        except Exception:
+            # Fall back to system default on any error
+            pass
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "default": DEFAULT_CHAT_MODEL,
+            "default": default_model,
             "free": get_free_models(),
             "models": get_all_models(),
         },

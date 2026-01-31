@@ -1,5 +1,6 @@
 import { listModels, ModelsResponse } from "@/lib/services/modelService";
 import { getSettings } from "@/lib/services/userSettingsService";
+import { getAuthToken } from "@/lib/utils/auth";
 import { useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 
@@ -22,9 +23,13 @@ export function useModel() {
 		}, []);
 	};
 
-	// Fetch user's default model preference
+	// Fetch user's default model preference (only when authenticated)
 	useEffect(() => {
 		const fetchUserDefault = async () => {
+			// Skip if user is not authenticated to avoid 401 loops on login page
+			const token = getAuthToken();
+			if (!token) return;
+
 			try {
 				const settings = await getSettings();
 				setUserDefault(settings.default_model);
@@ -39,20 +44,28 @@ export function useModel() {
 		setModel(model);
 	};
 
+	// Reset model to user's default (or system default)
+	// This clears the URL query param so the default can be re-applied
+	const resetToDefault = () => {
+		setModel(null);
+	};
+
 	useEffect(() => {
-		if (!model) {
-			// User default takes precedence over server-wide default
-			const effectiveDefault = userDefault || models.default;
+		// Only set default model when no explicit model is selected
+		// User default takes precedence over server-wide default
+		if (!model && (userDefault !== null || models.default)) {
+			const effectiveDefault = userDefault ?? models.default;
 			if (effectiveDefault) {
 				setModel(effectiveDefault);
 			}
 		}
-	}, [model, models.default, userDefault]);
+	}, [model, models.default, userDefault, setModel]);
 
 	return {
 		model,
 		setModel,
 		updateQueryStateModel,
+		resetToDefault,
 		models,
 		useModelsEffect,
 	};
