@@ -17,6 +17,7 @@ from .project import router as project
 from .api_tokens import router as api_tokens
 from .share import router as share
 from .settings import router as settings
+from .memory import router as memory
 
 
 def create_api_router(app: FastAPI, prefix: str = "/api"):
@@ -37,6 +38,7 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
     app.include_router(api_tokens, prefix=prefix)
     app.include_router(share, prefix=prefix)
     app.include_router(settings, prefix=prefix)
+    app.include_router(memory, prefix=prefix)
     return app
 
 
