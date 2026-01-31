@@ -1,53 +1,45 @@
-# Ralph Progress Log
-Started: Fri Jan 30 23:33:36 MST 2026
----
-
 ## Codebase Patterns
-- ticket.md is a Claude Code command file at .claude/commands/ralph/ticket.md
-- /team workflow has Phases 0-5; constrain to 0-3 for council-only analysis
-- Ralph prd.json lives at .ralph/prd.json, progress at .ralph/progress.txt
-- .ralph/prd.json is in .gitignore; use `git add -f` to stage it
+- Base class for SQLAlchemy models: `from src.services.db import get_db_base; Base = get_db_base()`
+- UUID primary keys: `UUID(as_uuid=True)` with `server_default=sa.text("uuid_generate_v4()")`
+- Timestamps: `DateTime(timezone=True)` with `server_default=func.now()` and `onupdate=func.now()`
+- Enums: inherit from `str, enum.Enum` for Pydantic compatibility
+- Encryption: use `src.utils.security.encrypt_value()` / `decrypt_value()` for Fernet encryption
+- Models exported from `src.schemas.models.__init__`
+- Pydantic schemas go in `src.schemas.entities/`
+- Migrations in `backend/migrations/versions/` with sequential numbering (0000, 0001, 0002...)
+- Foreign keys: `sa.ForeignKey("table.id", ondelete="CASCADE")`
+- Pyright has baseline import errors (can't resolve packages in this env) - these are pre-existing
+- Format: `make format` runs `uvx ruff format` from backend/
+- Commit with `-s` flag for sign-off
+- SSRF validation: use `_is_private_url()` from `src.schemas.entities.server` for URL validation
+- Schema pattern: Create (required), Update (all Optional), Response (with id/timestamps + redaction)
 
 ---
 
-## 2026-01-30 - US-001
-- Implemented: Step 8 in ticket.md now explicitly constrains /team to Phases 0-3 only
-- Step 8 verifies REVIEW.md and TASKS.md exist before proceeding
-- Phase 4 (implementation) and Phase 5 (validation) are NOT referenced as expected outputs
-- Files changed: .claude/commands/ralph/ticket.md
+## 2026-01-31 - US-001
+- Implemented Server SQLAlchemy model with ServerTransport enum (sse, streamable_http)
+- Created Alembic migration 0002_add_servers_table
+- Files changed:
+  - backend/src/schemas/models/server.py (new)
+  - backend/src/schemas/models/__init__.py (updated exports)
+  - backend/migrations/versions/0002_add_servers_table.py (new)
 - **Learnings for future iterations:**
-  - ticket.md was already fully written with all steps (1-12) in the initial commit on this branch
-  - The file includes Steps 9-10 (PRD generation/conversion), 11 (Ralph launch), 12 (reporting), and comprehensive error handling
-  - All 4 user stories appear to already be implemented in the current file
+  - The `config` field is stored as encrypted Text (use encrypt_value/decrypt_value from src.utils.security)
+  - slug field is on the model but auto-generation logic needs to be in the service layer
+  - Unique constraint is on (user_id, name) pair
+  - Pyright can't resolve sqlalchemy imports in this env - same as existing auth.py baseline
 ---
 
-## 2026-01-30 - US-002
-- Verified: Steps 9-10 in ticket.md already satisfy all acceptance criteria
-- Step 9 reads council artifacts, composes PRD with Ralph sizing rules, archives previous files, saves and verifies PRD
-- Step 10 invokes ralph skill, sets branchName without ralph/ prefix, validates branchName match
-- Files changed: .ralph/prd.json (marked passes: true)
+## 2026-01-31 - US-002
+- Created ServerCreate, ServerUpdate, ServerResponse Pydantic schemas
+- SSRF validation on URL field (blocks private IPs, localhost, .local/.internal domains)
+- Config secrets redacted in ServerResponse via field_validator
+- Files changed:
+  - backend/src/schemas/entities/server.py (new)
+  - backend/src/schemas/entities/__init__.py (updated exports)
 - **Learnings for future iterations:**
-  - .ralph/prd.json is in .gitignore; use `git add -f` to commit it
-  - All steps were pre-implemented in the initial branch commit; verification-only needed
----
-
-## 2026-01-30 - US-003
-- Verified: Steps 11-12 in ticket.md already satisfy all acceptance criteria
-- Step 11 runs `bash ../../.ralph/ralph.sh` from worktree, monitors completion signal, captures exit status (0 or 1)
-- Step 12 lists all council and Ralph artifacts, reports COMPLETE/PARTIAL with story counts, provides next steps
-- Old PR creation steps are not present (replaced by Ralph workflow)
-- Files changed: .ralph/prd.json (marked passes: true)
-- **Learnings for future iterations:**
-  - All steps were pre-implemented; verification-only needed for this story too
----
-
-## 2026-01-30 - US-004
-- Verified: Error handling and report sections in ticket.md satisfy all acceptance criteria
-- Error handling (lines 189-197) covers all 6 required cases: council incomplete, PRD generation failure, prd.json conversion failure, branchName mismatch, Ralph loop failure, Ralph partial completion
-- Each error case provides a specific recovery command or instruction
-- Report section (lines 209-220) reflects Ralph-specific artifacts and COMPLETE/PARTIAL status
-- Example invocations section preserved (lines 199-207)
-- Files changed: .ralph/prd.json (marked passes: true)
-- **Learnings for future iterations:**
-  - All 4 user stories were pre-implemented in the initial branch commit; all iterations were verification-only
+  - Schema pattern: Create (required fields), Update (all Optional), Response (includes id/timestamps)
+  - SSRF validation uses ipaddress module to check private/loopback/link-local/reserved
+  - Config redaction happens at the schema level via `@field_validator("config", mode="before")`
+  - Schemas exported from entities/__init__.py
 ---

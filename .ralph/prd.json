@@ -1,70 +1,217 @@
 {
-  "project": "Orchestra",
-  "branchName": "feat/707-ticket-md-ralph-loop",
-  "description": "ticket.md Ralph Loop Integration - Replace direct implementation (team Phases 4-5) with Ralph autonomous loop after council analysis",
+  "branchName": "feat/709-users-should-be-able-to-configure-servers-mcp",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Rewrite ticket.md Step 8 to constrain /team to Phases 0-3 only",
-      "description": "As a developer running /ticket, I want the team workflow to stop after council analysis so that implementation is handled by Ralph instead.",
+      "title": "Create Server SQLAlchemy model and Alembic migration",
+      "description": "As a developer, I need the servers database table and SQLAlchemy model so that server configurations can be persisted.",
       "acceptanceCriteria": [
-        "Step 8 in .claude/commands/ralph/ticket.md explicitly instructs to execute only Phases 0-3 of /team",
-        "Step 8 includes verification that REVIEW.md and TASKS.md exist before proceeding",
-        "Phase 4 (implementation) and Phase 5 (validation) are NOT referenced as expected outputs in Step 8",
-        "File is valid markdown with no syntax errors"
+        "Server SQLAlchemy model created with fields: id (UUID), name, slug (auto-generated), url, transport (enum: sse, streamable_http), config (encrypted JSON), user_id, created_at, updated_at",
+        "Model exported from models package __init__.py",
+        "Alembic migration generated and applies cleanly",
+        "stdio transport is not allowed in the model/enum",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "Server model with ServerTransport enum (sse, streamable_http only). Migration 0002. Config stored as encrypted Text. Unique constraint on (user_id, name)."
     },
     {
       "id": "US-002",
-      "title": "Add Steps 9-10 for PRD generation and prd.json conversion",
-      "description": "As a developer running /ticket, I want council outputs converted to Ralph's prd.json format so Ralph can execute autonomously.",
+      "title": "Create Server Pydantic schemas",
+      "description": "As a developer, I need request/response schemas for the server API so that input validation and response serialization are handled.",
       "acceptanceCriteria": [
-        "Step 9 reads council artifacts (REVIEW.md, TASKS.md, USER_STORIES.md) from spec folder",
-        "Step 9 composes PRD generation query with Ralph sizing rules (1-3 files per story, split by layer)",
-        "Step 9 archives previous prd.json/progress.txt before generating new PRD",
-        "Step 9 saves PRD to tasks/prd-<feature-slug>.md and verifies creation",
-        "Step 10 invokes ralph skill to convert PRD to .ralph/prd.json",
-        "Step 10 sets branchName to worktree branch (no ralph/ prefix)",
-        "Step 10 validates branchName matches worktree branch and fixes mismatch",
-        "File is valid markdown with no syntax errors"
+        "ServerCreate, ServerUpdate, ServerResponse Pydantic schemas defined",
+        "Config secrets are redacted in ServerResponse",
+        "Transport field only allows sse and streamable_http",
+        "URL field has SSRF validation (block private IPs, localhost)",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": ""
+      "notes": "ServerCreate, ServerUpdate, ServerResponse schemas in src/schemas/entities/server.py. SSRF validation blocks private IPs/localhost. Config secrets redacted in ServerResponse via field_validator."
     },
     {
       "id": "US-003",
-      "title": "Add Step 11 to launch Ralph loop and Step 12 for reporting",
-      "description": "As a developer running /ticket, I want Ralph launched automatically and a clear completion report with next steps.",
+      "title": "Create ServerService with CRUD operations",
+      "description": "As a developer, I need a service layer for server CRUD so that the API routes have clean business logic.",
       "acceptanceCriteria": [
-        "Step 11 runs bash ../../.ralph/ralph.sh from the worktree directory",
-        "Step 11 monitors for completion signal and captures exit status",
-        "Step 12 lists all council artifacts and Ralph artifacts",
-        "Step 12 reports COMPLETE or PARTIAL status with story counts",
-        "Step 12 provides next steps (push + PR if complete, resume if partial)",
-        "Old PR creation steps (former steps 10-11) are removed",
-        "File is valid markdown with no syntax errors"
+        "ServerService with create, get_by_id, list_by_user, update, delete methods",
+        "Config secrets encrypted with Fernet before storage, decrypted on read",
+        "Name uniqueness enforced per user",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Update error handling and report sections for new workflow",
-      "description": "As a developer running /ticket, I want clear error messages and recovery steps when any new step fails.",
+      "title": "Register server API routes",
+      "description": "As a developer, I need REST endpoints at /api/servers so that the frontend can manage server configurations.",
       "acceptanceCriteria": [
-        "Error handling covers: council incomplete, PRD generation failure, prd.json conversion failure, branchName mismatch, Ralph loop failure, Ralph partial completion",
-        "Each error case provides a specific recovery command or instruction",
-        "Report section reflects Ralph-specific artifacts and status instead of direct implementation",
-        "Example invocations section is preserved",
-        "File is valid markdown with no syntax errors"
+        "POST /api/servers - create server config",
+        "GET /api/servers - list user's servers",
+        "GET /api/servers/{id} - get single server",
+        "PUT /api/servers/{id} - update server config",
+        "DELETE /api/servers/{id} - delete server config",
+        "Routes registered in app router",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add server_ids field to Assistant model",
+      "description": "As a developer, I need the Assistant model to reference server configurations so that assistants can have MCP servers assigned.",
+      "acceptanceCriteria": [
+        "server_ids column added to Assistant model (JSON array of UUIDs)",
+        "Alembic migration for the new column",
+        "Assistant Pydantic schemas updated with optional server_ids field",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create server assignment endpoints",
+      "description": "As a developer, I need API endpoints to assign and unassign servers to assistants so that the frontend can manage the relationship.",
+      "acceptanceCriteria": [
+        "POST /api/assistants/{id}/servers - assign server_ids to assistant",
+        "GET /api/assistants/{id}/servers - list assigned servers",
+        "DELETE /api/assistants/{id}/servers/{server_id} - unassign a server",
+        "Removing assignment does not delete the server config",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Resolve server_ids at runtime in LLMService",
+      "description": "As a developer, I need LLMService to load MCP server configs at runtime so that assigned servers are available as tool providers during inference.",
+      "acceptanceCriteria": [
+        "LLMService.init_tools() reads server_ids from the assistant/request",
+        "Server configs fetched from DB and decrypted",
+        "MultiServerMCPClient initialized with resolved server configs",
+        "Works with SSE and streamable_http transports",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add test-connection and tool discovery endpoints",
+      "description": "As a developer, I need endpoints to test server connectivity and discover available tools so that users can verify configs before saving.",
+      "acceptanceCriteria": [
+        "POST /api/servers/test-connection - tests connectivity to a server URL",
+        "GET /api/servers/{id}/tools - discovers and returns available tools from a saved server",
+        "DNS rebinding protection applied to connection targets",
+        "Rate limiting on test-connection endpoint",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add TypeScript types and API service for servers",
+      "description": "As a frontend developer, I need TypeScript types and API service functions for servers so that UI components can interact with the backend.",
+      "acceptanceCriteria": [
+        "Server TypeScript interface defined (id, name, slug, url, transport, config, tools)",
+        "API service functions: createServer, getServers, getServer, updateServer, deleteServer, testConnection, discoverTools",
+        "useServer hook created following existing hook patterns",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create ServerForm component",
+      "description": "As a frontend developer, I need a form component for creating and editing server configurations so that users can input server details.",
+      "acceptanceCriteria": [
+        "ServerForm with fields: name, URL, transport dropdown (SSE / streamable_http), config JSON editor",
+        "Test Connection button that calls the test-connection API",
+        "Form validation (required fields, URL format)",
+        "Works for both create and edit modes",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create ServerCard and ServersIndexPage",
+      "description": "As a frontend developer, I need a server list page so that users can view, search, and manage their saved server configurations.",
+      "acceptanceCriteria": [
+        "ServerCard component showing name, URL, transport, action buttons (edit, delete)",
+        "ServersIndexPage listing all user servers with search/filter by name",
+        "Delete confirmation dialog",
+        "Route registered and navigation link added",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Add MCP Servers section to assistant form",
+      "description": "As a frontend developer, I need an MCP Servers section in the assistant create/edit form so that users can assign saved servers to an assistant.",
+      "acceptanceCriteria": [
+        "ServerSelectionModal component for browsing and selecting saved servers",
+        "MCP Servers section in assistant form showing assigned servers",
+        "Can add/remove server assignments",
+        "Import from Saved option in McpServerPanel",
+        "Changes persisted via assignment API on save",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Backend integration tests",
+      "description": "As a developer, I need integration tests for the server CRUD and assignment APIs to ensure correctness.",
+      "acceptanceCriteria": [
+        "Tests for server CRUD lifecycle (create, read, update, delete)",
+        "Tests for server assignment to assistants",
+        "Tests for SSRF validation (blocked URLs rejected)",
+        "Tests for transport restriction (stdio rejected)",
+        "Tests for config encryption/decryption round-trip",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Frontend tests and full formatting pass",
+      "description": "As a developer, I need frontend component tests and a final formatting/lint pass to ensure quality.",
+      "acceptanceCriteria": [
+        "Tests for ServerForm, ServerCard, ServerSelectionModal components",
+        "Full test suite passes",
+        "Linting and formatting pass",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
       "notes": ""
     }
   ]
