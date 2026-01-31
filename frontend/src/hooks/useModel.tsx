@@ -51,14 +51,15 @@ export function useModel() {
 	};
 
 	useEffect(() => {
-		if (!model) {
-			// User default takes precedence over server-wide default
-			const effectiveDefault = userDefault || models.default;
+		// Only set default model when no explicit model is selected
+		// User default takes precedence over server-wide default
+		if (!model && (userDefault !== null || models.default)) {
+			const effectiveDefault = userDefault ?? models.default;
 			if (effectiveDefault) {
 				setModel(effectiveDefault);
 			}
 		}
-	}, [model, models.default, userDefault]);
+	}, [model, models.default, userDefault, setModel]);
 
 	return {
 		model,

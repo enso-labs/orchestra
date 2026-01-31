@@ -42,12 +42,15 @@ _SYSTEM_KEYS: dict[str, str | None] = {
 }
 
 
-def resolve_api_key(model: str, user_keys: dict[str, str] | None) -> str | None:
+def resolve_api_key(model: str | None, user_keys: dict[str, str] | None) -> str | None:
     """Resolve the API key for a given model string.
 
     Checks user-provided keys first, then falls back to system env keys.
-    Returns None if the provider is unknown.
+    Returns None if the provider is unknown or model is None.
     """
+    if not model:
+        return None
+
     # Find matching provider prefix
     token_key: UserTokenKey | None = None
     for prefix, key in _PROVIDER_PREFIX_TO_KEY.items():
