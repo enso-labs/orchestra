@@ -112,6 +112,10 @@ class Assistant(BaseModel):
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
+    server_ids: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of saved MCP server configuration UUIDs assigned to this assistant",
+    )
     files: Optional[Dict[str, str]] = Field(
         default_factory=dict,
         description="File system storage for the assistant. Key is the file path, value is the file content.",
@@ -156,6 +160,7 @@ class Assistant(BaseModel):
             tools=self.tools,
             a2a=self.a2a,
             mcp=self.mcp,
+            server_ids=self.server_ids,
             system_prompt=self.system_prompt,
             instructions=self.instructions,
             subagents=self.subagents,
@@ -206,6 +211,10 @@ class LLMRequest(BaseModel):
     tools: Optional[List[Any]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
+    server_ids: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of saved MCP server configuration UUIDs",
+    )
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
     metadata: Optional[Config] = Field(
         default_factory=Config, description="LangGraph configuration"
