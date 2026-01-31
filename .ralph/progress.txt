@@ -22,6 +22,9 @@
 - Routes needing both assistant + server data require dual Depends: get_store (LangGraph) + get_async_db (SQL)
 - To update assistant fields: assistant.model_dump() → modify dict → assistant_service.update(id, dict)
 - When SQL access needed outside route handlers: use `AsyncSessionLocal()` as async context manager directly
+- Rate limiting: `@limiter.limit("10/minute")` from `src.utils.rate_limit`, endpoint must accept `Request` param
+- DNS rebinding protection: resolve hostname with `socket.getaddrinfo`, check resolved IPs with `ipaddress` module
+- MultiServerMCPClient supports `async with` for one-shot connections (tool discovery, test-connection)
 
 ---
 
@@ -119,4 +122,22 @@
   - Server._decrypted_config can be a JSON string — need to json.loads() it before extracting headers
   - MultiServerMCPClient expects dict[str, McpServer] format: {name: {transport, url, headers}}
   - Resolved server configs are keyed by slug (or name fallback) to avoid collisions with inline mcp keys
+---
+
+## 2026-01-31 - US-008
+- Added POST /api/servers/test-connection endpoint with DNS rebinding protection and rate limiting (10/min via slowapi)
+- Added GET /api/servers/{id}/tools endpoint for tool discovery via MultiServerMCPClient
+- New Pydantic schemas: ServerTestConnectionRequest, ServerTestConnectionResponse, ServerToolResponse
+- DNS rebinding protection: resolves hostname via socket.getaddrinfo and validates all resolved IPs against private/loopback/link-local/reserved ranges
+- Files changed:
+  - backend/src/routes/v0/server.py (added test-connection and tools endpoints + helper functions)
+  - backend/src/schemas/entities/server.py (added 3 new schemas)
+  - .ralph/prd.json (US-008 marked passes: true)
+- **Learnings for future iterations:**
+  - Rate limiting uses `@limiter.limit("10/minute")` decorator from `src.utils.rate_limit` (slowapi)
+  - Rate-limited endpoints need `Request` parameter in the function signature for slowapi to work
+  - test-connection must be registered BEFORE `/{server_id}` routes to avoid path capture conflict
+  - DNS rebinding protection: use socket.getaddrinfo to resolve, then check each IP with ipaddress module
+  - MultiServerMCPClient can be used as async context manager (`async with`) for one-shot tool discovery
+  - _build_mcp_config helper creates the dict format expected by MultiServerMCPClient
 ---

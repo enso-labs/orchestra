@@ -131,3 +131,39 @@ class ServerResponse(BaseModel):
         if isinstance(v, dict):
             return _redact_config(v)
         return v
+
+
+class ServerTestConnectionRequest(BaseModel):
+    url: str = Field(
+        ...,
+        min_length=1,
+        json_schema_extra={"example": "https://mcp.example.com/sse"},
+    )
+    transport: ServerTransport = Field(
+        default=ServerTransport.SSE,
+        json_schema_extra={"example": "sse"},
+    )
+    config: Optional[dict[str, Any]] = Field(
+        default=None,
+        json_schema_extra={"example": {"api_key": "sk-..."}},
+    )
+
+    @field_validator("url")
+    @classmethod
+    def validate_url_not_private(cls, v: str) -> str:
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("URL must start with http:// or https://")
+        if _is_private_url(v):
+            raise ValueError("URL must not point to a private or internal address")
+        return v
+
+
+class ServerTestConnectionResponse(BaseModel):
+    success: bool
+    message: str
+    tools_count: Optional[int] = None
+
+
+class ServerToolResponse(BaseModel):
+    name: str
+    description: Optional[str] = None

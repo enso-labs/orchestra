@@ -118,8 +118,8 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "POST /api/servers/test-connection with DNS rebinding protection and rate limiting (10/min via slowapi). GET /api/servers/{id}/tools discovers tools via MultiServerMCPClient. Both endpoints validate resolved IPs against private/internal ranges. New schemas: ServerTestConnectionRequest, ServerTestConnectionResponse, ServerToolResponse."
     },
     {
       "id": "US-009",
