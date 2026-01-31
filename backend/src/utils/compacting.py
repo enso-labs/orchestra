@@ -9,7 +9,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from langchain.agents.middleware import ModelRequest, ModelResponse, wrap_model_call
+from langchain.agents.middleware import ModelRequest, wrap_model_call
+from langchain.agents.middleware.types import ModelResponse
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
@@ -114,8 +115,12 @@ class SummarizationMiddleware(CompactingMiddleware):
     async def compact(self, messages: list[BaseMessage]) -> list[BaseMessage]:
         """Summarize older messages when token count exceeds threshold.
 
-        Returns the original messages unchanged if under threshold.
+        Returns the original messages unchanged if under threshold or no model available.
         """
+        # Skip compaction if no model is configured
+        if not self.model:
+            return messages
+
         if not self.should_compact(messages):
             return messages
 

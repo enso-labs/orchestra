@@ -97,6 +97,14 @@ class TestSummarizationNoOp:
         result = await mw.compact(msgs)
         assert result is msgs
 
+    @pytest.mark.asyncio
+    async def test_no_op_when_model_is_none(self) -> None:
+        """Compaction is skipped when model is None to prevent init_chat_model(None)."""
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2, model=None)
+        msgs = _make_messages(6, content_size=100)  # Would trigger compaction
+        result = await mw.compact(msgs)
+        assert result is msgs  # returned unchanged, no LLM call
+
 
 class TestSummarizationCompaction:
     @pytest.mark.asyncio

@@ -44,19 +44,33 @@ class TestCompactionMiddlewareNoOp:
             HumanMessage(content="Hello"),
             AIMessage(content="Hi there!"),
         ]
+        compacted_msgs = [
+            HumanMessage(content="Hello"),
+            AIMessage(content="Hi there!"),
+        ]
         # Make compact return the same list (no-op behavior)
-        mock_mw.compact = AsyncMock(return_value=short_msgs)
+        mock_mw.compact = AsyncMock(return_value=compacted_msgs)
 
-        handler = AsyncMock()
-        handler.return_value = MagicMock()
+        handler_response = MagicMock()
+        handler = AsyncMock(return_value=handler_response)
 
         request = MagicMock()
         request.state = {"messages": short_msgs}
 
-        # We can't call the decorated function directly in the same way,
-        # but we can verify the singleton's compact is called with the messages
-        await mock_mw.compact(short_msgs)
+        # Exercise the middleware by calling awrap_model_call with request and handler
+        result = await compaction_middleware.awrap_model_call(request, handler)
+
+        # Verify compact was called with original messages
         mock_mw.compact.assert_awaited_once_with(short_msgs)
+
+        # Verify handler was called with the request
+        handler.assert_awaited_once_with(request)
+
+        # Verify request.state["messages"] was updated to compacted result
+        assert request.state["messages"] is compacted_msgs
+
+        # Verify the middleware returns the handler's response
+        assert result is handler_response
 
 
 class TestBackwardCompatibility:
