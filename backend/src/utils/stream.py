@@ -191,6 +191,7 @@ async def stream_generator(
     config: RunnableConfig,
     service_context: ServiceContext,
     instructions: str = None,
+    api_key: str | None = None,
 ):
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
@@ -223,6 +224,7 @@ async def stream_generator(
                 checkpointer=checkpointer,
                 backend=backend,
                 service_context=service_context,
+                api_key=api_key,
             )
             input.messages[-1].model = agent.model
             # Send metadata event with thread_id at the start of the stream

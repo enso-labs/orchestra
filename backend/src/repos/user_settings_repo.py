@@ -91,6 +91,11 @@ class UserSettingsRepo(BaseRepo):
         await self._set(_SETTINGS_KEY, settings)
         return settings
 
+    async def get_all_decrypted_keys(self) -> dict[str, str]:
+        """Return all decrypted provider keys as a dict."""
+        settings = await self._get_or_create()
+        return self._decrypt_keys(settings)
+
     async def get_decrypted_key(self, provider: str) -> Optional[str]:
         """Return the raw decrypted key for a single provider, or None."""
         self._validate_provider(provider)
