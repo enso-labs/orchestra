@@ -1,0 +1,76 @@
+{
+  "project": "Orchestra",
+  "branchName": "bug/612-web-scrape-cannot-fetch-plain-text-pages",
+  "description": "Fix web_scrape to Handle plain/text Pages (Issue #612) - The web_scrape tool fails on text/plain URLs because fetch_html rejects non-HTML content types. Broaden content-type gate and add type-aware markdown conversion.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Refactor fetch_html to Support Text Content Types",
+      "description": "As a developer, I need to refactor the fetch_html function to accept text-based content types so that plain text URLs no longer fail with a ValueError.",
+      "acceptanceCriteria": [
+        "Add FetchResult dataclass with text: str and content_type: str fields to backend/src/tools/search.py",
+        "Add ALLOWED_TEXT_TYPES dict mapping MIME types to category strings (html, plain, json, xml, csv, markdown)",
+        "Rename fetch_html to fetch_content that returns FetchResult",
+        "Content-type gate accepts all text/* types plus allowlisted application/* types (application/json, application/xml, application/xhtml+xml, application/rss+xml, application/atom+xml)",
+        "Charset parameters are stripped from Content-Type before matching (e.g., text/plain; charset=utf-8 → text/plain)",
+        "Binary content still rejected via existing looks_binary() check",
+        "Missing Content-Type header still rejected as unknown",
+        "Existing HTML scraping path unchanged",
+        "Typecheck passes",
+        "make format passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Add Content-Type-Aware Markdown Conversion",
+      "description": "As a developer, I need a routing function that converts fetched content to markdown based on its content type, so that plain text is not forced through the HTML-to-markdown pipeline.",
+      "acceptanceCriteria": [
+        "Add content_to_markdown function to backend/src/tools/search.py",
+        "HTML (text/html, application/xhtml+xml) routes through existing html_to_markdown",
+        "Plain text (text/plain) routes through clean_markdown (returned as-is, cleaned)",
+        "Markdown (text/markdown) routes through clean_markdown",
+        "JSON (application/json) wrapped in ```json fenced code block",
+        "XML (text/xml, application/xml, application/rss+xml, application/atom+xml) wrapped in ```xml fenced code block",
+        "CSV (text/csv) wrapped in ```csv fenced code block",
+        "Unknown text types fall back to clean_markdown",
+        "Update url_to_markdown to call fetch_content then content_to_markdown",
+        "Update Accept header in urls_to_markdown to include text/plain",
+        "Update error tip message to no longer mention plain text as a failure cause",
+        "Typecheck passes",
+        "make format passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add Unit Tests for Web Scrape Pipeline",
+      "description": "As a developer, I need unit tests covering the web scraping pipeline so that the fix is verified and regressions are prevented.",
+      "acceptanceCriteria": [
+        "Create backend/tests/unit/tools/test_web_scrape.py",
+        "Test fetch_content with text/html response → accepted, returns FetchResult with content_type=html",
+        "Test fetch_content with text/plain response → accepted, returns FetchResult with content_type=plain",
+        "Test fetch_content with application/json response → accepted",
+        "Test fetch_content with text/plain; charset=utf-8 → charset stripped, accepted as plain",
+        "Test fetch_content with image/png response → raises ValueError",
+        "Test fetch_content with binary payload but text/html header → raises ValueError (binary detection)",
+        "Test fetch_content with missing Content-Type → raises ValueError",
+        "Test content_to_markdown routes HTML through html_to_markdown",
+        "Test content_to_markdown returns cleaned plain text for text/plain",
+        "Test content_to_markdown wraps JSON in fenced code block",
+        "Test content_to_markdown wraps XML in fenced code block",
+        "Test content_to_markdown wraps CSV in fenced code block",
+        "Test helper functions: strip_control_chars, looks_binary, clean_markdown",
+        "All tests pass with make test",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
