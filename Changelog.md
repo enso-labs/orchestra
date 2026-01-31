@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc142
 
 ### Changed
+  - feat/709-users-should-be-able-to-configure-servers-mcp (2026-01-30)
   - feat/707-ticket-md-ralph-loop (2026-01-30)
   - feat/694-show-subagent-tool-calls (2026-01-24)
   - feat/504-frontend-queue (2026-01-20)
