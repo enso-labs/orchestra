@@ -13,6 +13,7 @@ import {
 	FileText,
 	Loader2,
 	Search,
+	Server,
 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
@@ -784,6 +785,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							<Link to="/assistants" className="flex items-center w-full">
 								<Bot className="w-4 h-4 mr-2" />
 								Assistants
+							</Link>
+						</SidebarGroupLabel>
+					</SidebarGroup>
+
+					{/* Servers Link */}
+					<SidebarGroup className="border-b border-sidebar-border">
+						<SidebarGroupLabel
+							asChild
+							className={`
+								group/label text-sidebar-foreground hover:bg-sidebar-accent
+								hover:text-sidebar-accent-foreground text-sm
+							`}
+						>
+							<Link to="/servers" className="flex items-center w-full">
+								<Server className="w-4 h-4 mr-2" />
+								MCP Servers
 							</Link>
 						</SidebarGroupLabel>
 					</SidebarGroup>

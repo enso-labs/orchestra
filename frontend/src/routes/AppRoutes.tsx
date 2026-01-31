@@ -29,6 +29,7 @@ import ProjectPage from "@/pages/projects/ProjectPage";
 import ThreadPage from "@/pages/threads/ThreadPage";
 import AgentThreadPage from "@/pages/agents/thread";
 import SettingsPage from "@/pages/settings";
+import ServersIndexPage from "@/pages/servers";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -165,6 +166,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<ThreadPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/servers"
+						element={
+							<PrivateRoute>
+								<ServersIndexPage />
 							</PrivateRoute>
 						}
 					/>

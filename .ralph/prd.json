@@ -164,8 +164,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "ServerCard component in src/components/cards/ServerCard.tsx with name, URL, transport badge, edit/delete dropdown. ServersIndexPage in src/pages/servers/index.tsx with search filter, create/edit dialogs using ServerForm, delete confirmation via window.confirm. Route registered at /servers in AppRoutes.tsx. Sidebar nav link added in app-sidebar.tsx."
     },
     {
       "id": "US-012",

@@ -179,3 +179,22 @@
   - ServerForm is a reusable component (not a page) — pages come in US-011
   - Browser verification of standalone form components should be deferred to when the page/route is created
 ---
+
+## 2026-01-31 - US-011
+- Created ServerCard component with name, URL, transport badge, edit/delete dropdown menu
+- Created ServersIndexPage with search/filter, create/edit dialogs (using ServerForm), delete confirmation, loading/empty states
+- Registered /servers route in AppRoutes.tsx with PrivateRoute wrapper
+- Added "MCP Servers" navigation link in app-sidebar.tsx between Assistants and Projects
+- Files changed:
+  - frontend/src/components/cards/ServerCard.tsx (new)
+  - frontend/src/pages/servers/index.tsx (new)
+  - frontend/src/routes/AppRoutes.tsx (added route)
+  - frontend/src/components/drawers/app-sidebar.tsx (added nav link)
+  - .ralph/prd.json (US-011 marked passes: true)
+- **Learnings for future iterations:**
+  - Index pages follow PromptsIndexPage pattern: fixed header with search, scrollable grid of cards, empty/loading states
+  - Card components follow AgentScheduleCard pattern: Card with header, dropdown menu for actions, badges for metadata
+  - Delete confirmation uses window.confirm() (native browser dialog), not custom AlertDialog
+  - Dialog component from shadcn used for create/edit modals wrapping existing form components
+  - Sidebar nav links added as SidebarGroup with SidebarGroupLabel wrapping a Link component
+---
