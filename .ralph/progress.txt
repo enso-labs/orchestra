@@ -13,6 +13,9 @@
 - Frontend service tests: mock `@/lib/utils/apiClient` with `vi.mock(() => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }))`
 - New routes: import in `routes/v0/__init__.py`, add `app.include_router(router, prefix=prefix)` in `create_api_router()`
 - Route auth: `user: ProtectedUser = Depends(verify_credentials)`, store: `store: BaseStore = Depends(get_store)`
+- `memoryService.ts` uses `export default class` — import as default, not named export
+- Component tests need `import "@testing-library/jest-dom"` (no global setupFiles in vitest config)
+- Use `aria-label` on icon buttons for testability with `getAllByLabelText`
 
 ---
 
@@ -159,4 +162,27 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Dialog pattern: `open`/`onOpenChange` props, `useEffect` to reset form state on open
   - Edit dialogs: compare current vs original values for `hasChanges` detection
   - Browser verification deferred to US-011 since dialog requires parent component to mount
+---
+
+## 2026-01-31 - US-011
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created `MemorySettings` component at `frontend/src/components/settings/MemorySettings.tsx`
+- Card with Brain icon, title, description, and Add Memory button
+- Search input with 300ms debounce triggers server-side search via `MemoryService.list()`
+- Memory list in ScrollArea with edit (Pencil) and delete (Trash2) hover action buttons
+- Delete confirmation via AlertDialog with optimistic delete and rollback on error
+- Empty state for no memories and no search results
+- Loading skeleton states (3 skeleton rows)
+- Component added to settings page after ModelVisibilitySettings
+- Fixed `MemoryEditDialog` import (was named import, should be default)
+- Created 9 component tests at `frontend/src/components/settings/MemorySettings.test.tsx`
+- All 180 frontend tests pass, typecheck passes
+- Browser verified: component renders correctly on settings page
+- Files changed: `frontend/src/components/settings/MemorySettings.tsx`, `frontend/src/components/settings/MemorySettings.test.tsx`, `frontend/src/components/settings/MemoryEditDialog.tsx`, `frontend/src/pages/settings/index.tsx`
+- **Learnings for future iterations:**
+  - `memoryService.ts` uses `export default class` — must import as default, not named
+  - Component tests need `import "@testing-library/jest-dom"` explicitly (no global setupFiles)
+  - Use `aria-label` on icon-only buttons for reliable test selectors via `getAllByLabelText`
+  - Settings page uses `ScrollArea` with `data-radix-scroll-area-viewport` for scrolling
+---
 ---
