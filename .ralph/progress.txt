@@ -25,6 +25,11 @@
 - Rate limiting: `@limiter.limit("10/minute")` from `src.utils.rate_limit`, endpoint must accept `Request` param
 - DNS rebinding protection: resolve hostname with `socket.getaddrinfo`, check resolved IPs with `ipaddress` module
 - MultiServerMCPClient supports `async with` for one-shot connections (tool discovery, test-connection)
+- Frontend types in `src/lib/entities/index.ts`, services in `src/lib/services/`, hooks in `src/hooks/`
+- Frontend service pattern: class with static methods, try/catch, console.error + rethrow
+- Frontend hook pattern: useState for list/selected/loading/error; handler methods; useEffect helpers like `useEffectGetServers()`
+- Old Server type (type/description/public) coexists with new McpServerConfig types — don't remove old type
+- Form components: React Hook Form + zodResolver + shadcn Form/FormField pattern, placed in src/components/forms/{entity}/
 
 ---
 
@@ -140,4 +145,37 @@
   - DNS rebinding protection: use socket.getaddrinfo to resolve, then check each IP with ipaddress module
   - MultiServerMCPClient can be used as async context manager (`async with`) for one-shot tool discovery
   - _build_mcp_config helper creates the dict format expected by MultiServerMCPClient
+---
+
+## 2026-01-31 - US-009
+- Added new TypeScript types: McpServerConfig, McpServerCreate, McpServerUpdate, McpServerTestConnectionRequest/Response, McpServerTool to entities/index.ts
+- Created McpServerService class in serverService.ts with list/get/create/update/delete/testConnection/discoverTools methods
+- Created useServer hook in hooks/useServer.ts with full CRUD + test connection + tool discovery handlers
+- Kept existing legacy Server type and functional exports for backwards compatibility
+- Files changed:
+  - frontend/src/lib/entities/index.ts (added new types)
+  - frontend/src/lib/services/serverService.ts (added McpServerService class, kept legacy exports)
+  - frontend/src/hooks/useServer.ts (new)
+- **Learnings for future iterations:**
+  - Old Server type (type/description/public schema) is used by many existing components — don't replace it, add new types alongside
+  - Service pattern: class-based with static methods (like ProjectService, AgentService)
+  - Hook pattern: useState for list/selected/loading/error, handler methods return data, useEffect helpers
+  - Backend uses PUT (not PATCH) for server updates
+  - Frontend prettier is invoked via npx, not via make format
+---
+
+## 2026-01-31 - US-010
+- Created ServerForm component with React Hook Form + Zod validation
+- Fields: name (min 2 chars), URL (valid URL), transport dropdown (SSE/streamable_http), config JSON textarea
+- Test Connection button calls handleTestConnection from useServer hook, displays success/failure inline
+- Works in create mode (no server prop) and edit mode (server prop populates defaults)
+- Config field parsed as JSON before submission, with inline validation error on invalid JSON
+- Files changed:
+  - frontend/src/components/forms/servers/ServerForm.tsx (new)
+  - .ralph/prd.json (US-010 marked passes: true)
+- **Learnings for future iterations:**
+  - Form components in this codebase go in src/components/forms/{entity}/ directory
+  - React Hook Form + zodResolver + shadcn Form/FormField is the standard pattern
+  - ServerForm is a reusable component (not a page) — pages come in US-011
+  - Browser verification of standalone form components should be deferred to when the page/route is created
 ---

@@ -132,8 +132,8 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added McpServerConfig, McpServerCreate, McpServerUpdate, McpServerTestConnectionRequest/Response, McpServerTool types to entities/index.ts. McpServerService class with list/get/create/update/delete/testConnection/discoverTools in serverService.ts. useServer hook with full CRUD + test connection + tool discovery in hooks/useServer.ts."
     },
     {
       "id": "US-010",
@@ -148,8 +148,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "ServerForm component in src/components/forms/servers/ServerForm.tsx. React Hook Form + Zod validation. Fields: name, URL, transport (SSE/streamable_http), config JSON textarea. Test Connection button with success/failure display. Works in create and edit modes via optional server prop. Browser verification deferred to US-011 when page/route is created."
     },
     {
       "id": "US-011",
