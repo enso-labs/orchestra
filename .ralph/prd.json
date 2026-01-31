@@ -49,7 +49,7 @@
         "File is valid markdown with no syntax errors"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
