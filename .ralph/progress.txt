@@ -10,6 +10,7 @@
 - When adding new entity types, update `BaseRepo._format()` in base_repo.py to handle the new type
 - `/api/tools/invoke` tries `invoke_default_tool` first, catches `ValueError` to fall back to user tools
 - `runnable_config` for tools must be `{"configurable": {"user_id": ...}}` for memory tools
+- Frontend service tests: mock `@/lib/utils/apiClient` with `vi.mock(() => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }))`
 - New routes: import in `routes/v0/__init__.py`, add `app.include_router(router, prefix=prefix)` in `create_api_router()`
 - Route auth: `user: ProtectedUser = Depends(verify_credentials)`, store: `store: BaseStore = Depends(get_store)`
 
@@ -126,4 +127,36 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Repo tests use `unittest.IsolatedAsyncioTestCase` with InMemoryStore directly
   - Must run tests with `make test` (which sources env vars) - `uv run pytest` alone fails without POSTGRES_CONNECTION_STRING
   - ASGITransport(app=app) uses the main `app` (not `api_app`) for routes prefixed with `/api/`
+---
+
+## 2026-01-31 - US-009
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created TypeScript interfaces at `frontend/src/lib/entities/memory.ts`: Memory, MemoryListResponse, MemoryCreateRequest, MemoryUpdateRequest
+- Exported types from `frontend/src/lib/entities/index.ts`
+- Created `MemoryService` at `frontend/src/lib/services/memoryService.ts` with list, get, create, update, delete static methods
+- Exported service from `frontend/src/lib/services/index.ts`
+- Created 8 unit tests at `frontend/src/tests/services/memoryService.test.ts`
+- All 171 frontend tests pass, typecheck passes
+- Files changed: `frontend/src/lib/entities/memory.ts`, `frontend/src/lib/entities/index.ts`, `frontend/src/lib/services/memoryService.ts`, `frontend/src/lib/services/index.ts`, `frontend/src/tests/services/memoryService.test.ts`
+- **Learnings for future iterations:**
+  - Frontend services use static methods on classes with `apiClient` (axios wrapper)
+  - Service tests mock `@/lib/utils/apiClient` with vi.mock default export pattern
+  - `npm install` needed in worktree before running tests (node_modules not shared)
+  - Prettier auto-formats on commit; run `npx prettier --write` to check
+  - Entity types use `string` for dates (ISO strings from API), not Date objects
+---
+
+## 2026-01-31 - US-010
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created `MemoryEditDialog` component at `frontend/src/components/settings/MemoryEditDialog.tsx`
+- Supports create mode (no memory prop) and edit mode (memory prop provided)
+- Textarea with validation (required, non-empty), Cancel/Save buttons with loading state
+- Detects no-changes in edit mode and disables Save button
+- Toast notifications via sonner for success/error
+- Typecheck passes, all 171 frontend tests pass
+- Files changed: `frontend/src/components/settings/MemoryEditDialog.tsx`
+- **Learnings for future iterations:**
+  - Dialog pattern: `open`/`onOpenChange` props, `useEffect` to reset form state on open
+  - Edit dialogs: compare current vs original values for `hasChanges` detection
+  - Browser verification deferred to US-011 since dialog requires parent component to mount
 ---
