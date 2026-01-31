@@ -64,3 +64,15 @@ Started: Thu Jan 30 23:59:00 MST 2026
   - When `api_key` is None (no user key, no system key), `init_chat_model` falls back to its own env var lookup
 ---
 
+## 2026-01-31 - US-005
+- Created `frontend/src/lib/services/userSettingsService.ts` with typed API wrappers
+- Functions: getSettings(), updateDefaultModel(), upsertProviderKey(), deleteProviderKey()
+- TypeScript interfaces: UserSettingsResponse, ProviderKeyStatus matching backend schema
+- Files created: `frontend/src/lib/services/userSettingsService.ts`
+- **Learnings for future iterations:**
+  - Existing settingService.ts is for agent preset settings (different from user account settings)
+  - Function-based export pattern (not class-based) is simpler and used by settingService.ts
+  - Backend field names use snake_case (api_key, is_set, default_model) — keep same in TS interfaces
+  - `npx tsc --noEmit` from frontend dir for typecheck
+---
+
