@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import { MemorySettings } from "./MemorySettings";
+import { MemorySettings } from "@/components/settings/MemorySettings";
 
 // Mock sonner
 vi.mock("sonner", () => ({
@@ -27,7 +27,7 @@ vi.mock("@/lib/services/memoryService", () => ({
 }));
 
 // Mock MemoryEditDialog
-vi.mock("./MemoryEditDialog", () => ({
+vi.mock("@/components/settings/MemoryEditDialog", () => ({
 	MemoryEditDialog: ({
 		open,
 		onOpenChange,
@@ -169,9 +169,9 @@ describe("MemorySettings", () => {
 		});
 
 		// Click delete on first memory
-		const deleteButtons = screen.getAllByRole("button").filter((btn) =>
-			btn.className.includes("destructive"),
-		);
+		const deleteButtons = screen.getAllByRole("button", {
+			name: /Delete memory/i,
+		});
 		fireEvent.click(deleteButtons[0]);
 
 		// Confirm delete
@@ -194,9 +194,9 @@ describe("MemorySettings", () => {
 			expect(screen.getByText("User prefers dark mode")).toBeInTheDocument();
 		});
 
-		const deleteButtons = screen.getAllByRole("button").filter((btn) =>
-			btn.className.includes("destructive"),
-		);
+		const deleteButtons = screen.getAllByRole("button", {
+			name: /Delete memory/i,
+		});
 		fireEvent.click(deleteButtons[0]);
 		fireEvent.click(screen.getByText("Delete"));
 

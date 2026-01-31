@@ -37,8 +37,9 @@ async def list_memories(
     except Exception as e:
         logger.exception(f"Error listing memories: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        ) from e
 
 
 @router.get("/{memory_id}", response_model=Memory)
@@ -68,8 +69,9 @@ async def create_memory(
     except Exception as e:
         logger.exception(f"Error creating memory: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        ) from e
 
 
 @router.put("/{memory_id}", response_model=Memory)

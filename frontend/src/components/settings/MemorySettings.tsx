@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Memory } from "@/lib/entities/memory";
 import MemoryService from "@/lib/services/memoryService";
-import { MemoryEditDialog } from "./MemoryEditDialog";
+import { MemoryEditDialog } from "@/components/settings/MemoryEditDialog";
 
 export function MemorySettings() {
 	const [memories, setMemories] = useState<Memory[]>([]);
@@ -54,6 +54,12 @@ export function MemorySettings() {
 
 	useEffect(() => {
 		fetchMemories();
+		return () => {
+			if (debounceRef.current) {
+				clearTimeout(debounceRef.current);
+				debounceRef.current = null;
+			}
+		};
 	}, [fetchMemories]);
 
 	const handleSearchChange = (value: string) => {

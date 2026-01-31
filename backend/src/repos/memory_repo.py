@@ -11,7 +11,8 @@ from src.schemas.entities import SearchFilter
 
 
 class MemoryRepo(BaseRepo):
-    def __init__(self, user_id: str, store: BaseStore = get_store_in_memory()):
+    def __init__(self, user_id: str, store: Optional[BaseStore] = None):
+        store = store or get_store_in_memory()
         super().__init__(user_id=user_id, store=store, entity_type="memories")
 
     async def create(self, content: str, metadata: Optional[dict] = None) -> Memory:

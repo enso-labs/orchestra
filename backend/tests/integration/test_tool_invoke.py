@@ -1,4 +1,5 @@
 import pytest
+from httpx import AsyncClient
 from src.repos.user_repo import UserRepo
 from src.schemas.models import User
 
@@ -78,7 +79,9 @@ async def test_invoke_ephemeral_tool_missing_config(async_client, local_auth_hea
 
 
 @pytest.mark.asyncio
-async def test_memory_tool_full_workflow(async_client, local_auth_headers):
+async def test_memory_tool_full_workflow(
+    async_client: AsyncClient, local_auth_headers: dict[str, str]
+) -> None:
     """Test full memory workflow: upsert -> search -> update -> search -> delete -> verify."""
     # 1. Upsert a memory
     upsert_payload = [
@@ -160,7 +163,9 @@ async def test_memory_tool_full_workflow(async_client, local_auth_headers):
 
 
 @pytest.mark.asyncio
-async def test_memory_tool_update_nonexistent(async_client, local_auth_headers):
+async def test_memory_tool_update_nonexistent(
+    async_client: AsyncClient, local_auth_headers: dict[str, str]
+) -> None:
     """Test that updating a non-existent memory returns an error."""
     payload = [
         {
@@ -181,7 +186,7 @@ async def test_memory_tool_update_nonexistent(async_client, local_auth_headers):
 
 
 @pytest.mark.asyncio
-async def test_memory_tool_requires_auth(async_client):
+async def test_memory_tool_requires_auth(async_client: AsyncClient) -> None:
     """Test that memory tool invocation requires authentication."""
     payload = [{"name": "upsert_memory", "args": {"memory": "Should require auth"}}]
     response = await async_client.post("/api/tools/invoke", json=payload)

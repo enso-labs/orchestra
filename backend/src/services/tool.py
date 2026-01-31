@@ -1,3 +1,5 @@
+from typing import Any
+
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -91,16 +93,20 @@ class ToolService:
     #     tools = manager.get_tools(tools=arcade.tools, toolkits=arcade.toolkits)
     #     return tools
 
-    async def invoke_default_tool(self, name: str, input: dict, config: dict = None):
+    async def invoke_default_tool(
+        self, name: str, input: dict[str, Any], config: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         tool_library = init_tool_library(user_id=self.user_id)
         tool: StructuredTool = next((t for t in tool_library if t.name == name), None)
         if not tool:
             raise ValueError(f"Tool {name} not found")
-        runnable_config = None
+        runnable_config: RunnableConfig | None = None
         if self.user_id:
-            configurable = {"user_id": self.user_id}
-            if config:
-                configurable.update(config)
+            configurable: dict[str, Any] = {"user_id": self.user_id}
+            if config is not None:
+                # Merge caller config but exclude user_id to prevent override
+                config_without_user_id = {k: v for k, v in config.items() if k != "user_id"}
+                configurable.update(config_without_user_id)
             runnable_config = {"configurable": configurable}
         return await tool.ainvoke(
             input=input,
