@@ -1,144 +1,203 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/555-add-compacting-middleware",
-  "description": "Add Compacting Middleware (#555) - Context compaction middleware for DeepAgents that automatically summarizes older messages when conversation history exceeds ~170k tokens",
+  "branchName": "feat/442-able-to-edit-memorys",
+  "description": "Able to Edit Memories - Add update_memory tool, REST API endpoints, and frontend UI for memory CRUD management",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Verify Deepagents Internals",
-      "description": "As a developer, I need to determine whether deepagents==0.3.8 already ships internal SummarizationMiddleware so that we avoid double-summarization.",
+      "title": "Add update_memory Tool",
+      "description": "As a developer, I want the memory tool to support an update operation that can be invoked independently, so that memory edits can be tested without requiring the AI chat agent.",
       "acceptanceCriteria": [
-        "Inspect deepagents source for internal SummarizationMiddleware in create_deep_agent()",
-        "Document finding (YES/NO) as a code comment in the implementation",
-        "If YES: proceed with Phase 2A (lighter implementation, wire thresholds to deepagents)",
-        "If NO: proceed with Phase 2B (full Orchestra implementation)",
+        "update_memory function added to backend/src/tools/memory.py",
+        "Tool validates memory exists before updating (raises ValueError if not found)",
+        "Tool requires user_id from config (raises ValueError if missing)",
+        "Updated memory retains its original ID",
+        "MEMORY_TOOLS list updated to include update_memory",
+        "make format passes",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "deepagents==0.3.8 does NOT ship SummarizationMiddleware. Proceeding with Phase 2B."
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Add Compaction Constants",
-      "description": "As a developer, I need compaction threshold constants defined so that the middleware and tests can reference them.",
+      "title": "Add Memory Tools to Default Tool Library",
+      "description": "As a developer, I want memory tools included in the default tool library, so that they are available to all agents and can be invoked via /api/tools/invoke.",
       "acceptanceCriteria": [
-        "Add DEFAULT_COMPACTION_TOKEN_THRESHOLD = int(os.getenv('COMPACTION_TOKEN_THRESHOLD', '170000')) to backend/src/constants/llm.py",
-        "Add DEFAULT_COMPACTION_RECENT_MESSAGES = int(os.getenv('COMPACTION_RECENT_MESSAGES', '6')) to backend/src/constants/llm.py",
-        "Add DEFAULT_COMPACTION_MODEL constant pointing to DEFAULT_CHAT_MODEL_BASIC",
-        "Constants are importable from backend.src.constants.llm",
+        "MEMORY_TOOLS imported in backend/src/tools/__init__.py",
+        "*MEMORY_TOOLS added to default_tools() return list",
+        "No circular import errors",
+        "make format passes",
         "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Added all three constants to backend/src/constants/llm.py with os.getenv support."
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Create CompactingMiddleware ABC",
-      "description": "As a developer building custom agents, I want an abstract base class for compaction middleware so that I can implement custom compaction strategies.",
+      "title": "Fix invoke_default_tool Method",
+      "description": "As a developer, I want invoke_default_tool in ToolService to work correctly, so that default tools (including memory tools) can be invoked via the /api/tools/invoke endpoint.",
       "acceptanceCriteria": [
-        "Create new file backend/src/utils/compacting.py",
-        "CompactingMiddleware ABC with abstract method compact(messages: list) -> list",
-        "Constructor accepts token_threshold: int and recent_messages: int with defaults from constants",
-        "Helper method estimate_tokens(messages) using len(content) // 4",
-        "Helper method should_compact(messages) returns bool based on threshold",
-        "System prompt messages are identified and excluded from compaction candidates",
+        "Commented-out invoke_default_tool method in backend/src/services/tool.py uncommented and implemented",
+        "Method imports init_tool_library to get fresh tool list",
+        "Method builds runnable_config with user_id",
+        "Method raises ValueError if tool not found",
+        "make format passes",
         "Typecheck passes"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "Created CompactingMiddleware ABC with compact(), estimate_tokens(), should_compact(), is_system_message(), and split_messages() methods."
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Implement SummarizationMiddleware",
-      "description": "As a developer using DeepAgents for long-horizon tasks, I want automatic context compaction when message history exceeds token limits so that my agent continues operating without hitting context window limits.",
+      "title": "Integration Tests for Memory Tool Invocation",
+      "description": "As a developer, I want integration tests that verify the full memory tool workflow via /api/tools/invoke.",
       "acceptanceCriteria": [
-        "SummarizationMiddleware extends CompactingMiddleware in backend/src/utils/compacting.py",
-        "Estimates tokens via len(content) // 4 (consistent with AutoEvictMiddleware)",
-        "Triggers only when total tokens exceed DEFAULT_COMPACTION_TOKEN_THRESHOLD",
-        "Preserves system prompt messages (never summarized)",
-        "Preserves the N most recent messages (DEFAULT_COMPACTION_RECENT_MESSAGES)",
-        "Summarizes older messages using DEFAULT_CHAT_MODEL_BASIC via init_chat_model()",
-        "Summary is a SystemMessage with [CONVERSATION SUMMARY] prefix",
-        "Summary message has metadata={'compacted': True, 'original_count': N}",
-        "Is a complete no-op when total tokens are under threshold",
+        "Tests added to backend/tests/integration/test_tool_invoke.py",
+        "Test covers full workflow: upsert -> search -> update -> search -> delete -> verify",
+        "Test covers error case: update non-existent memory",
+        "Test covers auth requirement (401 without auth)",
+        "All existing tool invoke tests still pass",
+        "make test passes",
         "Typecheck passes"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Implemented SummarizationMiddleware extending CompactingMiddleware with LLM-based summarization via init_chat_model()."
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Create Compaction Middleware Decorator",
-      "description": "As a developer, I need a @wrap_model_call decorator that applies the SummarizationMiddleware before model invocation so it integrates with the existing middleware pipeline.",
+      "title": "Create Memory Entity Schemas",
+      "description": "As a developer, I need Pydantic schemas for memory entities to validate API requests and responses.",
       "acceptanceCriteria": [
-        "compaction_middleware function created in backend/src/utils/compacting.py",
-        "Uses @wrap_model_call decorator pattern (consistent with existing middleware)",
-        "Invokes SummarizationMiddleware on the message list before passing to the model handler",
-        "Handles async invocation correctly",
+        "File created at backend/src/schemas/entities/memory.py",
+        "Memory model with id, content, metadata, created_at, updated_at fields",
+        "MemoryCreate model with content and metadata fields",
+        "MemoryUpdate model with content and metadata fields",
+        "MemoryListResponse model with memories, total, limit, offset fields",
+        "Content fields have min_length=1 validation",
+        "make format passes",
         "Typecheck passes"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Created compaction_middleware using @wrap_model_call decorator pattern. Uses singleton SummarizationMiddleware instance."
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Register Compaction in Middleware Stack",
-      "description": "As a developer, I need the compaction middleware wired into the default middleware stack so it applies automatically to all agent invocations.",
+      "title": "Implement MemoryRepo",
+      "description": "As a developer, I need a repository class for memory CRUD operations that follows the BaseRepo pattern.",
       "acceptanceCriteria": [
-        "If Phase 2B: Add compaction_middleware as the FIRST item in init_default_middleware() in backend/src/utils/middleware.py",
-        "If Phase 2A: Wire DEFAULT_COMPACTION_TOKEN_THRESHOLD and DEFAULT_COMPACTION_RECENT_MESSAGES through init_graph() in backend/src/agents/__init__.py to create_deep_agent()",
-        "No breaking changes to existing callers of construct_agent()",
-        "Import added to backend/src/utils/middleware.py or backend/src/agents/__init__.py as appropriate",
+        "File created at backend/src/repos/memory_repo.py",
+        "MemoryRepo extends BaseRepo with entity_type=memories",
+        "create() generates memory_{uuid} ID and sets timestamps",
+        "get() returns None if not found",
+        "update() validates existence, updates content and updated_at",
+        "delete() returns bool",
+        "list() returns paginated results sorted by updated_at descending",
+        "make format passes",
         "Typecheck passes"
       ],
       "priority": 6,
       "passes": true,
-      "notes": "Added compaction_middleware as FIRST item in init_default_middleware() in backend/src/utils/middleware.py. No breaking changes to existing callers."
+      "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Unit Tests for Compaction Classes",
-      "description": "As a developer, I need comprehensive unit tests for the compaction middleware to ensure correctness and prevent regressions.",
+      "title": "Create Memory REST API Routes",
+      "description": "As a developer, I need REST API endpoints for memory CRUD so the frontend can manage memories.",
       "acceptanceCriteria": [
-        "Create backend/tests/unit/utils/test_compacting.py",
-        "Test: No-op when under token threshold",
-        "Test: Triggers compaction when over threshold",
-        "Test: System prompt is never summarized",
-        "Test: Recent N messages are preserved verbatim",
-        "Test: Summary message has [CONVERSATION SUMMARY] prefix",
-        "Test: Summary message has compacted: True metadata",
-        "Test: Summary message has correct original_count metadata",
-        "Test: Uses DEFAULT_CHAT_MODEL_BASIC for summarization (mock LLM call)",
-        "Test: Custom threshold overrides default",
-        "Test: Custom recent_messages count overrides default",
-        "All tests pass",
+        "File created at backend/src/routes/v0/memory.py",
+        "Router with prefix=/memories and tags=[Memory]",
+        "GET returns MemoryListResponse with limit/offset params",
+        "GET /{memory_id} returns Memory or 404",
+        "POST returns Memory with status 201",
+        "PUT /{memory_id} returns Memory or 404",
+        "DELETE /{memory_id} returns 204 or 404",
+        "All endpoints require authentication via verify_credentials",
+        "Router registered in backend/src/routes/v0/__init__.py",
+        "BaseRepo _format updated for memories entity type in backend/src/repos/base_repo.py",
+        "make format passes",
         "Typecheck passes"
       ],
       "priority": 7,
       "passes": true,
-      "notes": "Created 19 unit tests covering no-op, compaction trigger, system prompt preservation, recent message preservation, summary prefix, metadata, model configuration, and custom overrides."
+      "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Integration Tests for Middleware Stack",
-      "description": "As a developer, I need integration tests confirming the compaction middleware coexists correctly with the existing middleware stack.",
+      "title": "Backend Tests for Memory REST API",
+      "description": "As a developer, I need unit and integration tests for the memory repository and routes.",
       "acceptanceCriteria": [
-        "Create backend/tests/unit/utils/test_middleware_integration.py",
-        "Test: Compaction middleware is present (and first) in default middleware list (Phase 2B) OR not present if Phase 2A",
-        "Test: Compaction middleware coexists with AutoEvictMiddleware without conflict",
-        "Test: Existing agent construction is backward-compatible (no regressions)",
-        "Test: Middleware is a no-op for short message contexts",
-        "All tests pass",
+        "Unit tests at backend/tests/unit/repos/test_memory_repo.py with 8 test cases",
+        "Route tests at backend/tests/unit/routes/test_memory_routes.py with 8 test cases",
+        "Tests cover: create, get, update, delete, list, pagination, 404 errors",
+        "All tests pass with make test",
         "Typecheck passes"
       ],
       "priority": 8,
       "passes": true,
-      "notes": "Created 8 integration tests in backend/tests/unit/utils/test_middleware_integration.py covering: compaction middleware is first in stack, coexists with AutoEvictMiddleware, backward compatibility, and no-op for short contexts."
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Frontend Memory TypeScript Types and Service",
+      "description": "As a frontend developer, I need TypeScript types and a service class to interact with the memory API.",
+      "acceptanceCriteria": [
+        "File created at frontend/src/lib/entities/memory.ts with Memory, MemoryListResponse, MemoryCreateRequest, MemoryUpdateRequest interfaces",
+        "Types exported from frontend/src/lib/entities/index.ts",
+        "File created at frontend/src/lib/services/memoryService.ts with list, get, create, update, delete methods",
+        "Service exported from frontend/src/lib/services/index.ts",
+        "Unit tests at frontend/src/tests/services/memoryService.test.ts",
+        "All tests pass with npm run test",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Memory Edit Dialog Component",
+      "description": "As a user, I want a dialog to create and edit memories with form validation.",
+      "acceptanceCriteria": [
+        "File created at frontend/src/components/settings/MemoryEditDialog.tsx",
+        "Supports both create and edit modes based on memory prop presence",
+        "Textarea for content input with validation (required, non-empty)",
+        "Cancel and Save buttons with loading states",
+        "Detects no-changes in edit mode and disables save button",
+        "Toast notifications for success and error via sonner",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Memory Settings Component and Integration",
+      "description": "As a user, I want a memory management card on the Settings page to view, search, create, edit, and delete memories.",
+      "acceptanceCriteria": [
+        "File created at frontend/src/components/settings/MemorySettings.tsx",
+        "Card with header showing Brain icon, title, description, and Add Memory button",
+        "Search input with 300ms debounce triggers server-side search",
+        "Memory list in ScrollArea with edit and delete hover actions",
+        "Delete confirmation via AlertDialog",
+        "Optimistic delete with rollback on error",
+        "Empty state and loading skeleton states",
+        "Component added to frontend/src/pages/settings/index.tsx after ModelVisibilitySettings",
+        "Component tests at frontend/src/components/settings/MemorySettings.test.tsx",
+        "All tests pass with npm run test",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
     }
   ]
 }

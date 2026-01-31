@@ -68,4 +68,27 @@ async def search_memory(
     return [memory.dict() for memory in memories]
 
 
-MEMORY_TOOLS = [upsert_memory, delete_memory, search_memory]
+@tool
+async def update_memory(memory_id: str, memory: str, config: RunnableConfig) -> str:
+    """
+    Toolkit: Memory
+    Description: Update an existing memory in the vectorstore.
+    Args:
+            memory_id: The ID of the memory to update.
+            memory: The new memory content.
+            config: The config for the memory.
+    Returns:
+            Updated memory confirmation.
+    """
+    user_id = config["configurable"].get("user_id")
+    if not user_id:
+        raise ValueError("User ID is required to update memory.")
+    memory_service.user_id = user_id
+    existing = await memory_service.get(memory_id)
+    if not existing:
+        raise ValueError(f"Memory ID {memory_id} not found.")
+    await memory_service.set(memory_id, {"memory": memory}, ttl=None)
+    return f"Memory ID {memory_id} updated."
+
+
+MEMORY_TOOLS = [upsert_memory, delete_memory, search_memory, update_memory]

@@ -8,6 +8,7 @@ from src.tools.finance import FINANCE_TOOLS
 from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
 from src.tools.api import API_TOOLS
 from src.tools.bash_tool import BASH_TOOLS
+from src.tools.memory import MEMORY_TOOLS
 
 
 def default_tools() -> list[BaseTool]:
@@ -15,6 +16,7 @@ def default_tools() -> list[BaseTool]:
         *SEARCH_TOOLS,
         *PYTHON_CODE_INTERPRETER_TOOLS,
         *FINANCE_TOOLS,
+        *MEMORY_TOOLS,
     ]
     if APP_ENV == "test":
         default_tools.extend(TEST_TOOLS)

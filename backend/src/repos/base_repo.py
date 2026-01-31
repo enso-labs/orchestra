@@ -7,6 +7,7 @@ from src.services.db import get_store_in_memory
 from src.schemas.entities.store import Source, Project, Document
 from src.schemas.entities.auth import ApiToken
 from src.schemas.entities.settings import UserSettings
+from src.schemas.entities.memory import Memory
 from src.utils.logger import logger
 
 
@@ -29,7 +30,7 @@ class BaseRepo:
         await self.store.aput(
             namespace=self._get_namespace(),
             key=key,
-            value=value.model_dump(exclude_none=True),
+            value=value.model_dump(exclude_none=True, mode="json"),
             ttl=ttl,
         )
         logger.info(f"Set {self.entity_type} {key} successfully")
@@ -46,6 +47,8 @@ class BaseRepo:
             return ApiToken.model_validate(item.value)
         elif self.entity_type == "user_settings":
             return UserSettings.model_validate(item.value)
+        elif self.entity_type == "memories":
+            return Memory.model_validate(item.value)
         else:
             raise ValueError(f"Invalid entity type: {self.entity_type}")
 
