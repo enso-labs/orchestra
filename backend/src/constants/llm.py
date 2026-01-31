@@ -199,11 +199,33 @@ DEFAULT_CHAT_MODEL = get_default_chat_model()
 DEFAULT_CHAT_MODEL_BASIC = get_default_low_cost_model()
 DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value
 
+def _safe_int_env(var_name: str, default: int) -> int:
+    """
+    Safely parse an environment variable as an integer.
+
+    Args:
+        var_name: The name of the environment variable.
+        default: The default value to use if parsing fails.
+
+    Returns:
+        The parsed integer value, or the default if parsing fails.
+    """
+    raw_value = os.getenv(var_name)
+    if raw_value is None:
+        return default
+    try:
+        return int(raw_value)
+    except ValueError:
+        logger.warning(
+            f"Invalid value for {var_name}: '{raw_value}' is not a valid integer. "
+            f"Using default value: {default}"
+        )
+        return default
+
+
 # Compaction middleware constants
-DEFAULT_COMPACTION_TOKEN_THRESHOLD = int(
-    os.getenv("COMPACTION_TOKEN_THRESHOLD", "170000")
-)
-DEFAULT_COMPACTION_RECENT_MESSAGES = int(os.getenv("COMPACTION_RECENT_MESSAGES", "6"))
+DEFAULT_COMPACTION_TOKEN_THRESHOLD = _safe_int_env("COMPACTION_TOKEN_THRESHOLD", 170000)
+DEFAULT_COMPACTION_RECENT_MESSAGES = _safe_int_env("COMPACTION_RECENT_MESSAGES", 6)
 DEFAULT_COMPACTION_MODEL = DEFAULT_CHAT_MODEL_BASIC or DEFAULT_CHAT_MODEL
 
 # Initialize default system prompt with error handling to prevent import-time failures

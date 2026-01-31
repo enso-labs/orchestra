@@ -6,6 +6,7 @@
 #
 # Decision: Proceed with Phase 2B (full Orchestra implementation).
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Callable
 
@@ -19,6 +20,8 @@ from src.constants.llm import (
     DEFAULT_COMPACTION_RECENT_MESSAGES,
     DEFAULT_COMPACTION_TOKEN_THRESHOLD,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CompactingMiddleware(ABC):
@@ -135,15 +138,26 @@ class SummarizationMiddleware(CompactingMiddleware):
             for msg in middle_msgs
         )
 
-        llm = init_chat_model(self.model)
-        summary_response = await llm.ainvoke(
-            [
-                SystemMessage(
-                    content="You are a conversation summarizer. Provide a concise summary of the following conversation, preserving key facts, decisions, and context."
-                ),
-                HumanMessage(content=conversation_text),
-            ]
-        )
+        try:
+            llm = init_chat_model(self.model)
+            summary_response = await llm.ainvoke(
+                [
+                    SystemMessage(
+                        content="You are a conversation summarizer. Provide a concise summary of the following conversation, preserving key facts, decisions, and context."
+                    ),
+                    HumanMessage(content=conversation_text),
+                ]
+            )
+        except Exception as exc:
+            # Graceful fallback: log the error and return original messages
+            # to prevent breaking the request flow on LLM/network/rate-limit errors
+            logger.warning(
+                "Compaction LLM call failed (model=%s, conversation_length=%d): %s",
+                self.model,
+                len(conversation_text),
+                exc,
+            )
+            return messages
 
         summary_content = (
             summary_response.content
