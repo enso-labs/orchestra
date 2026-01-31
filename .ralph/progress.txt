@@ -4,6 +4,9 @@
 - Cannot import backend modules directly without env vars (POSTGRES_CONNECTION_STRING etc.) — use `python -c "import ast; ast.parse(...)"` for syntax checks
 - `backend/src/tools/search.py` contains the web scraping pipeline: fetch → convert → combine
 - The `urls_to_markdown` function is the main entry point called by the `web_scrape` tool
+- Running tests requires: `POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@localhost:5432/lg_template_test" OPENAI_API_KEY="sk-test" uv run pytest`
+- Pre-existing bug: ChatModels.OPENAI_GPT_5_2 requires OPENAI_API_KEY to be set at import time
+- `.ralph/` is gitignored — use `git add -f` to commit ralph files
 
 ---
 
@@ -29,4 +32,14 @@
 - **Learnings for future iterations:**
   - content_to_markdown is a simple dispatcher — easy to extend for new types
   - FetchResult.content_type category string makes routing clean
+---
+
+## 2026-01-31 - US-003
+- Created backend/tests/unit/tools/test_web_scrape.py with 31 tests
+- All tests pass: helpers, _resolve_content_type, fetch_content, content_to_markdown
+- Files changed: backend/tests/unit/tools/test_web_scrape.py
+- **Learnings for future iterations:**
+  - Tests require POSTGRES_CONNECTION_STRING and OPENAI_API_KEY env vars due to conftest.py loading the full app
+  - Use `httpx.Response` with `request=httpx.Request(...)` for mocking fetch responses
+  - Pre-existing ChatModels.OPENAI_GPT_5_2 bug requires OPENAI_API_KEY to be set for imports
 ---
