@@ -31,7 +31,12 @@ class Server(Base):
     slug: Mapped[str] = mapped_column(String, nullable=False, index=True)
     url: Mapped[str] = mapped_column(String, nullable=False)
     transport: Mapped[ServerTransport] = mapped_column(
-        sa.Enum(ServerTransport, name="servertransport", create_type=True),
+        sa.Enum(
+            ServerTransport,
+            name="servertransport",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
         default=ServerTransport.SSE,
     )

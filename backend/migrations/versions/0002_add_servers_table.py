@@ -20,7 +20,7 @@ depends_on = None
 def upgrade() -> None:
     # Create the enum type first
     servertransport = postgresql.ENUM(
-        "sse", "streamable_http", name="servertransport", create_type=True
+        "sse", "streamable_http", name="servertransport", create_type=False
     )
     servertransport.create(op.get_bind(), checkfirst=True)
 
