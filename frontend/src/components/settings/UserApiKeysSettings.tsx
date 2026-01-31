@@ -111,8 +111,7 @@ export function UserApiKeysSettings() {
 		setApiKeyValue("");
 	};
 
-	const getLabel = (provider: string) =>
-		PROVIDER_LABELS[provider] || provider;
+	const getLabel = (provider: string) => PROVIDER_LABELS[provider] || provider;
 
 	return (
 		<Card>
@@ -121,8 +120,8 @@ export function UserApiKeysSettings() {
 					<div>
 						<CardTitle>AI Provider Keys</CardTitle>
 						<CardDescription>
-							Add your own API keys for AI providers. When set,
-							your key is used instead of the system default.
+							Add your own API keys for AI providers. When set, your key is used
+							instead of the system default.
 						</CardDescription>
 					</div>
 					<Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -134,19 +133,15 @@ export function UserApiKeysSettings() {
 						</DialogTrigger>
 						<DialogContent>
 							<DialogHeader>
-								<DialogTitle>
-									Add / Update Provider Key
-								</DialogTitle>
+								<DialogTitle>Add / Update Provider Key</DialogTitle>
 								<DialogDescription>
-									Select a provider and enter your API key.
-									Keys are stored encrypted.
+									Select a provider and enter your API key. Keys are stored
+									encrypted.
 								</DialogDescription>
 							</DialogHeader>
 							<div className="grid gap-4 py-4">
 								<div className="grid grid-cols-4 items-center gap-4">
-									<Label className="text-right">
-										Provider
-									</Label>
+									<Label className="text-right">Provider</Label>
 									<Select
 										value={selectedProvider}
 										onValueChange={setSelectedProvider}
@@ -156,29 +151,20 @@ export function UserApiKeysSettings() {
 										</SelectTrigger>
 										<SelectContent>
 											{providers.map((p) => (
-												<SelectItem
-													key={p.provider}
-													value={p.provider}
-												>
+												<SelectItem key={p.provider} value={p.provider}>
 													{getLabel(p.provider)}
-													{p.is_set
-														? " (Update)"
-														: ""}
+													{p.is_set ? " (Update)" : ""}
 												</SelectItem>
 											))}
 										</SelectContent>
 									</Select>
 								</div>
 								<div className="grid grid-cols-4 items-center gap-4">
-									<Label className="text-right">
-										API Key
-									</Label>
+									<Label className="text-right">API Key</Label>
 									<Input
 										type="password"
 										value={apiKeyValue}
-										onChange={(e) =>
-											setApiKeyValue(e.target.value)
-										}
+										onChange={(e) => setApiKeyValue(e.target.value)}
 										className="col-span-3"
 										placeholder="sk-..."
 									/>
@@ -187,11 +173,7 @@ export function UserApiKeysSettings() {
 							<DialogFooter>
 								<Button
 									onClick={handleUpsert}
-									disabled={
-										!selectedProvider ||
-										!apiKeyValue.trim() ||
-										saving
-									}
+									disabled={!selectedProvider || !apiKeyValue.trim() || saving}
 								>
 									Save
 								</Button>
@@ -205,8 +187,7 @@ export function UserApiKeysSettings() {
 					<div>Loading...</div>
 				) : providers.filter((p) => p.is_set).length === 0 ? (
 					<div className="text-center text-muted-foreground py-8">
-						No provider keys configured. Add one to use your own
-						credentials.
+						No provider keys configured. Add one to use your own credentials.
 					</div>
 				) : (
 					<div className="space-y-4">
@@ -220,9 +201,7 @@ export function UserApiKeysSettings() {
 									<div className="flex items-center gap-3">
 										<Key className="h-4 w-4 text-muted-foreground" />
 										<div>
-											<div className="font-medium">
-												{getLabel(p.provider)}
-											</div>
+											<div className="font-medium">{getLabel(p.provider)}</div>
 											<div className="text-sm text-muted-foreground">
 												Key configured
 											</div>
@@ -232,9 +211,7 @@ export function UserApiKeysSettings() {
 										variant="ghost"
 										size="icon"
 										className="text-destructive hover:text-destructive/90"
-										onClick={() =>
-											handleDelete(p.provider)
-										}
+										onClick={() => handleDelete(p.provider)}
 									>
 										<Trash2 className="h-4 w-4" />
 									</Button>

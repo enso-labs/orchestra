@@ -74,7 +74,9 @@ function QueueItem({
 						placeholder="Enter your message..."
 					/>
 				) : (
-					<p className="text-sm whitespace-pre-wrap line-clamp-3">{item.query}</p>
+					<p className="text-sm whitespace-pre-wrap line-clamp-3">
+						{item.query}
+					</p>
 				)}
 				<Badge variant="secondary" className="mt-1 text-xs">
 					Pending
@@ -122,8 +124,13 @@ function QueueItem({
 }
 
 export function QueuePanel() {
-	const { queuedItems, queueLength, updateQueuedMessage, dequeue, setEditingId } =
-		useChatContext();
+	const {
+		queuedItems,
+		queueLength,
+		updateQueuedMessage,
+		dequeue,
+		setEditingId,
+	} = useChatContext();
 
 	if (queueLength === 0) {
 		return null;
