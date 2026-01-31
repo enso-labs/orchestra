@@ -1,17 +1,19 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/707-ticket-md-ralph-loop",
-  "description": "ticket.md Ralph Loop Integration - Replace direct implementation (team Phases 4-5) with Ralph autonomous loop after council analysis",
+  "branchName": "feat/665-allow-user-configure-default-account-settings",
+  "description": "User Default Account Settings - Allow users to configure default AI model and store encrypted API keys for AI providers (Anthropic, OpenAI, xAI, Gemini)",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Rewrite ticket.md Step 8 to constrain /team to Phases 0-3 only",
-      "description": "As a developer running /ticket, I want the team workflow to stop after council analysis so that implementation is handled by Ralph instead.",
+      "title": "Create Settings Schema and Repository",
+      "description": "As a developer, I need a backend data layer for user settings so that default model and encrypted API keys can be persisted per user.",
       "acceptanceCriteria": [
-        "Step 8 in .claude/commands/ralph/ticket.md explicitly instructs to execute only Phases 0-3 of /team",
-        "Step 8 includes verification that REVIEW.md and TASKS.md exist before proceeding",
-        "Phase 4 (implementation) and Phase 5 (validation) are NOT referenced as expected outputs in Step 8",
-        "File is valid markdown with no syntax errors"
+        "New file backend/src/schemas/entities/settings.py with Pydantic models: UserSettings, UserSettingsResponse, ProviderKeyStatus, UpdateDefaultModelRequest, UpsertProviderKeyRequest",
+        "New file backend/src/repos/user_settings_repo.py extending BaseRepo pattern with namespace (user_id, 'settings')",
+        "Repo methods: get_settings(), set_default_model(), upsert_provider_key(), delete_provider_key(), get_decrypted_key()",
+        "Provider keys encrypted via encrypt_value/decrypt_value from src/utils/security.py",
+        "Only providers listed in UserTokenKey enum are accepted",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
@@ -19,17 +21,16 @@
     },
     {
       "id": "US-002",
-      "title": "Add Steps 9-10 for PRD generation and prd.json conversion",
-      "description": "As a developer running /ticket, I want council outputs converted to Ralph's prd.json format so Ralph can execute autonomously.",
+      "title": "Create Settings API Routes",
+      "description": "As a developer, I need REST endpoints for user settings CRUD so the frontend can read and write settings.",
       "acceptanceCriteria": [
-        "Step 9 reads council artifacts (REVIEW.md, TASKS.md, USER_STORIES.md) from spec folder",
-        "Step 9 composes PRD generation query with Ralph sizing rules (1-3 files per story, split by layer)",
-        "Step 9 archives previous prd.json/progress.txt before generating new PRD",
-        "Step 9 saves PRD to tasks/prd-<feature-slug>.md and verifies creation",
-        "Step 10 invokes ralph skill to convert PRD to .ralph/prd.json",
-        "Step 10 sets branchName to worktree branch (no ralph/ prefix)",
-        "Step 10 validates branchName matches worktree branch and fixes mismatch",
-        "File is valid markdown with no syntax errors"
+        "New file backend/src/routes/v0/settings.py with 4 endpoints: GET /settings, PUT /settings/default-model, PUT /settings/provider-keys, DELETE /settings/provider-keys/{provider}",
+        "Router registered in backend/src/routes/v0/__init__.py",
+        "All endpoints require verify_credentials authentication",
+        "GET /settings returns UserSettingsResponse with is_set: bool per provider (never raw keys)",
+        "Invalid provider names return 400",
+        "Unauthenticated requests return 401",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
@@ -37,34 +38,130 @@
     },
     {
       "id": "US-003",
-      "title": "Add Step 11 to launch Ralph loop and Step 12 for reporting",
-      "description": "As a developer running /ticket, I want Ralph launched automatically and a clear completion report with next steps.",
+      "title": "Add resolve_api_key Helper",
+      "description": "As a developer, I need a utility that resolves the correct API key (user override or system default) for a given model string so that per-user keys can be injected into LLM calls.",
       "acceptanceCriteria": [
-        "Step 11 runs bash ../../.ralph/ralph.sh from the worktree directory",
-        "Step 11 monitors for completion signal and captures exit status",
-        "Step 12 lists all council artifacts and Ralph artifacts",
-        "Step 12 reports COMPLETE or PARTIAL status with story counts",
-        "Step 12 provides next steps (push + PR if complete, resume if partial)",
-        "Old PR creation steps (former steps 10-11) are removed",
-        "File is valid markdown with no syntax errors"
+        "New function resolve_api_key(model: str, user_keys: dict[str, str] | None) -> str | None in backend/src/utils/llm.py",
+        "Maps provider prefix (openai, anthropic, google_genai, xai) to UserTokenKey enum value",
+        "Returns user key if present, otherwise falls back to system env key",
+        "Returns None if provider is unknown",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Update error handling and report sections for new workflow",
-      "description": "As a developer running /ticket, I want clear error messages and recovery steps when any new step fails.",
+      "title": "Integrate User Keys into LLM Invocation",
+      "description": "As a developer, I need the LLM invocation path to use user-configured API keys and default model so that user settings take effect at runtime.",
       "acceptanceCriteria": [
-        "Error handling covers: council incomplete, PRD generation failure, prd.json conversion failure, branchName mismatch, Ralph loop failure, Ralph partial completion",
-        "Each error case provides a specific recovery command or instruction",
-        "Report section reflects Ralph-specific artifacts and status instead of direct implementation",
-        "Example invocations section is preserved",
-        "File is valid markdown with no syntax errors"
+        "Before init_chat_model, user keys are resolved from UserSettingsRepo (decrypted once per request)",
+        "resolve_api_key() result passed as api_key= kwarg to init_chat_model (NOT via os.environ)",
+        "When request has no explicit model and user has a default model configured, the user's default is used",
+        "When user has no key for a provider, system key is used as fallback",
+        "When user HAS a key and it fails, error is surfaced (no silent fallback to system key)",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Frontend Settings Service",
+      "description": "As a frontend developer, I need API wrapper functions for the user settings endpoints so that UI components can call them.",
+      "acceptanceCriteria": [
+        "New file frontend/src/lib/services/userSettingsService.ts",
+        "Functions: getSettings(), updateDefaultModel(model), upsertProviderKey(provider, apiKey), deleteProviderKey(provider)",
+        "All functions use apiClient (Axios) consistent with existing services",
+        "TypeScript interfaces match backend response schema (UserSettingsResponse, ProviderKeyStatus)",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create Default Model Settings Card",
+      "description": "As a user, I want to select my default AI model on the Settings page so that my preferred model loads automatically.",
+      "acceptanceCriteria": [
+        "New file frontend/src/components/settings/DefaultModelSettings.tsx",
+        "Renders as a Card component on the Settings page (above existing cards)",
+        "Combobox/select showing available models (from existing models data)",
+        "Current default model shown as selected on mount",
+        "On selection change, calls updateDefaultModel() and shows toast feedback",
+        "Clear default option to revert to system default",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create User API Keys Settings Card",
+      "description": "As a user, I want to manage my own API keys for AI providers on the Settings page so I can use my own credentials.",
+      "acceptanceCriteria": [
+        "New file frontend/src/components/settings/UserApiKeysSettings.tsx",
+        "Renders as a Card component on the Settings page",
+        "Lists supported providers with is_set status indicator",
+        "Add/Update Key dialog with provider selector and password input field",
+        "Delete action with confirmation dialog",
+        "Keys are NEVER displayed in full -- only is_set status shown",
+        "Toast feedback on all CRUD operations",
+        "Follows existing ApiTokensSettings dialog pattern",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Wire Settings Components into Settings Page",
+      "description": "As a user, I want to see the new default model and API keys sections when I visit the Settings page.",
+      "acceptanceCriteria": [
+        "frontend/src/pages/settings/index.tsx imports and renders DefaultModelSettings and UserApiKeysSettings",
+        "New cards appear above existing API Tokens and Model Visibility cards",
+        "Page layout remains consistent with existing card spacing",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Apply User Default Model in useModel Hook",
+      "description": "As a user, I want my configured default model to be used automatically when I start a new chat without explicitly selecting a model.",
+      "acceptanceCriteria": [
+        "frontend/src/hooks/useModel.tsx modified to fetch user's default model preference",
+        "When no model set via query param, user's default is applied",
+        "Falls back to server-wide default if no user preference configured",
+        "Query param override still takes precedence over user default",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Backend Unit Tests",
+      "description": "As a developer, I need tests for the settings repo and routes to ensure correctness and security.",
+      "acceptanceCriteria": [
+        "New test file for UserSettingsRepo: encryption round-trip, CRUD ops, invalid provider rejection",
+        "New test file for settings routes: auth required, response masking (no raw keys), invalid provider 400",
+        "All tests pass with make test",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
       "notes": ""
     }
   ]

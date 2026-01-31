@@ -1,53 +1,38 @@
 # Ralph Progress Log
-Started: Fri Jan 30 23:33:36 MST 2026
----
+Started: Thu Jan 30 23:59:00 MST 2026
 
 ## Codebase Patterns
-- ticket.md is a Claude Code command file at .claude/commands/ralph/ticket.md
-- /team workflow has Phases 0-5; constrain to 0-3 for council-only analysis
-- Ralph prd.json lives at .ralph/prd.json, progress at .ralph/progress.txt
-- .ralph/prd.json is in .gitignore; use `git add -f` to stage it
+- BaseRepo uses namespace tuple `(user_id, entity_type)` for store operations
+- Schema entities extend `BaseEntity` from `src/schemas/entities/store.py` for id/timestamps
+- Repos follow pattern: `__init__` calls `super().__init__(user_id, store, "entity_type")`
+- New entity types must be added to `BaseRepo._format()` and exported from `schemas/entities/__init__.py`
+- `encrypt_value(dict) -> str` and `decrypt_value(str) -> dict` in `src/utils/security.py` for Fernet encryption
+- `UserTokenKey` enum in `src/constants/__init__.py` lists all valid provider key names
+- `make format` runs from `backend/` dir, `make test` requires env vars (POSTGRES_CONNECTION_STRING etc.)
+- Format with `uvx ruff format` from backend directory
+- Routes pattern: `APIRouter(tags=[...])`, endpoints use `Depends(verify_credentials)` + `Depends(get_store)`, register in `__init__.py` `create_api_router`
 
 ---
 
-## 2026-01-30 - US-001
-- Implemented: Step 8 in ticket.md now explicitly constrains /team to Phases 0-3 only
-- Step 8 verifies REVIEW.md and TASKS.md exist before proceeding
-- Phase 4 (implementation) and Phase 5 (validation) are NOT referenced as expected outputs
-- Files changed: .claude/commands/ralph/ticket.md
+## 2026-01-31 - US-001
+- Implemented UserSettings schema and UserSettingsRepo
+- Files created: `backend/src/schemas/entities/settings.py`, `backend/src/repos/user_settings_repo.py`
+- Files modified: `backend/src/repos/base_repo.py` (added user_settings to _format), `backend/src/schemas/entities/__init__.py` (exports)
 - **Learnings for future iterations:**
-  - ticket.md was already fully written with all steps (1-12) in the initial commit on this branch
-  - The file includes Steps 9-10 (PRD generation/conversion), 11 (Ralph launch), 12 (reporting), and comprehensive error handling
-  - All 4 user stories appear to already be implemented in the current file
+  - Settings uses a single record per user with key `"default"` rather than multiple records
+  - Provider keys are stored as a single encrypted JSON blob, not individual encrypted values
+  - `store.aget()` returns an Item with `.value` attribute, not a SearchItem
+  - Pyright can't resolve imports without env vars set (pre-existing), use `ast.parse` for syntax validation
 ---
 
-## 2026-01-30 - US-002
-- Verified: Steps 9-10 in ticket.md already satisfy all acceptance criteria
-- Step 9 reads council artifacts, composes PRD with Ralph sizing rules, archives previous files, saves and verifies PRD
-- Step 10 invokes ralph skill, sets branchName without ralph/ prefix, validates branchName match
-- Files changed: .ralph/prd.json (marked passes: true)
+## 2026-01-31 - US-002
+- Implemented Settings API Routes (GET, PUT default-model, PUT provider-keys, DELETE provider-keys/{provider})
+- Files created: `backend/src/routes/v0/settings.py`
+- Files modified: `backend/src/routes/v0/__init__.py` (registered settings router)
 - **Learnings for future iterations:**
-  - .ralph/prd.json is in .gitignore; use `git add -f` to commit it
-  - All steps were pre-implemented in the initial branch commit; verification-only needed
+  - Routes follow pattern: APIRouter with tags, Depends(verify_credentials) + Depends(get_store)
+  - ValueError from repo is caught and re-raised as HTTPException 400 for invalid providers
+  - All settings endpoints return full UserSettingsResponse for consistency
+  - Ruff formatter splits long decorator lines automatically
 ---
 
-## 2026-01-30 - US-003
-- Verified: Steps 11-12 in ticket.md already satisfy all acceptance criteria
-- Step 11 runs `bash ../../.ralph/ralph.sh` from worktree, monitors completion signal, captures exit status (0 or 1)
-- Step 12 lists all council and Ralph artifacts, reports COMPLETE/PARTIAL with story counts, provides next steps
-- Old PR creation steps are not present (replaced by Ralph workflow)
-- Files changed: .ralph/prd.json (marked passes: true)
-- **Learnings for future iterations:**
-  - All steps were pre-implemented; verification-only needed for this story too
----
-
-## 2026-01-30 - US-004
-- Verified: Error handling and report sections in ticket.md satisfy all acceptance criteria
-- Error handling (lines 189-197) covers all 6 required cases: council incomplete, PRD generation failure, prd.json conversion failure, branchName mismatch, Ralph loop failure, Ralph partial completion
-- Each error case provides a specific recovery command or instruction
-- Report section (lines 209-220) reflects Ralph-specific artifacts and COMPLETE/PARTIAL status
-- Example invocations section preserved (lines 199-207)
-- Files changed: .ralph/prd.json (marked passes: true)
-- **Learnings for future iterations:**
-  - All 4 user stories were pre-implemented in the initial branch commit; all iterations were verification-only
----
