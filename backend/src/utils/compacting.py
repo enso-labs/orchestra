@@ -7,7 +7,9 @@
 # Decision: Proceed with Phase 2B (full Orchestra implementation).
 
 from abc import ABC, abstractmethod
+from typing import Callable
 
+from langchain.agents.middleware import ModelRequest, ModelResponse, wrap_model_call
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
@@ -150,3 +152,19 @@ class SummarizationMiddleware(CompactingMiddleware):
         )
 
         return system_msgs + [summary_message] + recent_msgs
+
+
+# Singleton instance used by the decorator
+_summarization_middleware = SummarizationMiddleware()
+
+
+@wrap_model_call
+async def compaction_middleware(
+    request: ModelRequest,
+    handler: Callable[[ModelRequest], ModelResponse],
+) -> ModelResponse:
+    """Apply SummarizationMiddleware to compact messages before model invocation."""
+    messages = request.state.get("messages", [])
+    compacted = await _summarization_middleware.compact(messages)
+    request.state["messages"] = compacted
+    return await handler(request)
