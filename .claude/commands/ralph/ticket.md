@@ -149,7 +149,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 
 11. _LAUNCH_ Ralph autonomous implementation loop:
     - _REPORT_ "Starting Ralph autonomous loop for <N> user stories..."
-    - RUN `cd ./.worktrees/<prefix>-<number> && bash ../../.ralph/ralph.sh` to execute Ralph
+    - RUN `cd ./.worktrees/<prefix>-<number> && bash ../../.ralph/ralph.sh 200` to execute Ralph
     - Ralph will:
       - Read `.ralph/prd.json` for user stories (resolved via SCRIPT_DIR at repo root)
       - Pick highest priority story with `passes: false`
@@ -164,7 +164,13 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
       - Exit 0: All stories completed
       - Exit 1: Max iterations reached (partial completion)
 
-12. _REPORT_ workflow completion:
+12. _PUSH_ changes to remote branch:
+    - _REGARDLESS_ of Ralph exit status (COMPLETE or PARTIAL), push all committed work to remote
+    - RUN `cd ./.worktrees/<prefix>-<number> && git push -u origin <branch-name>` to push branch to remote
+    - _IF_ push fails: _REPORT_ error and provide manual push command
+    - _REPORT_ "Pushed <branch-name> to origin"
+
+13. _REPORT_ workflow completion:
     - Issue processed: #<number> - <title>
     - Worktree location: `./.worktrees/<prefix>-<number>`
     - Spec folder: `.claude/specs/<prefix>-<number>-<short-name>/`
@@ -179,7 +185,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
     - Ralph progress: `.ralph/progress.txt`
     - Ralph status: <COMPLETE | PARTIAL>
     - _IF_ COMPLETE:
-      - Next steps: Push branch and create PR: `cd ./.worktrees/<prefix>-<number> && git push -u origin <branch-name> && gh pr create --base development --title "<issue-title>"`
+      - Next steps: Create PR: `cd ./.worktrees/<prefix>-<number> && gh pr create --base development --title "<issue-title>"`
     - _IF_ PARTIAL:
       - Stories completed: <N> of <M>
       - Next steps: Review `.ralph/progress.txt`, fix blockers, resume with `cd ./.worktrees/<prefix>-<number> && bash ../../.ralph/ralph.sh`
@@ -195,6 +201,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 - **branchName mismatch**: _REPORT_ "prd.json branchName does not match worktree branch. Update .ralph/prd.json branchName to match <branch-name>."
 - **Ralph loop failure**: _REPORT_ "Ralph encountered an error. Check .ralph/progress.txt for status. Resume with `bash ../../.ralph/ralph.sh`"
 - **Ralph partial completion**: _REPORT_ "Ralph completed <N> of <M> stories. Resume with `bash ../../.ralph/ralph.sh` or complete remaining stories manually."
+- **Push failure**: _REPORT_ "Failed to push branch. Try manually: `cd ./.worktrees/<prefix>-<number> && git push -u origin <branch-name>`"
 
 ## Example Invocations
 
@@ -217,4 +224,5 @@ Confirm workflow completion with:
 - PRD generated: `tasks/prd-<feature-slug>.md`
 - Ralph config: `.ralph/prd.json` with <N> user stories
 - Ralph execution status: COMPLETE or PARTIAL (<N> of <M> stories)
-- Next steps: Push branch and create PR (if COMPLETE), or resume Ralph (if PARTIAL)
+- Branch pushed to remote
+- Next steps: Create PR (if COMPLETE), or resume Ralph (if PARTIAL)
