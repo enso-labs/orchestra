@@ -12,7 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { Memory } from "@/lib/entities/memory";
-import { MemoryService } from "@/lib/services/memoryService";
+import MemoryService from "@/lib/services/memoryService";
 
 interface MemoryEditDialogProps {
 	open: boolean;

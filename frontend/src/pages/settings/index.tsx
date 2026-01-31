@@ -1,5 +1,6 @@
 import { ApiTokensSettings } from "@/components/settings/ApiTokensSettings";
 import { DefaultModelSettings } from "@/components/settings/DefaultModelSettings";
+import { MemorySettings } from "@/components/settings/MemorySettings";
 import { ModelVisibilitySettings } from "@/components/settings/ModelVisibilitySettings";
 import { UserApiKeysSettings } from "@/components/settings/UserApiKeysSettings";
 import ChatLayout from "@/layouts/chat-layout-v2";
@@ -30,6 +31,7 @@ export default function SettingsPage() {
 								<UserApiKeysSettings />
 								<ApiTokensSettings />
 								<ModelVisibilitySettings />
+								<MemorySettings />
 							</div>
 						</ScrollArea>
 					</div>
