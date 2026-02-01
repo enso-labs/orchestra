@@ -108,3 +108,26 @@
   - Badge component supports variants: default, secondary, destructive, outline - mapped to status colors
   - DropdownMenu from shadcn works well for row actions pattern
 ---
+
+## 2026-02-01 - US-012
+- Created ViewToggle component using shadcn Tabs pattern with Calendar and Table icons
+- Files changed: frontend/src/components/toggles/ViewToggle.tsx (new)
+- **Learnings for future iterations:**
+  - shadcn Tabs component (Radix TabsPrimitive) works well as a controlled toggle with onValueChange
+  - lucide-react Calendar and Table icons used for visual indicator
+  - toggles/ directory created for this component pattern
+---
+
+## 2026-02-01 - US-013
+- Refactored Schedules index page to integrate Calendar and Table views with ViewToggle
+- Added viewMode state defaulting to 'calendar', ViewToggle next to filters
+- Integrated useScheduleExecutions hook and mapExecutionsToEvents for data
+- ScheduleCalendar renders in calendar mode, ScheduleTable in table mode
+- Event click opens thread in new tab if thread_id exists
+- Existing create/edit/delete dialogs, stats cards, and filters preserved
+- Files changed: frontend/src/pages/schedules/index.tsx
+- **Learnings for future iterations:**
+  - The schedules page uses useSchedules for CRUD and useScheduleExecutions for execution data - both needed
+  - schedulesMap (Map<string, Schedule>) is needed to bridge executions to calendar events via mapExecutionsToEvents
+  - Kept the card grid as unreachable fallback since viewMode is typed to only 'calendar'|'table'
+---
