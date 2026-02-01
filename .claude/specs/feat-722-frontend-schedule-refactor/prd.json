@@ -32,7 +32,7 @@
       "id": "US-006",
       "title": "Sidebar Navigation for Schedules",
       "description": "Add Schedules as a first-class navigation item in the app sidebar alongside Projects, Assistants, and Threads. Sidebar dropdown shows the 10 most recent schedule executions with name, status indicator, and relative timestamp. Clicking navigates to thread or schedule detail.",
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-007",

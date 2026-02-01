@@ -9,6 +9,8 @@
 - Use shadcn/ui components and Tailwind for styling
 - Collapsible sidebar sections use `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from shadcn
 - Sign commits with `-s` flag
+- Files in `.claude/specs/` are gitignored; use `git add -f` to include them
+- Sidebar uses tab characters for indentation
 
 ---
 
@@ -35,4 +37,18 @@
 ## 2026-02-01 - US-005
 - Created useScheduleExecutions hook with auto-refresh support
 - Files changed: frontend/src/hooks/useScheduleExecutions.ts
+---
+
+## 2026-02-01 - US-006
+- Added Schedules collapsible section to app-sidebar between Projects and Threads
+- Shows 10 most recent executions with status emoji (🔵/🟢/🔴), schedule name, and relative timestamp
+- "View All Schedules" button navigates to /schedules
+- Clicking execution with thread_id opens thread in new tab
+- Loading and empty states handled
+- Files changed: frontend/src/components/drawers/app-sidebar.tsx
+- **Learnings for future iterations:**
+  - The sidebar uses tab characters for indentation, not spaces
+  - Collapsible sections follow a consistent pattern with SidebarGroup, SidebarGroupLabel, CollapsibleTrigger
+  - useSchedules hook needs fetchSchedules() called manually on mount to populate schedule names
+  - Files in .claude/specs are gitignored; use `git add -f` to include them
 ---
