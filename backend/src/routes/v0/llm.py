@@ -1,5 +1,4 @@
-import os
-from typing import Any, List
+from typing import Any
 from uuid import uuid4
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi import (
@@ -20,7 +19,7 @@ from langmem.prompts.types import (
 from src.controllers.llm import LLMController
 from src.services.llm import llm_service
 from src.services.prompt.optimize import PromptOptimizer, PromptOptimizerRequest
-from src.constants import GROQ_API_KEY
+from src.constants import DISTRIBUTED_WORKERS, GROQ_API_KEY
 from src.schemas.models import ProtectedUser
 from src.utils.auth import get_optional_user, get_optional_user_from_token
 from src.utils.logger import logger
@@ -33,9 +32,6 @@ from src.services.db import get_store
 from src.utils.rate_limit import limiter
 from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
 from src.repos.user_settings_repo import UserSettingsRepo
-
-# Distributed workers mode - when true, tasks are enqueued to TaskIQ workers
-DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
 
 llm_router = APIRouter(tags=["LLM"], prefix="/llm")
 

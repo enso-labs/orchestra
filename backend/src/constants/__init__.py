@@ -145,6 +145,9 @@ TEST_USER_ID = os.getenv("TEST_USER_ID", "00000000-0000-0000-0000-000000000000")
 # GridSite
 MICROSOFT_TEAMS_WEBHOOK_URL = os.getenv("MICROSOFT_TEAMS_WEBHOOK_URL")
 
+# Distributed Workers
+DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
+
 # Thread Search
 # Number of recent messages to store per thread snapshot for semantic search
 THREAD_SNAPSHOT_MESSAGE_COUNT = 20
