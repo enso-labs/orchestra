@@ -85,3 +85,15 @@
   - Calendar generic type `Calendar<ScheduleEvent>` enables typed eventPropGetter and onSelectEvent
   - CSS import `@import "react-big-calendar/lib/css/react-big-calendar.css"` works in Vite CSS files
 ---
+
+## 2026-02-01 - US-010
+- Created custom calendar CSS with full shadcn/ui theme overrides using CSS variables
+- Styled toolbar buttons, calendar grid, headers, day cells, time view, and popup overlay
+- Added .rbc-event-scheduled (blue #3b82f6), .rbc-event-success (green #10b981), .rbc-event-failure (red #ef4444) classes
+- Dark mode compatibility via hsl(var(--*)) CSS variable usage throughout
+- Files changed: frontend/src/styles/calendar.css (updated)
+- **Learnings for future iterations:**
+  - shadcn/ui CSS variables (--border, --background, --foreground, --muted, --primary, --accent, --popover, --ring) work well for theming third-party components
+  - React Big Calendar uses .rbc-* class prefix for all elements
+  - Dark mode works automatically since shadcn CSS variables change values in dark mode
+---

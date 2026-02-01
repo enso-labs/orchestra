@@ -163,7 +163,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Create frontend/src/styles/calendar.css, modify ScheduleCalendar.tsx to import it"
     },
     {
