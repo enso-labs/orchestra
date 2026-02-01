@@ -25,6 +25,46 @@ All commands are run via Bash: `agent-browser <command> [args]`.
 | Wait | `agent-browser wait <selector>` or `agent-browser wait <ms>` |
 | Semantic find | `agent-browser find role button click` |
 | Close | `agent-browser close` |
+| Hover | `agent-browser hover <selector-or-ref>` |
+| Double-click | `agent-browser dblclick <selector-or-ref>` |
+| Select dropdown | `agent-browser select <selector-or-ref> <value>` |
+| Check/Uncheck | `agent-browser check <sel>` / `agent-browser uncheck <sel>` |
+| Scroll | `agent-browser scroll <up\|down\|left\|right> [px]` |
+| Upload file | `agent-browser upload <sel> <file...>` |
+| Evaluate JS | `agent-browser eval "<js>"` |
+| Save PDF | `agent-browser pdf <path>` |
+| Go back/forward | `agent-browser back` / `agent-browser forward` |
+| Reload | `agent-browser reload` |
+| Get element count | `agent-browser get count <sel>` |
+| Check visibility | `agent-browser is visible <sel>` |
+| Check enabled | `agent-browser is enabled <sel>` |
+| Drag and drop | `agent-browser drag <src> <dst>` |
+
+### Debug Quick Reference
+
+| Action | Command |
+|--------|---------|
+| View console logs | `agent-browser console` |
+| View page errors | `agent-browser errors` |
+| Start trace | `agent-browser trace start` |
+| Stop trace | `agent-browser trace stop [path]` |
+| Start video recording | `agent-browser record start <path>` |
+| Stop video recording | `agent-browser record stop` |
+| Highlight element | `agent-browser highlight <sel>` |
+| Debug mode | Add `--debug` flag to any command |
+| Headed mode (visible) | Add `--headed` flag to any command |
+| Network requests log | `agent-browser network requests` |
+
+### Browser Settings
+
+| Setting | Command |
+|---------|---------|
+| Set viewport | `agent-browser set viewport <w> <h>` |
+| Set device | `agent-browser set device <name>` |
+| Set dark/light mode | `agent-browser set media light` or `agent-browser set media dark` |
+| Set geolocation | `agent-browser set geo <lat> <lng>` |
+| Go offline | `agent-browser set offline on` |
+| Set headers | `agent-browser set headers '<json>'` |
 
 ## Selectors
 
@@ -33,13 +73,34 @@ Three types:
 - **Snapshot refs**: `@e1`, `@e2` (from `snapshot` output)
 - **Semantic**: `find role button "Submit"` (ARIA roles, text, labels)
 
+## Defaults
+
+- **Default test URL**: `http://localhost:5173`
+- **Default login credentials**: `admin@example.com` / `test1234`
+- **Default screenshot mode**: Light mode (run `agent-browser set media light` before capturing) — required when creating docs for `@wiki`
+
+## Dev Server Check (REQUIRED)
+
+Before running any browser automation, **always** check if the target port needs its own dev server spun up to avoid accidentally using a dev server from a different worktree:
+
+```bash
+# 1. Check what's already running on the target port
+lsof -i :5173 -t 2>/dev/null && echo "Port in use" || echo "Port free"
+
+# 2. If in use, verify the process CWD matches this worktree
+ls -l /proc/$(lsof -i :5173 -t 2>/dev/null | head -1)/cwd 2>/dev/null
+```
+
+If the running server's working directory does NOT match the current worktree, start a new dev server on an available port and use that instead.
+
 ## Agent Workflow
 
-1. **Navigate + snapshot**: `agent-browser open <url> && agent-browser snapshot --json`
-2. **Parse refs** from JSON output to identify interactive elements
-3. **Act** using refs: `agent-browser click @e2`, `agent-browser fill @e3 "hello"`
-4. **Re-snapshot** after each action to observe new state
-5. **Screenshot** when visual verification is needed
+1. **Check dev server** (see above) — start one if needed
+2. **Navigate + snapshot**: `agent-browser open <url> && agent-browser snapshot --json`
+3. **Parse refs** from JSON output to identify interactive elements
+4. **Act** using refs: `agent-browser click @e2`, `agent-browser fill @e3 "hello"`
+5. **Re-snapshot** after each action to observe new state
+6. **Screenshot** when visual verification is needed (light mode for wiki docs)
 
 ## JSON Output
 
@@ -51,6 +112,16 @@ Add `--json` to any command for structured output:
 ## Sessions
 
 Use `--session <name>` for isolated sessions or `--profile <path>` for persistent cookies/storage.
+
+## Troubleshooting
+
+If you run into issues with any command, run `agent-browser --help` to check available commands and flags. Common fixes:
+
+- **Element not found**: Re-run `agent-browser snapshot` to get fresh refs — refs change after page mutations
+- **Timeout**: Use `agent-browser wait <sel>` before interacting with dynamically loaded elements
+- **Can't see what's happening**: Add `--headed` to see the browser, or `--debug` for verbose output
+- **Stale session**: Run `agent-browser close` and start fresh
+- **Check specific command help**: Most commands support `--json` for structured output to debug responses
 
 ## Full Documentation
 
