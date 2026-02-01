@@ -54,6 +54,26 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     This must be a module-level function (not a method) so APScheduler can pickle it.
     """
     from uuid import uuid4
+    from src.constants import DISTRIBUTED_WORKERS
+
+    # Distributed mode: dispatch to TaskIQ worker
+    if DISTRIBUTED_WORKERS:
+        from src.workers.tasks import run_agent_stream
+
+        metadata = task_dict.get("metadata") or {}
+        thread_id = metadata.get("thread_id") or str(uuid4())
+        logger.info(
+            f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker"
+            f" (thread_id={thread_id})"
+        )
+        await run_agent_stream.kiq(
+            task_dict=task_dict,
+            user_id=user_id,
+            thread_id=thread_id,
+        )
+        return
+
+    # In-process mode: execute directly
     from src.schemas.entities import LLMRequest
     from src.agents import construct_agent, Orchestra, init_config
     from src.services.db import get_checkpoint_db, get_store_db
@@ -65,7 +85,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     params = LLMRequest(**task_dict)
     params.metadata.user_id = user_id
     params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
-    logger.info(f"✓ Successfully reconstructed LLMRequest")
+    logger.info("✓ Successfully reconstructed LLMRequest")
 
     # Initialize config and get files and todos
     config = init_config(params, user_id)
@@ -104,7 +124,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             response = await agent.invoke(
                 params.input, config=config, context=ctx_schema
             )
-            logger.info(f"✓ LLM invocation completed successfully")
+            logger.info("✓ LLM invocation completed successfully")
 
             files_map = {**files_map, **response.get("files", {})}
             todos_list = [*todos_list, *response.get("todos", [])]
