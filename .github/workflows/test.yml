@@ -17,6 +17,7 @@ on:
             - "cli/**"
             - "website/**"
             - "sandboxes/**"
+            - "wiki/**"
     pull_request:
         types: [opened, synchronize, reopened]
         paths-ignore:
@@ -32,6 +33,7 @@ on:
             - "cli/**"
             - "website/**"
             - "sandboxes/**"
+            - "wiki/**"
 jobs:
     ###############################################################
     ## Test Frontend
