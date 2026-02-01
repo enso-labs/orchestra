@@ -10,8 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import NullPool
 from src.constants import DB_URI
 from src.services.db import get_async_db, get_store, get_store_db, get_checkpoint_db
-from src.repos.user_repo import UserRepo
-from src.schemas.models import User
 from langgraph.store.memory import InMemoryStore
 from taskiq import InMemoryBroker
 

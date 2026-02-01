@@ -3,7 +3,6 @@
 These are pure unit tests that don't require database or app initialization.
 """
 
-import pytest
 
 
 class TestLLMRequestFileGeneration:

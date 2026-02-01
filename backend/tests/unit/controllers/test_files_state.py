@@ -6,7 +6,6 @@ These tests verify that None values are properly handled in the files state
 to prevent AttributeError crashes in the _file_data_reducer.
 """
 
-import pytest
 
 
 class TestFilesStateInitialization:

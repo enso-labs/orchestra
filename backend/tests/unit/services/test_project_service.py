@@ -2,7 +2,6 @@
 
 import unittest
 import os
-from uuid import uuid4
 from langgraph.store.base import SearchItem
 from src.schemas.entities import SearchFilter
 from src.services.source import Source

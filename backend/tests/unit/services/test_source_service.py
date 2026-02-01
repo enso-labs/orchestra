@@ -3,13 +3,10 @@
 import os
 import unittest
 
-from langgraph.store.base import SearchItem
 from tests import get_test_user
 from seeds.user_seeder import seed_admin
 from src.utils.migrations import run_migrations
 from src.services.source import SourceService, Source
-from src.services.db import get_async_db
-from src.repos.user_repo import UserRepo
 
 
 class TestSourceService(unittest.IsolatedAsyncioTestCase):

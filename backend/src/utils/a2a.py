@@ -22,7 +22,6 @@ from src.common.types import (
     A2AClientJSONError,
     SendTaskStreamingRequest,
     SendTaskStreamingResponse,
-    Task,
 )
 
 

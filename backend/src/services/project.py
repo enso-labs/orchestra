@@ -1,4 +1,4 @@
-from langgraph.store.base import BaseStore, SearchOp
+from langgraph.store.base import BaseStore
 from src.services.db import get_store_in_memory
 from src.repos.project_repo import Project, ProjectRepo
 from src.schemas.entities import SearchFilter
