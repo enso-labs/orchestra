@@ -16,6 +16,7 @@ on:
             - "openspec/**"
             - "cli/**"
             - "website/**"
+            - "sandboxes/**"
     pull_request:
         types: [opened, synchronize, reopened]
         paths-ignore:
@@ -30,6 +31,7 @@ on:
             - "openspec/**"
             - "cli/**"
             - "website/**"
+            - "sandboxes/**"
 jobs:
     ###############################################################
     ## Test Frontend

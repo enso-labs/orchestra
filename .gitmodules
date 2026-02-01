@@ -7,3 +7,6 @@
 [submodule "wiki"]
 	path = wiki
 	url = git@github.com:ruska-ai/wiki.git
+[submodule "sandboxes"]
+	path = sandboxes
+	url = git@github.com:ruska-ai/sandboxes.git
