@@ -50,9 +50,15 @@ def get_final_response(transcript_path: str, max_length: int = 1500) -> str:
 
 
 def main():
-    # Explicitly load env file from .claude/.env.claude
-    dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env.claude')
+    # Prefer global env file, fall back to repo-local .claude/.env.claude
+    preferred_env_path = os.path.expanduser("~/.env/orchestra/.env.claude")
+    fallback_env_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        ".env.claude",
+    )
+    dotenv_path = preferred_env_path if os.path.exists(preferred_env_path) else fallback_env_path
     load_dotenv(dotenv_path=dotenv_path)
+    print(f"Loaded env from: {dotenv_path}", file=sys.stderr)
     # Read SLACK_WEBHOOK_URL from environment variable
     slack_webhook_url = os.environ.get("SLACK_WEBHOOK_URL", "")
 
