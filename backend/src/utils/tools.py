@@ -4,7 +4,6 @@ from langchain_core.tools import BaseTool, tool as create_tool
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 from langgraph.prebuilt.interrupt import HumanInterruptConfig, HumanInterrupt
-from langchain_core.tools import StructuredTool
 from pydantic import BaseModel
 from src.utils.api import APIClient
 from src.schemas.contexts import ContextSchema

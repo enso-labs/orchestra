@@ -4,13 +4,12 @@ and helper functions (strip_control_chars, looks_binary, clean_markdown).
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import httpx
 
 from src.tools.search import (
     FetchResult,
-    ALLOWED_TEXT_TYPES,
     _resolve_content_type,
     fetch_content,
     content_to_markdown,

@@ -10,7 +10,7 @@ using TaskIQ distributed workers. Key scenarios:
 """
 
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 from uuid import uuid4
 
 

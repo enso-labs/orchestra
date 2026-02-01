@@ -46,7 +46,7 @@ def get_financial_news(ticker: str) -> tuple[str, dict]:
     )
 
     # Convert to markdown (clean, no index)
-    markdown = f"## Financial News\n" + f"```csv\n{df.to_csv(index=False)}\n```"
+    markdown = "## Financial News\n" + f"```csv\n{df.to_csv(index=False)}\n```"
     return markdown
 
     # TODO: Eval if this is cleaner later on. Get fidgety as table but looks good.

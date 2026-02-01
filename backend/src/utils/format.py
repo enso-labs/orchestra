@@ -104,7 +104,7 @@ def init_system_prompt(
                 lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
             else:
                 lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
-        except Exception as e:
+        except Exception:
             lines.append(f"CURRENT_UTC: {current_utc}")
     elif timezone_val:
         now_iso = datetime.now(timezone.utc).isoformat()

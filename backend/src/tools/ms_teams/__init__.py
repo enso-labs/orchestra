@@ -48,7 +48,7 @@ async def webhook_teams(text: str, runtime: ToolRuntime) -> str:
                 json={"text": text},
             )
             response.raise_for_status()
-            return f"Message sent to Microsoft Teams channel"
+            return "Message sent to Microsoft Teams channel"
         except Exception as e:
             raise ToolException(
                 f"Error sending message to Microsoft Teams channel: {e}"

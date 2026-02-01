@@ -1,10 +1,7 @@
-import os
 import json
 from datetime import datetime
 from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_core.documents import Document
 from langchain.embeddings.base import init_embeddings
-from langchain.embeddings.base import Embeddings
 from fastapi import Request, UploadFile
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
