@@ -67,3 +67,11 @@
   - US-006 commit "Sidebar Navigation for Schedules" already included US-007 scope - check existing commits before implementing
   - SchedulesCollapsibleGroup is placed between ProjectsCollapsibleGroup and Threads CollapsibleGroup in the sidebar
 ---
+
+## 2026-02-01 - US-008
+- Removed Schedules button and unused Calendar import from SettingsPopover.tsx
+- Files changed: frontend/src/components/popovers/SettingsPopover.tsx
+- **Learnings for future iterations:**
+  - Simple removal: delete the button JSX block and clean up unused imports
+  - Typecheck confirms no other references to Calendar in this file
+---

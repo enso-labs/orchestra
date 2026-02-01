@@ -128,7 +128,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Only modify frontend/src/components/popovers/SettingsPopover.tsx"
     },
     {
