@@ -52,7 +52,7 @@ The recent refactoring introduced a separate `/api/llm/stream/distributed` endpo
 - [ ] Verify `handleSSEUnified()` in `useChat.ts` works correctly
 - [ ] Legacy `handleSSE()` fallback can be removed if unified handler is stable
 - [ ] Typecheck/lint passes
-- [ ] Verify in browser using dev-browser skill
+- [ ] Verify in browser using agent-browser skill
 
 ### US-004: Update Backend Controller Logic
 **Description:** As a backend developer, I want the LLM controller to transparently handle mode switching so that the route handler remains clean.

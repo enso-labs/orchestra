@@ -2,6 +2,12 @@
 
 You are an autonomous coding agent working on a software project.
 
+## Available Skills
+
+Before implementing a story, check if any skills in the `skills/` directory (relative to this file) apply. In particular:
+- **parallel-edits**: When a story requires changes to 2+ files, read all target files in parallel, validate edits, then execute all Edit calls in a single response. See `skills/parallel-edits/SKILL.md`.
+- **agent-browser**: For UI stories requiring browser verification, use the `agent-browser` CLI (not a Claude skill — it's a shell tool). See `skills/agent-browser/SKILL.md` for command reference.
+
 ## Your Task
 
 1. Read the PRD at `prd.json` (in the same directory as this file)
@@ -82,12 +88,12 @@ Only update AGENTS.md if you have **genuinely reusable knowledge** that would he
 
 ## Browser Testing (Required for Frontend Stories)
 
-For any story that changes UI, you MUST verify it works in the browser:
+For any story that changes UI, you MUST verify it works in the browser using the `agent-browser` CLI. See `skills/agent-browser/SKILL.md` for the full command reference.
 
-1. Load the `dev-browser` skill
-2. Navigate to the relevant page
-3. Verify the UI changes work as expected
-4. Take a screenshot if helpful for the progress log
+1. `agent-browser open <url>` — navigate to the relevant page
+2. `agent-browser snapshot --json` — get interactive element refs (`@e1`, `@e2`, …)
+3. Interact as needed: `agent-browser click @e2`, `agent-browser fill @e3 "text"`
+4. `agent-browser screenshot [path]` — capture visual proof for the progress log
 
 A frontend story is NOT complete until browser verification passes.
 

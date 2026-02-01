@@ -125,9 +125,10 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
      - Backend and frontend changes are SEPARATE stories
      - Schema/migration changes are SEPARATE from logic that uses them
      - If a task spans >3 files, SPLIT into multiple stories
+     - Stories touching 2+ files: Add "Use parallel-edits skill for coordinated changes" to acceptance criteria
      - Dependency order: Schema → Backend → Frontend → Integration
      - Add "Typecheck passes" to every story
-     - Add "Verify in browser using dev-browser skill" to UI stories
+     - Add "Verify in browser using agent-browser skill" to UI stories
      ```
    - _EXECUTE_ query from worktree directory
    - _VERIFY_ PRD was created at `tasks/prd-<feature-slug>.md`
@@ -150,6 +151,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 11. _LAUNCH_ Ralph autonomous implementation loop:
     - _REPORT_ "Starting Ralph autonomous loop for <N> user stories..."
     - RUN `cd ./.worktrees/<prefix>-<number> && bash ../../.ralph/ralph.sh 200` to execute Ralph
+    - Ralph has access to `.ralph/skills/parallel-edits/SKILL.md` for efficient multi-file changes
     - Ralph will:
       - Read `.ralph/prd.json` for user stories (resolved via SCRIPT_DIR at repo root)
       - Pick highest priority story with `passes: false`
