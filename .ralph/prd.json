@@ -182,7 +182,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Only create frontend/src/components/tables/ScheduleTable.tsx"
     },
     {

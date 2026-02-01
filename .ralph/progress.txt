@@ -97,3 +97,14 @@
   - React Big Calendar uses .rbc-* class prefix for all elements
   - Dark mode works automatically since shadcn CSS variables change values in dark mode
 ---
+
+## 2026-02-01 - US-011
+- Created ScheduleTable component with PAST/FUTURE toggle, status badges, and action dropdown menus
+- Table columns: Schedule Name, Status (Badge), Agent/Skill, Last/Next Run, Actions (Edit/Duplicate/Delete)
+- Supports controlled and uncontrolled view state via optional view/onViewChange props
+- Files changed: frontend/src/components/tables/ScheduleTable.tsx (new)
+- **Learnings for future iterations:**
+  - No shadcn Table component installed; used plain HTML table with Tailwind classes (rounded-md border, bg-muted/50)
+  - Badge component supports variants: default, secondary, destructive, outline - mapped to status colors
+  - DropdownMenu from shadcn works well for row actions pattern
+---
