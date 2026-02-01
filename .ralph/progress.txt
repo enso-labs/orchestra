@@ -57,3 +57,13 @@
   - Component was already implemented inline in app-sidebar.tsx from a previous US-006 commit; this iteration extracted it to match PRD requirement of a separate file
   - sidebar/ directory didn't exist and needed to be created
 ---
+
+## 2026-02-01 - US-007
+- Verified SchedulesCollapsibleGroup already implemented in app-sidebar.tsx from US-006 commit 883b8381
+- All acceptance criteria met: useScheduleExecutions with limit=10, ScheduleSidebarItem rendering, View All Schedules button, loading/empty states, Calendar icon + ChevronRight
+- Typecheck passes, no additional code changes needed
+- Files changed: .ralph/prd.json (marked passes: true)
+- **Learnings for future iterations:**
+  - US-006 commit "Sidebar Navigation for Schedules" already included US-007 scope - check existing commits before implementing
+  - SchedulesCollapsibleGroup is placed between ProjectsCollapsibleGroup and Threads CollapsibleGroup in the sidebar
+---

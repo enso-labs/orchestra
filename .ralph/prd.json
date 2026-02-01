@@ -113,7 +113,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Only modify frontend/src/components/drawers/app-sidebar.tsx"
     },
     {
