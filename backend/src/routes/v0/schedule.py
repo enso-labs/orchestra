@@ -1,11 +1,7 @@
 from fastapi import APIRouter, Depends, Response, Body
 from fastapi.responses import JSONResponse
 from fastapi_cache.decorator import cache
-from langgraph.store.base import BaseStore
 
-from src.controllers.llm import LLMController
-from src.agents import init_config
-from src.services.db import get_store
 from src.services.schedule import schedule_service
 from src.schemas.models import ProtectedUser
 from src.utils.auth import verify_credentials
@@ -84,11 +80,9 @@ async def get_job(
 async def create_job(
     job: ScheduleCreate = Body(openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
-    store: BaseStore = Depends(get_store),
 ):
-    config = init_config(job.task, user.id)
-    llm_controller = LLMController(user=user, store=store, config=config)
-    schedule = await llm_controller.llm_task(job)
+    schedule_service.user_id = user.id
+    schedule = schedule_service.create_job(job)
     return JSONResponse(
         status_code=201,
         content={
