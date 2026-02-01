@@ -61,7 +61,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Only create frontend/src/lib/utils/calendar.ts. Use date-fns for date math."
     },
     {

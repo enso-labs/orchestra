@@ -30,3 +30,12 @@
   - ScheduleService follows consistent pattern: static async methods, try/catch, console.error + rethrow
   - Execution endpoints assumed: /{id}/executions, /executions/recent, /executions with query params
 ---
+
+## 2026-02-01 - US-004
+- Created calendar utility functions: mapExecutionsToEvents, getCalendarDateRange, getExecutionStatusColor, filterExecutionsByPeriod
+- Files changed: frontend/src/lib/utils/calendar.ts (new)
+- **Learnings for future iterations:**
+  - date-fns v4 is installed; use named imports (addDays, subDays, isBefore, isAfter)
+  - Schedule entity has agent_id as optional field, must handle null in mapExecutionsToEvents
+  - Default event duration of 30min when no completed_at timestamp exists
+---
