@@ -1,0 +1,39 @@
+## Codebase Patterns
+- `scheduled_llm_invoke()` must be a module-level function (not a method) for APScheduler pickling
+- Imports inside `scheduled_llm_invoke()` function body are intentional for pickling support
+- `DISTRIBUTED_WORKERS` is now in `src/constants/__init__.py` (consolidated)
+- Use `make format` (runs `uvx ruff format`) for formatting, `make test` for running tests
+- Tests need env vars: `set -a && . ~/.env/orchestra/.env.backend && set +a` before pytest
+- Patch `src.constants.DISTRIBUTED_WORKERS` to control dispatch path in tests
+---
+
+## 2026-02-01 - US-001
+- Added `DISTRIBUTED_WORKERS` constant to `backend/src/constants/__init__.py`
+- Updated `backend/src/routes/v0/llm.py` to import from `src.constants` instead of inline definition
+- Removed `os` import and inline constant from `llm.py`
+- Files changed: `src/constants/__init__.py`, `src/routes/v0/llm.py`
+- **Learnings for future iterations:**
+  - `ruff check --fix` auto-removes unused imports (like `List`, `os`) which is helpful
+  - Pre-existing lint errors exist in codebase (83 remaining) - don't worry about those
+---
+
+## 2026-02-01 - US-002
+- Added TaskIQ dispatch path to `scheduled_llm_invoke()` when `DISTRIBUTED_WORKERS=true`
+- Extracts thread_id from task_dict metadata or generates UUID
+- Files changed: `src/services/schedule.py`
+---
+
+## 2026-02-01 - US-003
+- Simplified create_job route to call `schedule_service.create_job()` directly
+- Removed `LLMController`, `init_config`, `get_store`, `BaseStore` imports from schedule route
+- Files changed: `src/routes/v0/schedule.py`
+---
+
+## 2026-02-01 - US-004
+- Added 5 unit tests for TaskIQ dispatch path in `test_schedule_service.py`
+- Tests cover: distributed dispatch, in-process fallback, thread_id from metadata, thread_id generation, missing metadata
+- Files changed: `tests/unit/services/test_schedule_service.py`
+- **Learnings for future iterations:**
+  - Tests require env vars loaded from `~/.env/orchestra/.env.backend` due to conftest importing main app
+  - Patching `src.constants.DISTRIBUTED_WORKERS` works because function imports it fresh each call
+---
