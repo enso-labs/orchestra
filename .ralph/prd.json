@@ -236,7 +236,7 @@
         "All new components have proper TypeScript types (no 'any' usage)"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Touch any files that need formatting fixes. This is the final cleanup story."
     }
   ]
