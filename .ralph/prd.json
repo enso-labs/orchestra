@@ -1,0 +1,61 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/717-docs-wiki-ubuntu-sandbox-mcp-tutorial",
+  "description": "Ubuntu Sandbox MCP Tutorial - Step-by-step wiki tutorial with screenshots for connecting Ubuntu Sandbox over MCP to an Orchestra assistant",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Capture MCP Configuration Screenshots",
+      "description": "As a documentation contributor, I want to capture screenshots of the Ubuntu Sandbox MCP configuration flow using agent-browser so that the tutorial has visual guides.",
+      "acceptanceCriteria": [
+        "Navigate to https://chat.ruska.ai using agent-browser",
+        "Capture screenshot of sandbox health check / running state (sandbox-tutorial-health.png)",
+        "Capture screenshot of Tool Selection Modal with MCP Servers tab (sandbox-tutorial-mcp-tab.png)",
+        "Capture screenshot of MCP config form filled with sandbox details (sandbox-tutorial-config.png)",
+        "Capture screenshot of tools loaded showing exec_command (sandbox-tutorial-tools.png)",
+        "Capture screenshot of successful command execution in a thread (sandbox-tutorial-result.png)",
+        "All screenshots uploaded to github.com/ryaneggz/static/blob/main/enso/ with raw URLs accessible",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "BLOCKED: agent-browser cannot authenticate to chat.ruska.ai (lands on login page). Screenshots must be captured manually and uploaded to github.com/ryaneggz/static/blob/main/enso/. Expected filenames: sandbox-tutorial-health.png, sandbox-tutorial-mcp-tab.png, sandbox-tutorial-config.png, sandbox-tutorial-tools.png, sandbox-tutorial-result.png"
+    },
+    {
+      "id": "US-002",
+      "title": "Create Wiki Tutorial Page",
+      "description": "As an end user, I want a step-by-step tutorial page in the wiki so that I can follow clear instructions with screenshots to connect Ubuntu Sandbox over MCP.",
+      "acceptanceCriteria": [
+        "New file created at wiki/docs/tools/sandbox-tutorial.md",
+        "Frontmatter includes title (Tutorial: Connect Ubuntu Sandbox to an Assistant), slug (/tools/sandbox-tutorial), and sidebar_position",
+        "Prerequisites section links to sandbox.md for Docker setup",
+        "Step 1: Verify sandbox is running (health check screenshot embedded)",
+        "Step 2: Open MCP Configuration (MCP tab screenshot embedded)",
+        "Step 3: Add sandbox MCP server with JSON config block — includes both http://localhost:3005/mcp and http://exec_server:3005/mcp URLs with explanation of when to use each",
+        "Step 4: Fetch and select tools (tools loaded screenshot embedded)",
+        "Step 5: Test with a prompt (execution result screenshot embedded)",
+        "Troubleshooting section links back to sandbox.md",
+        "All screenshot URLs use external GitHub hosting pattern (https://github.com/ryaneggz/static/blob/main/enso/...?raw=true)",
+        "Wiki builds cleanly: cd wiki && npm run build passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Tutorial page created with all 5 steps, both localhost and docker-compose URLs, troubleshooting section, and external screenshot URLs. Wiki builds successfully."
+    },
+    {
+      "id": "US-003",
+      "title": "Update Sidebar Navigation",
+      "description": "As an end user, I want the tutorial to appear in the wiki sidebar so that I can discover and navigate to it.",
+      "acceptanceCriteria": [
+        "wiki/sidebars.ts updated: tools/sandbox-tutorial added after tools/sandbox in the Tools & Integrations category",
+        "Tutorial appears in sidebar between Sandbox and A2A",
+        "Wiki builds cleanly: cd wiki && npm run build passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "tools/sandbox-tutorial added to sidebars.ts after tools/sandbox and before tools/a2a. Wiki builds successfully."
+    }
+  ]
+}

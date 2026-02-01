@@ -1,0 +1,24 @@
+## Codebase Patterns
+- Wiki is a git submodule pointing to `git@github.com:ruska-ai/wiki.git` — changes require committing in both the submodule and the parent repo
+- Wiki uses Docusaurus; build with `cd wiki && npm run build`
+- External screenshots are hosted at `https://github.com/ryaneggz/static/blob/main/enso/<filename>?raw=true`
+- Sidebar is configured in `wiki/sidebars.ts` with string doc IDs (path relative to `docs/` without `.md`)
+- Existing docs use slug-based internal links (e.g., `/tools/sandbox`) which trigger broken link warnings but build succeeds
+- agent-browser cannot authenticate to chat.ruska.ai — screenshot capture requires manual login
+
+---
+
+## 2026-02-01 - US-002 & US-003
+- Created `wiki/docs/tools/sandbox-tutorial.md` with 5-step tutorial, both localhost and docker-compose URLs, troubleshooting section, and external screenshot URL placeholders
+- Updated `wiki/sidebars.ts` to add `tools/sandbox-tutorial` between `tools/sandbox` and `tools/a2a`
+- Wiki build passes successfully
+- US-001 (screenshots) is BLOCKED: agent-browser lands on login page at chat.ruska.ai, cannot capture authenticated UI flows. Screenshots must be manually captured and uploaded to `github.com/ryaneggz/static/blob/main/enso/`
+- Files changed:
+  - `wiki/docs/tools/sandbox-tutorial.md` (new)
+  - `wiki/sidebars.ts` (modified)
+  - `.ralph/prd.json` (updated)
+- **Learnings for future iterations:**
+  - The wiki submodule has a detached HEAD by default; create a branch before committing
+  - agent-browser can open public pages but cannot handle auth-gated flows on chat.ruska.ai
+  - Broken link warnings for slug-based paths are pre-existing and don't block the build
+---
