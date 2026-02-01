@@ -78,7 +78,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Only create frontend/src/hooks/useScheduleExecutions.ts"
     },
     {

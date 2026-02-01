@@ -39,3 +39,13 @@
   - Schedule entity has agent_id as optional field, must handle null in mapExecutionsToEvents
   - Default event duration of 30min when no completed_at timestamp exists
 ---
+
+## 2026-02-01 - US-005
+- Created useScheduleExecutions hook with configurable options for scheduleId, limit, autoRefresh, refreshInterval
+- Returns executions, loading, error, and three fetch functions (recent, by schedule, by date range)
+- Files changed: frontend/src/hooks/useScheduleExecutions.ts (new)
+- **Learnings for future iterations:**
+  - Hooks pattern: useCallback for fetch functions, useEffect for initial mount and auto-refresh
+  - Toast notifications via `import { toast } from "sonner"` - use toast.error for failures
+  - useRef for interval cleanup to avoid stale closures
+---
