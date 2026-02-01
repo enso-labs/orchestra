@@ -1,0 +1,32 @@
+## Codebase Patterns
+- Frontend tests: `npm run test -- --run` for CI mode, 16 test files currently passing
+- Typecheck: `npx tsc --noEmit` from frontend directory
+- Frontend working directory: `/home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-722/frontend`
+- Commits require `-s` flag for sign-off
+
+---
+
+## 2026-02-01 - US-001
+- Installed react-big-calendar and @types/react-big-calendar
+- Files changed: frontend/package.json, frontend/package-lock.json
+- **Learnings for future iterations:**
+  - npm install works fine from the frontend directory
+  - All 16 test files pass (180 tests), 2 skipped test files are pre-existing
+  - Typecheck passes cleanly with no errors
+---
+
+## 2026-02-01 - US-002
+- Added ScheduleExecution, ScheduleEvent, and ScheduleWithExecutions interfaces to schedule.ts
+- Files changed: frontend/src/lib/entities/schedule.ts
+- **Learnings for future iterations:**
+  - Existing Schedule interface has no breaking changes needed - new types extend cleanly
+  - ScheduleEvent.resource.agent_id is nullable since not all schedules are agent-linked
+---
+
+## 2026-02-01 - US-003
+- Added getScheduleExecutions, getRecentExecutions, getExecutionsByDateRange methods to ScheduleService
+- Files changed: frontend/src/lib/services/scheduleService.ts
+- **Learnings for future iterations:**
+  - ScheduleService follows consistent pattern: static async methods, try/catch, console.error + rethrow
+  - Execution endpoints assumed: /{id}/executions, /executions/recent, /executions with query params
+---

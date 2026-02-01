@@ -1,0 +1,243 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/722-frontend-schedule-refactor",
+  "description": "Frontend Schedule Refactor - Elevate Schedules from Settings to first-class navigation with Calendar and Table views",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Install React Big Calendar and setup dependencies",
+      "description": "As a developer, I need React Big Calendar installed and the test environment verified so the team can build the calendar view.",
+      "acceptanceCriteria": [
+        "Run `cd frontend && npm install react-big-calendar` successfully",
+        "Run `cd frontend && npm install --save-dev @types/react-big-calendar` successfully",
+        "Verify `npm run test` still passes with no regressions",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Only touch frontend/package.json. Do not install moment - use date-fns localizer."
+    },
+    {
+      "id": "US-002",
+      "title": "Define ScheduleExecution and ScheduleEvent entity types",
+      "description": "As a developer, I need new TypeScript interfaces for schedule executions and calendar events so components can use typed data.",
+      "acceptanceCriteria": [
+        "Add ScheduleExecution interface to frontend/src/lib/entities/schedule.ts with fields: id, schedule_id, thread_id (nullable), status ('scheduled'|'running'|'success'|'failure'), scheduled_time, started_at, completed_at, error_message, metadata",
+        "Add ScheduleEvent interface with fields: id, title, start (Date), end (Date), resource object containing schedule_id, execution_id, thread_id, status, agent_id",
+        "Add ScheduleWithExecutions interface extending Schedule with executions array",
+        "No breaking changes to existing Schedule interface",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Only modify frontend/src/lib/entities/schedule.ts"
+    },
+    {
+      "id": "US-003",
+      "title": "Add execution endpoints to schedule service",
+      "description": "As a developer, I need API service methods for fetching schedule executions so hooks can call them.",
+      "acceptanceCriteria": [
+        "Add getScheduleExecutions(scheduleId, limit) method to ScheduleService",
+        "Add getRecentExecutions(limit) method to ScheduleService",
+        "Add getExecutionsByDateRange(startDate, endDate) method to ScheduleService",
+        "Methods use apiClient.get with correct URL paths and query params",
+        "Error handling with try/catch",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Only modify frontend/src/lib/services/scheduleService.ts"
+    },
+    {
+      "id": "US-004",
+      "title": "Add calendar utility functions",
+      "description": "As a developer, I need utility functions for mapping executions to calendar events, computing date ranges, and status colors.",
+      "acceptanceCriteria": [
+        "Create frontend/src/lib/utils/calendar.ts",
+        "Implement mapExecutionsToEvents(executions, schedulesMap) returning ScheduleEvent[]",
+        "Implement getCalendarDateRange(referenceDate?) returning {startDate, endDate} for 30 days past/future",
+        "Implement getExecutionStatusColor(status) returning hex color string (blue=#3b82f6, green=#10b981, red=#ef4444)",
+        "Implement filterExecutionsByPeriod(executions, 'PAST'|'FUTURE') with descending sort",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Only create frontend/src/lib/utils/calendar.ts. Use date-fns for date math."
+    },
+    {
+      "id": "US-005",
+      "title": "Create useScheduleExecutions hook",
+      "description": "As a developer, I need a React hook that fetches and manages schedule execution state for sidebar, calendar, and table views.",
+      "acceptanceCriteria": [
+        "Create frontend/src/hooks/useScheduleExecutions.ts",
+        "Hook accepts options: { scheduleId?, limit?, autoRefresh?, refreshInterval? }",
+        "Returns { executions, loading, error, fetchRecentExecutions, fetchScheduleExecutions, fetchExecutionsByDateRange }",
+        "Initial fetch on mount based on options (scheduleId or recent)",
+        "Error handling with toast notification on failure",
+        "Cleanup interval on unmount when autoRefresh enabled",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Only create frontend/src/hooks/useScheduleExecutions.ts"
+    },
+    {
+      "id": "US-006",
+      "title": "Create ScheduleSidebarItem component",
+      "description": "As a user, I want to see individual schedule execution items in the sidebar with status indicators and timestamps.",
+      "acceptanceCriteria": [
+        "Create frontend/src/components/sidebar/ScheduleSidebarItem.tsx",
+        "Display schedule name with truncation",
+        "Display status badge with color (blue=scheduled, green=success, red=failure)",
+        "Display relative timestamp using formatDistanceToNow from date-fns",
+        "Click opens thread in new tab if thread_id exists, otherwise shows tooltip",
+        "Follows shadcn/ui SidebarMenuItem pattern from app-sidebar.tsx",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Only create frontend/src/components/sidebar/ScheduleSidebarItem.tsx"
+    },
+    {
+      "id": "US-007",
+      "title": "Add Schedules section to app-sidebar",
+      "description": "As a user, I want to see Schedules as a first-class navigation item in the sidebar alongside Projects, Assistants, and Threads.",
+      "acceptanceCriteria": [
+        "Add Schedules Collapsible section to app-sidebar.tsx between Projects and Threads",
+        "Use useScheduleExecutions hook with limit=10",
+        "Render ScheduleSidebarItem for each execution",
+        "Add 'View All Schedules' button that navigates to /schedules",
+        "Show loading state and empty state",
+        "Section uses Calendar icon and ChevronRight pattern",
+        "Use parallel-edits skill for coordinated changes",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Only modify frontend/src/components/drawers/app-sidebar.tsx"
+    },
+    {
+      "id": "US-008",
+      "title": "Remove schedule navigation from SettingsPopover",
+      "description": "As a user, I want schedule management accessible only from the new sidebar section, not from Settings.",
+      "acceptanceCriteria": [
+        "Remove the Schedules button/link from SettingsPopover.tsx",
+        "No broken references or orphaned imports",
+        "Settings popover renders without errors",
+        "No console errors when opening settings",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Only modify frontend/src/components/popovers/SettingsPopover.tsx"
+    },
+    {
+      "id": "US-009",
+      "title": "Implement ScheduleCalendar component with React Big Calendar",
+      "description": "As a user, I want a calendar view showing my schedules across a 60-day window with color-coded events.",
+      "acceptanceCriteria": [
+        "Create frontend/src/components/calendar/ScheduleCalendar.tsx",
+        "Use React Big Calendar with dateFnsLocalizer",
+        "Accept events: ScheduleEvent[] and onEventClick callback",
+        "Implement eventStyleGetter for color coding (blue=scheduled, green=success, red=failure)",
+        "Default to month view, enable week and day views",
+        "Calendar fills available height",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Create frontend/src/components/calendar/ScheduleCalendar.tsx and frontend/src/styles/calendar.css"
+    },
+    {
+      "id": "US-010",
+      "title": "Create custom calendar CSS for shadcn/ui theme",
+      "description": "As a user, I want the calendar to match the application's design system in both light and dark themes.",
+      "acceptanceCriteria": [
+        "Create frontend/src/styles/calendar.css",
+        "Override React Big Calendar defaults with Tailwind/shadcn styles",
+        "Define .rbc-event-scheduled (blue), .rbc-event-success (green), .rbc-event-failure (red) classes",
+        "Dark mode compatibility using CSS variables",
+        "Import in ScheduleCalendar component",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Create frontend/src/styles/calendar.css, modify ScheduleCalendar.tsx to import it"
+    },
+    {
+      "id": "US-011",
+      "title": "Implement ScheduleTable component with PAST/FUTURE toggle",
+      "description": "As a user, I want to toggle between Calendar and Table views and filter past/future schedules in the table.",
+      "acceptanceCriteria": [
+        "Create frontend/src/components/tables/ScheduleTable.tsx",
+        "Accept events, view ('past'|'future'), onViewChange, onEdit, onDelete, onDuplicate props",
+        "Render PAST/FUTURE toggle buttons",
+        "Filter events using filterExecutionsByPeriod utility",
+        "Table columns: Schedule Name, Status (Badge), Agent/Skill, Last Run, Next Run, Actions (DropdownMenu)",
+        "Sort descending by scheduled_time",
+        "Empty state when no events match filter",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Only create frontend/src/components/tables/ScheduleTable.tsx"
+    },
+    {
+      "id": "US-012",
+      "title": "Create ViewToggle component for Calendar/Table switch",
+      "description": "As a user, I want a toggle button to switch between Calendar and Table views on the schedules page.",
+      "acceptanceCriteria": [
+        "Create frontend/src/components/toggles/ViewToggle.tsx",
+        "Accept view ('calendar'|'table') and onViewChange props",
+        "Render Calendar button with Calendar icon and Table button with Table icon",
+        "Active state styling on selected view",
+        "Follows shadcn/ui button/tabs pattern",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Only create frontend/src/components/toggles/ViewToggle.tsx"
+    },
+    {
+      "id": "US-013",
+      "title": "Refactor Schedules index page with Calendar/Table views",
+      "description": "As a user, I want the /schedules page to default to Calendar view with a toggle to switch to Table view.",
+      "acceptanceCriteria": [
+        "Modify frontend/src/pages/schedules/index.tsx",
+        "Add view state ('calendar'|'table') defaulting to 'calendar'",
+        "Add ViewToggle component next to existing filters",
+        "Render ScheduleCalendar when view='calendar'",
+        "Render ScheduleTable when view='table'",
+        "Use useScheduleExecutions hook for data",
+        "Map executions to events using mapExecutionsToEvents",
+        "Event click opens thread in new tab (if thread_id exists)",
+        "Keep existing create/edit/delete dialogs functional",
+        "Keep existing stats cards and filters",
+        "Use parallel-edits skill for coordinated changes",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Only modify frontend/src/pages/schedules/index.tsx. This is the main integration story."
+    },
+    {
+      "id": "US-014",
+      "title": "Final verification and lint/format cleanup",
+      "description": "As a developer, I want all code formatted, linted, and the build passing before PR.",
+      "acceptanceCriteria": [
+        "Run `cd frontend && npm run build` succeeds with no errors",
+        "Run `cd frontend && npm run lint` passes (or fix issues)",
+        "Typecheck passes",
+        "No console.log debug statements in new code",
+        "All new components have proper TypeScript types (no 'any' usage)"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Touch any files that need formatting fixes. This is the final cleanup story."
+    }
+  ]
+}
