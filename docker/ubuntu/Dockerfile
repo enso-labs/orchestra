@@ -16,9 +16,14 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends gh \
  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
 COPY package.json index.js /app/
-RUN npm install --production
+RUN cd /app && npm install --production
+
+# Create unprivileged user for command execution
+RUN useradd -m -s /bin/bash executor \
+ && chmod 700 /app
+
+WORKDIR /home/executor
 
 # Copy & enable entrypoint
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
