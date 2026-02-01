@@ -47,6 +47,36 @@ export interface Schedule {
 	agent_id?: string; // Link to specific agent
 }
 
+export interface ScheduleExecution {
+	id: string;
+	schedule_id: string;
+	thread_id: string | null;
+	status: "scheduled" | "running" | "success" | "failure";
+	scheduled_time: string;
+	started_at: string | null;
+	completed_at: string | null;
+	error_message: string | null;
+	metadata: Record<string, any>;
+}
+
+export interface ScheduleEvent {
+	id: string;
+	title: string;
+	start: Date;
+	end: Date;
+	resource: {
+		schedule_id: string;
+		execution_id: string;
+		thread_id: string | null;
+		status: string;
+		agent_id: string | null;
+	};
+}
+
+export interface ScheduleWithExecutions extends Schedule {
+	executions: ScheduleExecution[];
+}
+
 export interface ScheduleFormData {
 	name: string;
 	description?: string;
