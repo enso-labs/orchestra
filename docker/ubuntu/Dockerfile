@@ -1,32 +1,24 @@
-FROM ubuntu:24.04-slim
+FROM debian:bookworm-slim
 
-# Set up NVM
-ENV NVM_DIR=/root/.nvm
-
-# Install base tools, NVM, Node LTS, and clean up in one layer
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
+      ca-certificates \
       curl \
-      tmux \
-      nano \
-      git \
       jq \
-      build-essential \
- && rm -rf /var/lib/apt/lists/* \
- \
- # Install NVM & Node LTS
- && curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash \
- && . "$NVM_DIR/nvm.sh" \
- && nvm install --lts \
- && nvm alias default node \
- && nvm cache clear
+ && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ # Install GitHub CLI
+ && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      > /etc/apt/sources.list.d/github-cli.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends gh \
+ && rm -rf /var/lib/apt/lists/*
 
-# Ensure node is on PATH
-ENV PATH=$NVM_DIR/versions/node/$(nvm version default)/bin:$PATH
-
-# Clone your app (shallow) and set as workdir
 WORKDIR /app
-RUN git clone --depth 1 https://github.com/promptengineers-ai/exec-server.git .
+COPY package.json index.js /app/
+RUN npm install --production
 
 # Copy & enable entrypoint
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
