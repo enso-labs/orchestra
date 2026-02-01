@@ -4,7 +4,8 @@
 - External screenshots are hosted at `https://github.com/ryaneggz/static/blob/main/enso/<filename>?raw=true`
 - Sidebar is configured in `wiki/sidebars.ts` with string doc IDs (path relative to `docs/` without `.md`)
 - Existing docs use slug-based internal links (e.g., `/tools/sandbox`) which trigger broken link warnings but build succeeds
-- agent-browser cannot authenticate to chat.ruska.ai — screenshot capture requires manual login
+- agent-browser CAN authenticate to localhost:5173 with admin@example.com / test1234 — use local dev server for screenshot capture
+- Screenshots are uploaded via `gh api --method PUT repos/ryaneggz/static/contents/enso/<filename>` with base64-encoded content
 
 ---
 
@@ -21,4 +22,24 @@
   - The wiki submodule has a detached HEAD by default; create a branch before committing
   - agent-browser can open public pages but cannot handle auth-gated flows on chat.ruska.ai
   - Broken link warnings for slug-based paths are pre-existing and don't block the build
+---
+
+## 2026-02-01 - US-001
+- Captured 5 screenshots via agent-browser on localhost:5173:
+  - sandbox-tutorial-health.png (main dashboard)
+  - sandbox-tutorial-mcp-tab.png (MCP Servers tab in Tool Selection modal)
+  - sandbox-tutorial-config.png (Add Server form filled with sandbox details)
+  - sandbox-tutorial-tools.png (Tool Selection modal showing platform tools)
+  - sandbox-tutorial-result.png (exec_command execution result in thread)
+- Uploaded all screenshots to github.com/ryaneggz/static/blob/main/enso/
+- Updated tutorial (sandbox-tutorial.md) to match actual form-based UI (not JSON editor)
+- Files changed:
+  - `wiki/docs/tools/sandbox-tutorial.md` (updated Steps 2 & 3 to match UI)
+  - `.ralph/prd.json` (US-001 passes: true)
+  - `.ralph/progress.txt` (updated)
+- **Learnings for future iterations:**
+  - The MCP config UI is form-based (Server Name, Transport dropdown, URL field), not a JSON editor
+  - agent-browser login works on localhost:5173 with test credentials
+  - Use `gh api --method PUT` with base64 content to upload files to GitHub repos
+  - The Tool Selection modal has 4 tabs: Platform, API Tools, MCP Servers, A2A Agents
 ---

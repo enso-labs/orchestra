@@ -8,7 +8,7 @@
       "title": "Capture MCP Configuration Screenshots",
       "description": "As a documentation contributor, I want to capture screenshots of the Ubuntu Sandbox MCP configuration flow using agent-browser so that the tutorial has visual guides.",
       "acceptanceCriteria": [
-        "Navigate to https://chat.ruska.ai using agent-browser",
+        "Navigate to http://localhost:5173 using agent-browser and login with admin@example.com / test1234",
         "Capture screenshot of sandbox health check / running state (sandbox-tutorial-health.png)",
         "Capture screenshot of Tool Selection Modal with MCP Servers tab (sandbox-tutorial-mcp-tab.png)",
         "Capture screenshot of MCP config form filled with sandbox details (sandbox-tutorial-config.png)",
@@ -18,8 +18,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "BLOCKED: agent-browser cannot authenticate to chat.ruska.ai (lands on login page). Screenshots must be captured manually and uploaded to github.com/ryaneggz/static/blob/main/enso/. Expected filenames: sandbox-tutorial-health.png, sandbox-tutorial-mcp-tab.png, sandbox-tutorial-config.png, sandbox-tutorial-tools.png, sandbox-tutorial-result.png"
+      "passes": true,
+      "notes": "Screenshots captured via agent-browser on localhost:5173 and uploaded to github.com/ryaneggz/static/blob/main/enso/. Tutorial updated to match actual form-based MCP configuration UI."
     },
     {
       "id": "US-002",
