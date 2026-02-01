@@ -49,3 +49,11 @@
   - Toast notifications via `import { toast } from "sonner"` - use toast.error for failures
   - useRef for interval cleanup to avoid stale closures
 ---
+
+## 2026-02-01 - US-006
+- Extracted ScheduleSidebarItem component from app-sidebar.tsx into its own file
+- Files changed: frontend/src/components/sidebar/ScheduleSidebarItem.tsx (new), frontend/src/components/drawers/app-sidebar.tsx (updated import)
+- **Learnings for future iterations:**
+  - Component was already implemented inline in app-sidebar.tsx from a previous US-006 commit; this iteration extracted it to match PRD requirement of a separate file
+  - sidebar/ directory didn't exist and needed to be created
+---

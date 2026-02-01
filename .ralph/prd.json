@@ -95,7 +95,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Only create frontend/src/components/sidebar/ScheduleSidebarItem.tsx"
     },
     {
