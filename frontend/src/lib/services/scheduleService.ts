@@ -1,5 +1,9 @@
 import apiClient from "@/lib/utils/apiClient";
-import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
+import {
+	Schedule,
+	ScheduleCreate,
+	ScheduleExecution,
+} from "@/lib/entities/schedule";
 
 export class ScheduleService {
 	private static readonly BASE_URL = "/schedules";
@@ -91,6 +95,59 @@ export class ScheduleService {
 			await apiClient.delete(`${this.BASE_URL}/${scheduleId}`);
 		} catch (error) {
 			console.error("Failed to delete schedule:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Get executions for a specific schedule
+	 */
+	static async getScheduleExecutions(
+		scheduleId: string,
+		limit: number = 50,
+	): Promise<ScheduleExecution[]> {
+		try {
+			const response = await apiClient.get(
+				`${this.BASE_URL}/${scheduleId}/executions?limit=${limit}`,
+			);
+			return response.data;
+		} catch (error) {
+			console.error("Failed to fetch schedule executions:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Get recent executions across all schedules
+	 */
+	static async getRecentExecutions(
+		limit: number = 20,
+	): Promise<ScheduleExecution[]> {
+		try {
+			const response = await apiClient.get(
+				`${this.BASE_URL}/executions/recent?limit=${limit}`,
+			);
+			return response.data;
+		} catch (error) {
+			console.error("Failed to fetch recent executions:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Get executions within a date range
+	 */
+	static async getExecutionsByDateRange(
+		startDate: string,
+		endDate: string,
+	): Promise<ScheduleExecution[]> {
+		try {
+			const response = await apiClient.get(
+				`${this.BASE_URL}/executions?start_date=${startDate}&end_date=${endDate}`,
+			);
+			return response.data;
+		} catch (error) {
+			console.error("Failed to fetch executions by date range:", error);
 			throw error;
 		}
 	}
