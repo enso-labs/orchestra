@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, Response, Body
 from fastapi.responses import JSONResponse
 from fastapi_cache.decorator import cache
@@ -54,6 +56,46 @@ async def get_recent_executions(
     executions = await schedule_execution_service.get_recent_executions(
         user_id=user.id,
         limit=limit,
+    )
+    return [
+        ScheduleExecutionResponse(
+            id=str(e.id),
+            schedule_id=e.schedule_id,
+            thread_id=e.thread_id,
+            status=e.status,
+            scheduled_time=e.scheduled_time,
+            started_at=e.started_at,
+            completed_at=e.completed_at,
+            error_message=e.error_message,
+            metadata=e.metadata or {},
+            user_id=e.user_id,
+        )
+        for e in executions
+    ]
+
+
+################################################################################
+### Executions by Date Range
+################################################################################
+@router.get(
+    "/schedules/executions",
+    response_model=list[ScheduleExecutionResponse],
+    operation_id="ruska_list_executions",
+)
+async def get_executions(
+    start: datetime | None = None,
+    end: datetime | None = None,
+    user: ProtectedUser = Depends(verify_credentials),
+):
+    effective_end = end if end is not None else datetime.utcnow()
+    effective_start = (
+        start if start is not None else (effective_end - timedelta(days=30))
+    )
+
+    executions = await schedule_execution_service.get_executions_by_date_range(
+        user_id=user.id,
+        start=effective_start,
+        end=effective_end,
     )
     return [
         ScheduleExecutionResponse(
