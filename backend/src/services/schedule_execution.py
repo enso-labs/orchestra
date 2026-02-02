@@ -34,6 +34,7 @@ class ScheduleExecutionService:
         thread_id: str | None = None,
         error_message: str | None = None,
         completed_at: datetime | None = None,
+        started_at: datetime | None = None,
     ) -> ScheduleExecution | None:
         async with AsyncSessionLocal() as session:
             result = await session.execute(
@@ -49,6 +50,8 @@ class ScheduleExecutionService:
                 execution.error_message = error_message
             if completed_at is not None:
                 execution.completed_at = completed_at
+            if started_at is not None:
+                execution.started_at = started_at
             await session.commit()
             await session.refresh(execution)
             return execution

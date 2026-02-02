@@ -48,13 +48,34 @@ def create_trigger(trigger: JobTrigger):
         raise ValueError("Invalid trigger type")
 
 
-async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None):
+async def scheduled_llm_invoke(
+    task_dict: dict, user_id: str, title: str = None, schedule_id: str = None
+):
     """
     Standalone function for scheduled LLM invocations.
     This must be a module-level function (not a method) so APScheduler can pickle it.
     """
     from uuid import uuid4
+    from datetime import datetime, timezone
     from src.constants import DISTRIBUTED_WORKERS
+    from src.services.schedule_execution import schedule_execution_service
+
+    # Record execution start
+    execution = None
+    if schedule_id:
+        try:
+            execution = await schedule_execution_service.create_execution(
+                schedule_id=schedule_id,
+                user_id=user_id,
+                scheduled_time=datetime.now(timezone.utc),
+            )
+            await schedule_execution_service.update_execution(
+                execution_id=execution.id,
+                status="running",
+                started_at=datetime.now(timezone.utc),
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to record execution start: {exc}")
 
     # Distributed mode: dispatch to TaskIQ worker
     if DISTRIBUTED_WORKERS:
@@ -71,6 +92,17 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             user_id=user_id,
             thread_id=thread_id,
         )
+        # Mark success for distributed dispatch
+        if execution:
+            try:
+                await schedule_execution_service.update_execution(
+                    execution_id=execution.id,
+                    status="success",
+                    thread_id=thread_id,
+                    completed_at=datetime.now(timezone.utc),
+                )
+            except Exception as exc:
+                logger.warning(f"Failed to record execution success: {exc}")
         return
 
     # In-process mode: execute directly
@@ -126,10 +158,36 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             )
             logger.info("✓ LLM invocation completed successfully")
 
+            # Record success
+            if execution:
+                try:
+                    thread_id = config.get("configurable", {}).get(
+                        "thread_id", params.metadata.thread_id
+                    )
+                    await schedule_execution_service.update_execution(
+                        execution_id=execution.id,
+                        status="success",
+                        thread_id=thread_id,
+                        completed_at=datetime.now(timezone.utc),
+                    )
+                except Exception as exc:
+                    logger.warning(f"Failed to record execution success: {exc}")
+
             files_map = {**files_map, **response.get("files", {})}
             todos_list = [*todos_list, *response.get("todos", [])]
             return response
         except Exception as e:
+            # Record failure
+            if execution:
+                try:
+                    await schedule_execution_service.update_execution(
+                        execution_id=execution.id,
+                        status="failure",
+                        error_message=str(e),
+                        completed_at=datetime.now(timezone.utc),
+                    )
+                except Exception as exc:
+                    logger.warning(f"Failed to record execution failure: {exc}")
             logger.error(f"❌ Error in scheduled job: {e}", exc_info=True)
             raise
         finally:
@@ -216,7 +274,7 @@ class ScheduleService:
             func=scheduled_llm_invoke,
             trigger=trigger,
             args=[job.task.model_dump()],
-            kwargs={"user_id": self.user_id, "title": job.title},
+            kwargs={"user_id": self.user_id, "title": job.title, "schedule_id": job_id},
             replace_existing=True,
             misfire_grace_time=300,
         )
