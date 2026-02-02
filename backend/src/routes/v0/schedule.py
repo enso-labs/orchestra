@@ -3,12 +3,14 @@ from fastapi.responses import JSONResponse
 from fastapi_cache.decorator import cache
 
 from src.services.schedule import schedule_service
+from src.services.schedule_execution import schedule_execution_service
 from src.schemas.models import ProtectedUser
 from src.utils.auth import verify_credentials
 from src.constants.examples import Examples
 from src.schemas.entities.schedule import (
     ScheduleCreate,
     ScheduleUpdate,
+    ScheduleExecutionResponse,
     JobUpdated,
 )
 
@@ -35,6 +37,39 @@ async def get_jobs(
     schedule_service.user_id = user.id
     schedules = schedule_service.get_jobs()
     return {"schedules": [schedule.model_dump() for schedule in schedules]}
+
+
+################################################################################
+### Recent Executions
+################################################################################
+@router.get(
+    "/schedules/executions/recent",
+    response_model=list[ScheduleExecutionResponse],
+    operation_id="ruska_list_recent_executions",
+)
+async def get_recent_executions(
+    limit: int = 20,
+    user: ProtectedUser = Depends(verify_credentials),
+):
+    executions = await schedule_execution_service.get_recent_executions(
+        user_id=user.id,
+        limit=limit,
+    )
+    return [
+        ScheduleExecutionResponse(
+            id=str(e.id),
+            schedule_id=e.schedule_id,
+            thread_id=e.thread_id,
+            status=e.status,
+            scheduled_time=e.scheduled_time,
+            started_at=e.started_at,
+            completed_at=e.completed_at,
+            error_message=e.error_message,
+            metadata=e.metadata or {},
+            user_id=e.user_id,
+        )
+        for e in executions
+    ]
 
 
 ################################################################################
