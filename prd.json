@@ -1,0 +1,63 @@
+{
+  "title": "Schedule Service TaskIQ Worker Dispatch",
+  "description": "Update scheduled_llm_invoke() to dispatch to the existing run_agent_stream TaskIQ task when DISTRIBUTED_WORKERS=true, while keeping the in-process fallback as a permanent option.",
+  "branchName": "ralph/schedule-taskiq-dispatch",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Add DISTRIBUTED_WORKERS constant to src/constants",
+      "description": "As a developer, I need DISTRIBUTED_WORKERS available as a shared constant so multiple modules can reference it without duplicating the env var read.",
+      "priority": 1,
+      "passes": true,
+      "acceptanceCriteria": [
+        "DISTRIBUTED_WORKERS added to backend/src/constants/__init__.py as os.getenv('DISTRIBUTED_WORKERS', 'false').lower() == 'true'",
+        "backend/src/routes/v0/llm.py imports DISTRIBUTED_WORKERS from src.constants instead of defining it inline",
+        "Inline definition removed from llm.py",
+        "Existing behavior unchanged",
+        "Typecheck/lint passes (make format)"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Dispatch scheduled jobs to TaskIQ when distributed mode enabled",
+      "description": "As an operator, I want scheduled LLM jobs to run on TaskIQ workers when DISTRIBUTED_WORKERS=true so that scheduled execution doesn't consume API server resources.",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "scheduled_llm_invoke() checks DISTRIBUTED_WORKERS at the top of the function",
+        "When true, dispatches to run_agent_stream.kiq() with task_dict, user_id, and a thread_id",
+        "When false, existing in-process execution path runs unchanged",
+        "Dispatch is logged with job title and thread_id",
+        "Typecheck/lint passes (make format)"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Simplify schedule create route",
+      "description": "As a developer, I want the create schedule endpoint to call schedule_service.create_job() directly instead of going through LLMController.llm_task().",
+      "priority": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "create_job route in schedule.py calls schedule_service.create_job(job) directly",
+        "LLMController, init_config, get_store, and BaseStore imports removed from schedule.py",
+        "store dependency removed from create_job route signature",
+        "Response format unchanged (201 with job.id and next_run_time)",
+        "Typecheck/lint passes (make format)"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Add unit tests for TaskIQ dispatch path",
+      "description": "As a developer, I need tests verifying that scheduled_llm_invoke() correctly dispatches to TaskIQ or runs in-process based on the DISTRIBUTED_WORKERS flag.",
+      "priority": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "Test that when DISTRIBUTED_WORKERS=true, run_agent_stream.kiq() is called with correct args",
+        "Test that when DISTRIBUTED_WORKERS=false, the existing in-process path is invoked",
+        "Test that thread_id is extracted from task_dict metadata when present",
+        "Test that thread_id is generated as UUID when not present in metadata",
+        "All existing tests still pass (make test)"
+      ]
+    }
+  ]
+}

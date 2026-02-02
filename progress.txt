@@ -1,0 +1,18 @@
+## Codebase Patterns
+- DISTRIBUTED_WORKERS is imported inside function body (not module-level) in schedule.py for APScheduler pickle compatibility
+- Patch `src.constants.DISTRIBUTED_WORKERS` (not `src.services.schedule.DISTRIBUTED_WORKERS`) when testing functions that import it inside their body
+- Backend tests require env vars loaded from `~/.env/orchestra/.env.backend` — use `set -a && . ~/.env/orchestra/.env.backend && set +a` before pytest
+- Use `make format` in backend/ to run ruff formatting
+
+---
+
+## 2026-02-01 - US-004
+- Implemented unit tests for scheduled_llm_invoke TaskIQ dispatch logic
+- Files changed: backend/tests/unit/services/test_schedule_dispatch.py (created)
+- 4 tests: dispatch to kiq when distributed, in-process when not, thread_id extraction from metadata, UUID generation when no thread_id
+- All 316 tests pass (unit suite)
+- **Learnings for future iterations:**
+  - Since DISTRIBUTED_WORKERS is imported inside the function body (for pickle compat), you must patch `src.constants.DISTRIBUTED_WORKERS` not `src.services.schedule.DISTRIBUTED_WORKERS`
+  - The `src.workers.tasks.run_agent_stream` must be patched as a context manager inside the test since it's also imported inside the function body
+  - US-001 through US-003 were already implemented on this branch before this iteration
+---
