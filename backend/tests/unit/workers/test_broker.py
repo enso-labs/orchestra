@@ -4,7 +4,6 @@ Phase 3-4 TDD: Tests for broker configuration ensuring proper setup.
 """
 
 
-
 class TestBrokerConfiguration:
     """Tests for broker configuration."""
 
