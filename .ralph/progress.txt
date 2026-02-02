@@ -10,8 +10,10 @@ Started: Sun Feb  1 22:01:09 MST 2026
 - Pydantic schemas live in backend/src/schemas/entities/
 - SPA catch-all on backend serves index.html for unrecognized routes — this is why missing endpoints return HTML not 404
 - Frontend expects ScheduleExecution interface: id, schedule_id, thread_id, status, scheduled_time, started_at, completed_at, error_message, metadata
-- `make format` in backend runs `uvx ruff format` - run before committing
+- `make format` in backend runs `uvx ruff format` - run before committing (must be run from backend/ dir)
+- APScheduler job kwargs flow: `create_job` sets kwargs → APScheduler passes them to the job function at runtime
 - `make test` in backend sources env from `~/.env/orchestra/.env.backend` before running pytest
+- AsyncSessionLocal pattern: `async with AsyncSessionLocal() as session:` for direct SQLAlchemy queries
 ---
 
 ## 2026-02-01 - US-001
@@ -24,4 +26,74 @@ Started: Sun Feb  1 22:01:09 MST 2026
   - Models live in `backend/src/schemas/models/`, not `backend/src/models/` (PRD path was slightly wrong)
   - Pydantic schemas go in `backend/src/schemas/entities/`
   - `load_models()` imports are side-effect only — Pyright warns "not accessed" but that's expected
+---
+
+## 2026-02-01 - US-002
+- Created ScheduleExecutionService in `backend/src/services/schedule_execution.py`
+- Implements: create_execution, update_execution, get_recent_executions, get_executions_by_schedule, get_executions_by_date_range
+- All methods use `AsyncSessionLocal` context manager for DB sessions
+- Module singleton: `schedule_execution_service` instance exported at bottom
+- Files changed: schedule_execution.py (new)
+- **Learnings for future iterations:**
+  - `AsyncSessionLocal` from `src.services.db` is the async session factory — use `async with AsyncSessionLocal() as session:`
+  - No other services currently use direct SQLAlchemy queries; this is the first service to do so
+  - `make format` must be run from `backend/` directory, not project root
+---
+
+## 2026-02-01 - US-003
+- Added execution lifecycle tracking to `scheduled_llm_invoke` in `backend/src/services/schedule.py`
+- Creates execution record with status 'running' and started_at at invocation start
+- On success: updates to 'success' with thread_id and completed_at
+- On failure: updates to 'failure' with error_message and completed_at
+- Both distributed (TaskIQ) and in-process paths covered
+- Added `schedule_id` kwarg to `create_job` so the function knows which schedule triggered it
+- Added `started_at` parameter to `ScheduleExecutionService.update_execution`
+- Files changed: backend/src/services/schedule.py, backend/src/services/schedule_execution.py
+- **Learnings for future iterations:**
+  - APScheduler passes kwargs to the job function — adding new kwargs requires updating both the function signature and the `add_job` call in `create_job`
+  - Execution tracking is wrapped in try/except to avoid breaking the actual job if DB recording fails
+  - The `schedule_id` is the APScheduler job ID (a UUID string), set during `create_job`
+---
+
+## 2026-02-01 - US-004
+- Added GET /schedules/executions/recent endpoint to backend/src/routes/v0/schedule.py
+- Route placed before /{job_id} to avoid path parameter capture
+- Returns list[ScheduleExecutionResponse] with optional limit query param (default 20)
+- Uses ProtectedUser dependency for auth scoping
+- Files changed: backend/src/routes/v0/schedule.py
+- **Learnings for future iterations:**
+  - Import both `schedule_execution_service` and `ScheduleExecutionResponse` for execution endpoints
+  - SQLAlchemy model fields need explicit str() conversion for UUID id when constructing Pydantic response
+  - Pre-existing type errors exist in schedule routes (ScheduleCreate vs Job) — not introduced by execution endpoints
+---
+
+## 2026-02-01 - US-005
+- Added GET /schedules/{schedule_id}/executions endpoint
+- Verifies schedule exists and belongs to user via schedule_service.get_job() — returns 404 if not found/authorized
+- Returns list[ScheduleExecutionResponse] ordered by scheduled_time desc
+- Files changed: backend/src/routes/v0/schedule.py
+- **Learnings for future iterations:**
+  - schedule_service.get_job() raises HTTPException(403) if user doesn't own the schedule — catch and re-raise as 404 per AC
+---
+
+## 2026-02-01 - US-006
+- Added GET /schedules/executions endpoint with optional start/end date range query params
+- Defaults to last 30 days if not provided
+- Route placed before /{job_id} to avoid path capture
+- Files changed: backend/src/routes/v0/schedule.py
+- **Learnings for future iterations:**
+  - Use type narrowing with intermediate variables (effective_start/effective_end) to satisfy Pyright when Optional params have defaults
+---
+
+## 2026-02-01 - US-007
+- Added croniter dependency to pyproject.toml
+- Created _get_projected_executions() helper that generates future execution times from cron expressions
+- Integrated projections into /executions/recent (next 30 days) and /executions (date range) endpoints
+- Projected executions use synthetic IDs: '{schedule_id}_proj_{iso_time}'
+- Projected executions have status='scheduled', no started_at/completed_at
+- Files changed: backend/src/routes/v0/schedule.py, backend/pyproject.toml, backend/uv.lock
+- **Learnings for future iterations:**
+  - croniter.get_next(datetime) returns the next occurrence from the given start time
+  - schedule_service.user_id must be set before calling get_jobs() — it filters by user
+  - Only project future executions (after now), not past projected ones
 ---
