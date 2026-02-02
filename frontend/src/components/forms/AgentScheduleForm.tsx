@@ -90,6 +90,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 			return;
 		}
 
+		const agentMetadata = (agent.metadata || {}) as Record<string, any>;
 		const scheduleData: ScheduleCreate = {
 			title: data.name,
 			trigger: {
@@ -97,24 +98,28 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 				expression: data.cronExpression,
 			},
 			task: {
+				input: {
+					messages: [
+						{
+							role: "user",
+							content: data.message,
+						},
+					],
+				},
 				model: data.inheritFromAgent
 					? agent.model
 					: data.customModel || agent.model,
-				system: data.inheritFromAgent
+				system_prompt: data.inheritFromAgent
 					? agent.prompt
 					: data.customSystem || agent.prompt,
-				messages: [
-					{
-						role: "user",
-						content: data.message,
-					},
-				],
 				tools: data.inheritFromAgent ? agent.tools : data.customTools || [],
 				a2a: agent.a2a,
 				mcp: agent.mcp,
 				subagents: agent.subagents,
 				metadata: {
-					...agent.metadata,
+					...agentMetadata,
+					assistant_id: agentMetadata.assistant_id || agent.id,
+					agent_id: agent.id,
 					schedule_description: data.description,
 					inherited_from_agent: data.inheritFromAgent,
 					enabled: data.enabled,
