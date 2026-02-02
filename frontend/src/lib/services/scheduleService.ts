@@ -143,7 +143,7 @@ export class ScheduleService {
 	): Promise<ScheduleExecution[]> {
 		try {
 			const response = await apiClient.get(
-				`${this.BASE_URL}/executions?start_date=${startDate}&end_date=${endDate}`,
+				`${this.BASE_URL}/executions?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`,
 			);
 			return response.data;
 		} catch (error) {

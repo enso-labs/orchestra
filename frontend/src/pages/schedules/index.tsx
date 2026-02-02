@@ -78,18 +78,15 @@ function SchedulesIndexPage() {
 	// Map executions to calendar events
 	const schedulesMap = useMemo(() => {
 		const map = new Map<string, Schedule>();
-		schedules.forEach((s) => map.set(s.id, s));
+		for (const s of schedules) {
+			map.set(s.id, s);
+		}
 		return map;
 	}, [schedules]);
 
-	const calendarEvents = useMemo(
-		() => mapExecutionsToEvents(executions ?? [], schedulesMap),
-		[executions, schedulesMap],
-	);
-
 	const handleEventClick = (event: ScheduleEvent) => {
 		if (event.resource.thread_id) {
-			window.open(`/?t=${event.resource.thread_id}`, "_blank");
+			window.open(`/?t=${event.resource.thread_id}`, "_blank", "noopener,noreferrer");
 		}
 	};
 
@@ -212,6 +209,23 @@ function SchedulesIndexPage() {
 				}
 			});
 	}, [schedules, searchQuery, filterStatus, filterAgentId, sortBy]);
+
+	// Create a set of filtered schedule IDs to filter executions
+	const filteredScheduleIds = useMemo(() => {
+		return new Set(filteredAndSortedSchedules.map((s) => s.id));
+	}, [filteredAndSortedSchedules]);
+
+	// Filter executions to only include those for filtered schedules
+	const filteredExecutions = useMemo(() => {
+		if (!executions) return [];
+		return executions.filter((e) => filteredScheduleIds.has(e.schedule_id));
+	}, [executions, filteredScheduleIds]);
+
+	// Create filtered calendar events for calendar/table views
+	const filteredCalendarEvents = useMemo(
+		() => mapExecutionsToEvents(filteredExecutions, schedulesMap),
+		[filteredExecutions, schedulesMap],
+	);
 
 	const getStatusCounts = () => {
 		const counts = {
@@ -437,19 +451,19 @@ function SchedulesIndexPage() {
 				{/* Scrollable content area */}
 				<div className="flex-1 min-h-0 px-4">
 					<div className="mx-auto h-full">
-						{viewMode === "calendar" ? (
-							<ScheduleCalendar
-								events={calendarEvents}
-								onEventClick={handleEventClick}
-							/>
-						) : viewMode === "table" ? (
-							<ScheduleTable
-								events={calendarEvents}
-								onEdit={handleEditSchedule}
-								onDelete={handleDeleteSchedule}
-								onDuplicate={handleDuplicateSchedule}
-							/>
-						) : (
+					{viewMode === "calendar" ? (
+						<ScheduleCalendar
+							events={filteredCalendarEvents}
+							onEventClick={handleEventClick}
+						/>
+					) : viewMode === "table" ? (
+						<ScheduleTable
+							events={filteredCalendarEvents}
+							onEdit={handleEditSchedule}
+							onDelete={handleDeleteSchedule}
+							onDuplicate={handleDuplicateSchedule}
+						/>
+					) : (
 							<ScrollArea className="h-full">
 								<div className="pb-4">
 									{/* Schedules Grid */}
