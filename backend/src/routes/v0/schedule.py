@@ -98,7 +98,7 @@ async def get_recent_executions(
             started_at=e.started_at,
             completed_at=e.completed_at,
             error_message=e.error_message,
-            metadata=e.metadata or {},
+            metadata=e.execution_metadata or {},
             user_id=e.user_id,
         )
         for e in executions
@@ -146,7 +146,7 @@ async def get_executions(
             started_at=e.started_at,
             completed_at=e.completed_at,
             error_message=e.error_message,
-            metadata=e.metadata or {},
+            metadata=e.execution_metadata or {},
             user_id=e.user_id,
         )
         for e in executions
@@ -297,7 +297,7 @@ async def get_schedule_executions(
             started_at=e.started_at,
             completed_at=e.completed_at,
             error_message=e.error_message,
-            metadata=e.metadata or {},
+            metadata=e.execution_metadata or {},
             user_id=e.user_id,
         )
         for e in executions

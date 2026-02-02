@@ -35,5 +35,5 @@ class ScheduleExecution(Base):
         DateTime(timezone=True), nullable=True
     )
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata: Mapped[dict] = mapped_column(JSONB, server_default=sa.text("'{}'::jsonb"))
+    execution_metadata: Mapped[dict] = mapped_column(JSONB, name="metadata", server_default=sa.text("'{}'::jsonb"))
     user_id: Mapped[str] = mapped_column(String, nullable=False)
