@@ -4,7 +4,7 @@ dev:
 	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug --env-file ~/.env/orchestra/.env.backend
 
 dev.worker:
-	@set -a && . ~/.env/orchestra/.env.backend && set +a && uv run taskiq worker src.workers.tasks:broker
+	@set -a && . ~/.env/orchestra/.env.backend && set +a && uv run taskiq worker src.workers.tasks:broker --reload --reload-dir src
 
 claude:
 	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8031 --log-level debug --env-file ~/secrets/.env.orchestra.backend

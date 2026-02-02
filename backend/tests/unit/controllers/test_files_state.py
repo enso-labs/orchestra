@@ -7,7 +7,6 @@ to prevent AttributeError crashes in the _file_data_reducer.
 """
 
 
-
 class TestFilesStateInitialization:
     """Test files state initialization with edge cases."""
 
