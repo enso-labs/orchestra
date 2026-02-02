@@ -33,7 +33,7 @@ export function useScheduleExecutions(
 				const data = await ScheduleService.getRecentExecutions(
 					fetchLimit ?? limit,
 				);
-				setExecutions(data);
+				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
 				const message = "Failed to fetch recent executions";
 				setError(message);
@@ -55,7 +55,7 @@ export function useScheduleExecutions(
 					id,
 					fetchLimit ?? limit,
 				);
-				setExecutions(data);
+				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
 				const message = "Failed to fetch schedule executions";
 				setError(message);
@@ -77,7 +77,7 @@ export function useScheduleExecutions(
 					startDate,
 					endDate,
 				);
-				setExecutions(data);
+				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
 				const message = "Failed to fetch executions by date range";
 				setError(message);

@@ -83,7 +83,7 @@ function SchedulesIndexPage() {
 	}, [schedules]);
 
 	const calendarEvents = useMemo(
-		() => mapExecutionsToEvents(executions, schedulesMap),
+		() => mapExecutionsToEvents(executions ?? [], schedulesMap),
 		[executions, schedulesMap],
 	);
 
