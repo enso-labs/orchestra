@@ -18,8 +18,10 @@ export const createScheduleFromAgent = (
 		},
 		task: {
 			model: agent.model,
-			system: agent.prompt,
-			messages: [{ role: "user", content: message }],
+			system_prompt: agent.prompt,
+			input: {
+				messages: [{ role: "user", content: message }],
+			},
 			tools: agent.tools,
 			a2a: agent.a2a,
 			mcp: agent.mcp,
