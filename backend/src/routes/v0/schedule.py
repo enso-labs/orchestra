@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, Body
+from fastapi import APIRouter, Depends, HTTPException, Response, Body
 from fastapi.responses import JSONResponse
 from fastapi_cache.decorator import cache
 
@@ -171,3 +171,43 @@ async def delete_job(
     schedule_service.user_id = user.id
     schedule_service.delete_job(job_id)
     return Response(status_code=204)
+
+
+################################################################################
+### Schedule Executions by Schedule ID
+################################################################################
+@router.get(
+    "/schedules/{schedule_id}/executions",
+    response_model=list[ScheduleExecutionResponse],
+    operation_id="ruska_list_schedule_executions",
+)
+async def get_schedule_executions(
+    schedule_id: str,
+    user: ProtectedUser = Depends(verify_credentials),
+):
+    # Verify schedule exists and belongs to user (raises 403 if not)
+    try:
+        schedule_service.user_id = user.id
+        schedule_service.get_job(schedule_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    executions = await schedule_execution_service.get_executions_by_schedule(
+        schedule_id=schedule_id,
+        user_id=user.id,
+    )
+    return [
+        ScheduleExecutionResponse(
+            id=str(e.id),
+            schedule_id=e.schedule_id,
+            thread_id=e.thread_id,
+            status=e.status,
+            scheduled_time=e.scheduled_time,
+            started_at=e.started_at,
+            completed_at=e.completed_at,
+            error_message=e.error_message,
+            metadata=e.metadata or {},
+            user_id=e.user_id,
+        )
+        for e in executions
+    ]
