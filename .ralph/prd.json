@@ -1,46 +1,124 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/724-add-watcher-to-worker-reload",
-  "description": "Add file-watching auto-reload to TaskIQ worker for development using native --reload flag",
+  "branchName": "bug/727-render-schedules-calendar",
+  "description": "Fix schedule calendar not rendering — add missing backend execution endpoints and execution tracking model",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Verify and Add Watcher Dependency",
-      "description": "As a developer, I need the watcher dependency to be available in the backend environment so that the TaskIQ --reload flag works correctly.",
+      "title": "Create ScheduleExecution SQLAlchemy model and Pydantic schema",
+      "description": "As a developer, I need a database model and schema for schedule execution records so the API can persist and return execution history.",
       "acceptanceCriteria": [
-        "Check if watchdog or watchfiles is importable in the backend venv (run: uv run python -c 'import watchdog' or uv run python -c 'import watchfiles')",
-        "If neither is present, add watchdog to dev dependencies in backend/pyproject.toml",
+        "Create SQLAlchemy model ScheduleExecution in backend/src/models/ with columns: id (UUID, PK), schedule_id (String, not null), thread_id (String, nullable), status (String, not null, default 'scheduled' — one of 'scheduled','running','success','failure'), scheduled_time (DateTime, not null), started_at (DateTime, nullable), completed_at (DateTime, nullable), error_message (Text, nullable), metadata (JSONB, default {}), user_id (String, not null)",
+        "Create Pydantic response schema ScheduleExecutionResponse in backend/src/schemas/entities/schedule.py matching the model fields",
+        "Table name should be 'schedule_executions'",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "watchdog was already available as a transitive dependency - no changes needed"
+      "passes": false,
+      "notes": "Follow existing SQLAlchemy model patterns in the codebase. The app uses PostgreSQL with async SQLAlchemy. Check backend/src/models/ or backend/src/services/db.py for DB connection patterns."
     },
     {
       "id": "US-002",
-      "title": "Update Makefile dev.worker Target with Reload Flag",
-      "description": "As a developer running Ralph autonomous loops, I want the TaskIQ worker to automatically reload when Python source files change so that code changes are immediately reflected without manual worker restarts.",
+      "title": "Create ScheduleExecutionService with CRUD operations",
+      "description": "As a developer, I need a service layer to create, update, and query execution records from the database.",
       "acceptanceCriteria": [
-        "backend/Makefile dev.worker target includes --reload --reload-dir src flags",
-        "Production docker-compose.yml worker entrypoint is NOT modified (verify no changes to docker-compose.yml)",
+        "Create ScheduleExecutionService class in backend/src/services/schedule_execution.py",
+        "Implement create_execution(schedule_id, user_id, scheduled_time) -> ScheduleExecution",
+        "Implement update_execution(execution_id, status, thread_id=None, error_message=None, completed_at=None)",
+        "Implement get_recent_executions(user_id, limit=20) -> list ordered by scheduled_time desc",
+        "Implement get_executions_by_schedule(schedule_id, user_id) -> list ordered by scheduled_time desc",
+        "Implement get_executions_by_date_range(user_id, start, end) -> list filtered by scheduled_time",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "Use async SQLAlchemy patterns consistent with the existing codebase. Check backend/src/services/ for examples of how other services handle DB sessions."
     },
     {
       "id": "US-003",
-      "title": "Verify and Format",
-      "description": "As a developer, I want to confirm the changes are clean and tests pass.",
+      "title": "Record execution lifecycle in scheduled_llm_invoke",
+      "description": "As a system, I need to track each schedule execution from dispatch through completion so users can see run history.",
       "acceptanceCriteria": [
-        "Run make format from backend directory",
-        "Existing backend tests pass (make test from backend directory)",
-        "No unintended file changes"
+        "In backend/src/services/schedule.py scheduled_llm_invoke function, insert a schedule_execution row with status 'running' and started_at=now when execution begins",
+        "On successful completion, update status to 'success', set completed_at and thread_id",
+        "On failure/exception, update status to 'failure', set completed_at and error_message",
+        "Both distributed mode (TaskIQ dispatch) and in-process mode paths are covered",
+        "Existing schedule create/update/delete functionality is not broken",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": ""
+      "passes": false,
+      "notes": "The scheduled_llm_invoke function in backend/src/services/schedule.py has two code paths: distributed (DISTRIBUTED_WORKERS=True dispatches via run_agent_stream.kiq()) and in-process (direct agent.invoke). Both need execution tracking. user_id and title are already available as function parameters."
+    },
+    {
+      "id": "US-004",
+      "title": "Add GET /schedules/executions/recent endpoint",
+      "description": "As a frontend consumer, I need an endpoint to fetch recent executions across all schedules so the calendar and sidebar can display them.",
+      "acceptanceCriteria": [
+        "Add GET /schedules/executions/recent route to backend/src/routes/v0/schedule.py",
+        "CRITICAL: This route MUST be defined BEFORE the GET /schedules/{job_id} route to avoid 'executions' being captured as a job_id path parameter",
+        "Accepts optional query parameter limit (int, default 20)",
+        "Returns JSON array of ScheduleExecutionResponse objects",
+        "Results ordered by scheduled_time descending",
+        "Scoped to authenticated user's schedules only (use ProtectedUser dependency)",
+        "Returns [] empty array when no executions exist",
+        "Returns content-type: application/json (not text/html)",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Route ordering is critical in FastAPI. The /executions/recent path must come before /{job_id} or FastAPI will try to match 'executions' as a job_id. Check existing routes in backend/src/routes/v0/schedule.py for auth patterns."
+    },
+    {
+      "id": "US-005",
+      "title": "Add GET /schedules/{schedule_id}/executions endpoint",
+      "description": "As a frontend consumer, I need to fetch executions for a specific schedule.",
+      "acceptanceCriteria": [
+        "Add GET /schedules/{schedule_id}/executions route to backend/src/routes/v0/schedule.py",
+        "Returns JSON array of ScheduleExecutionResponse objects ordered by scheduled_time desc",
+        "Returns 404 if schedule doesn't exist or doesn't belong to user",
+        "Requires authentication via ProtectedUser",
+        "Returns content-type: application/json",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "This route uses a path parameter for the schedule ID. It should be placed after the /executions/recent and /executions routes but can go before or after /{job_id} since it has a longer path prefix."
+    },
+    {
+      "id": "US-006",
+      "title": "Add GET /schedules/executions endpoint with date range filtering",
+      "description": "As a frontend consumer, I need to fetch executions within a date range so the calendar can display events for the visible window.",
+      "acceptanceCriteria": [
+        "Add GET /schedules/executions route to backend/src/routes/v0/schedule.py",
+        "CRITICAL: This route MUST be defined BEFORE the GET /schedules/{job_id} route",
+        "Accepts optional query parameters start (ISO datetime) and end (ISO datetime)",
+        "Defaults to last 30 days if start/end not provided",
+        "Returns JSON array of ScheduleExecutionResponse objects",
+        "Scoped to authenticated user's schedules only",
+        "Returns content-type: application/json",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Place this route alongside the /executions/recent route, before /{job_id}. The frontend calls this as /api/schedules/executions?start=<ISO>&end=<ISO>."
+    },
+    {
+      "id": "US-007",
+      "title": "Generate projected future executions from cron expressions",
+      "description": "As a user, I want to see upcoming scheduled runs on the calendar so I can visualize when my agents will execute next.",
+      "acceptanceCriteria": [
+        "Add croniter to backend dependencies in pyproject.toml (if not already present)",
+        "Create a utility function that takes a cron expression and returns projected execution times for the next 30 days",
+        "The /executions/recent and /executions (date range) endpoints include projected future executions with status 'scheduled'",
+        "Projected executions have no started_at or completed_at values",
+        "Projected executions use synthetic IDs in format '{schedule_id}_proj_{iso_time}' to avoid collisions with real records",
+        "Projected executions include the schedule_id and user_id from the parent schedule",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Use croniter library to compute next N occurrences from a cron expression. Each schedule's trigger.expression contains the cron string. The frontend getCalendarDateRange covers 30 days past and 30 days future, so project up to 30 days ahead."
     }
   ]
 }

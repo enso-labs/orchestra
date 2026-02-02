@@ -1,19 +1,13 @@
 ## Codebase Patterns
-- `watchdog` is available as a transitive dependency in the backend venv (no need to add explicitly)
-- TaskIQ v0.12.1 supports `--reload` and `--reload-dir` flags natively
-- `make format` in backend runs `uvx ruff format` - run it before committing
+- Backend uses async SQLAlchemy with PostgreSQL (see backend/src/services/db.py for DB_URI and connection patterns)
+- Schedules use APScheduler SQLAlchemyJobStore (table "schedules") — not standard SQLAlchemy models
+- Schedule execution dispatch: scheduled_llm_invoke() in backend/src/services/schedule.py has two paths: distributed (TaskIQ) and in-process
+- FastAPI route ordering matters: /executions/recent must come before /{job_id} or "executions" gets captured as path param
+- Auth pattern: ProtectedUser dependency (see existing schedule routes for examples)
+- Pydantic schemas live in backend/src/schemas/entities/
+- SPA catch-all on backend serves index.html for unrecognized routes — this is why missing endpoints return HTML not 404
+- Frontend expects ScheduleExecution interface: id, schedule_id, thread_id, status, scheduled_time, started_at, completed_at, error_message, metadata
+- `make format` in backend runs `uvx ruff format` - run before committing
 - `make test` in backend sources env from `~/.env/orchestra/.env.backend` before running pytest
 ---
 
-## 2026-02-01 - US-001, US-002, US-003
-- Verified `watchdog` is already importable in backend venv (no pyproject.toml changes needed)
-- Added `--reload --reload-dir src` flags to `backend/Makefile` `dev.worker` target
-- Ran `make format` (5 pre-existing files reformatted) and `make test` (360 passed, 2 skipped)
-- docker-compose.yml was NOT modified
-- Files changed: `backend/Makefile` (feature), plus 5 formatting fixes
-- **Learnings for future iterations:**
-  - `watchdog` as transitive dep is NOT sufficient for TaskIQ reload - must install `taskiq[reload]` extra
-  - `taskiq[reload]` belongs in dev dependencies since `--reload` is only for development
-  - TaskIQ's `FileWatcher` is `None` without the reload extra, causing `TypeError: 'NoneType' object is not callable`
-  - Ruff formatting may touch files unrelated to your changes - include them in the commit
----

@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - FEAT: Truncate Tool Calls. Allow extension (cli) #54
 
 ### Fixed
+  - bug/727-render-schedules-calendar (2026-02-01)
   - bug/612-web-scrape-cannot-fetch-plain-text-pages (2026-01-31)
   - bug/705-fallback-searxng-from-exa (2026-01-29)
   - bug/662-fix-db-timeout (2026-01-19)
