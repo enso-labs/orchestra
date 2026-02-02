@@ -1,0 +1,18 @@
+## Codebase Patterns
+- `watchdog` is available as a transitive dependency in the backend venv (no need to add explicitly)
+- TaskIQ v0.12.1 supports `--reload` and `--reload-dir` flags natively
+- `make format` in backend runs `uvx ruff format` - run it before committing
+- `make test` in backend sources env from `~/.env/orchestra/.env.backend` before running pytest
+---
+
+## 2026-02-01 - US-001, US-002, US-003
+- Verified `watchdog` is already importable in backend venv (no pyproject.toml changes needed)
+- Added `--reload --reload-dir src` flags to `backend/Makefile` `dev.worker` target
+- Ran `make format` (5 pre-existing files reformatted) and `make test` (360 passed, 2 skipped)
+- docker-compose.yml was NOT modified
+- Files changed: `backend/Makefile` (feature), plus 5 formatting fixes
+- **Learnings for future iterations:**
+  - `watchdog` comes as a transitive dep, likely via uvicorn[standard] - no need to add it
+  - TaskIQ's `--reload` flag uses watchdog under the hood
+  - Ruff formatting may touch files unrelated to your changes - include them in the commit
+---

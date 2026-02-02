@@ -1,0 +1,46 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/724-add-watcher-to-worker-reload",
+  "description": "Add file-watching auto-reload to TaskIQ worker for development using native --reload flag",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Verify and Add Watcher Dependency",
+      "description": "As a developer, I need the watcher dependency to be available in the backend environment so that the TaskIQ --reload flag works correctly.",
+      "acceptanceCriteria": [
+        "Check if watchdog or watchfiles is importable in the backend venv (run: uv run python -c 'import watchdog' or uv run python -c 'import watchfiles')",
+        "If neither is present, add watchdog to dev dependencies in backend/pyproject.toml",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "watchdog was already available as a transitive dependency - no changes needed"
+    },
+    {
+      "id": "US-002",
+      "title": "Update Makefile dev.worker Target with Reload Flag",
+      "description": "As a developer running Ralph autonomous loops, I want the TaskIQ worker to automatically reload when Python source files change so that code changes are immediately reflected without manual worker restarts.",
+      "acceptanceCriteria": [
+        "backend/Makefile dev.worker target includes --reload --reload-dir src flags",
+        "Production docker-compose.yml worker entrypoint is NOT modified (verify no changes to docker-compose.yml)",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Verify and Format",
+      "description": "As a developer, I want to confirm the changes are clean and tests pass.",
+      "acceptanceCriteria": [
+        "Run make format from backend directory",
+        "Existing backend tests pass (make test from backend directory)",
+        "No unintended file changes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}
