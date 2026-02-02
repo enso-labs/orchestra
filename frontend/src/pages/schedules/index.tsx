@@ -176,7 +176,7 @@ function SchedulesIndexPage() {
 				const matchesSearch =
 					searchQuery === "" ||
 					schedule.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					schedule.task.messages?.[0]?.content
+					schedule.task.input?.messages?.[0]?.content
 						?.toLowerCase()
 						.includes(searchQuery.toLowerCase());
 
@@ -578,11 +578,11 @@ function SchedulesIndexPage() {
 									editingSchedule.task.metadata?.schedule_description || "",
 								enabled: editingSchedule.task.metadata?.enabled ?? true,
 								cronExpression: editingSchedule.trigger.expression,
-								message: editingSchedule.task.messages?.[0]?.content || "",
+								message: editingSchedule.task.input?.messages?.[0]?.content || "",
 								inheritFromAgent:
 									editingSchedule.task.metadata?.inherited_from_agent || true,
 								customModel: editingSchedule.task.model,
-								customSystem: editingSchedule.task.system,
+								customSystem: editingSchedule.task.system_prompt,
 								customTools: editingSchedule.task.tools || [],
 							}}
 							isLoading={loading}
