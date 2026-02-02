@@ -1,3 +1,6 @@
+# Ralph Progress Log
+Started: Sun Feb  1 22:01:09 MST 2026
+
 ## Codebase Patterns
 - Backend uses async SQLAlchemy with PostgreSQL (see backend/src/services/db.py for DB_URI and connection patterns)
 - Schedules use APScheduler SQLAlchemyJobStore (table "schedules") — not standard SQLAlchemy models
@@ -11,3 +14,14 @@
 - `make test` in backend sources env from `~/.env/orchestra/.env.backend` before running pytest
 ---
 
+## 2026-02-01 - US-001
+- Created ScheduleExecution SQLAlchemy model in `backend/src/schemas/models/schedule_execution.py`
+- Created ScheduleExecutionResponse Pydantic schema in `backend/src/schemas/entities/schedule.py`
+- Registered model in barrel export `backend/src/schemas/models/__init__.py`
+- Registered model in `load_models()` in `backend/src/services/db.py`
+- Files changed: schedule_execution.py (new), __init__.py, schedule.py, db.py
+- **Learnings for future iterations:**
+  - Models live in `backend/src/schemas/models/`, not `backend/src/models/` (PRD path was slightly wrong)
+  - Pydantic schemas go in `backend/src/schemas/entities/`
+  - `load_models()` imports are side-effect only — Pyright warns "not accessed" but that's expected
+---

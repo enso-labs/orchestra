@@ -14,7 +14,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Follow existing SQLAlchemy model patterns in the codebase. The app uses PostgreSQL with async SQLAlchemy. Check backend/src/models/ or backend/src/services/db.py for DB connection patterns."
     },
     {
