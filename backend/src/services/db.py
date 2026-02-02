@@ -60,6 +60,7 @@ def load_models():
     """Import all models to ensure they are registered with SQLAlchemy"""
     from src.schemas.models import (
         User,
+        ScheduleExecution,
     )
 
     return _Base

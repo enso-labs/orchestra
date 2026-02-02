@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 from uuid import uuid4
 from datetime import datetime
 
@@ -175,3 +175,16 @@ class Schedule(BaseModel):
     trigger: JobTrigger
     task: LLMRequest
     next_run_time: datetime = Field(..., json_schema_extra={"example": datetime.now()})
+
+
+class ScheduleExecutionResponse(BaseModel):
+    id: str
+    schedule_id: str
+    thread_id: Optional[str] = None
+    status: str
+    scheduled_time: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    user_id: str
