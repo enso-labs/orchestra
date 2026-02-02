@@ -1,32 +1,28 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/722-frontend-schedule-refactor",
-  "description": "Fix Schedule Create/Update Payload to Match Backend Schema - Align frontend payload with backend LLMRequest model to eliminate 422 errors",
+  "branchName": "feat/724-add-watcher-to-worker-reload",
+  "description": "Add file-watching auto-reload to TaskIQ worker for development using native --reload flag",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Update ScheduleCreate TypeScript Interface",
-      "description": "As a developer, I need the ScheduleCreate interface to match the backend LLMRequest schema so TypeScript catches payload mismatches at compile time.",
+      "title": "Verify and Add Watcher Dependency",
+      "description": "As a developer, I need the watcher dependency to be available in the backend environment so that the TaskIQ --reload flag works correctly.",
       "acceptanceCriteria": [
-        "ScheduleCreate.task has a required `input` field of type `{ messages: Array<{ role: string; content: string }>; files?: Record<string, any> }`",
-        "ScheduleCreate.task uses `system_prompt` instead of `system`",
-        "ScheduleCreate.task.metadata typed with known Config fields: user_id, thread_id, checkpoint_id, assistant_id, project_id, graph_id (all optional) plus [key: string]: any",
-        "Schedule read interface updated to also reflect task.input nesting",
-        "Typecheck passes (`npx tsc --noEmit` from frontend directory)"
+        "Check if watchdog or watchfiles is importable in the backend venv (run: uv run python -c 'import watchdog' or uv run python -c 'import watchfiles')",
+        "If neither is present, add watchdog to dev dependencies in backend/pyproject.toml",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "watchdog was already available as a transitive dependency - no changes needed"
     },
     {
       "id": "US-002",
-      "title": "Update AgentScheduleForm Payload Construction",
-      "description": "As a user, I want schedule creation to succeed so I can automate agent tasks on a cron schedule.",
+      "title": "Update Makefile dev.worker Target with Reload Flag",
+      "description": "As a developer running Ralph autonomous loops, I want the TaskIQ worker to automatically reload when Python source files change so that code changes are immediately reflected without manual worker restarts.",
       "acceptanceCriteria": [
-        "handleFormSubmit in AgentScheduleForm.tsx wraps messages inside task.input: { messages: [...] }",
-        "system field renamed to system_prompt in the constructed payload",
-        "metadata includes assistant_id mapped from agent.id (or agent.metadata.assistant_id if available)",
-        "Custom metadata keys (schedule_description, inherited_from_agent, enabled, agent_id) preserved as extra fields",
+        "backend/Makefile dev.worker target includes --reload --reload-dir src flags",
+        "Production docker-compose.yml worker entrypoint is NOT modified (verify no changes to docker-compose.yml)",
         "Typecheck passes"
       ],
       "priority": 2,
@@ -35,32 +31,14 @@
     },
     {
       "id": "US-003",
-      "title": "Update Schedule Page Create/Edit Handlers",
-      "description": "As a developer, I need the schedule page handlers to pass the correctly structured payload through to the service layer.",
+      "title": "Verify and Format",
+      "description": "As a developer, I want to confirm the changes are clean and tests pass.",
       "acceptanceCriteria": [
-        "handleCreateSchedule in schedules/index.tsx adds agent_id into metadata correctly with the new structure",
-        "handleEditSchedule (if it reconstructs the payload) uses the same task.input nesting",
-        "Edit form pre-population reads messages from task.input.messages (not task.messages)",
-        "Typecheck passes",
-        "Verify in browser using agent-browser skill"
+        "Run make format from backend directory",
+        "Existing backend tests pass (make test from backend directory)",
+        "No unintended file changes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-004",
-      "title": "Verify End-to-End Schedule CRUD",
-      "description": "As a user, I want to create, view, and edit schedules without errors.",
-      "acceptanceCriteria": [
-        "POST /api/schedules returns 201 (not 422) with the new payload structure",
-        "Created schedule appears in the schedule list",
-        "Edit schedule dialog pre-populates correctly from the stored schedule",
-        "PUT /api/schedules/{id} succeeds without 422",
-        "Typecheck and lint pass",
-        "Verify in browser using agent-browser skill"
-      ],
-      "priority": 4,
       "passes": true,
       "notes": ""
     }

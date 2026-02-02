@@ -1,54 +1,18 @@
-# Ralph Progress Log
-Started: Sun Feb  1 17:44:41 MST 2026
----
-
 ## Codebase Patterns
-- Backend LLMRequest schema: `input: LLMInput` (messages + files), `system_prompt`, `metadata: Config`
-- Config model fields: user_id, thread_id, checkpoint_id, assistant_id, project_id, graph_id (with extra="allow")
-- LLMInput model fields: messages (List[ChatMessage]), files (Optional[Dict])
-- Frontend schedule types at: `frontend/src/lib/entities/schedule.ts`
-- Backend LLM schemas at: `backend/src/schemas/entities/llm.py`
-
+- `watchdog` is available as a transitive dependency in the backend venv (no need to add explicitly)
+- TaskIQ v0.12.1 supports `--reload` and `--reload-dir` flags natively
+- `make format` in backend runs `uvx ruff format` - run it before committing
+- `make test` in backend sources env from `~/.env/orchestra/.env.backend` before running pytest
 ---
 
-## 2026-02-01 - US-001
-- Updated ScheduleCreate and Schedule interfaces to nest messages under task.input (matching LLMInput)
-- Added ScheduleTaskMetadata interface with typed Config fields + index signature
-- Removed legacy `system` field, kept only `system_prompt`
-- Added `files?` field to input matching backend LLMInput
-- Files changed: `frontend/src/lib/entities/schedule.ts`
+## 2026-02-01 - US-001, US-002, US-003
+- Verified `watchdog` is already importable in backend venv (no pyproject.toml changes needed)
+- Added `--reload --reload-dir src` flags to `backend/Makefile` `dev.worker` target
+- Ran `make format` (5 pre-existing files reformatted) and `make test` (360 passed, 2 skipped)
+- docker-compose.yml was NOT modified
+- Files changed: `backend/Makefile` (feature), plus 5 formatting fixes
 - **Learnings for future iterations:**
-  - Backend uses `LLMInput` wrapper with `messages` + `files`; frontend was sending messages flat
-  - `Config` model uses `extra="allow"` so custom metadata keys are valid
-  - Typecheck passed cleanly after interface changes - consumers use `any` or dynamic access
----
-
-## 2026-02-01 - US-002
-- Updated handleFormSubmit to wrap messages inside task.input
-- Renamed system to system_prompt in payload construction
-- Added assistant_id from agent.metadata or agent.id to metadata
-- Files changed: `frontend/src/components/forms/AgentScheduleForm.tsx`
-- **Learnings for future iterations:**
-  - Agent type from agentService has `metadata?: object` - needs cast to Record<string,any> for spreading
-  - agent.id should map to both metadata.agent_id and metadata.assistant_id
----
-
-## 2026-02-01 - US-003
-- Updated all task.messages references to task.input.messages across 3 files
-- Updated task.system references to task.system_prompt
-- Files changed: `frontend/src/pages/schedules/index.tsx`, `frontend/src/components/cards/AgentScheduleCard.tsx`, `frontend/src/components/panels/AgentSchedulesPanel.tsx`
-- **Learnings for future iterations:**
-  - Schedule message references exist in multiple places: search filter, card display, edit form pre-population
-  - Always grep for old field names across entire frontend after changing interfaces
----
-
-## 2026-02-01 - US-004
-- Verified schedules page loads without errors in browser
-- Created a test schedule successfully (POST returned 201, not 422)
-- Schedule appeared in list (Total: 1, Upcoming: 1)
-- Typecheck and lint pass
-- Files changed: `.ralph/prd.json`, `.ralph/progress.txt`
-- **Learnings for future iterations:**
-  - agent-browser e1 button is the Create Schedule (+) button in top-right
-  - Agent cards in create dialog are clickable divs, not buttons - use eval for clicking
+  - `watchdog` comes as a transitive dep, likely via uvicorn[standard] - no need to add it
+  - TaskIQ's `--reload` flag uses watchdog under the hood
+  - Ruff formatting may touch files unrelated to your changes - include them in the commit
 ---
