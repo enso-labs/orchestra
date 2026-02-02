@@ -54,7 +54,7 @@ export const AgentScheduleCard: React.FC<AgentScheduleCardProps> = ({
 	};
 
 	const getTaskSummary = () => {
-		const message = schedule.task.messages?.[0]?.content;
+		const message = schedule.task.input?.messages?.[0]?.content;
 		if (typeof message === "string") {
 			return message.length > 60 ? `${message.substring(0, 60)}...` : message;
 		}

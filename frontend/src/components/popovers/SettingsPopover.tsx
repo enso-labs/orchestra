@@ -8,7 +8,7 @@ import { logout } from "@/lib/utils/auth";
 import {
 	Settings,
 	Cog,
-	Calendar,
+
 	FileText,
 	Book,
 	Globe,
@@ -61,14 +61,6 @@ export function SettingsPopover() {
 					>
 						<FileText className="h-4 w-4" />
 						Prompts
-					</Button>
-					<Button
-						variant="ghost"
-						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => navigate("/schedules")}
-					>
-						<Calendar className="h-4 w-4" />
-						Schedules
 					</Button>
 					<Button
 						variant="ghost"

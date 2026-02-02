@@ -13,6 +13,7 @@ import {
 	FileText,
 	Loader2,
 	Search,
+	Calendar,
 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
@@ -62,6 +63,9 @@ import { deleteThread, updateThreadProject } from "@/lib/services";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
+import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
+import { useSchedules } from "@/hooks/useSchedules";
+import { ScheduleSidebarItem } from "@/components/sidebar/ScheduleSidebarItem";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -712,6 +716,88 @@ function CollapsibleGroup({
 	);
 }
 
+function SchedulesCollapsibleGroup() {
+	const { executions, loading } = useScheduleExecutions({ limit: 10 });
+	const { schedules, fetchSchedules } = useSchedules();
+	const navigate = useNavigate();
+
+	// Fetch schedules on mount to build name map
+	React.useEffect(() => {
+		fetchSchedules();
+	}, [fetchSchedules]);
+
+	const schedulesMap = React.useMemo(() => {
+		const map = new Map<string, string>();
+		for (const s of schedules) {
+			map.set(s.id, s.title);
+		}
+		return map;
+	}, [schedules]);
+
+	return (
+		<Collapsible
+			key="schedules"
+			title={`Schedules (${executions.length} recent)`}
+			defaultOpen={false}
+			className="group/collapsible"
+		>
+			<SidebarGroup className="border-b border-sidebar-border">
+				<SidebarGroupLabel
+					asChild
+					className={`
+						group/label text-sidebar-foreground hover:bg-sidebar-accent
+						hover:text-sidebar-accent-foreground text-sm
+					`}
+				>
+					<CollapsibleTrigger>
+						<Calendar className="w-4 h-4 mr-2" />
+						Schedules
+						<ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+					</CollapsibleTrigger>
+				</SidebarGroupLabel>
+				<CollapsibleContent>
+					<SidebarGroupContent className="px-1 pt-2">
+						<div className="px-2 pb-2">
+							<Button
+								variant="outline"
+								size="sm"
+								className="w-full justify-start gap-2"
+								onClick={() => navigate("/schedules")}
+							>
+								<Calendar className="h-4 w-4" />
+								View All Schedules
+							</Button>
+						</div>
+						<SidebarMenu className="gap-0">
+							{loading ? (
+								<div className="flex items-center justify-center gap-2 p-3 text-sm text-sidebar-foreground/60">
+									<Loader2 className="h-4 w-4 animate-spin" />
+									<span>Loading...</span>
+								</div>
+							) : executions.length > 0 ? (
+								executions.map((execution) => (
+									<ScheduleSidebarItem
+										key={execution.id}
+										execution={execution}
+										scheduleName={
+											schedulesMap.get(execution.schedule_id) ??
+											"Unknown Schedule"
+										}
+									/>
+								))
+							) : (
+								<div className="px-3 py-4 text-center text-sm text-sidebar-foreground/50">
+									No recent executions
+								</div>
+							)}
+						</SidebarMenu>
+					</SidebarGroupContent>
+				</CollapsibleContent>
+			</SidebarGroup>
+		</Collapsible>
+	);
+}
+
 // const versions = ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -793,6 +879,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						onCreateProject={() => setIsCreateProjectModalOpen(true)}
 						onAddSource={handleAddSource}
 					/>
+					<SchedulesCollapsibleGroup />
 					<CollapsibleGroup
 						title="Threads"
 						items={unassociatedThreads}

@@ -1,0 +1,62 @@
+{
+  "title": "Frontend Schedule Refactor",
+  "description": "Elevate Schedules from Settings to first-class navigation with calendar and table views",
+  "branchName": "feat/722-frontend-schedule-refactor",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Install React Big Calendar and setup dependencies",
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "Define ScheduleExecution and ScheduleEvent entity types",
+      "passes": true
+    },
+    {
+      "id": "US-003",
+      "title": "Add execution endpoints to schedule service",
+      "passes": true
+    },
+    {
+      "id": "US-004",
+      "title": "Add calendar utility functions",
+      "passes": true
+    },
+    {
+      "id": "US-005",
+      "title": "Create useScheduleExecutions hook",
+      "passes": true
+    },
+    {
+      "id": "US-006",
+      "title": "Sidebar Navigation for Schedules",
+      "description": "Add Schedules as a first-class navigation item in the app sidebar alongside Projects, Assistants, and Threads. Sidebar dropdown shows the 10 most recent schedule executions with name, status indicator, and relative timestamp. Clicking navigates to thread or schedule detail.",
+      "passes": true
+    },
+    {
+      "id": "US-007",
+      "title": "Calendar View (Default Schedule Index)",
+      "description": "React Big Calendar renders as the default view at /schedules with events spanning 30 days past to 30 days future, color-coded by status.",
+      "passes": false
+    },
+    {
+      "id": "US-008",
+      "title": "Table View (Secondary Toggle)",
+      "description": "Toggle between Calendar and Table views on the schedules page. Table supports PAST/FUTURE toggle, sorted descending by execution time.",
+      "passes": false
+    },
+    {
+      "id": "US-009",
+      "title": "Remove Schedule Navigation from SettingsPopover",
+      "description": "Remove schedule navigation from SettingsPopover, keep it accessible only from the new dedicated Schedules sidebar section.",
+      "passes": false
+    },
+    {
+      "id": "US-010",
+      "title": "End-to-End Validation with agent-browser",
+      "description": "Validate the scheduling flow end-to-end using agent-browser skill.",
+      "passes": false
+    }
+  ]
+}

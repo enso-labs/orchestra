@@ -22,7 +22,11 @@ import {
 } from "@/components/ui/select";
 import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
 import { AgentScheduleForm } from "@/components/forms/AgentScheduleForm";
+import { ScheduleCalendar } from "@/components/calendar/ScheduleCalendar";
+import { ScheduleTable } from "@/components/tables/ScheduleTable";
+import { ViewToggle } from "@/components/toggles/ViewToggle";
 import { getScheduleStatus } from "@/lib/utils/schedule";
+import { mapExecutionsToEvents } from "@/lib/utils/calendar";
 import {
 	Search,
 	Calendar,
@@ -38,8 +42,9 @@ import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import HouseIcon from "@/components/icons/HouseIcon";
 import { useSchedules } from "@/hooks/useSchedules";
+import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
 import { useAgentContext } from "@/context/AgentContext";
-import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
+import { Schedule, ScheduleCreate, ScheduleEvent } from "@/lib/entities/schedule";
 import { toast } from "sonner";
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
@@ -62,10 +67,28 @@ function SchedulesIndexPage() {
 	const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 	const [sortBy, setSortBy] = useState<SortBy>("next_run");
 	const [filterAgentId, setFilterAgentId] = useState<string>("all");
+	const [viewMode, setViewMode] = useState<"calendar" | "table">("calendar");
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
 	const [selectedAgentId, setSelectedAgentId] = useState<string>("");
 	const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+
+	const { executions } = useScheduleExecutions();
+
+	// Map executions to calendar events
+	const schedulesMap = useMemo(() => {
+		const map = new Map<string, Schedule>();
+		for (const s of schedules) {
+			map.set(s.id, s);
+		}
+		return map;
+	}, [schedules]);
+
+	const handleEventClick = (event: ScheduleEvent) => {
+		if (event.resource.thread_id) {
+			window.open(`/?t=${event.resource.thread_id}`, "_blank", "noopener,noreferrer");
+		}
+	};
 
 	useEffectGetAgents();
 
@@ -150,7 +173,7 @@ function SchedulesIndexPage() {
 				const matchesSearch =
 					searchQuery === "" ||
 					schedule.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					schedule.task.messages?.[0]?.content
+					schedule.task.input?.messages?.[0]?.content
 						?.toLowerCase()
 						.includes(searchQuery.toLowerCase());
 
@@ -186,6 +209,23 @@ function SchedulesIndexPage() {
 				}
 			});
 	}, [schedules, searchQuery, filterStatus, filterAgentId, sortBy]);
+
+	// Create a set of filtered schedule IDs to filter executions
+	const filteredScheduleIds = useMemo(() => {
+		return new Set(filteredAndSortedSchedules.map((s) => s.id));
+	}, [filteredAndSortedSchedules]);
+
+	// Filter executions to only include those for filtered schedules
+	const filteredExecutions = useMemo(() => {
+		if (!executions) return [];
+		return executions.filter((e) => filteredScheduleIds.has(e.schedule_id));
+	}, [executions, filteredScheduleIds]);
+
+	// Create filtered calendar events for calendar/table views
+	const filteredCalendarEvents = useMemo(
+		() => mapExecutionsToEvents(filteredExecutions, schedulesMap),
+		[filteredExecutions, schedulesMap],
+	);
 
 	const getStatusCounts = () => {
 		const counts = {
@@ -347,6 +387,7 @@ function SchedulesIndexPage() {
 								</div>
 							</div>
 							<div className="flex gap-2">
+								<ViewToggle view={viewMode} onViewChange={setViewMode} />
 								<Select
 									value={filterAgentId}
 									onValueChange={(value: string) => setFilterAgentId(value)}
@@ -410,57 +451,71 @@ function SchedulesIndexPage() {
 				{/* Scrollable content area */}
 				<div className="flex-1 min-h-0 px-4">
 					<div className="mx-auto h-full">
-						<ScrollArea className="h-full">
-							<div className="pb-4">
-								{/* Schedules Grid */}
-								{filteredAndSortedSchedules.length > 0 ? (
-									<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-										{filteredAndSortedSchedules.map((schedule) => {
-											const agent = getAgentForSchedule(schedule);
-											return (
-												<AgentScheduleCard
-													key={schedule.id}
-													schedule={schedule}
-													agent={agent || { id: "", name: "Unknown Agent" }}
-													onEdit={handleEditSchedule}
-													onDelete={handleDeleteSchedule}
-													onDuplicate={handleDuplicateSchedule}
-												/>
-											);
-										})}
-									</div>
-								) : (
-									/* Empty State */
-									<Card>
-										<CardContent className="flex flex-col items-center justify-center py-12">
-											<Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-											<CardTitle className="text-lg mb-2">
-												{searchQuery ||
-												filterStatus !== "all" ||
-												filterAgentId !== "all"
-													? "No schedules found"
-													: "No schedules yet"}
-											</CardTitle>
-											<CardDescription className="text-center mb-4">
-												{searchQuery ||
-												filterStatus !== "all" ||
-												filterAgentId !== "all"
-													? "Try adjusting your search or filter criteria"
-													: "Create schedules from agent pages to get started"}
-											</CardDescription>
-											{!searchQuery &&
-												filterStatus === "all" &&
-												filterAgentId === "all" && (
-													<Button onClick={() => navigate("/assistants")}>
-														<Bot className="h-4 w-4 mr-2" />
-														Go to Agents
-													</Button>
-												)}
-										</CardContent>
-									</Card>
-								)}
-							</div>
-						</ScrollArea>
+					{viewMode === "calendar" ? (
+						<ScheduleCalendar
+							events={filteredCalendarEvents}
+							onEventClick={handleEventClick}
+						/>
+					) : viewMode === "table" ? (
+						<ScheduleTable
+							events={filteredCalendarEvents}
+							onEdit={handleEditSchedule}
+							onDelete={handleDeleteSchedule}
+							onDuplicate={handleDuplicateSchedule}
+						/>
+					) : (
+							<ScrollArea className="h-full">
+								<div className="pb-4">
+									{/* Schedules Grid */}
+									{filteredAndSortedSchedules.length > 0 ? (
+										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+											{filteredAndSortedSchedules.map((schedule) => {
+												const agent = getAgentForSchedule(schedule);
+												return (
+													<AgentScheduleCard
+														key={schedule.id}
+														schedule={schedule}
+														agent={agent || { id: "", name: "Unknown Agent" }}
+														onEdit={handleEditSchedule}
+														onDelete={handleDeleteSchedule}
+														onDuplicate={handleDuplicateSchedule}
+													/>
+												);
+											})}
+										</div>
+									) : (
+										/* Empty State */
+										<Card>
+											<CardContent className="flex flex-col items-center justify-center py-12">
+												<Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+												<CardTitle className="text-lg mb-2">
+													{searchQuery ||
+													filterStatus !== "all" ||
+													filterAgentId !== "all"
+														? "No schedules found"
+														: "No schedules yet"}
+												</CardTitle>
+												<CardDescription className="text-center mb-4">
+													{searchQuery ||
+													filterStatus !== "all" ||
+													filterAgentId !== "all"
+														? "Try adjusting your search or filter criteria"
+														: "Create schedules from agent pages to get started"}
+												</CardDescription>
+												{!searchQuery &&
+													filterStatus === "all" &&
+													filterAgentId === "all" && (
+														<Button onClick={() => navigate("/assistants")}>
+															<Bot className="h-4 w-4 mr-2" />
+															Go to Agents
+														</Button>
+													)}
+											</CardContent>
+										</Card>
+									)}
+								</div>
+							</ScrollArea>
+						)}
 					</div>
 				</div>
 			</div>
@@ -537,11 +592,11 @@ function SchedulesIndexPage() {
 									editingSchedule.task.metadata?.schedule_description || "",
 								enabled: editingSchedule.task.metadata?.enabled ?? true,
 								cronExpression: editingSchedule.trigger.expression,
-								message: editingSchedule.task.messages?.[0]?.content || "",
+								message: editingSchedule.task.input?.messages?.[0]?.content || "",
 								inheritFromAgent:
 									editingSchedule.task.metadata?.inherited_from_agent || true,
 								customModel: editingSchedule.task.model,
-								customSystem: editingSchedule.task.system,
+								customSystem: editingSchedule.task.system_prompt,
 								customTools: editingSchedule.task.tools || [],
 							}}
 							isLoading={loading}
