@@ -5,20 +5,32 @@ export interface ScheduleCreate {
 		expression: string; // e.g., "0 */1 * * *" (minimum 1 hour intervals)
 	};
 	task: {
+		input: {
+			messages: Array<{
+				role: "user" | "assistant" | "system" | "tool";
+				content: string;
+			}>;
+			files?: Record<string, any>;
+		};
 		model: string;
-		system?: string;
 		system_prompt?: string;
 		instructions?: string;
-		messages: Array<{
-			role: "user" | "assistant" | "system" | "tool";
-			content: string;
-		}>;
 		tools?: string[];
 		a2a?: Record<string, any>;
 		mcp?: Record<string, any>;
 		subagents?: Array<any>;
-		metadata?: Record<string, any>;
+		metadata?: ScheduleTaskMetadata;
 	};
+}
+
+export interface ScheduleTaskMetadata {
+	user_id?: string;
+	thread_id?: string;
+	checkpoint_id?: string;
+	assistant_id?: string;
+	project_id?: string;
+	graph_id?: "react" | "deepagent";
+	[key: string]: any;
 }
 
 export interface Schedule {
@@ -29,19 +41,21 @@ export interface Schedule {
 		expression: string;
 	};
 	task: {
+		input: {
+			messages: Array<{
+				role: "user" | "assistant" | "system" | "tool";
+				content: string;
+			}>;
+			files?: Record<string, any>;
+		};
 		model: string;
-		system?: string;
 		system_prompt?: string;
 		instructions?: string;
-		messages: Array<{
-			role: "user" | "assistant" | "system" | "tool";
-			content: string;
-		}>;
 		tools?: string[];
 		a2a?: Record<string, any>;
 		mcp?: Record<string, any>;
 		subagents?: Array<any>;
-		metadata?: Record<string, any>;
+		metadata?: ScheduleTaskMetadata;
 	};
 	next_run_time: string; // ISO datetime
 	agent_id?: string; // Link to specific agent
