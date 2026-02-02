@@ -7,7 +7,6 @@ from langchain_core.messages import (
 )
 
 
-
 def from_message_to_dict(messages, include_tool_calls: bool = True) -> list[dict]:
     # Convert API messages to LangChain message objects
     converted: list[dict] = []

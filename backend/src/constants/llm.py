@@ -199,6 +199,7 @@ DEFAULT_CHAT_MODEL = get_default_chat_model()
 DEFAULT_CHAT_MODEL_BASIC = get_default_low_cost_model()
 DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value
 
+
 def _safe_int_env(var_name: str, default: int) -> int:
     """
     Safely parse an environment variable as an integer.

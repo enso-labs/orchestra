@@ -4,7 +4,6 @@ These are pure unit tests that don't require database or app initialization.
 """
 
 
-
 class TestLLMRequestFileGeneration:
     """Test LLMRequest schema with file generation parameters."""
 
