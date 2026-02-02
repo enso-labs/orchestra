@@ -12,7 +12,8 @@
 - docker-compose.yml was NOT modified
 - Files changed: `backend/Makefile` (feature), plus 5 formatting fixes
 - **Learnings for future iterations:**
-  - `watchdog` comes as a transitive dep, likely via uvicorn[standard] - no need to add it
-  - TaskIQ's `--reload` flag uses watchdog under the hood
+  - `watchdog` as transitive dep is NOT sufficient for TaskIQ reload - must install `taskiq[reload]` extra
+  - `taskiq[reload]` belongs in dev dependencies since `--reload` is only for development
+  - TaskIQ's `FileWatcher` is `None` without the reload extra, causing `TypeError: 'NoneType' object is not callable`
   - Ruff formatting may touch files unrelated to your changes - include them in the commit
 ---

@@ -9,7 +9,7 @@ Usage:
 
     # From API code, enqueue tasks:
     from src.workers.tasks import run_agent_stream
-    await run_agent_stream.kiq(task_dict, user_id, thread_id, config_dict)
+    await run_agent_stream.kiq(task_dict, user_id, thread_id, config_dict)as
 """
 
 from src.workers.broker import broker, REDIS_URL

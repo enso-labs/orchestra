@@ -12,8 +12,11 @@
 **/sandbox/db/*
 **/site
 **/docker/searxng/settings.yml.new
+**/*.pyc
+**/*.pyo
 
-backend/src/public
+
+**/backend/src/public
 **/.worktrees/
 **/.playwright*
 **/.backups/

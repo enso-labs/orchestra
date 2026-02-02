@@ -3,6 +3,11 @@ from uuid import uuid4
 from datetime import datetime, timezone
 from fastapi.openapi.models import Example
 
+def get_arcade_response_example():
+    return httpx.get(
+        "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json"
+    ).json()
+
 MCP_SERVER_EXAMPLE = {
     "transport": "sse",
     "url": "https://mcp.enso.sh/sse",
@@ -21,10 +26,7 @@ ARCADE_REQ_BODY_EXAMPLE = {
     "arcade": {"tools": ["Web.ScrapeUrl"], "toolkits": ["Google"]}
 }
 
-ARCADE_RESPONSE_EXAMPLE = httpx.get(
-    "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/mock-response-arcade.json"
-).json()
-
+ARCADE_RESPONSE_EXAMPLE = get_arcade_response_example()
 
 def get_example_metadata(
     project_id: bool = False,
@@ -47,6 +49,10 @@ def get_example_metadata(
         metadata["checkpoint_id"] = str(uuid4())
     return metadata
 
+def get_airtable_spec():
+    return httpx.get(
+        "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/airtable-spec.json"
+    ).json()
 
 NEW_THREAD_API_TOOLS = {
     "system": "You are",
@@ -59,9 +65,7 @@ NEW_THREAD_API_TOOLS = {
             "name": "Airtable Tools",
             "description": "Airtable Tools",
             "headers": {"x-api-key": "1234567890"},
-            "spec": httpx.get(
-                "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/airtable-spec.json"
-            ).json(),
+            "spec": get_airtable_spec(),
         }
     ],
 }
