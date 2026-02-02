@@ -1,39 +1,18 @@
 ## Codebase Patterns
-- `scheduled_llm_invoke()` must be a module-level function (not a method) for APScheduler pickling
-- Imports inside `scheduled_llm_invoke()` function body are intentional for pickling support
-- `DISTRIBUTED_WORKERS` is now in `src/constants/__init__.py` (consolidated)
-- Use `make format` (runs `uvx ruff format`) for formatting, `make test` for running tests
-- Tests need env vars: `set -a && . ~/.env/orchestra/.env.backend && set +a` before pytest
-- Patch `src.constants.DISTRIBUTED_WORKERS` to control dispatch path in tests
----
+- DISTRIBUTED_WORKERS is imported inside function body (not module-level) in schedule.py for APScheduler pickle compatibility
+- Patch `src.constants.DISTRIBUTED_WORKERS` (not `src.services.schedule.DISTRIBUTED_WORKERS`) when testing functions that import it inside their body
+- Backend tests require env vars loaded from `~/.env/orchestra/.env.backend` — use `set -a && . ~/.env/orchestra/.env.backend && set +a` before pytest
+- Use `make format` in backend/ to run ruff formatting
 
-## 2026-02-01 - US-001
-- Added `DISTRIBUTED_WORKERS` constant to `backend/src/constants/__init__.py`
-- Updated `backend/src/routes/v0/llm.py` to import from `src.constants` instead of inline definition
-- Removed `os` import and inline constant from `llm.py`
-- Files changed: `src/constants/__init__.py`, `src/routes/v0/llm.py`
-- **Learnings for future iterations:**
-  - `ruff check --fix` auto-removes unused imports (like `List`, `os`) which is helpful
-  - Pre-existing lint errors exist in codebase (83 remaining) - don't worry about those
----
-
-## 2026-02-01 - US-002
-- Added TaskIQ dispatch path to `scheduled_llm_invoke()` when `DISTRIBUTED_WORKERS=true`
-- Extracts thread_id from task_dict metadata or generates UUID
-- Files changed: `src/services/schedule.py`
----
-
-## 2026-02-01 - US-003
-- Simplified create_job route to call `schedule_service.create_job()` directly
-- Removed `LLMController`, `init_config`, `get_store`, `BaseStore` imports from schedule route
-- Files changed: `src/routes/v0/schedule.py`
 ---
 
 ## 2026-02-01 - US-004
-- Added 5 unit tests for TaskIQ dispatch path in `test_schedule_service.py`
-- Tests cover: distributed dispatch, in-process fallback, thread_id from metadata, thread_id generation, missing metadata
-- Files changed: `tests/unit/services/test_schedule_service.py`
+- Implemented unit tests for scheduled_llm_invoke TaskIQ dispatch logic
+- Files changed: backend/tests/unit/services/test_schedule_dispatch.py (created)
+- 4 tests: dispatch to kiq when distributed, in-process when not, thread_id extraction from metadata, UUID generation when no thread_id
+- All 316 tests pass (unit suite)
 - **Learnings for future iterations:**
-  - Tests require env vars loaded from `~/.env/orchestra/.env.backend` due to conftest importing main app
-  - Patching `src.constants.DISTRIBUTED_WORKERS` works because function imports it fresh each call
+  - Since DISTRIBUTED_WORKERS is imported inside the function body (for pickle compat), you must patch `src.constants.DISTRIBUTED_WORKERS` not `src.services.schedule.DISTRIBUTED_WORKERS`
+  - The `src.workers.tasks.run_agent_stream` must be patched as a context manager inside the test since it's also imported inside the function body
+  - US-001 through US-003 were already implemented on this branch before this iteration
 ---
