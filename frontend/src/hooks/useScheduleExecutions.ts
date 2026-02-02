@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import ScheduleService from "@/lib/services/scheduleService";
 import { ScheduleExecution } from "@/lib/entities/schedule";
 
@@ -33,12 +32,14 @@ export function useScheduleExecutions(
 				const data = await ScheduleService.getRecentExecutions(
 					fetchLimit ?? limit,
 				);
-				setExecutions(data);
+				// Ensure data is an array before setting
+				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
 				const message = "Failed to fetch recent executions";
 				setError(message);
-				toast.error(message);
+				// Don't show toast for expected 404 (endpoint may not exist yet)
 				console.error(message, err);
+				setExecutions([]);
 			} finally {
 				setLoading(false);
 			}
@@ -55,12 +56,13 @@ export function useScheduleExecutions(
 					id,
 					fetchLimit ?? limit,
 				);
-				setExecutions(data);
+				// Ensure data is an array before setting
+				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
 				const message = "Failed to fetch schedule executions";
 				setError(message);
-				toast.error(message);
 				console.error(message, err);
+				setExecutions([]);
 			} finally {
 				setLoading(false);
 			}
@@ -77,12 +79,13 @@ export function useScheduleExecutions(
 					startDate,
 					endDate,
 				);
-				setExecutions(data);
+				// Ensure data is an array before setting
+				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
 				const message = "Failed to fetch executions by date range";
 				setError(message);
-				toast.error(message);
 				console.error(message, err);
+				setExecutions([]);
 			} finally {
 				setLoading(false);
 			}
