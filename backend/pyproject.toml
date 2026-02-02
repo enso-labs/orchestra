@@ -59,6 +59,7 @@ dependencies = [
     "taskiq-redis>=1.0.0",
     "redis>=5.0.0",
     "taskiq[reload]>=0.12.1",
+    "croniter>=6.0.0",
 ]
 
 [dependency-groups]

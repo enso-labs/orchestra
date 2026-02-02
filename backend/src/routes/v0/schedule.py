@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from croniter import croniter
 from fastapi import APIRouter, Depends, HTTPException, Response, Body
 from fastapi.responses import JSONResponse
 from fastapi_cache.decorator import cache
@@ -17,6 +18,36 @@ from src.schemas.entities.schedule import (
 )
 
 router = APIRouter(tags=["Schedule"])
+
+
+def _get_projected_executions(
+    user_id: str,
+    start: datetime,
+    end: datetime,
+) -> list[ScheduleExecutionResponse]:
+    """Generate projected future executions from cron expressions for all user schedules."""
+    projections: list[ScheduleExecutionResponse] = []
+    for schedule in schedule_service.get_jobs():
+        cron_expr = schedule.trigger.expression.strip()
+        try:
+            cron = croniter(cron_expr, start)
+        except (ValueError, KeyError):
+            continue
+        while True:
+            next_time: datetime = cron.get_next(datetime)
+            if next_time > end:
+                break
+            projections.append(
+                ScheduleExecutionResponse(
+                    id=f"{schedule.id}_proj_{next_time.isoformat()}",
+                    schedule_id=schedule.id,
+                    status="scheduled",
+                    scheduled_time=next_time,
+                    metadata={},
+                    user_id=user_id,
+                )
+            )
+    return projections
 
 
 ################################################################################
@@ -57,7 +88,7 @@ async def get_recent_executions(
         user_id=user.id,
         limit=limit,
     )
-    return [
+    results = [
         ScheduleExecutionResponse(
             id=str(e.id),
             schedule_id=e.schedule_id,
@@ -72,6 +103,14 @@ async def get_recent_executions(
         )
         for e in executions
     ]
+
+    # Add projected future executions
+    now = datetime.utcnow()
+    schedule_service.user_id = user.id
+    projections = _get_projected_executions(user.id, now, now + timedelta(days=30))
+    results.extend(projections)
+    results.sort(key=lambda x: x.scheduled_time, reverse=True)
+    return results
 
 
 ################################################################################
@@ -97,7 +136,7 @@ async def get_executions(
         start=effective_start,
         end=effective_end,
     )
-    return [
+    results = [
         ScheduleExecutionResponse(
             id=str(e.id),
             schedule_id=e.schedule_id,
@@ -112,6 +151,16 @@ async def get_executions(
         )
         for e in executions
     ]
+
+    # Add projected future executions within date range
+    now = datetime.utcnow()
+    if effective_end > now:
+        proj_start = max(effective_start, now)
+        schedule_service.user_id = user.id
+        projections = _get_projected_executions(user.id, proj_start, effective_end)
+        results.extend(projections)
+    results.sort(key=lambda x: x.scheduled_time, reverse=True)
+    return results
 
 
 ################################################################################
