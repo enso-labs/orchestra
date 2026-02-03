@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "dotenv -e ~/.env/orchestra/.env.frontend -- vite",
-		"dev:claude": "vite --host 0.0.0.0 --port 8030",
+		"dev:claude": "dotenv -e ~/.env/orchestra/.env.frontend -- vite --host 0.0.0.0 --port 8030",
 		"docs": "cd ../backend && bash scripts/docs.sh",
 		"build": "tsc -b && vite build",
 		"format": "npx prettier --write .",
