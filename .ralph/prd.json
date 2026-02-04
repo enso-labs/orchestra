@@ -89,8 +89,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "TDD red phase: all 4 tests FAIL as expected. Tests verify: no Instructions tab, no System Prompt tab, AGENTS.md guidance note present, file panel reference present. Tests will go green after US-006."
     },
     {
       "id": "US-006",

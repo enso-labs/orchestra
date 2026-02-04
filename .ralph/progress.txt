@@ -8,6 +8,12 @@
 - Agent mode AGENTS.md extraction: lines 155-158 of `backend/src/services/llm.py`
 - Non-agent path AGENTS.md extraction: lines 174-185 of `backend/src/services/llm.py`
 - `_make_params()` helper in tests constructs LLMInput with files parameter directly, not via kwargs override
+- Frontend tests: `cd frontend && npx vitest run` — uses jsdom, globals: true, @testing-library/react
+- Mock contexts by mocking the hook module before importing component: `vi.mock("@/context/AgentContext", ...)`
+- Mock react-router-dom with `vi.mock("react-router-dom", ...)` for `useNavigate`/`useParams`
+- Agent form uses Radix Tabs with role="tab" for Instructions/System Prompt — query with `screen.queryByRole("tab", { name: /.../ })`
+- `AgentCreateForm` imports from: AgentContext, ChatContext (toBackendFormat), react-router-dom, MonacoEditor, PromptSelectionModal
+- TypeScript check: `npx tsc --noEmit --pretty` (no errors expected)
 
 ---
 
@@ -34,4 +40,19 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Placement matters: extraction must happen BEFORE `self.default_system_prompt(params)` so instructions are available
   - The `params.input.files` guard (`if params.input.files and ...`) handles both None and empty dict cases safely
   - All 377 backend tests pass with no regressions
+---
+
+## 2026-02-04 - US-005
+- What was implemented: TDD tests for agent create form — verifying Instructions/System Prompt tabs are removed and AGENTS.md guidance note is shown
+- Files changed:
+  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Created with 4 tests in `AgentCreateForm — AGENTS.md guidance (US-005)` suite
+  - `.ralph/prd.json` — Marked US-005 as `passes: true`
+  - `.ralph/progress.txt` — Added codebase patterns and progress entry
+- **Learnings for future iterations:**
+  - Radix UI Tabs render as `<button role="tab">` — use `screen.queryByRole("tab", { name: /instructions/i })` to find them
+  - Must mock 6 dependencies for AgentCreateForm: react-router-dom, AgentContext, ChatContext, MonacoEditor, SelectModel, ToolSelectionModal, PromptSelectionModal
+  - No setupTests.ts file — each test file is self-contained with inline mocks
+  - `vi.mock()` must be called BEFORE importing the component under test
+  - 4 tests properly FAIL (red phase): Instructions tab present, System Prompt tab present, AGENTS.md text missing, file panel text missing
+  - TypeScript typecheck passes with `npx tsc --noEmit`
 ---
