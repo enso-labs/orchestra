@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v0.0.2-rc142
 
 ### Changed
+  - feat/729-pre-configure-deep-agent-backend-skill-builder (2026-02-04)
   - feat/722-frontend-schedule-refactor (2026-02-01)
   - feat/724-add-watcher-to-worker-reload (2026-02-01)
   - feat/715-ubuntu-execution-env (2026-01-31)
