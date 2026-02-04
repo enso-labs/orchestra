@@ -171,6 +171,19 @@ class LLMService:
                     f"Assistant {params.metadata.assistant_id} not found in user or public namespace"
                 )
 
+        ### Extract AGENTS.md from thread-level files
+        if params.input.files and "AGENTS.md" in params.input.files:
+            agents_md = params.input.files["AGENTS.md"]
+            content = ""
+            if isinstance(agents_md, str):
+                content = agents_md
+            elif isinstance(agents_md, dict):
+                content = agents_md.get("content", "")
+            elif isinstance(agents_md, list):
+                content = "\n".join(agents_md)
+            if content:
+                params.instructions = content
+
         ### Collect all tools
         params.system_prompt = self.default_system_prompt(params)
         params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)

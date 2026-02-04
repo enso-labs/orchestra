@@ -72,8 +72,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added 11-line AGENTS.md extraction block in LLMService.assistant() non-agent path. Handles string, dict (content key), and list formats. Skips injection if content is empty. All 377 backend tests pass."
     },
     {
       "id": "US-005",

@@ -6,7 +6,7 @@
 - `LLMRequest.instructions` defaults to `""` (empty string)
 - `LLMService.assistant()` has two paths: agent mode (with assistant_id) and non-agent/thread mode
 - Agent mode AGENTS.md extraction: lines 155-158 of `backend/src/services/llm.py`
-- Non-agent path: lines 174-177 of `backend/src/services/llm.py` (where thread-level AGENTS.md extraction goes)
+- Non-agent path AGENTS.md extraction: lines 174-185 of `backend/src/services/llm.py`
 - `_make_params()` helper in tests constructs LLMInput with files parameter directly, not via kwargs override
 
 ---
@@ -21,4 +21,17 @@
   - Thread-level tests use `assistant_service.get.return_value = None` + `get_public.return_value = None` to trigger the non-agent path
   - 3 tests properly FAIL (red phase): string, dict, list AGENTS.md extraction
   - 4 tests PASS: empty string skip, no AGENTS.md, None files, empty files dict
+---
+
+## 2026-02-04 - US-004
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- What was implemented: Thread-level AGENTS.md extraction in `LLMService.assistant()` non-agent path
+- Files changed:
+  - `backend/src/services/llm.py` — Added 11-line AGENTS.md extraction block before tool collection, handling string/dict/list formats with empty-content guard
+  - `.ralph/prd.json` — Marked US-004 as `passes: true`
+- **Learnings for future iterations:**
+  - The extraction block mirrors the agent-mode pattern but handles polymorphic file values (str, dict with `content` key, list joined by newlines)
+  - Placement matters: extraction must happen BEFORE `self.default_system_prompt(params)` so instructions are available
+  - The `params.input.files` guard (`if params.input.files and ...`) handles both None and empty dict cases safely
+  - All 377 backend tests pass with no regressions
 ---
