@@ -28,6 +28,8 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 from src.utils.middleware import init_default_middleware
 from src.tools import default_tools
+from src.services.skill import SkillService
+from src.schemas.entities.skill import SkillTemplate
 
 
 CACHE_LLM = InMemoryCache()
@@ -148,6 +150,41 @@ async def init_subagents(
             subagent_dict["model"] = subagent.model
         result.append(subagent_dict)
     return result
+
+
+async def init_skills_as_subagents(
+    skill_service: SkillService,
+    service_context: ServiceContext,
+    categories: list[str] = None,
+) -> list[SubAgent]:
+    """Convert enabled skills into subagent dictionaries."""
+    skills = await skill_service.get_enabled_skills(categories=categories)
+    subagents = []
+
+    for skill in skills:
+        # Initialize tools for the skill
+        tools = await init_tools(
+            skill.tools,
+            None,  # a2a - skills don't use A2A by default
+            None,  # mcp - skills don't use MCP by default
+            service_context,
+        )
+
+        # Build subagent dict matching deepagents format
+        subagent_dict = {
+            "name": skill.slug,
+            "description": skill.description,
+            "system_prompt": skill.system_prompt,
+            "tools": tools,
+        }
+
+        if skill.model:
+            subagent_dict["model"] = skill.model
+
+        subagents.append(subagent_dict)
+        logger.debug(f"Loaded skill subagent: {skill.slug}")
+
+    return subagents
 
 
 async def init_memories(system_prompt: str, tools: list[BaseTool]):
