@@ -11,8 +11,9 @@
 - Frontend tests: `cd frontend && npx vitest run` — uses jsdom, globals: true, @testing-library/react
 - Mock contexts by mocking the hook module before importing component: `vi.mock("@/context/AgentContext", ...)`
 - Mock react-router-dom with `vi.mock("react-router-dom", ...)` for `useNavigate`/`useParams`
-- Agent form uses Radix Tabs with role="tab" for Instructions/System Prompt — query with `screen.queryByRole("tab", { name: /.../ })`
-- `AgentCreateForm` imports from: AgentContext, ChatContext (toBackendFormat), react-router-dom, MonacoEditor, PromptSelectionModal
+- Agent form no longer uses Tabs — Instructions/System Prompt tabs were removed in US-006
+- `AgentCreateForm` imports from: AgentContext, ChatContext (toBackendFormat), react-router-dom, SelectModel, ToolSelectionModal (MonacoEditor and PromptSelectionModal removed in US-006)
+- When using `getByText(/AGENTS\.md/)` in tests, ensure "AGENTS.md" text appears in only ONE text node (not in both a title and a `<strong>` tag)
 - TypeScript check: `npx tsc --noEmit --pretty` (no errors expected)
 
 ---
@@ -55,4 +56,19 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - `vi.mock()` must be called BEFORE importing the component under test
   - 4 tests properly FAIL (red phase): Instructions tab present, System Prompt tab present, AGENTS.md text missing, file panel text missing
   - TypeScript typecheck passes with `npx tsc --noEmit`
+---
+
+## 2026-02-04 - US-006
+- What was implemented: Removed Instructions/System Prompt tabs from agent form and added AGENTS.md guidance note
+- Files changed:
+  - `frontend/src/components/forms/agents/agent-create-form.tsx` — Removed: Tabs block (Instructions + System Prompt), `systemMessage`/`instructions` Zod fields, form defaultValues, `promptMode` conditional in onSubmit, 7 state variables (isFullscreenOpen, fullscreenSystemMessage, systemMessageUrl, isUsingUrl, isLoadingFromUrl, isPromptModalOpen, selectedPrompt, promptMode), fullscreen System Message Dialog, PromptSelectionModal usage, and 10+ unused imports (Maximize2, Download, ToggleLeft, ToggleRight, Library, MonacoEditor, Prompt, Badge, cn, Dialog/DialogContent/DialogHeader/DialogTitle, Tabs/TabsContent/TabsList/TabsTrigger, Textarea remains for description). Added AGENTS.md guidance note with FileText icon.
+  - `.ralph/prd.json` — Marked US-006 as `passes: true`
+  - `.ralph/progress.txt` — Updated codebase patterns and added progress entry
+- **Learnings for future iterations:**
+  - When using `getByText(/regex/)` in tests, ensure the matched text appears in only ONE DOM text node. Having "AGENTS.md" in both a title `<p>` and a `<strong>` tag causes `getByText` to throw "Found multiple elements"
+  - The `Textarea` import is still needed for the description field — don't remove it
+  - `Badge` import was used by selectedPrompt display — safe to remove when removing PromptSelectionModal
+  - The `useEffect` that synced agent.instructions/system_prompt to form values was also removed since those fields no longer exist
+  - All 4 US-005 tests now PASS (green phase), all 184 frontend tests pass, TypeScript and lint clean
+  - Browser verification requires authentication — login page blocks unauthenticated access
 ---

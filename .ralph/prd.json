@@ -111,8 +111,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Removed Instructions/System Prompt tabs, Zod schema fields, form defaultValues, promptMode logic, fullscreen editor dialog, PromptSelectionModal, and 10+ unused imports/state vars. Added AGENTS.md guidance note with FileText icon. All 4 US-005 tests pass, all 184 frontend tests pass, TypeScript and lint clean."
     },
     {
       "id": "US-007",
