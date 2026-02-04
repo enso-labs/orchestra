@@ -1,19 +1,35 @@
 ## Codebase Patterns
-- `watchdog` is available as a transitive dependency in the backend venv (no need to add explicitly)
-- TaskIQ v0.12.1 supports `--reload` and `--reload-dir` flags natively
-- `make format` in backend runs `uvx ruff format` - run it before committing
-- `make test` in backend sources env from `~/.env/orchestra/.env.backend` before running pytest
+- Backend unit tests use `unittest.IsolatedAsyncioTestCase` with `asyncSetUp()` for async tests
+- Use `AsyncMock` for mocked async services, `MagicMock` for sync services with async methods set via `service.method = AsyncMock(...)`
+- `Assistant.files` is `Dict[str, str]` — AGENTS.md key is just `"AGENTS.md"` (not `/AGENTS.md`)
+- Assistant model validates that only ONE of `system_prompt` or `instructions` can be set (model_validator)
+- When setting `instructions` from AGENTS.md, must set `system_prompt = None` first to pass validation
+- `LLMInput.files` is `Dict[str, Any]` — values can be string, dict with 'content' key, or list
+- Tests require env vars loaded: `set -a && . ~/.env/orchestra/.env.backend && set +a`
+- Run tests: `uv run pytest tests/unit/services/test_llm_agents_md.py -v`
+- Format/lint: `uvx ruff format <file> && uvx ruff check <file> --fix`
 ---
 
-## 2026-02-01 - US-001, US-002, US-003
-- Verified `watchdog` is already importable in backend venv (no pyproject.toml changes needed)
-- Added `--reload --reload-dir src` flags to `backend/Makefile` `dev.worker` target
-- Ran `make format` (5 pre-existing files reformatted) and `make test` (360 passed, 2 skipped)
-- docker-compose.yml was NOT modified
-- Files changed: `backend/Makefile` (feature), plus 5 formatting fixes
+## 2026-02-04 - US-001
+- Implemented TDD tests for AGENTS.md extraction from assistant.files (agent mode)
+- Created: `backend/tests/unit/services/test_llm_agents_md.py`
+- 6 tests total: 2 fail (red phase — expecting extraction logic), 4 pass (no-change scenarios)
+- Tests cover: AGENTS.md sets instructions, system_prompt defaults, no AGENTS.md preserves fields, empty/None files
 - **Learnings for future iterations:**
-  - `watchdog` as transitive dep is NOT sufficient for TaskIQ reload - must install `taskiq[reload]` extra
-  - `taskiq[reload]` belongs in dev dependencies since `--reload` is only for development
-  - TaskIQ's `FileWatcher` is `None` without the reload extra, causing `TypeError: 'NoneType' object is not callable`
-  - Ruff formatting may touch files unrelated to your changes - include them in the commit
+  - `tests/__init__.py` imports `from main import app` which requires DB env vars even for pure unit tests
+  - Must use `object.__setattr__` to set `files=None` on Assistant (bypasses Pydantic validation)
+  - `_make_params` helper creates LLMRequest with mock assistant_id for testing agent mode path
 ---
+
+## 2026-02-04 - US-002
+- Implemented AGENTS.md extraction in `LLMService.assistant()` for agent mode (green phase of TDD)
+- Modified: `backend/src/services/llm.py` — added 4-line extraction block after assistant load (line ~155)
+- Logic: if `assistant.files` contains `"AGENTS.md"`, set `system_prompt = None` then `instructions = files["AGENTS.md"]`
+- All 6 US-001 tests now pass (previously 2 were failing in red phase)
+- Full backend test suite: 370 passed, 2 skipped, 0 failures
+- **Learnings for future iterations:**
+  - The extraction must happen BEFORE `self.default_system_prompt(assistant)` call so the default applies after clearing
+  - Setting `system_prompt = None` before `instructions` is critical due to model_validator preventing both being set
+  - The change is minimal (4 lines) because `to_llm_request()` naturally propagates `instructions` and `system_prompt`
+---
+

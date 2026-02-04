@@ -152,6 +152,11 @@ class LLMService:
                     )
 
             if assistant:
+                # Extract AGENTS.md from assistant files as instructions
+                if assistant.files and "AGENTS.md" in assistant.files:
+                    assistant.system_prompt = None
+                    assistant.instructions = assistant.files["AGENTS.md"]
+
                 assistant.system_prompt = self.default_system_prompt(assistant)
                 assistant.tools = await self.init_tools(
                     assistant.tools, assistant.a2a, assistant.mcp

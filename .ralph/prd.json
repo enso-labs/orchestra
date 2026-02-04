@@ -1,45 +1,261 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/724-add-watcher-to-worker-reload",
-  "description": "Add file-watching auto-reload to TaskIQ worker for development using native --reload flag",
+  "branchName": "feat/731-agents-md-system-prompt-injection",
+  "description": "File-based AGENTS.md system prompt injection — replace agent form instructions/system_prompt fields with file-based AGENTS.md discovery, add wiki docs, and Intro.js onboarding tour",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Verify and Add Watcher Dependency",
-      "description": "As a developer, I need the watcher dependency to be available in the backend environment so that the TaskIQ --reload flag works correctly.",
+      "title": "Backend — Write TDD tests for AGENTS.md extraction from agent files",
+      "description": "As a developer, I need unit tests that verify LLMService.assistant() correctly extracts AGENTS.md from assistant.files and sets it as instructions. Tests are written FIRST before implementation.",
       "acceptanceCriteria": [
-        "Check if watchdog or watchfiles is importable in the backend venv (run: uv run python -c 'import watchdog' or uv run python -c 'import watchfiles')",
-        "If neither is present, add watchdog to dev dependencies in backend/pyproject.toml",
-        "Typecheck passes"
+        "Create test file at backend/tests/unit/services/test_llm_agents_md.py",
+        "Test: when assistant.files contains 'AGENTS.md' key with string value, assistant.instructions is set to that value",
+        "Test: when AGENTS.md is present, assistant.system_prompt is set to None (so default applies)",
+        "Test: when assistant.files does NOT contain 'AGENTS.md', existing instructions/system_prompt are unchanged",
+        "Test: when assistant.files is None or empty, no error occurs and existing fields are unchanged",
+        "Tests should initially FAIL (red phase of TDD) since implementation does not exist yet",
+        "Typecheck passes",
+        "Tests pass after US-002 implementation"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "watchdog was already available as a transitive dependency - no changes needed"
+      "notes": "TDD red phase: 2 tests fail (expecting AGENTS.md extraction), 4 pass (no-change scenarios). Tests will go green after US-002."
     },
     {
       "id": "US-002",
-      "title": "Update Makefile dev.worker Target with Reload Flag",
-      "description": "As a developer running Ralph autonomous loops, I want the TaskIQ worker to automatically reload when Python source files change so that code changes are immediately reflected without manual worker restarts.",
+      "title": "Backend — Implement AGENTS.md extraction in LLMService.assistant() for agent mode",
+      "description": "As a developer, I need LLMService.assistant() to detect AGENTS.md in assistant.files and inject its content as instructions so that file-based configuration drives agent behavior.",
       "acceptanceCriteria": [
-        "backend/Makefile dev.worker target includes --reload --reload-dir src flags",
-        "Production docker-compose.yml worker entrypoint is NOT modified (verify no changes to docker-compose.yml)",
+        "In backend/src/services/llm.py, after loading assistant (line ~154), check if assistant.files and 'AGENTS.md' in assistant.files",
+        "When AGENTS.md found: set assistant.instructions = assistant.files['AGENTS.md'] and assistant.system_prompt = None",
+        "Existing line assistant.system_prompt = self.default_system_prompt(assistant) continues to work (returns DEFAULT_SYSTEM_PROMPT when system_prompt is None)",
+        "When AGENTS.md is NOT present, no changes to existing instructions/system_prompt fields",
+        "All tests from US-001 now pass (green phase of TDD)",
+        "All existing backend tests pass (make test)",
         "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": ""
+      "notes": "Added 4-line AGENTS.md extraction block in LLMService.assistant() after assistant load. Sets system_prompt=None then instructions=AGENTS.md content. All 370 backend tests pass."
     },
     {
       "id": "US-003",
-      "title": "Verify and Format",
-      "description": "As a developer, I want to confirm the changes are clean and tests pass.",
+      "title": "Backend — Write TDD tests for thread-level AGENTS.md (non-agent mode)",
+      "description": "As a developer, I need unit tests that verify LLMService.assistant() correctly handles AGENTS.md in thread-level files (params.input.files) when no agent is selected.",
       "acceptanceCriteria": [
-        "Run make format from backend directory",
-        "Existing backend tests pass (make test from backend directory)",
-        "No unintended file changes"
+        "Add tests to backend/tests/unit/services/test_llm_agents_md.py",
+        "Test: when params.input.files contains 'AGENTS.md' as string, params.instructions is set to that string",
+        "Test: when params.input.files contains 'AGENTS.md' as dict with 'content' key, content is extracted correctly",
+        "Test: when params.input.files contains 'AGENTS.md' as list, content is joined with newlines",
+        "Test: when AGENTS.md content is empty string, params.instructions is NOT set",
+        "Test: when params.input.files is None or does not contain AGENTS.md, no changes",
+        "Tests should initially FAIL (red phase)",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Backend — Implement thread-level AGENTS.md extraction (non-agent mode)",
+      "description": "As a user in default supervisor mode, I want AGENTS.md in my thread files to be injected as instructions into the system prompt.",
+      "acceptanceCriteria": [
+        "In backend/src/services/llm.py, in the no-assistant path (after line ~170), check params.input.files for 'AGENTS.md'",
+        "Handle string format: use value directly",
+        "Handle dict format: extract from 'content' key",
+        "Handle list format: join with newlines",
+        "Skip injection if content is empty after extraction",
+        "Set params.instructions = extracted content",
+        "All tests from US-003 now pass (green phase)",
+        "All existing backend tests pass (make test)",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Frontend — Write TDD tests for agent form without instructions/system_prompt fields",
+      "description": "As a developer, I need component tests that verify the agent create form no longer renders Instructions/System Prompt tabs and instead shows an AGENTS.md guidance note.",
+      "acceptanceCriteria": [
+        "Create test file at frontend/src/components/forms/agents/agent-create-form.test.tsx",
+        "Test: form does NOT render a tab with text 'Instructions'",
+        "Test: form does NOT render a tab with text 'System Prompt'",
+        "Test: form renders a guidance note containing 'AGENTS.md'",
+        "Test: form renders text about creating AGENTS.md in the file panel",
+        "Tests should initially FAIL (red phase)",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Frontend — Remove system_prompt/instructions from agent form and add guidance note",
+      "description": "As a user creating or editing an agent, I no longer see Instructions/System Prompt tabs. Instead I see a guidance note directing me to create AGENTS.md in the file panel.",
+      "acceptanceCriteria": [
+        "Remove the <Tabs> block containing 'Instructions' and 'System Prompt' tabs from agent-create-form.tsx",
+        "Remove systemMessage and instructions from Zod formSchema",
+        "Remove systemMessage and instructions from form defaultValues",
+        "Remove promptMode conditional in onSubmit (no more configData.instructions or configData.system_prompt setting)",
+        "Remove state variables: promptMode, selectedPrompt, isPromptModalOpen, fullscreenSystemMessage, isFullscreenOpen, URL-related state",
+        "Remove fullscreen system message editor dialog",
+        "Remove PromptSelectionModal usage",
+        "Remove unused imports: ToggleLeft, ToggleRight, Library, MonacoEditor, Prompt, PromptSelectionModal, Tabs, TabsContent, TabsList, TabsTrigger, Maximize2, Download",
+        "Add AGENTS.md guidance note with FileText icon directing users to the file panel",
+        "All tests from US-005 now pass (green phase)",
+        "Typecheck/lint passes (npm run lint)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Frontend — Write TDD tests for legacy instructions migration card",
+      "description": "As a developer, I need component tests that verify a read-only legacy card appears when editing an agent with instructions but no AGENTS.md, and a migration button is available.",
+      "acceptanceCriteria": [
+        "Add tests to frontend/src/components/forms/agents/agent-create-form.test.tsx",
+        "Test: when agent has instructions but no AGENTS.md in files, a read-only card displays the instructions content",
+        "Test: the read-only card includes a button with text 'Migrate to AGENTS.md'",
+        "Test: when agent has AGENTS.md in files, the legacy card is NOT shown",
+        "Test: when agent has no instructions and no system_prompt, the legacy card is NOT shown",
+        "Tests should initially FAIL (red phase)",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Frontend — Implement legacy instructions migration card",
+      "description": "As a user editing an existing agent with legacy instructions/system_prompt, I see a read-only card with a 'Migrate to AGENTS.md' button that creates the file in the agent's file system.",
+      "acceptanceCriteria": [
+        "When editing agent with instructions/system_prompt but no AGENTS.md in files, show read-only card with amber/warning styling",
+        "Card displays current instructions content (or system_prompt if no instructions)",
+        "Card includes 'Migrate to AGENTS.md' button",
+        "Clicking migration button creates AGENTS.md in agent's file system with the instructions content",
+        "After migration, the legacy card is hidden and standard guidance note is shown",
+        "When agent already has AGENTS.md in files, only the guidance note is shown",
+        "All tests from US-007 now pass (green phase)",
+        "Typecheck/lint passes (npm run lint)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Frontend — Install Intro.js and create useIntroTour hook",
+      "description": "As a developer, I need the Intro.js library installed and a reusable React hook for defining and triggering guided tours.",
+      "acceptanceCriteria": [
+        "Install intro.js package in frontend (npm install intro.js)",
+        "Create frontend/src/hooks/useIntroTour.ts with a reusable hook",
+        "Hook accepts: tourId (string for localStorage key), steps array ({element, intro, position}), and optional options",
+        "Hook checks localStorage for dismissal state (key pattern: orchestra:tour:{tourId}:dismissed)",
+        "Hook exposes: startTour(), isComplete (boolean), and resetTour() functions",
+        "Hook auto-starts tour if not dismissed and autoStart option is true",
+        "Hook persists dismissal to localStorage on tour completion or exit",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Frontend — Add AGENTS.md onboarding tour to agent create page",
+      "description": "As a first-time user creating an agent, I see an interactive guided tour walking me through the AGENTS.md file-based workflow.",
+      "acceptanceCriteria": [
+        "Import and use useIntroTour in agent-create-form.tsx",
+        "Define 5 tour steps: guidance note, file panel toggle, file creation area, file editor, save button",
+        "Tour auto-shows on first visit to agent create page (localStorage check)",
+        "Add a small help icon or 'Show Tour' link near the AGENTS.md guidance note to re-trigger",
+        "Tour steps use concise, action-oriented text (1-2 sentences each)",
+        "On agent edit page with legacy instructions, include step highlighting 'Migrate to AGENTS.md' button",
+        "Typecheck/lint passes (npm run lint)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Wiki — Create AGENTS.md feature documentation page",
+      "description": "As a user or developer, I want a wiki page documenting how AGENTS.md works, how to create it, migration from legacy fields, and API usage.",
+      "acceptanceCriteria": [
+        "Create wiki/docs/assistants/agents-md.md with frontmatter (title, slug, sidebar_position)",
+        "Document: what AGENTS.md is and how it mirrors Claude Code's CLAUDE.md pattern",
+        "Document: step-by-step how to create AGENTS.md via the file panel",
+        "Document: AGENTS.md in agent mode vs default thread mode",
+        "Document: migration path from legacy instructions/system_prompt fields",
+        "Document: backwards compatibility (existing agents continue to work)",
+        "Document: API usage with curl examples showing files dict with AGENTS.md",
+        "Add page to wiki/sidebars.ts under Core Features > Assistants",
+        "Wiki builds without errors (npm run build in wiki directory)",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Wiki — Update assistants index page to reference AGENTS.md",
+      "description": "As a user reading the assistants documentation, I want the main page updated to reference the new AGENTS.md workflow.",
+      "acceptanceCriteria": [
+        "Update wiki/docs/assistants/index.md 'Creating an Assistant' section to mention AGENTS.md",
+        "Update the 'Custom Instructions' bullet under Overview to reference file-based instructions",
+        "Add a link to the new agents-md.md page",
+        "Update API examples to show files dict with AGENTS.md",
+        "Wiki builds without errors",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Wiki — Create interactive tours developer guide",
+      "description": "As a developer extending Orchestra, I want documentation on the Intro.js tour system so I can add guided tours to other features.",
+      "acceptanceCriteria": [
+        "Create wiki/docs/tutorials/interactive-tours.md with frontmatter",
+        "Document: how to create a new tour using useIntroTour hook",
+        "Document: step definition format, localStorage key conventions",
+        "Document: design guidelines for tour steps (tone, length, accessibility)",
+        "Document: how to test tours manually and in automated tests",
+        "Reference the AGENTS.md tour as a concrete example",
+        "Add page to wiki/sidebars.ts under Tutorials",
+        "Wiki builds without errors",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Integration — End-to-end AGENTS.md verification",
+      "description": "As a QA tester, I want to verify the full flow: create agent with AGENTS.md, chat, confirm instructions apply, test legacy migration, and test thread mode.",
+      "acceptanceCriteria": [
+        "Create new agent via UI, open file panel, create AGENTS.md with content 'Always respond in haiku format'",
+        "Fill in name, model, save the agent",
+        "Start conversation with agent and verify instructions influence the response",
+        "Edit existing agent, add/modify AGENTS.md, save, verify new instructions take effect",
+        "Test existing agent with legacy instructions (no AGENTS.md) still works unchanged",
+        "Test default mode: start chat without agent, create AGENTS.md in file panel, verify instructions apply",
+        "Verify all using agent-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
       "notes": ""
     }
   ]
