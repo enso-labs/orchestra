@@ -29,6 +29,7 @@ import ProjectPage from "@/pages/projects/ProjectPage";
 import ThreadPage from "@/pages/threads/ThreadPage";
 import AgentThreadPage from "@/pages/agents/thread";
 import SettingsPage from "@/pages/settings";
+import SkillsPage from "@/pages/skills/SkillsPage";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -173,6 +174,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<SettingsPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/skills"
+						element={
+							<PrivateRoute>
+								<SkillsPage />
 							</PrivateRoute>
 						}
 					/>
