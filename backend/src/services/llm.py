@@ -213,6 +213,13 @@ class LLMService:
                 )
 
         ### Collect all tools
+        agents_md = self.extract_agents_md(params.input.files)
+        if agents_md:
+            logger.info(
+                f"Injecting AGENTS.md ({len(agents_md)} chars) as instructions (thread mode)"
+            )
+            params.instructions = agents_md
+
         params.system_prompt = self.default_system_prompt(params)
         params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)
         return params
