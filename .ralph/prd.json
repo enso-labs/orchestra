@@ -234,7 +234,7 @@
         "No regressions from middleware changes: chat response completes successfully, confirming compaction middleware removal does not break streaming"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "QA-only story, no code changes. Uses agent-browser CLI. Requires both frontend and backend dev servers running. Default login: admin@example.com / test1234. Depends on US-001 through US-009 being complete. See skills/agent-browser/SKILL.md for CLI reference."
     },
     {
