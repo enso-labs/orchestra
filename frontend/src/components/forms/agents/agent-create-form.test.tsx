@@ -18,12 +18,12 @@ vi.mock("react-router-dom", () => ({
 // Mock AgentContext
 const mockAgentContext = {
 	agent: {
-		id: undefined,
+		id: undefined as string | undefined,
 		name: "",
 		description: "",
 		model: "gpt-4",
-		tools: [],
-		subagents: [],
+		tools: [] as string[],
+		subagents: [] as unknown[],
 		mcp: {},
 		a2a: {},
 		public: false,
@@ -55,7 +55,7 @@ vi.mock("@/components/inputs/MonacoEditor", () => ({
 
 // Mock SelectModel
 vi.mock("@/components/lists/SelectModel", () => ({
-	default: ({ onModelSelected }: { onModelSelected: () => void }) => (
+	default: (_props: { onModelSelected: () => void }) => (
 		<select data-testid="select-model" />
 	),
 }));
@@ -68,15 +68,6 @@ vi.mock("@/components/modals/ToolSelectionModal", () => ({
 // Mock PromptSelectionModal
 vi.mock("@/components/modals/PromptSelectionModal", () => ({
 	PromptSelectionModal: () => null,
-}));
-
-// Mock useIntroTour to prevent Intro.js from rendering tour overlays in tests
-vi.mock("@/hooks/useIntroTour", () => ({
-	useIntroTour: () => ({
-		startTour: vi.fn(),
-		isComplete: false,
-		resetTour: vi.fn(),
-	}),
 }));
 
 import { AgentCreateForm } from "./agent-create-form";

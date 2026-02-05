@@ -9,6 +9,7 @@ Started: Wed Feb  4 18:52:52 MST 2026
 - LLM routes: `/api/llm/stream` returns 200 (direct) or 202 (distributed); `/api/llm/invoke` may return 500 with mocked external APIs
 - File panel: `agent-browser` CSS selector `"h1 + button"` targets the create button next to page heading
 - Agent browser: Login requires filling email/password textboxes then clicking Sign in; session persists across navigation
+- License check: Always verify library licenses before adding — AGPL (e.g. Intro.js) is incompatible with this project
 
 ---
 
@@ -43,4 +44,34 @@ Started: Wed Feb  4 18:52:52 MST 2026
   - agent-browser `@ref` can match multiple elements when page has many buttons; use CSS selectors like `"h1 + button"` for disambiguation
   - File panel state may carry over between agent-edit and thread-mode contexts
   - All 387 backend tests + 188 frontend tests pass
+---
+
+## 2026-02-04 19:20 MST - US-015
+- What was implemented:
+  - Removed Intro.js library (AGPL-licensed, incompatible with project license)
+  - `npm uninstall intro.js` in frontend/ — removed from package.json and package-lock.json
+  - Deleted `frontend/src/hooks/useIntroTour.ts` entirely
+  - In `agent-create-form.tsx`:
+    - Removed `useIntroTour` and `IntroTourStep` imports
+    - Removed `useMemo` import (no longer needed)
+    - Removed `HelpCircle` icon import, added `ExternalLink` import
+    - Removed `tourSteps` useMemo block and `useIntroTour` hook call
+    - Removed all `data-tour` attributes from elements (save buttons, legacy card, guidance note)
+    - Replaced "Show Tour" button with "Learn more" link to https://docs.ruska.ai/assistants/agents-md
+  - In `agent-create-form.test.tsx`:
+    - Removed `useIntroTour` mock (`vi.mock("@/hooks/useIntroTour", ...)`)
+    - Fixed TS type for `_props` in SelectModel mock
+    - Added `string | undefined` type annotation on `mockAgentContext.agent.id`
+- Files changed:
+  - `frontend/package.json` (intro.js removed)
+  - `frontend/package-lock.json` (intro.js removed)
+  - `frontend/src/hooks/useIntroTour.ts` (deleted)
+  - `frontend/src/components/forms/agents/agent-create-form.tsx` (tour code removed, Learn more link added)
+  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` (useIntroTour mock removed, TS fixes)
+  - `.ralph/prd.json` (US-015 passes: true)
+  - `.ralph/progress.txt` (this file)
+- **Learnings for future iterations:**
+  - Intro.js is AGPL-licensed — always check library licenses before adding to project
+  - When removing a mock from test files, also verify TS type inference doesn't break (literal `undefined` vs `string | undefined`)
+  - All 188 frontend tests pass, TypeScript and lint clean
 ---

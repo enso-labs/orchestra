@@ -276,8 +276,8 @@
         "intro.js no longer appears in package.json or package-lock.json"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Removed intro.js package (npm uninstall), deleted useIntroTour.ts hook, removed tour imports/useMemo/useIntroTour hook call/tourSteps from agent-create-form.tsx, removed HelpCircle import replaced with ExternalLink, removed 'Show Tour' button replaced with 'Learn more' link to docs.ruska.ai/assistants/agents-md, removed all data-tour attributes, removed useIntroTour mock from tests, fixed TS type annotations in tests. All 188 frontend tests pass, TypeScript and lint clean, intro.js removed from package.json and package-lock.json."
     },
     {
       "id": "US-016",
