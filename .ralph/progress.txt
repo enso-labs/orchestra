@@ -21,6 +21,8 @@
 - Use `isMigrated` local state as guard when `createFile` doesn't instantly update `agent.files` in context
 - Intro.js: use `introJs.tour()` factory, `tour.setOptions({ steps: [...] })`, `tour.start()`, `tour.exit(true)` for cleanup
 - `useIntroTour` hook: `useIntroTour(tourId, steps, options?)` → `{ startTour, isComplete, resetTour }`, localStorage key: `orchestra:tour:{tourId}:dismissed`
+- When `useIntroTour` has `autoStart: true`, mock it in tests: `vi.mock("@/hooks/useIntroTour", ...)` — prevents Intro.js DOM overlays from breaking `getByText` queries
+- Tour step selectors: use `data-tour="x"` attributes for same-component elements; `[aria-label="x"]` for cross-component elements (ChatNav, FileTreeHeader, FileEditorPanel)
 
 ---
 
@@ -125,4 +127,21 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Import `intro.js/introjs.css` in the hook file so consumers don't need to separately import styles
   - Hook exposes `startTour()`, `isComplete` (boolean state), and `resetTour()` (clears localStorage + resets state)
   - `hasAutoStarted` ref prevents double auto-start in StrictMode
+---
+
+## 2026-02-04 - US-010
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- What was implemented: Added AGENTS.md onboarding tour to the agent create/edit form using useIntroTour hook
+- Files changed:
+  - `frontend/src/components/forms/agents/agent-create-form.tsx` — Added: `HelpCircle` import, `useMemo`+`useIntroTour`+`IntroTourStep` imports, 5 tour steps with `data-tour` selectors and `aria-label` selectors for cross-component elements, conditional legacy migration step, "Show Tour" link with HelpCircle icon, `data-tour` attributes on guidance note, legacy migration card, and save buttons
+  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Added `useIntroTour` mock to prevent Intro.js overlay from rendering in tests (which caused `getByText(/AGENTS\.md/)` to find multiple DOM matches)
+  - `.ralph/prd.json` — Marked US-010 as `passes: true`
+  - `.ralph/progress.txt` — Added progress entry
+- **Learnings for future iterations:**
+  - When `useIntroTour` has `autoStart: true`, it renders Intro.js tooltip overlays to the DOM on mount — tests MUST mock the hook to prevent extra DOM elements from breaking `getByText` queries
+  - Tour steps targeting elements outside the component (e.g., `[aria-label='Switch to editor view']`, `[aria-label='Create new file']`, `[aria-label='File editor']`) use CSS attribute selectors — these match elements in ChatNav, FileTreeHeader, and FileEditorPanel
+  - Tour steps targeting elements inside the component use `data-tour` attributes — these are safer than class selectors
+  - `useMemo` wraps the `tourSteps` array with `hasLegacyInstructions` as dependency to dynamically splice the legacy migration step
+  - All 188 frontend tests pass, TypeScript and lint clean
+  - Browser verification skipped (requires authentication)
 ---
