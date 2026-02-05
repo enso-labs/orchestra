@@ -343,7 +343,7 @@ export function AgentCreateForm() {
 										Agent instructions are now file-based
 									</p>
 									<a
-										href="https://docs.ruska.ai/assistants/agents-md"
+										href="https://docs.ruska.ai/docs/assistants/agents-md"
 										target="_blank"
 										rel="noopener noreferrer"
 										className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"

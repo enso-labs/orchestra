@@ -318,8 +318,8 @@
         "Typecheck/lint passes (npm run lint)"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Fixed docs link in agent-create-form.tsx from 'https://docs.ruska.ai/assistants/agents-md' to 'https://docs.ruska.ai/docs/assistants/agents-md'. No other occurrences of docs.ruska.ai links missing /docs/ prefix found in frontend or wiki. URL verified: returns 301 (Docusaurus trailing slash redirect), not 404. All 188 frontend tests pass, TypeScript and lint clean."
     },
     {
       "id": "US-018",

@@ -11,6 +11,7 @@ Started: Wed Feb  4 18:52:52 MST 2026
 - Agent browser: Login requires filling email/password textboxes then clicking Sign in; session persists across navigation
 - License check: Always verify library licenses before adding — AGPL (e.g. Intro.js) is incompatible with this project
 - Wiki links: Use relative paths with `.md` extension (e.g., `../assistants/agents-md.md`), not absolute slug paths — Docusaurus breaks on absolute slugs
+- Wiki external URLs: Docusaurus `routeBasePath: 'docs'` means absolute URLs must include `/docs/` prefix (e.g., `https://docs.ruska.ai/docs/assistants/agents-md`)
 
 ---
 
@@ -103,4 +104,21 @@ Started: Wed Feb  4 18:52:52 MST 2026
   - Wiki submodule must be committed separately before the main repo submodule reference
   - agent-browser theme toggle opens a dropdown menu — use snapshot to find menuitem refs, not text selectors (text=Day matches too many)
   - Pre-existing broken links in tools/sandbox and tools/sandbox-tutorial are not related to this work
+---
+
+## 2026-02-04 19:56 MST - US-017
+- What was implemented:
+  - Fixed 'Learn more' link in `agent-create-form.tsx` from `https://docs.ruska.ai/assistants/agents-md` to `https://docs.ruska.ai/docs/assistants/agents-md`
+  - Searched all frontend files and wiki docs for other docs.ruska.ai links missing `/docs/` prefix — none found
+  - `frontend/mock/config.ts` already uses correct format (`https://docs.ruska.ai/docs/tools`)
+  - Wiki docs use relative paths (e.g., `../assistants/agents-md.md`) per Docusaurus convention — no absolute links to fix
+  - Verified corrected URL returns HTTP 301 (Docusaurus trailing slash redirect), not 404
+- Files changed:
+  - `frontend/src/components/forms/agents/agent-create-form.tsx` (line 346: href fixed)
+  - `.ralph/prd.json` (US-017 passes: true)
+  - `.ralph/progress.txt` (this file)
+- **Learnings for future iterations:**
+  - Docusaurus with `routeBasePath: 'docs'` requires all absolute URLs to include `/docs/` prefix (e.g., `https://docs.ruska.ai/docs/assistants/agents-md`)
+  - Use `curl -s -o /dev/null -w "%{http_code}"` to quickly verify link correctness
+  - All 188 frontend tests pass, TypeScript and lint clean
 ---
