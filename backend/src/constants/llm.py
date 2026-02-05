@@ -225,9 +225,17 @@ def _safe_int_env(var_name: str, default: int) -> int:
 
 
 # Compaction middleware constants
-DEFAULT_COMPACTION_TOKEN_THRESHOLD = _safe_int_env("COMPACTION_TOKEN_THRESHOLD", 170000)
-DEFAULT_COMPACTION_RECENT_MESSAGES = _safe_int_env("COMPACTION_RECENT_MESSAGES", 6)
-DEFAULT_COMPACTION_MODEL = DEFAULT_CHAT_MODEL_BASIC or DEFAULT_CHAT_MODEL
+# DEPRECATED (#734): These constants are only used when USE_INTERNAL_SUMMARIZATION=false.
+# The default middleware stack now relies on the internal SummarizationMiddleware instead.
+DEFAULT_COMPACTION_TOKEN_THRESHOLD = _safe_int_env(
+    "COMPACTION_TOKEN_THRESHOLD", 170000
+)  # Deprecated — see #734
+DEFAULT_COMPACTION_RECENT_MESSAGES = _safe_int_env(
+    "COMPACTION_RECENT_MESSAGES", 6
+)  # Deprecated — see #734
+DEFAULT_COMPACTION_MODEL = (
+    DEFAULT_CHAT_MODEL_BASIC or DEFAULT_CHAT_MODEL
+)  # Deprecated — see #734
 
 # Initialize default system prompt with error handling to prevent import-time failures
 try:
