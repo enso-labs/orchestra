@@ -11,6 +11,11 @@ Feature: feat/734-update-scaffold (Update create_deep_agent scaffolding)
 - `init_default_middleware()` in `src/utils/middleware.py` reads `USE_INTERNAL_SUMMARIZATION` env var to toggle compaction middleware
 - Commits must be signed: `git commit -s`
 - `Assistant` and `LLMRequest` schemas live in `backend/src/schemas/entities/llm.py`; new fields need wiring in `to_llm_request()`
+- `init_graph()`, `Orchestra.__init__()`, and `construct_agent()` all live in `backend/src/agents/__init__.py`
+- `construct_agent()` uses `agent_name` param which maps to `name` on `Orchestra` and `init_graph` (and ultimately `create_deep_agent`)
+- Full param wiring chain: LLMRequest -> LLMController -> stream_generator() -> construct_agent() -> Orchestra -> init_graph() -> create_deep_agent()
+- Pre-existing lint errors in `stream.py` (`current_agent` undefined in `handle_multi_mode`) — do not fix as part of unrelated stories
+- `init_chat_model` is a local import inside `init_graph()` — mock it at `langchain.chat_models.init_chat_model`, not at the `src.agents` level
 
 ---
 
@@ -43,3 +48,71 @@ Feature: feat/734-update-scaffold (Update create_deep_agent scaffolding)
   - New Optional fields with `default=None` are fully backward compatible — no migration needed
 ---
 
+
+## 2026-02-04 - US-004
+- Added 12 unit tests covering the 5 new deep agent parameter fields on LLMRequest and Assistant
+- Tests cover: default None values, individual field setting, all fields together, to_llm_request() propagation (full, none, partial)
+- All 328 tests pass (12 new + 316 existing)
+- Files changed:
+  - `backend/tests/unit/schemas/test_llm_schemas.py` (new file)
+- **Learnings for future iterations:**
+  - Test file follows same unittest pattern as `test_hitl_schemas.py` in the same directory
+  - LLMInput requires at minimum `messages=[{"role": "user", "content": "..."}]` to construct test instances
+  - `ruff format` auto-reformats after creation — always run before committing
+---
+
+## 2026-02-04 - US-005
+- Added 5 new parameters (skills, memory, name, response_format, interrupt_on) to `init_graph()` and forwarded to `create_deep_agent()`
+- Added same 5 parameters to `Orchestra.__init__()` and forwarded to `init_graph()`
+- Added 5 parameters to `construct_agent()` (using `agent_name` which maps to `name`) and forwarded to `Orchestra()`
+- All 328 tests pass, no regressions
+- Files changed:
+  - `backend/src/agents/__init__.py` - Updated init_graph(), Orchestra.__init__(), and construct_agent() signatures and forwarding
+- **Learnings for future iterations:**
+  - `construct_agent()` uses `agent_name` as the param name (matching LLMRequest schema field), which maps to `name` on Orchestra and init_graph
+  - Pre-existing lint warning: `create_agent` import is unused in `__init__.py` — not introduced by this change
+  - The `create_deep_agent()` signature accepts all 5 new params as keyword-only arguments (after the `*`)
+---
+
+## 2026-02-04 - US-006
+- Wired 5 new deep agent parameters (skills, memory, agent_name, response_format, interrupt_on) through the full request-to-agent pipeline
+- `LLMController.llm_invoke()` now reads the 5 fields from `params` (LLMRequest) and passes them to `construct_agent()`
+- `LLMController.llm_stream()` now reads the 5 fields from `assistant` (LLMRequest) and passes them to `stream_generator()`
+- `stream_generator()` signature now includes the 5 new parameters and forwards them to `construct_agent()`
+- All 328 tests pass, no regressions
+- Files changed:
+  - `backend/src/controllers/llm.py` - Updated llm_invoke() and llm_stream() to pass new params
+  - `backend/src/utils/stream.py` - Updated stream_generator() signature and construct_agent() call
+- **Learnings for future iterations:**
+  - `llm_invoke()` works with `params` (LLMRequest directly), while `llm_stream()` works with `assistant` (also LLMRequest, returned by llm_service.assistant())
+  - Pre-existing lint errors in `stream.py` for `current_agent` in `handle_multi_mode()` — undefined variable, not introduced by this change
+  - The full parameter flow is: LLMRequest schema -> LLMController -> stream_generator() -> construct_agent() -> Orchestra -> init_graph() -> create_deep_agent()
+---
+
+## 2026-02-04 - US-007
+- Added integration test verifying new deep agent parameters flow from init_graph() through to create_deep_agent()
+- Test `test_passes_all_new_params`: mocks create_deep_agent, calls init_graph() with all 5 new params, verifies they are forwarded
+- Test `test_passes_none_defaults`: calls init_graph() without new params, verifies None defaults are forwarded
+- All 330 tests pass (2 new + 328 existing, 2 skipped)
+- Files changed:
+  - `backend/tests/unit/agents/__init__.py` (new file)
+  - `backend/tests/unit/agents/test_init_graph.py` (new file)
+- **Learnings for future iterations:**
+  - `init_chat_model` is imported locally inside `init_graph()` — must mock as `langchain.chat_models.init_chat_model`, not `src.agents.init_chat_model`
+  - `init_default_middleware` must also be mocked (returns a list that gets concatenated with `middleware` param)
+  - Mocking `create_deep_agent` at `src.agents.create_deep_agent` works because it's imported at module level
+---
+
+## 2026-02-04 - US-008
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added deprecation comments to DEFAULT_COMPACTION_TOKEN_THRESHOLD, DEFAULT_COMPACTION_RECENT_MESSAGES, and DEFAULT_COMPACTION_MODEL
+- Block comment at section header explains constants are only used when USE_INTERNAL_SUMMARIZATION=false
+- Inline comments on each constant reference issue #734
+- Constants NOT removed (still needed for rollback path)
+- All 330 tests pass, 2 skipped
+- Files changed:
+  - `backend/src/constants/llm.py` - Added deprecation comments to compaction constants section
+- **Learnings for future iterations:**
+  - `ruff format` will reformat long inline comments by wrapping the assignment across lines — always run format after editing
+  - These constants are consumed by `compacting.py` which is already deprecated (US-001)
+---

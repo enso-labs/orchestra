@@ -64,7 +64,7 @@
         "All existing tests pass"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/tests/unit/schemas/test_llm_schemas.py (new file or add to existing). Depends on US-003."
     },
     {
@@ -81,7 +81,7 @@
         "All existing tests pass"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/src/agents/__init__.py. Depends on US-003 (schema fields must exist)."
     },
     {
@@ -97,7 +97,7 @@
         "All existing tests pass"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/src/controllers/llm.py, backend/src/utils/stream.py. Depends on US-005."
     },
     {
@@ -111,7 +111,7 @@
         "All existing tests pass"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/tests/unit/agents/test_init_graph.py (new file). Depends on US-005."
     },
     {
@@ -125,7 +125,7 @@
         "All existing tests pass"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/src/constants/llm.py. Independent, can run any time after US-001."
     },
     {
