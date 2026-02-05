@@ -4,7 +4,7 @@
 
 Orchestra's `create_deep_agent()` scaffolding is out of date with the latest `deepagents` library. The library now auto-applies an internal `SummarizationMiddleware`, supports new parameters (`skills`, `memory`, `name`, `response_format`, `interrupt_on`), and ships middleware that overlaps with Orchestra's custom `compaction_middleware`. This causes a **critical double-summarization bug** where every model call runs two compaction passes, wasting tokens and producing unpredictable context windows.
 
-This PRD defines the work to (1) eliminate the double-summarization conflict via a feature-flagged removal of Orchestra's custom compaction, (2) wire the five new `create_deep_agent()` parameters through Orchestra's full call chain (schemas, controller, stream, agents, Orchestra class), (3) update tests to reflect the new middleware stack, and (4) add markdown documentation cells and `name` parameter usage to the example notebooks.
+This PRD defines the work to (1) eliminate the double-summarization conflict via a feature-flagged removal of Orchestra's custom compaction, (2) wire the five new `create_deep_agent()` parameters through Orchestra's full call chain (schemas, controller, stream, agents, Orchestra class), (3) update tests to reflect the new middleware stack, (4) add markdown documentation cells and `name` parameter usage to the example notebooks, and (5) deprecate `system_prompt`/`instructions` in favor of AGENTS.md files loaded via the `memory` parameter, aligning with the deepagents library's recommended pattern.
 
 ## Background
 
@@ -24,6 +24,7 @@ Orchestra's existing call chain (`LLMController` -> `stream_generator` / `constr
 - **Maintain backward compatibility**: All new fields are `Optional` with `None` defaults. Existing API requests, assistants, and tests must continue to work unchanged.
 - **Improve observability**: Pass `name` to `create_deep_agent()` for better LangSmith tracing and log identification.
 - **Update example notebooks**: Add markdown documentation cells to all existing notebooks, add `name` parameter usage, and clean up stale patterns (internal API imports, dead code).
+- **Deprecate system_prompt/instructions**: Soft-deprecate the `system_prompt` and `instructions` fields on schemas, and migrate the agent pipeline to use AGENTS.md files via the `memory` parameter instead of passing `system_prompt` directly to `create_deep_agent()`, behind a feature flag for safe rollback.
 
 ## Non-Goals
 
@@ -213,6 +214,133 @@ Orchestra's existing call chain (`LLMController` -> `stream_generator` / `constr
 
 ---
 
+### US-010: Soft-deprecate system_prompt and instructions on LLMRequest and Assistant schemas
+
+**Description:** As a backend developer, I want the `system_prompt` and `instructions` fields on `LLMRequest` and `Assistant` to be marked as deprecated so that developers understand they should migrate to AGENTS.md files loaded via the `memory` parameter, aligning with the deepagents library's recommended pattern.
+
+**Priority:** P2
+
+**Files:**
+- `backend/src/schemas/entities/llm.py`
+
+**Acceptance Criteria:**
+- [ ] `system_prompt` field on `Assistant` has a deprecation comment referencing #734 and recommending AGENTS.md via `memory` parameter
+- [ ] `instructions` field on `Assistant` has a deprecation comment referencing #734 and recommending AGENTS.md via `memory` parameter
+- [ ] `system_prompt` field on `LLMRequest` has a deprecation comment referencing #734 and recommending AGENTS.md via `memory` parameter
+- [ ] `instructions` field on `LLMRequest` has a deprecation comment referencing #734 and recommending AGENTS.md via `memory` parameter
+- [ ] `validate_system_prompt_or_instructions` validator has a deprecation comment noting both fields are deprecated in favor of AGENTS.md
+- [ ] Field `description` values updated to note deprecation (e.g., `"Deprecated (#734): Use AGENTS.md via memory parameter instead."`)
+- [ ] Fields are NOT removed (soft deprecation only -- still functional for backward compatibility and rollback)
+- [ ] Typecheck passes
+- [ ] All existing tests pass
+
+---
+
+### US-011: Migrate system_prompt/instructions to AGENTS.md via memory parameter in agent pipeline
+
+**Description:** As a backend developer, I want `init_graph()` to stop passing `system_prompt` directly to `create_deep_agent()` and instead write the system prompt content as an AGENTS.md file to the backend filesystem and pass it via the `memory` parameter, aligning with the deepagents library's recommended pattern where agent instructions are provided through AGENTS.md files.
+
+**Priority:** P1
+
+**Files:**
+- `backend/src/agents/__init__.py`
+
+**Acceptance Criteria:**
+- [ ] `init_graph()` conditionally controls how system_prompt reaches `create_deep_agent()` based on the `USE_AGENTS_MD_INSTRUCTIONS` environment variable (default: `"true"`)
+- [ ] When `USE_AGENTS_MD_INSTRUCTIONS=true` (default):
+  - [ ] System prompt content (including merged instructions) is written to the backend filesystem as an AGENTS.md file
+  - [ ] The AGENTS.md file path is prepended to the `memory` list
+  - [ ] `system_prompt=None` is passed to `create_deep_agent()` (the library uses its internal default or reads from AGENTS.md)
+  - [ ] User-provided `memory` paths are preserved alongside the generated AGENTS.md path
+- [ ] When `USE_AGENTS_MD_INSTRUCTIONS=false` (rollback):
+  - [ ] `system_prompt` is passed directly to `create_deep_agent()` as before (existing behavior preserved)
+  - [ ] `memory` is passed through unchanged
+- [ ] Typecheck passes
+- [ ] All existing tests pass
+
+---
+
+### US-012: Deprecate init_system_prompt() and update construct_agent() for AGENTS.md migration
+
+**Description:** As a backend developer, I want `construct_agent()` to support the AGENTS.md-first instruction pattern by passing `instructions` content through the `memory` parameter rather than merging it into `system_prompt` via `init_system_prompt()`, and I want `init_system_prompt()` marked as deprecated.
+
+**Priority:** P1
+
+**Files:**
+- `backend/src/agents/__init__.py`
+- `backend/src/utils/format.py`
+
+**Acceptance Criteria:**
+- [ ] When `USE_AGENTS_MD_INSTRUCTIONS=true`, `construct_agent()` passes `instructions` content to `Orchestra`/`init_graph()` via a mechanism that writes it as AGENTS.md (rather than calling `init_system_prompt()` to merge into system_prompt)
+- [ ] When `USE_AGENTS_MD_INSTRUCTIONS=false`, `construct_agent()` continues using `init_system_prompt()` to merge `instructions` into `system_prompt` (rollback path)
+- [ ] `init_system_prompt()` in `format.py` has a deprecation comment noting it is only used when `USE_AGENTS_MD_INSTRUCTIONS=false` and referencing #734
+- [ ] Metadata (timezone, language, UTC time) previously injected by `init_system_prompt()` is preserved in the AGENTS.md content or handled through an alternative mechanism
+- [ ] Subagent system prompts are also migrated to the AGENTS.md pattern when the flag is enabled
+- [ ] Typecheck passes
+- [ ] All existing tests pass
+
+---
+
+### US-013: Add tests for system_prompt → AGENTS.md migration
+
+**Description:** As a backend developer, I want tests verifying that the system_prompt → AGENTS.md migration works correctly with both feature flag states, ensuring no regressions in either mode.
+
+**Priority:** P1
+
+**Files:**
+- `backend/tests/unit/agents/test_init_graph.py`
+
+**Acceptance Criteria:**
+- [ ] Test that when `USE_AGENTS_MD_INSTRUCTIONS=true`, `init_graph()` does NOT pass `system_prompt` to `create_deep_agent()`
+- [ ] Test that when `USE_AGENTS_MD_INSTRUCTIONS=true`, system_prompt content is written to the backend as an AGENTS.md file and the file path is included in the `memory` list
+- [ ] Test that when `USE_AGENTS_MD_INSTRUCTIONS=false`, `init_graph()` passes `system_prompt` to `create_deep_agent()` as before
+- [ ] Test that user-provided `memory` paths are preserved alongside the generated AGENTS.md path (no data loss)
+- [ ] Test that `None` system_prompt does not generate an AGENTS.md file
+- [ ] Typecheck passes
+- [ ] All existing tests pass
+
+---
+
+### US-014: Frontend QA validation of backend changes using agent-browser
+
+**Description:** As a QA engineer, I want to validate that the backend changes from US-001 through US-009 do not break the frontend application by performing end-to-end browser testing using the `agent-browser` CLI, ensuring login, assistant management, and chat functionality all work correctly.
+
+**Priority:** P1
+
+**Files:**
+- No code changes — this is a QA validation story only
+
+**Acceptance Criteria:**
+- [ ] Dev servers are running from the correct worktree (frontend on 5173, backend on 8000). Use `npm run dev:claude` for frontend if `npm run dev` fails, or `npx vite --host 0.0.0.0 --port 5173` as fallback
+- [ ] Login works: Navigate to `http://localhost:5173`, login with `admin@example.com` / `test1234`, verify redirect to main app
+- [ ] Assistant list loads: Navigate to agents/assistants page, verify at least one assistant is listed without errors
+- [ ] Assistant creation works: Create a new assistant with name, description, model, and tools — verify it saves successfully and appears in the list
+- [ ] Chat works end-to-end: Open a chat thread with an assistant, send a message, verify a streamed response is received without errors
+- [ ] Console is clean: Run `agent-browser console` and `agent-browser errors` — verify no JavaScript errors or failed API requests related to the schema changes
+- [ ] Screenshot evidence: Capture screenshots of (1) logged-in dashboard, (2) assistant list, (3) successful chat response — save to `.ralph/qa-screenshots/` directory
+- [ ] No regressions from middleware changes: The chat response completes successfully, confirming the compaction middleware removal (US-001) does not break streaming
+
+---
+
+### US-015: Backend API backward compatibility validation
+
+**Description:** As a QA engineer, I want to validate that the backend API accepts requests both with and without the new optional fields (skills, memory, agent_name, response_format, interrupt_on) by making curl requests against the running backend, confirming backward compatibility.
+
+**Priority:** P1
+
+**Files:**
+- No code changes — this is a QA validation story only
+
+**Acceptance Criteria:**
+- [ ] Backend is running on port 8000 from the correct worktree
+- [ ] Login request succeeds: `curl -X POST http://localhost:8000/api/auth/login -H "Content-Type: application/json" -d '{"email":"admin@example.com","password":"test1234"}'` returns a token
+- [ ] Invoke without new fields works: `curl -X POST http://localhost:8000/api/v0/llm/invoke` with only `input.messages` succeeds (backward compatible)
+- [ ] Invoke with new fields works: `curl -X POST http://localhost:8000/api/v0/llm/invoke` including `skills`, `memory`, and `agent_name` fields returns a valid response (no 422 validation error)
+- [ ] OpenAPI schema includes new fields: `curl http://localhost:8000/openapi.json` contains the new optional fields in the LLMRequest schema definition
+- [ ] Log evidence: Append curl commands and response summaries to progress.txt
+
+---
+
 ## Technical Notes
 
 ### Cross-cutting concern: Feature flag for compaction removal
@@ -237,6 +365,23 @@ The internal `FilesystemMiddleware` and Orchestra's `AutoEvictMiddleware` both i
 
 These operate on different triggers and have been assessed as **low risk** for conflict. No action is needed.
 
+### Cross-cutting concern: system_prompt/instructions deprecation and AGENTS.md migration
+
+The `deepagents` library recommends using AGENTS.md files (loaded via the `memory` parameter and `MemoryMiddleware`) for agent instructions, rather than passing `system_prompt` directly to `create_deep_agent()`. Orchestra currently uses `system_prompt` and `instructions` fields on `LLMRequest`/`Assistant`, which are merged by `init_system_prompt()` in `format.py` and passed as `create_deep_agent(system_prompt=...)`.
+
+US-010 through US-013 implement a phased migration:
+
+1. **US-010** (soft deprecation): Add deprecation comments to schema fields. No behavioral change.
+2. **US-011** (pipeline migration): Behind `USE_AGENTS_MD_INSTRUCTIONS` feature flag (default `"true"`), `init_graph()` writes system_prompt content as an AGENTS.md file to the backend filesystem and passes the path via the `memory` parameter instead of passing `system_prompt` directly.
+3. **US-012** (utility deprecation): `init_system_prompt()` is marked deprecated, only used in rollback path. `construct_agent()` updated to route `instructions` through the AGENTS.md mechanism.
+4. **US-013** (tests): Verify both flag states work correctly.
+
+**Interaction with AGENTS.md injection PRD**: The separate `prd-agents-md-system-prompt-injection.md` handles extracting user-created AGENTS.md files from `assistant.files` and injecting content as `instructions`. With US-011/US-012, those injected `instructions` will flow through the memory parameter as AGENTS.md files rather than being merged into `system_prompt` via `init_system_prompt()`. The two features are complementary.
+
+**Metadata handling**: `init_system_prompt()` currently appends timezone, language, and UTC time to the composed prompt. When `USE_AGENTS_MD_INSTRUCTIONS=true`, this metadata must be preserved — either appended to the AGENTS.md content or handled through an alternative mechanism (e.g., a separate metadata file in memory, or a minimal system_prompt containing only metadata).
+
+After validation in production, a follow-up task should remove the feature flag and fully delete the `init_system_prompt()` code path.
+
 ### Story dependency order
 
 ```
@@ -253,9 +398,22 @@ US-006 (controller + stream)
         v
 US-008 (deprecate constants)   -- independent, can run any time after US-001
 US-009 (notebook updates)       -- independent, can run any time
+
+US-010 (deprecate schema fields)   -- independent, can run any time
+US-011 (pipeline migration)  ----> US-013 (migration tests)
+        |
+        v
+US-012 (deprecate init_system_prompt)
+
+US-014 (frontend QA via agent-browser)  -- depends on US-001 through US-009
+US-015 (backend API curl validation)    -- depends on US-001 through US-009
 ```
 
 US-001 and US-003 can run in parallel (they touch different files). US-005 depends on US-003 (needs the schema fields to exist). US-006 depends on US-005 (needs the `construct_agent()` signature to be updated). US-002 depends on US-001. US-004 depends on US-003. US-007 depends on US-005.
+
+US-010 is independent (comments only). US-011 depends on US-005/US-006 (needs the memory parameter wired through). US-012 depends on US-011. US-013 depends on US-011.
+
+US-014 and US-015 are QA validation stories — no code changes, only browser and curl verification. They depend on US-001 through US-009 being complete (all currently passing). US-014 uses `agent-browser` CLI, US-015 uses `curl`.
 
 ### Internal middleware stack after changes
 
