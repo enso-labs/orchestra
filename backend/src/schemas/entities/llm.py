@@ -112,6 +112,22 @@ class Assistant(BaseModel):
     subagents: Optional[list[dict]] = []
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
+    # Deep agent parameters
+    skills: Optional[List[str]] = Field(
+        default=None, description="Skills to enable on the deep agent"
+    )
+    memory: Optional[List[str]] = Field(
+        default=None, description="Memory entries for the deep agent"
+    )
+    agent_name: Optional[str] = Field(
+        default=None, description="Name for the deep agent"
+    )
+    response_format: Optional[Dict[str, Any]] = Field(
+        default=None, description="Response format configuration for the deep agent"
+    )
+    interrupt_on: Optional[Dict[str, Any]] = Field(
+        default=None, description="Interrupt conditions for the deep agent"
+    )
     files: Optional[Dict[str, str]] = Field(
         default_factory=dict,
         description="File system storage for the assistant. Key is the file path, value is the file content.",
@@ -161,6 +177,11 @@ class Assistant(BaseModel):
             subagents=self.subagents,
             metadata=metadata or self.metadata,
             input=input,
+            skills=self.skills,
+            memory=self.memory,
+            agent_name=self.agent_name,
+            response_format=self.response_format,
+            interrupt_on=self.interrupt_on,
         )
 
 
@@ -209,6 +230,22 @@ class LLMRequest(BaseModel):
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
     metadata: Optional[Config] = Field(
         default_factory=Config, description="LangGraph configuration"
+    )
+    # Deep agent parameters
+    skills: Optional[List[str]] = Field(
+        default=None, description="Skills to enable on the deep agent"
+    )
+    memory: Optional[List[str]] = Field(
+        default=None, description="Memory entries for the deep agent"
+    )
+    agent_name: Optional[str] = Field(
+        default=None, description="Name for the deep agent"
+    )
+    response_format: Optional[Dict[str, Any]] = Field(
+        default=None, description="Response format configuration for the deep agent"
+    )
+    interrupt_on: Optional[Dict[str, Any]] = Field(
+        default=None, description="Interrupt conditions for the deep agent"
     )
     # Inference dictation parameters
     generate_files: Optional[bool] = Field(

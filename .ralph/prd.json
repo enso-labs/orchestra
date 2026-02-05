@@ -17,7 +17,7 @@
         "All existing tests pass"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/src/utils/middleware.py, backend/src/utils/compacting.py. Feature flag USE_INTERNAL_SUMMARIZATION defaults to 'true'. Read os.getenv('USE_INTERNAL_SUMMARIZATION', 'true').lower() == 'true'."
     },
     {
@@ -33,7 +33,7 @@
         "All existing tests pass"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/tests/unit/utils/test_middleware_integration.py, backend/tests/unit/utils/test_compacting.py. Depends on US-001."
     },
     {
@@ -49,7 +49,7 @@
         "All existing tests pass"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/src/schemas/entities/llm.py. Can run in parallel with US-001/US-002."
     },
     {

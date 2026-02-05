@@ -3,3 +3,43 @@ Started: 2026-02-04
 Feature: feat/734-update-scaffold (Update create_deep_agent scaffolding)
 ---
 
+## Codebase Patterns
+- Backend tests require env vars loaded from `$HOME/.env/orchestra/.env.backend` (no `.env.test` in worktrees)
+- Run tests with: `set -a && source /home/ryaneggz/.env/orchestra/.env.backend && set +a && uv run pytest tests/unit -s`
+- Format with: `uvx ruff format` from backend dir
+- Lint check with: `uvx ruff check <files>`
+- `init_default_middleware()` in `src/utils/middleware.py` reads `USE_INTERNAL_SUMMARIZATION` env var to toggle compaction middleware
+- Commits must be signed: `git commit -s`
+- `Assistant` and `LLMRequest` schemas live in `backend/src/schemas/entities/llm.py`; new fields need wiring in `to_llm_request()`
+
+---
+
+## 2026-02-04 - US-001 + US-002
+- Implemented feature flag `USE_INTERNAL_SUMMARIZATION` (default: `true`) in `init_default_middleware()`
+- When true (default), `compaction_middleware` is excluded from the middleware stack (5 items instead of 6)
+- When false, `compaction_middleware` is included as the first middleware (rollback path, 6 items)
+- Updated `compacting.py` header with deprecation notice referencing #734
+- Updated `test_middleware_integration.py` tests to verify both flag states (also satisfies US-002)
+- Files changed:
+  - `backend/src/utils/middleware.py` - Added `os` import, feature flag logic in `init_default_middleware()`
+  - `backend/src/utils/compacting.py` - Added deprecation header comment
+  - `backend/tests/unit/utils/test_middleware_integration.py` - Updated `TestCompactionInMiddlewareStack` with new default assertions and env var toggle test
+- **Learnings for future iterations:**
+  - US-001 and US-002 were tightly coupled — test updates were required as part of US-001 to keep CI green
+  - `@patch.dict("os.environ", {...})` works well for testing env-var-based feature flags
+  - The ruff formatter auto-reformats files in the backend dir (2 files reformatted on first run)
+---
+
+## 2026-02-04 - US-003
+- Added 5 new Optional fields to `LLMRequest`: skills, memory, agent_name, response_format, interrupt_on (all default to None)
+- Added 5 new Optional fields to `Assistant`: skills, memory, agent_name, response_format, interrupt_on (all default to None)
+- Updated `Assistant.to_llm_request()` to propagate all 5 new fields to the returned `LLMRequest`
+- All 316 existing tests pass, backward compatible (new fields default to None)
+- Files changed:
+  - `backend/src/schemas/entities/llm.py` - Added deep agent parameter fields to both schemas and updated to_llm_request()
+- **Learnings for future iterations:**
+  - The `Assistant` and `LLMRequest` schemas are both in `backend/src/schemas/entities/llm.py`
+  - `to_llm_request()` is the bridge method that converts Assistant config into LLMRequest — any new fields on both schemas must be wired through here
+  - New Optional fields with `default=None` are fully backward compatible — no migration needed
+---
+
