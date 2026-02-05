@@ -17,7 +17,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Both schema changes are in the same file (backend/src/schemas/entities/llm.py). Follow the exact pattern used by the `subagents` field. The `to_llm_request()` method already passes subagents — add skills in the same fashion."
     },
     {
@@ -32,7 +32,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the same pattern as the `subagents` parameter in init_graph(). The create_deep_agent() function from deepagents==0.3.8 already accepts `skills: list[str] | None = None` as a keyword argument."
     },
     {

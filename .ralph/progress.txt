@@ -3,3 +3,33 @@ Started: 2026-02-05
 Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
 ---
 
+## Codebase Patterns
+- Schema fields in `backend/src/schemas/entities/llm.py`: Follow the `subagents` field pattern when adding new list-type fields (Optional with default_factory=list)
+- `Assistant.to_llm_request()` must forward all new schema fields to `LLMRequest` constructor
+- Pre-existing pyright errors exist in llm.py (None assignments, type variance) — these are not regressions
+- `make format` must be run from `backend/` directory, not project root
+- Format changes (ruff) may touch unrelated files — include them in commits
+- `init_graph()` and `create_deep_agent()` accept `skills: list[str] | None = None` — follow subagents pattern for new params
+- Agent construction chain: `construct_agent()` → `Orchestra.__init__()` → `init_graph()` → `create_deep_agent()`
+
+## 2026-02-05 - US-001
+- Added `skills: Optional[List[str]]` field with `default_factory=list` to Assistant model (after subagents)
+- Added `skills: Optional[List[str]]` field with `default_factory=list` to LLMRequest model (after subagents)
+- Added `skills=self.skills` to `Assistant.to_llm_request()` return statement
+- Files changed: `backend/src/schemas/entities/llm.py`, `backend/src/constants/examples/__init__.py` (format only)
+- **Learnings for future iterations:**
+  - The `skills` field follows the exact same pattern as `subagents` in both models
+  - Ruff formatter added blank lines in examples/__init__.py as a side effect
+  - pyright has 7 pre-existing errors in llm.py — none related to skills changes
+---
+
+## 2026-02-05 - US-002
+- Added `skills: list[str] | None = None` parameter to `init_graph()` function signature (after subagents)
+- Passed `skills=skills` to `create_deep_agent()` call inside `init_graph()`
+- Files changed: `backend/src/agents/__init__.py`
+- **Learnings for future iterations:**
+  - `init_graph()` parameter order: tools, subagents, skills, system_prompt, model, ...
+  - `create_deep_agent()` from deepagents already accepts `skills` kwarg — just pass it through
+  - No format changes needed — ruff found no issues
+---
+
