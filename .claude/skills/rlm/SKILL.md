@@ -247,3 +247,68 @@ Aggregate all worker results into a unified output.
 | **Supervisor** | Sonnet | Synthesis (Step 5) | Requires cross-chunk reasoning and pattern detection |
 
 Explicitly specify `model: "haiku"` in every Task tool invocation for worker sub-agents. The supervisor runs as the main Sonnet conversation.
+
+## Error Handling
+
+Handle failures at each level with graceful degradation.
+
+### Single Subagent Failure
+
+If one worker Task fails (timeout, empty output, malformed result):
+
+1. **Retry once** with the same prompt and chunk.
+2. If retry succeeds, use the result normally.
+3. If retry fails, mark the chunk as skipped and continue with remaining results.
+
+### Multiple Failures (>30% of chunks)
+
+If more than 30% of worker Tasks fail:
+
+1. **Fall back to Sonnet-only processing**: Abandon the parallel Haiku approach.
+2. Process the input directly with Sonnet, using a single pass or sequential reads.
+3. Accept reduced coverage over unreliable parallel results.
+
+### All Failures
+
+If every worker Task fails:
+
+1. **Process the entire input directly** with Sonnet without chunking.
+2. Read the input in sequential passes if it exceeds context.
+3. Produce the best output possible from direct processing.
+
+### Partial Results
+
+When some chunks succeed and others fail (but failure rate <= 30%):
+
+1. **Produce output from successful chunks**, noting gaps.
+2. Include a completeness percentage in the output metadata.
+3. State which areas were not analyzed and why.
+
+Example output note:
+```
+Note: Analysis covers 7 of 10 chunks (70% completeness).
+Chunks 3, 7, 9 could not be processed. Areas not covered: [list].
+```
+
+### Graceful Degradation Ladder
+
+When problems occur, degrade through these levels in order:
+
+| Level | Condition | Action |
+|-------|-----------|--------|
+| **Full RLM** | All workers succeed | Normal workflow: decompose, parallel process, synthesize |
+| **Partial RLM** | Some workers fail (<= 30%) | Synthesize from successful chunks, note gaps |
+| **Sonnet Fallback** | Many workers fail (> 30%) | Abandon chunking, process directly with Sonnet |
+| **Best-Effort** | All workers fail or Sonnet fallback also struggles | Produce whatever output is possible, clearly state limitations |
+
+Always inform the user which degradation level was reached and why.
+
+## When NOT to Use RLM
+
+Do NOT invoke the RLM pattern for:
+
+- **Small inputs (< 500 lines)**: Direct processing is faster and simpler. The overhead of decomposition and synthesis exceeds the benefit.
+- **Single file analysis**: If the task involves one file that fits in context, process it directly.
+- **Simple queries**: Questions like "what does function X do?" or "fix this bug" do not need parallel decomposition.
+- **Already-structured data**: If the user provides a clear, bounded dataset (a single JSON file, a specific API response), process it directly.
+- **Time-sensitive tasks**: If the user needs an immediate answer, RLM adds latency from decomposition and synthesis. Use direct processing for speed.
