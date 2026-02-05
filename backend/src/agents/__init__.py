@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional
 from uuid import uuid4
 from langchain.tools import ToolRuntime
@@ -83,11 +86,27 @@ def init_graph(
         kwargs["api_key"] = api_key
     llm = init_chat_model(**kwargs)
 
+    # Feature flag: write system_prompt to AGENTS.md and load via memory parameter
+    use_agents_md = os.getenv("USE_AGENTS_MD_INSTRUCTIONS", "true").lower() == "true"
+
+    effective_system_prompt = system_prompt
+    effective_memory = list(memory) if memory else []
+
+    if use_agents_md and system_prompt:
+        # Write system prompt content to a temporary AGENTS.md file
+        agents_md_dir = tempfile.mkdtemp(prefix="orchestra_agents_md_")
+        agents_md_path = os.path.join(agents_md_dir, "AGENTS.md")
+        with open(agents_md_path, "w") as f:
+            f.write(system_prompt)
+        # Prepend AGENTS.md path to memory list
+        effective_memory.insert(0, agents_md_path)
+        effective_system_prompt = None
+
     deep_agent = create_deep_agent(
         model=llm,
         tools=tools,
         subagents=subagents,
-        system_prompt=system_prompt,
+        system_prompt=effective_system_prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
         middleware=init_default_middleware(backend=backend) + middleware,
@@ -96,7 +115,7 @@ def init_graph(
         backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
         skills=skills,
-        memory=memory,
+        memory=effective_memory or None,
         name=name,
         response_format=response_format,
         interrupt_on=interrupt_on,

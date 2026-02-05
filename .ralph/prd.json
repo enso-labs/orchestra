@@ -182,7 +182,7 @@
         "All existing tests pass"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/src/agents/__init__.py. Depends on US-005/US-006 (memory parameter must be wired through). Feature flag USE_AGENTS_MD_INSTRUCTIONS defaults to 'true'."
     },
     {

@@ -17,6 +17,7 @@ Feature: feat/734-update-scaffold (Update create_deep_agent scaffolding)
 - Pre-existing lint errors in `stream.py` (`current_agent` undefined in `handle_multi_mode`) — do not fix as part of unrelated stories
 - `init_chat_model` is a local import inside `init_graph()` — mock it at `langchain.chat_models.init_chat_model`, not at the `src.agents` level
 - `create_deep_agent(backend=StateBackend)` is the public API for backends — pass the class as a callable, framework constructs ToolRuntime internally
+- `USE_AGENTS_MD_INSTRUCTIONS` env var (default: `true`) controls system_prompt → AGENTS.md migration in `init_graph()`; when true, system_prompt is written to a temp AGENTS.md file and loaded via `memory` param
 
 ---
 
@@ -157,4 +158,22 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Pydantic Field `description` parameter is the right place for deprecation notices that show up in API docs / OpenAPI schemas
   - Inline `#` comments are good for developer-facing deprecation notices in source code
   - This was a pure comments/metadata change — no behavioral impact, no test changes needed
+---
+
+## 2026-02-05 - US-011
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented system_prompt → AGENTS.md migration in `init_graph()` behind `USE_AGENTS_MD_INSTRUCTIONS` env var (default: `true`)
+- When enabled: system prompt content is written to a temporary AGENTS.md file via `tempfile.mkdtemp()`, path is prepended to the memory list, and `system_prompt=None` is passed to `create_deep_agent()`
+- When disabled (rollback): system_prompt is passed directly to `create_deep_agent()` as before, memory is unchanged
+- User-provided memory paths are preserved alongside the generated AGENTS.md path
+- When system_prompt is None, no AGENTS.md file is generated (guard: `if use_agents_md and system_prompt`)
+- `effective_memory or None` ensures an empty list becomes None when no memory paths exist
+- All 330 tests pass, 2 skipped
+- Files changed:
+  - `backend/src/agents/__init__.py` - Added `os`, `tempfile` imports; added AGENTS.md migration logic in `init_graph()`
+- **Learnings for future iterations:**
+  - `tempfile.mkdtemp()` creates a directory that persists until explicitly removed — good for files that need to outlive the function call
+  - `list(memory) if memory else []` is the pattern for making a safe copy that handles None input
+  - `effective_memory or None` converts empty list back to None so downstream code doesn't receive an unexpected empty list
+  - The feature flag pattern `os.getenv("VAR", "true").lower() == "true"` is consistent with `USE_INTERNAL_SUMMARIZATION` from US-001
 ---
