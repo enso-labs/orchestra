@@ -63,7 +63,7 @@
         "Typecheck passes (make format)"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Read backend/src/workers/tasks.py to find _execute_agent_stream(). Follow same pattern as US-003 for stream.py."
     },
     {
@@ -77,7 +77,7 @@
         "Typecheck passes (make format)"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Read backend/src/controllers/llm.py to find llm_invoke(). Follow same pattern as US-003 and US-004."
     },
     {

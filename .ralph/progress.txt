@@ -48,3 +48,32 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Memory files must be merged BEFORE creating `ToolRuntime` since the runtime receives `files_map` in its state
   - User files take precedence over memory files via `{**memory_files, **files_map}` merge order
 ---
+
+## 2026-02-05 - US-004
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Wired memory into `_execute_agent_stream()` in `backend/src/workers/tasks.py`
+- Added imports of `prepare_memory_files` from `src.agents` and `memory_service` from `src.services.memory` (inside function to match existing lazy-import pattern)
+- Calls `prepare_memory_files(user_id, memory_service)` before creating `ToolRuntime`
+- Merges memory files into `files_map` with user files taking precedence: `{**memory_files, **files_map}`
+- Passes `memory_sources` to `construct_agent()` via the `memory` kwarg
+- Files changed: `backend/src/workers/tasks.py`
+- **Learnings for future iterations:**
+  - `_execute_agent_stream()` uses lazy imports inside the function body (not module-level) — follow this pattern for consistency
+  - The function receives `user_id` directly as a parameter, not via `service_context.user_id` — use the direct parameter
+  - `files_map` is passed as a parameter to `_execute_agent_stream()`, so memory merge must happen inside the function before it's used
+---
+
+## 2026-02-05 - US-005
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Wired memory into `llm_invoke()` in `backend/src/controllers/llm.py`
+- Added imports of `prepare_memory_files` from `src.agents` and `memory_service` from `src.services.memory`
+- Calls `prepare_memory_files(self.user_id, memory_service)` before `init_backend()`
+- Merges memory files into `params.input.files` with existing files taking precedence: `{**memory_files, **existing_files}`
+- Passes `memory_sources` to `construct_agent()` via the `memory` kwarg
+- Memory files are merged before `init_backend()` so `_init_runtime()` picks up the merged files in `request.input.files`
+- Files changed: `backend/src/controllers/llm.py`
+- **Learnings for future iterations:**
+  - In llm.py, memory must be merged into `params.input.files` BEFORE `init_backend()` since `_init_runtime()` reads `request.input.files`
+  - `llm_invoke()` uses `self.user_id` (not `service_context.user_id`) — both are the same value, but use `self.user_id` for consistency
+  - Module-level imports work fine in llm.py (no circular import issues with `memory_service` or `prepare_memory_files`)
+---
