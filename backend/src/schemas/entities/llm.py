@@ -93,13 +93,21 @@ class Assistant(BaseModel):
     name: str
     description: str = Field(default="Helpful AI Assistant.")
     model: Optional[str] = None
+    # Deprecated: Use AGENTS.md files loaded via the memory parameter instead. See #734.
     system_prompt: Optional[str] = Field(
-        default=None, examples=["You are a helpful assistant."]
+        default=None,
+        description="Deprecated (#734): Use AGENTS.md via memory parameter instead. Will be removed in a future release.",
+        examples=["You are a helpful assistant."],
     )
+    # Deprecated: Use AGENTS.md files loaded via the memory parameter instead. See #734.
     instructions: Optional[str] = Field(
-        default=None, examples=["Your role is to help the user with their task."]
+        default=None,
+        description="Deprecated (#734): Use AGENTS.md via memory parameter instead. Will be removed in a future release.",
+        examples=["Your role is to help the user with their task."],
     )
 
+    # Deprecated: Both system_prompt and instructions are deprecated in favor of AGENTS.md
+    # loaded via the memory parameter. This validator is retained for backward compatibility. See #734.
     @model_validator(mode="after")
     def validate_system_prompt_or_instructions(self):
         if self.system_prompt and self.instructions:
@@ -222,8 +230,18 @@ class PublicAssistant(BaseModel):
 class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default=DEFAULT_CHAT_MODEL)
-    system_prompt: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
-    instructions: Optional[str] = Field(default="", exclude=True)
+    # Deprecated: Use AGENTS.md files loaded via the memory parameter instead. See #734.
+    system_prompt: Optional[str] = Field(
+        default=DEFAULT_SYSTEM_PROMPT,
+        exclude=True,
+        description="Deprecated (#734): Use AGENTS.md via memory parameter instead. Will be removed in a future release.",
+    )
+    # Deprecated: Use AGENTS.md files loaded via the memory parameter instead. See #734.
+    instructions: Optional[str] = Field(
+        default="",
+        exclude=True,
+        description="Deprecated (#734): Use AGENTS.md via memory parameter instead. Will be removed in a future release.",
+    )
     tools: Optional[List[Any]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
