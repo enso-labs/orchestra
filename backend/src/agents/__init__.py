@@ -261,6 +261,14 @@ async def construct_agent(
     api_key: str | None = None,
     memory: list[str] | None = None,
 ):
+    """Build and return an Orchestra agent instance.
+
+    Args:
+        memory: Optional list of file paths (e.g. ``["/memories.md"]``) that
+            reference files in the StateBackend. When provided, MemoryMiddleware
+            is added to the agent's middleware stack so the agent can access
+            user memories during execution.
+    """
     try:
         if subagents:
             subagents = await init_subagents(subagents, service_context)

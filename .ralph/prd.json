@@ -95,7 +95,7 @@
         "All tests pass (make test)"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Read existing test patterns in backend/tests/unit/ for conventions. Mock MemoryService.search() for all test cases. Use pytest and pytest-asyncio since prepare_memory_files is async."
     },
     {
@@ -108,7 +108,7 @@
         "Typecheck passes (make format)"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "This is a documentation-only story. Read the functions modified in US-003, US-004, US-005 and add/update their docstrings. Keep docstrings concise."
     }
   ]

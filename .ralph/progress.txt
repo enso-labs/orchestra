@@ -9,6 +9,7 @@ Feature: Native DeepAgents Memory (feat/738-native-deepagents-memory)
 - Use `TYPE_CHECKING` guard for `MemoryService` import in agents/__init__.py to avoid circular imports
 - Pre-existing ruff lint warning (F401) on unused `create_agent` import in agents/__init__.py — not our change
 - Memory wiring pattern: call `prepare_memory_files()` → merge `{**memory_files, **files_map}` → pass `memory_sources` to `construct_agent(memory=...)`
+- Unit test convention: use `@pytest.mark.asyncio` on classes, `pytest-asyncio` auto mode, `unittest.mock.AsyncMock` for async methods, `patch("src.module.name")` for patching
 ---
 
 ## 2026-02-05 - US-001
@@ -76,4 +77,31 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - In llm.py, memory must be merged into `params.input.files` BEFORE `init_backend()` since `_init_runtime()` reads `request.input.files`
   - `llm_invoke()` uses `self.user_id` (not `service_context.user_id`) — both are the same value, but use `self.user_id` for consistency
   - Module-level imports work fine in llm.py (no circular import issues with `memory_service` or `prepare_memory_files`)
+---
+
+## 2026-02-05 - US-006
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created `backend/tests/unit/agents/test_prepare_memory_files.py` with 9 tests covering all acceptance criteria
+- Created `backend/tests/unit/agents/__init__.py` (new test package)
+- Tests cover: None user_id, empty string user_id, empty search results, exception handling with log warning, correct files_map/sources return, markdown bullet formatting, user_id set on service before search, single memory, non-dict value fallback
+- All 373 tests pass (9 new + 364 existing), `make format` clean
+- Files changed: `backend/tests/unit/agents/__init__.py`, `backend/tests/unit/agents/test_prepare_memory_files.py`
+- **Learnings for future iterations:**
+  - Mock `SearchItem` with `MagicMock()` whose `.dict()` returns `{"key": "...", "value": {"memory": "text"}}` — no need to import `SearchItem` directly
+  - `prepare_memory_files` sets `memory_svc.user_id` before calling `.search()` — test this side effect
+  - `create_file_data` returns `{"content": [...lines], "created_at": str, "modified_at": str}` — assert content as list of strings
+  - Test env requires `$HOME/.env/orchestra/.env.backend` loaded (conftest imports DB_URI)
+---
+
+## 2026-02-05 - US-007
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added docstrings documenting memory loading behavior to four functions
+- `stream_generator()` in `backend/src/utils/stream.py` — new docstring
+- `_execute_agent_stream()` in `backend/src/workers/tasks.py` — appended memory paragraph to existing docstring
+- `llm_invoke()` in `backend/src/controllers/llm.py` — new docstring
+- `construct_agent()` in `backend/src/agents/__init__.py` — new docstring with `memory` arg description
+- Files changed: `backend/src/utils/stream.py`, `backend/src/workers/tasks.py`, `backend/src/controllers/llm.py`, `backend/src/agents/__init__.py`
+- **Learnings for future iterations:**
+  - Documentation-only stories are quick — just read existing code and add concise docstrings
+  - Use ``double backtick`` RST style in docstrings for function/parameter references (consistent with existing codebase)
 ---

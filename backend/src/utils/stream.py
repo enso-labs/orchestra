@@ -192,6 +192,13 @@ async def stream_generator(
     instructions: str = None,
     api_key: str | None = None,
 ):
+    """Stream agent responses as Server-Sent Events.
+
+    Automatically loads user memories via ``prepare_memory_files()`` and merges
+    them into the files map before agent construction. User-provided files take
+    precedence over memory files. The resulting memory sources are passed to
+    ``construct_agent()`` so that MemoryMiddleware is activated.
+    """
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
     memory_files, memory_sources = await prepare_memory_files(

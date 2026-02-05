@@ -194,6 +194,11 @@ async def _execute_agent_stream(
 
     Extracted to reduce duplication between resilient and legacy modes.
     Checks for abort signals on every chunk for responsive cancellation.
+
+    Automatically loads user memories via ``prepare_memory_files()`` and merges
+    them into the files map before agent construction. User-provided files take
+    precedence over memory files. The resulting memory sources are passed to
+    ``construct_agent()`` so that MemoryMiddleware is activated.
     """
     from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime

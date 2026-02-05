@@ -96,6 +96,14 @@ class LLMController:
         return model, api_key
 
     async def llm_invoke(self, params: LLMRequest):
+        """Invoke the agent synchronously and return the final response.
+
+        Automatically loads user memories via ``prepare_memory_files()`` and
+        merges them into ``params.input.files`` before backend initialisation.
+        Existing user files take precedence over memory files. The resulting
+        memory sources are passed to ``construct_agent()`` so that
+        MemoryMiddleware is activated.
+        """
         agent = None
         config = None
         try:
