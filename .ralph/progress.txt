@@ -1,13 +1,5 @@
-## Codebase Patterns
-- Single injection point: LLMService.assistant() in backend/src/services/llm.py (line 124)
-- All 4 production paths (invoke, stream, distributed worker, scheduled) call LLMService.assistant() before construct_agent()
-- Assistant.files is Dict[str, str]; LLMInput.files is Dict[str, Any] (can contain FileData dicts from frontend)
-- Assistant model has validate_system_prompt_or_instructions validator (mode="after") -- direct attribute assignment does NOT re-trigger it
-- LLMRequest has no mutual exclusion validator -- system_prompt and instructions can coexist
-- LLMRequest.instructions has exclude=True (dropped during model_dump()) -- safe because worker re-resolves via assistant()
-- Frontend FileData format: {"content": string[], "created_at": string, "modified_at": string}
-- to_llm_request() does NOT forward assistant.files -- extraction must happen before conversion
-- Expert analyses in: .claude/plans/plan-agents-md-system-prompt-injection/
-- Synthesis document: .claude/plans/plan-agents-md-system-prompt-injection/SYNTHESIS.md
+# Ralph Progress Log
+Started: 2026-02-04
+Feature: feat/734-update-scaffold (Update create_deep_agent scaffolding)
 ---
 

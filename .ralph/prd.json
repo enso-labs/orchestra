@@ -1,103 +1,151 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/731-agent-md-system-injection",
-  "description": "AGENTS.md System Prompt Injection - Automatically extract AGENTS.md file content from assistant or thread files and inject it as instructions in the LLM system prompt",
+  "branchName": "feat/734-update-scaffold",
+  "description": "Update create_deep_agent scaffolding - Wire new deepagents API parameters (skills, memory, name, response_format, interrupt_on) through Orchestra's call chain, eliminate double-summarization middleware conflict, and update example notebooks.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add extract_agents_md() helper method to LLMService",
-      "description": "As a developer, I need a static helper method on LLMService that safely extracts AGENTS.md content from a files dict, handling all possible content formats from the frontend and backend.",
+      "title": "Remove duplicate compaction middleware behind feature flag",
+      "description": "As a backend developer, I want to remove Orchestra's custom compaction_middleware from the default middleware stack so that only the internal SummarizationMiddleware handles message compaction, eliminating double summarization.",
       "acceptanceCriteria": [
-        "Add @staticmethod extract_agents_md(files: dict | None) -> str | None to LLMService in backend/src/services/llm.py",
-        "Returns None when files is None or empty dict",
-        "Returns None when 'AGENTS.md' key is not present (exact match)",
-        "Handles str values: strips whitespace and returns content",
-        "Handles dict values with 'content' key where content is str: strips and returns",
-        "Handles dict values with 'content' key where content is list[str]: joins with newlines, strips, returns (frontend FileData format)",
-        "Handles dict values with 'content' key where content is None: returns None",
-        "Handles list values: joins with newlines, strips, returns",
-        "Returns None for empty string or whitespace-only content after extraction",
-        "Typecheck passes"
+        "init_default_middleware() conditionally excludes compaction_middleware based on USE_INTERNAL_SUMMARIZATION env var (default: 'true')",
+        "When USE_INTERNAL_SUMMARIZATION=true (default), compaction_middleware is NOT in the returned middleware list",
+        "When USE_INTERNAL_SUMMARIZATION=false, compaction_middleware IS in the returned middleware list (rollback path)",
+        "compacting.py header comment updated to note deprecation and reference issue #734",
+        "The compaction_middleware import in middleware.py remains but is guarded by the feature flag branch",
+        "Typecheck passes",
+        "All existing tests pass"
       ],
       "priority": 1,
       "passes": false,
-      "notes": ""
+      "notes": "Files: backend/src/utils/middleware.py, backend/src/utils/compacting.py. Feature flag USE_INTERNAL_SUMMARIZATION defaults to 'true'. Read os.getenv('USE_INTERNAL_SUMMARIZATION', 'true').lower() == 'true'."
     },
     {
       "id": "US-002",
-      "title": "Inject AGENTS.md in agent mode (assistant_id present)",
-      "description": "As a user who has created an assistant with an AGENTS.md file, I want the agent to automatically use that file's content as its instructions so that I can configure agent behavior through a markdown file.",
+      "title": "Update middleware integration tests for new stack",
+      "description": "As a backend developer, I want the middleware integration tests to reflect the updated default middleware stack (without compaction_middleware by default) so that the test suite validates the correct middleware composition.",
       "acceptanceCriteria": [
-        "In LLMService.assistant(), after assistant is loaded (line 154) and before default_system_prompt() is called (line 155), call self.extract_agents_md(assistant.files)",
-        "If AGENTS.md content is found: set assistant.system_prompt = None then assistant.instructions = agents_md_content",
-        "Log info message with content length when AGENTS.md is injected (e.g. 'Injecting AGENTS.md (N chars) as instructions')",
-        "Log warning when AGENTS.md overrides an existing instructions field on the assistant",
-        "Agents without AGENTS.md in their files behave identically to current behavior (no code path change)",
-        "Only backend/src/services/llm.py is modified",
-        "Typecheck passes"
+        "test_middleware_integration.py asserts init_default_middleware() returns 5 items (was 6) when USE_INTERNAL_SUMMARIZATION=true",
+        "test_middleware_integration.py includes a test verifying compaction_middleware is NOT in the default stack",
+        "test_middleware_integration.py includes a test verifying compaction_middleware IS in the stack when USE_INTERNAL_SUMMARIZATION=false",
+        "test_compacting.py retains existing tests for the SummarizationMiddleware class itself",
+        "Typecheck passes",
+        "All existing tests pass"
       ],
       "priority": 2,
       "passes": false,
-      "notes": ""
+      "notes": "Files: backend/tests/unit/utils/test_middleware_integration.py, backend/tests/unit/utils/test_compacting.py. Depends on US-001."
     },
     {
       "id": "US-003",
-      "title": "Inject AGENTS.md in non-agent thread mode (no assistant_id)",
-      "description": "As a user sending files alongside my messages without using an assistant, I want the system to check for AGENTS.md in my thread-level files and use it as instructions.",
+      "title": "Add new fields to LLMRequest and Assistant schemas",
+      "description": "As an API consumer, I want to pass skills, memory, agent_name, response_format, and interrupt_on in my API requests so that I can configure the new create_deep_agent() parameters.",
       "acceptanceCriteria": [
-        "In LLMService.assistant(), in the non-agent branch (before line 170 default_system_prompt call), call self.extract_agents_md(params.input.files)",
-        "If AGENTS.md content is found: set params.instructions = agents_md_content",
-        "Log info message with content length when AGENTS.md is injected in thread mode",
-        "Requests without AGENTS.md in their files behave identically to current behavior",
-        "Only backend/src/services/llm.py is modified",
-        "Typecheck passes"
+        "LLMRequest has new Optional fields: skills (Optional[List[str]]), memory (Optional[List[str]]), agent_name (Optional[str]), response_format (Optional[Dict[str, Any]]), interrupt_on (Optional[Dict[str, Any]]) -- all default to None",
+        "Assistant has new Optional fields: skills (Optional[List[str]]), memory (Optional[List[str]]), agent_name (Optional[str]), response_format (Optional[Dict[str, Any]]), interrupt_on (Optional[Dict[str, Any]]) -- all default to None",
+        "Assistant.to_llm_request() propagates the five new fields to the returned LLMRequest",
+        "Existing API requests without the new fields continue to work (backward compatible)",
+        "Typecheck passes",
+        "All existing tests pass"
       ],
       "priority": 3,
       "passes": false,
-      "notes": ""
+      "notes": "Files: backend/src/schemas/entities/llm.py. Can run in parallel with US-001/US-002."
     },
     {
       "id": "US-004",
-      "title": "Unit tests for extract_agents_md() helper",
-      "description": "As a developer, I need comprehensive unit tests for the extraction helper to ensure correct handling of all content formats and edge cases.",
+      "title": "Add schema tests for new LLMRequest and Assistant fields",
+      "description": "As a backend developer, I want unit tests covering the new schema fields so that I can verify they default correctly and propagate through to_llm_request().",
       "acceptanceCriteria": [
-        "Create backend/tests/unit/services/test_llm_service.py",
-        "Test: None files dict returns None",
-        "Test: Empty files dict returns None",
-        "Test: Files dict without AGENTS.md key returns None",
-        "Test: AGENTS.md as plain string returns stripped content",
-        "Test: AGENTS.md as dict with content as string returns stripped content",
-        "Test: AGENTS.md as dict with content as list of strings returns newline-joined content",
-        "Test: AGENTS.md as dict with content as None returns None",
-        "Test: AGENTS.md as list of strings returns newline-joined content",
-        "Test: AGENTS.md with empty string value returns None",
-        "Test: AGENTS.md with whitespace-only value returns None",
-        "All tests pass (run: cd backend && uv run pytest tests/unit/services/test_llm_service.py -v)",
-        "Typecheck passes"
+        "Test that LLMRequest new fields all default to None when not provided",
+        "Test that LLMRequest new fields are set correctly when provided",
+        "Test that Assistant.to_llm_request() propagates all five new fields",
+        "Typecheck passes",
+        "All existing tests pass"
       ],
       "priority": 4,
       "passes": false,
-      "notes": ""
+      "notes": "Files: backend/tests/unit/schemas/test_llm_schemas.py (new file or add to existing). Depends on US-003."
     },
     {
       "id": "US-005",
-      "title": "Integration tests for AGENTS.md injection in assistant()",
-      "description": "As a developer, I need async integration tests verifying that LLMService.assistant() correctly injects AGENTS.md content in both agent and non-agent modes.",
+      "title": "Wire new parameters through init_graph and Orchestra class",
+      "description": "As a backend developer, I want init_graph() and Orchestra.__init__() to accept and forward skills, memory, name, response_format, and interrupt_on to create_deep_agent() so that the new API surface is available to the agent construction pipeline.",
       "acceptanceCriteria": [
-        "Add tests to backend/tests/unit/services/test_llm_service.py",
-        "Test: Agent with AGENTS.md in assistant.files -- returned LLMRequest.instructions contains AGENTS.md content",
-        "Test: Agent without AGENTS.md -- returned LLMRequest uses original instructions/system_prompt",
-        "Test: Agent with AGENTS.md AND existing instructions -- AGENTS.md wins, warning is logged",
-        "Test: Non-agent mode with AGENTS.md in params.input.files -- params.instructions is set to AGENTS.md content",
-        "Test: Non-agent mode without AGENTS.md -- params.instructions unchanged",
-        "Mock AssistantService.get() to return controlled Assistant objects with unittest.mock.AsyncMock",
-        "Use pytest with @pytest.mark.asyncio",
-        "All tests pass (run: cd backend && uv run pytest tests/unit/services/test_llm_service.py -v)",
-        "Typecheck passes"
+        "init_graph() signature includes: skills: list[str] | None = None, memory: list[str] | None = None, name: str | None = None, response_format: Any | None = None, interrupt_on: dict[str, Any] | None = None",
+        "init_graph() passes all five new parameters to create_deep_agent()",
+        "Orchestra.__init__() signature includes the same five new parameters and forwards them to init_graph()",
+        "construct_agent() signature includes: skills, memory, agent_name, response_format, interrupt_on",
+        "construct_agent() forwards the parameters to Orchestra() (mapping agent_name to name)",
+        "Typecheck passes",
+        "All existing tests pass"
       ],
       "priority": 5,
       "passes": false,
-      "notes": ""
+      "notes": "Files: backend/src/agents/__init__.py. Depends on US-003 (schema fields must exist)."
+    },
+    {
+      "id": "US-006",
+      "title": "Wire new parameters through LLMController and stream_generator",
+      "description": "As a backend developer, I want LLMController.llm_invoke(), LLMController.llm_stream(), and stream_generator() to pass the new parameters through to construct_agent() so that the full request-to-agent pipeline supports the new configuration.",
+      "acceptanceCriteria": [
+        "LLMController.llm_invoke() reads skills, memory, agent_name, response_format, interrupt_on from params and passes them to construct_agent()",
+        "LLMController.llm_stream() reads the same fields from assistant and passes them to stream_generator()",
+        "stream_generator() signature includes the five new parameters",
+        "stream_generator() passes them to construct_agent()",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Files: backend/src/controllers/llm.py, backend/src/utils/stream.py. Depends on US-005."
+    },
+    {
+      "id": "US-007",
+      "title": "Add integration test for new parameter propagation",
+      "description": "As a backend developer, I want an integration test that verifies the new parameters flow from init_graph() through to create_deep_agent() so that I can confirm end-to-end wiring works.",
+      "acceptanceCriteria": [
+        "Test mocks create_deep_agent and verifies init_graph() passes skills, memory, name, response_format, interrupt_on through to the mock",
+        "Test verifies that None defaults are passed when no new parameters are provided",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Files: backend/tests/unit/agents/test_init_graph.py (new file). Depends on US-005."
+    },
+    {
+      "id": "US-008",
+      "title": "Deprecate compaction constants",
+      "description": "As a backend developer, I want the DEFAULT_COMPACTION_* constants in backend/src/constants/llm.py marked as deprecated so that future contributors understand they are no longer actively used by the default middleware stack.",
+      "acceptanceCriteria": [
+        "DEFAULT_COMPACTION_TOKEN_THRESHOLD, DEFAULT_COMPACTION_RECENT_MESSAGES, and DEFAULT_COMPACTION_MODEL have deprecation comments referencing issue #734",
+        "Constants are NOT removed (still used when USE_INTERNAL_SUMMARIZATION=false)",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Files: backend/src/constants/llm.py. Independent, can run any time after US-001."
+    },
+    {
+      "id": "US-009",
+      "title": "Add markdown cells and name parameter to example notebooks",
+      "description": "As a developer reading the example notebooks, I want markdown documentation cells explaining each section and the name parameter set on all agents so that I can understand the examples and get better traces.",
+      "acceptanceCriteria": [
+        "Each notebook has a title markdown cell with purpose, features covered, and prerequisites",
+        "Each major code section is preceded by a markdown cell explaining what it demonstrates",
+        "All create_deep_agent() calls include the name parameter with a descriptive kebab-case value",
+        "Dead code (commented-out imports, unused provider installs) is removed",
+        "deep_agent_backend.ipynb removes direct ToolRuntime import/construction (uses public API only)",
+        "stream_subagent_updates.ipynb removes unused package installs (langchain-anthropic, langchain-groq, langchain-xai)",
+        "Notebook outputs are cleared",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Files: examples/agents/deep_agent_backend.ipynb, examples/agents/stream_subagent_updates.ipynb, examples/agents/RLM.ipynb. Independent, can run any time."
     }
   ]
 }
