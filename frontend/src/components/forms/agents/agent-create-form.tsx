@@ -14,6 +14,8 @@ import {
 	Ban,
 	Globe,
 	Lock,
+	AlertTriangle,
+	ArrowRight,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 
@@ -59,10 +61,11 @@ export function AgentCreateForm() {
 		isAgentSelected,
 		updateQueryStateModel,
 	} = useAgentContext();
-	const { toBackendFormat } = useChatContext();
+	const { toBackendFormat, createFile } = useChatContext();
 	const [isEditing, setIsEditing] = useState(!agentId);
 	const [originalAgent, setOriginalAgent] = useState<Agent | null>(null);
 	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
+	const [isMigrated, setIsMigrated] = useState(false);
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -151,6 +154,13 @@ export function AgentCreateForm() {
 	}, [agent]);
 
 	const filteredSubagents = agents.filter((a: Agent) => a.id !== agentId);
+
+	// Legacy instructions: show migration card when agent has instructions/system_prompt but no AGENTS.md
+	const hasLegacyInstructions =
+		!isMigrated &&
+		(agent.instructions || agent.system_prompt) &&
+		!agent.files?.["AGENTS.md"];
+	const legacyContent = agent.instructions || agent.system_prompt || "";
 
 	return (
 		<Form {...form}>
@@ -292,6 +302,35 @@ export function AgentCreateForm() {
 								</FormItem>
 							)}
 						/>
+						{/* Legacy Instructions Migration Card */}
+						{hasLegacyInstructions && (
+							<div className="flex flex-col gap-3 p-4 border border-amber-500/50 rounded-lg bg-amber-500/10">
+								<div className="flex items-start gap-3">
+									<AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+									<div className="flex-1">
+										<p className="text-sm font-medium text-foreground">
+											Legacy Instructions
+										</p>
+										<p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
+											{legacyContent}
+										</p>
+									</div>
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="self-start border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+									onClick={() => {
+										createFile("AGENTS.md", legacyContent);
+										setIsMigrated(true);
+									}}
+								>
+									<ArrowRight className="h-4 w-4 mr-2" />
+									Migrate to AGENTS.md
+								</Button>
+							</div>
+						)}
 						{/* AGENTS.md Guidance Note */}
 						<div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/50">
 							<FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />

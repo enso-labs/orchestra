@@ -40,9 +40,11 @@ vi.mock("@/context/AgentContext", () => ({
 }));
 
 // Mock ChatContext
+const mockCreateFile = vi.fn();
 vi.mock("@/context/ChatContext", () => ({
 	useChatContext: () => ({
 		toBackendFormat: vi.fn().mockReturnValue({}),
+		createFile: mockCreateFile,
 	}),
 }));
 
