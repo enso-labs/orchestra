@@ -165,8 +165,8 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Installed intro.js package. Created useIntroTour hook at frontend/src/hooks/useIntroTour.ts with: tourId-based localStorage dismissal (key: orchestra:tour:{tourId}:dismissed), steps array with element/intro/position/title, optional autoStart/exitOnOverlayClick/showProgress/showBullets options, startTour()/isComplete/resetTour() API, cleanup on unmount. All 188 frontend tests pass, TypeScript and lint clean."
     },
     {
       "id": "US-010",

@@ -19,6 +19,8 @@
 - Agent type from `agentService.ts` has `instructions?: string`, `system_prompt?: string`, `files?: Record<string, string>` — use these for legacy migration card tests
 - `createFile(path, content)` from `useChatContext()` creates files in the agent's file system (delegates to `useFileSystem` hook)
 - Use `isMigrated` local state as guard when `createFile` doesn't instantly update `agent.files` in context
+- Intro.js: use `introJs.tour()` factory, `tour.setOptions({ steps: [...] })`, `tour.start()`, `tour.exit(true)` for cleanup
+- `useIntroTour` hook: `useIntroTour(tourId, steps, options?)` → `{ startTour, isComplete, resetTour }`, localStorage key: `orchestra:tour:{tourId}:dismissed`
 
 ---
 
@@ -105,4 +107,22 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - `isMigrated` state is needed as a local guard since calling `createFile` doesn't instantly update `agent.files` on the agent context object
   - All 8 agent form tests pass (4 US-005 + 4 US-007 green phase), all 188 frontend tests pass, TypeScript and lint clean
   - Browser verification skipped (requires authentication — login page blocks unauthenticated access)
+---
+
+## 2026-02-04 - US-009
+- What was implemented: Installed intro.js library and created reusable useIntroTour React hook
+- Files changed:
+  - `frontend/package.json` — Added `intro.js` dependency
+  - `frontend/package-lock.json` — Lock file updated
+  - `frontend/src/hooks/useIntroTour.ts` — Created hook with full tour management API
+  - `.ralph/prd.json` — Marked US-009 as `passes: true`
+  - `.ralph/progress.txt` — Added progress entry
+- **Learnings for future iterations:**
+  - Intro.js v7+ uses `introJs.tour()` factory (not `introJs()` directly) for the modern API
+  - Tour callbacks: `onComplete` fires when user finishes all steps, `onExit` fires when user clicks overlay or presses Esc
+  - The hook uses localStorage (not cookies) for dismissal persistence — key pattern: `orchestra:tour:{tourId}:dismissed`
+  - `tour.exit(true)` forces exit without triggering beforeExit — used for cleanup on unmount
+  - Import `intro.js/introjs.css` in the hook file so consumers don't need to separately import styles
+  - Hook exposes `startTour()`, `isComplete` (boolean state), and `resetTour()` (clears localStorage + resets state)
+  - `hasAutoStarted` ref prevents double auto-start in StrictMode
 ---
