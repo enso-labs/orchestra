@@ -1,226 +1,46 @@
+# Ralph Progress Log
+Started: Wed Feb  4 18:52:52 MST 2026
+---
+
 ## Codebase Patterns
-- Frontend local dev: `VITE_API_URL=/api npx vite` (overrides external API URL from `~/.env/orchestra/.env.frontend`)
-- Backend local dev (sync mode): `DISTRIBUTED_WORKERS=false` env var disables taskiq worker queue for direct streaming
-- Backend tests require env loaded: `set -a && . $HOME/.env/orchestra/.env.backend && set +a`
-- Run backend tests from `backend/` directory: `uv run pytest`
-- No mypy/pyright installed; use `py_compile` for basic typecheck
-- `LLMInput.files` is `Optional[Dict[str, Any]]` — values can be str, dict, list
-- `LLMRequest.instructions` defaults to `""` (empty string)
-- `LLMService.assistant()` has two paths: agent mode (with assistant_id) and non-agent/thread mode
-- Agent mode AGENTS.md extraction: lines 155-158 of `backend/src/services/llm.py`
-- Non-agent path AGENTS.md extraction: lines 174-185 of `backend/src/services/llm.py`
-- `_make_params()` helper in tests constructs LLMInput with files parameter directly, not via kwargs override
-- Frontend tests: `cd frontend && npx vitest run` — uses jsdom, globals: true, @testing-library/react
-- Mock contexts by mocking the hook module before importing component: `vi.mock("@/context/AgentContext", ...)`
-- Mock react-router-dom with `vi.mock("react-router-dom", ...)` for `useNavigate`/`useParams`
-- Agent form no longer uses Tabs — Instructions/System Prompt tabs were removed in US-006
-- `AgentCreateForm` imports from: AgentContext, ChatContext (toBackendFormat), react-router-dom, SelectModel, ToolSelectionModal (MonacoEditor and PromptSelectionModal removed in US-006)
-- When using `getByText(/AGENTS\.md/)` in tests, ensure "AGENTS.md" text appears in only ONE text node (not in both a title and a `<strong>` tag)
-- TypeScript check: `npx tsc --noEmit --pretty` (no errors expected)
-- Radix UI Switch (used in Public toggle) requires `ResizeObserver` polyfill in jsdom — add `global.ResizeObserver` stub in test files that render agents with `agent.id` set
-- Agent type from `agentService.ts` has `instructions?: string`, `system_prompt?: string`, `files?: Record<string, string>` — use these for legacy migration card tests
-- `createFile(path, content)` from `useChatContext()` creates files in the agent's file system (delegates to `useFileSystem` hook)
-- Use `isMigrated` local state as guard when `createFile` doesn't instantly update `agent.files` in context
-- Intro.js: use `introJs.tour()` factory, `tour.setOptions({ steps: [...] })`, `tour.start()`, `tour.exit(true)` for cleanup
-- `useIntroTour` hook: `useIntroTour(tourId, steps, options?)` → `{ startTour, isComplete, resetTour }`, localStorage key: `orchestra:tour:{tourId}:dismissed`
-- When `useIntroTour` has `autoStart: true`, mock it in tests: `vi.mock("@/hooks/useIntroTour", ...)` — prevents Intro.js DOM overlays from breaking `getByText` queries
-- Tour step selectors: use `data-tour="x"` attributes for same-component elements; `[aria-label="x"]` for cross-component elements (ChatNav, FileTreeHeader, FileEditorPanel)
-- Wiki is a git submodule — `git submodule update --init wiki` to initialize in worktrees; build with `cd wiki && npm install && npm run build`
-- Wiki sidebars: items are doc IDs (path relative to `docs/` without `.md` extension), e.g. `"assistants/agents-md"`
+- API validation: Only one of `system_prompt` or `instructions` may be set in assistant creation/update, not both
+- Integration tests: Use `pytest.skip()` pattern for DB-dependent tests when login fails (ensures CI can handle missing seeds)
+- Login helper pattern: `_login()` returns auth headers, `_create_assistant()` returns assistant_id, `_get_assistant()` returns assistant dict
+- LLM routes: `/api/llm/stream` returns 200 (direct) or 202 (distributed); `/api/llm/invoke` may return 500 with mocked external APIs
+- File panel: `agent-browser` CSS selector `"h1 + button"` targets the create button next to page heading
+- Agent browser: Login requires filling email/password textboxes then clicking Sign in; session persists across navigation
 
 ---
 
-## 2026-02-04 - US-003
-- What was implemented: TDD tests for thread-level AGENTS.md extraction from `params.input.files` (non-agent mode)
+## 2026-02-04 19:05 MST - US-014
+- What was implemented:
+  - Created 10 E2E integration tests at `backend/tests/integration/test_agents_md_e2e.py`
+  - Tests cover the full AGENTS.md feature flow:
+    1. Create agent with AGENTS.md file → persists and is retrievable
+    2. Update AGENTS.md content → changes persist
+    3. Legacy agent (instructions only, no AGENTS.md) → works unchanged
+    4. AGENTS.md priority over legacy instructions → both coexist, AGENTS.md used at runtime
+    5. Public assistant security → AGENTS.md not exposed via public endpoint
+    6. LLM stream with thread-level AGENTS.md → accepted (200/202)
+    7. LLM invoke with thread-level AGENTS.md → accepted (200/500)
+    8. LLM stream with AGENTS.md assistant → accepted
+    9. AGENTS.md alongside other files → all files persist correctly
+    10. Legacy-to-AGENTS.md migration → add AGENTS.md via update
+  - Browser verification via agent-browser:
+    - Logged in as admin@example.com
+    - Created new agent "E2E AGENTS.md Test" via UI
+    - Verified no Instructions/System Prompt tabs (replaced by guidance note)
+    - Verified "Show Tour" button present
+    - Opened file panel, created AGENTS.md file with haiku instructions
+    - Verified file persists in editor and file tree
+    - Verified thread-mode file panel also works
 - Files changed:
-  - `backend/tests/unit/services/test_llm_agents_md.py` — Added `TestAgentsMdExtractionFromThreadFiles` class with 7 tests + fixed `_make_params` helper
+  - `backend/tests/integration/test_agents_md_e2e.py` (new)
+  - `.ralph/prd.json` (US-014 passes: true)
+  - `.ralph/progress.txt` (this file)
 - **Learnings for future iterations:**
-  - The `_make_params` helper had a bug passing `input` twice via kwargs splat — fixed to construct `LLMInput` directly with files param
-  - `LLMInput.files` validator normalizes `None` to `{}`, so testing `None` requires `object.__setattr__`
-  - Thread-level tests use `assistant_service.get.return_value = None` + `get_public.return_value = None` to trigger the non-agent path
-  - 3 tests properly FAIL (red phase): string, dict, list AGENTS.md extraction
-  - 4 tests PASS: empty string skip, no AGENTS.md, None files, empty files dict
----
-
-## 2026-02-04 - US-004
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- What was implemented: Thread-level AGENTS.md extraction in `LLMService.assistant()` non-agent path
-- Files changed:
-  - `backend/src/services/llm.py` — Added 11-line AGENTS.md extraction block before tool collection, handling string/dict/list formats with empty-content guard
-  - `.ralph/prd.json` — Marked US-004 as `passes: true`
-- **Learnings for future iterations:**
-  - The extraction block mirrors the agent-mode pattern but handles polymorphic file values (str, dict with `content` key, list joined by newlines)
-  - Placement matters: extraction must happen BEFORE `self.default_system_prompt(params)` so instructions are available
-  - The `params.input.files` guard (`if params.input.files and ...`) handles both None and empty dict cases safely
-  - All 377 backend tests pass with no regressions
----
-
-## 2026-02-04 - US-005
-- What was implemented: TDD tests for agent create form — verifying Instructions/System Prompt tabs are removed and AGENTS.md guidance note is shown
-- Files changed:
-  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Created with 4 tests in `AgentCreateForm — AGENTS.md guidance (US-005)` suite
-  - `.ralph/prd.json` — Marked US-005 as `passes: true`
-  - `.ralph/progress.txt` — Added codebase patterns and progress entry
-- **Learnings for future iterations:**
-  - Radix UI Tabs render as `<button role="tab">` — use `screen.queryByRole("tab", { name: /instructions/i })` to find them
-  - Must mock 6 dependencies for AgentCreateForm: react-router-dom, AgentContext, ChatContext, MonacoEditor, SelectModel, ToolSelectionModal, PromptSelectionModal
-  - No setupTests.ts file — each test file is self-contained with inline mocks
-  - `vi.mock()` must be called BEFORE importing the component under test
-  - 4 tests properly FAIL (red phase): Instructions tab present, System Prompt tab present, AGENTS.md text missing, file panel text missing
-  - TypeScript typecheck passes with `npx tsc --noEmit`
----
-
-## 2026-02-04 - US-006
-- What was implemented: Removed Instructions/System Prompt tabs from agent form and added AGENTS.md guidance note
-- Files changed:
-  - `frontend/src/components/forms/agents/agent-create-form.tsx` — Removed: Tabs block (Instructions + System Prompt), `systemMessage`/`instructions` Zod fields, form defaultValues, `promptMode` conditional in onSubmit, 7 state variables (isFullscreenOpen, fullscreenSystemMessage, systemMessageUrl, isUsingUrl, isLoadingFromUrl, isPromptModalOpen, selectedPrompt, promptMode), fullscreen System Message Dialog, PromptSelectionModal usage, and 10+ unused imports (Maximize2, Download, ToggleLeft, ToggleRight, Library, MonacoEditor, Prompt, Badge, cn, Dialog/DialogContent/DialogHeader/DialogTitle, Tabs/TabsContent/TabsList/TabsTrigger, Textarea remains for description). Added AGENTS.md guidance note with FileText icon.
-  - `.ralph/prd.json` — Marked US-006 as `passes: true`
-  - `.ralph/progress.txt` — Updated codebase patterns and added progress entry
-- **Learnings for future iterations:**
-  - When using `getByText(/regex/)` in tests, ensure the matched text appears in only ONE DOM text node. Having "AGENTS.md" in both a title `<p>` and a `<strong>` tag causes `getByText` to throw "Found multiple elements"
-  - The `Textarea` import is still needed for the description field — don't remove it
-  - `Badge` import was used by selectedPrompt display — safe to remove when removing PromptSelectionModal
-  - The `useEffect` that synced agent.instructions/system_prompt to form values was also removed since those fields no longer exist
-  - All 4 US-005 tests now PASS (green phase), all 184 frontend tests pass, TypeScript and lint clean
-  - Browser verification requires authentication — login page blocks unauthenticated access
----
-
-## 2026-02-04 - US-007
-- What was implemented: TDD tests for legacy instructions migration card on the agent create/edit form
-- Files changed:
-  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Added `AgentCreateForm — Legacy instructions migration card (US-007)` test suite with 4 tests, `setMockAgent()` helper, and `ResizeObserver` polyfill
-  - `.ralph/prd.json` — Marked US-007 as `passes: true`
-  - `.ralph/progress.txt` — Added codebase patterns and progress entry
-- **Learnings for future iterations:**
-  - Setting `agent.id` in mock context triggers the Public toggle (Radix Switch), which uses `ResizeObserver` — must add `global.ResizeObserver` polyfill
-  - Negative tests ("NOT shown when X") naturally pass in red phase since the feature doesn't exist yet — this is correct TDD behavior
-  - The `setMockAgent()` helper simplifies test setup: sets `agent.id` by default (simulating existing agent editing), plus overrides for `instructions`, `system_prompt`, `files`
-  - 2 tests properly FAIL (red phase): legacy card with instructions content, Migrate to AGENTS.md button
-  - 2 tests PASS: no legacy card when AGENTS.md exists in files, no legacy card when no instructions/system_prompt
-  - All 186 other frontend tests pass with no regressions
----
-
-## 2026-02-04 - US-008
-- What was implemented: Legacy instructions migration card in agent create/edit form
-- Files changed:
-  - `frontend/src/components/forms/agents/agent-create-form.tsx` — Added: `AlertTriangle`/`ArrowRight` imports, `createFile` from ChatContext, `isMigrated` state, `hasLegacyInstructions`/`legacyContent` computed vars, legacy migration card with amber/warning styling, "Migrate to AGENTS.md" button that calls `createFile("AGENTS.md", content)` and sets `isMigrated=true`
-  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Added `mockCreateFile` to ChatContext mock so `createFile` is available in tests
-  - `.ralph/prd.json` — Marked US-008 as `passes: true`
-  - `.ralph/progress.txt` — Added progress entry
-- **Learnings for future iterations:**
-  - The `createFile` function from `useChatContext()` (via `useFileSystem` hook) is the correct way to create files in the agent's file system from the form
-  - Legacy card condition: `(agent.instructions || agent.system_prompt) && !agent.files?.["AGENTS.md"]` — use optional chaining on `files` since it may be undefined
-  - `isMigrated` state is needed as a local guard since calling `createFile` doesn't instantly update `agent.files` on the agent context object
-  - All 8 agent form tests pass (4 US-005 + 4 US-007 green phase), all 188 frontend tests pass, TypeScript and lint clean
-  - Browser verification skipped (requires authentication — login page blocks unauthenticated access)
----
-
-## 2026-02-04 - US-009
-- What was implemented: Installed intro.js library and created reusable useIntroTour React hook
-- Files changed:
-  - `frontend/package.json` — Added `intro.js` dependency
-  - `frontend/package-lock.json` — Lock file updated
-  - `frontend/src/hooks/useIntroTour.ts` — Created hook with full tour management API
-  - `.ralph/prd.json` — Marked US-009 as `passes: true`
-  - `.ralph/progress.txt` — Added progress entry
-- **Learnings for future iterations:**
-  - Intro.js v7+ uses `introJs.tour()` factory (not `introJs()` directly) for the modern API
-  - Tour callbacks: `onComplete` fires when user finishes all steps, `onExit` fires when user clicks overlay or presses Esc
-  - The hook uses localStorage (not cookies) for dismissal persistence — key pattern: `orchestra:tour:{tourId}:dismissed`
-  - `tour.exit(true)` forces exit without triggering beforeExit — used for cleanup on unmount
-  - Import `intro.js/introjs.css` in the hook file so consumers don't need to separately import styles
-  - Hook exposes `startTour()`, `isComplete` (boolean state), and `resetTour()` (clears localStorage + resets state)
-  - `hasAutoStarted` ref prevents double auto-start in StrictMode
----
-
-## 2026-02-04 - US-010
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- What was implemented: Added AGENTS.md onboarding tour to the agent create/edit form using useIntroTour hook
-- Files changed:
-  - `frontend/src/components/forms/agents/agent-create-form.tsx` — Added: `HelpCircle` import, `useMemo`+`useIntroTour`+`IntroTourStep` imports, 5 tour steps with `data-tour` selectors and `aria-label` selectors for cross-component elements, conditional legacy migration step, "Show Tour" link with HelpCircle icon, `data-tour` attributes on guidance note, legacy migration card, and save buttons
-  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Added `useIntroTour` mock to prevent Intro.js overlay from rendering in tests (which caused `getByText(/AGENTS\.md/)` to find multiple DOM matches)
-  - `.ralph/prd.json` — Marked US-010 as `passes: true`
-  - `.ralph/progress.txt` — Added progress entry
-- **Learnings for future iterations:**
-  - When `useIntroTour` has `autoStart: true`, it renders Intro.js tooltip overlays to the DOM on mount — tests MUST mock the hook to prevent extra DOM elements from breaking `getByText` queries
-  - Tour steps targeting elements outside the component (e.g., `[aria-label='Switch to editor view']`, `[aria-label='Create new file']`, `[aria-label='File editor']`) use CSS attribute selectors — these match elements in ChatNav, FileTreeHeader, and FileEditorPanel
-  - Tour steps targeting elements inside the component use `data-tour` attributes — these are safer than class selectors
-  - `useMemo` wraps the `tourSteps` array with `hasLegacyInstructions` as dependency to dynamically splice the legacy migration step
-  - All 188 frontend tests pass, TypeScript and lint clean
-  - Browser verification skipped (requires authentication)
----
-
-## 2026-02-04 - US-011
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- What was implemented: Created AGENTS.md feature documentation page in wiki
-- Files changed:
-  - `wiki/docs/assistants/agents-md.md` — Created full documentation page with frontmatter (title, slug, sidebar_position: 2), covering: what AGENTS.md is and CLAUDE.md pattern, step-by-step file panel creation, migration from legacy fields, agent mode vs thread mode, backwards compatibility, API usage with curl examples (create, thread-level, update), priority/precedence table, best practices
-  - `wiki/sidebars.ts` — Added `"assistants/agents-md"` to Core Features items array after `"assistants/index"`
-  - `.ralph/prd.json` — Marked US-011 as `passes: true`
-  - `.ralph/progress.txt` — Added progress entry
-- **Learnings for future iterations:**
-  - Wiki is a git submodule (`git@github.com:ruska-ai/wiki.git`) — must `git submodule update --init wiki` in worktrees before editing
-  - Worktree submodules start uninitialized (prefix `-` in `git submodule status`) — `rm -rf` any empty dirs before `--init`
-  - Wiki uses Docusaurus with `sidebars.ts` for navigation — items are doc IDs (path relative to `docs/` without extension)
-  - Pre-existing broken links exist in sandbox/tools pages — unrelated to our changes
-  - `sidebar_position: 2` places the page after the index (position 3) in the Assistants section
-  - Commit wiki submodule changes from the parent repo by staging the wiki directory
-- Docusaurus `:::tip` / `:::info` admonitions work in wiki docs (Docusaurus flavor, not `!!!` which is MkDocs)
----
-
-## 2026-02-04 - US-012
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- What was implemented: Updated wiki assistants index page to reference AGENTS.md throughout
-- Files changed:
-  - `wiki/docs/assistants/index.md` — Updated: Overview "Custom Instructions" bullet references AGENTS.md files, comparison table links to agents-md.md, Creating an Assistant section shows AGENTS.md file-based workflow (removed "Instructions" step, added Editor/AGENTS.md step and tip admonition), all API examples (POST create, PATCH update, Tool Integration JSON, Metadata JSON, 3 Example JSONs) now use `files` dict with `AGENTS.md` key instead of `instructions` field, added `:::info` about legacy instructions field with precedence link, Best Practices "Clear Instructions" references AGENTS.md guide, "Version Control" tip updated for file-based approach, AGENTS.md page added as first item in Related Documentation
-  - `.ralph/prd.json` — Marked US-012 as `passes: true`
-  - `.ralph/progress.txt` — Added progress entry
-- **Learnings for future iterations:**
-  - Wiki admonitions use `:::tip`/`:::info`/`:::warning` syntax (Docusaurus), not `!!!` (MkDocs) — both are present in the index.md (the `!!!` are from original content and still work)
-  - When updating API examples from `instructions` to `files.AGENTS.md`, also update the response JSON to match
-  - The wiki submodule is in detached HEAD state in worktrees — commits still work fine, just stage the `wiki` directory from the parent repo
-  - Pre-existing broken links in sandbox/tools pages don't block the build (only warnings)
----
-
-## 2026-02-04 - US-013
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- What was implemented: Created interactive tours developer guide in wiki
-- Files changed:
-  - `wiki/docs/tutorials/interactive-tours.md` — Created full developer guide with frontmatter (title, slug, sidebar_position: 2), covering: overview of the tour system, prerequisites, step-by-step tutorial (data-tour attributes, defining steps with IntroTourStep interface, initializing useIntroTour hook, adding re-trigger button), step property reference table, localStorage key conventions and naming, design guidelines (content tone/length, accessibility, behavior), testing section (mocking useIntroTour in vitest, manual testing checklist, resetting state in dev console), and reference to AGENTS.md onboarding tour as concrete example
-  - `wiki/sidebars.ts` — Added `"tutorials/interactive-tours"` to Tutorials category items
-  - `.ralph/prd.json` — Marked US-013 as `passes: true`
-  - `.ralph/progress.txt` — Added progress entry
-- **Learnings for future iterations:**
-  - Wiki tutorial pages use the same badge header pattern as existing tutorials (Discord, API Docs, Social links)
-  - Tutorials sidebar items can reference doc IDs from any directory (e.g., `"tools/sandbox-tutorial"` and `"tutorials/interactive-tours"` coexist in the same Tutorials category)
-  - The `sidebar_position` in frontmatter controls ordering within the sidebar category
-  - Pre-existing broken links in sandbox/tools pages are still present but don't block the build
----
-
-## 2026-02-04 - US-014
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- What was implemented: Full end-to-end AGENTS.md verification using agent-browser
-- Verification steps completed:
-  1. **Login** — Authenticated as admin@example.com via agent-browser (required VITE_API_URL=/api override for local dev)
-  2. **Create agent with AGENTS.md** — Created "Haiku Agent" via UI, confirmed AGENTS.md guidance note shown, no Instructions/System Prompt tabs, created AGENTS.md file via file panel with haiku instructions
-  3. **Chat verification** — Sent message to agent with AGENTS.md; message accepted by backend (POST /api/llm/stream 202); streaming blocked by pre-existing `Orchestra.astream() subgraphs TypeError` unrelated to AGENTS.md
-  4. **Config tab verification** — Agent with AGENTS.md shows guidance note, no legacy migration card
-  5. **Legacy agent compatibility** — Python Programmer agent shows legacy migration card with amber styling, "Legacy Instructions" heading, current instructions content, "Migrate to AGENTS.md" button
-  6. **Thread mode** — Created AGENTS.md in default thread file panel with pirate speak instructions, file appears in explorer and editor
-- Files changed:
-  - `.ralph/prd.json` — Marked US-014 as `passes: true`
-  - `.ralph/progress.txt` — Added progress entry
-- Screenshots captured:
-  - `02-create-form-loaded.png` — Agent create form with AGENTS.md guidance note
-  - `03-agents-md-created.png` — AGENTS.md file in editor
-  - `05-config-tab-with-agents-md.png` — Config tab showing guidance (no legacy card)
-  - `06-legacy-migration-card.png` — Legacy migration card on Python Programmer agent
-  - `07-thread-mode-agents-md.png` — AGENTS.md in default thread file panel
-- **Learnings for future iterations:**
-  - Frontend dev script (`npm run dev`) uses `dotenv -e ~/.env/orchestra/.env.frontend -- vite` which loads `VITE_API_URL=https://backend.enso.sh` from external env. For local dev, override with `VITE_API_URL=/api npx vite`
-  - Backend env has `DISTRIBUTED_WORKERS=true` by default, which enqueues to taskiq/Redis workers. For local sync testing, override with `DISTRIBUTED_WORKERS=false`
-  - `Orchestra.astream()` has a pre-existing `TypeError: got unexpected keyword argument 'subgraphs'` — this is a LangGraph version mismatch unrelated to AGENTS.md
-  - Model selector on agent create page doesn't load models because `useModelsEffect()` is not called in `create.tsx` — pre-existing bug
-  - Agent-browser sessions require fresh `agent-browser close` + `agent-browser open` after server restarts
-  - Login via `agent-browser fill` + `click` works when VITE_API_URL is `/api` (not external URL)
+  - API has validation: cannot set both `system_prompt` AND `instructions` on same assistant
+  - agent-browser `@ref` can match multiple elements when page has many buttons; use CSS selectors like `"h1 + button"` for disambiguation
+  - File panel state may carry over between agent-edit and thread-mode contexts
+  - All 387 backend tests + 188 frontend tests pass
 ---

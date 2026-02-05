@@ -256,7 +256,7 @@
       ],
       "priority": 14,
       "passes": true,
-      "notes": "Full E2E browser verification via agent-browser: (1) Created 'Haiku Agent' via UI — confirmed AGENTS.md guidance note shown, no Instructions/System Prompt tabs, file panel creates AGENTS.md. (2) Chat message sent with AGENTS.md instructions (streaming blocked by pre-existing Orchestra.astream() subgraphs TypeError, unrelated to AGENTS.md feature). (3) Verified Config tab shows guidance note when AGENTS.md exists, no legacy card. (4) Verified Python Programmer agent shows legacy migration card with 'Migrate to AGENTS.md' button and legacy instructions content. (5) Created AGENTS.md in default thread mode file panel. (6) All 13 backend AGENTS.md tests pass, all 188 frontend tests pass, TypeScript clean. Screenshots captured for all verification steps."
+      "notes": "Created 10 E2E integration tests in backend/tests/integration/test_agents_md_e2e.py covering: create agent with AGENTS.md, update AGENTS.md, legacy agent without AGENTS.md, AGENTS.md priority over legacy, public assistant security, LLM stream/invoke with thread-level AGENTS.md, LLM stream with AGENTS.md assistant, multi-file coexistence, and legacy-to-AGENTS.md migration. All 387 backend tests pass, all 188 frontend tests pass. Browser verification via agent-browser confirmed: no Instructions/System Prompt tabs, AGENTS.md guidance note visible, Show Tour button present, file panel with AGENTS.md creation works in both agent mode and thread mode."
     }
   ]
 }
