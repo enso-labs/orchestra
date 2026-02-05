@@ -1,4 +1,8 @@
-from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional
+from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.services.memory import MemoryService
+
 from uuid import uuid4
 from langchain.tools import ToolRuntime
 from langchain_core.language_models import BaseChatModel
@@ -13,6 +17,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.cache.memory import InMemoryCache
 from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend
+from deepagents.backends.utils import create_file_data
 
 
 from src.constants import APP_ENV
@@ -54,6 +59,44 @@ async def add_memories_to_system():
         "reminders, or other information you wanted to remember):\n\n"
         f"<context>{formatted_memories}</context>"
     )
+
+
+async def prepare_memory_files(
+    user_id: str | None,
+    memory_svc: "MemoryService",
+) -> tuple[dict, list[str] | None]:
+    """Fetch user memories and format them as a StateBackend file.
+
+    Returns a (files_map, memory_sources) tuple suitable for passing to
+    create_deep_agent via the ``memory`` kwarg.  When no memories are
+    available the tuple is ``({}, None)`` so callers can safely unpack
+    without extra guards.
+    """
+    if not user_id:
+        return {}, None
+
+    try:
+        memory_svc.user_id = user_id
+        memories = await memory_svc.search()
+    except Exception as exc:
+        logger.warning(f"Failed to fetch memories for user {user_id}: {exc}")
+        return {}, None
+
+    if not memories:
+        return {}, None
+
+    bullet_lines = []
+    for mem in memories:
+        data = mem.dict()
+        value = data.get("value", {})
+        text = (
+            value.get("memory", str(value)) if isinstance(value, dict) else str(value)
+        )
+        bullet_lines.append(f"- {text}")
+
+    content = "\n".join(bullet_lines)
+    files_map = {"/memories.md": create_file_data(content)}
+    return files_map, ["/memories.md"]
 
 
 def init_graph(
