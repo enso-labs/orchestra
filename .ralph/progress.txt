@@ -33,3 +33,16 @@ Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
   - No format changes needed — ruff found no issues
 ---
 
+## 2026-02-05 - US-003
+- Added `skills: list[str] | None = None` parameter to `construct_agent()` function signature (after subagents)
+- Passed `skills=skills` to `Orchestra()` constructor inside `construct_agent()`
+- Added `skills: list[str] | None = None` parameter to `Orchestra.__init__()` (after subagents)
+- Stored `self.skills = skills` as instance variable
+- Passed `skills=self.skills` to `init_graph()` call inside `Orchestra.__init__()`
+- Files changed: `backend/src/agents/__init__.py`
+- **Learnings for future iterations:**
+  - `construct_agent()` → `Orchestra()` → `init_graph()` → `create_deep_agent()` chain now fully threads `skills`
+  - 40 pre-existing pyright errors in __init__.py — none related to skills changes
+  - No format changes needed for this story
+---
+

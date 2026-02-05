@@ -48,7 +48,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Both Orchestra.__init__() and construct_agent() are in the same file (backend/src/agents/__init__.py). Follow the exact pattern used by the subagents parameter in both functions."
     },
     {
