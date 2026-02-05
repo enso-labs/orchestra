@@ -144,7 +144,7 @@
         "All existing tests pass"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Files: examples/agents/deep_agent_backend.ipynb, examples/agents/stream_subagent_updates.ipynb, examples/agents/RLM.ipynb. Independent, can run any time."
     }
   ]

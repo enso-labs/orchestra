@@ -16,6 +16,7 @@ Feature: feat/734-update-scaffold (Update create_deep_agent scaffolding)
 - Full param wiring chain: LLMRequest -> LLMController -> stream_generator() -> construct_agent() -> Orchestra -> init_graph() -> create_deep_agent()
 - Pre-existing lint errors in `stream.py` (`current_agent` undefined in `handle_multi_mode`) — do not fix as part of unrelated stories
 - `init_chat_model` is a local import inside `init_graph()` — mock it at `langchain.chat_models.init_chat_model`, not at the `src.agents` level
+- `create_deep_agent(backend=StateBackend)` is the public API for backends — pass the class as a callable, framework constructs ToolRuntime internally
 
 ---
 
@@ -115,4 +116,29 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
 - **Learnings for future iterations:**
   - `ruff format` will reformat long inline comments by wrapping the assignment across lines — always run format after editing
   - These constants are consumed by `compacting.py` which is already deprecated (US-001)
+---
+
+## 2026-02-04 - US-009
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added title markdown cells with purpose, features covered, and prerequisites to all 3 notebooks
+- Added explanatory markdown cells before each major code section in all notebooks
+- Added `name` parameter to all `create_deep_agent()` calls with descriptive kebab-case values:
+  - deep_agent_backend: `name="state-backend-demo"`
+  - stream_subagent_updates: `name="subagent-streaming-demo"`
+  - RLM V2: `name="rlm-root-agent"` and `name="rlm-sub-agent"`
+- Removed dead code:
+  - deep_agent_backend: Removed `ToolRuntime` import/construction, `InMemoryStore` import, commented `FilesystemMiddleware` import; now uses `backend=StateBackend` (public API callable pattern)
+  - stream_subagent_updates: Removed unused package installs (`langchain-anthropic`, `langchain-google-genai`, `langchain-groq`, `langchain-xai`), removed commented `model="xai:grok-4"` line
+  - RLM: Removed commented `# from langchain.agents import create_agent` in V2 cell
+- Cleared all notebook outputs across all 3 notebooks
+- All 330 tests pass, 2 skipped
+- Files changed:
+  - `examples/agents/deep_agent_backend.ipynb` - Restructured with markdown cells, removed ToolRuntime, added name param
+  - `examples/agents/stream_subagent_updates.ipynb` - Restructured with markdown cells, removed unused packages, added name param
+  - `examples/agents/RLM.ipynb` - Restructured with markdown cells, added name params, removed commented import
+- **Learnings for future iterations:**
+  - `create_deep_agent(backend=StateBackend)` is the public API — pass the class as a callable, the framework constructs `ToolRuntime` internally
+  - Notebook JSON requires careful handling — use Python scripts with `json.load/dump` for reliable transformations rather than manual editing
+  - The RLM notebook V1 uses `create_agent` (LangChain), V2 uses `create_deep_agent` (deepagents), V3 uses raw StateGraph — only V2 needs `name` param
+  - `NotebookEdit` tool works cell-by-cell; for multi-cell restructuring (adding/reordering cells), a script approach is more efficient
 ---
