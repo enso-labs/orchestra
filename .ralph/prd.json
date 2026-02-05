@@ -238,8 +238,8 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created wiki/docs/tutorials/interactive-tours.md with full developer guide: overview, prerequisites, step-by-step tutorial (data-tour attributes, step definitions, hook initialization, re-trigger button), localStorage key conventions, design guidelines (content, accessibility, behavior), testing section (mocking in component tests, manual checklist, resetting state in dev), and reference to AGENTS.md tour as concrete example. Added to wiki/sidebars.ts under Tutorials. Wiki builds without errors, TypeScript passes."
     },
     {
       "id": "US-014",

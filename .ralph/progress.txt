@@ -179,3 +179,18 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - The wiki submodule is in detached HEAD state in worktrees — commits still work fine, just stage the `wiki` directory from the parent repo
   - Pre-existing broken links in sandbox/tools pages don't block the build (only warnings)
 ---
+
+## 2026-02-04 - US-013
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- What was implemented: Created interactive tours developer guide in wiki
+- Files changed:
+  - `wiki/docs/tutorials/interactive-tours.md` — Created full developer guide with frontmatter (title, slug, sidebar_position: 2), covering: overview of the tour system, prerequisites, step-by-step tutorial (data-tour attributes, defining steps with IntroTourStep interface, initializing useIntroTour hook, adding re-trigger button), step property reference table, localStorage key conventions and naming, design guidelines (content tone/length, accessibility, behavior), testing section (mocking useIntroTour in vitest, manual testing checklist, resetting state in dev console), and reference to AGENTS.md onboarding tour as concrete example
+  - `wiki/sidebars.ts` — Added `"tutorials/interactive-tours"` to Tutorials category items
+  - `.ralph/prd.json` — Marked US-013 as `passes: true`
+  - `.ralph/progress.txt` — Added progress entry
+- **Learnings for future iterations:**
+  - Wiki tutorial pages use the same badge header pattern as existing tutorials (Discord, API Docs, Social links)
+  - Tutorials sidebar items can reference doc IDs from any directory (e.g., `"tools/sandbox-tutorial"` and `"tutorials/interactive-tours"` coexist in the same Tutorials category)
+  - The `sidebar_position` in frontmatter controls ordering within the sidebar category
+  - Pre-existing broken links in sandbox/tools pages are still present but don't block the build
+---
