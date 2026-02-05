@@ -1,113 +1,131 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/736-rlm-skill",
-  "description": "RLM Skill - Recursive Language Model pattern for processing large inputs using Sonnet orchestrator and parallel Haiku subagents",
+  "branchName": "feat/740-native-deepagents-skills",
+  "description": "Native DeepAgents Skills Support - Thread skills parameter through agent construction chain and merge Assistant.files into ToolRuntime state for progressive skill loading",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create RLM skill directory and SKILL.md with core workflow",
-      "description": "As a developer, I need the RLM skill created with directory structure and SKILL.md containing the full decompose-process-synthesize workflow so Claude can process large inputs.",
+      "title": "Add `skills` field to Assistant and LLMRequest schemas",
+      "description": "As a developer, I need the Assistant and LLMRequest models to accept a skills field so users can configure skill directory paths and they flow through the request chain.",
       "acceptanceCriteria": [
-        "Directory created at .claude/skills/rlm/",
-        "SKILL.md has valid YAML frontmatter with name: rlm",
-        "YAML description includes trigger keywords: analyze large, recursive analysis, deep analysis, process large input, comprehensive review, rlm, recursive reasoning",
-        "SKILL.md contains purpose statement explaining the RLM pattern",
-        "SKILL.md contains Prerequisites section (Task tool access, scratchpad directory)",
-        "SKILL.md contains Step 1: Assess Task Complexity with size thresholds (>50 files or >10K lines or >100K tokens triggers RLM, otherwise process directly)",
-        "SKILL.md contains Step 2: Decompose the Problem with 3 strategies: uniform chunking (split by ~200 lines), keyword filtering (use Grep to narrow), structural decomposition (parse sections/functions/headings)",
-        "SKILL.md contains decision criteria for choosing between the 3 strategies based on input type and query type",
-        "SKILL.md contains chunk size guidance: target ~200 lines or ~8K tokens per chunk with 5-10 lines overlap",
-        "SKILL.md contains Step 3: Spawn Worker Sub-Agents with Task tool invocation pattern explicitly specifying model: haiku and subagent_type: general-purpose",
-        "SKILL.md contains Step 4: Evaluate Completeness with convergence criteria (completeness >= 90% AND confidence >= 80%, max 3 iterations)",
-        "SKILL.md contains iterative deepening pattern: if gaps found, re-decompose and spawn new Haiku batch (workaround for no-nesting constraint)",
-        "SKILL.md contains Step 5: Synthesize Final Output with aggregation and deduplication instructions",
-        "SKILL.md explicitly states model selection: Sonnet for supervisor (decomposition + synthesis), Haiku for workers (chunk processing)",
-        "All instructions use imperative form (Analyze, Decompose, Spawn, not You should analyze)",
-        "SKILL.md is under 5000 words",
+        "Assistant model in backend/src/schemas/entities/llm.py has a new `skills: Optional[List[str]]` field with `default_factory=list`",
+        "Field description reads: 'Skill directory paths for progressive loading (e.g., [\"./skills/\"])'",
+        "LLMRequest model in backend/src/schemas/entities/llm.py has a new `skills: Optional[List[str]]` field with `default_factory=list`",
+        "skills field is placed after the subagents field in LLMRequest",
+        "Assistant.to_llm_request() passes `skills=self.skills` to the returned LLMRequest",
+        "Existing assistants without skills default to empty list (no behavior change)",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "This is the main skill file. Read existing skills at .claude/skills/reflection/SKILL.md and .claude/skills/prd/SKILL.md for patterns. Read expert analyses at .claude/plans/plan-rlm-skill/ for detailed design guidance."
+      "passes": false,
+      "notes": "Both schema changes are in the same file (backend/src/schemas/entities/llm.py). Follow the exact pattern used by the `subagents` field. The `to_llm_request()` method already passes subagents — add skills in the same fashion."
     },
     {
       "id": "US-002",
-      "title": "Add error handling, fallback patterns, and model selection guidance to SKILL.md",
-      "description": "As Claude, I need error handling instructions and clear model routing rules in the skill so I can recover gracefully from failures.",
+      "title": "Thread `skills` through `init_graph()` to `create_deep_agent()`",
+      "description": "As a developer, I need init_graph() to accept and forward a skills parameter so that create_deep_agent() receives it and activates progressive skill loading.",
       "acceptanceCriteria": [
-        "SKILL.md contains Error Handling section",
-        "Single subagent failure: retry once with same prompt",
-        "Multiple failures (>30% of chunks): fall back to Sonnet-only processing",
-        "All failures: process entire input directly with Sonnet without chunking",
-        "Partial results: produce output noting gaps and completeness percentage",
-        "Graceful degradation ladder documented: Full RLM -> Partial -> Sonnet fallback -> Best-effort",
-        "SKILL.md contains Model Selection section with table: Sonnet for decomposition/synthesis, Haiku for chunk processing",
-        "SKILL.md contains When NOT to Use RLM section (small inputs <500 lines, single file, simple queries)",
+        "init_graph() in backend/src/agents/__init__.py accepts `skills: list[str] | None = None` parameter",
+        "skills is passed to create_deep_agent(skills=skills) call inside init_graph()",
+        "When skills=None, create_deep_agent() does not activate skill loading (existing behavior preserved)",
+        "When skills=['./skills/'], the agent is configured to look for skills in that directory",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Edit the SKILL.md created in US-001. Add these sections after the main workflow steps."
+      "passes": false,
+      "notes": "Follow the same pattern as the `subagents` parameter in init_graph(). The create_deep_agent() function from deepagents==0.3.8 already accepts `skills: list[str] | None = None` as a keyword argument."
     },
     {
       "id": "US-003",
-      "title": "Add 3 realistic example scenarios to SKILL.md",
-      "description": "As Claude, I need concrete examples showing the RLM pattern applied to real tasks so I understand the expected workflow end-to-end.",
+      "title": "Thread `skills` through `Orchestra.__init__()` and `construct_agent()`",
+      "description": "As a developer, I need the Orchestra class and construct_agent() to accept and forward a skills parameter to init_graph().",
       "acceptanceCriteria": [
-        "SKILL.md contains Examples section with 3 scenarios",
-        "Example 1: Comprehensive codebase security review - 150 files split into 5 module-based chunks, parallel Haiku analysis, synthesized security report with findings by severity",
-        "Example 2: Long document analysis - 80-page paper split into section-based chunks, extract key findings per section, unified summary",
-        "Example 3: Multi-file question answering - trace auth flow across 30+ files, layer-based chunks (frontend/API/backend/database), end-to-end trace output",
-        "Each example shows all 3 phases: Decomposition plan, Processing (Task tool calls with model: haiku), Synthesis",
-        "Examples demonstrate model routing: Sonnet for strategy and synthesis, Haiku for chunks",
-        "Each example shows the user request and the expected output format",
+        "Orchestra.__init__() in backend/src/agents/__init__.py accepts `skills: list[str] | None = None` parameter",
+        "Orchestra stores skills as self.skills instance variable",
+        "Orchestra passes skills=self.skills to init_graph() in the deepagent graph_id branch",
+        "construct_agent() in backend/src/agents/__init__.py accepts `skills: list[str] | None = None` parameter",
+        "construct_agent() passes skills=skills to Orchestra() constructor",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Edit the SKILL.md created in US-001. Add Examples section. Keep examples concise but complete - show the workflow not just the result."
+      "passes": false,
+      "notes": "Both Orchestra.__init__() and construct_agent() are in the same file (backend/src/agents/__init__.py). Follow the exact pattern used by the subagents parameter in both functions."
     },
     {
       "id": "US-004",
-      "title": "Create references/prompt-templates.md with Haiku subagent templates",
-      "description": "As Claude, I need reusable prompt templates for spawning Haiku chunk-processing subagents so I can maintain consistency across RLM invocations.",
+      "title": "Thread `skills` and merge Assistant.files in streaming entry point",
+      "description": "As an end user chatting via the streaming API, I want the agent to have access to skill files stored in my assistant configuration so it can progressively load relevant skills during conversation.",
       "acceptanceCriteria": [
-        "File created at .claude/skills/rlm/references/prompt-templates.md",
-        "Contains extraction prompt template: for pulling specific information from chunks (findings, positions, confidence)",
-        "Contains analysis prompt template: for analyzing chunks against a query (claims, evidence, caveats)",
-        "Contains filtering prompt template: for determining chunk relevance (relevance score 0-1, key passages, INCLUDE/SKIP action)",
-        "Contains synthesis prompt template: for final Sonnet aggregation (integrate findings, resolve contradictions, cite sources)",
-        "All templates are self-contained: include placeholders for original query, chunk content, chunk number/total, output format",
-        "All templates specify structured output format with findings, confidence, and cross-references",
-        "All chunk templates include constraint: Focus ONLY on this chunk, do NOT reference external content",
-        "All chunk templates specify model: haiku in usage notes",
-        "Synthesis template specifies model: sonnet in usage notes",
+        "stream_generator() in backend/src/utils/stream.py accepts `files: dict | None = None` and `skills: list[str] | None = None` parameters",
+        "Assistant-level files are merged into files_map: `files_map = {**(files or {}), **(config['metadata'].get('files', {}) or input.files or {})}`",
+        "skills is passed to construct_agent() via the skills kwarg",
+        "llm_stream() in backend/src/controllers/llm.py passes assistant.skills and assistant.files to stream_generator()",
+        "Agent works normally when no skills are configured",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Create the references/ subdirectory and prompt-templates.md. These templates are loaded contextually by Claude when the RLM skill is active."
+      "passes": false,
+      "notes": "Two files modified: stream.py (add parameters and merge files) and controllers/llm.py (pass assistant.skills and assistant.files). The file merge order is: assistant files as base, request files override. Pattern: {**assistant.files, **request.files}."
     },
     {
       "id": "US-005",
-      "title": "Create install.sh script for standalone skill installation",
-      "description": "As a developer who finds this skill on GitHub, I want a single install.sh script so I can download and install the RLM skill into any project without cloning the entire Orchestra repo.",
+      "title": "Pass `skills` and merge Assistant.files in direct invoke entry point",
+      "description": "As an API consumer using the direct invoke endpoint, I want the agent to have access to skills for consistent behavior across invoke and stream paths.",
       "acceptanceCriteria": [
-        "Script created at .claude/skills/rlm/install.sh",
-        "Script is executable (chmod +x)",
-        "Script creates .claude/skills/rlm/ directory in the current project by default",
-        "Script supports --global flag to install to ~/.claude/skills/rlm/ instead",
-        "Script downloads SKILL.md and references/prompt-templates.md from the repo raw GitHub URLs (use https://raw.githubusercontent.com/ruska-ai/orchestra/master/.claude/skills/rlm/ as base URL)",
-        "Script validates that both files were downloaded successfully and are non-empty",
-        "Script prints success message with usage instructions after install (e.g. 'RLM skill installed. Trigger with: analyze large, recursive analysis, rlm')",
-        "Script is idempotent — running again overwrites existing files without error",
-        "Script includes header comment with one-liner usage: curl -fsSL <raw-url>/install.sh | bash",
-        "Script uses set -e for error handling",
+        "llm_invoke() in backend/src/controllers/llm.py merges assistant files into params.input.files before init_backend()",
+        "File merge follows same pattern as streaming: assistant files as base, request files override",
+        "skills is passed to construct_agent() via the skills kwarg",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Use raw.githubusercontent.com URLs for the ruska-ai/orchestra repo. The script should be simple — mkdir, curl, validate, print. Check .claude/skills/agent-browser/ or similar for any existing install patterns."
+      "passes": false,
+      "notes": "Only backend/src/controllers/llm.py is modified. The llm_invoke() function already calls construct_agent() — add skills=params.skills to that call. Also merge assistant.files into params.input.files before the init_backend() call."
+    },
+    {
+      "id": "US-006",
+      "title": "Thread `skills` and merge files in worker entry point",
+      "description": "As an end user with distributed agent tasks, I want those background agents to also have access to skills for consistent behavior.",
+      "acceptanceCriteria": [
+        "_execute_agent_stream() in backend/src/workers/tasks.py passes skills=params.skills to construct_agent()",
+        "Assistant files are merged into files_map in the worker path following the same merge pattern as streaming",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Only backend/src/workers/tasks.py is modified. Follow the same pattern as the subagents parameter already passed to construct_agent() in this function."
+    },
+    {
+      "id": "US-007",
+      "title": "Run backend tests and validate no regressions",
+      "description": "As a developer, I need to confirm all existing tests pass with no regressions after threading the skills parameter through the agent construction chain.",
+      "acceptanceCriteria": [
+        "Run `make test` and all existing tests pass",
+        "Run `make format` and all files pass lint/typecheck",
+        "No behavior change for existing assistants without skills configured",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "This is a validation-only story. Run the full test suite and format checks. Fix any regressions found."
+    },
+    {
+      "id": "US-008",
+      "title": "Validate frontend loads and assistant creation still works via agent-browser",
+      "description": "As a developer, I need to verify the frontend still functions correctly after the backend schema changes, ensuring assistant creation, editing, and chat streaming are not broken by the new skills field.",
+      "acceptanceCriteria": [
+        "Verify in browser using agent-browser skill: Navigate to the app login page (http://localhost:5173) and confirm it loads without errors",
+        "Verify in browser using agent-browser skill: Log in with test credentials and confirm successful authentication redirect to the main chat interface",
+        "Verify in browser using agent-browser skill: Navigate to assistant creation/settings page and confirm the form renders correctly — existing fields (name, description, model, system_prompt, tools) are all visible and functional",
+        "Verify in browser using agent-browser skill: Create a new assistant WITHOUT skills configured — confirm it saves successfully and appears in the assistant list, verifying backward compatibility",
+        "Verify in browser using agent-browser skill: Open an existing assistant and confirm its configuration loads correctly with no console errors — the new skills field with empty default should not break existing assistant loading",
+        "Verify in browser using agent-browser skill: Start a new chat with an existing assistant — type a test message, send it, and confirm streaming response renders correctly in the chat UI with no errors",
+        "Verify in browser using agent-browser skill: Open browser developer tools console and confirm there are no JavaScript errors or failed API requests (4xx/5xx) related to the assistant or chat endpoints",
+        "Verify in browser using agent-browser skill: If an assistant edit/update form exists, update an existing assistant's name or description and confirm the save operation completes without errors — the new skills field should serialize correctly in the API payload",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "This story requires the dev server running (make dev for backend, npm run dev for frontend). Use the agent-browser skill to perform each validation step. The key concern is that adding the `skills` field to the Assistant schema could cause frontend deserialization issues if the frontend TypeScript types are tightly coupled to the API response shape. Check for TypeScript strict mode errors and API response handling."
     }
   ]
 }
