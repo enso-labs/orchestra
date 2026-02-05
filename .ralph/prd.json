@@ -105,7 +105,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "This is a validation-only story. Run the full test suite and format checks. Fix any regressions found."
     },
     {
