@@ -15,6 +15,8 @@
 - `AgentCreateForm` imports from: AgentContext, ChatContext (toBackendFormat), react-router-dom, SelectModel, ToolSelectionModal (MonacoEditor and PromptSelectionModal removed in US-006)
 - When using `getByText(/AGENTS\.md/)` in tests, ensure "AGENTS.md" text appears in only ONE text node (not in both a title and a `<strong>` tag)
 - TypeScript check: `npx tsc --noEmit --pretty` (no errors expected)
+- Radix UI Switch (used in Public toggle) requires `ResizeObserver` polyfill in jsdom — add `global.ResizeObserver` stub in test files that render agents with `agent.id` set
+- Agent type from `agentService.ts` has `instructions?: string`, `system_prompt?: string`, `files?: Record<string, string>` — use these for legacy migration card tests
 
 ---
 
@@ -71,4 +73,19 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - The `useEffect` that synced agent.instructions/system_prompt to form values was also removed since those fields no longer exist
   - All 4 US-005 tests now PASS (green phase), all 184 frontend tests pass, TypeScript and lint clean
   - Browser verification requires authentication — login page blocks unauthenticated access
+---
+
+## 2026-02-04 - US-007
+- What was implemented: TDD tests for legacy instructions migration card on the agent create/edit form
+- Files changed:
+  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Added `AgentCreateForm — Legacy instructions migration card (US-007)` test suite with 4 tests, `setMockAgent()` helper, and `ResizeObserver` polyfill
+  - `.ralph/prd.json` — Marked US-007 as `passes: true`
+  - `.ralph/progress.txt` — Added codebase patterns and progress entry
+- **Learnings for future iterations:**
+  - Setting `agent.id` in mock context triggers the Public toggle (Radix Switch), which uses `ResizeObserver` — must add `global.ResizeObserver` polyfill
+  - Negative tests ("NOT shown when X") naturally pass in red phase since the feature doesn't exist yet — this is correct TDD behavior
+  - The `setMockAgent()` helper simplifies test setup: sets `agent.id` by default (simulating existing agent editing), plus overrides for `instructions`, `system_prompt`, `files`
+  - 2 tests properly FAIL (red phase): legacy card with instructions content, Migrate to AGENTS.md button
+  - 2 tests PASS: no legacy card when AGENTS.md exists in files, no legacy card when no instructions/system_prompt
+  - All 186 other frontend tests pass with no regressions
 ---

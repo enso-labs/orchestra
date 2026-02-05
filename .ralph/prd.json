@@ -128,8 +128,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "TDD red phase: 2 tests FAIL as expected (legacy card with instructions content, Migrate to AGENTS.md button). 2 negative tests PASS (no legacy card when AGENTS.md exists, no legacy card when no instructions). Added ResizeObserver polyfill for jsdom (needed by Radix Switch when agent.id is set). Tests will go green after US-008."
     },
     {
       "id": "US-008",

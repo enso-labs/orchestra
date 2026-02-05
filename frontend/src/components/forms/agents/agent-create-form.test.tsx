@@ -2,6 +2,13 @@ import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+// Polyfill ResizeObserver for jsdom (needed by Radix UI Switch)
+global.ResizeObserver = class ResizeObserver {
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+};
+
 // Mock react-router-dom
 vi.mock("react-router-dom", () => ({
 	useNavigate: () => vi.fn(),
@@ -63,6 +70,22 @@ vi.mock("@/components/modals/PromptSelectionModal", () => ({
 
 import { AgentCreateForm } from "./agent-create-form";
 
+// Helper to set mock agent with legacy instructions for US-007 tests
+function setMockAgent(overrides: Record<string, unknown>) {
+	mockAgentContext.agent = {
+		id: "existing-agent-123",
+		name: "Test Agent",
+		description: "A test agent",
+		model: "gpt-4",
+		tools: [],
+		subagents: [],
+		mcp: {},
+		a2a: {},
+		public: false,
+		...overrides,
+	};
+}
+
 describe("AgentCreateForm — AGENTS.md guidance (US-005)", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -114,5 +137,72 @@ describe("AgentCreateForm — AGENTS.md guidance (US-005)", () => {
 		// The guidance note should reference the file panel for creating AGENTS.md
 		const filePanelText = screen.getByText(/file panel/i);
 		expect(filePanelText).toBeInTheDocument();
+	});
+});
+
+describe("AgentCreateForm — Legacy instructions migration card (US-007)", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("shows a read-only legacy card when agent has instructions but no AGENTS.md in files", () => {
+		setMockAgent({
+			instructions: "You are a helpful coding assistant.",
+			files: {},
+		});
+		render(<AgentCreateForm />);
+
+		// Should display the legacy instructions content in a read-only card
+		expect(
+			screen.getByText(/You are a helpful coding assistant/),
+		).toBeInTheDocument();
+		// The card should be visually distinct (look for legacy/migration indicator)
+		expect(screen.getByText(/legacy instructions/i)).toBeInTheDocument();
+	});
+
+	it("includes a 'Migrate to AGENTS.md' button in the legacy card", () => {
+		setMockAgent({
+			instructions: "You are a helpful coding assistant.",
+			files: {},
+		});
+		render(<AgentCreateForm />);
+
+		const migrateButton = screen.getByRole("button", {
+			name: /migrate to agents\.md/i,
+		});
+		expect(migrateButton).toBeInTheDocument();
+	});
+
+	it("does NOT show the legacy card when agent has AGENTS.md in files", () => {
+		setMockAgent({
+			instructions: "You are a helpful coding assistant.",
+			files: { "AGENTS.md": "# My Agent Instructions" },
+		});
+		render(<AgentCreateForm />);
+
+		// Legacy card should not appear when AGENTS.md already exists
+		expect(
+			screen.queryByText(/legacy instructions/i),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /migrate to agents\.md/i }),
+		).not.toBeInTheDocument();
+	});
+
+	it("does NOT show the legacy card when agent has no instructions and no system_prompt", () => {
+		setMockAgent({
+			instructions: undefined,
+			system_prompt: undefined,
+			files: {},
+		});
+		render(<AgentCreateForm />);
+
+		// No legacy card when there are no legacy instructions to show
+		expect(
+			screen.queryByText(/legacy instructions/i),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /migrate to agents\.md/i }),
+		).not.toBeInTheDocument();
 	});
 });
