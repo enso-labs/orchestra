@@ -312,3 +312,261 @@ Do NOT invoke the RLM pattern for:
 - **Simple queries**: Questions like "what does function X do?" or "fix this bug" do not need parallel decomposition.
 - **Already-structured data**: If the user provides a clear, bounded dataset (a single JSON file, a specific API response), process it directly.
 - **Time-sensitive tasks**: If the user needs an immediate answer, RLM adds latency from decomposition and synthesis. Use direct processing for speed.
+
+## Examples
+
+### Example 1: Comprehensive Codebase Security Review
+
+**User request**: "Review the entire backend codebase for security vulnerabilities."
+
+**Phase 1: Decomposition (Sonnet supervisor)**
+
+Assess: 150 Python files, ~25,000 lines. Exceeds thresholds. Use RLM.
+
+Strategy: Structural Decomposition (group by module).
+
+Work plan:
+```
+Chunk 1: auth/ (12 files) - Focus: authentication security, session management
+Chunk 2: database/ (18 files) - Focus: SQL injection, query safety
+Chunk 3: api/ (45 files) - Focus: input validation, error handling
+Chunk 4: services/ (50 files) - Focus: business logic, OWASP Top 10
+Chunk 5: utils/ (25 files) - Focus: dependency security, utility safety
+```
+
+**Phase 2: Processing (5 parallel Haiku workers)**
+
+Spawn 5 Task tool calls in a single message:
+
+```
+Task(
+  subagent_type: "general-purpose",
+  model: "haiku",
+  description: "Process chunk 1 of 5: auth module security review",
+  prompt: "You are processing chunk 1 of 5 in a codebase security review.
+
+ORIGINAL QUERY: Review backend for security vulnerabilities.
+
+YOUR CHUNK: auth/ module - files: login.py, session.py, middleware.py, jwt.py, ...
+
+TASK: Analyze for authentication vulnerabilities: weak crypto, hardcoded secrets,
+insecure session storage, JWT implementation issues.
+
+OUTPUT FORMAT:
+- List each finding with severity (Critical/High/Medium/Low)
+- Include file name and line number
+- Confidence score (0-1) per finding
+
+CONSTRAINT: Focus ONLY on this chunk. Do NOT reference external content."
+)
+```
+
+(Repeat for chunks 2-5 with module-specific focus.)
+
+**Phase 3: Synthesis (Sonnet supervisor)**
+
+```markdown
+# Backend Security Review
+
+## Summary
+Analysis of 150 files (25K lines) identified 47 security issues across 5 modules.
+3 critical issues require immediate attention. Most common finding: missing input
+validation (8 occurrences across modules).
+
+## Key Findings
+1. SQL injection in database/query_builder.py:45 - Critical - (Chunk 2)
+2. Hardcoded API key in utils/config.py:12 - Critical - (Chunk 5)
+3. Missing auth on admin endpoints in api/admin_routes.py - Critical - (Chunk 3)
+
+## Cross-Chunk Patterns
+- Input validation missing in 4 of 5 modules
+- Inconsistent error handling across all modules
+- Vulnerable dependency in utils/ used by auth/ and services/
+
+## Recommendations
+1. Immediate: Fix 3 critical issues
+2. Short-term: Add input validation middleware
+3. Long-term: Standardize error handling
+
+## Analysis Metadata
+- Input: 150 files, 25,000 lines
+- Strategy: Structural Decomposition (by module)
+- Chunks processed: 5
+- Iterations: 1
+- Confidence: 88/100
+```
+
+### Example 2: Long Document Analysis
+
+**User request**: "Summarize this 80-page research paper and extract key findings."
+
+**Phase 1: Decomposition (Sonnet supervisor)**
+
+Assess: Single document, ~45,000 words, ~15,000 lines. Exceeds thresholds. Use RLM.
+
+Strategy: Structural Decomposition (split by section headings).
+
+Work plan:
+```
+Chunk 1: Abstract + Introduction (pages 1-8) - Focus: research question, methodology overview
+Chunk 2: Literature Review (pages 9-20) - Focus: prior work, identified gaps
+Chunk 3: Methodology (pages 21-35) - Focus: research design, methods used
+Chunk 4: Results (pages 36-55) - Focus: key findings, data highlights
+Chunk 5: Discussion (pages 56-70) - Focus: interpretation, implications
+Chunk 6: Conclusion (pages 71-80) - Focus: contributions, future work
+```
+
+**Phase 2: Processing (6 parallel Haiku workers)**
+
+```
+Task(
+  subagent_type: "general-purpose",
+  model: "haiku",
+  description: "Process chunk 4 of 6: extract results findings",
+  prompt: "You are processing chunk 4 of 6 in a research paper analysis.
+
+ORIGINAL QUERY: Summarize paper and extract key findings.
+
+YOUR CHUNK: Results section (pages 36-55)
+[section content here]
+
+TASK: Extract key findings, statistical results, and data highlights.
+List each finding with supporting evidence from the text.
+
+OUTPUT FORMAT:
+- Finding: [description]
+- Evidence: [quote or data point]
+- Confidence: [0-1]
+
+CONSTRAINT: Focus ONLY on this chunk. Do NOT reference external content."
+)
+```
+
+**Phase 3: Synthesis (Sonnet supervisor)**
+
+```markdown
+# Research Paper Summary: [Title]
+
+## Summary
+This study investigates [research question]. Using [methodology], the authors found
+[primary result] with implications for [field impact]. The work builds on identified
+gaps in [prior work area] and contributes a novel approach to [contribution].
+
+## Key Findings
+1. [Primary finding from Results chunk] - supported by [evidence]
+2. [Secondary finding] - statistical significance p < 0.01
+3. [Methodological innovation from Methodology chunk]
+
+## Cross-Chunk Patterns
+- Research question (Chunk 1) directly answered by findings (Chunk 4)
+- Limitations (Chunk 6) qualify the strength of results (Chunk 4)
+- Prior work gaps (Chunk 2) addressed by methodology (Chunk 3)
+
+## Recommendations
+- Follow-up reading: [key citations from literature review]
+- Future research directions identified in Conclusion
+
+## Analysis Metadata
+- Input: 80 pages, ~45,000 words
+- Strategy: Structural Decomposition (by section)
+- Chunks processed: 6
+- Iterations: 1
+- Confidence: 92/100
+```
+
+### Example 3: Multi-File Question Answering
+
+**User request**: "How does the authentication flow work from login to database? Trace the full path."
+
+**Phase 1: Decomposition (Sonnet supervisor)**
+
+Assess: Question spans 30+ files across frontend, API, backend, and database layers. Use RLM.
+
+Strategy: Structural Decomposition (split by application layer).
+
+Work plan:
+```
+Chunk 1: Frontend layer (5 files) - Focus: LoginForm, auth state, API call construction
+Chunk 2: API layer (8 files) - Focus: auth routes, middleware, request validation
+Chunk 3: Backend layer (12 files) - Focus: auth service, credential verification, token generation
+Chunk 4: Database layer (10 files) - Focus: user model, queries, password storage
+```
+
+**Phase 2: Processing (4 parallel Haiku workers)**
+
+```
+Task(
+  subagent_type: "general-purpose",
+  model: "haiku",
+  description: "Process chunk 1 of 4: trace frontend auth flow",
+  prompt: "You are processing chunk 1 of 4 in an authentication flow trace.
+
+ORIGINAL QUERY: Trace the authentication flow from login to database.
+
+YOUR CHUNK: Frontend layer files.
+Read these files: frontend/src/components/LoginForm.tsx,
+frontend/src/store/authSlice.ts, frontend/src/api/auth.ts
+
+TASK: Trace the authentication flow in the frontend layer:
+1. What triggers the login? (button click, form submit)
+2. What validation happens client-side?
+3. What API call is made? (endpoint, method, payload)
+4. Include file names and line numbers.
+
+OUTPUT FORMAT:
+- Step: [description]
+- File: [filename:line]
+- Code: [relevant snippet]
+- Next: [what happens next / what data passes to next layer]
+
+CONSTRAINT: Focus ONLY on this chunk. Do NOT reference external content."
+)
+```
+
+**Phase 3: Synthesis (Sonnet supervisor)**
+
+```markdown
+# Authentication Flow: Login to Database
+
+## Summary
+The auth flow spans 4 layers across 35 files. User submits credentials via
+LoginForm.tsx, which dispatches to the API via authSlice. The API validates
+the request through middleware, the backend verifies credentials with bcrypt,
+and the database stores password hashes with the user model.
+
+## End-to-End Trace
+
+### 1. Frontend (LoginForm.tsx)
+- User clicks "Login" button (LoginForm.tsx:45)
+- Client-side email validation (LoginForm.tsx:38)
+- Redux action: authSlice.login() dispatched (authSlice.ts:52)
+- API call: POST /api/auth/login with {email, password} (auth.ts:15)
+
+### 2. API Layer (auth_routes.py)
+- Request received at /api/auth/login (auth_routes.py:23)
+- CSRF validation middleware (middleware/security.py:15)
+- Rate limiting: 5 requests/minute (middleware/rate_limit.py:8)
+- Passes to backend: auth_service.authenticate()
+
+### 3. Backend (auth_service.py)
+- Credentials sanitized (auth_service.py:67)
+- User lookup: user_service.get_by_email() (auth_service.py:72)
+- Password verify: bcrypt.verify() (auth_service.py:78)
+- JWT token generated (crypto/jwt.py:34)
+
+### 4. Database (user_model.py)
+- Query: SELECT id, email, password_hash FROM users WHERE email = ?
+- Password stored as bcrypt hash (cost factor 12)
+
+## Cross-Chunk Patterns
+- CSRF protection at API layer guards frontend requests
+- Rate limiting prevents brute force from frontend
+- bcrypt used consistently (backend stores, database persists)
+
+## Analysis Metadata
+- Input: 35 files across 4 application layers
+- Strategy: Structural Decomposition (by layer)
+- Chunks processed: 4
+- Iterations: 1
+- Confidence: 90/100
+```
