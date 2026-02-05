@@ -245,3 +245,24 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - `agent-browser` refs (e.g. `@e14`) can match multiple elements if the page has similar button structures — use `eval` with JS selectors for precise targeting
   - The assistant create page is at `/assistant/create` and the form fields are: Name, Description, Instructions/System Prompt, Model, Tools, SubAgents
 ---
+
+## 2026-02-05 - US-015
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Backend API backward compatibility validation using curl
+- All acceptance criteria verified:
+  1. Backend running on port 8000 from correct worktree — confirmed
+  2. Login succeeds: `curl POST /api/auth/login` with admin@example.com/test1234 returns HTTP 200 with access_token
+  3. Invoke without new fields: `curl POST /api/llm/invoke` with only `input.messages` and `config.configurable.model` — HTTP 200, got "OK" response (backward compatible)
+  4. Invoke with new fields: `curl POST /api/llm/invoke` including `skills`, `memory`, `agent_name` — HTTP 200, got "OK" response (no 422 validation error)
+  5. OpenAPI schema: All 5 new fields (skills, memory, agent_name, response_format, interrupt_on) confirmed present in LLMRequest schema definition
+- Curl commands used:
+  - Login: `curl -X POST http://localhost:8000/api/auth/login -H "Content-Type: application/json" -d '{"email":"admin@example.com","password":"test1234"}'`
+  - Invoke without new fields: `curl -X POST http://localhost:8000/api/llm/invoke -H "Authorization: Bearer $TOKEN" -d '{"input":{"messages":[{"role":"user","content":"Say OK"}]},"config":{"configurable":{"model":"openai:gpt-4.1-mini"}}}'`
+  - Invoke with new fields: `curl -X POST http://localhost:8000/api/llm/invoke -H "Authorization: Bearer $TOKEN" -d '{"input":{"messages":[{"role":"user","content":"Say OK"}]},"config":{"configurable":{"model":"openai:gpt-4.1-mini"}},"skills":["web_search"],"memory":[],"agent_name":"qa-test-agent"}'`
+  - OpenAPI check: `curl http://localhost:8000/openapi.json` — verified LLMRequest schema contains all 5 new Optional fields
+- Files changed: None (QA-only story)
+- **Learnings for future iterations:**
+  - The invoke endpoint is synchronous and returns the full response — useful for quick API testing
+  - New Optional fields with `default=None` are truly backward compatible — requests without them work identically
+  - OpenAPI schema auto-generates from Pydantic models — no separate schema maintenance needed
+---

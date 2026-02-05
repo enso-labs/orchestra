@@ -250,7 +250,7 @@
         "Log evidence: append curl commands and response summaries to progress.txt"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "QA-only story, no code changes. Uses curl for API validation. Requires backend running on port 8000. Default login: admin@example.com / test1234."
     }
   ]
