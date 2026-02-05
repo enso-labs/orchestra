@@ -10,27 +10,30 @@ from src.utils.middleware import init_default_middleware, AutoEvictMiddleware
 
 
 class TestCompactionInMiddlewareStack:
-    def test_compaction_middleware_is_first_in_default_stack(self) -> None:
-        """Compaction middleware must be the first item in the default middleware list."""
+    def test_compaction_middleware_excluded_by_default(self) -> None:
+        """Compaction middleware is NOT in the default stack (USE_INTERNAL_SUMMARIZATION defaults to true)."""
         middleware_list = init_default_middleware(backend=None)
-        assert middleware_list[0] is compaction_middleware
+        assert compaction_middleware not in middleware_list
 
-    def test_compaction_middleware_present_in_default_stack(self) -> None:
-        """Compaction middleware is included in the default middleware list."""
+    def test_default_stack_length(self) -> None:
+        """Default middleware stack has 5 items when USE_INTERNAL_SUMMARIZATION=true."""
+        middleware_list = init_default_middleware(backend=None)
+        # add_ai_message_metadata, retry_model, 2x PII, AutoEvict = 5
+        assert len(middleware_list) == 5
+
+    @patch.dict("os.environ", {"USE_INTERNAL_SUMMARIZATION": "false"})
+    def test_compaction_middleware_included_when_flag_false(self) -> None:
+        """Compaction middleware IS in the stack when USE_INTERNAL_SUMMARIZATION=false."""
         middleware_list = init_default_middleware(backend=None)
         assert compaction_middleware in middleware_list
+        assert middleware_list[0] is compaction_middleware
+        assert len(middleware_list) == 6
 
     def test_auto_evict_middleware_still_present(self) -> None:
         """AutoEvictMiddleware coexists with compaction middleware."""
         middleware_list = init_default_middleware(backend=None)
         auto_evict = [m for m in middleware_list if isinstance(m, AutoEvictMiddleware)]
         assert len(auto_evict) == 1
-
-    def test_middleware_stack_length_unchanged(self) -> None:
-        """Default middleware stack has expected number of items."""
-        middleware_list = init_default_middleware(backend=None)
-        # compaction, add_ai_message_metadata, retry_model, 2x PII, AutoEvict = 6
-        assert len(middleware_list) == 6
 
 
 class TestCompactionMiddlewareNoOp:

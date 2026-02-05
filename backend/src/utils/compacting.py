@@ -1,5 +1,9 @@
 # Compacting Middleware for Orchestra
 #
+# DEPRECATED (#734): This middleware is excluded from the default middleware stack
+# when USE_INTERNAL_SUMMARIZATION=true (the default). It remains available as a
+# rollback path when USE_INTERNAL_SUMMARIZATION=false.
+#
 # US-001 Finding: deepagents==0.3.8 does NOT ship internal SummarizationMiddleware.
 # Verified by inspecting deepagents source - no summarization/compaction/middleware
 # references found in the package. create_deep_agent() has no compaction parameters.

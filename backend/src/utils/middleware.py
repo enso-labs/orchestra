@@ -1,3 +1,4 @@
+import os
 from typing import Awaitable, Callable
 from deepagents.backends.utils import (
     format_content_with_line_numbers,
@@ -289,10 +290,17 @@ def init_default_middleware(
     Returns:
         The default middleware.
     """
-    return [
-        compaction_middleware,
-        add_ai_message_metadata,
-        retry_model,
-        *pii_middleware(),
-        AutoEvictMiddleware(backend=backend),
-    ]
+    use_internal = os.getenv("USE_INTERNAL_SUMMARIZATION", "true").lower() == "true"
+
+    middleware: list[Callable] = []
+    if not use_internal:
+        middleware.append(compaction_middleware)
+    middleware.extend(
+        [
+            add_ai_message_metadata,
+            retry_model,
+            *pii_middleware(),
+            AutoEvictMiddleware(backend=backend),
+        ]
+    )
+    return middleware
