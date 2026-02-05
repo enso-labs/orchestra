@@ -101,6 +101,13 @@ class LLMController:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
 
+            # Merge assistant-level files as base, request files override
+            assistant_files = getattr(params, "files", None)
+            params.input.files = {
+                **(assistant_files or {}),
+                **(params.input.files or {}),
+            }
+
             # Resolve user-configured API key and default model
             params.model, api_key = await self._resolve_user_settings(params.model)
 
@@ -112,6 +119,7 @@ class LLMController:
                     model=params.model,
                     tools=params.tools,
                     subagents=params.subagents,
+                    skills=params.skills,
                     checkpointer=checkpointer,
                     backend=backend,
                     service_context=self.service_context,
