@@ -177,3 +177,27 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - `effective_memory or None` converts empty list back to None so downstream code doesn't receive an unexpected empty list
   - The feature flag pattern `os.getenv("VAR", "true").lower() == "true"` is consistent with `USE_INTERNAL_SUMMARIZATION` from US-001
 ---
+
+## 2026-02-05 - US-012
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Deprecated `init_system_prompt()` in `format.py` with comment referencing #734, noting it is only used when `USE_AGENTS_MD_INSTRUCTIONS=false`
+- Updated `construct_agent()` to use AGENTS.md pattern when `USE_AGENTS_MD_INSTRUCTIONS=true` (default):
+  - Builds AGENTS.md content via `_build_agents_md_content()` with system_prompt + instructions + metadata
+  - Writes to temp file via `tempfile.mkdtemp()`, prepends path to memory list
+  - Passes `system_prompt=None` to Orchestra
+- When `USE_AGENTS_MD_INSTRUCTIONS=false` (rollback): continues using `init_system_prompt()` as before
+- Added `_build_metadata_lines()` helper to replicate metadata injection (timezone, language, UTC time) from `init_system_prompt()` for the AGENTS.md path
+- Added `_build_agents_md_content()` helper to compose full AGENTS.md content from system_prompt, instructions, and config metadata
+- Updated `init_subagents()` to also use AGENTS.md pattern when flag is enabled:
+  - Writes subagent system_prompt content to temp AGENTS.md file
+  - Passes `system_prompt=None` and `memory=[agents_md_path]` in subagent dict
+  - Rollback path preserves original `init_system_prompt()` behavior
+- All 330 tests pass, 2 skipped
+- Files changed:
+  - `backend/src/agents/__init__.py` - Added _build_metadata_lines(), _build_agents_md_content(), updated construct_agent() and init_subagents()
+  - `backend/src/utils/format.py` - Added deprecation comment to init_system_prompt()
+- **Learnings for future iterations:**
+  - `_build_metadata_lines()` replicates the metadata logic from `init_system_prompt()` — if either changes, the other should be updated to stay in sync until the deprecated code is removed
+  - `construct_agent()` handles both the `instructions` merge and the AGENTS.md file write in one place, so `init_graph()` doesn't need to know about instructions
+  - Subagent dicts accept a `memory` key alongside `system_prompt`, `tools`, `name`, etc. — this is part of the SubAgent TypedDict/dict interface
+---

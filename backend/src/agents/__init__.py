@@ -159,19 +159,41 @@ async def init_tools(
 async def init_subagents(
     subagents: list[Assistant], service_context: ServiceContext
 ) -> list[SubAgent]:
+    use_agents_md = os.getenv("USE_AGENTS_MD_INSTRUCTIONS", "true").lower() == "true"
     result = []
     for subagent in subagents:
-        system_prompt = subagent.system_prompt or init_system_prompt(
-            DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions
-        )
-        subagent_dict = {
-            "name": subagent.slug,
-            "description": subagent.description,
-            "system_prompt": system_prompt,
-            "tools": await init_tools(
-                subagent.tools, subagent.a2a, subagent.mcp, service_context
-            ),
-        }
+        if use_agents_md:
+            # Build AGENTS.md content for this subagent
+            base_prompt = subagent.system_prompt or DEFAULT_SYSTEM_PROMPT
+            agents_md_content = _build_agents_md_content(
+                base_prompt, {}, subagent.instructions
+            )
+            agents_md_dir = tempfile.mkdtemp(prefix="orchestra_subagent_agents_md_")
+            agents_md_path = os.path.join(agents_md_dir, "AGENTS.md")
+            with open(agents_md_path, "w") as f:
+                f.write(agents_md_content)
+            subagent_dict = {
+                "name": subagent.slug,
+                "description": subagent.description,
+                "system_prompt": None,
+                "memory": [agents_md_path],
+                "tools": await init_tools(
+                    subagent.tools, subagent.a2a, subagent.mcp, service_context
+                ),
+            }
+        else:
+            # Rollback path: use init_system_prompt() as before
+            system_prompt = subagent.system_prompt or init_system_prompt(
+                DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions
+            )
+            subagent_dict = {
+                "name": subagent.slug,
+                "description": subagent.description,
+                "system_prompt": system_prompt,
+                "tools": await init_tools(
+                    subagent.tools, subagent.a2a, subagent.mcp, service_context
+                ),
+            }
 
         if getattr(subagent, "model", None) is not None:
             subagent_dict["model"] = subagent.model
@@ -229,6 +251,57 @@ def init_backend(runtime: ToolRuntime, *, routes):
     return CompositeBackend(default=default_state, routes=built_routes)
 
 
+def _build_metadata_lines(config: dict) -> list[str]:
+    """Extract metadata lines (timezone, language, UTC time) from config.
+
+    This replicates the metadata section that init_system_prompt() appends,
+    so the same information is available when using the AGENTS.md path.
+    """
+    lines: list[str] = []
+    metadata = config.get("metadata", {}) if config else {}
+    current_utc = metadata.get("current_utc")
+    timezone_val = metadata.get("timezone")
+    lang = metadata.get("language", "en-US")
+    if current_utc:
+        try:
+            import pytz
+            from dateutil.parser import isoparse
+
+            dt_utc = isoparse(current_utc)
+            if timezone_val:
+                tz = pytz.timezone(timezone_val)
+                dt_local = dt_utc.astimezone(tz)
+                lines.append(f"LOCAL_TIME: {dt_local.isoformat()}")
+                lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
+            else:
+                lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
+        except Exception:
+            lines.append(f"CURRENT_UTC: {current_utc}")
+    elif timezone_val:
+        from datetime import datetime, timezone as tz_mod
+
+        now_iso = datetime.now(tz_mod.utc).isoformat()
+        lines.append(f"CURRENT_UTC: {now_iso}")
+    if timezone_val:
+        lines.append(f"TIMEZONE: {timezone_val}")
+    if lang:
+        lines.append(f"LANGUAGE: {lang}")
+    return lines
+
+
+def _build_agents_md_content(
+    system_prompt: str, config: dict, instructions: str = None
+) -> str:
+    """Build AGENTS.md content from system_prompt, instructions, and config metadata."""
+    lines = [system_prompt]
+    if instructions:
+        lines.append("---")
+        lines.append(f"INSTRUCTIONS:\n{instructions}")
+    lines.append("---")
+    lines.extend(_build_metadata_lines(config))
+    return "\n".join(lines) + "\n"
+
+
 ################################################################################
 ### Construct Agent
 ################################################################################
@@ -250,8 +323,31 @@ async def construct_agent(
     interrupt_on: dict[str, Any] | None = None,
 ):
     try:
+        use_agents_md = (
+            os.getenv("USE_AGENTS_MD_INSTRUCTIONS", "true").lower() == "true"
+        )
+
         if subagents:
             subagents = await init_subagents(subagents, service_context)
+
+        if use_agents_md:
+            # Build AGENTS.md content with system_prompt + instructions + metadata
+            effective_system_prompt = None
+            effective_memory = list(memory) if memory else []
+            agents_md_content = _build_agents_md_content(
+                system_prompt, service_context.config or {}, instructions
+            )
+            agents_md_dir = tempfile.mkdtemp(prefix="orchestra_agents_md_")
+            agents_md_path = os.path.join(agents_md_dir, "AGENTS.md")
+            with open(agents_md_path, "w") as f:
+                f.write(agents_md_content)
+            effective_memory.insert(0, agents_md_path)
+        else:
+            # Rollback path: use init_system_prompt() as before
+            effective_system_prompt = init_system_prompt(
+                system_prompt, service_context.config or {}, instructions
+            )
+            effective_memory = memory
 
         # Asynchronous LLM call
         agent = Orchestra(
@@ -259,9 +355,7 @@ async def construct_agent(
             model=model,
             tools=tools,
             subagents=subagents,
-            system_prompt=init_system_prompt(
-                system_prompt, service_context.config or {}, instructions
-            ),
+            system_prompt=effective_system_prompt,
             checkpointer=checkpointer,
             store=service_context.store,
             middleware=middleware,
@@ -269,7 +363,7 @@ async def construct_agent(
             backend=backend,
             api_key=api_key,
             skills=skills,
-            memory=memory,
+            memory=effective_memory or None,
             name=agent_name,
             response_format=response_format,
             interrupt_on=interrupt_on,

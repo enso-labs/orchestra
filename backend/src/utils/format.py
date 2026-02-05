@@ -81,6 +81,8 @@ def raw_html(content: str) -> str:
 def init_system_prompt(
     system_prompt: str, config: RunnableConfig, instructions: str = None
 ) -> str:
+    # Deprecated (#734): Only used when USE_AGENTS_MD_INSTRUCTIONS=false (rollback path).
+    # Prefer AGENTS.md files loaded via the memory parameter in create_deep_agent().
     lines = [system_prompt]
     if instructions:
         lines.append("---")
