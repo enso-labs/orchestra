@@ -1,7 +1,7 @@
 {
   "project": "Orchestra",
   "branchName": "feat/734-update-scaffold",
-  "description": "Update create_deep_agent scaffolding - Wire new deepagents API parameters (skills, memory, name, response_format, interrupt_on) through Orchestra's call chain, eliminate double-summarization middleware conflict, and update example notebooks.",
+  "description": "Update create_deep_agent scaffolding - Wire new deepagents API parameters (skills, memory, name, response_format, interrupt_on) through Orchestra's call chain, eliminate double-summarization middleware conflict, deprecate system_prompt/instructions in favor of AGENTS.md via memory parameter, and update example notebooks.",
   "userStories": [
     {
       "id": "US-001",
@@ -146,6 +146,78 @@
       "priority": 9,
       "passes": true,
       "notes": "Files: examples/agents/deep_agent_backend.ipynb, examples/agents/stream_subagent_updates.ipynb, examples/agents/RLM.ipynb. Independent, can run any time."
+    },
+    {
+      "id": "US-010",
+      "title": "Soft-deprecate system_prompt and instructions on LLMRequest and Assistant schemas",
+      "description": "As a backend developer, I want the system_prompt and instructions fields on LLMRequest and Assistant to be marked as deprecated so that developers understand they should migrate to AGENTS.md files loaded via the memory parameter, aligning with the deepagents library's recommended pattern.",
+      "acceptanceCriteria": [
+        "system_prompt field on Assistant has a deprecation comment referencing #734 and recommending AGENTS.md via memory parameter",
+        "instructions field on Assistant has a deprecation comment referencing #734 and recommending AGENTS.md via memory parameter",
+        "system_prompt field on LLMRequest has a deprecation comment referencing #734 and recommending AGENTS.md via memory parameter",
+        "instructions field on LLMRequest has a deprecation comment referencing #734 and recommending AGENTS.md via memory parameter",
+        "validate_system_prompt_or_instructions validator has a deprecation comment noting both fields are deprecated in favor of AGENTS.md",
+        "Field description values updated to note deprecation",
+        "Fields are NOT removed (soft deprecation only -- still functional for backward compatibility and rollback)",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Files: backend/src/schemas/entities/llm.py. Independent, can run any time. Comments-only change, no behavioral impact."
+    },
+    {
+      "id": "US-011",
+      "title": "Migrate system_prompt/instructions to AGENTS.md via memory parameter in agent pipeline",
+      "description": "As a backend developer, I want init_graph() to stop passing system_prompt directly to create_deep_agent() and instead write the system prompt content as an AGENTS.md file to the backend filesystem and pass it via the memory parameter, aligning with the deepagents library's recommended pattern where agent instructions are provided through AGENTS.md files.",
+      "acceptanceCriteria": [
+        "init_graph() conditionally controls how system_prompt reaches create_deep_agent() based on USE_AGENTS_MD_INSTRUCTIONS env var (default: 'true')",
+        "When USE_AGENTS_MD_INSTRUCTIONS=true: system prompt content is written to backend filesystem as AGENTS.md file",
+        "When USE_AGENTS_MD_INSTRUCTIONS=true: AGENTS.md file path is prepended to the memory list",
+        "When USE_AGENTS_MD_INSTRUCTIONS=true: system_prompt=None is passed to create_deep_agent()",
+        "When USE_AGENTS_MD_INSTRUCTIONS=true: user-provided memory paths are preserved alongside generated AGENTS.md path",
+        "When USE_AGENTS_MD_INSTRUCTIONS=false: system_prompt is passed directly to create_deep_agent() as before (rollback)",
+        "When USE_AGENTS_MD_INSTRUCTIONS=false: memory is passed through unchanged",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Files: backend/src/agents/__init__.py. Depends on US-005/US-006 (memory parameter must be wired through). Feature flag USE_AGENTS_MD_INSTRUCTIONS defaults to 'true'."
+    },
+    {
+      "id": "US-012",
+      "title": "Deprecate init_system_prompt() and update construct_agent() for AGENTS.md migration",
+      "description": "As a backend developer, I want construct_agent() to support the AGENTS.md-first instruction pattern by passing instructions content through the memory parameter rather than merging it into system_prompt via init_system_prompt(), and I want init_system_prompt() marked as deprecated.",
+      "acceptanceCriteria": [
+        "When USE_AGENTS_MD_INSTRUCTIONS=true, construct_agent() passes instructions content to Orchestra/init_graph() via AGENTS.md mechanism rather than calling init_system_prompt()",
+        "When USE_AGENTS_MD_INSTRUCTIONS=false, construct_agent() continues using init_system_prompt() to merge instructions into system_prompt (rollback path)",
+        "init_system_prompt() in format.py has a deprecation comment noting it is only used when USE_AGENTS_MD_INSTRUCTIONS=false, referencing #734",
+        "Metadata (timezone, language, UTC time) previously injected by init_system_prompt() is preserved in AGENTS.md content or handled through alternative mechanism",
+        "Subagent system prompts are also migrated to the AGENTS.md pattern when the flag is enabled",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Files: backend/src/agents/__init__.py, backend/src/utils/format.py. Depends on US-011."
+    },
+    {
+      "id": "US-013",
+      "title": "Add tests for system_prompt to AGENTS.md migration",
+      "description": "As a backend developer, I want tests verifying that the system_prompt to AGENTS.md migration works correctly with both feature flag states, ensuring no regressions in either mode.",
+      "acceptanceCriteria": [
+        "Test that when USE_AGENTS_MD_INSTRUCTIONS=true, init_graph() does NOT pass system_prompt to create_deep_agent()",
+        "Test that when USE_AGENTS_MD_INSTRUCTIONS=true, system_prompt content is written to backend as AGENTS.md and file path is in memory list",
+        "Test that when USE_AGENTS_MD_INSTRUCTIONS=false, init_graph() passes system_prompt to create_deep_agent() as before",
+        "Test that user-provided memory paths are preserved alongside generated AGENTS.md path",
+        "Test that None system_prompt does not generate an AGENTS.md file",
+        "Typecheck passes",
+        "All existing tests pass"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Files: backend/tests/unit/agents/test_init_graph.py. Depends on US-011."
     }
   ]
 }

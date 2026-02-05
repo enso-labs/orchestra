@@ -142,3 +142,19 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - The RLM notebook V1 uses `create_agent` (LangChain), V2 uses `create_deep_agent` (deepagents), V3 uses raw StateGraph — only V2 needs `name` param
   - `NotebookEdit` tool works cell-by-cell; for multi-cell restructuring (adding/reordering cells), a script approach is more efficient
 ---
+
+## 2026-02-05 - US-010
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Soft-deprecated system_prompt and instructions fields on both Assistant and LLMRequest schemas
+- Added deprecation comments (inline # comments) referencing #734 and recommending AGENTS.md via memory parameter
+- Updated Field description values to note deprecation on all 4 fields (2 per schema)
+- Added deprecation comment to validate_system_prompt_or_instructions validator noting it is retained for backward compatibility
+- Fields NOT removed — soft deprecation only, still functional for backward compatibility and rollback
+- All 330 tests pass, 2 skipped
+- Files changed:
+  - `backend/src/schemas/entities/llm.py` - Added deprecation comments and descriptions to system_prompt, instructions, and validator
+- **Learnings for future iterations:**
+  - Pydantic Field `description` parameter is the right place for deprecation notices that show up in API docs / OpenAPI schemas
+  - Inline `#` comments are good for developer-facing deprecation notices in source code
+  - This was a pure comments/metadata change — no behavioral impact, no test changes needed
+---
