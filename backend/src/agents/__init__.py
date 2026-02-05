@@ -59,6 +59,7 @@ async def add_memories_to_system():
 def init_graph(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
+    skills: list[str] | None = None,
     system_prompt: str = None,
     model: str = DEFAULT_CHAT_MODEL,
     context_schema: Type[ContextSchema] | None = None,
@@ -82,6 +83,7 @@ def init_graph(
         model=llm,
         tools=tools,
         subagents=subagents,
+        skills=skills,
         system_prompt=system_prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
