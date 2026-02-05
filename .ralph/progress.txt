@@ -23,6 +23,8 @@
 - `useIntroTour` hook: `useIntroTour(tourId, steps, options?)` → `{ startTour, isComplete, resetTour }`, localStorage key: `orchestra:tour:{tourId}:dismissed`
 - When `useIntroTour` has `autoStart: true`, mock it in tests: `vi.mock("@/hooks/useIntroTour", ...)` — prevents Intro.js DOM overlays from breaking `getByText` queries
 - Tour step selectors: use `data-tour="x"` attributes for same-component elements; `[aria-label="x"]` for cross-component elements (ChatNav, FileTreeHeader, FileEditorPanel)
+- Wiki is a git submodule — `git submodule update --init wiki` to initialize in worktrees; build with `cd wiki && npm install && npm run build`
+- Wiki sidebars: items are doc IDs (path relative to `docs/` without `.md` extension), e.g. `"assistants/agents-md"`
 
 ---
 
@@ -144,4 +146,21 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - `useMemo` wraps the `tourSteps` array with `hasLegacyInstructions` as dependency to dynamically splice the legacy migration step
   - All 188 frontend tests pass, TypeScript and lint clean
   - Browser verification skipped (requires authentication)
+---
+
+## 2026-02-04 - US-011
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- What was implemented: Created AGENTS.md feature documentation page in wiki
+- Files changed:
+  - `wiki/docs/assistants/agents-md.md` — Created full documentation page with frontmatter (title, slug, sidebar_position: 2), covering: what AGENTS.md is and CLAUDE.md pattern, step-by-step file panel creation, migration from legacy fields, agent mode vs thread mode, backwards compatibility, API usage with curl examples (create, thread-level, update), priority/precedence table, best practices
+  - `wiki/sidebars.ts` — Added `"assistants/agents-md"` to Core Features items array after `"assistants/index"`
+  - `.ralph/prd.json` — Marked US-011 as `passes: true`
+  - `.ralph/progress.txt` — Added progress entry
+- **Learnings for future iterations:**
+  - Wiki is a git submodule (`git@github.com:ruska-ai/wiki.git`) — must `git submodule update --init wiki` in worktrees before editing
+  - Worktree submodules start uninitialized (prefix `-` in `git submodule status`) — `rm -rf` any empty dirs before `--init`
+  - Wiki uses Docusaurus with `sidebars.ts` for navigation — items are doc IDs (path relative to `docs/` without extension)
+  - Pre-existing broken links exist in sandbox/tools pages — unrelated to our changes
+  - `sidebar_position: 2` places the page after the index (position 3) in the Assistants section
+  - Commit wiki submodule changes from the parent repo by staging the wiki directory
 ---

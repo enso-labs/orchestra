@@ -203,8 +203,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created wiki/docs/assistants/agents-md.md with full AGENTS.md feature documentation: what it is, how it mirrors CLAUDE.md pattern, step-by-step creation via file panel, agent mode vs thread mode, migration from legacy fields, backwards compatibility, API usage with curl examples, priority/precedence, best practices. Added to wiki/sidebars.ts under Core Features. Wiki builds without errors, TypeScript passes."
     },
     {
       "id": "US-012",
