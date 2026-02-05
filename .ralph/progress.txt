@@ -201,3 +201,21 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - `construct_agent()` handles both the `instructions` merge and the AGENTS.md file write in one place, so `init_graph()` doesn't need to know about instructions
   - Subagent dicts accept a `memory` key alongside `system_prompt`, `tools`, `name`, etc. — this is part of the SubAgent TypedDict/dict interface
 ---
+
+## 2026-02-05 - US-013
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added 5 new tests to `TestInitGraphAgentsMdMigration` class in `test_init_graph.py`
+- Tests verify:
+  1. When `USE_AGENTS_MD_INSTRUCTIONS=true`, `system_prompt=None` is passed to `create_deep_agent()`
+  2. When enabled, system_prompt content is written to AGENTS.md file and path is in memory list
+  3. When `USE_AGENTS_MD_INSTRUCTIONS=false`, `system_prompt` is passed directly (rollback path)
+  4. User-provided memory paths are preserved alongside generated AGENTS.md path
+  5. `None` system_prompt does not generate an AGENTS.md file
+- All 335 tests pass (5 new + 330 existing), 2 skipped
+- Files changed:
+  - `backend/tests/unit/agents/test_init_graph.py` - Added TestInitGraphAgentsMdMigration class with 5 tests
+- **Learnings for future iterations:**
+  - `@patch.dict("os.environ", {"USE_AGENTS_MD_INSTRUCTIONS": "true"})` works cleanly for testing env-var feature flags at the test method level
+  - The AGENTS.md file is actually written to disk during tests via `tempfile.mkdtemp()` — can verify file existence and content with `os.path.exists()` and `open()`
+  - When testing with `system_prompt=None`, the code path skips AGENTS.md generation entirely — `effective_memory or None` converts empty list to None
+---

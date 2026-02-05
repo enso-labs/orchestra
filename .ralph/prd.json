@@ -216,7 +216,7 @@
         "All existing tests pass"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Files: backend/tests/unit/agents/test_init_graph.py. Depends on US-011."
     },
     {
