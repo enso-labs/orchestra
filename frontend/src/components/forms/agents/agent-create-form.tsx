@@ -16,6 +16,7 @@ import {
 	Lock,
 	AlertTriangle,
 	ArrowRight,
+	HelpCircle,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 
@@ -33,11 +34,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import agentService, { Agent } from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+	useIntroTour,
+	type IntroTourStep,
+} from "@/hooks/useIntroTour";
 
 const formSchema = z.object({
 	name: z.string().min(2, {
@@ -162,6 +167,57 @@ export function AgentCreateForm() {
 		!agent.files?.["AGENTS.md"];
 	const legacyContent = agent.instructions || agent.system_prompt || "";
 
+	// AGENTS.md onboarding tour
+	const tourSteps = useMemo<IntroTourStep[]>(() => {
+		const steps: IntroTourStep[] = [
+			{
+				element: "[data-tour='agents-md-guidance']",
+				title: "File-Based Instructions",
+				intro: "Agent behavior is now configured via an AGENTS.md file instead of form fields. This gives you full markdown support and version control.",
+				position: "bottom",
+			},
+			{
+				element: "[aria-label='Switch to editor view']",
+				title: "Open the File Panel",
+				intro: "Click the Editor tab to access the file panel where you can create and edit agent files.",
+				position: "bottom",
+			},
+			{
+				element: "[aria-label='Create new file']",
+				title: "Create AGENTS.md",
+				intro: "Use this button to create a new file. Name it AGENTS.md to define your agent's instructions.",
+				position: "right",
+			},
+			{
+				element: "[aria-label='File editor']",
+				title: "Edit Your Instructions",
+				intro: "Write your agent's instructions here using markdown. These will be injected as the system prompt at runtime.",
+				position: "left",
+			},
+			{
+				element: "[data-tour='save-agent']",
+				title: "Save Your Agent",
+				intro: "Once you've configured your agent and created AGENTS.md, click Save to persist your changes.",
+				position: "bottom",
+			},
+		];
+		// Add legacy migration step when editing an agent with legacy instructions
+		if (hasLegacyInstructions) {
+			steps.splice(1, 0, {
+				element: "[data-tour='legacy-migration']",
+				title: "Migrate Legacy Instructions",
+				intro: "This agent has legacy instructions. Click 'Migrate to AGENTS.md' to automatically convert them to the new file-based format.",
+				position: "bottom",
+			});
+		}
+		return steps;
+	}, [hasLegacyInstructions]);
+
+	const { startTour } = useIntroTour("agents-md-onboarding", tourSteps, {
+		autoStart: true,
+		showProgress: true,
+	});
+
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -193,6 +249,7 @@ export function AgentCreateForm() {
 											<Ban className="h-4 w-4" />
 										</Button>
 										<Button
+											data-tour="save-agent"
 											type="button"
 											variant="default"
 											size="icon"
@@ -228,6 +285,7 @@ export function AgentCreateForm() {
 							</div>
 						) : (
 							<Button
+								data-tour="save-agent"
 								type="button"
 								variant="outline"
 								size="icon"
@@ -304,7 +362,10 @@ export function AgentCreateForm() {
 						/>
 						{/* Legacy Instructions Migration Card */}
 						{hasLegacyInstructions && (
-							<div className="flex flex-col gap-3 p-4 border border-amber-500/50 rounded-lg bg-amber-500/10">
+							<div
+								data-tour="legacy-migration"
+								className="flex flex-col gap-3 p-4 border border-amber-500/50 rounded-lg bg-amber-500/10"
+							>
 								<div className="flex items-start gap-3">
 									<AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
 									<div className="flex-1">
@@ -332,12 +393,26 @@ export function AgentCreateForm() {
 							</div>
 						)}
 						{/* AGENTS.md Guidance Note */}
-						<div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/50">
+						<div
+							data-tour="agents-md-guidance"
+							className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/50"
+						>
 							<FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-							<div>
-								<p className="text-sm font-medium text-foreground">
-									Agent instructions are now file-based
-								</p>
+							<div className="flex-1">
+								<div className="flex items-center justify-between">
+									<p className="text-sm font-medium text-foreground">
+										Agent instructions are now file-based
+									</p>
+									<button
+										type="button"
+										onClick={startTour}
+										className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+										title="Show guided tour"
+									>
+										<HelpCircle className="h-3.5 w-3.5" />
+										Show Tour
+									</button>
+								</div>
 								<p className="text-xs text-muted-foreground mt-1">
 									Create an AGENTS.md file in the file panel to define this
 									agent's instructions and system behavior.

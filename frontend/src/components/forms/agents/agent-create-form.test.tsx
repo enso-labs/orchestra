@@ -70,6 +70,15 @@ vi.mock("@/components/modals/PromptSelectionModal", () => ({
 	PromptSelectionModal: () => null,
 }));
 
+// Mock useIntroTour to prevent Intro.js from rendering tour overlays in tests
+vi.mock("@/hooks/useIntroTour", () => ({
+	useIntroTour: () => ({
+		startTour: vi.fn(),
+		isComplete: false,
+		resetTour: vi.fn(),
+	}),
+}));
+
 import { AgentCreateForm } from "./agent-create-form";
 
 // Helper to set mock agent with legacy instructions for US-007 tests
