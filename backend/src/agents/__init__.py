@@ -211,6 +211,7 @@ async def construct_agent(
     model: BaseChatModel,
     tools: list[BaseTool],
     subagents: list[SubAgent] = [],
+    skills: list[str] | None = None,
     middleware: list[Callable] = [],
     backend: CompositeBackend = None,
     checkpointer: BaseCheckpointSaver = None,
@@ -227,6 +228,7 @@ async def construct_agent(
             model=model,
             tools=tools,
             subagents=subagents,
+            skills=skills,
             system_prompt=init_system_prompt(
                 system_prompt, service_context.config or {}, instructions
             ),
@@ -248,6 +250,7 @@ class Orchestra:
         self,
         tools: list[BaseTool],
         subagents: Optional[list[SubAgent]] = None,
+        skills: list[str] | None = None,
         model: str = DEFAULT_CHAT_MODEL,
         system_prompt: str | None = None,
         context_schema: Type[Any] | None = None,
@@ -265,9 +268,11 @@ class Orchestra:
         self.store = store
         self.checkpointer = checkpointer
         self.subagents = subagents
+        self.skills = skills
         self.graph = init_graph(
             tools=self.tools,
             subagents=self.subagents,
+            skills=self.skills,
             model=self.model,
             system_prompt=self.system_prompt,
             context_schema=self.context_schema,
