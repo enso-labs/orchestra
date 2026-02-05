@@ -18,7 +18,7 @@
         "Typecheck passes (make format)"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Read backend/src/agents/__init__.py for the existing add_memories_to_system() function and understand the current pattern. Import create_file_data from deepagents.backends.utils. Do NOT remove add_memories_to_system() — it stays for backward compatibility."
     },
     {
@@ -34,7 +34,7 @@
         "Typecheck passes (make format)"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Read backend/src/agents/__init__.py to find init_graph(), Orchestra class, and construct_agent(). The memory parameter on create_deep_agent() already exists in the DeepAgents library — you just need to pass it through. Check deepagents source or docs to confirm the parameter name."
     },
     {
@@ -49,7 +49,7 @@
         "Typecheck passes (make format)"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Read backend/src/utils/stream.py to find stream_generator(). Import prepare_memory_files locally to avoid circular imports. The user_id and memory service should be available from the request context."
     },
     {

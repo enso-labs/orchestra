@@ -1,4 +1,50 @@
 # Ralph Progress Log
 Started: 2026-02-05
 Feature: Native DeepAgents Memory (feat/738-native-deepagents-memory)
+
+## Codebase Patterns
+- Backend format/lint: `cd backend && make format` runs `uvx ruff format`
+- `create_file_data(content: str)` from `deepagents.backends.utils` returns `{content: list[str], created_at: str, modified_at: str}`
+- `MemoryService.search()` returns `list[SearchItem]` where each item has `.dict()` → `{key, value, ...}` and `value` is typically `{"memory": "text"}`
+- Use `TYPE_CHECKING` guard for `MemoryService` import in agents/__init__.py to avoid circular imports
+- Pre-existing ruff lint warning (F401) on unused `create_agent` import in agents/__init__.py — not our change
+- Memory wiring pattern: call `prepare_memory_files()` → merge `{**memory_files, **files_map}` → pass `memory_sources` to `construct_agent(memory=...)`
+---
+
+## 2026-02-05 - US-001
+- Implemented `prepare_memory_files(user_id, memory_svc)` async helper in `backend/src/agents/__init__.py`
+- Added import of `create_file_data` from `deepagents.backends.utils`
+- Added `TYPE_CHECKING` guard for `MemoryService` type hint
+- Function fetches user memories, formats as markdown bullet list, returns `(files_map, memory_sources)` tuple
+- Files changed: `backend/src/agents/__init__.py`, `backend/src/constants/examples/__init__.py` (ruff format)
+- **Learnings for future iterations:**
+  - `create_file_data` splits content by newlines into a list — pass the full string, not pre-split lines
+  - The `memory_service` singleton at module level already exists but `prepare_memory_files` accepts it as a parameter for testability
+  - SearchItem `.dict()` returns `value` as a dict with a `"memory"` key containing the text
+---
+
+## 2026-02-05 - US-002
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added `memory: list[str] | None = None` parameter to `init_graph()`, `Orchestra.__init__()`, and `construct_agent()`
+- Each function passes `memory` down the chain: `construct_agent()` → `Orchestra()` → `init_graph()` → `create_deep_agent()`
+- `create_deep_agent()` internally creates `MemoryMiddleware` when `memory` is not None
+- Files changed: `backend/src/agents/__init__.py`
+- **Learnings for future iterations:**
+  - `create_deep_agent()` has `memory: list[str] | None = None` as a keyword-only argument
+  - When `memory` is provided, deepagents internally does: `MemoryMiddleware(backend=backend, sources=memory)` and appends it to the middleware stack
+  - The memory parameter is a list of file paths (e.g., `["/memories.md"]`) that reference files in the StateBackend
+---
+
+## 2026-02-05 - US-003
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Wired memory into `stream_generator()` in `backend/src/utils/stream.py`
+- Added import of `prepare_memory_files` from `src.agents` and `memory_service` from `src.services.memory`
+- Calls `prepare_memory_files(service_context.user_id, memory_service)` before creating `ToolRuntime`
+- Merges memory files into `files_map` with user files taking precedence: `{**memory_files, **files_map}`
+- Passes `memory_sources` to `construct_agent()` via the `memory` kwarg
+- Files changed: `backend/src/utils/stream.py`
+- **Learnings for future iterations:**
+  - `memory_service` singleton can be imported directly at module level in stream.py (no circular import issue)
+  - Memory files must be merged BEFORE creating `ToolRuntime` since the runtime receives `files_map` in its state
+  - User files take precedence over memory files via `{**memory_files, **files_map}` merge order
 ---

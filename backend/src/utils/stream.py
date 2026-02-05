@@ -14,7 +14,7 @@ from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
-from src.agents import construct_agent, init_backend
+from src.agents import construct_agent, init_backend, prepare_memory_files
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
@@ -23,6 +23,7 @@ from langchain_core.messages import (
 )
 from src.utils.logger import log_to_file, logger
 from src.utils.format import get_time
+from src.services.memory import memory_service
 
 # Configurable stream timeout (default 60 seconds)
 STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
@@ -193,6 +194,10 @@ async def stream_generator(
 ):
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
+    memory_files, memory_sources = await prepare_memory_files(
+        service_context.user_id, memory_service
+    )
+    files_map = {**memory_files, **files_map}
     async with get_checkpoint_db() as checkpointer:
         try:
             ctx = ContextSchema(
@@ -223,6 +228,7 @@ async def stream_generator(
                 backend=backend,
                 service_context=service_context,
                 api_key=api_key,
+                memory=memory_sources,
             )
             input.messages[-1].model = agent.model
             # Send metadata event with thread_id at the start of the stream
