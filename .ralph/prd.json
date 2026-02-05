@@ -1,113 +1,115 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/736-rlm-skill",
-  "description": "RLM Skill - Recursive Language Model pattern for processing large inputs using Sonnet orchestrator and parallel Haiku subagents",
+  "branchName": "feat/738-native-deepagents-memory",
+  "description": "Native DeepAgents Memory - Standardize user memory injection using MemoryMiddleware pattern instead of ad-hoc string concatenation",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create RLM skill directory and SKILL.md with core workflow",
-      "description": "As a developer, I need the RLM skill created with directory structure and SKILL.md containing the full decompose-process-synthesize workflow so Claude can process large inputs.",
+      "title": "Add prepare_memory_files() helper to agents module",
+      "description": "As a developer, I need a reusable async helper that fetches user memories and formats them as a file for the StateBackend, so all entry points can share the same memory loading logic.",
       "acceptanceCriteria": [
-        "Directory created at .claude/skills/rlm/",
-        "SKILL.md has valid YAML frontmatter with name: rlm",
-        "YAML description includes trigger keywords: analyze large, recursive analysis, deep analysis, process large input, comprehensive review, rlm, recursive reasoning",
-        "SKILL.md contains purpose statement explaining the RLM pattern",
-        "SKILL.md contains Prerequisites section (Task tool access, scratchpad directory)",
-        "SKILL.md contains Step 1: Assess Task Complexity with size thresholds (>50 files or >10K lines or >100K tokens triggers RLM, otherwise process directly)",
-        "SKILL.md contains Step 2: Decompose the Problem with 3 strategies: uniform chunking (split by ~200 lines), keyword filtering (use Grep to narrow), structural decomposition (parse sections/functions/headings)",
-        "SKILL.md contains decision criteria for choosing between the 3 strategies based on input type and query type",
-        "SKILL.md contains chunk size guidance: target ~200 lines or ~8K tokens per chunk with 5-10 lines overlap",
-        "SKILL.md contains Step 3: Spawn Worker Sub-Agents with Task tool invocation pattern explicitly specifying model: haiku and subagent_type: general-purpose",
-        "SKILL.md contains Step 4: Evaluate Completeness with convergence criteria (completeness >= 90% AND confidence >= 80%, max 3 iterations)",
-        "SKILL.md contains iterative deepening pattern: if gaps found, re-decompose and spawn new Haiku batch (workaround for no-nesting constraint)",
-        "SKILL.md contains Step 5: Synthesize Final Output with aggregation and deduplication instructions",
-        "SKILL.md explicitly states model selection: Sonnet for supervisor (decomposition + synthesis), Haiku for workers (chunk processing)",
-        "All instructions use imperative form (Analyze, Decompose, Spawn, not You should analyze)",
-        "SKILL.md is under 5000 words",
-        "Typecheck passes"
+        "New async function prepare_memory_files(user_id, memory_svc) in backend/src/agents/__init__.py",
+        "Imports create_file_data from deepagents.backends.utils",
+        "Returns tuple[dict, list[str] | None] — a files_map entry and a memory sources list (or empty dict / None)",
+        "Returns ({}, None) when user_id is falsy",
+        "Returns ({}, None) when MemoryService.search() returns empty list",
+        "Catches exceptions from MemoryService.search(), logs a warning, and returns ({}, None)",
+        "Formats memories as markdown bullet list under path /memories.md using create_file_data()",
+        "Typecheck passes (make format)"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "This is the main skill file. Read existing skills at .claude/skills/reflection/SKILL.md and .claude/skills/prd/SKILL.md for patterns. Read expert analyses at .claude/plans/plan-rlm-skill/ for detailed design guidance."
+      "passes": false,
+      "notes": "Read backend/src/agents/__init__.py for the existing add_memories_to_system() function and understand the current pattern. Import create_file_data from deepagents.backends.utils. Do NOT remove add_memories_to_system() — it stays for backward compatibility."
     },
     {
       "id": "US-002",
-      "title": "Add error handling, fallback patterns, and model selection guidance to SKILL.md",
-      "description": "As Claude, I need error handling instructions and clear model routing rules in the skill so I can recover gracefully from failures.",
+      "title": "Thread memory parameter through init_graph, Orchestra, and construct_agent",
+      "description": "As a developer, I need the memory parameter plumbed through the agent construction chain so that create_deep_agent() receives it and activates MemoryMiddleware.",
       "acceptanceCriteria": [
-        "SKILL.md contains Error Handling section",
-        "Single subagent failure: retry once with same prompt",
-        "Multiple failures (>30% of chunks): fall back to Sonnet-only processing",
-        "All failures: process entire input directly with Sonnet without chunking",
-        "Partial results: produce output noting gaps and completeness percentage",
-        "Graceful degradation ladder documented: Full RLM -> Partial -> Sonnet fallback -> Best-effort",
-        "SKILL.md contains Model Selection section with table: Sonnet for decomposition/synthesis, Haiku for chunk processing",
-        "SKILL.md contains When NOT to Use RLM section (small inputs <500 lines, single file, simple queries)",
-        "Typecheck passes"
+        "init_graph() accepts memory: list[str] | None = None and passes it to create_deep_agent()",
+        "Orchestra.__init__() accepts memory: list[str] | None = None and passes it to init_graph()",
+        "construct_agent() accepts memory: list[str] | None = None and passes it to Orchestra()",
+        "When memory=None, create_deep_agent() does not add MemoryMiddleware (existing behavior preserved)",
+        "When memory=[\"/memories.md\"], MemoryMiddleware is added to the middleware stack",
+        "Typecheck passes (make format)"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Edit the SKILL.md created in US-001. Add these sections after the main workflow steps."
+      "passes": false,
+      "notes": "Read backend/src/agents/__init__.py to find init_graph(), Orchestra class, and construct_agent(). The memory parameter on create_deep_agent() already exists in the DeepAgents library — you just need to pass it through. Check deepagents source or docs to confirm the parameter name."
     },
     {
       "id": "US-003",
-      "title": "Add 3 realistic example scenarios to SKILL.md",
-      "description": "As Claude, I need concrete examples showing the RLM pattern applied to real tasks so I understand the expected workflow end-to-end.",
+      "title": "Wire memory into streaming entry point (stream.py)",
+      "description": "As an end user chatting via the streaming API, I want the agent to automatically recall my stored memories so responses are personalized without me needing to repeat context.",
       "acceptanceCriteria": [
-        "SKILL.md contains Examples section with 3 scenarios",
-        "Example 1: Comprehensive codebase security review - 150 files split into 5 module-based chunks, parallel Haiku analysis, synthesized security report with findings by severity",
-        "Example 2: Long document analysis - 80-page paper split into section-based chunks, extract key findings per section, unified summary",
-        "Example 3: Multi-file question answering - trace auth flow across 30+ files, layer-based chunks (frontend/API/backend/database), end-to-end trace output",
-        "Each example shows all 3 phases: Decomposition plan, Processing (Task tool calls with model: haiku), Synthesis",
-        "Examples demonstrate model routing: Sonnet for strategy and synthesis, Haiku for chunks",
-        "Each example shows the user request and the expected output format",
-        "Typecheck passes"
+        "stream_generator() in backend/src/utils/stream.py calls prepare_memory_files() before creating ToolRuntime",
+        "Memory files are merged into files_map with user-provided files taking precedence ({**memory_files, **files_map})",
+        "memory_sources is passed to construct_agent() via the memory kwarg",
+        "Agent works normally when no memories exist",
+        "Typecheck passes (make format)"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Edit the SKILL.md created in US-001. Add Examples section. Keep examples concise but complete - show the workflow not just the result."
+      "passes": false,
+      "notes": "Read backend/src/utils/stream.py to find stream_generator(). Import prepare_memory_files locally to avoid circular imports. The user_id and memory service should be available from the request context."
     },
     {
       "id": "US-004",
-      "title": "Create references/prompt-templates.md with Haiku subagent templates",
-      "description": "As Claude, I need reusable prompt templates for spawning Haiku chunk-processing subagents so I can maintain consistency across RLM invocations.",
+      "title": "Wire memory into worker entry point (tasks.py)",
+      "description": "As an end user with scheduled or distributed agent tasks, I want those background agents to also have access to my memories for consistent personalized behavior.",
       "acceptanceCriteria": [
-        "File created at .claude/skills/rlm/references/prompt-templates.md",
-        "Contains extraction prompt template: for pulling specific information from chunks (findings, positions, confidence)",
-        "Contains analysis prompt template: for analyzing chunks against a query (claims, evidence, caveats)",
-        "Contains filtering prompt template: for determining chunk relevance (relevance score 0-1, key passages, INCLUDE/SKIP action)",
-        "Contains synthesis prompt template: for final Sonnet aggregation (integrate findings, resolve contradictions, cite sources)",
-        "All templates are self-contained: include placeholders for original query, chunk content, chunk number/total, output format",
-        "All templates specify structured output format with findings, confidence, and cross-references",
-        "All chunk templates include constraint: Focus ONLY on this chunk, do NOT reference external content",
-        "All chunk templates specify model: haiku in usage notes",
-        "Synthesis template specifies model: sonnet in usage notes",
-        "Typecheck passes"
+        "_execute_agent_stream() in backend/src/workers/tasks.py calls prepare_memory_files() before creating ToolRuntime",
+        "Memory files are merged into files_map with user-provided files taking precedence",
+        "memory_sources is passed to construct_agent() via the memory kwarg",
+        "Typecheck passes (make format)"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Create the references/ subdirectory and prompt-templates.md. These templates are loaded contextually by Claude when the RLM skill is active."
+      "passes": false,
+      "notes": "Read backend/src/workers/tasks.py to find _execute_agent_stream(). Follow same pattern as US-003 for stream.py."
     },
     {
       "id": "US-005",
-      "title": "Create install.sh script for standalone skill installation",
-      "description": "As a developer who finds this skill on GitHub, I want a single install.sh script so I can download and install the RLM skill into any project without cloning the entire Orchestra repo.",
+      "title": "Wire memory into direct invoke entry point (llm.py)",
+      "description": "As an API consumer using the direct invoke endpoint, I want the agent to have access to my memories for personalized responses.",
       "acceptanceCriteria": [
-        "Script created at .claude/skills/rlm/install.sh",
-        "Script is executable (chmod +x)",
-        "Script creates .claude/skills/rlm/ directory in the current project by default",
-        "Script supports --global flag to install to ~/.claude/skills/rlm/ instead",
-        "Script downloads SKILL.md and references/prompt-templates.md from the repo raw GitHub URLs (use https://raw.githubusercontent.com/ruska-ai/orchestra/master/.claude/skills/rlm/ as base URL)",
-        "Script validates that both files were downloaded successfully and are non-empty",
-        "Script prints success message with usage instructions after install (e.g. 'RLM skill installed. Trigger with: analyze large, recursive analysis, rlm')",
-        "Script is idempotent — running again overwrites existing files without error",
-        "Script includes header comment with one-liner usage: curl -fsSL <raw-url>/install.sh | bash",
-        "Script uses set -e for error handling",
-        "Typecheck passes"
+        "llm_invoke() in backend/src/controllers/llm.py calls prepare_memory_files() before init_backend()",
+        "Memory files are merged into params.input.files with existing files taking precedence",
+        "memory_sources is passed to construct_agent() via the memory kwarg",
+        "Typecheck passes (make format)"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Use raw.githubusercontent.com URLs for the ruska-ai/orchestra repo. The script should be simple — mkdir, curl, validate, print. Check .claude/skills/agent-browser/ or similar for any existing install patterns."
+      "passes": false,
+      "notes": "Read backend/src/controllers/llm.py to find llm_invoke(). Follow same pattern as US-003 and US-004."
+    },
+    {
+      "id": "US-006",
+      "title": "Add unit tests for prepare_memory_files()",
+      "description": "As a developer, I need tests covering the new helper function to ensure correctness and prevent regressions.",
+      "acceptanceCriteria": [
+        "Test file at backend/tests/unit/agents/test_prepare_memory_files.py",
+        "Test: returns ({}, None) when user_id is None",
+        "Test: returns ({}, None) when user_id is empty string",
+        "Test: returns ({}, None) when MemoryService.search() returns empty list",
+        "Test: returns ({}, None) and logs warning when MemoryService.search() raises exception",
+        "Test: returns correctly formatted files_map and [\"/memories.md\"] when memories exist",
+        "Test: verifies markdown bullet format of memory content",
+        "All tests pass (make test)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Read existing test patterns in backend/tests/unit/ for conventions. Mock MemoryService.search() for all test cases. Use pytest and pytest-asyncio since prepare_memory_files is async."
+    },
+    {
+      "id": "US-007",
+      "title": "Update API documentation with memory behavior",
+      "description": "As an API consumer, I want the documentation to describe that agents now automatically load user memories, so I understand the personalization behavior.",
+      "acceptanceCriteria": [
+        "Update docstrings in stream_generator(), _execute_agent_stream(), and llm_invoke() to mention memory loading",
+        "Add a note to the construct_agent() docstring about the memory parameter",
+        "Typecheck passes (make format)"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "This is a documentation-only story. Read the functions modified in US-003, US-004, US-005 and add/update their docstrings. Keep docstrings concise."
     }
   ]
 }
