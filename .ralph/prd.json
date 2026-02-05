@@ -1,7 +1,7 @@
 {
   "project": "Orchestra",
   "branchName": "feat/731-agents-md-system-prompt-injection",
-  "description": "File-based AGENTS.md system prompt injection — replace agent form instructions/system_prompt fields with file-based AGENTS.md discovery, add wiki docs, and Intro.js onboarding tour",
+  "description": "File-based AGENTS.md system prompt injection — replace agent form instructions/system_prompt fields with file-based AGENTS.md discovery, add wiki docs, and remove Intro.js due to license conflicts",
   "userStories": [
     {
       "id": "US-001",
@@ -257,6 +257,53 @@
       "priority": 14,
       "passes": true,
       "notes": "Created 10 E2E integration tests in backend/tests/integration/test_agents_md_e2e.py covering: create agent with AGENTS.md, update AGENTS.md, legacy agent without AGENTS.md, AGENTS.md priority over legacy, public assistant security, LLM stream/invoke with thread-level AGENTS.md, LLM stream with AGENTS.md assistant, multi-file coexistence, and legacy-to-AGENTS.md migration. All 387 backend tests pass, all 188 frontend tests pass. Browser verification via agent-browser confirmed: no Instructions/System Prompt tabs, AGENTS.md guidance note visible, Show Tour button present, file panel with AGENTS.md creation works in both agent mode and thread mode."
+    },
+    {
+      "id": "US-015",
+      "title": "Frontend — Remove Intro.js and tour system due to license conflict",
+      "description": "As a developer, I need to remove the Intro.js library (AGPL-licensed, incompatible with our project) along with the useIntroTour hook, all tour usage in agent-create-form.tsx, and the 'Show Tour' button. The AGENTS.md guidance note should remain but link to docs.ruska.ai instead of triggering a tour.",
+      "acceptanceCriteria": [
+        "Run `npm uninstall intro.js` in frontend/ to remove the package",
+        "Delete frontend/src/hooks/useIntroTour.ts",
+        "In agent-create-form.tsx: remove useIntroTour import and hook call",
+        "In agent-create-form.tsx: remove the 'Show Tour' button (HelpCircle icon link)",
+        "In agent-create-form.tsx: remove all data-tour attributes from elements",
+        "Replace 'Show Tour' with a 'Learn more' link pointing to https://docs.ruska.ai/assistants/agents-md",
+        "In agent-create-form.test.tsx: remove useIntroTour mock (vi.mock for useIntroTour)",
+        "In agent-create-form.test.tsx: update any tests that reference 'Show Tour' to reference 'Learn more' or the docs link",
+        "All existing frontend tests pass (npm run test)",
+        "Typecheck/lint passes (npm run lint)",
+        "intro.js no longer appears in package.json or package-lock.json"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Wiki — Replace interactive-tours page with AGENTS.md workflow guide (with screenshots)",
+      "description": "As a user reading the tutorials, I want the interactive-tours.md page replaced with an AGENTS.md workflow guide that includes annotated screenshots showing how to create and use AGENTS.md files via the UI.",
+      "acceptanceCriteria": [
+        "Use agent-browser to capture screenshots in LIGHT MODE (toggle theme to light first):",
+        "  Screenshot 1: Agent create form showing the AGENTS.md guidance note (no Instructions/System Prompt tabs)",
+        "  Screenshot 2: File panel open with AGENTS.md file in the file tree",
+        "  Screenshot 3: AGENTS.md file open in the editor with example content",
+        "  Screenshot 4: Legacy migration card with 'Migrate to AGENTS.md' button (if an agent with legacy instructions exists)",
+        "Save screenshots to wiki/static/img/agents-md/ directory (create if needed)",
+        "Rewrite wiki/docs/tutorials/interactive-tours.md → rename/replace to wiki/docs/tutorials/agents-md-workflow.md",
+        "New page frontmatter: title 'AGENTS.md Workflow Guide', appropriate slug and sidebar_position",
+        "Document step-by-step with screenshots: creating an agent, opening file panel, creating AGENTS.md, writing instructions, saving",
+        "Document: editing existing AGENTS.md, migrating from legacy instructions",
+        "Document: using AGENTS.md in default thread mode (no agent selected)",
+        "Reference the full AGENTS.md docs at /assistants/agents-md for API usage and advanced topics",
+        "Update wiki/sidebars.ts: replace 'tutorials/interactive-tours' with 'tutorials/agents-md-workflow'",
+        "Delete the old wiki/docs/tutorials/interactive-tours.md if not renamed in place",
+        "Wiki builds without errors (npm run build in wiki directory)",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
