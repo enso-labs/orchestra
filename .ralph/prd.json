@@ -124,7 +124,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "This story requires the dev server running (make dev for backend, npm run dev for frontend). Use the agent-browser skill to perform each validation step. The key concern is that adding the `skills` field to the Assistant schema could cause frontend deserialization issues if the frontend TypeScript types are tightly coupled to the API response shape. Check for TypeScript strict mode errors and API response handling."
     }
   ]

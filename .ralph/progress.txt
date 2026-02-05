@@ -16,6 +16,8 @@ Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
 - File merge pattern in `stream_generator()`: assistant files as base, request/config files override → `{**(files or {}), **(config_files or input.files or {})}`
 - File merge in `llm_invoke()` must happen before `init_backend()` — ToolRuntime reads `request.input.files`
 - Worker path in `_execute_agent_stream()`: `files_map` comes from config, merge assistant files before passing to ToolRuntime — same `getattr()` pattern as controllers
+- Frontend is loosely coupled to backend API schema — adding new Optional fields with defaults does not break frontend deserialization
+- Dev server startup: backend needs `source ~/.env/orchestra/.env.backend`, frontend needs `npm install` per worktree
 
 ## 2026-02-05 - US-001
 - Added `skills: Optional[List[str]]` field with `default_factory=list` to Assistant model (after subagents)
@@ -99,5 +101,30 @@ Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
   - `make format` and `make test` must be run from `backend/` directory
   - 2 tests are skipped (prompt optimization, project service) — these are pre-existing skips, not regressions
   - Warnings about deprecated crypt module, argon2 version access, and LangGraph imports are pre-existing
+---
+
+## 2026-02-05 - US-008
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Validated frontend loads and assistant management works via agent-browser after backend schema changes
+- Browser verification steps completed:
+  1. Landing page (http://localhost:5173) loads without errors — ORCHESTRA heading, chat input, navigation all visible
+  2. Login with test credentials (admin@example.com / test1234) — successful redirect to main chat interface with sidebar, threads, and user profile
+  3. Assistants page renders correctly — 6 existing agents displayed in card grid with names, descriptions, tools, models
+  4. Assistant creation form renders all fields: Name, Description, Instructions/System Prompt tabs, Model dropdown, Tools section, SubAgents section
+  5. Created "US-008 Test Agent" without skills — saved successfully, appeared in list (7 agents), confirming backward compatibility
+  6. Opened existing "Python Programmer" assistant — configuration loaded correctly with all fields (Name, Description, Instructions, Model, 5 tools, SubAgents)
+  7. Chat streaming: sent test message, API accepted (POST /api/llm/stream → 202, GET /api/threads/{id}/stream → 200), frontend showed processing state with TTFT indicator. Full response not received due to Celery worker not running locally (infrastructure concern, not a code regression)
+  8. Console errors reviewed: only pre-existing 404s on `/api/schedules/executions/recent` and stream retry due to missing worker — NO errors related to skills field changes
+  9. Config edit mode works — fields become editable, Save button available
+- Backend tests: 364 passed, 2 skipped, 0 failures (7.37s)
+- Format check: 188 files unchanged (clean)
+- Files changed: None (validation-only story)
+- **Learnings for future iterations:**
+  - Frontend is loosely coupled to backend schema — new fields with defaults (like `skills: []`) don't break frontend deserialization
+  - Dev server startup requires: backend needs `.env.backend` sourced, frontend needs `npm install` in worktree (node_modules not shared between worktrees)
+  - Chat streaming uses distributed task queue (Celery) — TTFT will be infinite without a worker process running locally
+  - The `dotenv` CLI in frontend npm scripts conflicts with python-dotenv CLI — source env manually as workaround
+  - Pre-existing 404 errors: `/api/schedules/executions/recent` and `/api/assistants/public/{id}` endpoints return 404 — not related to our changes
+  - Assistant creation via `+` button navigates to `/assistant/create` — form clears after successful save and returns count increment on assistants list
 ---
 
