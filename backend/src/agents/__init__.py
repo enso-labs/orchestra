@@ -67,6 +67,11 @@ def init_graph(
     middleware: list[Callable] = None,
     backend: CompositeBackend = None,
     api_key: str | None = None,
+    skills: list[str] | None = None,
+    memory: list[str] | None = None,
+    name: str | None = None,
+    response_format: Any | None = None,
+    interrupt_on: dict[str, Any] | None = None,
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
 
@@ -90,6 +95,11 @@ def init_graph(
         cache=CACHE_LLM,
         backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
+        skills=skills,
+        memory=memory,
+        name=name,
+        response_format=response_format,
+        interrupt_on=interrupt_on,
     )
     return deep_agent
 
@@ -214,6 +224,11 @@ async def construct_agent(
     checkpointer: BaseCheckpointSaver = None,
     service_context: ServiceContext = None,
     api_key: str | None = None,
+    skills: list[str] | None = None,
+    memory: list[str] | None = None,
+    agent_name: str | None = None,
+    response_format: Any | None = None,
+    interrupt_on: dict[str, Any] | None = None,
 ):
     try:
         if subagents:
@@ -234,6 +249,11 @@ async def construct_agent(
             context_schema=ContextSchema,
             backend=backend,
             api_key=api_key,
+            skills=skills,
+            memory=memory,
+            name=agent_name,
+            response_format=response_format,
+            interrupt_on=interrupt_on,
         )
         return agent
     except Exception as e:
@@ -255,6 +275,11 @@ class Orchestra:
         graph_id: Literal["react", "deepagent"] = "deepagent",
         backend: CompositeBackend = None,
         api_key: str | None = None,
+        skills: list[str] | None = None,
+        memory: list[str] | None = None,
+        name: str | None = None,
+        response_format: Any | None = None,
+        interrupt_on: dict[str, Any] | None = None,
     ):
         self.tools = tools
         self.model = model
@@ -274,6 +299,11 @@ class Orchestra:
             middleware=middleware,
             backend=backend,
             api_key=api_key,
+            skills=skills,
+            memory=memory,
+            name=name,
+            response_format=response_format,
+            interrupt_on=interrupt_on,
         )
 
     async def invoke(
