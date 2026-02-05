@@ -1,45 +1,102 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/724-add-watcher-to-worker-reload",
-  "description": "Add file-watching auto-reload to TaskIQ worker for development using native --reload flag",
+  "branchName": "feat/731-agent-md-system-injection",
+  "description": "AGENTS.md System Prompt Injection - Automatically extract AGENTS.md file content from assistant or thread files and inject it as instructions in the LLM system prompt",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Verify and Add Watcher Dependency",
-      "description": "As a developer, I need the watcher dependency to be available in the backend environment so that the TaskIQ --reload flag works correctly.",
+      "title": "Add extract_agents_md() helper method to LLMService",
+      "description": "As a developer, I need a static helper method on LLMService that safely extracts AGENTS.md content from a files dict, handling all possible content formats from the frontend and backend.",
       "acceptanceCriteria": [
-        "Check if watchdog or watchfiles is importable in the backend venv (run: uv run python -c 'import watchdog' or uv run python -c 'import watchfiles')",
-        "If neither is present, add watchdog to dev dependencies in backend/pyproject.toml",
+        "Add @staticmethod extract_agents_md(files: dict | None) -> str | None to LLMService in backend/src/services/llm.py",
+        "Returns None when files is None or empty dict",
+        "Returns None when 'AGENTS.md' key is not present (exact match)",
+        "Handles str values: strips whitespace and returns content",
+        "Handles dict values with 'content' key where content is str: strips and returns",
+        "Handles dict values with 'content' key where content is list[str]: joins with newlines, strips, returns (frontend FileData format)",
+        "Handles dict values with 'content' key where content is None: returns None",
+        "Handles list values: joins with newlines, strips, returns",
+        "Returns None for empty string or whitespace-only content after extraction",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "watchdog was already available as a transitive dependency - no changes needed"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Update Makefile dev.worker Target with Reload Flag",
-      "description": "As a developer running Ralph autonomous loops, I want the TaskIQ worker to automatically reload when Python source files change so that code changes are immediately reflected without manual worker restarts.",
+      "title": "Inject AGENTS.md in agent mode (assistant_id present)",
+      "description": "As a user who has created an assistant with an AGENTS.md file, I want the agent to automatically use that file's content as its instructions so that I can configure agent behavior through a markdown file.",
       "acceptanceCriteria": [
-        "backend/Makefile dev.worker target includes --reload --reload-dir src flags",
-        "Production docker-compose.yml worker entrypoint is NOT modified (verify no changes to docker-compose.yml)",
+        "In LLMService.assistant(), after assistant is loaded (line 154) and before default_system_prompt() is called (line 155), call self.extract_agents_md(assistant.files)",
+        "If AGENTS.md content is found: set assistant.system_prompt = None then assistant.instructions = agents_md_content",
+        "Log info message with content length when AGENTS.md is injected (e.g. 'Injecting AGENTS.md (N chars) as instructions')",
+        "Log warning when AGENTS.md overrides an existing instructions field on the assistant",
+        "Agents without AGENTS.md in their files behave identically to current behavior (no code path change)",
+        "Only backend/src/services/llm.py is modified",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Verify and Format",
-      "description": "As a developer, I want to confirm the changes are clean and tests pass.",
+      "title": "Inject AGENTS.md in non-agent thread mode (no assistant_id)",
+      "description": "As a user sending files alongside my messages without using an assistant, I want the system to check for AGENTS.md in my thread-level files and use it as instructions.",
       "acceptanceCriteria": [
-        "Run make format from backend directory",
-        "Existing backend tests pass (make test from backend directory)",
-        "No unintended file changes"
+        "In LLMService.assistant(), in the non-agent branch (before line 170 default_system_prompt call), call self.extract_agents_md(params.input.files)",
+        "If AGENTS.md content is found: set params.instructions = agents_md_content",
+        "Log info message with content length when AGENTS.md is injected in thread mode",
+        "Requests without AGENTS.md in their files behave identically to current behavior",
+        "Only backend/src/services/llm.py is modified",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Unit tests for extract_agents_md() helper",
+      "description": "As a developer, I need comprehensive unit tests for the extraction helper to ensure correct handling of all content formats and edge cases.",
+      "acceptanceCriteria": [
+        "Create backend/tests/unit/services/test_llm_service.py",
+        "Test: None files dict returns None",
+        "Test: Empty files dict returns None",
+        "Test: Files dict without AGENTS.md key returns None",
+        "Test: AGENTS.md as plain string returns stripped content",
+        "Test: AGENTS.md as dict with content as string returns stripped content",
+        "Test: AGENTS.md as dict with content as list of strings returns newline-joined content",
+        "Test: AGENTS.md as dict with content as None returns None",
+        "Test: AGENTS.md as list of strings returns newline-joined content",
+        "Test: AGENTS.md with empty string value returns None",
+        "Test: AGENTS.md with whitespace-only value returns None",
+        "All tests pass (run: cd backend && uv run pytest tests/unit/services/test_llm_service.py -v)",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Integration tests for AGENTS.md injection in assistant()",
+      "description": "As a developer, I need async integration tests verifying that LLMService.assistant() correctly injects AGENTS.md content in both agent and non-agent modes.",
+      "acceptanceCriteria": [
+        "Add tests to backend/tests/unit/services/test_llm_service.py",
+        "Test: Agent with AGENTS.md in assistant.files -- returned LLMRequest.instructions contains AGENTS.md content",
+        "Test: Agent without AGENTS.md -- returned LLMRequest uses original instructions/system_prompt",
+        "Test: Agent with AGENTS.md AND existing instructions -- AGENTS.md wins, warning is logged",
+        "Test: Non-agent mode with AGENTS.md in params.input.files -- params.instructions is set to AGENTS.md content",
+        "Test: Non-agent mode without AGENTS.md -- params.instructions unchanged",
+        "Mock AssistantService.get() to return controlled Assistant objects with unittest.mock.AsyncMock",
+        "Use pytest with @pytest.mark.asyncio",
+        "All tests pass (run: cd backend && uv run pytest tests/unit/services/test_llm_service.py -v)",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
       "notes": ""
     }
   ]

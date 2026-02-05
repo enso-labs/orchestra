@@ -1,19 +1,13 @@
 ## Codebase Patterns
-- `watchdog` is available as a transitive dependency in the backend venv (no need to add explicitly)
-- TaskIQ v0.12.1 supports `--reload` and `--reload-dir` flags natively
-- `make format` in backend runs `uvx ruff format` - run it before committing
-- `make test` in backend sources env from `~/.env/orchestra/.env.backend` before running pytest
+- Single injection point: LLMService.assistant() in backend/src/services/llm.py (line 124)
+- All 4 production paths (invoke, stream, distributed worker, scheduled) call LLMService.assistant() before construct_agent()
+- Assistant.files is Dict[str, str]; LLMInput.files is Dict[str, Any] (can contain FileData dicts from frontend)
+- Assistant model has validate_system_prompt_or_instructions validator (mode="after") -- direct attribute assignment does NOT re-trigger it
+- LLMRequest has no mutual exclusion validator -- system_prompt and instructions can coexist
+- LLMRequest.instructions has exclude=True (dropped during model_dump()) -- safe because worker re-resolves via assistant()
+- Frontend FileData format: {"content": string[], "created_at": string, "modified_at": string}
+- to_llm_request() does NOT forward assistant.files -- extraction must happen before conversion
+- Expert analyses in: .claude/plans/plan-agents-md-system-prompt-injection/
+- Synthesis document: .claude/plans/plan-agents-md-system-prompt-injection/SYNTHESIS.md
 ---
 
-## 2026-02-01 - US-001, US-002, US-003
-- Verified `watchdog` is already importable in backend venv (no pyproject.toml changes needed)
-- Added `--reload --reload-dir src` flags to `backend/Makefile` `dev.worker` target
-- Ran `make format` (5 pre-existing files reformatted) and `make test` (360 passed, 2 skipped)
-- docker-compose.yml was NOT modified
-- Files changed: `backend/Makefile` (feature), plus 5 formatting fixes
-- **Learnings for future iterations:**
-  - `watchdog` as transitive dep is NOT sufficient for TaskIQ reload - must install `taskiq[reload]` extra
-  - `taskiq[reload]` belongs in dev dependencies since `--reload` is only for development
-  - TaskIQ's `FileWatcher` is `None` without the reload extra, causing `TypeError: 'NoneType' object is not callable`
-  - Ruff formatting may touch files unrelated to your changes - include them in the commit
----
