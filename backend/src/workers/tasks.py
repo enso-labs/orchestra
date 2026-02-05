@@ -198,15 +198,20 @@ async def _execute_agent_stream(
     from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
     from src.schemas.contexts import ContextSchema
-    from src.agents import construct_agent, init_backend
+    from src.agents import construct_agent, init_backend, prepare_memory_files
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger
     from src.services.errors import CheckpointConnectionError
     from src.services.abort import AbortService
+    from src.services.memory import memory_service
 
     # Get assistant config if needed
     params = await service_context.llm_service.assistant(params)
+
+    # Load user memories and merge into files_map
+    memory_files, memory_sources = await prepare_memory_files(user_id, memory_service)
+    files_map = {**memory_files, **files_map}
 
     # Initialize ToolRuntime and Backend
     ctx_schema = ContextSchema(model=params.model or "", user_id=user_id)
@@ -234,6 +239,7 @@ async def _execute_agent_stream(
         checkpointer=checkpointer,
         service_context=service_context,
         backend=backend,
+        memory=memory_sources,
     )
     params.input.messages[-1].model = agent.model
 
