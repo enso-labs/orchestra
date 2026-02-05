@@ -116,6 +116,39 @@ class LLMService:
                     filtered_tools.append(structured_tool)
         return filtered_tools
 
+    @staticmethod
+    def extract_agents_md(files: dict | None) -> str | None:
+        """Extract AGENTS.md content from a files dict, handling all content formats."""
+        if not files or "AGENTS.md" not in files:
+            return None
+
+        value = files["AGENTS.md"]
+
+        # str value
+        if isinstance(value, str):
+            content = value.strip()
+            return content or None
+
+        # dict value with 'content' key (e.g. frontend FileData format)
+        if isinstance(value, dict):
+            raw = value.get("content")
+            if raw is None:
+                return None
+            if isinstance(raw, list):
+                content = "\n".join(raw).strip()
+                return content or None
+            if isinstance(raw, str):
+                content = raw.strip()
+                return content or None
+            return None
+
+        # list value
+        if isinstance(value, list):
+            content = "\n".join(value).strip()
+            return content or None
+
+        return None
+
     def default_system_prompt(self, item: LLMRequest | Assistant) -> str:
         if not item.system_prompt:
             return DEFAULT_SYSTEM_PROMPT
