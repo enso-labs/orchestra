@@ -190,6 +190,11 @@ async def stream_generator(
     service_context: ServiceContext,
     instructions: str = None,
     api_key: str | None = None,
+    skills: list[str] | None = None,
+    memory: list[str] | None = None,
+    agent_name: str | None = None,
+    response_format: dict | None = None,
+    interrupt_on: dict | None = None,
 ):
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
@@ -223,6 +228,11 @@ async def stream_generator(
                 backend=backend,
                 service_context=service_context,
                 api_key=api_key,
+                skills=skills,
+                memory=memory,
+                agent_name=agent_name,
+                response_format=response_format,
+                interrupt_on=interrupt_on,
             )
             input.messages[-1].model = agent.model
             # Send metadata event with thread_id at the start of the stream

@@ -116,6 +116,11 @@ class LLMController:
                     backend=backend,
                     service_context=self.service_context,
                     api_key=api_key,
+                    skills=params.skills,
+                    memory=params.memory,
+                    agent_name=params.agent_name,
+                    response_format=params.response_format,
+                    interrupt_on=params.interrupt_on,
                 )
                 response = await agent.invoke(
                     params.input,
@@ -149,6 +154,11 @@ class LLMController:
             service_context=self.service_context,
             instructions=assistant.instructions,
             api_key=api_key,
+            skills=assistant.skills,
+            memory=assistant.memory,
+            agent_name=assistant.agent_name,
+            response_format=assistant.response_format,
+            interrupt_on=assistant.interrupt_on,
         )
 
     async def llm_task(self, job: ScheduleCreate):
