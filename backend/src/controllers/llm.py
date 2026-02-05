@@ -149,6 +149,8 @@ class LLMController:
             service_context=self.service_context,
             instructions=assistant.instructions,
             api_key=api_key,
+            files=getattr(assistant, "files", None),
+            skills=assistant.skills,
         )
 
     async def llm_task(self, job: ScheduleCreate):

@@ -190,8 +190,13 @@ async def stream_generator(
     service_context: ServiceContext,
     instructions: str = None,
     api_key: str | None = None,
+    files: dict | None = None,
+    skills: list[str] | None = None,
 ):
-    files_map = config["metadata"].get("files", {}) or input.files or {}
+    files_map = {
+        **(files or {}),
+        **(config["metadata"].get("files", {}) or input.files or {}),
+    }
     todos_list = config["metadata"].get("todos", [])
     async with get_checkpoint_db() as checkpointer:
         try:
@@ -219,6 +224,7 @@ async def stream_generator(
                 model=model,
                 tools=tools,
                 subagents=subagents,
+                skills=skills,
                 checkpointer=checkpointer,
                 backend=backend,
                 service_context=service_context,
