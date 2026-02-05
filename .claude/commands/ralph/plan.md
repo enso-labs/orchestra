@@ -63,15 +63,12 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 
 5. _COLLECT_ all expert outputs into `.claude/plans/plan-<topic-slug>/`
 
-6. _SYNTHESIZE_ via integration subagent:
+6. _SYNTHESIZE_ into PRD via prd subagent:
+   - _LOAD_ the prd skill
    - _READ_ all expert outputs
    - _RECONCILE_ overlapping recommendations
    - _IDENTIFY_ cross-cutting concerns missed by specialists
-   - _PRODUCE_ unified analysis document
-
-7. _GENERATE_ PRD via prd subagent:
-   - _LOAD_ the prd skill
-   - _CREATE_ PRD for TOPIC incorporating all expert analysis
+   - _CREATE_ PRD for TOPIC as the unified synthesis of all expert analysis
    - _APPLY_ sizing rules:
      - Each user story completable in ONE iteration
      - One story touches 1-3 files max
@@ -80,7 +77,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
      - Add "Verify in browser using agent-browser skill" to UI stories
    - _SAVE_ to `tasks/prd-<topic-slug>.md`
 
-8. _REPORT_ completion:
+7. _REPORT_ completion:
    - Keywords searched: [codebase terms]
    - Web queries: [domain terms]
    - Hotspot files: [most relevant files]
