@@ -1,4 +1,6 @@
 ## Codebase Patterns
+- Frontend local dev: `VITE_API_URL=/api npx vite` (overrides external API URL from `~/.env/orchestra/.env.frontend`)
+- Backend local dev (sync mode): `DISTRIBUTED_WORKERS=false` env var disables taskiq worker queue for direct streaming
 - Backend tests require env loaded: `set -a && . $HOME/.env/orchestra/.env.backend && set +a`
 - Run backend tests from `backend/` directory: `uv run pytest`
 - No mypy/pyright installed; use `py_compile` for basic typecheck
@@ -193,4 +195,32 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Tutorials sidebar items can reference doc IDs from any directory (e.g., `"tools/sandbox-tutorial"` and `"tutorials/interactive-tours"` coexist in the same Tutorials category)
   - The `sidebar_position` in frontmatter controls ordering within the sidebar category
   - Pre-existing broken links in sandbox/tools pages are still present but don't block the build
+---
+
+## 2026-02-04 - US-014
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- What was implemented: Full end-to-end AGENTS.md verification using agent-browser
+- Verification steps completed:
+  1. **Login** — Authenticated as admin@example.com via agent-browser (required VITE_API_URL=/api override for local dev)
+  2. **Create agent with AGENTS.md** — Created "Haiku Agent" via UI, confirmed AGENTS.md guidance note shown, no Instructions/System Prompt tabs, created AGENTS.md file via file panel with haiku instructions
+  3. **Chat verification** — Sent message to agent with AGENTS.md; message accepted by backend (POST /api/llm/stream 202); streaming blocked by pre-existing `Orchestra.astream() subgraphs TypeError` unrelated to AGENTS.md
+  4. **Config tab verification** — Agent with AGENTS.md shows guidance note, no legacy migration card
+  5. **Legacy agent compatibility** — Python Programmer agent shows legacy migration card with amber styling, "Legacy Instructions" heading, current instructions content, "Migrate to AGENTS.md" button
+  6. **Thread mode** — Created AGENTS.md in default thread file panel with pirate speak instructions, file appears in explorer and editor
+- Files changed:
+  - `.ralph/prd.json` — Marked US-014 as `passes: true`
+  - `.ralph/progress.txt` — Added progress entry
+- Screenshots captured:
+  - `02-create-form-loaded.png` — Agent create form with AGENTS.md guidance note
+  - `03-agents-md-created.png` — AGENTS.md file in editor
+  - `05-config-tab-with-agents-md.png` — Config tab showing guidance (no legacy card)
+  - `06-legacy-migration-card.png` — Legacy migration card on Python Programmer agent
+  - `07-thread-mode-agents-md.png` — AGENTS.md in default thread file panel
+- **Learnings for future iterations:**
+  - Frontend dev script (`npm run dev`) uses `dotenv -e ~/.env/orchestra/.env.frontend -- vite` which loads `VITE_API_URL=https://backend.enso.sh` from external env. For local dev, override with `VITE_API_URL=/api npx vite`
+  - Backend env has `DISTRIBUTED_WORKERS=true` by default, which enqueues to taskiq/Redis workers. For local sync testing, override with `DISTRIBUTED_WORKERS=false`
+  - `Orchestra.astream()` has a pre-existing `TypeError: got unexpected keyword argument 'subgraphs'` — this is a LangGraph version mismatch unrelated to AGENTS.md
+  - Model selector on agent create page doesn't load models because `useModelsEffect()` is not called in `create.tsx` — pre-existing bug
+  - Agent-browser sessions require fresh `agent-browser close` + `agent-browser open` after server restarts
+  - Login via `agent-browser fill` + `click` works when VITE_API_URL is `/api` (not external URL)
 ---
