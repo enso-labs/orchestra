@@ -219,8 +219,8 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Updated wiki/docs/assistants/index.md: Custom Instructions bullet references AGENTS.md files, comparison table links to agents-md.md, Creating an Assistant section shows AGENTS.md workflow with tip admonition, all API examples (create, update, tool integration, metadata, 3 examples) use files dict with AGENTS.md instead of instructions field, added legacy instructions info admonition, Best Practices updated for AGENTS.md, Version Control tip updated, AGENTS.md page added to Related Documentation. Wiki builds without errors, TypeScript passes."
     },
     {
       "id": "US-013",

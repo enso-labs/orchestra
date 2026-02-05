@@ -163,4 +163,19 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Pre-existing broken links exist in sandbox/tools pages — unrelated to our changes
   - `sidebar_position: 2` places the page after the index (position 3) in the Assistants section
   - Commit wiki submodule changes from the parent repo by staging the wiki directory
+- Docusaurus `:::tip` / `:::info` admonitions work in wiki docs (Docusaurus flavor, not `!!!` which is MkDocs)
+---
+
+## 2026-02-04 - US-012
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- What was implemented: Updated wiki assistants index page to reference AGENTS.md throughout
+- Files changed:
+  - `wiki/docs/assistants/index.md` — Updated: Overview "Custom Instructions" bullet references AGENTS.md files, comparison table links to agents-md.md, Creating an Assistant section shows AGENTS.md file-based workflow (removed "Instructions" step, added Editor/AGENTS.md step and tip admonition), all API examples (POST create, PATCH update, Tool Integration JSON, Metadata JSON, 3 Example JSONs) now use `files` dict with `AGENTS.md` key instead of `instructions` field, added `:::info` about legacy instructions field with precedence link, Best Practices "Clear Instructions" references AGENTS.md guide, "Version Control" tip updated for file-based approach, AGENTS.md page added as first item in Related Documentation
+  - `.ralph/prd.json` — Marked US-012 as `passes: true`
+  - `.ralph/progress.txt` — Added progress entry
+- **Learnings for future iterations:**
+  - Wiki admonitions use `:::tip`/`:::info`/`:::warning` syntax (Docusaurus), not `!!!` (MkDocs) — both are present in the index.md (the `!!!` are from original content and still work)
+  - When updating API examples from `instructions` to `files.AGENTS.md`, also update the response JSON to match
+  - The wiki submodule is in detached HEAD state in worktrees — commits still work fine, just stage the `wiki` directory from the parent repo
+  - Pre-existing broken links in sandbox/tools pages don't block the build (only warnings)
 ---
