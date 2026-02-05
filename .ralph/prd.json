@@ -78,7 +78,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Only backend/src/controllers/llm.py is modified. The llm_invoke() function already calls construct_agent() — add skills=params.skills to that call. Also merge assistant.files into params.input.files before the init_backend() call."
     },
     {
