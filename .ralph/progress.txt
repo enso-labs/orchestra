@@ -11,6 +11,9 @@ Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
 - Format changes (ruff) may touch unrelated files — include them in commits
 - `init_graph()` and `create_deep_agent()` accept `skills: list[str] | None = None` — follow subagents pattern for new params
 - Agent construction chain: `construct_agent()` → `Orchestra.__init__()` → `init_graph()` → `create_deep_agent()`
+- `stream_generator()` in `backend/src/utils/stream.py` follows subagents pattern for new kwargs — add after `api_key`
+- `llm_stream()` in `backend/src/controllers/llm.py` variable `assistant` is actually `LLMRequest` (not `Assistant`) — use `getattr(assistant, "files", None)` for safe access to fields not on `LLMRequest`
+- File merge pattern in `stream_generator()`: assistant files as base, request/config files override → `{**(files or {}), **(config_files or input.files or {})}`
 
 ## 2026-02-05 - US-001
 - Added `skills: Optional[List[str]]` field with `default_factory=list` to Assistant model (after subagents)
@@ -44,5 +47,19 @@ Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
   - `construct_agent()` → `Orchestra()` → `init_graph()` → `create_deep_agent()` chain now fully threads `skills`
   - 40 pre-existing pyright errors in __init__.py — none related to skills changes
   - No format changes needed for this story
+---
+
+## 2026-02-05 - US-004
+- Added `files: dict | None = None` and `skills: list[str] | None = None` parameters to `stream_generator()`
+- Merged assistant-level files as base with config/input files as override: `{**(files or {}), **(config["metadata"].get("files", {}) or input.files or {})}`
+- Passed `skills=skills` to `construct_agent()` call inside `stream_generator()`
+- Updated `llm_stream()` to pass `files=getattr(assistant, "files", None)` and `skills=assistant.skills` to `stream_generator()`
+- Files changed: `backend/src/utils/stream.py`, `backend/src/controllers/llm.py`
+- **Learnings for future iterations:**
+  - `llm_service.assistant()` returns `LLMRequest`, not `Assistant` — the variable name `assistant` in `llm_stream()` is misleading
+  - `LLMRequest` has `skills` field but no `files` field — use `getattr()` for safe access
+  - `Assistant.files` is not forwarded through `to_llm_request()` — the `files` param on `stream_generator()` provides the path for assistant-level files
+  - Ruff reformatted the dict unpacking across multiple lines but no unrelated file changes
+  - All 364 tests pass with no regressions
 ---
 

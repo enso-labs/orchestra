@@ -64,7 +64,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Two files modified: stream.py (add parameters and merge files) and controllers/llm.py (pass assistant.skills and assistant.files). The file merge order is: assistant files as base, request files override. Pattern: {**assistant.files, **request.files}."
     },
     {
