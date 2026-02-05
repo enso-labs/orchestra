@@ -302,8 +302,8 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Replaced wiki/docs/tutorials/interactive-tours.md with wiki/docs/tutorials/agents-md-workflow.md. Captured 4 screenshots in light mode using agent-browser: (1) agent create form with AGENTS.md guidance note, (2) file panel open with Explorer/Create File, (3) AGENTS.md file in editor with example content, (4) legacy migration card with Migrate to AGENTS.md button. Screenshots saved to wiki/static/img/agents-md/. Updated sidebars.ts to reference agents-md-workflow. Updated agents-md.md to replace Show Tour tip with link to workflow guide. Wiki builds without errors, TypeScript passes."
     }
   ]
 }

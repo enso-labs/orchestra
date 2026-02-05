@@ -10,6 +10,7 @@ Started: Wed Feb  4 18:52:52 MST 2026
 - File panel: `agent-browser` CSS selector `"h1 + button"` targets the create button next to page heading
 - Agent browser: Login requires filling email/password textboxes then clicking Sign in; session persists across navigation
 - License check: Always verify library licenses before adding — AGPL (e.g. Intro.js) is incompatible with this project
+- Wiki links: Use relative paths with `.md` extension (e.g., `../assistants/agents-md.md`), not absolute slug paths — Docusaurus breaks on absolute slugs
 
 ---
 
@@ -74,4 +75,32 @@ Started: Wed Feb  4 18:52:52 MST 2026
   - Intro.js is AGPL-licensed — always check library licenses before adding to project
   - When removing a mock from test files, also verify TS type inference doesn't break (literal `undefined` vs `string | undefined`)
   - All 188 frontend tests pass, TypeScript and lint clean
+---
+
+## 2026-02-04 20:15 MST - US-016
+- What was implemented:
+  - Replaced `wiki/docs/tutorials/interactive-tours.md` (Intro.js developer guide) with `wiki/docs/tutorials/agents-md-workflow.md` (AGENTS.md visual workflow guide)
+  - Captured 4 annotated screenshots in light mode using agent-browser:
+    1. `01-agent-create-form.png` — agent create form showing AGENTS.md guidance note (no Instructions/System Prompt tabs)
+    2. `02-file-panel-open.png` — file panel open with Explorer sidebar and Create File button
+    3. `03-agents-md-editor.png` — AGENTS.md file open in editor with example Sales Assistant content
+    4. `04-legacy-migration-card.png` — legacy migration card with amber styling and "Migrate to AGENTS.md" button
+  - Screenshots saved to `wiki/static/img/agents-md/`
+  - New workflow guide documents: creating assistant, opening file panel, creating AGENTS.md, writing instructions, saving, editing existing, migrating from legacy, using in thread mode, best practices
+  - Updated `wiki/sidebars.ts`: replaced `tutorials/interactive-tours` with `tutorials/agents-md-workflow`
+  - Updated `wiki/docs/assistants/agents-md.md`: replaced "First-Time Tour / Show Tour" tip with "Step-by-Step Guide" linking to the new workflow page
+  - Fixed Docusaurus broken links by using relative paths (`../assistants/agents-md.md` etc.) instead of absolute slugs
+- Files changed:
+  - `wiki/docs/tutorials/agents-md-workflow.md` (new)
+  - `wiki/docs/tutorials/interactive-tours.md` (deleted)
+  - `wiki/docs/assistants/agents-md.md` (updated tip)
+  - `wiki/sidebars.ts` (sidebar entry replaced)
+  - `wiki/static/img/agents-md/*.png` (4 new screenshots)
+  - `.ralph/prd.json` (US-016 passes: true)
+  - `.ralph/progress.txt` (this file)
+- **Learnings for future iterations:**
+  - Docusaurus wiki links must use relative paths with `.md` extension (e.g., `../assistants/agents-md.md`), not absolute slug paths (e.g., `/assistants/agents-md`)
+  - Wiki submodule must be committed separately before the main repo submodule reference
+  - agent-browser theme toggle opens a dropdown menu — use snapshot to find menuitem refs, not text selectors (text=Day matches too many)
+  - Pre-existing broken links in tools/sandbox and tools/sandbox-tutorial are not related to this work
 ---
