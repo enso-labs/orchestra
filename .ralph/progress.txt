@@ -17,6 +17,8 @@
 - TypeScript check: `npx tsc --noEmit --pretty` (no errors expected)
 - Radix UI Switch (used in Public toggle) requires `ResizeObserver` polyfill in jsdom — add `global.ResizeObserver` stub in test files that render agents with `agent.id` set
 - Agent type from `agentService.ts` has `instructions?: string`, `system_prompt?: string`, `files?: Record<string, string>` — use these for legacy migration card tests
+- `createFile(path, content)` from `useChatContext()` creates files in the agent's file system (delegates to `useFileSystem` hook)
+- Use `isMigrated` local state as guard when `createFile` doesn't instantly update `agent.files` in context
 
 ---
 
@@ -88,4 +90,19 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - 2 tests properly FAIL (red phase): legacy card with instructions content, Migrate to AGENTS.md button
   - 2 tests PASS: no legacy card when AGENTS.md exists in files, no legacy card when no instructions/system_prompt
   - All 186 other frontend tests pass with no regressions
+---
+
+## 2026-02-04 - US-008
+- What was implemented: Legacy instructions migration card in agent create/edit form
+- Files changed:
+  - `frontend/src/components/forms/agents/agent-create-form.tsx` — Added: `AlertTriangle`/`ArrowRight` imports, `createFile` from ChatContext, `isMigrated` state, `hasLegacyInstructions`/`legacyContent` computed vars, legacy migration card with amber/warning styling, "Migrate to AGENTS.md" button that calls `createFile("AGENTS.md", content)` and sets `isMigrated=true`
+  - `frontend/src/components/forms/agents/agent-create-form.test.tsx` — Added `mockCreateFile` to ChatContext mock so `createFile` is available in tests
+  - `.ralph/prd.json` — Marked US-008 as `passes: true`
+  - `.ralph/progress.txt` — Added progress entry
+- **Learnings for future iterations:**
+  - The `createFile` function from `useChatContext()` (via `useFileSystem` hook) is the correct way to create files in the agent's file system from the form
+  - Legacy card condition: `(agent.instructions || agent.system_prompt) && !agent.files?.["AGENTS.md"]` — use optional chaining on `files` since it may be undefined
+  - `isMigrated` state is needed as a local guard since calling `createFile` doesn't instantly update `agent.files` on the agent context object
+  - All 8 agent form tests pass (4 US-005 + 4 US-007 green phase), all 188 frontend tests pass, TypeScript and lint clean
+  - Browser verification skipped (requires authentication — login page blocks unauthenticated access)
 ---

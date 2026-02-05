@@ -147,8 +147,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added legacy instructions migration card with amber/warning styling. Shows when agent has instructions/system_prompt but no AGENTS.md in files. Displays legacy content in read-only card with AlertTriangle icon. 'Migrate to AGENTS.md' button calls createFile() from ChatContext. After migration, card hides via isMigrated state. All 8 agent form tests pass (including 4 US-007 green phase), all 188 frontend tests pass, TypeScript and lint clean."
     },
     {
       "id": "US-009",
