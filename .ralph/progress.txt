@@ -15,6 +15,7 @@ Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
 - `llm_stream()` in `backend/src/controllers/llm.py` variable `assistant` is actually `LLMRequest` (not `Assistant`) — use `getattr(assistant, "files", None)` for safe access to fields not on `LLMRequest`
 - File merge pattern in `stream_generator()`: assistant files as base, request/config files override → `{**(files or {}), **(config_files or input.files or {})}`
 - File merge in `llm_invoke()` must happen before `init_backend()` — ToolRuntime reads `request.input.files`
+- Worker path in `_execute_agent_stream()`: `files_map` comes from config, merge assistant files before passing to ToolRuntime — same `getattr()` pattern as controllers
 
 ## 2026-02-05 - US-001
 - Added `skills: Optional[List[str]]` field with `default_factory=list` to Assistant model (after subagents)
@@ -74,5 +75,17 @@ Feature: Native DeepAgents Skills Support (feat/740-native-deepagents-skills)
   - File merge must happen before `init_backend()` because `init_backend` → `_init_runtime()` reads `request.input.files` for ToolRuntime state
   - 24 pre-existing pyright errors in controllers/llm.py — none on the new lines (105-109, 122)
   - No ruff format changes needed
+---
+
+## 2026-02-05 - US-006
+- Merged assistant-level files into `files_map` in `_execute_agent_stream()` after `llm_service.assistant()` call: `{**(assistant_files or {}), **files_map}`
+- Used `getattr(params, "files", None)` for safe access since `LLMRequest` doesn't have a `files` field
+- Added `skills=params.skills` to `construct_agent()` call in `_execute_agent_stream()`
+- Files changed: `backend/src/workers/tasks.py`
+- **Learnings for future iterations:**
+  - Worker path in `_execute_agent_stream()` already had `files_map` from `config["configurable"].get("files", {})` — assistant files merge uses assistant as base, existing files_map as override
+  - Same `getattr()` pattern needed as in `llm_invoke()` since `params` is `LLMRequest` after `llm_service.assistant()`
+  - No ruff format changes needed
+  - All 364 tests pass with no regressions
 ---
 

@@ -208,6 +208,13 @@ async def _execute_agent_stream(
     # Get assistant config if needed
     params = await service_context.llm_service.assistant(params)
 
+    # Merge assistant-level files as base, request files override
+    assistant_files = getattr(params, "files", None)
+    files_map = {
+        **(assistant_files or {}),
+        **files_map,
+    }
+
     # Initialize ToolRuntime and Backend
     ctx_schema = ContextSchema(model=params.model or "", user_id=user_id)
     runtime = ToolRuntime(
@@ -231,6 +238,7 @@ async def _execute_agent_stream(
         tools=params.tools,
         model=params.model,
         subagents=params.subagents,
+        skills=params.skills,
         checkpointer=checkpointer,
         service_context=service_context,
         backend=backend,

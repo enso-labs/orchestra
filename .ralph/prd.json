@@ -91,7 +91,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Only backend/src/workers/tasks.py is modified. Follow the same pattern as the subagents parameter already passed to construct_agent() in this function."
     },
     {
