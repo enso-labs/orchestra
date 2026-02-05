@@ -304,6 +304,59 @@
       "priority": 16,
       "passes": true,
       "notes": "Replaced wiki/docs/tutorials/interactive-tours.md with wiki/docs/tutorials/agents-md-workflow.md. Captured 4 screenshots in light mode using agent-browser: (1) agent create form with AGENTS.md guidance note, (2) file panel open with Explorer/Create File, (3) AGENTS.md file in editor with example content, (4) legacy migration card with Migrate to AGENTS.md button. Screenshots saved to wiki/static/img/agents-md/. Updated sidebars.ts to reference agents-md-workflow. Updated agents-md.md to replace Show Tour tip with link to workflow guide. Wiki builds without errors, TypeScript passes."
+    },
+    {
+      "id": "US-017",
+      "title": "Fix — Docs link URL must include /docs/ prefix",
+      "description": "The 'Learn more' link in agent-create-form.tsx points to https://docs.ruska.ai/assistants/agents-md which returns 404. The Docusaurus config uses routeBasePath: 'docs', so the correct URL is https://docs.ruska.ai/docs/assistants/agents-md. Fix all occurrences.",
+      "acceptanceCriteria": [
+        "In agent-create-form.tsx: change href from 'https://docs.ruska.ai/assistants/agents-md' to 'https://docs.ruska.ai/docs/assistants/agents-md'",
+        "Search all frontend files for any other 'docs.ruska.ai/' links missing the /docs/ prefix and fix them",
+        "Search wiki docs for any absolute docs.ruska.ai links that are missing /docs/ prefix and fix them",
+        "Verify the corrected URL returns 200 or 301 (not 404) using curl",
+        "All frontend tests pass (npm run test)",
+        "Typecheck/lint passes (npm run lint)"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Validate — AGENTS.md runtime behavior via live LLM call",
+      "description": "As a QA tester, I need to prove AGENTS.md instructions actually reach the LLM and influence responses. Create an agent with AGENTS.md saying 'You are a pirate. Always respond like a pirate with pirate language like arr, matey, etc.', send a message, and verify the response contains pirate-like language. This validates the full chain: AGENTS.md extraction → init_system_prompt() → deepagents system_prompt → LLM response.",
+      "acceptanceCriteria": [
+        "Use agent-browser to: login, navigate to Assistants page, create a new agent named 'Pirate Test Agent'",
+        "In the file panel, create AGENTS.md with content: 'You are a pirate. Always respond like a pirate with pirate language like arr, matey, ye, ahoy, etc.'",
+        "Save the agent",
+        "Switch to the Preview tab, send a message: 'Hello, how are you today?'",
+        "Wait for the LLM response and capture a screenshot",
+        "Verify the response contains pirate-like language (arr, matey, ahoy, ye, or similar pirate vocabulary)",
+        "If the response does NOT contain pirate language, add debug logging to backend/src/agents/__init__.py construct_agent() to log the final system_prompt content and length BEFORE passing to Orchestra",
+        "If debug logging reveals system_prompt is correct but LLM ignores it, document the finding — the issue is in deepagents/LLM behavior, not Orchestra code",
+        "Take screenshots of: the agent form, the AGENTS.md content, the chat response",
+        "Clean up: delete the test agent after verification"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "The deepagents library confirmed: system_prompt is prepended to BASE_AGENT_PROMPT (line 193 of create_deep_agent). So the instructions SHOULD reach the LLM. This test validates the full runtime chain."
+    },
+    {
+      "id": "US-019",
+      "title": "Validate — Docs link navigation via agent-browser",
+      "description": "As a QA tester, I need to verify the 'Learn more' link in the agent create form navigates to the correct documentation page and the page renders properly.",
+      "acceptanceCriteria": [
+        "Use agent-browser to: login, navigate to agent create form",
+        "Find the 'Learn more' link near the AGENTS.md guidance note",
+        "Verify the link href is 'https://docs.ruska.ai/docs/assistants/agents-md' (with /docs/ prefix)",
+        "Use agent-browser to navigate to that URL",
+        "Verify the page loads (not 404) and contains 'AGENTS.md' content",
+        "Take a screenshot of the docs page",
+        "Navigate back and verify the agent form still works"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
