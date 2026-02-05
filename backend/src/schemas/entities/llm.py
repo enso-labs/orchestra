@@ -110,6 +110,10 @@ class Assistant(BaseModel):
 
     tools: list[str]
     subagents: Optional[list[dict]] = []
+    skills: Optional[List[str]] = Field(
+        default_factory=list,
+        description='Skill directory paths for progressive loading (e.g., ["./skills/"])',
+    )
     mcp: Optional[dict] = {}
     a2a: Optional[dict] = {}
     files: Optional[Dict[str, str]] = Field(
@@ -159,6 +163,7 @@ class Assistant(BaseModel):
             system_prompt=self.system_prompt,
             instructions=self.instructions,
             subagents=self.subagents,
+            skills=self.skills,
             metadata=metadata or self.metadata,
             input=input,
         )
@@ -207,6 +212,10 @@ class LLMRequest(BaseModel):
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
+    skills: Optional[List[str]] = Field(
+        default_factory=list,
+        description='Skill directory paths for progressive loading (e.g., ["./skills/"])',
+    )
     metadata: Optional[Config] = Field(
         default_factory=Config, description="LangGraph configuration"
     )
