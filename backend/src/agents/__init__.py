@@ -91,7 +91,7 @@ async def prepare_memory_files(
         text = (
             value.get("content", str(value)) if isinstance(value, dict) else str(value)
         )
-        bullet_lines.append(f"- {text}")
+        bullet_lines.append(text)
 
     content = "\n".join(bullet_lines)
     files_map = {"/memories.md": create_file_data(content)}
