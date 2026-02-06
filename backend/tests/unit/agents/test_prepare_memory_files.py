@@ -78,8 +78,8 @@ class TestPrepareMemoryFilesWithMemories:
 
         content_lines = files_map["/AGENTS.md"]["content"]
         assert content_lines == [
-            "- Remember to call Bob",
-            "- User prefers dark mode",
+            "Remember to call Bob",
+            "User prefers dark mode",
         ]
 
     async def test_handles_single_memory(self) -> None:
@@ -91,7 +91,7 @@ class TestPrepareMemoryFilesWithMemories:
         files_map, sources = await prepare_memory_files("user-789", memory_svc)
 
         assert sources == ["/AGENTS.md"]
-        assert files_map["/AGENTS.md"]["content"] == ["- Only one memory"]
+        assert files_map["/AGENTS.md"]["content"] == ["Only one memory"]
 
     async def test_handles_full_memory_repo_value_structure(self) -> None:
         """When value matches the full MemoryRepo structure, content is extracted."""
@@ -114,7 +114,7 @@ class TestPrepareMemoryFilesWithMemories:
 
         assert sources == ["/AGENTS.md"]
         assert files_map["/AGENTS.md"]["content"] == [
-            "- User likes Python over JavaScript"
+            "User likes Python over JavaScript"
         ]
 
     async def test_handles_non_dict_value(self) -> None:
@@ -128,4 +128,4 @@ class TestPrepareMemoryFilesWithMemories:
         files_map, sources = await prepare_memory_files("user-123", memory_svc)
 
         assert sources == ["/AGENTS.md"]
-        assert files_map["/AGENTS.md"]["content"] == ["- plain string value"]
+        assert files_map["/AGENTS.md"]["content"] == ["plain string value"]
