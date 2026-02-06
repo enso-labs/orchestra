@@ -194,11 +194,16 @@ async def _execute_agent_stream(
 
     Extracted to reduce duplication between resilient and legacy modes.
     Checks for abort signals on every chunk for responsive cancellation.
+
+    Automatically loads user memories via ``prepare_memory_files()`` and merges
+    them into the files map before agent construction. User-provided files take
+    precedence over memory files. The resulting memory sources are passed to
+    ``construct_agent()`` so that MemoryMiddleware is activated.
     """
     from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
     from src.schemas.contexts import ContextSchema
-    from src.agents import construct_agent, init_backend
+    from src.agents import construct_agent, init_backend, prepare_memory_files
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger
@@ -207,6 +212,12 @@ async def _execute_agent_stream(
 
     # Get assistant config if needed
     params = await service_context.llm_service.assistant(params)
+
+    # Load user memories and merge into files_map
+    memory_files, memory_sources = await prepare_memory_files(
+        user_id, service_context.memory_service
+    )
+    files_map = {**memory_files, **files_map}
 
     # Initialize ToolRuntime and Backend
     ctx_schema = ContextSchema(model=params.model or "", user_id=user_id)
@@ -234,6 +245,7 @@ async def _execute_agent_stream(
         checkpointer=checkpointer,
         service_context=service_context,
         backend=backend,
+        memory=memory_sources,
     )
     params.input.messages[-1].model = agent.model
 

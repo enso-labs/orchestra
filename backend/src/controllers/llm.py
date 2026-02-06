@@ -9,7 +9,7 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.schedule import ScheduleCreate
 from src.schemas.entities import LLMRequest
 from src.contexts.service import ServiceContext
-from src.agents import construct_agent, init_config
+from src.agents import construct_agent, init_config, prepare_memory_files
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
@@ -95,6 +95,14 @@ class LLMController:
         return model, api_key
 
     async def llm_invoke(self, params: LLMRequest):
+        """Invoke the agent synchronously and return the final response.
+
+        Automatically loads user memories via ``prepare_memory_files()`` and
+        merges them into ``params.input.files`` before backend initialisation.
+        Existing user files take precedence over memory files. The resulting
+        memory sources are passed to ``construct_agent()`` so that
+        MemoryMiddleware is activated.
+        """
         agent = None
         config = None
         try:
@@ -103,6 +111,14 @@ class LLMController:
 
             # Resolve user-configured API key and default model
             params.model, api_key = await self._resolve_user_settings(params.model)
+
+            # Load user memories into files_map for MemoryMiddleware
+            memory_files, memory_sources = await prepare_memory_files(
+                self.user_id, self.service_context.memory_service
+            )
+            if memory_files:
+                existing_files = params.input.files or {}
+                params.input.files = {**memory_files, **existing_files}
 
             async with get_checkpoint_db() as checkpointer:
                 backend = self.init_backend(params)
@@ -116,6 +132,7 @@ class LLMController:
                     backend=backend,
                     service_context=self.service_context,
                     api_key=api_key,
+                    memory=memory_sources,
                 )
                 response = await agent.invoke(
                     params.input,

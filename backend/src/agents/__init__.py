@@ -1,4 +1,8 @@
-from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional
+from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.services.memory import MemoryService
+
 from uuid import uuid4
 from langchain.tools import ToolRuntime
 from langchain_core.language_models import BaseChatModel
@@ -13,6 +17,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.cache.memory import InMemoryCache
 from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend
+from deepagents.backends.utils import create_file_data
 
 
 from src.constants import APP_ENV
@@ -56,6 +61,43 @@ async def add_memories_to_system():
     )
 
 
+async def prepare_memory_files(
+    user_id: str | None,
+    memory_svc: "MemoryService",
+) -> tuple[dict, list[str] | None]:
+    """Fetch user memories and format them as a StateBackend file.
+
+    Returns a (files_map, memory_sources) tuple suitable for passing to
+    create_deep_agent via the ``memory`` kwarg.  When no memories are
+    available the tuple is ``({}, None)`` so callers can safely unpack
+    without extra guards.
+    """
+    if not user_id:
+        return {}, None
+
+    try:
+        memories = await memory_svc.search()
+    except Exception as exc:
+        logger.warning(f"Failed to fetch memories for user {user_id}: {exc}")
+        return {}, None
+
+    if not memories:
+        return {}, None
+
+    bullet_lines = []
+    for mem in memories:
+        data = mem.dict()
+        value = data.get("value", {})
+        text = (
+            value.get("content", str(value)) if isinstance(value, dict) else str(value)
+        )
+        bullet_lines.append(f"- {text}")
+
+    content = "\n".join(bullet_lines)
+    files_map = {"/memories.md": create_file_data(content)}
+    return files_map, ["/memories.md"]
+
+
 def init_graph(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
@@ -67,6 +109,7 @@ def init_graph(
     middleware: list[Callable] = None,
     backend: CompositeBackend = None,
     api_key: str | None = None,
+    memory: list[str] | None = None,
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
 
@@ -90,6 +133,7 @@ def init_graph(
         cache=CACHE_LLM,
         backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
+        memory=memory,
     )
     return deep_agent
 
@@ -214,7 +258,16 @@ async def construct_agent(
     checkpointer: BaseCheckpointSaver = None,
     service_context: ServiceContext = None,
     api_key: str | None = None,
+    memory: list[str] | None = None,
 ):
+    """Build and return an Orchestra agent instance.
+
+    Args:
+        memory: Optional list of file paths (e.g. ``["/memories.md"]``) that
+            reference files in the StateBackend. When provided, MemoryMiddleware
+            is added to the agent's middleware stack so the agent can access
+            user memories during execution.
+    """
     try:
         if subagents:
             subagents = await init_subagents(subagents, service_context)
@@ -234,6 +287,7 @@ async def construct_agent(
             context_schema=ContextSchema,
             backend=backend,
             api_key=api_key,
+            memory=memory,
         )
         return agent
     except Exception as e:
@@ -255,6 +309,7 @@ class Orchestra:
         graph_id: Literal["react", "deepagent"] = "deepagent",
         backend: CompositeBackend = None,
         api_key: str | None = None,
+        memory: list[str] | None = None,
     ):
         self.tools = tools
         self.model = model
@@ -274,6 +329,7 @@ class Orchestra:
             middleware=middleware,
             backend=backend,
             api_key=api_key,
+            memory=memory,
         )
 
     async def invoke(
