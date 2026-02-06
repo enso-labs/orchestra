@@ -1,39 +1,78 @@
 # Ralph Progress Log
-Started: Thu Feb  5 17:18:57 MST 2026
+Started: Thu Feb  5 19:51:59 MST 2026
 ---
 
 ## Codebase Patterns
-- ServiceContext (backend/src/contexts/service.py) creates per-request service instances with the correct user_id and AsyncPostgresStore — always prefer service_context.memory_service over the module-level singleton
-- The module-level memory_service singleton in backend/src/services/memory.py defaults to InMemoryStore (get_store_in_memory()) — only suitable for legacy add_memories_to_system()
-- prepare_memory_files() should NOT mutate user_id on the passed service; ServiceContext already initialises MemoryService with the correct user_id
-- When removing imports, check if other functions in the file still use them (e.g., add_memories_to_system still uses the singleton)
-- MemoryRepo stores Memory objects with a 'content' key (not 'memory') — use value.get('content', ...) when parsing SearchItem values
-
+- Backend format check: `cd backend && make format` (runs `uvx ruff format`)
+- Backend lint check: `uvx ruff check <file>` from backend dir
+- Backend test: `cd backend && make test` (requires .env file)
+- Git hooks: Worktree commits need `BEADS_DIR=/home/ryaneggz/ruska-ai/orchestra/.beads` env var set for pre-commit hook
+- LLMService is in `backend/src/services/llm.py`, schemas in `backend/src/schemas/entities/llm.py`
+- Assistant.files is Dict[str, str], LLMInput.files is Dict[str, Any]
+- Assistant model has a model_validator preventing both system_prompt and instructions from being set at construction time, but direct attribute assignment bypasses this
+- Running tests directly: `set -a && . $HOME/.env/orchestra/.env.backend && set +a && uv run pytest <path>` (tests/__init__.py imports app, needs full env)
+- Git operations in worktree: run from worktree root, not from `backend/` subdir
+- Async integration tests: use `unittest.IsolatedAsyncioTestCase` + `AsyncMock` for service method mocking
+- Mock `LLMService.init_tools` with `@patch.object` to avoid A2A/MCP/tool loading in tests
 ---
 
-## 2026-02-05 - US-008
-- What was implemented: Replaced the module-level memory_service singleton with service_context.memory_service in all three entry points (stream.py, tasks.py, llm.py) so memories persisted through the Settings UI are correctly retrieved at agent runtime
-- Files changed:
-  - backend/src/agents/__init__.py — removed memory_svc.user_id mutation from prepare_memory_files()
-  - backend/src/utils/stream.py — switched to service_context.memory_service, removed singleton import
-  - backend/src/workers/tasks.py — switched to service_context.memory_service, removed singleton import
-  - backend/src/controllers/llm.py — switched to self.service_context.memory_service, removed singleton import
-  - backend/tests/unit/agents/test_prepare_memory_files.py — removed test_sets_user_id_on_service_before_search test
-  - .ralph/prd.json — marked US-008 as passes: true
+## 2026-02-05 - US-001
+- Implemented `extract_agents_md()` static helper method on LLMService
+- Handles all content formats: str, dict with content key (str or list[str]), list of strings
+- Returns None for None/empty files, missing key, or empty/whitespace content
+- Files changed: `backend/src/services/llm.py`
 - **Learnings for future iterations:**
-  - ServiceContext already initialises MemoryService with the correct user_id and store — no need to mutate user_id on the service
-  - The module-level singleton uses InMemoryStore which is why searches return empty in production
-  - When removing a test that validates removed behavior, also verify no other tests depend on it
+  - The worktree pre-commit hook needs BEADS_DIR set: `BEADS_DIR=/home/ryaneggz/ruska-ai/orchestra/.beads`
+  - `make format` and `make test` are in the `backend/` Makefile, not the root Makefile
+  - Ruff format left the code unchanged — the code style matched already
 ---
 
-## 2026-02-05 - US-009
-- What was implemented: Fixed memory value parsing in prepare_memory_files() to use 'content' key instead of 'memory' to match MemoryRepo storage format. Updated all test mocks and added a test case with the full MemoryRepo value structure.
-- Files changed:
-  - backend/src/agents/__init__.py — changed value.get('memory', ...) to value.get('content', ...)
-  - backend/tests/unit/agents/test_prepare_memory_files.py — updated _make_search_item to use 'content' key, added test_handles_full_memory_repo_value_structure test
-  - .ralph/prd.json — marked US-009 as passes: true
+## 2026-02-05 - US-002
+- Implemented AGENTS.md injection in agent mode (assistant with files)
+- Added extraction check after assistant is loaded, before default_system_prompt() is called
+- When AGENTS.md is found: sets system_prompt=None (so DEFAULT_SYSTEM_PROMPT is used) and instructions=agents_md_content
+- Logs info message with content length, warns when overriding existing instructions
+- Files changed: `backend/src/services/llm.py`
 - **Learnings for future iterations:**
-  - MemoryRepo.create() stores Memory(id, content, metadata, created_at, updated_at) — model_dump() produces a dict with 'content' key, NOT 'memory'
-  - SearchItem.value returns the dict from model_dump(), so parsing code must use value.get('content', ...) to extract the text
-  - Always verify mock data structures match the actual production data by checking the Pydantic model and repo code
+  - Direct attribute assignment on Pydantic models bypasses model_validator(mode='after'), which is critical for setting both system_prompt=None and instructions without triggering the "only one of" validator
+  - The injection must happen BEFORE default_system_prompt() is called so system_prompt=None correctly triggers DEFAULT_SYSTEM_PROMPT fallback
+  - assistant.files is Dict[str, str] while params.input.files is Dict[str, Any] — use the same extract_agents_md() helper for both
+---
+
+## 2026-02-05 - US-003
+- Implemented AGENTS.md injection in non-agent (thread) mode
+- Added extraction check in the non-agent branch before default_system_prompt() is called
+- When AGENTS.md is found in params.input.files, sets params.instructions = agents_md_content
+- Logs info message with content length
+- Files changed: `backend/src/services/llm.py`
+- **Learnings for future iterations:**
+  - The non-agent branch is at lines 224+ (after the assistant_id block). Insert before `params.system_prompt = self.default_system_prompt(params)`
+  - In thread mode, we set params.instructions (on LLMRequest) rather than assistant.instructions (on Assistant)
+  - No need to set system_prompt=None in thread mode since params already uses default_system_prompt() which handles None
+---
+
+## 2026-02-05 - US-004
+- Created comprehensive unit tests for `extract_agents_md()` static method
+- 10 test cases covering all acceptance criteria: None files, empty files, missing key, plain string, dict with content string, dict with content list, dict with content None, list of strings, empty string, whitespace-only
+- All tests pass (10/10)
+- Files changed: `backend/tests/unit/services/test_extract_agents_md.py` (new file)
+- **Learnings for future iterations:**
+  - `make test` requires sourcing the env file first: `set -a && . $HOME/.env/orchestra/.env.backend && set +a`
+  - The `tests/__init__.py` imports `from main import app` which triggers all module-level constants including DB_URI and ChatModels enum — tests always need the full env
+  - Unit tests for `@staticmethod` methods are synchronous, no need for `IsolatedAsyncioTestCase`
+  - Ruff format already matches the code style — no changes needed
+  - Git operations in worktree need to run from `/home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-745` (the worktree root), not from `backend/`
+---
+
+## 2026-02-05 - US-005
+- Added 5 async integration tests for AGENTS.md injection in `LLMService.assistant()`
+- Tests cover: agent with AGENTS.md injects instructions, agent without AGENTS.md uses original, AGENTS.md overrides existing instructions with warning, thread mode with AGENTS.md sets instructions, thread mode without AGENTS.md unchanged
+- All 15 tests pass (10 unit + 5 integration)
+- Files changed: `backend/tests/unit/services/test_extract_agents_md.py`
+- **Learnings for future iterations:**
+  - Use `unittest.IsolatedAsyncioTestCase` for async tests (consistent with existing test patterns)
+  - Mock `LLMService.init_tools` with `@patch.object(LLMService, "init_tools", new_callable=AsyncMock)` to avoid real tool loading (A2A, MCP, tool library)
+  - Mock `assistant_service.get` with `AsyncMock` to return controlled `Assistant` objects
+  - The `Assistant` model_validator prevents setting both `system_prompt` and `instructions` at construction — but for tests with existing instructions, just set `instructions` alone (no `system_prompt`)
+  - To test logging, use `with patch("src.services.llm.logger")` to capture log calls
 ---
