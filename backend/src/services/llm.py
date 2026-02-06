@@ -221,6 +221,14 @@ class LLMService:
                     f"Assistant {params.metadata.assistant_id} not found in user or public namespace"
                 )
 
+        ### Check for AGENTS.md in thread-level files and inject as instructions
+        agents_md = self.extract_agents_md(params.input.files)
+        if agents_md:
+            params.instructions = agents_md
+            logger.info(
+                f"Injected AGENTS.md ({len(agents_md)} chars) as instructions in thread mode"
+            )
+
         ### Collect all tools
         params.system_prompt = self.default_system_prompt(params)
         params.tools = await self.init_tools(params.tools, params.a2a, params.mcp)
