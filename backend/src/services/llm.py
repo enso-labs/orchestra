@@ -116,6 +116,48 @@ class LLMService:
                     filtered_tools.append(structured_tool)
         return filtered_tools
 
+    @staticmethod
+    def extract_agents_md(files: dict | None) -> str | None:
+        """Extract AGENTS.md content from a files dict, handling all possible formats.
+
+        Supports:
+        - str values (direct content)
+        - dict values with 'content' key (str or list[str])
+        - list values (list of strings joined with newlines)
+
+        Returns None if files is None/empty, key is missing, or content is empty/whitespace.
+        """
+        if not files:
+            return None
+
+        value = files.get("AGENTS.md")
+        if value is None:
+            return None
+
+        content: str | None = None
+
+        if isinstance(value, str):
+            content = value
+        elif isinstance(value, dict):
+            inner = value.get("content")
+            if isinstance(inner, str):
+                content = inner
+            elif isinstance(inner, list):
+                content = "\n".join(str(item) for item in inner)
+            else:
+                return None
+        elif isinstance(value, list):
+            content = "\n".join(str(item) for item in value)
+        else:
+            return None
+
+        if content is not None:
+            content = content.strip()
+            if not content:
+                return None
+
+        return content
+
     def default_system_prompt(self, item: LLMRequest | Assistant) -> str:
         if not item.system_prompt:
             return DEFAULT_SYSTEM_PROMPT
