@@ -1,148 +1,91 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/738-native-deepagents-memory",
-  "description": "Native DeepAgents Memory - Standardize user memory injection using MemoryMiddleware pattern instead of ad-hoc string concatenation",
+  "branchName": "feat/743-update-wiki-for-memories",
+  "description": "Wiki Documentation for Memories Feature - Document the Memories feature with API reference, UI tutorial with screenshots, and llm.txt update",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add prepare_memory_files() helper to agents module",
-      "description": "As a developer, I need a reusable async helper that fetches user memories and formats them as a file for the StateBackend, so all entry points can share the same memory loading logic.",
+      "title": "Initialize wiki submodule and add Memories entries to sidebar",
+      "description": "As a documentation reader, I want to find 'Memories' in the wiki navigation so I can learn about the feature.",
       "acceptanceCriteria": [
-        "New async function prepare_memory_files(user_id, memory_svc) in backend/src/agents/__init__.py",
-        "Imports create_file_data from deepagents.backends.utils",
-        "Returns tuple[dict, list[str] | None] — a files_map entry and a memory sources list (or empty dict / None)",
-        "Returns ({}, None) when user_id is falsy",
-        "Returns ({}, None) when MemoryService.search() returns empty list",
-        "Catches exceptions from MemoryService.search(), logs a warning, and returns ({}, None)",
-        "Formats memories as markdown bullet list under path /memories.md using create_file_data()",
-        "Typecheck passes (make format)"
+        "Run 'git submodule update --init wiki' in the worktree to initialize the wiki submodule",
+        "Add 'memories/index' to the 'Core Features' items array in wiki/sidebars.ts (after 'storage/index')",
+        "Add 'memories/tutorial' to the 'Tutorials' items array in wiki/sidebars.ts",
+        "Create empty placeholder files wiki/docs/memories/index.md and wiki/docs/memories/tutorial.md with basic frontmatter so the sidebar does not break",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Read backend/src/agents/__init__.py for the existing add_memories_to_system() function and understand the current pattern. Import create_file_data from deepagents.backends.utils. Do NOT remove add_memories_to_system() — it stays for backward compatibility."
+      "notes": "The wiki is a git submodule. In this worktree it is not yet initialized — run 'git submodule update --init wiki' first. Read wiki/sidebars.ts for the current structure. The existing sidebar has: Core Features [assistants/index, threads/index, storage/index] and Tutorials [tools/sandbox-tutorial]. Add memories/index to Core Features and memories/tutorial to Tutorials."
     },
     {
       "id": "US-002",
-      "title": "Thread memory parameter through init_graph, Orchestra, and construct_agent",
-      "description": "As a developer, I need the memory parameter plumbed through the agent construction chain so that create_deep_agent() receives it and activates MemoryMiddleware.",
+      "title": "Write main Memories documentation page (API reference)",
+      "description": "As a developer or API consumer, I want a reference page explaining how memories work and how to interact with them via the API so I can integrate memories into my workflow.",
       "acceptanceCriteria": [
-        "init_graph() accepts memory: list[str] | None = None and passes it to create_deep_agent()",
-        "Orchestra.__init__() accepts memory: list[str] | None = None and passes it to init_graph()",
-        "construct_agent() accepts memory: list[str] | None = None and passes it to Orchestra()",
-        "When memory=None, create_deep_agent() does not add MemoryMiddleware (existing behavior preserved)",
-        "When memory=[\"/memories.md\"], MemoryMiddleware is added to the middleware stack",
-        "Typecheck passes (make format)"
+        "Create wiki/docs/memories/index.md with Docusaurus frontmatter: title 'Memories', slug '/memories', sidebar_position 4",
+        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /memories.md",
+        "Include 'How It Works' section describing the lifecycle: create memory -> stored in LangGraph BaseStore -> automatically retrieved via prepare_memory_files() -> injected as markdown into streaming/worker/invoke entry points",
+        "Include 'API Reference' section with curl examples for all 5 endpoints: GET /api/memories (list with limit, offset, query params), GET /api/memories/{memory_id}, POST /api/memories (body: {content, metadata?}), PUT /api/memories/{memory_id} (body: {content, metadata?}), DELETE /api/memories/{memory_id}",
+        "Each curl example uses localhost base URL and includes Authorization: Bearer <token> header",
+        "Each curl example includes an example JSON response matching the backend schemas (Memory: {id, content, metadata, created_at, updated_at}, MemoryListResponse: {memories[], total, limit, offset})",
+        "Include a 'Configuration via UI' section at the bottom linking to the tutorial page at ./tutorial",
+        "Follow the same markdown structure as wiki/docs/assistants/index.md (heading hierarchy, bullet lists, code blocks)",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Read backend/src/agents/__init__.py to find init_graph(), Orchestra class, and construct_agent(). The memory parameter on create_deep_agent() already exists in the DeepAgents library — you just need to pass it through. Check deepagents source or docs to confirm the parameter name."
+      "notes": "Read wiki/docs/assistants/index.md and wiki/docs/storage/index.md from the main repo at /home/ryaneggz/ruska-ai/orchestra/wiki/ for the exact Docusaurus page pattern (frontmatter, heading style, admonitions). The API endpoints are defined in backend/src/routes/v0/memory.py. Schemas are in backend/src/schemas/entities/memory.py: Memory(id, content, metadata?, created_at?, updated_at?), MemoryCreate(content, metadata?), MemoryUpdate(content, metadata?), MemoryListResponse(memories, total, limit, offset). Query params for list: limit(default=10, max=100), offset(default=0), query(default=''). Auth uses Bearer token. Use localhost URLs since docs target local dev."
     },
     {
       "id": "US-003",
-      "title": "Wire memory into streaming entry point (stream.py)",
-      "description": "As an end user chatting via the streaming API, I want the agent to automatically recall my stored memories so responses are personalized without me needing to repeat context.",
+      "title": "Capture full workflow screenshots with agent-browser",
+      "description": "As a documentation author, I need screenshots of the memories workflow captured in light mode to include in the tutorial page.",
       "acceptanceCriteria": [
-        "stream_generator() in backend/src/utils/stream.py calls prepare_memory_files() before creating ToolRuntime",
-        "Memory files are merged into files_map with user-provided files taking precedence ({**memory_files, **files_map})",
-        "memory_sources is passed to construct_agent() via the memory kwarg",
-        "Agent works normally when no memories exist",
-        "Typecheck passes (make format)"
+        "Create directory wiki/static/img/memories/",
+        "Use agent-browser skill to navigate to local dev environment Settings page",
+        "Set browser to light mode",
+        "Capture screenshot of Settings page showing the Memories section (empty state) and save as wiki/static/img/memories/settings-memories-empty.png",
+        "Use agent-browser to click 'Add Memory' and fill in example content like 'I prefer Python for backend development and TypeScript for frontend. My timezone is America/Chicago.'",
+        "Capture screenshot of the Add Memory dialog with content filled in and save as wiki/static/img/memories/settings-add-memory-dialog.png",
+        "Save the memory, then capture screenshot of Settings page showing the created memory in the list and save as wiki/static/img/memories/settings-memories-list.png",
+        "Navigate to chat, send a message that triggers memory recall (e.g., 'What programming languages do I prefer?'), and capture screenshot showing personalized response as wiki/static/img/memories/chat-memory-recall.png"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "Read backend/src/utils/stream.py to find stream_generator(). Import prepare_memory_files locally to avoid circular imports. The user_id and memory service should be available from the request context."
+      "notes": "The local dev environment must be running: 'make dev' for backend (port 8000) and 'cd frontend && npm run dev' for frontend (port 5173). The Settings page is at http://localhost:5173/settings. You must log in first. The agent-browser skill handles browser automation. Use light mode for all screenshots. The MemorySettings component is in frontend/src/components/settings/MemorySettings.tsx. The settings page is at frontend/src/pages/settings/index.tsx."
     },
     {
       "id": "US-004",
-      "title": "Wire memory into worker entry point (tasks.py)",
-      "description": "As an end user with scheduled or distributed agent tasks, I want those background agents to also have access to my memories for consistent personalized behavior.",
+      "title": "Write Memories tutorial page (UI walkthrough with screenshots)",
+      "description": "As a user, I want a step-by-step visual tutorial showing me how to add memories through the Settings page and see them working in chat.",
       "acceptanceCriteria": [
-        "_execute_agent_stream() in backend/src/workers/tasks.py calls prepare_memory_files() before creating ToolRuntime",
-        "Memory files are merged into files_map with user-provided files taking precedence",
-        "memory_sources is passed to construct_agent() via the memory kwarg",
-        "Typecheck passes (make format)"
+        "Create wiki/docs/memories/tutorial.md with frontmatter: title 'Tutorial: Configuring Memories', sidebar_label 'Memory Tutorial', sidebar_position 1",
+        "Step 1 'Navigate to Settings': describe how to reach the Settings page, include screenshot reference ![Settings Memories Empty](/img/memories/settings-memories-empty.png)",
+        "Step 2 'Add a Memory': describe clicking Add Memory button, entering content, saving; include screenshot ![Add Memory Dialog](/img/memories/settings-add-memory-dialog.png)",
+        "Step 3 'Verify Memory Created': describe seeing the memory in the list; include screenshot ![Memories List](/img/memories/settings-memories-list.png)",
+        "Step 4 'Test in Chat': describe navigating to chat, sending a message, seeing personalized response; include screenshot ![Memory Recall](/img/memories/chat-memory-recall.png)",
+        "Step 5 'Managing Memories': brief section describing edit (pencil icon) and delete (trash icon with confirmation dialog) actions",
+        "Include a link back to the main Memories page: 'For API reference and programmatic access, see [Memories](/docs/memories)'",
+        "Typecheck passes"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Read backend/src/workers/tasks.py to find _execute_agent_stream(). Follow same pattern as US-003 for stream.py."
+      "notes": "Screenshots should already exist in wiki/static/img/memories/ from US-003. Reference them with Docusaurus-compatible image syntax: ![alt text](/img/memories/filename.png). Follow the same tutorial structure as wiki/docs/tools/sandbox-tutorial.md. The MemorySettings component has: search bar, Add Memory button, memory list with edit/delete icons, and MemoryEditDialog for create/edit. Delete shows an AlertDialog confirmation."
     },
     {
       "id": "US-005",
-      "title": "Wire memory into direct invoke entry point (llm.py)",
-      "description": "As an API consumer using the direct invoke endpoint, I want the agent to have access to my memories for personalized responses.",
+      "title": "Update llm.txt with memories documentation",
+      "description": "As an external AI agent or search engine, I need the public llm.txt to reflect the memories feature so LLM search engines provide accurate information about Orchestra.",
       "acceptanceCriteria": [
-        "llm_invoke() in backend/src/controllers/llm.py calls prepare_memory_files() before init_backend()",
-        "Memory files are merged into params.input.files with existing files taking precedence",
-        "memory_sources is passed to construct_agent() via the memory kwarg",
-        "Typecheck passes (make format)"
+        "Read website/public/llm.txt to understand the current structure and style",
+        "Add a 'Memories' subsection under '## Core Features' (after the existing Prompts or Tools section) with: one-line description of what memories are, that they persist per-user, that they are automatically injected into agent context during conversations, the 5 API endpoints (GET list, GET single, POST create, PUT update, DELETE), and that configuration is available via the Settings UI",
+        "Keep the addition concise (5-10 lines) and consistent with the existing llm.txt bullet-point style",
+        "Typecheck passes"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Read backend/src/controllers/llm.py to find llm_invoke(). Follow same pattern as US-003 and US-004."
-    },
-    {
-      "id": "US-006",
-      "title": "Add unit tests for prepare_memory_files()",
-      "description": "As a developer, I need tests covering the new helper function to ensure correctness and prevent regressions.",
-      "acceptanceCriteria": [
-        "Test file at backend/tests/unit/agents/test_prepare_memory_files.py",
-        "Test: returns ({}, None) when user_id is None",
-        "Test: returns ({}, None) when user_id is empty string",
-        "Test: returns ({}, None) when MemoryService.search() returns empty list",
-        "Test: returns ({}, None) and logs warning when MemoryService.search() raises exception",
-        "Test: returns correctly formatted files_map and [\"/memories.md\"] when memories exist",
-        "Test: verifies markdown bullet format of memory content",
-        "All tests pass (make test)"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": "Read existing test patterns in backend/tests/unit/ for conventions. Mock MemoryService.search() for all test cases. Use pytest and pytest-asyncio since prepare_memory_files is async."
-    },
-    {
-      "id": "US-007",
-      "title": "Update API documentation with memory behavior",
-      "description": "As an API consumer, I want the documentation to describe that agents now automatically load user memories, so I understand the personalization behavior.",
-      "acceptanceCriteria": [
-        "Update docstrings in stream_generator(), _execute_agent_stream(), and llm_invoke() to mention memory loading",
-        "Add a note to the construct_agent() docstring about the memory parameter",
-        "Typecheck passes (make format)"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "This is a documentation-only story. Read the functions modified in US-003, US-004, US-005 and add/update their docstrings. Keep docstrings concise."
-    },
-    {
-      "id": "US-008",
-      "title": "Use service_context.memory_service instead of singleton memory_service",
-      "description": "As a developer, I need all three entry points to use the MemoryService instance from ServiceContext (backed by AsyncPostgresStore) instead of the module-level singleton (backed by InMemoryStore), so that memories persisted through the Settings UI are found at agent runtime.",
-      "acceptanceCriteria": [
-        "In stream_generator() (backend/src/utils/stream.py): replace memory_service singleton with service_context.memory_service when calling prepare_memory_files()",
-        "In _execute_agent_stream() (backend/src/workers/tasks.py): replace memory_service singleton with service_context.memory_service when calling prepare_memory_files()",
-        "In llm_invoke() (backend/src/controllers/llm.py): replace memory_service singleton with self.service_context.memory_service when calling prepare_memory_files()",
-        "Remove the now-unnecessary 'from src.services.memory import memory_service' import from stream.py, tasks.py (inside _execute_agent_stream), and llm.py",
-        "Remove the memory_svc.user_id = user_id mutation in prepare_memory_files() — ServiceContext already initialises MemoryService with the correct user_id",
-        "Agent correctly retrieves memories that were created through the Settings UI",
-        "Typecheck passes (make format)"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "ServiceContext already creates self.memory_service = MemoryService(user_id=self.user_id, store=store) at backend/src/contexts/service.py:35 with the correct AsyncPostgresStore. The module-level singleton at backend/src/services/memory.py:31 defaults to get_store_in_memory() which returns InMemoryStore — this is why searches return empty. In stream.py, service_context is already a function parameter. In tasks.py, service_context is already a parameter. In llm.py, use self.service_context. The add_memories_to_system() function still uses the singleton — that is legacy and not part of this fix."
-    },
-    {
-      "id": "US-009",
-      "title": "Fix memory value parsing to use content key from MemoryRepo",
-      "description": "As a developer, I need prepare_memory_files() to correctly extract memory text from the data structure used by MemoryRepo, so that memory content is properly formatted in the markdown file.",
-      "acceptanceCriteria": [
-        "In prepare_memory_files() (backend/src/agents/__init__.py): change value.get('memory', str(value)) to value.get('content', str(value)) to match MemoryRepo storage format",
-        "Update existing unit tests in backend/tests/unit/agents/test_prepare_memory_files.py to use {'content': 'text'} instead of {'memory': 'text'} in mock SearchItem values",
-        "Add a test case that uses the full MemoryRepo value structure: {'id': 'memory_xxx', 'content': '...', 'metadata': {}, 'created_at': '...', 'updated_at': '...'}",
-        "Verify that bullet lines correctly extract the content field value",
-        "All tests pass (make test)",
-        "Typecheck passes (make format)"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "MemoryRepo.create() stores Memory(id=..., content=..., metadata=..., created_at=..., updated_at=...) via BaseRepo._set() which calls value.model_dump(exclude_none=True, mode='json') — the resulting dict has a 'content' key, NOT a 'memory' key. SearchItem.dict() returns {'key': '...', 'value': {'id': '...', 'content': '...', ...}}. Existing tests mock SearchItem with MagicMock() whose .dict() returns {'key': '...', 'value': {'memory': 'text'}} — these need updating to {'key': '...', 'value': {'content': 'text'}}. The fallback str(value) for non-dict values should remain for safety."
+      "notes": "Read website/public/llm.txt at /home/ryaneggz/ruska-ai/orchestra/website/public/llm.txt (or the worktree copy). The existing structure has ## Core Features with subsections like ### Projects, ### Assistants, ### Threads, ### Schedules, ### Prompts, ### Tools. Add ### Memories following the same pattern. Also check if there is a worktree copy at /home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-743/website/public/llm.txt."
     }
   ]
 }
