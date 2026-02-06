@@ -194,6 +194,19 @@ class LLMService:
                     )
 
             if assistant:
+                # Check for AGENTS.md in assistant files and inject as instructions
+                agents_md = self.extract_agents_md(assistant.files)
+                if agents_md:
+                    if assistant.instructions:
+                        logger.warning(
+                            f"AGENTS.md overriding existing instructions for assistant {params.metadata.assistant_id}"
+                        )
+                    assistant.system_prompt = None
+                    assistant.instructions = agents_md
+                    logger.info(
+                        f"Injected AGENTS.md ({len(agents_md)} chars) as instructions for assistant {params.metadata.assistant_id}"
+                    )
+
                 assistant.system_prompt = self.default_system_prompt(assistant)
                 assistant.tools = await self.init_tools(
                     assistant.tools, assistant.a2a, assistant.mcp
