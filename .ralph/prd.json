@@ -141,7 +141,7 @@
         "Typecheck passes (make format)"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "MemoryRepo.create() stores Memory(id=..., content=..., metadata=..., created_at=..., updated_at=...) via BaseRepo._set() which calls value.model_dump(exclude_none=True, mode='json') — the resulting dict has a 'content' key, NOT a 'memory' key. SearchItem.dict() returns {'key': '...', 'value': {'id': '...', 'content': '...', ...}}. Existing tests mock SearchItem with MagicMock() whose .dict() returns {'key': '...', 'value': {'memory': 'text'}} — these need updating to {'key': '...', 'value': {'content': 'text'}}. The fallback str(value) for non-dict values should remain for safety."
     }
   ]

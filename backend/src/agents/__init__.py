@@ -89,7 +89,7 @@ async def prepare_memory_files(
         data = mem.dict()
         value = data.get("value", {})
         text = (
-            value.get("memory", str(value)) if isinstance(value, dict) else str(value)
+            value.get("content", str(value)) if isinstance(value, dict) else str(value)
         )
         bullet_lines.append(f"- {text}")
 

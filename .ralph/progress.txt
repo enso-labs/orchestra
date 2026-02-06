@@ -1,107 +1,39 @@
 # Ralph Progress Log
-Started: 2026-02-05
-Feature: Native DeepAgents Memory (feat/738-native-deepagents-memory)
+Started: Thu Feb  5 17:18:57 MST 2026
+---
 
 ## Codebase Patterns
-- Backend format/lint: `cd backend && make format` runs `uvx ruff format`
-- `create_file_data(content: str)` from `deepagents.backends.utils` returns `{content: list[str], created_at: str, modified_at: str}`
-- `MemoryService.search()` returns `list[SearchItem]` where each item has `.dict()` → `{key, value, ...}` and `value` is typically `{"memory": "text"}`
-- Use `TYPE_CHECKING` guard for `MemoryService` import in agents/__init__.py to avoid circular imports
-- Pre-existing ruff lint warning (F401) on unused `create_agent` import in agents/__init__.py — not our change
-- Memory wiring pattern: call `prepare_memory_files()` → merge `{**memory_files, **files_map}` → pass `memory_sources` to `construct_agent(memory=...)`
-- Unit test convention: use `@pytest.mark.asyncio` on classes, `pytest-asyncio` auto mode, `unittest.mock.AsyncMock` for async methods, `patch("src.module.name")` for patching
+- ServiceContext (backend/src/contexts/service.py) creates per-request service instances with the correct user_id and AsyncPostgresStore — always prefer service_context.memory_service over the module-level singleton
+- The module-level memory_service singleton in backend/src/services/memory.py defaults to InMemoryStore (get_store_in_memory()) — only suitable for legacy add_memories_to_system()
+- prepare_memory_files() should NOT mutate user_id on the passed service; ServiceContext already initialises MemoryService with the correct user_id
+- When removing imports, check if other functions in the file still use them (e.g., add_memories_to_system still uses the singleton)
+- MemoryRepo stores Memory objects with a 'content' key (not 'memory') — use value.get('content', ...) when parsing SearchItem values
+
 ---
 
-## 2026-02-05 - US-001
-- Implemented `prepare_memory_files(user_id, memory_svc)` async helper in `backend/src/agents/__init__.py`
-- Added import of `create_file_data` from `deepagents.backends.utils`
-- Added `TYPE_CHECKING` guard for `MemoryService` type hint
-- Function fetches user memories, formats as markdown bullet list, returns `(files_map, memory_sources)` tuple
-- Files changed: `backend/src/agents/__init__.py`, `backend/src/constants/examples/__init__.py` (ruff format)
+## 2026-02-05 - US-008
+- What was implemented: Replaced the module-level memory_service singleton with service_context.memory_service in all three entry points (stream.py, tasks.py, llm.py) so memories persisted through the Settings UI are correctly retrieved at agent runtime
+- Files changed:
+  - backend/src/agents/__init__.py — removed memory_svc.user_id mutation from prepare_memory_files()
+  - backend/src/utils/stream.py — switched to service_context.memory_service, removed singleton import
+  - backend/src/workers/tasks.py — switched to service_context.memory_service, removed singleton import
+  - backend/src/controllers/llm.py — switched to self.service_context.memory_service, removed singleton import
+  - backend/tests/unit/agents/test_prepare_memory_files.py — removed test_sets_user_id_on_service_before_search test
+  - .ralph/prd.json — marked US-008 as passes: true
 - **Learnings for future iterations:**
-  - `create_file_data` splits content by newlines into a list — pass the full string, not pre-split lines
-  - The `memory_service` singleton at module level already exists but `prepare_memory_files` accepts it as a parameter for testability
-  - SearchItem `.dict()` returns `value` as a dict with a `"memory"` key containing the text
+  - ServiceContext already initialises MemoryService with the correct user_id and store — no need to mutate user_id on the service
+  - The module-level singleton uses InMemoryStore which is why searches return empty in production
+  - When removing a test that validates removed behavior, also verify no other tests depend on it
 ---
 
-## 2026-02-05 - US-002
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- Added `memory: list[str] | None = None` parameter to `init_graph()`, `Orchestra.__init__()`, and `construct_agent()`
-- Each function passes `memory` down the chain: `construct_agent()` → `Orchestra()` → `init_graph()` → `create_deep_agent()`
-- `create_deep_agent()` internally creates `MemoryMiddleware` when `memory` is not None
-- Files changed: `backend/src/agents/__init__.py`
+## 2026-02-05 - US-009
+- What was implemented: Fixed memory value parsing in prepare_memory_files() to use 'content' key instead of 'memory' to match MemoryRepo storage format. Updated all test mocks and added a test case with the full MemoryRepo value structure.
+- Files changed:
+  - backend/src/agents/__init__.py — changed value.get('memory', ...) to value.get('content', ...)
+  - backend/tests/unit/agents/test_prepare_memory_files.py — updated _make_search_item to use 'content' key, added test_handles_full_memory_repo_value_structure test
+  - .ralph/prd.json — marked US-009 as passes: true
 - **Learnings for future iterations:**
-  - `create_deep_agent()` has `memory: list[str] | None = None` as a keyword-only argument
-  - When `memory` is provided, deepagents internally does: `MemoryMiddleware(backend=backend, sources=memory)` and appends it to the middleware stack
-  - The memory parameter is a list of file paths (e.g., `["/memories.md"]`) that reference files in the StateBackend
----
-
-## 2026-02-05 - US-003
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- Wired memory into `stream_generator()` in `backend/src/utils/stream.py`
-- Added import of `prepare_memory_files` from `src.agents` and `memory_service` from `src.services.memory`
-- Calls `prepare_memory_files(service_context.user_id, memory_service)` before creating `ToolRuntime`
-- Merges memory files into `files_map` with user files taking precedence: `{**memory_files, **files_map}`
-- Passes `memory_sources` to `construct_agent()` via the `memory` kwarg
-- Files changed: `backend/src/utils/stream.py`
-- **Learnings for future iterations:**
-  - `memory_service` singleton can be imported directly at module level in stream.py (no circular import issue)
-  - Memory files must be merged BEFORE creating `ToolRuntime` since the runtime receives `files_map` in its state
-  - User files take precedence over memory files via `{**memory_files, **files_map}` merge order
----
-
-## 2026-02-05 - US-004
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- Wired memory into `_execute_agent_stream()` in `backend/src/workers/tasks.py`
-- Added imports of `prepare_memory_files` from `src.agents` and `memory_service` from `src.services.memory` (inside function to match existing lazy-import pattern)
-- Calls `prepare_memory_files(user_id, memory_service)` before creating `ToolRuntime`
-- Merges memory files into `files_map` with user files taking precedence: `{**memory_files, **files_map}`
-- Passes `memory_sources` to `construct_agent()` via the `memory` kwarg
-- Files changed: `backend/src/workers/tasks.py`
-- **Learnings for future iterations:**
-  - `_execute_agent_stream()` uses lazy imports inside the function body (not module-level) — follow this pattern for consistency
-  - The function receives `user_id` directly as a parameter, not via `service_context.user_id` — use the direct parameter
-  - `files_map` is passed as a parameter to `_execute_agent_stream()`, so memory merge must happen inside the function before it's used
----
-
-## 2026-02-05 - US-005
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- Wired memory into `llm_invoke()` in `backend/src/controllers/llm.py`
-- Added imports of `prepare_memory_files` from `src.agents` and `memory_service` from `src.services.memory`
-- Calls `prepare_memory_files(self.user_id, memory_service)` before `init_backend()`
-- Merges memory files into `params.input.files` with existing files taking precedence: `{**memory_files, **existing_files}`
-- Passes `memory_sources` to `construct_agent()` via the `memory` kwarg
-- Memory files are merged before `init_backend()` so `_init_runtime()` picks up the merged files in `request.input.files`
-- Files changed: `backend/src/controllers/llm.py`
-- **Learnings for future iterations:**
-  - In llm.py, memory must be merged into `params.input.files` BEFORE `init_backend()` since `_init_runtime()` reads `request.input.files`
-  - `llm_invoke()` uses `self.user_id` (not `service_context.user_id`) — both are the same value, but use `self.user_id` for consistency
-  - Module-level imports work fine in llm.py (no circular import issues with `memory_service` or `prepare_memory_files`)
----
-
-## 2026-02-05 - US-006
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- Created `backend/tests/unit/agents/test_prepare_memory_files.py` with 9 tests covering all acceptance criteria
-- Created `backend/tests/unit/agents/__init__.py` (new test package)
-- Tests cover: None user_id, empty string user_id, empty search results, exception handling with log warning, correct files_map/sources return, markdown bullet formatting, user_id set on service before search, single memory, non-dict value fallback
-- All 373 tests pass (9 new + 364 existing), `make format` clean
-- Files changed: `backend/tests/unit/agents/__init__.py`, `backend/tests/unit/agents/test_prepare_memory_files.py`
-- **Learnings for future iterations:**
-  - Mock `SearchItem` with `MagicMock()` whose `.dict()` returns `{"key": "...", "value": {"memory": "text"}}` — no need to import `SearchItem` directly
-  - `prepare_memory_files` sets `memory_svc.user_id` before calling `.search()` — test this side effect
-  - `create_file_data` returns `{"content": [...lines], "created_at": str, "modified_at": str}` — assert content as list of strings
-  - Test env requires `$HOME/.env/orchestra/.env.backend` loaded (conftest imports DB_URI)
----
-
-## 2026-02-05 - US-007
-Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
-- Added docstrings documenting memory loading behavior to four functions
-- `stream_generator()` in `backend/src/utils/stream.py` — new docstring
-- `_execute_agent_stream()` in `backend/src/workers/tasks.py` — appended memory paragraph to existing docstring
-- `llm_invoke()` in `backend/src/controllers/llm.py` — new docstring
-- `construct_agent()` in `backend/src/agents/__init__.py` — new docstring with `memory` arg description
-- Files changed: `backend/src/utils/stream.py`, `backend/src/workers/tasks.py`, `backend/src/controllers/llm.py`, `backend/src/agents/__init__.py`
-- **Learnings for future iterations:**
-  - Documentation-only stories are quick — just read existing code and add concise docstrings
-  - Use ``double backtick`` RST style in docstrings for function/parameter references (consistent with existing codebase)
+  - MemoryRepo.create() stores Memory(id, content, metadata, created_at, updated_at) — model_dump() produces a dict with 'content' key, NOT 'memory'
+  - SearchItem.value returns the dict from model_dump(), so parsing code must use value.get('content', ...) to extract the text
+  - Always verify mock data structures match the actual production data by checking the Pydantic model and repo code
 ---

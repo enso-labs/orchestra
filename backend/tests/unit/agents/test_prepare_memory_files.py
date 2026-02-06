@@ -9,7 +9,7 @@ from src.agents import prepare_memory_files
 def _make_search_item(memory_text: str) -> MagicMock:
     """Create a mock SearchItem whose .dict() returns the expected shape."""
     item = MagicMock()
-    item.dict.return_value = {"key": "some-key", "value": {"memory": memory_text}}
+    item.dict.return_value = {"key": "some-key", "value": {"content": memory_text}}
     return item
 
 
@@ -92,6 +92,30 @@ class TestPrepareMemoryFilesWithMemories:
 
         assert sources == ["/memories.md"]
         assert files_map["/memories.md"]["content"] == ["- Only one memory"]
+
+    async def test_handles_full_memory_repo_value_structure(self) -> None:
+        """When value matches the full MemoryRepo structure, content is extracted."""
+        item = MagicMock()
+        item.dict.return_value = {
+            "key": "memory_abc123",
+            "value": {
+                "id": "memory_abc123",
+                "content": "User likes Python over JavaScript",
+                "metadata": {},
+                "created_at": "2026-02-05T12:00:00",
+                "updated_at": "2026-02-05T12:00:00",
+            },
+        }
+
+        memory_svc = MagicMock()
+        memory_svc.search = AsyncMock(return_value=[item])
+
+        files_map, sources = await prepare_memory_files("user-123", memory_svc)
+
+        assert sources == ["/memories.md"]
+        assert files_map["/memories.md"]["content"] == [
+            "- User likes Python over JavaScript"
+        ]
 
     async def test_handles_non_dict_value(self) -> None:
         """When value is not a dict, it should be stringified."""
