@@ -91,11 +91,11 @@ async def prepare_memory_files(
         text = (
             value.get("content", str(value)) if isinstance(value, dict) else str(value)
         )
-        bullet_lines.append(f"- {text}")
+        bullet_lines.append(text + "\n")
 
     content = "\n".join(bullet_lines)
-    files_map = {"/memories.md": create_file_data(content)}
-    return files_map, ["/memories.md"]
+    files_map = {"/AGENTS.md": create_file_data(content)}
+    return files_map, ["/AGENTS.md"]
 
 
 def init_graph(
@@ -263,7 +263,7 @@ async def construct_agent(
     """Build and return an Orchestra agent instance.
 
     Args:
-        memory: Optional list of file paths (e.g. ``["/memories.md"]``) that
+        memory: Optional list of file paths (e.g. ``["/AGENTS.md"]``) that
             reference files in the StateBackend. When provided, MemoryMiddleware
             is added to the agent's middleware stack so the agent can access
             user memories during execution.

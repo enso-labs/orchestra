@@ -26,7 +26,7 @@ Document the Memories feature in the Orchestra wiki (`docs.ruska.ai`). The Memor
 
 **Acceptance Criteria:**
 - [ ] Create `wiki/docs/memories/index.md`
-- [ ] Include an "Overview" section explaining what memories are and how they work (stored per-user, automatically injected into agent context as `/memories.md`, namespaced by user ID)
+- [ ] Include an "Overview" section explaining what memories are and how they work (stored per-user, automatically injected into agent context as `/AGENTS.md`, namespaced by user ID)
 - [ ] Include a "How It Works" section describing: memory storage via LangGraph BaseStore, automatic injection via `prepare_memory_files()` into streaming/worker/invoke entry points, markdown formatting of memories
 - [ ] Include "API Reference" section with curl examples for all 5 endpoints:
   - `GET /api/memories` (list with pagination and search query)

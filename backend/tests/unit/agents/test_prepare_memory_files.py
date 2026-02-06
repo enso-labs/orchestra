@@ -59,9 +59,9 @@ class TestPrepareMemoryFilesWithMemories:
 
         files_map, sources = await prepare_memory_files("user-123", memory_svc)
 
-        assert sources == ["/memories.md"]
-        assert "/memories.md" in files_map
-        file_data = files_map["/memories.md"]
+        assert sources == ["/AGENTS.md"]
+        assert "/AGENTS.md" in files_map
+        file_data = files_map["/AGENTS.md"]
         assert "content" in file_data
         assert "created_at" in file_data
         assert "modified_at" in file_data
@@ -76,7 +76,7 @@ class TestPrepareMemoryFilesWithMemories:
 
         files_map, _ = await prepare_memory_files("user-123", memory_svc)
 
-        content_lines = files_map["/memories.md"]["content"]
+        content_lines = files_map["/AGENTS.md"]["content"]
         assert content_lines == [
             "- Remember to call Bob",
             "- User prefers dark mode",
@@ -90,8 +90,8 @@ class TestPrepareMemoryFilesWithMemories:
 
         files_map, sources = await prepare_memory_files("user-789", memory_svc)
 
-        assert sources == ["/memories.md"]
-        assert files_map["/memories.md"]["content"] == ["- Only one memory"]
+        assert sources == ["/AGENTS.md"]
+        assert files_map["/AGENTS.md"]["content"] == ["- Only one memory"]
 
     async def test_handles_full_memory_repo_value_structure(self) -> None:
         """When value matches the full MemoryRepo structure, content is extracted."""
@@ -112,8 +112,8 @@ class TestPrepareMemoryFilesWithMemories:
 
         files_map, sources = await prepare_memory_files("user-123", memory_svc)
 
-        assert sources == ["/memories.md"]
-        assert files_map["/memories.md"]["content"] == [
+        assert sources == ["/AGENTS.md"]
+        assert files_map["/AGENTS.md"]["content"] == [
             "- User likes Python over JavaScript"
         ]
 
@@ -127,5 +127,5 @@ class TestPrepareMemoryFilesWithMemories:
 
         files_map, sources = await prepare_memory_files("user-123", memory_svc)
 
-        assert sources == ["/memories.md"]
-        assert files_map["/memories.md"]["content"] == ["- plain string value"]
+        assert sources == ["/AGENTS.md"]
+        assert files_map["/AGENTS.md"]["content"] == ["- plain string value"]

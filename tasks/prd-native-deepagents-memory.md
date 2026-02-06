@@ -30,7 +30,7 @@ This feature wires the existing `memory` parameter on `create_deep_agent()` so t
 - [ ] Returns `({}, None)` when `user_id` is falsy
 - [ ] Returns `({}, None)` when `MemoryService.search()` returns empty
 - [ ] Catches exceptions from `MemoryService.search()`, logs a warning, and returns `({}, None)`
-- [ ] Formats memories as markdown bullet list under path `/memories.md`
+- [ ] Formats memories as markdown bullet list under path `/AGENTS.md`
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-002: Thread `memory` parameter through `init_graph`, `Orchestra`, and `construct_agent`
@@ -41,7 +41,7 @@ This feature wires the existing `memory` parameter on `create_deep_agent()` so t
 - [ ] `Orchestra.__init__()` accepts `memory: list[str] | None = None` and passes it to `init_graph()`
 - [ ] `construct_agent()` accepts `memory: list[str] | None = None` and passes it to `Orchestra()`
 - [ ] When `memory=None`, `create_deep_agent()` does not add `MemoryMiddleware` (existing behavior preserved)
-- [ ] When `memory=["/memories.md"]`, `MemoryMiddleware` is added to the middleware stack
+- [ ] When `memory=["/AGENTS.md"]`, `MemoryMiddleware` is added to the middleware stack
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-003: Wire memory into streaming entry point (`stream.py`)
@@ -82,7 +82,7 @@ This feature wires the existing `memory` parameter on `create_deep_agent()` so t
 - [ ] Test: returns `({}, None)` when `user_id` is empty string
 - [ ] Test: returns `({}, None)` when `MemoryService.search()` returns empty list
 - [ ] Test: returns `({}, None)` and logs warning when `MemoryService.search()` raises exception
-- [ ] Test: returns correctly formatted `files_map` and `["/memories.md"]` when memories exist
+- [ ] Test: returns correctly formatted `files_map` and `["/AGENTS.md"]` when memories exist
 - [ ] Test: verifies markdown bullet format of memory content
 - [ ] All tests pass (`make test`)
 
@@ -141,9 +141,9 @@ The following stories address bugs discovered during end-to-end testing of US-00
 
 - FR-1: The system must fetch user memories via `MemoryService.search()` when a `user_id` is present
 - FR-2: The system must format fetched memories as a markdown bullet list and wrap with `create_file_data()` from `deepagents.backends.utils`
-- FR-3: The system must store memory content in `files_map` under the key `/memories.md`, served by the default `StateBackend`
-- FR-4: The system must pass `memory=["/memories.md"]` to `create_deep_agent()` which adds `MemoryMiddleware` to the middleware stack
-- FR-5: `MemoryMiddleware.abefore_agent()` must download `/memories.md` from `StateBackend` and inject its content into the system prompt via `modify_request()`
+- FR-3: The system must store memory content in `files_map` under the key `/AGENTS.md`, served by the default `StateBackend`
+- FR-4: The system must pass `memory=["/AGENTS.md"]` to `create_deep_agent()` which adds `MemoryMiddleware` to the middleware stack
+- FR-5: `MemoryMiddleware.abefore_agent()` must download `/AGENTS.md` from `StateBackend` and inject its content into the system prompt via `modify_request()`
 - FR-6: When merging memory files into `files_map`, user-provided files must take precedence over memory files
 - FR-7: When `user_id` is absent, empty, or memory fetch fails, the system must proceed without `MemoryMiddleware` (no error, no degraded behavior)
 - FR-8: The `MemoryService.search()` default limit of 20 memories must be respected; `SummarizationMiddleware` handles context window limits downstream
@@ -182,6 +182,6 @@ The following stories address bugs discovered during end-to-end testing of US-00
 ## Open Questions
 
 - Should `add_memories_to_system()` be formally deprecated with a warning log in this PR, or handled in a follow-up?
-- Should the memory file path (`/memories.md`) be configurable or is a constant sufficient?
+- Should the memory file path (`/AGENTS.md`) be configurable or is a constant sufficient?
 - Should there be an upper bound on memory count beyond the default `limit=20` from `MemoryService.search()`?
 - ~~Why does `prepare_memory_files()` return empty results?~~ **Resolved:** Store instance mismatch (US-008) and value key mismatch (US-009)
