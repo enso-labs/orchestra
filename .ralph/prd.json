@@ -111,7 +111,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Read wiki/sidebars.ts — Core Features is at items: ['assistants/index', 'threads/index', 'storage/index'] (line 11). Add 'agents-md/index' to the end of that array. Tutorials is at items: ['tools/sandbox-tutorial'] (line 22). Add 'agents-md/tutorial' to the end of that array. Follow the same frontmatter pattern as wiki/docs/assistants/index.md."
     },
     {
@@ -128,7 +128,7 @@
         "Include curl examples showing how to create an assistant with AGENTS.md via API"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Read wiki/docs/assistants/index.md for documentation style and structure. The API base URL is https://chat.ruska.ai (from AGENTS.md deployment field). For curl examples, show POST /api/v0/assistants with files: {'AGENTS.md': '# Instructions...'} and POST /api/v0/threads with input.files containing AGENTS.md. Reference the Assistant schema: files is Dict[str, str] where key is filename. Explain that AGENTS.md content overrides the instructions field and takes precedence. Link to DeepAgents memory docs showing this is built on the same pattern."
     },
     {
@@ -147,7 +147,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "This story requires the agent-browser skill. The application is at https://chat.ruska.ai. Use light mode for all screenshots. Follow the same tutorial pattern as wiki/docs/tools/sandbox-tutorial.md. Screenshots should be stored as PNG files in wiki/docs/agents-md/img/. Reference images in markdown as ![Alt text](./img/filename.png). The backend must be running with AGENTS.md injection (US-001 through US-003) for the demo to work — chat responses should reflect the AGENTS.md instructions."
     },
     {

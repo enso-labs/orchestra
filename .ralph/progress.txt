@@ -14,6 +14,9 @@ Started: Thu Feb  5 19:51:59 MST 2026
 - Git operations in worktree: run from worktree root, not from `backend/` subdir
 - Async integration tests: use `unittest.IsolatedAsyncioTestCase` + `AsyncMock` for service method mocking
 - Mock `LLMService.init_tools` with `@patch.object` to avoid A2A/MCP/tool loading in tests
+- Wiki is a git submodule: commit inside `wiki/` first (on a branch), then `git add wiki` in the parent repo
+- Wiki sidebar: `wiki/sidebars.ts` — Core Features items array and Tutorials items array
+- Wiki doc frontmatter pattern: `title`, `slug`, `sidebar_position` (see `wiki/docs/assistants/index.md`)
 ---
 
 ## 2026-02-05 - US-001
@@ -75,4 +78,51 @@ Started: Thu Feb  5 19:51:59 MST 2026
   - Mock `assistant_service.get` with `AsyncMock` to return controlled `Assistant` objects
   - The `Assistant` model_validator prevents setting both `system_prompt` and `instructions` at construction — but for tests with existing instructions, just set `instructions` alone (no `system_prompt`)
   - To test logging, use `with patch("src.services.llm.logger")` to capture log calls
+---
+
+## 2026-02-05 - US-006
+- Added AGENTS.md sidebar entries to wiki docs
+- Updated `wiki/sidebars.ts`: added `agents-md/index` to Core Features, `agents-md/tutorial` to Tutorials
+- Created `wiki/docs/agents-md/index.md` placeholder with frontmatter (title: AGENTS.md, slug: /agents-md)
+- Created `wiki/docs/agents-md/tutorial.md` placeholder with frontmatter (title: AGENTS.md Tutorial, slug: /agents-md/tutorial)
+- Files changed: `wiki/sidebars.ts`, `wiki/docs/agents-md/index.md` (new), `wiki/docs/agents-md/tutorial.md` (new)
+- **Learnings for future iterations:**
+  - Wiki is a git submodule — must commit inside `wiki/` first (on a branch), then `git add wiki` in the parent repo
+  - Wiki `node_modules` are not installed in worktrees — TypeScript errors from missing `@docusaurus/*` types are pre-existing and expected; typecheck effectively passes for our changes
+  - Sidebar entries go in `wiki/sidebars.ts` — Core Features items array (line 11) and Tutorials items array (line 21)
+  - Doc pages follow frontmatter pattern: `title`, `slug`, `sidebar_position` — see `wiki/docs/assistants/index.md` for reference
+---
+
+## 2026-02-05 - US-007
+- Replaced placeholder in `wiki/docs/agents-md/index.md` with full reference documentation
+- Sections: Overview, How It Works (Agent Mode + Thread Mode), Precedence Rules, Supported Formats, API Usage (curl examples for create/update/thread), Example AGENTS.md Content, Connection to DeepAgents Memory
+- Referenced Claude Code's CLAUDE.md and OpenAI Codex's AGENTS.md conventions
+- Included example AGENTS.md content showing persona, rules, knowledge, and response format
+- Documented both agent mode and thread mode injection with step-by-step descriptions
+- Included curl examples for creating assistants with AGENTS.md, updating, and thread mode usage
+- Files changed: `wiki/docs/agents-md/index.md`
+- **Learnings for future iterations:**
+  - Follow the same documentation style as `wiki/docs/assistants/index.md` — sections, curl examples, tables, related docs links
+  - The API base URL is `https://chat.ruska.ai` (from AGENTS.md deployment field)
+  - Assistant `files` field is `Dict[str, str]` where key is filename and value is content
+  - Thread-level `input.files` is `Dict[str, Any]` — can contain various formats (str, dict, list)
+  - Wiki submodule: commit inside `wiki/` first on the branch, then `git add wiki` in parent
+---
+
+## 2026-02-05 - US-008
+- Replaced placeholder in `wiki/docs/agents-md/tutorial.md` with full step-by-step tutorial
+- Used `agent-browser` CLI to capture 5 screenshots of the workflow in light mode (Day theme)
+- Screenshots stored in `wiki/docs/agents-md/img/`: home-page.png, file-panel-empty.png, create-file-dialog.png, agents-md-editor.png, chat-send-message.png
+- Tutorial follows same pattern as `wiki/docs/tools/sandbox-tutorial.md` (badges, numbered steps, tips, troubleshooting table)
+- All images have descriptive alt text
+- Steps: Navigate to Orchestra, open file panel, create AGENTS.md file, write instructions, chat with agent
+- Includes API usage section, tips/best practices table, and troubleshooting table
+- Files changed: `wiki/docs/agents-md/tutorial.md`, `wiki/docs/agents-md/img/` (7 screenshots)
+- **Learnings for future iterations:**
+  - The public-facing Orchestra page at `chat.ruska.ai` allows file creation and editing without auth, but API calls (sending messages) require authentication
+  - `agent-browser` theme toggle opens a dropdown with Day/Dusk/Night/System options — click the menu item to select
+  - Screenshots captured via `agent-browser screenshot <path>` are full-page PNG captures
+  - The file panel has Chat/Editor toggle buttons in the top-right — use these to switch views
+  - File badge (number indicator) appears on the Manage Files button when files are attached
+  - Wiki submodule commit must happen inside `wiki/` dir before `git add wiki` in parent
 ---
