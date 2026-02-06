@@ -76,7 +76,6 @@ async def prepare_memory_files(
         return {}, None
 
     try:
-        memory_svc.user_id = user_id
         memories = await memory_svc.search()
     except Exception as exc:
         logger.warning(f"Failed to fetch memories for user {user_id}: {exc}")

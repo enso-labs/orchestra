@@ -23,7 +23,6 @@ from langchain_core.messages import (
 )
 from src.utils.logger import log_to_file, logger
 from src.utils.format import get_time
-from src.services.memory import memory_service
 
 # Configurable stream timeout (default 60 seconds)
 STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
@@ -202,7 +201,7 @@ async def stream_generator(
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
     memory_files, memory_sources = await prepare_memory_files(
-        service_context.user_id, memory_service
+        service_context.user_id, service_context.memory_service
     )
     files_map = {**memory_files, **files_map}
     async with get_checkpoint_db() as checkpointer:

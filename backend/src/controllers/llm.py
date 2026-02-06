@@ -14,7 +14,6 @@ from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
 from src.repos.user_settings_repo import UserSettingsRepo
-from src.services.memory import memory_service
 from src.utils.llm import resolve_api_key
 from src.utils.logger import logger
 from src.utils.format import get_time
@@ -115,7 +114,7 @@ class LLMController:
 
             # Load user memories into files_map for MemoryMiddleware
             memory_files, memory_sources = await prepare_memory_files(
-                self.user_id, memory_service
+                self.user_id, self.service_context.memory_service
             )
             if memory_files:
                 existing_files = params.input.files or {}

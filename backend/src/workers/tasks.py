@@ -209,13 +209,14 @@ async def _execute_agent_stream(
     from src.utils.logger import logger
     from src.services.errors import CheckpointConnectionError
     from src.services.abort import AbortService
-    from src.services.memory import memory_service
 
     # Get assistant config if needed
     params = await service_context.llm_service.assistant(params)
 
     # Load user memories and merge into files_map
-    memory_files, memory_sources = await prepare_memory_files(user_id, memory_service)
+    memory_files, memory_sources = await prepare_memory_files(
+        user_id, service_context.memory_service
+    )
     files_map = {**memory_files, **files_map}
 
     # Initialize ToolRuntime and Backend

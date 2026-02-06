@@ -110,6 +110,39 @@
       "priority": 7,
       "passes": true,
       "notes": "This is a documentation-only story. Read the functions modified in US-003, US-004, US-005 and add/update their docstrings. Keep docstrings concise."
+    },
+    {
+      "id": "US-008",
+      "title": "Use service_context.memory_service instead of singleton memory_service",
+      "description": "As a developer, I need all three entry points to use the MemoryService instance from ServiceContext (backed by AsyncPostgresStore) instead of the module-level singleton (backed by InMemoryStore), so that memories persisted through the Settings UI are found at agent runtime.",
+      "acceptanceCriteria": [
+        "In stream_generator() (backend/src/utils/stream.py): replace memory_service singleton with service_context.memory_service when calling prepare_memory_files()",
+        "In _execute_agent_stream() (backend/src/workers/tasks.py): replace memory_service singleton with service_context.memory_service when calling prepare_memory_files()",
+        "In llm_invoke() (backend/src/controllers/llm.py): replace memory_service singleton with self.service_context.memory_service when calling prepare_memory_files()",
+        "Remove the now-unnecessary 'from src.services.memory import memory_service' import from stream.py, tasks.py (inside _execute_agent_stream), and llm.py",
+        "Remove the memory_svc.user_id = user_id mutation in prepare_memory_files() — ServiceContext already initialises MemoryService with the correct user_id",
+        "Agent correctly retrieves memories that were created through the Settings UI",
+        "Typecheck passes (make format)"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "ServiceContext already creates self.memory_service = MemoryService(user_id=self.user_id, store=store) at backend/src/contexts/service.py:35 with the correct AsyncPostgresStore. The module-level singleton at backend/src/services/memory.py:31 defaults to get_store_in_memory() which returns InMemoryStore — this is why searches return empty. In stream.py, service_context is already a function parameter. In tasks.py, service_context is already a parameter. In llm.py, use self.service_context. The add_memories_to_system() function still uses the singleton — that is legacy and not part of this fix."
+    },
+    {
+      "id": "US-009",
+      "title": "Fix memory value parsing to use content key from MemoryRepo",
+      "description": "As a developer, I need prepare_memory_files() to correctly extract memory text from the data structure used by MemoryRepo, so that memory content is properly formatted in the markdown file.",
+      "acceptanceCriteria": [
+        "In prepare_memory_files() (backend/src/agents/__init__.py): change value.get('memory', str(value)) to value.get('content', str(value)) to match MemoryRepo storage format",
+        "Update existing unit tests in backend/tests/unit/agents/test_prepare_memory_files.py to use {'content': 'text'} instead of {'memory': 'text'} in mock SearchItem values",
+        "Add a test case that uses the full MemoryRepo value structure: {'id': 'memory_xxx', 'content': '...', 'metadata': {}, 'created_at': '...', 'updated_at': '...'}",
+        "Verify that bullet lines correctly extract the content field value",
+        "All tests pass (make test)",
+        "Typecheck passes (make format)"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "MemoryRepo.create() stores Memory(id=..., content=..., metadata=..., created_at=..., updated_at=...) via BaseRepo._set() which calls value.model_dump(exclude_none=True, mode='json') — the resulting dict has a 'content' key, NOT a 'memory' key. SearchItem.dict() returns {'key': '...', 'value': {'id': '...', 'content': '...', ...}}. Existing tests mock SearchItem with MagicMock() whose .dict() returns {'key': '...', 'value': {'memory': 'text'}} — these need updating to {'key': '...', 'value': {'content': 'text'}}. The fallback str(value) for non-dict values should remain for safety."
     }
   ]
 }

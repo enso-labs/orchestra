@@ -82,14 +82,6 @@ class TestPrepareMemoryFilesWithMemories:
             "- User prefers dark mode",
         ]
 
-    async def test_sets_user_id_on_service_before_search(self) -> None:
-        memory_svc = MagicMock()
-        memory_svc.search = AsyncMock(return_value=[_make_search_item("test")])
-
-        await prepare_memory_files("user-456", memory_svc)
-
-        assert memory_svc.user_id == "user-456"
-
     async def test_handles_single_memory(self) -> None:
         memory_svc = MagicMock()
         memory_svc.search = AsyncMock(
