@@ -24,7 +24,7 @@
       "description": "As a developer or API consumer, I want a reference page explaining how memories work and how to interact with them via the API so I can integrate memories into my workflow.",
       "acceptanceCriteria": [
         "Create wiki/docs/memories/index.md with Docusaurus frontmatter: title 'Memories', slug '/memories', sidebar_position 4",
-        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /memories.md",
+        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /AGENTS.md",
         "Include 'How It Works' section describing the lifecycle: create memory -> stored in LangGraph BaseStore -> automatically retrieved via prepare_memory_files() -> injected as markdown into streaming/worker/invoke entry points",
         "Include 'API Reference' section with curl examples for all 5 endpoints: GET /api/memories (list with limit, offset, query params), GET /api/memories/{memory_id}, POST /api/memories (body: {content, metadata?}), PUT /api/memories/{memory_id} (body: {content, metadata?}), DELETE /api/memories/{memory_id}",
         "Each curl example uses localhost base URL and includes Authorization: Bearer <token> header",
