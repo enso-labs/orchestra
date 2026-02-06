@@ -6,7 +6,9 @@ Standardize how user memories are injected into agent context by adopting the De
 
 This feature wires the existing `memory` parameter on `create_deep_agent()` so that user memories are loaded as files via the `StateBackend` and injected by `MemoryMiddleware` at agent startup. This aligns Orchestra with DeepAgents best practices for injectable context, making memory handling consistent, testable, and maintainable.
 
-**4 files modified, 0 files created.**
+**4 files modified, 0 files created.** *(Initial implementation — US-001 through US-007 are complete.)*
+
+**Bug fix iteration (US-008, US-009):** Testing revealed that `prepare_memory_files()` returns no results because the module-level `memory_service` singleton uses an `InMemoryStore` while the UI persists memories to `AsyncPostgresStore` (PostgreSQL). Additionally, the value parsing reads `value["memory"]` but `MemoryRepo` stores data under `value["content"]`.
 
 ## Goals
 
@@ -92,6 +94,49 @@ This feature wires the existing `memory` parameter on `create_deep_agent()` so t
 - [ ] Add a note to the `construct_agent()` docstring about the `memory` parameter
 - [ ] Typecheck/lint passes (`make format`)
 
+---
+
+## Bug Fix Iteration
+
+The following stories address bugs discovered during end-to-end testing of US-001 through US-007. Memories created through the Settings UI were not visible to `prepare_memory_files()` due to two root causes.
+
+### US-008: Use `service_context.memory_service` instead of singleton `memory_service`
+**Description:** As a developer, I need all three entry points to use the `MemoryService` instance from `ServiceContext` (which is backed by `AsyncPostgresStore`) instead of the module-level singleton (which uses `InMemoryStore`), so that memories persisted through the UI are actually found at agent runtime.
+
+**Acceptance Criteria:**
+- [ ] In `stream_generator()` (`backend/src/utils/stream.py`): replace `memory_service` singleton with `service_context.memory_service` when calling `prepare_memory_files()`
+- [ ] In `_execute_agent_stream()` (`backend/src/workers/tasks.py`): replace `memory_service` singleton with `service_context.memory_service` when calling `prepare_memory_files()`
+- [ ] In `llm_invoke()` (`backend/src/controllers/llm.py`): replace `memory_service` singleton with `self.service_context.memory_service` when calling `prepare_memory_files()`
+- [ ] Remove the now-unnecessary `from src.services.memory import memory_service` import from `stream.py`, `tasks.py` (inside `_execute_agent_stream`), and `llm.py`
+- [ ] Remove the `memory_svc.user_id = user_id` mutation in `prepare_memory_files()` — `ServiceContext` already initialises `MemoryService` with the correct `user_id`
+- [ ] Agent correctly retrieves memories that were created through the Settings UI
+- [ ] Typecheck/lint passes (`make format`)
+
+**Notes:**
+- `ServiceContext` already creates `self.memory_service = MemoryService(user_id=self.user_id, store=store)` at `backend/src/contexts/service.py:35` with the correct `AsyncPostgresStore`
+- The module-level singleton at `backend/src/services/memory.py:31` (`memory_service = MemoryService()`) defaults to `get_store_in_memory()` which returns an `InMemoryStore` — this is why searches return empty
+- In `stream.py`, `service_context` is already a function parameter. In `tasks.py`, `service_context` is already a parameter. In `llm.py`, use `self.service_context`
+- The `add_memories_to_system()` function still uses the singleton — that function is legacy and not part of this fix
+
+### US-009: Fix memory value parsing to use `content` key from `MemoryRepo`
+**Description:** As a developer, I need `prepare_memory_files()` to correctly extract memory text from the data structure used by `MemoryRepo`, so that memory content is properly formatted in the markdown file.
+
+**Acceptance Criteria:**
+- [ ] In `prepare_memory_files()` (`backend/src/agents/__init__.py`): change `value.get("memory", str(value))` to `value.get("content", str(value))` to match `MemoryRepo`'s storage format
+- [ ] Update existing unit tests in `backend/tests/unit/agents/test_prepare_memory_files.py` to use `{"content": "text"}` instead of `{"memory": "text"}` in mock `SearchItem` values
+- [ ] Add a test case that uses the full `MemoryRepo` value structure: `{"id": "memory_xxx", "content": "...", "metadata": {}, "created_at": "...", "updated_at": "..."}`
+- [ ] Verify that bullet lines correctly extract the `content` field value
+- [ ] All tests pass (`make test`)
+- [ ] Typecheck/lint passes (`make format`)
+
+**Notes:**
+- `MemoryRepo.create()` stores `Memory(id=..., content=..., metadata=..., created_at=..., updated_at=...)` via `BaseRepo._set()` which calls `value.model_dump(exclude_none=True, mode="json")` — the resulting dict has a `content` key, NOT a `memory` key
+- The `SearchItem.dict()` returns `{"key": "...", "value": {"id": "...", "content": "...", ...}}` — the `value` sub-dict uses `content`
+- The fallback `str(value)` for non-dict values should remain for safety
+- Existing tests mock `SearchItem` with `MagicMock()` whose `.dict()` returns `{"key": "...", "value": {"memory": "text"}}` — these need updating to `{"key": "...", "value": {"content": "text"}}`
+
+---
+
 ## Functional Requirements
 
 - FR-1: The system must fetch user memories via `MemoryService.search()` when a `user_id` is present
@@ -103,6 +148,8 @@ This feature wires the existing `memory` parameter on `create_deep_agent()` so t
 - FR-7: When `user_id` is absent, empty, or memory fetch fails, the system must proceed without `MemoryMiddleware` (no error, no degraded behavior)
 - FR-8: The `MemoryService.search()` default limit of 20 memories must be respected; `SummarizationMiddleware` handles context window limits downstream
 - FR-9: All three entry points (stream, worker, invoke) must behave identically with respect to memory loading
+- FR-10: All entry points must use the `MemoryService` instance from `ServiceContext` (backed by `AsyncPostgresStore`) — never the module-level singleton (backed by `InMemoryStore`)
+- FR-11: `prepare_memory_files()` must parse memory values using the `content` key (matching `MemoryRepo` storage format), not the `memory` key
 
 ## Non-Goals
 
@@ -121,6 +168,8 @@ This feature wires the existing `memory` parameter on `create_deep_agent()` so t
 - **`MemoryMiddleware` lifecycle**: At agent startup, `abefore_agent()` downloads the file from backend and calls `modify_request()` to inject content into the system prompt
 - **`SummarizationMiddleware`**: Already in the middleware stack via `init_default_middleware()` — handles cases where injected memory content makes the context too large
 - **Import location**: `prepare_memory_files` is imported locally in `stream.py`, `tasks.py`, and `llm.py` to avoid circular imports
+- **Store mismatch (Bug)**: The module-level `memory_service` singleton in `backend/src/services/memory.py:31` uses `get_store_in_memory()` (`InMemoryStore`), while the UI persists via `AsyncPostgresStore`. `ServiceContext` already creates a correctly-backed `MemoryService` at `backend/src/contexts/service.py:35` — entry points should use `service_context.memory_service`
+- **Value structure mismatch (Bug)**: `MemoryRepo` stores `Memory` model instances via `model_dump()`, producing `{"id": ..., "content": ..., "metadata": ..., "created_at": ..., "updated_at": ...}`. The `content` key holds the memory text, not `memory`
 
 ## Success Metrics
 
@@ -135,3 +184,4 @@ This feature wires the existing `memory` parameter on `create_deep_agent()` so t
 - Should `add_memories_to_system()` be formally deprecated with a warning log in this PR, or handled in a follow-up?
 - Should the memory file path (`/memories.md`) be configurable or is a constant sufficient?
 - Should there be an upper bound on memory count beyond the default `limit=20` from `MemoryService.search()`?
+- ~~Why does `prepare_memory_files()` return empty results?~~ **Resolved:** Store instance mismatch (US-008) and value key mismatch (US-009)
