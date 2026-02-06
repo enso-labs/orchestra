@@ -161,7 +161,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Read website/public/llm.txt to understand the existing style and structure. Add a new section for AGENTS.md. Describe that users can create an AGENTS.md file in their assistant's file panel to configure agent behavior — similar to how Claude Code uses CLAUDE.md or OpenAI Codex uses AGENTS.md. Include the supported formats (plain string, dict with content key, list) and explain that AGENTS.md content is injected as instructions in the agent's system prompt."
     }
   ]

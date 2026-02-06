@@ -17,6 +17,7 @@ Started: Thu Feb  5 19:51:59 MST 2026
 - Wiki is a git submodule: commit inside `wiki/` first (on a branch), then `git add wiki` in the parent repo
 - Wiki sidebar: `wiki/sidebars.ts` — Core Features items array and Tutorials items array
 - Wiki doc frontmatter pattern: `title`, `slug`, `sidebar_position` (see `wiki/docs/assistants/index.md`)
+- Website is a git submodule: initialize with `git submodule update --init website`, create branch, commit, then `git add website` in parent
 ---
 
 ## 2026-02-05 - US-001
@@ -125,4 +126,16 @@ Started: Thu Feb  5 19:51:59 MST 2026
   - The file panel has Chat/Editor toggle buttons in the top-right — use these to switch views
   - File badge (number indicator) appears on the Manage Files button when files are attached
   - Wiki submodule commit must happen inside `wiki/` dir before `git add wiki` in parent
+---
+
+## 2026-02-05 - US-009
+- Updated `website/public/llm.txt` with AGENTS.md feature description
+- Added new "AGENTS.md" section under Core Features, following existing style
+- Documented: what AGENTS.md is, supported formats (4 types), agent mode vs thread mode
+- Referenced the Claude Code CLAUDE.md and OpenAI Codex AGENTS.md convention
+- Files changed: `website/public/llm.txt`
+- **Learnings for future iterations:**
+  - `website/` is a git submodule (like `wiki/`) — must initialize with `git submodule update --init website` in worktrees
+  - Website submodule checks out in detached HEAD — need to `git checkout -b <branch>` before committing
+  - Same submodule commit pattern: commit in submodule first, then `git add website` in parent
 ---
