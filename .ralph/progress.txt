@@ -20,6 +20,7 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Middleware hooks are optional — only define the hooks your middleware needs (beforeLLM, afterLLM, beforeTool, afterTool)
 - `runBeforeLLM` and `runBeforeTool` chain their outputs; `runAfterLLM` is side-effect only (no chaining)
 - Cannot `vi.spyOn` ESM `node:fs/promises` exports — use real filesystem I/O in tests with temp dirs and cleanup in `afterEach`
+- Context trimming middleware keeps first message (system) + summary placeholder + last N messages — never loses the system prompt
 - Use factory function pattern for middleware needing dependencies (e.g., `createObservabilityMiddleware(logger)`) — allows DI and per-instance state via closures
 - Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
 
@@ -213,4 +214,18 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Use `logger.debug` for routine tool events, `logger.info` for LLM calls, `logger.warn` for tool failures — natural log level mapping
   - Truncate large args in logs with `JSON.stringify(args).slice(0, 200) + "..."` to prevent log flooding
   - Barrel file now also exports middleware runner functions (runBeforeLLM etc.) and Middleware type
+---
+
+## 2026-02-09 - US-015
+- What was implemented: Context manager middleware (Factor 3) — automatic message trimming for context window management
+- Files changed:
+  - packages/agent-ts/src/middleware/context-manager.ts (createContextManagerMiddleware factory with beforeLLM hook)
+  - packages/agent-ts/src/middleware/context-manager.test.ts (16 tests: name, hooks, under/over threshold, trimming, summary message, immutability, state preservation, custom threshold, edge cases)
+  - packages/agent-ts/src/index.ts (added createContextManagerMiddleware export)
+- **Learnings for future iterations:**
+  - Factory function pattern (`createContextManagerMiddleware(threshold, keep)`) works well for configurable middleware — same pattern as observability middleware
+  - Context trimming keeps first message (system prompt) + summary + last N messages — preserves conversation boundaries
+  - Use spread operator `{ ...state, messages: [...] }` to avoid mutating original state
+  - `Array.slice(-keep)` handles edge case where `keep` exceeds array length gracefully (returns all elements)
+  - Summary message uses role "user" since LLM expects user/assistant/system roles
 ---
