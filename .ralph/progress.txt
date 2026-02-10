@@ -20,6 +20,7 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Middleware hooks are optional — only define the hooks your middleware needs (beforeLLM, afterLLM, beforeTool, afterTool)
 - `runBeforeLLM` and `runBeforeTool` chain their outputs; `runAfterLLM` is side-effect only (no chaining)
 - Cannot `vi.spyOn` ESM `node:fs/promises` exports — use real filesystem I/O in tests with temp dirs and cleanup in `afterEach`
+- Use factory function pattern for middleware needing dependencies (e.g., `createObservabilityMiddleware(logger)`) — allows DI and per-instance state via closures
 - Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
 
 ---
@@ -198,4 +199,18 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Return `JSON.stringify({error, message, tool, suggestion})` string so LLM can parse it as structured error context
   - No-error case returns the original result by reference — no cloning needed
   - Error messages with special characters (quotes, paths) are safely handled by JSON.stringify
+---
+
+## 2026-02-09 - US-014
+- What was implemented: Observability middleware (Factor 12) — logs LLM calls and tool executions with timing
+- Files changed:
+  - packages/agent-ts/src/middleware/observability.ts (createObservabilityMiddleware factory with all four hooks)
+  - packages/agent-ts/src/middleware/observability.test.ts (13 tests: name, all hooks, LLM logging, tool logging, timing, truncation, error vs success)
+  - packages/agent-ts/src/index.ts (added middleware runner exports, errorHandlerMiddleware, createObservabilityMiddleware)
+- **Learnings for future iterations:**
+  - Use factory function pattern (`createObservabilityMiddleware(logger)`) when middleware needs injected dependencies (Logger) — avoids module-level state
+  - Track timing with closure variables (`llmStartTime`, `toolStartTimes` Map) — scoped per middleware instance
+  - Use `logger.debug` for routine tool events, `logger.info` for LLM calls, `logger.warn` for tool failures — natural log level mapping
+  - Truncate large args in logs with `JSON.stringify(args).slice(0, 200) + "..."` to prevent log flooding
+  - Barrel file now also exports middleware runner functions (runBeforeLLM etc.) and Middleware type
 ---

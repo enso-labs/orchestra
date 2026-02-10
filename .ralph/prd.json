@@ -256,8 +256,8 @@
         "Tests pass"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Observability middleware with createObservabilityMiddleware factory, all four hooks (beforeLLM, afterLLM, beforeTool, afterTool) with timing and structured logging. All 13 tests pass."
     },
     {
       "id": "US-015",
