@@ -33,3 +33,4 @@ export {
 export type { Middleware } from "./middleware/index.js";
 export { errorHandlerMiddleware } from "./middleware/error-handler.js";
 export { createObservabilityMiddleware } from "./middleware/observability.js";
+export { createContextManagerMiddleware } from "./middleware/context-manager.js";
