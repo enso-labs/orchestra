@@ -268,20 +268,144 @@ import {
 import type { Middleware } from "@ruska/agent-ts/middleware";
 ```
 
-## Development
+## Development Setup
 
-```bash
-npm run typecheck   # Type-check without emitting
-npm run build       # Compile to dist/
-npm run test        # Run vitest
-```
-
-## Requirements
+### Prerequisites
 
 - Node.js 18+ (native `fetch`, `ReadableStream`, `TextDecoderStream`)
-- Ruska backend running at `RUSKA_API_URL`
-- Valid `RUSKA_API_KEY` for authentication
+- Ruska backend running at `RUSKA_API_URL` (default `http://localhost:8000`)
+
+### Install & Configure
+
+```bash
+cd packages/agent-ts
+npm install
+cp .env.example .env
+# Edit .env — set RUSKA_API_KEY at minimum
+```
+
+### Dev Mode
+
+```bash
+npm run dev          # Run src/index.ts with tsx (one-shot)
+npm run dev:watch    # Run with tsx in watch mode — restarts on file changes
+```
+
+## Manual Validation Steps
+
+1. **Typecheck** — verify the project compiles without errors:
+   ```bash
+   npm run typecheck
+   ```
+
+2. **Build** — compile to `dist/` and verify output contains `.js` and `.d.ts` files:
+   ```bash
+   npm run build
+   ls dist/
+   ```
+
+3. **Config validation** — verify `loadConfig()` reads env vars and throws on missing keys:
+   ```bash
+   npx tsx -e "import { loadConfig } from './src/index.ts'; console.log(loadConfig())"
+   ```
+
+4. **Interactive run** — start the agent, verify streaming output, tool calls, and clean exit:
+   ```bash
+   npm run start
+   ```
+
+5. **Debug mode** — run with verbose structured JSON logs to stderr:
+   ```bash
+   LOG_LEVEL=debug npm run start
+   ```
+
+6. **File output** — after a successful run, check the `output/` directory for written files:
+   ```bash
+   ls -la output/
+   ```
+
+## Local Testing (npm link)
+
+Test the package in another project before publishing:
+
+```bash
+# In packages/agent-ts — build and register the global link
+npm run link
+
+# In your consumer project — link the package
+npm link @ruska/agent-ts
+```
+
+Example consumer code:
+
+```typescript
+import { runAgent, loadConfig } from "@ruska/agent-ts";
+
+const config = loadConfig();
+const result = await runAgent("Test topic", config);
+console.log(result);
+```
+
+Clean up when done:
+
+```bash
+# In your consumer project
+npm unlink @ruska/agent-ts
+
+# In packages/agent-ts
+npm unlink
+```
+
+## Publishing to npm
+
+### Prerequisites
+
+- Logged in to npm: `npm login`
+- Registry access to the `@ruska` scope
+
+### Steps
+
+1. **Bump version** (updates `package.json` and creates a git tag):
+   ```bash
+   npm version patch   # 0.1.0 → 0.1.1
+   npm version minor   # 0.1.0 → 0.2.0
+   npm version major   # 0.1.0 → 1.0.0
+   ```
+
+2. **Publish** (runs tests and builds via `prepublishOnly` hook automatically):
+   ```bash
+   npm publish
+   ```
+
+3. **Verify** the published package:
+   ```bash
+   npm info @ruska/agent-ts
+   ```
+
+## Package Locally (without publishing)
+
+Build a `.tgz` tarball for local distribution:
+
+```bash
+npm run package:local
+```
+
+This produces a file like `ruska-agent-ts-0.1.0.tgz`. Install it in another project:
+
+```bash
+npm install ./path/to/ruska-agent-ts-0.1.0.tgz
+```
+
+## Common Issues
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `ZodError: RUSKA_API_KEY is required` | Missing API key in environment | Copy `.env.example` to `.env` and set `RUSKA_API_KEY` |
+| HTTP 401 from `/api/llm/stream` | Invalid or expired API key | Verify your `RUSKA_API_KEY` is correct and active |
+| `ECONNREFUSED` / backend not running | Ruska backend is not reachable | Start the backend (`make dev` in repo root) or set `RUSKA_API_URL` to the correct host |
+| `MaxIterationsError` | Agent exceeded `MAX_ITERATIONS` without producing a result | Increase `MAX_ITERATIONS` in `.env`, or simplify the research topic |
+| Simulated search results | `TAVILY_API_KEY` not set | The `tavily_search` local fallback only registers when `TAVILY_API_KEY` is set; without it, `web_search` is server-delegated — ensure the backend has search configured |
 
 ## License
 
-MIT
+Apache-2.0

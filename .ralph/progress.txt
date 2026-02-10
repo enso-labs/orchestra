@@ -315,3 +315,14 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - When comparing to a sibling package's pattern, read its package.json first and adapt field values (directory, homepage path) while keeping structure identical
   - All 21 user stories now pass — PRD is fully complete
 ---
+
+## 2026-02-09 - US-022
+- What was implemented: README publishing guide and local testing instructions
+- Files changed:
+  - packages/agent-ts/README.md (added: Development Setup, Manual Validation Steps, Local Testing npm link, Publishing to npm, Package Locally, Common Issues troubleshooting table, updated License to Apache-2.0)
+- **Learnings for future iterations:**
+  - README sections should reference actual package.json scripts — cross-check every command mentioned
+  - Common Issues troubleshooting table format: Issue | Cause | Solution — keeps it scannable
+  - npm link workflow: `npm run link` in package → `npm link @scope/name` in consumer → `npm unlink` to clean up
+  - All 22 user stories now pass — PRD is fully complete
+---

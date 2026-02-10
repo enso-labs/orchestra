@@ -395,6 +395,24 @@
       "priority": 21,
       "passes": true,
       "notes": "Publish-ready package.json matching CLI pattern: license, author, homepage, repository, bugs, keywords, engines, files, publishConfig. Scripts: build:clean, prepack, prepublishOnly, version, link, package:local. build:clean and package:local verified working."
+    },
+    {
+      "id": "US-022",
+      "title": "README: publishing guide and local testing instructions",
+      "description": "As a maintainer or contributor, I need clear README sections for how to publish the package and how to test it locally before publishing.",
+      "acceptanceCriteria": [
+        "README has a 'Development Setup' section with: Prerequisites (Node 18+, backend running), Install & Configure (npm install, cp .env.example .env), Dev Mode (npm run dev with description)",
+        "README has a 'Manual Validation Steps' section with numbered steps: 1. Typecheck (npm run typecheck), 2. Build (npm run build, verify dist/ output), 3. Config validation (npx tsx import test), 4. Interactive run (npm run start, verify streaming/tools/exit), 5. Debug mode (LOG_LEVEL=debug npm run start), 6. File output (check output/ dir)",
+        "README has a 'Local Testing (npm link)' section: npm run link in packages/agent-ts, npm link @ruska/agent-ts in consumer project, example code snippet, npm unlink to clean up",
+        "README has a 'Publishing to npm' section: prerequisites (npm login, registry access), steps: bump version (npm version patch/minor/major), publish (npm publish), verify (npm info @ruska/agent-ts)",
+        "README has a 'Package Locally (without publishing)' section: npm run package:local, produces .tgz, install in other project via npm install ./path/to/ruska-agent-ts-x.y.z.tgz",
+        "README has a 'Common Issues' troubleshooting table: missing API key, HTTP 401, backend not running, max iterations, simulated search results",
+        "All commands in the README are correct and match actual package.json scripts",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": true,
+      "notes": "README updated with Development Setup, Manual Validation Steps, Local Testing (npm link), Publishing to npm, Package Locally, Common Issues troubleshooting table, and Apache-2.0 license."
     }
   ]
 }
