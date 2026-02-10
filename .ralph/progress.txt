@@ -144,4 +144,17 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Path traversal protection: `resolve(dir, filename)` then check `startsWith(resolvedDir + "/")`
   - Tool handler receives `options` record — use `options.outputDir` to inject config without requiring full Config object
   - `import.meta.dirname` provides __dirname equivalent in ESM for resolving test fixture paths
+- note_taker tool mutates `state.notes` directly — handler receives live state reference from executeTool
+---
+
+## 2026-02-09 - US-010
+- What was implemented: note_taker local tool that accumulates research notes in AgentState
+- Files changed:
+  - packages/agent-ts/src/tools/note-taker.ts (noteTakerDefinition, noteTakerHandler, registerNoteTaker)
+  - packages/agent-ts/src/tools/note-taker.test.ts (12 tests: definition shape, local flag, registration, note addition, category default, custom category, optional source, multi-call state mutation, ISO timestamp)
+- **Learnings for future iterations:**
+  - Tool handlers that mutate AgentState work because `executeTool` passes the state object by reference
+  - Category defaults to "general" when not provided — use `|| "general"` pattern
+  - ISO timestamps via `new Date().toISOString()` — verify in tests by re-parsing and comparing
+  - No filesystem operations needed — pure in-memory state mutation is simpler to test than file I/O tools
 ---
