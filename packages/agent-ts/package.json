@@ -1,0 +1,39 @@
+{
+  "name": "@ruska/agent-ts",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "12 Factor Agent TypeScript library — local agent loop backed by Ruska /llm/stream API",
+  "exports": {
+    ".": "./dist/index.js",
+    "./agent": "./dist/agent.js",
+    "./tools": "./dist/tools/index.js",
+    "./middleware": "./dist/middleware/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      ".": ["./dist/index.d.ts"],
+      "agent": ["./dist/agent.d.ts"],
+      "tools": ["./dist/tools/index.d.ts"],
+      "middleware": ["./dist/middleware/index.d.ts"]
+    }
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.3",
+    "vitest": "^3.0.5"
+  }
+}
