@@ -12,6 +12,10 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Use `any` type for `vi.spyOn(globalThis, "fetch")` to avoid complex vitest MockInstance type issues with overloaded fetch signatures
 - Backend SSE format: `data: ["eventType", payload]\n\n` — event types are `metadata`, `messages`, `values`, `error`, and `[DONE]` sentinel
 - Mock fetch in tests with `new Response(readableStream, { status, headers })` — use `ReadableStream` for SSE body simulation
+- Subdirectories under `src/` work fine — import with `./prompts/system.js` relative paths
+- Tool registry uses module-level arrays/maps — call `_resetRegistry()` in `beforeEach` for test isolation
+- `ToolDefinition.parameters` is typed as `z.ZodType` — any Zod schema works (z.object, z.string, etc.)
+- `registerTool` replaces existing tools with the same name — supports tool override pattern
 
 ---
 
@@ -81,4 +85,32 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Use `ReadableStream<Uint8Array>` + `TextEncoder` to simulate SSE body in tests
   - `response.body.getReader()` + `TextDecoder({ stream: true })` handles chunked SSE data correctly
   - Backend sends `: keep-alive\n\n` comments — skip lines starting with `:`
+---
+
+## 2026-02-09 - US-006
+- What was implemented: Prompt templates and system prompt builder with phase-based content
+- Files changed:
+  - packages/agent-ts/src/prompts/templates.ts (ToolDef interface, toolDescriptionBlock, researchInstructions, synthesisInstructions, outputInstructions, errorRecoveryGuidance)
+  - packages/agent-ts/src/prompts/system.ts (buildSystemPrompt function, Phase type, BuildSystemPromptOptions interface)
+  - packages/agent-ts/src/prompts/system.test.ts (17 tests: template fragments, phase switching, tool inclusion, composition)
+  - packages/agent-ts/src/index.ts (added buildSystemPrompt, Phase, BuildSystemPromptOptions, ToolDef exports)
+- **Learnings for future iterations:**
+  - Subdirectories under `src/` (e.g., `src/prompts/`) work fine with bundler moduleResolution — import with `./prompts/system.js`
+  - Use `ToolDef` interface (name, description, parameters) for tool definitions in prompts — decoupled from Zod schemas
+  - Phase enum is `"research" | "synthesis" | "output"` — dynamic prompt middleware will use this
+  - Templates are pure functions returning strings — easy to test and compose
+---
+
+## 2026-02-09 - US-007
+- What was implemented: Tool registry with definitions, dispatch, registerTool, and getServerToolNames
+- Files changed:
+  - packages/agent-ts/src/tools/index.ts (ToolDefinition, ToolHandler types, registerTool, executeTool, getServerToolNames, getToolDefinitions, ToolNotFoundError, _resetRegistry)
+  - packages/agent-ts/src/tools/index.test.ts (13 tests: registerTool add/replace/multiple, executeTool dispatch/unknown/validation/state/options, getServerToolNames filtering/empty, ToolNotFoundError shape, getToolDefinitions copy)
+  - packages/agent-ts/src/index.ts (added tool registry exports)
+- **Learnings for future iterations:**
+  - Module-level state (arrays, Maps) requires a `_resetRegistry()` helper for test isolation with `beforeEach`
+  - `ToolDefinition.parameters` typed as `z.ZodType` accepts any Zod schema — lets consumers use `z.object({})` or custom schemas
+  - `registerTool` with same name replaces existing definition — useful for tool override/customization
+  - `TOOL_DEFINITIONS` is a live reference to the internal array — `getToolDefinitions()` returns a copy for safety
+  - `executeTool` validates with `def.parameters.parse(args)` before calling handler — Zod errors propagate to caller
 ---

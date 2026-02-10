@@ -16,3 +16,11 @@ export type { StreamEvent, StreamChatRequest } from "./stream-client.js";
 export { buildSystemPrompt } from "./prompts/system.js";
 export type { Phase, BuildSystemPromptOptions } from "./prompts/system.js";
 export type { ToolDef } from "./prompts/templates.js";
+export {
+  registerTool,
+  executeTool,
+  getServerToolNames,
+  getToolDefinitions,
+  ToolNotFoundError,
+} from "./tools/index.js";
+export type { ToolDefinition, ToolHandler } from "./tools/index.js";

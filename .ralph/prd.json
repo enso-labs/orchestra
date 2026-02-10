@@ -111,8 +111,8 @@
         "Tests pass"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Prompt templates (templates.ts) and buildSystemPrompt (system.ts) with phase-based content, tool definitions, error recovery. 17 tests pass."
     },
     {
       "id": "US-007",
@@ -130,8 +130,8 @@
         "Tests pass"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tool registry with registerTool, executeTool, getServerToolNames, ToolNotFoundError, Zod validation. All 13 tests pass."
     },
     {
       "id": "US-008",
