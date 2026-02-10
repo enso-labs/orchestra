@@ -3,6 +3,33 @@
   "version": "0.1.0",
   "type": "module",
   "description": "12 Factor Agent TypeScript library — local agent loop backed by Ruska /llm/stream API",
+  "license": "Apache-2.0",
+  "author": "RUSKA <reggleston@ruska.ai>",
+  "homepage": "https://github.com/enso-labs/orchestra/tree/main/packages/agent-ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enso-labs/orchestra.git",
+    "directory": "packages/agent-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/enso-labs/orchestra/issues"
+  },
+  "keywords": [
+    "agent",
+    "ai",
+    "llm",
+    "ruska",
+    "orchestra",
+    "typescript",
+    "12-factor"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "!dist/__tests__"
+  ],
   "exports": {
     ".": "./dist/index.js",
     "./agent": "./dist/agent.js",
@@ -22,9 +49,18 @@
     "dev": "tsx src/index.ts",
     "dev:watch": "tsx watch src/index.ts",
     "build": "tsc",
+    "build:clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npm run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "prepublishOnly": "npm run build"
+    "prepack": "npm run build:clean",
+    "prepublishOnly": "npm run test && npm run build:clean",
+    "version": "git add -A",
+    "link": "npm install && npm run build && npm link",
+    "package:local": "npm run build:clean && npm pack"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
