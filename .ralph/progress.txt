@@ -187,3 +187,15 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Middleware hooks are optional — runner functions skip middlewares that don't define a given hook
   - Empty middleware array is a valid no-op — runners return original state/args/result unchanged
 ---
+
+## 2026-02-09 - US-013
+- What was implemented: Error handler middleware (Factor 8/9) — wraps tool errors into LLM-readable JSON
+- Files changed:
+  - packages/agent-ts/src/middleware/error-handler.ts (errorHandlerMiddleware with afterTool hook)
+  - packages/agent-ts/src/middleware/error-handler.test.ts (9 tests: name, hook presence, passthrough, error JSON, tool name inclusion, valid JSON, reference preservation, special characters)
+- **Learnings for future iterations:**
+  - Error handler only needs `afterTool` hook — keep middleware focused on a single concern
+  - Return `JSON.stringify({error, message, tool, suggestion})` string so LLM can parse it as structured error context
+  - No-error case returns the original result by reference — no cloning needed
+  - Error messages with special characters (quotes, paths) are safely handled by JSON.stringify
+---

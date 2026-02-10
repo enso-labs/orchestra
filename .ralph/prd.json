@@ -237,8 +237,8 @@
         "Tests pass"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Error handler middleware with afterTool hook: wraps errors into LLM-readable JSON, passes results through unchanged. All 9 tests pass."
     },
     {
       "id": "US-014",
