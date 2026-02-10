@@ -6,6 +6,8 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Build uses plain `tsc` with bundler moduleResolution for ESM compatibility
 - `.env.example` files require `git add -f` due to parent `.gitignore` pattern matching `.env*`
 - `dist/` is gitignored — build artifacts are not committed
+- Use `loadConfig(customEnv)` in tests instead of mutating `process.env`
+- Test files live alongside source: `src/foo.test.ts` next to `src/foo.ts`
 
 ---
 
@@ -21,4 +23,16 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Parent .gitignore blocks `.env.example` — use `git add -f` to force-add
   - `dist/` should be gitignored, not committed
   - `vitest` installed as devDep but no test files yet — `vitest run` will pass with 0 tests
+---
+
+## 2026-02-09 - US-002
+- What was implemented: Zod-validated config from environment variables
+- Files changed:
+  - packages/agent-ts/src/config.ts (loadConfig function, Config type, Zod schema)
+  - packages/agent-ts/src/config.test.ts (8 tests covering valid/invalid/defaults/coercion)
+- **Learnings for future iterations:**
+  - `loadConfig()` accepts an optional `env` parameter for testability — pass custom env maps in tests instead of mutating `process.env`
+  - Zod `z.coerce.number()` handles string-to-number conversion for env vars like MAX_ITERATIONS
+  - `dotenv.config()` is called at module import time in config.ts — tests that pass custom env bypass this
+  - Use `.min(1)` on required string fields to catch empty string as missing
 ---
