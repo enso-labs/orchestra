@@ -292,3 +292,14 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - `cache-dependency-path` must point to the package-specific lock file, not the repo root
   - Existing repo workflows use `actions/checkout@v4`, `actions/setup-node@v4` — follow same versions
 ---
+
+## 2026-02-09 - US-020
+- What was implemented: README.md with complete documentation for @ruska/agent-ts
+- Files changed:
+  - packages/agent-ts/README.md (new: 12 Factor mapping table, quick start, custom tools, custom middleware, model swapping, architecture diagram, package exports reference, development commands, requirements)
+- **Learnings for future iterations:**
+  - README code examples should reflect actual exported API — read barrel files and source before writing examples
+  - Architecture diagrams in text (using box-drawing characters) are more maintainable than images for library READMEs
+  - Include both runtime value imports and type-only imports in the exports reference — consumers need both
+  - All 20 user stories now pass — PRD is complete
+---
