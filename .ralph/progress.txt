@@ -267,3 +267,15 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Don't attempt `JSON.parse()` on non-JSON text on last iteration — let the loop fall through to `MaxIterationsError`
   - `_resetRegistry()` must be called in `beforeEach` for agent tests that register tools — module-level state persists across tests
 ---
+
+## 2026-02-09 - US-018
+- What was implemented: Package exports verification — barrel files and public API smoke tests
+- Files changed:
+  - packages/agent-ts/src/exports.test.ts (25 tests: main entry point exports, tools sub-path exports, middleware sub-path exports, type-level compile checks)
+- **Learnings for future iterations:**
+  - Barrel files (index.ts) were already complete from previous stories — each story updated the barrel file as it was implemented
+  - Export smoke tests use aliased imports (e.g., `registerTool as toolRegister`) to avoid name conflicts when testing multiple sub-paths in one file
+  - Type-only imports (`import type { ... }`) verify compile-time type availability — if a type were missing, `tsc --noEmit` would catch it
+  - `package.json` `exports` field maps `"."` → `dist/index.js`, `"./tools"` → `dist/tools/index.js`, `"./middleware"` → `dist/middleware/index.js` — must match `typesVersions` for declaration files
+  - Zod schemas double as both runtime values (`.parse()`) and TypeScript types (`z.infer<typeof Schema>`) — export the schema value and the type is automatically available
+---

@@ -329,8 +329,8 @@
         "Tests pass"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Barrel files verified: src/index.ts re-exports all public API (runAgent, loadConfig, createLogger, all schemas/types). Sub-paths ./tools and ./middleware resolve correctly. 25 export smoke tests pass. All 266 tests pass."
     },
     {
       "id": "US-019",
