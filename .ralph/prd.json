@@ -147,8 +147,8 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "web_search tool definition (local: false, server-delegated), tavily_search local fallback with TAVILY_API_KEY guard, registerWebSearch/registerTavilySearch functions. All 16 tests pass."
     },
     {
       "id": "US-009",
@@ -166,8 +166,8 @@
         "Tests pass"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "file_writer tool with path traversal protection, directory auto-creation, and size reporting. All 12 tests pass."
     },
     {
       "id": "US-010",

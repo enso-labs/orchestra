@@ -16,6 +16,8 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Tool registry uses module-level arrays/maps — call `_resetRegistry()` in `beforeEach` for test isolation
 - `ToolDefinition.parameters` is typed as `z.ZodType` — any Zod schema works (z.object, z.string, etc.)
 - `registerTool` replaces existing tools with the same name — supports tool override pattern
+- Cannot `vi.spyOn` ESM `node:fs/promises` exports — use real filesystem I/O in tests with temp dirs and cleanup in `afterEach`
+- Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
 
 ---
 
@@ -113,4 +115,33 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - `registerTool` with same name replaces existing definition — useful for tool override/customization
   - `TOOL_DEFINITIONS` is a live reference to the internal array — `getToolDefinitions()` returns a copy for safety
   - `executeTool` validates with `def.parameters.parse(args)` before calling handler — Zod errors propagate to caller
+- Server-delegated tools (local: false) should still have a handler that throws — prevents accidental local execution
+- Use `registerWebSearch()` / `registerTavilySearch()` functions for explicit tool registration
+- Tavily fallback pattern: check `process.env.TAVILY_API_KEY` and return boolean from register function
+---
+
+## 2026-02-09 - US-008
+- What was implemented: web_search server-delegated tool definition and tavily_search local fallback
+- Files changed:
+  - packages/agent-ts/src/tools/web-search.ts (webSearchDefinition, tavilySearchDefinition, registerWebSearch, registerTavilySearch)
+  - packages/agent-ts/src/tools/web-search.test.ts (16 tests: definition shape, local flags, server tool names, registration, Tavily API call mock, API error handling, combined registration)
+- **Learnings for future iterations:**
+  - Server-delegated tools (local: false) still need a handler registered — use one that throws descriptive error
+  - `registerTavilySearch()` returns boolean indicating whether registration happened — caller can check
+  - Use `vi.spyOn(globalThis, "fetch") as any` pattern for fetch mocking (from progress patterns)
+  - Tavily API expects `api_key` in POST body, not as header
+  - Combined registration test verifies both tools coexist with correct local/server separation
+---
+
+## 2026-02-09 - US-009
+- What was implemented: file_writer local tool with path traversal protection
+- Files changed:
+  - packages/agent-ts/src/tools/file-writer.ts (fileWriterDefinition, fileWriterHandler, registerFileWriter)
+  - packages/agent-ts/src/tools/file-writer.test.ts (12 tests: definition shape, local flag, registration, successful write, directory auto-creation, path traversal rejection x2, unicode size, default outputDir)
+- **Learnings for future iterations:**
+  - Cannot spy on ESM `node:fs/promises` exports — vitest can't redefine module namespace properties in ESM mode
+  - For filesystem tool tests, use real temp directories with `afterEach` cleanup (`rm -rf`)
+  - Path traversal protection: `resolve(dir, filename)` then check `startsWith(resolvedDir + "/")`
+  - Tool handler receives `options` record — use `options.outputDir` to inject config without requiring full Config object
+  - `import.meta.dirname` provides __dirname equivalent in ESM for resolving test fixture paths
 ---
