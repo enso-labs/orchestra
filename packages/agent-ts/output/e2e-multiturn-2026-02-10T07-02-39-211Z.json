@@ -1,0 +1,14 @@
+{
+  "test": "multiTurn",
+  "timestamp": "2026-02-10T07:02:39.211Z",
+  "requestCount": 3,
+  "success": false,
+  "result": null,
+  "rawText": null,
+  "error": "Agent loop exceeded maximum iterations (3). The agent did not produce a final result within the allowed turns.",
+  "toolsInPayload": [
+    "[]",
+    "[]",
+    "[]"
+  ]
+}
