@@ -8,6 +8,7 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - `dist/` is gitignored — build artifacts are not committed
 - Use `loadConfig(customEnv)` in tests instead of mutating `process.env`
 - Test files live alongside source: `src/foo.test.ts` next to `src/foo.ts`
+- Logger uses `process.stderr.write()` for structured JSON — spy with `vi.spyOn(process.stderr, "write").mockReturnValue(true)` in tests
 
 ---
 
@@ -35,4 +36,17 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Zod `z.coerce.number()` handles string-to-number conversion for env vars like MAX_ITERATIONS
   - `dotenv.config()` is called at module import time in config.ts — tests that pass custom env bypass this
   - Use `.min(1)` on required string fields to catch empty string as missing
+---
+
+## 2026-02-09 - US-003
+- What was implemented: Structured JSON logger with level filtering
+- Files changed:
+  - packages/agent-ts/src/logger.ts (createLogger factory, Logger interface, LogLevel type)
+  - packages/agent-ts/src/logger.test.ts (11 tests: each level, suppression, metadata, JSON format, defaults)
+- **Learnings for future iterations:**
+  - Use `process.stderr.write()` not `console.error()` for structured JSON output — avoids console formatting
+  - Spy on `process.stderr.write` with `vi.spyOn(process.stderr, "write").mockReturnValue(true)` in tests
+  - Use `any` type for stderr spy to avoid complex vitest MockInstance type issues with overloaded write signatures
+  - Logger has zero external dependencies — pure Node.js `process.stderr.write`
+  - Export both `Logger` interface and `LogLevel` type for downstream consumers
 ---
