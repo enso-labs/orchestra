@@ -228,4 +228,21 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Use spread operator `{ ...state, messages: [...] }` to avoid mutating original state
   - `Array.slice(-keep)` handles edge case where `keep` exceeds array length gracefully (returns all elements)
   - Summary message uses role "user" since LLM expects user/assistant/system roles
+- Dynamic prompt middleware uses factory pattern (`createDynamicPromptMiddleware(options)`) — same as context-manager and observability middleware
+- Phase detection priority: output (iteration >= maxIterations - 2) > synthesis (notes >= 3) > research (default)
+- `getToolDefinitions()` returns ToolDefinition[] with Zod `.parameters` — map to `{ type: "object" }` for prompt ToolDef format since Zod schemas have `_def` property
+- Cast `mw.beforeLLM!(state)` as `AgentState` in tests since Middleware type returns `AgentState | Promise<AgentState>`
+---
+
+## 2026-02-09 - US-016
+- What was implemented: Dynamic prompt middleware (Factor 2) — adapts system prompt per turn based on agent state
+- Files changed:
+  - packages/agent-ts/src/middleware/dynamic-prompt.ts (createDynamicPromptMiddleware factory, DynamicPromptOptions, detectPhase, dynamicPromptMiddleware alias)
+  - packages/agent-ts/src/middleware/dynamic-prompt.test.ts (18 tests: name, hooks, phase detection x8, prompt content x4, state immutability x2, alias export)
+  - packages/agent-ts/src/index.ts (added createDynamicPromptMiddleware, dynamicPromptMiddleware, DynamicPromptOptions exports)
+- **Learnings for future iterations:**
+  - Phase detection: output takes priority (near max iterations), then synthesis (enough notes), then research (default)
+  - `getToolDefinitions()` returns Zod-typed parameters — need to map to plain objects for `buildSystemPrompt`'s `ToolDef` interface
+  - `beforeLLM` return type is `AgentState | Promise<AgentState>` — use `as AgentState` cast in tests when calling synchronous hooks directly
+  - `buildSystemPrompt` uses markdown bold for note count: `**N** research note(s)` — test assertions must match this format
 ---
