@@ -24,3 +24,12 @@ export {
   ToolNotFoundError,
 } from "./tools/index.js";
 export type { ToolDefinition, ToolHandler } from "./tools/index.js";
+export {
+  runBeforeLLM,
+  runAfterLLM,
+  runBeforeTool,
+  runAfterTool,
+} from "./middleware/index.js";
+export type { Middleware } from "./middleware/index.js";
+export { errorHandlerMiddleware } from "./middleware/error-handler.js";
+export { createObservabilityMiddleware } from "./middleware/observability.js";
