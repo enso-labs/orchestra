@@ -56,7 +56,8 @@
     "prepublishOnly": "npm run test && npm run build:clean",
     "version": "git add -A",
     "link": "npm install && npm run build && npm link",
-    "package:local": "npm run build:clean && npm pack"
+    "package:local": "npm run build:clean && npm pack",
+    "e2e": "tsx scripts/e2e-validate.ts"
   },
   "publishConfig": {
     "access": "public",

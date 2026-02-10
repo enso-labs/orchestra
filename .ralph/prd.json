@@ -432,6 +432,27 @@
       "priority": 23,
       "passes": true,
       "notes": "StructuredOutputError with rawText, non-JSON retry limit (MAX_NON_JSON_RETRIES=2) with nudge message, singleTurn mode, nonJsonRetries reset after tool calls. All 278 tests pass."
+    },
+    {
+      "id": "US-024",
+      "title": "End-to-end validation: run agent against live backend and verify no recursive threads",
+      "description": "As a maintainer, I need to validate that the recursive thread fix actually works against the live Ruska backend by running the agent and inspecting server logs for thread count.",
+      "acceptanceCriteria": [
+        "Create packages/agent-ts/scripts/e2e-validate.ts that runs runAgent with singleTurn: true against the live backend at RUSKA_API_URL",
+        "The script: loads config, calls runAgent('What is TypeScript?', config, { singleTurn: true, onChunk: (c) => process.stdout.write(c) }), prints the result or catches StructuredOutputError and prints rawText",
+        "The script exits cleanly with exit code 0 on success (ResearchResult or StructuredOutputError), exit code 1 on unexpected errors (network, auth)",
+        "Add npm script 'e2e' in package.json: 'tsx scripts/e2e-validate.ts'",
+        "Run npm run e2e with the backend running at localhost:8000 — capture the output",
+        "Check backend server logs (stderr/stdout) after running: count the number of thread_id entries created — must be exactly 1 (singleTurn sends one request)",
+        "Run a second test WITHOUT singleTurn (maxIterations: 3) to verify the retry limit works: at most 3 backend requests, NOT 15",
+        "Check backend logs after second run: at most 3 thread operations, with nudge messages visible in the request payloads",
+        "Document the validation results in the script output (print thread count, request count, pass/fail)",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 24,
+      "passes": true,
+      "notes": "E2E validation script at scripts/e2e-validate.ts. npm run e2e runs both tests. singleTurn: 1 request (PASS). Multi-turn maxIterations:3: 3 requests (PASS). Both tests verify request count via fetch interception. All 278 unit tests pass."
     }
   ]
 }

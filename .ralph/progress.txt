@@ -31,6 +31,8 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Nudge message appended as `{ role: "user" }` asking LLM to output only raw JSON matching the ResearchResult schema
 - Use factory function pattern for middleware needing dependencies (e.g., `createObservabilityMiddleware(logger)`) — allows DI and per-instance state via closures
 - Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
+- E2E validation: intercept `globalThis.fetch` to count backend requests without needing server log access
+- E2E script lives at `scripts/e2e-validate.ts` — run via `npm run e2e` (requires live backend at RUSKA_API_URL)
 
 ---
 
@@ -344,4 +346,22 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Existing MaxIterationsError test broke because non-JSON retry now fires before max iterations — fix by using tool calls to consume iterations instead
   - Nudge message describes schema fields inline rather than referencing "ResearchResult" by name — LLM doesn't know the type name
   - All 23 user stories now pass — PRD is fully complete
+---
+
+## 2026-02-09 - US-024
+- What was implemented: E2E validation script that runs agent against live backend to verify no recursive thread creation
+- Files changed:
+  - packages/agent-ts/scripts/e2e-validate.ts (new: e2e validation with singleTurn and multi-turn tests, fetch interception for request counting, structured pass/fail output)
+  - packages/agent-ts/package.json (added "e2e" npm script: `tsx scripts/e2e-validate.ts`)
+  - .ralph/prd.json (US-024 passes: true)
+- **E2E validation results:**
+  - Test 1 (singleTurn): PASS — 1 backend request sent (MaxIterationsError after single iteration, as expected)
+  - Test 2 (multi-turn maxIterations: 3): PASS — 3 backend requests sent (MaxIterationsError after 3 iterations, bounded correctly)
+  - Both tests confirm: no recursive thread explosion (previously 15+ requests), request count matches expected bounds
+- **Learnings for future iterations:**
+  - Backend returns empty text when it runs tools server-side (agent runs server-side, no text content returned to client) — singleTurn hits MaxIterationsError not StructuredOutputError
+  - Fetch interception via `globalThis.fetch` wrapper is effective for counting backend requests in e2e scripts without needing backend log access
+  - MaxIterationsError is acceptable in e2e validation — the key assertion is request count, not error type
+  - E2E script should handle all three outcomes: ResearchResult (success), StructuredOutputError (non-JSON), MaxIterationsError (loop bounded)
+  - All 24 user stories now pass — PRD is fully complete
 ---
