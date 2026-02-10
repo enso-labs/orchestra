@@ -2,40 +2,66 @@ import { WebSearchInput } from "../schemas.js";
 import { registerTool } from "./index.js";
 import type { ToolDefinition, ToolHandler } from "./index.js";
 
-// --- web_search: server-delegated tool ---
+// --- web_search: local tool (pure LLM mode — all tools run locally) ---
 
 export const webSearchDefinition: ToolDefinition = {
   name: "web_search",
   description:
-    "Search the web for information on a given query. Executed server-side by the Ruska backend.",
+    "Search the web for information on a given query. When TAVILY_API_KEY is set, uses the Tavily Search API. Otherwise returns simulated results.",
   parameters: WebSearchInput,
-  local: false,
+  local: true,
 };
 
 /**
- * Server-delegated tool — no local handler needed.
- * The backend executes web_search when it appears in the API request tools array.
+ * Local web_search handler.
+ * If TAVILY_API_KEY is set, calls Tavily API. Otherwise returns simulated results.
  */
-const webSearchHandler: ToolHandler = async () => {
-  throw new Error(
-    "web_search is a server-delegated tool and cannot be executed locally",
-  );
+const webSearchHandler: ToolHandler = async (args) => {
+  const { query } = args as { query: string };
+  const apiKey = process.env.TAVILY_API_KEY;
+
+  if (apiKey) {
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: apiKey, query }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Tavily API error: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Simulated search results when no TAVILY_API_KEY
+  return {
+    results: [
+      {
+        title: `Search results for: ${query}`,
+        url: `https://example.com/search?q=${encodeURIComponent(query)}`,
+        content: `Simulated search result for "${query}". Set TAVILY_API_KEY for real web search results.`,
+      },
+    ],
+    query,
+    simulated: true,
+  };
 };
 
 /**
  * Register the web_search tool definition in the registry.
- * Since local: false, it will appear in getServerToolNames() for the API request.
+ * All tools are local — the backend acts as pure LLM inference only.
  */
 export function registerWebSearch(): void {
   registerTool(webSearchDefinition, webSearchHandler);
 }
 
-// --- tavily_search: local fallback when TAVILY_API_KEY is set ---
+// --- tavily_search: explicit Tavily registration (alias for backward compat) ---
 
 export const tavilySearchDefinition: ToolDefinition = {
   name: "tavily_search",
   description:
-    "Search the web using the Tavily Search API. Local fallback for web_search when TAVILY_API_KEY is configured.",
+    "Search the web using the Tavily Search API. Explicit Tavily search tool when TAVILY_API_KEY is configured.",
   parameters: WebSearchInput,
   local: true,
 };

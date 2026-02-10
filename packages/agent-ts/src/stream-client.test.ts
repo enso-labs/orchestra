@@ -238,7 +238,7 @@ describe("streamChat", () => {
     expect(body.metadata).toEqual({});
   });
 
-  it("includes tools and metadata in request body", async () => {
+  it("always sends tools: [] regardless of request.tools (pure LLM mode)", async () => {
     const config = makeConfig();
     fetchSpy.mockResolvedValue(mockResponse([]));
 
@@ -256,7 +256,8 @@ describe("streamChat", () => {
     }
 
     const body = JSON.parse(fetchSpy.mock.calls[0]![1]!.body as string);
-    expect(body.tools).toEqual(["web_search", "note_taker"]);
+    // Pure LLM mode: tools always [] — backend must not run its own agent loop
+    expect(body.tools).toEqual([]);
     expect(body.metadata.thread_id).toBe("existing-thread");
     expect(body.model).toBe("openai:gpt-4o");
   });

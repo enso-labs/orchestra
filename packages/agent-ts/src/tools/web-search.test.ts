@@ -44,8 +44,8 @@ describe("web_search tool", () => {
       expect(typeof webSearchDefinition.description).toBe("string");
     });
 
-    it("has local set to false (server-delegated)", () => {
-      expect(webSearchDefinition.local).toBe(false);
+    it("has local set to true (all tools are local in pure LLM mode)", () => {
+      expect(webSearchDefinition.local).toBe(true);
     });
 
     it("has a Zod parameters schema that validates query string", () => {
@@ -65,25 +65,81 @@ describe("web_search tool", () => {
   });
 
   describe("registerWebSearch", () => {
-    it("adds web_search to the registry", () => {
+    it("adds web_search to the registry as local tool", () => {
       registerWebSearch();
       const defs = getToolDefinitions();
       expect(defs).toHaveLength(1);
       expect(defs[0].name).toBe("web_search");
-      expect(defs[0].local).toBe(false);
+      expect(defs[0].local).toBe(true);
     });
 
-    it("makes web_search appear in getServerToolNames()", () => {
+    it("web_search does NOT appear in getServerToolNames() (all tools are local)", () => {
       registerWebSearch();
-      expect(getServerToolNames()).toContain("web_search");
+      expect(getServerToolNames()).not.toContain("web_search");
     });
 
-    it("throws when executed locally (server-delegated)", async () => {
+    it("returns simulated results when TAVILY_API_KEY is not set", async () => {
       registerWebSearch();
+      const state = makeState();
+      const result = await executeTool("web_search", { query: "test" }, state);
+      expect(result).toEqual(expect.objectContaining({
+        query: "test",
+        simulated: true,
+        results: expect.arrayContaining([
+          expect.objectContaining({
+            title: expect.stringContaining("test"),
+            url: expect.stringContaining("example.com"),
+            content: expect.stringContaining("Simulated"),
+          }),
+        ]),
+      }));
+    });
+
+    it("calls Tavily API when TAVILY_API_KEY is set", async () => {
+      process.env.TAVILY_API_KEY = "tvly-test-key";
+      registerWebSearch();
+
+      const mockResponse = {
+        results: [{ title: "Real Result", url: "https://example.com" }],
+      };
+      const fetchSpy = vi.spyOn(globalThis, "fetch") as any;
+      fetchSpy.mockResolvedValue(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+      const state = makeState();
+      const result = await executeTool("web_search", { query: "test query" }, state);
+      expect(result).toEqual(mockResponse);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://api.tavily.com/search",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: "tvly-test-key",
+            query: "test query",
+          }),
+        }),
+      );
+    });
+
+    it("throws on Tavily API error when TAVILY_API_KEY is set", async () => {
+      process.env.TAVILY_API_KEY = "tvly-test-key";
+      registerWebSearch();
+
+      const fetchSpy = vi.spyOn(globalThis, "fetch") as any;
+      fetchSpy.mockResolvedValue(
+        new Response("Unauthorized", { status: 401, statusText: "Unauthorized" }),
+      );
+
       const state = makeState();
       await expect(
         executeTool("web_search", { query: "test" }, state),
-      ).rejects.toThrow("server-delegated tool");
+      ).rejects.toThrow("Tavily API error: 401 Unauthorized");
     });
   });
 
@@ -193,9 +249,9 @@ describe("web_search tool", () => {
       expect(names).toContain("web_search");
       expect(names).toContain("tavily_search");
 
-      // Only web_search should be a server tool
+      // Both are local tools — no server tools in pure LLM mode
       const serverTools = getServerToolNames();
-      expect(serverTools).toEqual(["web_search"]);
+      expect(serverTools).toEqual([]);
     });
   });
 });

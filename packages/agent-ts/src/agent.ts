@@ -6,7 +6,7 @@ import {
   type StreamEvent,
   type StreamChatRequest,
 } from "./stream-client.js";
-import { executeTool, getServerToolNames } from "./tools/index.js";
+import { executeTool } from "./tools/index.js";
 import type { ToolDefinition } from "./tools/index.js";
 import {
   runBeforeLLM,
@@ -86,7 +86,7 @@ function extractTextContent(item: unknown): string | undefined {
   return undefined;
 }
 
-/** Extract tool_calls from a messages event data item */
+/** Extract tool_calls from a messages event data item (metadata-style) */
 function extractToolCalls(item: unknown): ToolCall[] {
   if (typeof item !== "object" || item === null) return [];
   const msg = item as Record<string, unknown>;
@@ -106,6 +106,38 @@ function extractToolCalls(item: unknown): ToolCall[] {
     }));
 }
 
+/**
+ * Extract tool_calls from the assistant's text response.
+ * In pure LLM mode the model outputs structured JSON tool calls in its text:
+ *   { "tool_calls": [{ "id": "...", "name": "...", "args": {...} }] }
+ */
+function extractToolCallsFromText(text: string): ToolCall[] {
+  const jsonStr = extractJSON(text);
+  if (!jsonStr) return [];
+
+  try {
+    const parsed = JSON.parse(jsonStr);
+    if (typeof parsed === "object" && parsed !== null && Array.isArray(parsed.tool_calls)) {
+      return parsed.tool_calls
+        .filter(
+          (tc: unknown): tc is ToolCall =>
+            typeof tc === "object" &&
+            tc !== null &&
+            typeof (tc as Record<string, unknown>).name === "string",
+        )
+        .map((tc: Record<string, unknown>, idx: number) => ({
+          id: (typeof tc.id === "string" ? tc.id : `text-tc-${idx}`) as string,
+          name: tc.name as string,
+          args: (tc.args as Record<string, unknown>) ?? {},
+        }));
+    }
+  } catch {
+    // Not valid JSON or no tool_calls field
+  }
+
+  return [];
+}
+
 // --- Core Agent Loop ---
 
 export async function runAgent(
@@ -117,8 +149,6 @@ export async function runAgent(
   const onChunk = options?.onChunk;
   const promptFn = options?.promptFn;
   const singleTurn = options?.singleTurn ?? false;
-
-  const serverToolNames = getServerToolNames();
 
   // Initialize agent state
   let state: AgentState = {
@@ -140,13 +170,13 @@ export async function runAgent(
     state = await runBeforeLLM(middlewares, state);
 
     // --- Build API request ---
+    // Pure LLM mode: no tools sent to backend — all tools described in system_prompt
     const request: StreamChatRequest = {
       messages: state.messages.map((m) => ({
         role: m.role,
         content: m.content,
       })),
       model: config.model,
-      tools: serverToolNames.length > 0 ? serverToolNames : undefined,
       metadata: state.threadId ? { thread_id: state.threadId } : undefined,
     };
 
@@ -177,6 +207,7 @@ export async function runAgent(
               onChunk(text);
             }
           }
+          // Extract tool_calls from message metadata (if backend passes them through)
           const tcs = extractToolCalls(item);
           toolCalls.push(...tcs);
         }
@@ -194,13 +225,16 @@ export async function runAgent(
     // --- Run afterLLM middleware ---
     await runAfterLLM(middlewares, state, events);
 
-    // --- Check for tool calls ---
-    // Filter to only local tool calls (server tools are handled by backend)
-    const localToolCalls = toolCalls.filter(
-      (tc) => !serverToolNames.includes(tc.name),
-    );
+    // --- Check for tool calls from message metadata ---
+    // Also check for tool calls embedded in the assistant's text response
+    // (pure LLM mode: the model outputs tool_calls as JSON in its text)
+    if (toolCalls.length === 0 && assistantText) {
+      const textToolCalls = extractToolCallsFromText(assistantText);
+      toolCalls.push(...textToolCalls);
+    }
 
-    if (localToolCalls.length > 0) {
+    // All tool calls are local (pure LLM mode — no server-delegated tools)
+    if (toolCalls.length > 0) {
       // Reset non-JSON retries after a successful tool call turn
       nonJsonRetries = 0;
 
@@ -215,8 +249,8 @@ export async function runAgent(
         };
       }
 
-      // Execute local tools
-      for (const tc of localToolCalls) {
+      // Execute all tools locally
+      for (const tc of toolCalls) {
         // Run beforeTool middleware
         const processedArgs = await runBeforeTool(
           middlewares,
@@ -308,7 +342,7 @@ export async function runAgent(
 }
 
 /** Try to extract a JSON object from text that may contain markdown/prose */
-function extractJSON(text: string): string | null {
+export function extractJSON(text: string): string | null {
   // Try the whole string first
   const trimmed = text.trim();
   if (trimmed.startsWith("{")) {

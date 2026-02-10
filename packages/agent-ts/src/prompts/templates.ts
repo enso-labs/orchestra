@@ -19,6 +19,31 @@ export function toolDescriptionBlock(tools: ToolDef[]): string {
   return `## Available Tools\n\n${lines.join("\n\n")}`;
 }
 
+// --- Tool call format instructions ---
+
+export function toolCallFormatInstructions(): string {
+  return `## How to Call Tools
+
+When you want to use a tool, respond with ONLY a JSON object in this exact format:
+\`\`\`json
+{
+  "tool_calls": [
+    {
+      "id": "call-1",
+      "name": "tool_name",
+      "args": { "param": "value" }
+    }
+  ]
+}
+\`\`\`
+
+Rules:
+- Output ONLY the JSON object — no prose, no markdown wrapping, no explanation before or after
+- You may call multiple tools in one response by adding more entries to the tool_calls array
+- Each tool call must have a unique "id" string, a "name" matching one of the available tools, and "args" matching the tool's parameter schema
+- After you receive tool results, use them to continue your research or produce the final output`;
+}
+
 // --- Phase-specific instructions ---
 
 export function researchInstructions(): string {

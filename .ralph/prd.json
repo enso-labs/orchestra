@@ -473,6 +473,30 @@
       "priority": 25,
       "passes": true,
       "notes": "E2E script writes TestResult JSON to output/ folder for both singleTurn and multiTurn tests. Uses fs.mkdir recursive + fs.writeFile. Filenames include ISO timestamp. Handles all three outcomes: ResearchResult (success), StructuredOutputError (rawText), unexpected errors. All 278 tests pass."
+    },
+    {
+      "id": "US-026",
+      "title": "Pure LLM mode: send tools:[] to backend, own all tools locally (12 Factor text-in text-out)",
+      "description": "The backend /api/llm/stream runs a full LangGraph agent loop when tools are provided. Sending tools:['web_search'] causes the BACKEND to loop autonomously, executing tools server-side and returning plain text — not tool_calls for the local harness. This breaks the 12 Factor principle of owning your agent loop. Fix: NEVER send tools to the backend. Send tools:[] (empty) so the backend acts as a pure LLM inference layer (text in, text out). Describe ALL tools in the system_prompt so the LLM generates structured tool_call JSON in its text response. The local harness parses and executes ALL tools.",
+      "acceptanceCriteria": [
+        "stream-client.ts: request body ALWAYS sends tools: [] (empty array) regardless of registered tools — the backend must NOT run its own agent loop",
+        "agent.ts: remove getServerToolNames() from request building — no tools sent to backend ever",
+        "agent.ts: remove the localToolCalls filter (lines 177-179) — ALL tool calls are now local since no tools are server-delegated",
+        "agent.ts: parse tool_calls from the LLM response (the LLM will output structured JSON tool calls as instructed by the system prompt)",
+        "tools/web-search.ts: change web_search to local: true — when TAVILY_API_KEY is set it runs locally via Tavily API, otherwise returns simulated results",
+        "tools/web-search.ts: the webSearchHandler must actually execute (no longer throws 'server-delegated' error) — implement simulated search results when no TAVILY_API_KEY",
+        "prompts/templates.ts: tool description block must include full JSON schema for each tool so the LLM knows the exact call format",
+        "prompts/system.ts: system prompt must instruct the LLM to output tool calls as JSON: { tool_calls: [{ id, name, args }] } when it wants to use a tool",
+        "agent.ts: extractToolCalls must also parse tool calls from the assistant text (LLM may output them as JSON in the response body, not just in message metadata)",
+        "e2e-validate.ts: update to run against live backend, verify exactly 1 HTTP request per agent turn (no backend-side looping), write results to output/",
+        "Run npm run e2e with backend running — verify output/ contains valid result JSON with success: true OR a StructuredOutputError with rawText showing the LLM response",
+        "Verify backend logs show exactly 1 thread created per npm run e2e invocation, with tools: [] in the request payload",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 26,
+      "passes": true,
+      "notes": "Pure LLM mode: stream-client always sends tools:[], agent.ts removes server tool filtering, adds extractToolCallsFromText for text-based tool call parsing, web_search changed to local:true with simulated results fallback, prompts include toolCallFormatInstructions for LLM tool calling, e2e script verifies tools:[] in all payloads. All 285 tests pass."
     }
   ]
 }

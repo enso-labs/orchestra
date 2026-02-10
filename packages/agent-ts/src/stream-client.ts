@@ -107,11 +107,15 @@ export async function* streamChat(
 ): AsyncGenerator<StreamEvent> {
   const url = `${config.apiUrl}/api/llm/stream`;
 
+  // Pure LLM mode: ALWAYS send tools: [] so the backend acts as a pure inference
+  // layer (text in, text out). All tools are described in the system_prompt and
+  // dispatched locally by the agent loop. This prevents the backend from running
+  // its own LangGraph agent loop with server-side tool execution.
   const body = {
     input: { messages: request.messages },
     model: request.model,
     system_prompt: request.system_prompt,
-    tools: request.tools ?? [],
+    tools: [],
     metadata: request.metadata ?? {},
   };
 

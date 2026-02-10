@@ -1,10 +1,16 @@
 #!/usr/bin/env tsx
 /**
- * End-to-end validation script for @ruska/agent-ts
+ * End-to-end validation script for @ruska/agent-ts (Pure LLM Mode)
  *
- * Validates that the recursive thread fix works against the live Ruska backend:
- * 1. singleTurn mode — sends exactly 1 request, exits cleanly
- * 2. Multi-turn mode (maxIterations: 3) — at most 3 backend requests with retry/nudge
+ * Validates that the agent runs in pure LLM mode against the live Ruska backend:
+ * 1. singleTurn mode — sends exactly 1 request with tools:[], exits cleanly
+ * 2. Multi-turn mode (maxIterations: 3) — at most 3 backend requests, all with tools:[]
+ *
+ * Pure LLM mode means:
+ * - Backend acts as text-in/text-out inference layer only
+ * - All tools described in system_prompt, dispatched locally
+ * - Request body always has tools: [] (empty array)
+ * - Exactly 1 HTTP request per agent turn (no backend-side looping)
  *
  * Usage:
  *   npm run e2e
@@ -16,6 +22,9 @@ import { resolve } from "node:path";
 import { loadConfig } from "../src/config.js";
 import { runAgent, StructuredOutputError, MaxIterationsError } from "../src/agent.js";
 import { registerWebSearch } from "../src/tools/web-search.js";
+import { registerNoteTaker } from "../src/tools/note-taker.js";
+import { registerFileWriter } from "../src/tools/file-writer.js";
+import { registerHumanContact } from "../src/tools/human-contact.js";
 import type { Config } from "../src/config.js";
 import type { ResearchResult } from "../src/schemas.js";
 
@@ -39,6 +48,7 @@ interface TestResult {
   result: ResearchResult | null;
   rawText: string | null;
   error: string | null;
+  toolsInPayload: string[];
 }
 
 async function writeTestResult(
@@ -57,19 +67,30 @@ async function writeTestResult(
 // ── Test 1: singleTurn ───────────────────────────────────────────────────────
 
 async function testSingleTurn(config: Config): Promise<{ pass: boolean; testResult: TestResult }> {
-  printHeader("Test 1: singleTurn mode (expect exactly 1 backend request)");
+  printHeader("Test 1: singleTurn mode (expect exactly 1 backend request, tools: [])");
 
   let chunkCount = 0;
   let requestCount = 0;
+  const toolsInPayload: string[] = [];
   const timestamp = new Date().toISOString();
 
-  // Intercept fetch to count requests to the backend
+  // Intercept fetch to count requests and verify tools: []
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (...args: Parameters<typeof fetch>) => {
     const url = typeof args[0] === "string" ? args[0] : (args[0] as Request).url;
     if (url.includes("/api/llm/stream")) {
       requestCount++;
-      console.log(`  [fetch] Request #${requestCount} → ${url}`);
+      const init = args[1];
+      if (init?.body) {
+        const bodyText = typeof init.body === "string" ? init.body : "[non-string body]";
+        try {
+          const parsed = JSON.parse(bodyText);
+          toolsInPayload.push(JSON.stringify(parsed.tools));
+        } catch {
+          toolsInPayload.push("[parse error]");
+        }
+      }
+      console.log(`  [fetch] Request #${requestCount} → ${url} (tools: [])`);
     }
     return originalFetch(...args);
   };
@@ -88,42 +109,42 @@ async function testSingleTurn(config: Config): Promise<{ pass: boolean; testResu
     printResult("Sources:", String(result.sources.length));
     printResult("Chunks received:", String(chunkCount));
     printResult("Backend requests:", String(requestCount));
-    printResult("Thread count:", `${requestCount} (expected: 1)`);
+    printResult("Tools in payload:", toolsInPayload.join(", ") || "none");
 
-    const pass = requestCount === 1;
-    console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) sent`);
+    const allToolsEmpty = toolsInPayload.every((t) => t === "[]");
+    const pass = requestCount === 1 && allToolsEmpty;
+    console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s), tools: ${allToolsEmpty ? "[] (pure LLM)" : "NOT EMPTY"}`);
     return {
       pass,
-      testResult: { test: "singleTurn", timestamp, requestCount, success: true, result, rawText: null, error: null },
+      testResult: { test: "singleTurn", timestamp, requestCount, success: true, result, rawText: null, error: null, toolsInPayload },
     };
   } catch (err) {
     if (err instanceof StructuredOutputError) {
       printResult("Status:", "StructuredOutputError (acceptable)");
       printResult("Raw text:", err.rawText.slice(0, 100) + (err.rawText.length > 100 ? "..." : ""));
       printResult("Backend requests:", String(requestCount));
-      printResult("Thread count:", `${requestCount} (expected: 1)`);
+      printResult("Tools in payload:", toolsInPayload.join(", ") || "none");
 
-      const pass = requestCount === 1;
-      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) sent`);
+      const allToolsEmpty = toolsInPayload.every((t) => t === "[]");
+      const pass = requestCount === 1 && allToolsEmpty;
+      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s), tools: ${allToolsEmpty ? "[] (pure LLM)" : "NOT EMPTY"}`);
       return {
         pass,
-        testResult: { test: "singleTurn", timestamp, requestCount, success: false, result: null, rawText: err.rawText, error: null },
+        testResult: { test: "singleTurn", timestamp, requestCount, success: false, result: null, rawText: err.rawText, error: null, toolsInPayload },
       };
     }
 
-    // MaxIterationsError is acceptable — singleTurn sets effectiveMaxIterations=1,
-    // so if the LLM returns empty text or only server-side tool calls, the loop
-    // exhausts its single iteration and throws. The key assertion is request count.
     if (err instanceof MaxIterationsError) {
       printResult("Status:", "MaxIterationsError (loop bounded — 1 iteration)");
       printResult("Backend requests:", String(requestCount));
-      printResult("Thread count:", `${requestCount} (expected: 1)`);
+      printResult("Tools in payload:", toolsInPayload.join(", ") || "none");
 
-      const pass = requestCount === 1;
-      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) sent`);
+      const allToolsEmpty = toolsInPayload.every((t) => t === "[]");
+      const pass = requestCount === 1 && allToolsEmpty;
+      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s), tools: ${allToolsEmpty ? "[] (pure LLM)" : "NOT EMPTY"}`);
       return {
         pass,
-        testResult: { test: "singleTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: (err as Error).message },
+        testResult: { test: "singleTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: (err as Error).message, toolsInPayload },
       };
     }
 
@@ -131,7 +152,7 @@ async function testSingleTurn(config: Config): Promise<{ pass: boolean; testResu
     printResult("Backend requests:", String(requestCount));
     return {
       pass: false,
-      testResult: { test: "singleTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: String(err) },
+      testResult: { test: "singleTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: String(err), toolsInPayload },
     };
   } finally {
     globalThis.fetch = originalFetch;
@@ -141,29 +162,35 @@ async function testSingleTurn(config: Config): Promise<{ pass: boolean; testResu
 // ── Test 2: multi-turn with maxIterations: 3 ────────────────────────────────
 
 async function testMultiTurn(config: Config): Promise<{ pass: boolean; testResult: TestResult }> {
-  printHeader("Test 2: multi-turn mode (maxIterations: 3, expect at most 3 requests)");
+  printHeader("Test 2: multi-turn mode (maxIterations: 3, expect at most 3 requests, all tools: [])");
 
   const multiTurnConfig: Config = { ...config, maxIterations: 3 };
 
   let chunkCount = 0;
   let requestCount = 0;
+  const toolsInPayload: string[] = [];
   const requestPayloads: string[] = [];
   const timestamp = new Date().toISOString();
 
-  // Intercept fetch to count requests and capture payloads
+  // Intercept fetch to count requests, capture payloads, verify tools: []
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (...args: Parameters<typeof fetch>) => {
     const url = typeof args[0] === "string" ? args[0] : (args[0] as Request).url;
     if (url.includes("/api/llm/stream")) {
       requestCount++;
-      // Capture body to check for nudge messages
       const init = args[1];
       if (init?.body) {
         const bodyText = typeof init.body === "string" ? init.body : "[non-string body]";
         requestPayloads.push(bodyText);
+        try {
+          const parsed = JSON.parse(bodyText);
+          toolsInPayload.push(JSON.stringify(parsed.tools));
+        } catch {
+          toolsInPayload.push("[parse error]");
+        }
         const hasNudge = bodyText.includes("not valid JSON");
         console.log(
-          `  [fetch] Request #${requestCount} → ${url}${hasNudge ? " (contains nudge)" : ""}`,
+          `  [fetch] Request #${requestCount} → ${url} (tools: [])${hasNudge ? " (contains nudge)" : ""}`,
         );
       } else {
         console.log(`  [fetch] Request #${requestCount} → ${url}`);
@@ -184,47 +211,48 @@ async function testMultiTurn(config: Config): Promise<{ pass: boolean; testResul
     printResult("Confidence:", String(result.confidence));
     printResult("Chunks received:", String(chunkCount));
     printResult("Backend requests:", String(requestCount));
-    printResult("Thread operations:", `${requestCount} (expected: <= 3)`);
+    printResult("Tools in payload:", toolsInPayload.join(", ") || "none");
 
-    // Check for nudge messages in payloads
     const nudgeCount = requestPayloads.filter((p) => p.includes("not valid JSON")).length;
     printResult("Nudge messages:", String(nudgeCount));
 
-    const pass = requestCount <= 3;
-    console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) sent (max 3)`);
+    const allToolsEmpty = toolsInPayload.every((t) => t === "[]");
+    const pass = requestCount <= 3 && allToolsEmpty;
+    console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) (max 3), tools: ${allToolsEmpty ? "[] (pure LLM)" : "NOT EMPTY"}`);
     return {
       pass,
-      testResult: { test: "multiTurn", timestamp, requestCount, success: true, result, rawText: null, error: null },
+      testResult: { test: "multiTurn", timestamp, requestCount, success: true, result, rawText: null, error: null, toolsInPayload },
     };
   } catch (err) {
     if (err instanceof StructuredOutputError) {
       printResult("Status:", "StructuredOutputError (retry exhausted)");
       printResult("Raw text:", err.rawText.slice(0, 100) + (err.rawText.length > 100 ? "..." : ""));
       printResult("Backend requests:", String(requestCount));
-      printResult("Thread operations:", `${requestCount} (expected: <= 3)`);
+      printResult("Tools in payload:", toolsInPayload.join(", ") || "none");
 
       const nudgeCount = requestPayloads.filter((p) => p.includes("not valid JSON")).length;
       printResult("Nudge messages:", String(nudgeCount));
 
-      const pass = requestCount <= 3;
-      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) sent (max 3)`);
+      const allToolsEmpty = toolsInPayload.every((t) => t === "[]");
+      const pass = requestCount <= 3 && allToolsEmpty;
+      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) (max 3), tools: ${allToolsEmpty ? "[] (pure LLM)" : "NOT EMPTY"}`);
       return {
         pass,
-        testResult: { test: "multiTurn", timestamp, requestCount, success: false, result: null, rawText: err.rawText, error: null },
+        testResult: { test: "multiTurn", timestamp, requestCount, success: false, result: null, rawText: err.rawText, error: null, toolsInPayload },
       };
     }
 
-    // MaxIterationsError is also acceptable — means loop bounded correctly
     if (err instanceof Error && err.name === "MaxIterationsError") {
       printResult("Status:", "MaxIterationsError (loop bounded correctly)");
       printResult("Backend requests:", String(requestCount));
-      printResult("Thread operations:", `${requestCount} (expected: <= 3)`);
+      printResult("Tools in payload:", toolsInPayload.join(", ") || "none");
 
-      const pass = requestCount <= 3;
-      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) sent (max 3)`);
+      const allToolsEmpty = toolsInPayload.every((t) => t === "[]");
+      const pass = requestCount <= 3 && allToolsEmpty;
+      console.log(`\n  Result: ${pass ? "PASS" : "FAIL"} — ${requestCount} request(s) (max 3), tools: ${allToolsEmpty ? "[] (pure LLM)" : "NOT EMPTY"}`);
       return {
         pass,
-        testResult: { test: "multiTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: (err as Error).message },
+        testResult: { test: "multiTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: (err as Error).message, toolsInPayload },
       };
     }
 
@@ -232,7 +260,7 @@ async function testMultiTurn(config: Config): Promise<{ pass: boolean; testResul
     printResult("Backend requests:", String(requestCount));
     return {
       pass: false,
-      testResult: { test: "multiTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: String(err) },
+      testResult: { test: "multiTurn", timestamp, requestCount, success: false, result: null, rawText: null, error: String(err), toolsInPayload },
     };
   } finally {
     globalThis.fetch = originalFetch;
@@ -242,8 +270,8 @@ async function testMultiTurn(config: Config): Promise<{ pass: boolean; testResul
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  console.log("@ruska/agent-ts — E2E Validation");
-  console.log(`Validates recursive thread fix (US-023) against live backend\n`);
+  console.log("@ruska/agent-ts — E2E Validation (Pure LLM Mode)");
+  console.log(`Validates pure LLM mode (US-026): tools:[] in all requests, local tool dispatch\n`);
 
   let config: Config;
   try {
@@ -257,8 +285,11 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Register web_search tool (server-delegated)
+  // Register all tools locally (pure LLM mode — no server-delegated tools)
   registerWebSearch();
+  registerNoteTaker();
+  registerFileWriter();
+  registerHumanContact();
 
   const outputDir = resolve(config.outputDir);
   const results: { name: string; pass: boolean }[] = [];
@@ -266,7 +297,7 @@ async function main(): Promise<void> {
   // Test 1: singleTurn
   try {
     const { pass, testResult } = await testSingleTurn(config);
-    results.push({ name: "singleTurn", pass });
+    results.push({ name: "singleTurn (1 request, tools: [])", pass });
     const filePath = await writeTestResult(testResult, outputDir);
     console.log(`  Output saved: ${filePath}`);
   } catch (err) {
@@ -280,6 +311,7 @@ async function main(): Promise<void> {
       result: null,
       rawText: null,
       error: String(err),
+      toolsInPayload: [],
     };
     const filePath = await writeTestResult(crashResult, outputDir);
     console.log(`  Output saved: ${filePath}`);
@@ -288,7 +320,7 @@ async function main(): Promise<void> {
   // Test 2: multi-turn
   try {
     const { pass, testResult } = await testMultiTurn(config);
-    results.push({ name: "multi-turn (maxIterations: 3)", pass });
+    results.push({ name: "multi-turn (maxIterations: 3, tools: [])", pass });
     const filePath = await writeTestResult(testResult, outputDir);
     console.log(`  Output saved: ${filePath}`);
   } catch (err) {
@@ -302,6 +334,7 @@ async function main(): Promise<void> {
       result: null,
       rawText: null,
       error: String(err),
+      toolsInPayload: [],
     };
     const filePath = await writeTestResult(crashResult, outputDir);
     console.log(`  Output saved: ${filePath}`);

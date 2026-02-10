@@ -218,21 +218,19 @@ describe("runAgent", () => {
       expect(toolResultMsg.content).toContain("success");
     });
 
-    it("does not execute server-delegated tools locally", async () => {
-      // Register a server tool (local: false)
+    it("executes all tools locally in pure LLM mode (no server-delegated tools)", async () => {
+      // All tools are local in pure LLM mode
       registerTool(
         {
           name: "web_search",
           description: "Search the web",
           parameters: z.object({ query: z.string() }),
-          local: false,
+          local: true,
         },
-        async () => {
-          throw new Error("Should not be called locally");
-        },
+        async () => ({ results: [{ title: "Found it" }], simulated: true }),
       );
 
-      // Turn 1: LLM returns server tool call — should be ignored for local execution
+      // Turn 1: LLM returns tool call — web_search executed locally
       let callCount = 0;
       mockStreamChat.mockImplementation(() => {
         callCount++;
@@ -252,8 +250,7 @@ describe("runAgent", () => {
             { type: "done" },
           ]);
         }
-        // Since web_search is server-side, no local tool calls → parse text
-        // Turn 2 not needed if no local tool calls
+        // Turn 2: LLM returns final result after seeing tool results
         return mockStream([
           {
             type: "messages",
@@ -263,11 +260,18 @@ describe("runAgent", () => {
         ]);
       });
 
-      // Since web_search is a server tool, it won't be executed locally.
-      // The text "Searching..." is not valid JSON, so the loop continues.
-      // On the second turn, we get valid JSON.
       const result = await runAgent("test topic", makeConfig());
       expect(result).toEqual(validResearchResult);
+      // Both turns executed — tool was dispatched locally
+      expect(mockStreamChat).toHaveBeenCalledTimes(2);
+
+      // Verify tool result message was passed to second call
+      const secondCallMessages = mockStreamChat.mock.calls[1][0].messages;
+      const toolResultMsg = secondCallMessages.find(
+        (m: { role: string; content: string }) => m.role === "tool",
+      );
+      expect(toolResultMsg).toBeDefined();
+      expect(toolResultMsg.content).toContain("web_search");
     });
 
     it("handles tool execution errors via afterTool middleware", async () => {
@@ -559,17 +563,15 @@ describe("runAgent", () => {
       expect(passedConfig).toBe(config);
     });
 
-    it("includes server tool names in request when registered", async () => {
+    it("does not include tools in request (pure LLM mode — tools:[] always)", async () => {
       registerTool(
         {
           name: "web_search",
           description: "Search",
           parameters: z.object({ query: z.string() }),
-          local: false,
+          local: true,
         },
-        async () => {
-          throw new Error("server only");
-        },
+        async () => ({ results: [], simulated: true }),
       );
 
       mockStreamChat.mockReturnValue(
@@ -585,7 +587,8 @@ describe("runAgent", () => {
       await runAgent("test", makeConfig());
 
       const request = mockStreamChat.mock.calls[0][0];
-      expect(request.tools).toEqual(["web_search"]);
+      // Pure LLM mode: no tools sent to backend
+      expect(request.tools).toBeUndefined();
     });
 
     it("includes thread_id in subsequent requests", async () => {
@@ -915,6 +918,116 @@ describe("runAgent", () => {
       const err = new StructuredOutputError(longText);
       expect(err.message).toContain("...");
       expect(err.message.length).toBeLessThan(longText.length + 100);
+    });
+  });
+
+  describe("pure LLM mode — tool calls from text (US-026)", () => {
+    it("parses tool_calls from LLM text response", async () => {
+      registerTool(
+        {
+          name: "web_search",
+          description: "Search",
+          parameters: z.object({ query: z.string() }),
+          local: true,
+        },
+        async () => ({ results: [{ title: "Found it" }], simulated: true }),
+      );
+
+      const toolCallJson = JSON.stringify({
+        tool_calls: [
+          { id: "tc-text-1", name: "web_search", args: { query: "TypeScript" } },
+        ],
+      });
+
+      let callCount = 0;
+      mockStreamChat.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // LLM outputs tool_calls as JSON text (pure LLM mode)
+          return mockStream([
+            { type: "messages", data: [{ content: toolCallJson }] },
+            { type: "done" },
+          ]);
+        }
+        return mockStream([
+          { type: "messages", data: [{ content: JSON.stringify(validResearchResult) }] },
+          { type: "done" },
+        ]);
+      });
+
+      const result = await runAgent("test topic", makeConfig());
+      expect(result).toEqual(validResearchResult);
+      expect(mockStreamChat).toHaveBeenCalledTimes(2);
+
+      // Verify tool result was passed back
+      const secondCallMessages = mockStreamChat.mock.calls[1][0].messages;
+      const toolResultMsg = secondCallMessages.find(
+        (m: { role: string; content: string }) => m.role === "tool",
+      );
+      expect(toolResultMsg).toBeDefined();
+      expect(toolResultMsg.content).toContain("web_search");
+    });
+
+    it("assigns generated IDs when tool_calls in text have no id field", async () => {
+      registerTool(
+        {
+          name: "note_taker",
+          description: "Take note",
+          parameters: z.object({ note: z.string() }),
+          local: true,
+        },
+        async () => ({ success: true, note_count: 1 }),
+      );
+
+      const toolCallJson = JSON.stringify({
+        tool_calls: [
+          { name: "note_taker", args: { note: "A finding" } },
+        ],
+      });
+
+      let callCount = 0;
+      mockStreamChat.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return mockStream([
+            { type: "messages", data: [{ content: toolCallJson }] },
+            { type: "done" },
+          ]);
+        }
+        return mockStream([
+          { type: "messages", data: [{ content: JSON.stringify(validResearchResult) }] },
+          { type: "done" },
+        ]);
+      });
+
+      const result = await runAgent("test topic", makeConfig());
+      expect(result).toEqual(validResearchResult);
+      expect(mockStreamChat).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not send tools in API request (pure LLM mode)", async () => {
+      registerTool(
+        {
+          name: "web_search",
+          description: "Search",
+          parameters: z.object({ query: z.string() }),
+          local: true,
+        },
+        async () => ({ results: [], simulated: true }),
+      );
+
+      mockStreamChat.mockReturnValue(
+        mockStream([
+          { type: "messages", data: [{ content: JSON.stringify(validResearchResult) }] },
+          { type: "done" },
+        ]),
+      );
+
+      await runAgent("test", makeConfig());
+
+      const request = mockStreamChat.mock.calls[0][0];
+      // Pure LLM mode: tools never sent to backend
+      expect(request.tools).toBeUndefined();
     });
   });
 

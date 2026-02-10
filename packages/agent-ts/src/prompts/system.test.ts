@@ -3,6 +3,7 @@ import { buildSystemPrompt, type Phase } from "./system.js";
 import {
   type ToolDef,
   toolDescriptionBlock,
+  toolCallFormatInstructions,
   researchInstructions,
   synthesisInstructions,
   outputInstructions,
@@ -84,6 +85,23 @@ describe("templates", () => {
       expect(result).toContain("retry");
     });
   });
+
+  describe("toolCallFormatInstructions", () => {
+    it("includes JSON format for tool_calls", () => {
+      const result = toolCallFormatInstructions();
+      expect(result).toContain("How to Call Tools");
+      expect(result).toContain("tool_calls");
+      expect(result).toContain('"name"');
+      expect(result).toContain('"args"');
+      expect(result).toContain('"id"');
+    });
+
+    it("instructs to output only JSON", () => {
+      const result = toolCallFormatInstructions();
+      expect(result).toContain("ONLY");
+      expect(result).toContain("JSON");
+    });
+  });
 });
 
 // --- buildSystemPrompt tests ---
@@ -155,7 +173,7 @@ describe("buildSystemPrompt", () => {
     expect(result).not.toContain("Phase: Synthesis");
   });
 
-  it("includes tool definitions when provided", () => {
+  it("includes tool definitions and call format instructions when provided", () => {
     const result = buildSystemPrompt({
       topic: "test",
       phase: "research",
@@ -165,9 +183,12 @@ describe("buildSystemPrompt", () => {
     expect(result).toContain("## Available Tools");
     expect(result).toContain("**web_search**");
     expect(result).toContain("**note_taker**");
+    // Pure LLM mode: tool call format instructions included
+    expect(result).toContain("How to Call Tools");
+    expect(result).toContain("tool_calls");
   });
 
-  it("omits tool section when no tools", () => {
+  it("omits tool section and call format when no tools", () => {
     const result = buildSystemPrompt({
       topic: "test",
       phase: "research",
@@ -175,6 +196,7 @@ describe("buildSystemPrompt", () => {
       tools: [],
     });
     expect(result).not.toContain("## Available Tools");
+    expect(result).not.toContain("How to Call Tools");
   });
 
   it("always includes error recovery guidance", () => {

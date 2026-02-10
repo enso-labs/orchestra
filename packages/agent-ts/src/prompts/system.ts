@@ -1,6 +1,7 @@
 import {
   type ToolDef,
   toolDescriptionBlock,
+  toolCallFormatInstructions,
   researchInstructions,
   synthesisInstructions,
   outputInstructions,
@@ -42,6 +43,8 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 
   if (toolBlock) {
     parts.push("", toolBlock);
+    // Include tool call format instructions when tools are available
+    parts.push("", toolCallFormatInstructions());
   }
 
   parts.push("", errorBlock);

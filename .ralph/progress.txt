@@ -24,7 +24,9 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Agent loop handles tool_calls from `messages` event data: `{ id, name, args }` objects in `tool_calls[]` array
 - `extractJSON()` tries: raw string, code fences, first `{...}` block — handles LLM responses wrapped in prose/markdown
 - Tool results appended as `{ role: "tool", content: "[Tool: name] result" }` messages for next LLM turn
-- Server tools (local: false) are filtered out of local execution — only sent in API request `tools` array
+- Pure LLM mode: ALL tools are local (local: true), backend gets tools:[] always — no server-delegated tools
+- LLM outputs tool_calls as JSON in text response: `{ "tool_calls": [...] }` — agent.ts `extractToolCallsFromText` parses them
+- `toolCallFormatInstructions()` in templates.ts instructs the LLM how to format tool calls as JSON
 - Context trimming middleware keeps first message (system) + summary placeholder + last N messages — never loses the system prompt
 - Non-JSON retry: `nonJsonRetries` counter tracks consecutive non-JSON responses; resets to 0 after any tool call turn; throws `StructuredOutputError` after `MAX_NON_JSON_RETRIES` (2)
 - `singleTurn` option: sends one request and returns or throws immediately — no retry loop
@@ -378,4 +380,27 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Return `{ pass, testResult }` from test functions to keep existing boolean pass/fail logic while capturing full result data
   - Crash handlers in main also write output files to ensure every run produces a result file
   - All 25 user stories now pass — PRD is fully complete
+---
+
+## 2026-02-09 - US-026
+- What was implemented: Pure LLM mode — backend acts as text-in/text-out inference layer only, all tools owned locally
+- Files changed:
+  - packages/agent-ts/src/stream-client.ts (always send tools: [] in request body, ignoring request.tools)
+  - packages/agent-ts/src/agent.ts (removed getServerToolNames import/usage, removed localToolCalls server filter, added extractToolCallsFromText for parsing tool_calls from LLM text, exported extractJSON)
+  - packages/agent-ts/src/tools/web-search.ts (web_search changed to local: true, handler returns simulated results when no TAVILY_API_KEY, calls Tavily API when key is set)
+  - packages/agent-ts/src/prompts/templates.ts (added toolCallFormatInstructions function with JSON format for tool_calls)
+  - packages/agent-ts/src/prompts/system.ts (includes toolCallFormatInstructions when tools are available)
+  - packages/agent-ts/scripts/e2e-validate.ts (updated for pure LLM mode: registers all tools locally, verifies tools:[] in payloads, added toolsInPayload to TestResult)
+  - packages/agent-ts/src/agent.test.ts (updated server tool test → local tool test, added 3 pure LLM mode tests: text tool_calls parsing, generated IDs, no tools in request)
+  - packages/agent-ts/src/tools/web-search.test.ts (updated 5 tests: local:true, simulated results, Tavily with key, Tavily error, combined both local)
+  - packages/agent-ts/src/stream-client.test.ts (updated 1 test: tools always [] regardless of request.tools)
+  - packages/agent-ts/src/prompts/system.test.ts (added 2 tests: toolCallFormatInstructions content, updated 2 existing tests: tool section includes call format instructions)
+- **Learnings for future iterations:**
+  - The Ruska backend `/api/llm/stream` runs a full LangGraph agent (`create_deep_agent`) when tools are non-empty — this causes server-side looping that breaks 12 Factor ownership
+  - Sending tools: [] forces the backend to act as pure text-in/text-out inference — essential for local agent loop control
+  - Tool call format must be described in the system_prompt with exact JSON schema so the LLM knows how to invoke tools via text output
+  - `extractToolCallsFromText` must handle missing `id` fields (auto-generate IDs) since some LLMs omit them
+  - web_search simulated results provide a useful fallback for development/testing without Tavily API key
+  - The `getServerToolNames()` function still exists in tools/index.ts but returns [] since no tools have `local: false` anymore
+  - All 26 user stories now pass — PRD is fully complete
 ---
