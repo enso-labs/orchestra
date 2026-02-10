@@ -453,6 +453,26 @@
       "priority": 24,
       "passes": true,
       "notes": "E2E validation script at scripts/e2e-validate.ts. npm run e2e runs both tests. singleTurn: 1 request (PASS). Multi-turn maxIterations:3: 3 requests (PASS). Both tests verify request count via fetch interception. All 278 unit tests pass."
+    },
+    {
+      "id": "US-025",
+      "title": "E2E script: log full response output to output/ folder",
+      "description": "As a maintainer, I need the e2e-validate.ts script to write the full response (ResearchResult JSON or StructuredOutputError rawText) to the output/ folder so I can review results after each run.",
+      "acceptanceCriteria": [
+        "e2e-validate.ts writes each test run result to output/ folder using the file_writer pattern (fs.mkdir recursive, fs.writeFile)",
+        "singleTurn result saved to output/e2e-singleturn-{ISO timestamp}.json containing: { test: 'singleTurn', timestamp, requestCount, success: boolean, result: ResearchResult | null, rawText: string | null, error: string | null }",
+        "Multi-turn result saved to output/e2e-multiturn-{ISO timestamp}.json with same shape but test: 'multiTurn'",
+        "If runAgent returns a valid ResearchResult, 'result' field contains the parsed object and 'success' is true",
+        "If StructuredOutputError is thrown, 'rawText' field contains error.rawText and 'success' is false",
+        "If an unexpected error occurs, 'error' field contains the error message and 'success' is false",
+        "Script prints the output file paths to stdout after writing",
+        "output/ directory is created if it doesn't exist",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 25,
+      "passes": true,
+      "notes": "E2E script writes TestResult JSON to output/ folder for both singleTurn and multiTurn tests. Uses fs.mkdir recursive + fs.writeFile. Filenames include ISO timestamp. Handles all three outcomes: ResearchResult (success), StructuredOutputError (rawText), unexpected errors. All 278 tests pass."
     }
   ]
 }

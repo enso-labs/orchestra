@@ -365,3 +365,17 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - E2E script should handle all three outcomes: ResearchResult (success), StructuredOutputError (non-JSON), MaxIterationsError (loop bounded)
   - All 24 user stories now pass — PRD is fully complete
 ---
+
+## 2026-02-09 - US-025
+- What was implemented: E2E validation script writes full response output to output/ folder as JSON files
+- Files changed:
+  - packages/agent-ts/scripts/e2e-validate.ts (added fs imports, TestResult interface, writeTestResult helper, modified testSingleTurn/testMultiTurn to return TestResult, main writes output files and prints paths)
+  - .ralph/prd.json (US-025 passes: true)
+- **Learnings for future iterations:**
+  - Use `node:fs/promises` `mkdir` and `writeFile` for output — same pattern as file_writer tool
+  - ISO timestamps in filenames need colons/dots replaced (`replace(/[:.]/g, "-")`) for filesystem compatibility
+  - `resolve(config.outputDir)` handles both relative (`./output`) and absolute paths from config
+  - Return `{ pass, testResult }` from test functions to keep existing boolean pass/fail logic while capturing full result data
+  - Crash handlers in main also write output files to ensure every run produces a result file
+  - All 25 user stories now pass — PRD is fully complete
+---
