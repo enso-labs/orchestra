@@ -220,8 +220,8 @@
         "Tests pass"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Middleware system with Middleware type, runBeforeLLM, runAfterLLM, runBeforeTool, runAfterTool. All 17 tests pass."
     },
     {
       "id": "US-013",

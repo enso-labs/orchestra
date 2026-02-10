@@ -17,6 +17,8 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - `ToolDefinition.parameters` is typed as `z.ZodType` — any Zod schema works (z.object, z.string, etc.)
 - Tools needing external callbacks (e.g., `human_contact.promptFn`) use `options` third arg — same DI pattern as `file_writer.outputDir`
 - `registerTool` replaces existing tools with the same name — supports tool override pattern
+- Middleware hooks are optional — only define the hooks your middleware needs (beforeLLM, afterLLM, beforeTool, afterTool)
+- `runBeforeLLM` and `runBeforeTool` chain their outputs; `runAfterLLM` is side-effect only (no chaining)
 - Cannot `vi.spyOn` ESM `node:fs/promises` exports — use real filesystem I/O in tests with temp dirs and cleanup in `afterEach`
 - Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
 
@@ -170,4 +172,18 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Throw a clear error when `promptFn` is not provided rather than silently failing — helps consumers understand the DI requirement
   - Test both `options: undefined` and `options: {}` cases for missing promptFn — both should throw
   - Error propagation from `promptFn` (e.g., user cancelled) passes through naturally — no need to catch/wrap
+---
+
+## 2026-02-09 - US-012
+- What was implemented: Middleware system with types and runner functions
+- Files changed:
+  - packages/agent-ts/src/middleware/index.ts (Middleware interface, runBeforeLLM, runAfterLLM, runBeforeTool, runAfterTool)
+  - packages/agent-ts/src/middleware/index.test.ts (17 tests: type shape, ordering, state propagation, arg chaining, result chaining, error passthrough, async hooks, empty arrays)
+- **Learnings for future iterations:**
+  - `runBeforeLLM` chains state — each middleware receives the output of the previous one
+  - `runBeforeTool` chains args — each middleware transforms args for the next
+  - `runAfterTool` chains result — each middleware transforms the result for the next
+  - `runAfterLLM` does NOT chain — each middleware receives the same state and events (side-effect only)
+  - Middleware hooks are optional — runner functions skip middlewares that don't define a given hook
+  - Empty middleware array is a valid no-op — runners return original state/args/result unchanged
 ---
