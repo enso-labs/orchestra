@@ -34,3 +34,5 @@ export type { Middleware } from "./middleware/index.js";
 export { errorHandlerMiddleware } from "./middleware/error-handler.js";
 export { createObservabilityMiddleware } from "./middleware/observability.js";
 export { createContextManagerMiddleware } from "./middleware/context-manager.js";
+export { createDynamicPromptMiddleware, dynamicPromptMiddleware } from "./middleware/dynamic-prompt.js";
+export type { DynamicPromptOptions } from "./middleware/dynamic-prompt.js";
