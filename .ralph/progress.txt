@@ -9,6 +9,9 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Use `loadConfig(customEnv)` in tests instead of mutating `process.env`
 - Test files live alongside source: `src/foo.test.ts` next to `src/foo.ts`
 - Logger uses `process.stderr.write()` for structured JSON — spy with `vi.spyOn(process.stderr, "write").mockReturnValue(true)` in tests
+- Use `any` type for `vi.spyOn(globalThis, "fetch")` to avoid complex vitest MockInstance type issues with overloaded fetch signatures
+- Backend SSE format: `data: ["eventType", payload]\n\n` — event types are `metadata`, `messages`, `values`, `error`, and `[DONE]` sentinel
+- Mock fetch in tests with `new Response(readableStream, { status, headers })` — use `ReadableStream` for SSE body simulation
 
 ---
 
@@ -49,4 +52,33 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Use `any` type for stderr spy to avoid complex vitest MockInstance type issues with overloaded write signatures
   - Logger has zero external dependencies — pure Node.js `process.stderr.write`
   - Export both `Logger` interface and `LogLevel` type for downstream consumers
+---
+
+## 2026-02-09 - US-004
+- What was implemented: Zod schemas for ResearchResult, AgentState, and tool inputs
+- Files changed:
+  - packages/agent-ts/src/schemas.ts (ResearchResult, AgentState, WebSearchInput, FileWriterInput, HumanContactInput, NoteTakerInput schemas + types)
+  - packages/agent-ts/src/schemas.test.ts (30 tests: valid/invalid parse, edge cases, boundary values, missing fields)
+  - packages/agent-ts/src/index.ts (updated barrel exports for config, logger, and all schemas)
+- **Learnings for future iterations:**
+  - Use `z.infer<typeof Schema>` with same name for schema + type (TypeScript allows value/type with same name from Zod)
+  - Use `.min(1)` on string fields that should not be empty (title, summary, query, filename, question, note)
+  - Confidence uses `.min(0).max(1)` for 0-1 range validation
+  - AgentState iteration uses `.int().nonnegative()` to reject negative and fractional values
+  - Barrel file now exports all public API from config, logger, and schemas modules
+---
+
+## 2026-02-09 - US-005
+- What was implemented: SSE stream client with async generator for Ruska /api/llm/stream endpoint
+- Files changed:
+  - packages/agent-ts/src/stream-client.ts (streamChat async generator, StreamEvent union type, StreamConnectionError class, SSE parser)
+  - packages/agent-ts/src/stream-client.test.ts (16 tests: event parsing for metadata/messages/values/error/done, full session, keep-alive skip, malformed data skip, request headers/body, HTTP errors 401/500/400, network failure)
+  - packages/agent-ts/src/index.ts (added streamChat, StreamConnectionError, StreamEvent, StreamChatRequest exports)
+- **Learnings for future iterations:**
+  - Backend SSE format is `data: ["eventType", payload]\n\n` — must parse JSON array with event type as first element
+  - Use `any` type for `vi.spyOn(globalThis, "fetch")` — overloaded fetch signature causes complex MockInstance type incompatibilities
+  - SSE `[DONE]` sentinel is not valid JSON — handle before `JSON.parse`
+  - Use `ReadableStream<Uint8Array>` + `TextEncoder` to simulate SSE body in tests
+  - `response.body.getReader()` + `TextDecoder({ stream: true })` handles chunked SSE data correctly
+  - Backend sends `: keep-alive\n\n` comments — skip lines starting with `:`
 ---

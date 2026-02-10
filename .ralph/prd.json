@@ -74,8 +74,8 @@
         "Tests pass"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Schemas module with ResearchResult, AgentState, and 4 tool input schemas. All 30 tests pass. Barrel file updated with exports."
     },
     {
       "id": "US-005",
@@ -94,8 +94,8 @@
         "Tests pass"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "SSE stream client with streamChat async generator, StreamEvent types, StreamConnectionError. All 16 tests pass."
     },
     {
       "id": "US-006",

@@ -11,3 +11,5 @@ export {
   HumanContactInput,
   NoteTakerInput,
 } from "./schemas.js";
+export { streamChat, StreamConnectionError } from "./stream-client.js";
+export type { StreamEvent, StreamChatRequest } from "./stream-client.js";
