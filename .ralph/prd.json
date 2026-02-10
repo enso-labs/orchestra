@@ -345,8 +345,8 @@
         "Typecheck passes"
       ],
       "priority": 19,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "GitHub Actions workflow at .github/workflows/agent-ts.yml. Triggers on push/PR to development when packages/agent-ts/** changes. Node.js 18 and 20 matrix. Steps: checkout, setup Node, npm ci, typecheck, build, test."
     },
     {
       "id": "US-020",

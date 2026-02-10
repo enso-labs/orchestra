@@ -278,4 +278,17 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Type-only imports (`import type { ... }`) verify compile-time type availability — if a type were missing, `tsc --noEmit` would catch it
   - `package.json` `exports` field maps `"."` → `dist/index.js`, `"./tools"` → `dist/tools/index.js`, `"./middleware"` → `dist/middleware/index.js` — must match `typesVersions` for declaration files
   - Zod schemas double as both runtime values (`.parse()`) and TypeScript types (`z.infer<typeof Schema>`) — export the schema value and the type is automatically available
+- CI workflow uses `cache-dependency-path: packages/agent-ts/package-lock.json` for npm cache — must match actual lockfile location
+---
+
+## 2026-02-09 - US-019
+- What was implemented: GitHub Actions CI pipeline for @ruska/agent-ts
+- Files changed:
+  - .github/workflows/agent-ts.yml (new workflow: typecheck, build, test on Node 18+20 matrix)
+- **Learnings for future iterations:**
+  - Use `paths` filter on both push and pull_request triggers to only run CI when agent-ts files change
+  - Node.js matrix strategy `[18, 20]` covers minimum supported (Node 18 for native fetch) and current LTS
+  - `working-directory: ./packages/agent-ts` required since package is not at repo root
+  - `cache-dependency-path` must point to the package-specific lock file, not the repo root
+  - Existing repo workflows use `actions/checkout@v4`, `actions/setup-node@v4` — follow same versions
 ---
