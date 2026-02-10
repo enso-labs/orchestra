@@ -366,6 +366,35 @@
       "priority": 20,
       "passes": true,
       "notes": "README.md with 12 Factor mapping table, quick start guide, custom tools/middleware examples, model swapping, architecture diagram, and full package exports reference."
+    },
+    {
+      "id": "US-021",
+      "title": "Publish scripts and package metadata matching CLI pattern",
+      "description": "As a maintainer, I need publish-ready scripts and package metadata so the package can be published to npm with the same workflow as @ruska/cli.",
+      "acceptanceCriteria": [
+        "package.json has 'license': 'Apache-2.0'",
+        "package.json has 'author': 'RUSKA <reggleston@ruska.ai>'",
+        "package.json has 'homepage' pointing to the GitHub packages/agent-ts README",
+        "package.json has 'repository' with type git, url git+https://github.com/enso-labs/orchestra.git, directory packages/agent-ts",
+        "package.json has 'bugs' url https://github.com/enso-labs/orchestra/issues",
+        "package.json has 'keywords' array including: agent, ai, llm, ruska, orchestra, typescript, 12-factor",
+        "package.json has 'engines': { 'node': '>=18' }",
+        "package.json has 'files': ['dist', '!dist/__tests__']",
+        "package.json has 'publishConfig': { 'access': 'public', 'registry': 'https://registry.npmjs.org' }",
+        "package.json scripts include 'build:clean': removes dist/ then runs tsc (matching CLI pattern: node -e ... && npm run build)",
+        "package.json scripts 'prepack': 'npm run build:clean'",
+        "package.json scripts 'prepublishOnly': 'npm run test && npm run build:clean'",
+        "package.json scripts 'version': 'git add -A'",
+        "package.json scripts 'link': 'npm install && npm run build && npm link'",
+        "package.json scripts 'package:local': 'npm run build:clean && npm pack'",
+        "npm run build:clean removes dist/ and rebuilds successfully",
+        "npm run package:local produces a .tgz file",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 21,
+      "passes": true,
+      "notes": "Publish-ready package.json matching CLI pattern: license, author, homepage, repository, bugs, keywords, engines, files, publishConfig. Scripts: build:clean, prepack, prepublishOnly, version, link, package:local. build:clean and package:local verified working."
     }
   ]
 }

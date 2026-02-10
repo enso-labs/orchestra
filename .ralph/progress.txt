@@ -303,3 +303,15 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Include both runtime value imports and type-only imports in the exports reference — consumers need both
   - All 20 user stories now pass — PRD is complete
 ---
+
+## 2026-02-09 - US-021
+- What was implemented: Publish scripts and package metadata matching @ruska/cli pattern
+- Files changed:
+  - packages/agent-ts/package.json (added license, author, homepage, repository, bugs, keywords, engines, files, publishConfig, and publish scripts: build:clean, prepack, prepublishOnly, version, link, package:local)
+- **Learnings for future iterations:**
+  - `build:clean` uses `node -e "require('fs').rmSync('dist',{recursive:true,force:true})"` — this CJS eval works even in ESM packages since it's executed via `node -e`, not imported
+  - `prepack` runs `build:clean` automatically before `npm pack` — so `package:local` (build:clean + npm pack) triggers prepack redundantly but harmlessly
+  - `files` array `["dist", "!dist/__tests__"]` only excludes a `__tests__` subdirectory, not `.test.js` files alongside source — this matches the CLI pattern exactly
+  - When comparing to a sibling package's pattern, read its package.json first and adapt field values (directory, homepage path) while keeping structure identical
+  - All 21 user stories now pass — PRD is fully complete
+---
