@@ -15,6 +15,7 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Subdirectories under `src/` work fine — import with `./prompts/system.js` relative paths
 - Tool registry uses module-level arrays/maps — call `_resetRegistry()` in `beforeEach` for test isolation
 - `ToolDefinition.parameters` is typed as `z.ZodType` — any Zod schema works (z.object, z.string, etc.)
+- Tools needing external callbacks (e.g., `human_contact.promptFn`) use `options` third arg — same DI pattern as `file_writer.outputDir`
 - `registerTool` replaces existing tools with the same name — supports tool override pattern
 - Cannot `vi.spyOn` ESM `node:fs/promises` exports — use real filesystem I/O in tests with temp dirs and cleanup in `afterEach`
 - Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
@@ -157,4 +158,16 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - Category defaults to "general" when not provided — use `|| "general"` pattern
   - ISO timestamps via `new Date().toISOString()` — verify in tests by re-parsing and comparing
   - No filesystem operations needed — pure in-memory state mutation is simpler to test than file I/O tools
+---
+
+## 2026-02-09 - US-011
+- What was implemented: human_contact local tool with dependency-injected promptFn
+- Files changed:
+  - packages/agent-ts/src/tools/human-contact.ts (humanContactDefinition, humanContactHandler, registerHumanContact)
+  - packages/agent-ts/src/tools/human-contact.test.ts (12 tests: definition shape, local flag, registration, promptFn call, ISO timestamp, missing promptFn error, context passthrough, error propagation)
+- **Learnings for future iterations:**
+  - `promptFn` is injected via `options.promptFn` (third arg to handler) — same pattern as `file_writer` uses `options.outputDir`
+  - Throw a clear error when `promptFn` is not provided rather than silently failing — helps consumers understand the DI requirement
+  - Test both `options: undefined` and `options: {}` cases for missing promptFn — both should throw
+  - Error propagation from `promptFn` (e.g., user cancelled) passes through naturally — no need to catch/wrap
 ---
