@@ -1,0 +1,46 @@
+name: Agent TS
+
+on:
+    push:
+        branches:
+            - development
+        paths:
+            - "packages/agent-ts/**"
+    pull_request:
+        branches:
+            - development
+        paths:
+            - "packages/agent-ts/**"
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18, 20]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+                  cache-dependency-path: packages/agent-ts/package-lock.json
+
+            - name: Install dependencies
+              working-directory: ./packages/agent-ts
+              run: npm ci
+
+            - name: Typecheck
+              working-directory: ./packages/agent-ts
+              run: npm run typecheck
+
+            - name: Build
+              working-directory: ./packages/agent-ts
+              run: npm run build
+
+            - name: Test
+              working-directory: ./packages/agent-ts
+              run: npm run test
