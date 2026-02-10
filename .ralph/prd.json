@@ -1,91 +1,371 @@
 {
-  "project": "Orchestra",
-  "branchName": "feat/743-update-wiki-for-memories",
-  "description": "Wiki Documentation for Memories Feature - Document the Memories feature with API reference, UI tutorial with screenshots, and llm.txt update",
+  "project": "@ruska/agent-ts",
+  "branchName": "ralph/agent-ts-12-factor",
+  "description": "12 Factor Agent TypeScript library — local agent loop backed by Ruska /llm/stream API",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize wiki submodule and add Memories entries to sidebar",
-      "description": "As a documentation reader, I want to find 'Memories' in the wiki navigation so I can learn about the feature.",
+      "title": "Project scaffolding: package.json, tsconfig, env example",
+      "description": "As a library consumer, I need the package skeleton so I can install and build it.",
       "acceptanceCriteria": [
-        "Run 'git submodule update --init wiki' in the worktree to initialize the wiki submodule",
-        "Add 'memories/index' to the 'Core Features' items array in wiki/sidebars.ts (after 'storage/index')",
-        "Add 'memories/tutorial' to the 'Tutorials' items array in wiki/sidebars.ts",
-        "Create empty placeholder files wiki/docs/memories/index.md and wiki/docs/memories/tutorial.md with basic frontmatter so the sidebar does not break",
+        "packages/agent-ts/ directory exists",
+        "package.json has name @ruska/agent-ts, version 0.1.0, type module",
+        "package.json exports: '.', './agent', './tools', './middleware'",
+        "Dependencies: zod, dotenv only. DevDeps: typescript, tsx, @types/node, vitest",
+        "Scripts: start, dev, dev:watch, build (tsc), typecheck (tsc --noEmit), test (vitest run), prepublishOnly",
+        "tsconfig.json: strict, ES2022 target, ESNext module, bundler moduleResolution, declaration, sourceMap, outDir dist",
+        ".env.example with RUSKA_API_URL, RUSKA_API_KEY, MODEL, TAVILY_API_KEY, LOG_LEVEL, OUTPUT_DIR, MAX_ITERATIONS",
+        "src/index.ts exists as empty barrel file",
+        "npm run typecheck exits zero",
+        "npm run build produces dist/ with .js and .d.ts files",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "The wiki is a git submodule. In this worktree it is not yet initialized — run 'git submodule update --init wiki' first. Read wiki/sidebars.ts for the current structure. The existing sidebar has: Core Features [assistants/index, threads/index, storage/index] and Tutorials [tools/sandbox-tutorial]. Add memories/index to Core Features and memories/tutorial to Tutorials."
+      "notes": "Scaffolded with package.json, tsconfig.json, .env.example, src/index.ts. Typecheck and build pass."
     },
     {
       "id": "US-002",
-      "title": "Write main Memories documentation page (API reference)",
-      "description": "As a developer or API consumer, I want a reference page explaining how memories work and how to interact with them via the API so I can integrate memories into my workflow.",
+      "title": "Zod-validated config from environment variables",
+      "description": "As a library consumer, I need typed, validated config from env vars so the agent fails fast on misconfiguration.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/index.md with Docusaurus frontmatter: title 'Memories', slug '/memories', sidebar_position 4",
-        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /AGENTS.md",
-        "Include 'How It Works' section describing the lifecycle: create memory -> stored in LangGraph BaseStore -> automatically retrieved via prepare_memory_files() -> injected as markdown into streaming/worker/invoke entry points",
-        "Include 'API Reference' section with curl examples for all 5 endpoints: GET /api/memories (list with limit, offset, query params), GET /api/memories/{memory_id}, POST /api/memories (body: {content, metadata?}), PUT /api/memories/{memory_id} (body: {content, metadata?}), DELETE /api/memories/{memory_id}",
-        "Each curl example uses localhost base URL and includes Authorization: Bearer <token> header",
-        "Each curl example includes an example JSON response matching the backend schemas (Memory: {id, content, metadata, created_at, updated_at}, MemoryListResponse: {memories[], total, limit, offset})",
-        "Include a 'Configuration via UI' section at the bottom linking to the tutorial page at ./tutorial",
-        "Follow the same markdown structure as wiki/docs/assistants/index.md (heading hierarchy, bullet lists, code blocks)",
-        "Typecheck passes"
+        "src/config.ts exports loadConfig() returning typed Config object",
+        "Validates: apiUrl (default http://localhost:8000), apiKey (required), model (default openai:gpt-4.1-mini), tavilyApiKey (optional), logLevel (enum debug|info|warn|error, default info), outputDir (default ./output), maxIterations (number, default 15)",
+        "Throws ZodError with clear message when RUSKA_API_KEY is missing",
+        "Loads .env via dotenv",
+        "Config type is exported",
+        "Tests: valid config, missing required fields, default values, type coercion",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Read wiki/docs/assistants/index.md and wiki/docs/storage/index.md from the main repo at /home/ryaneggz/ruska-ai/orchestra/wiki/ for the exact Docusaurus page pattern (frontmatter, heading style, admonitions). The API endpoints are defined in backend/src/routes/v0/memory.py. Schemas are in backend/src/schemas/entities/memory.py: Memory(id, content, metadata?, created_at?, updated_at?), MemoryCreate(content, metadata?), MemoryUpdate(content, metadata?), MemoryListResponse(memories, total, limit, offset). Query params for list: limit(default=10, max=100), offset(default=0), query(default=''). Auth uses Bearer token. Use localhost URLs since docs target local dev."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Capture full workflow screenshots with agent-browser",
-      "description": "As a documentation author, I need screenshots of the memories workflow captured in light mode to include in the tutorial page.",
+      "title": "Structured JSON logger with level filtering",
+      "description": "As a library consumer, I need structured logs so I can pipe agent observability into any log aggregator.",
       "acceptanceCriteria": [
-        "Create directory wiki/static/img/memories/",
-        "Use agent-browser skill to navigate to local dev environment Settings page",
-        "Set browser to light mode",
-        "Capture screenshot of Settings page showing the Memories section (empty state) and save as wiki/static/img/memories/settings-memories-empty.png",
-        "Use agent-browser to click 'Add Memory' and fill in example content like 'I prefer Python for backend development and TypeScript for frontend. My timezone is America/Chicago.'",
-        "Capture screenshot of the Add Memory dialog with content filled in and save as wiki/static/img/memories/settings-add-memory-dialog.png",
-        "Save the memory, then capture screenshot of Settings page showing the created memory in the list and save as wiki/static/img/memories/settings-memories-list.png",
-        "Navigate to chat, send a message that triggers memory recall (e.g., 'What programming languages do I prefer?'), and capture screenshot showing personalized response as wiki/static/img/memories/chat-memory-recall.png"
+        "src/logger.ts exports createLogger(level) returning { debug, info, warn, error } methods",
+        "Each method writes JSON line to stderr: { timestamp, level, message, ...metadata }",
+        "Respects LOG_LEVEL — messages below threshold are suppressed",
+        "Zero external dependencies (uses process.stderr.write)",
+        "Tests: each level outputs correctly, suppression below threshold, metadata passthrough, valid JSON format",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "The local dev environment must be running: 'make dev' for backend (port 8000) and 'cd frontend && npm run dev' for frontend (port 5173). The Settings page is at http://localhost:5173/settings. You must log in first. The agent-browser skill handles browser automation. Use light mode for all screenshots. The MemorySettings component is in frontend/src/components/settings/MemorySettings.tsx. The settings page is at frontend/src/pages/settings/index.tsx."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Write Memories tutorial page (UI walkthrough with screenshots)",
-      "description": "As a user, I want a step-by-step visual tutorial showing me how to add memories through the Settings page and see them working in chat.",
+      "title": "Zod schemas: ResearchResult, AgentState, tool inputs",
+      "description": "As a library consumer, I need well-defined schemas so the agent's inputs, outputs, and state are type-safe.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/tutorial.md with frontmatter: title 'Tutorial: Configuring Memories', sidebar_label 'Memory Tutorial', sidebar_position 1",
-        "Step 1 'Navigate to Settings': describe how to reach the Settings page, include screenshot reference ![Settings Memories Empty](/img/memories/settings-memories-empty.png)",
-        "Step 2 'Add a Memory': describe clicking Add Memory button, entering content, saving; include screenshot ![Add Memory Dialog](/img/memories/settings-add-memory-dialog.png)",
-        "Step 3 'Verify Memory Created': describe seeing the memory in the list; include screenshot ![Memories List](/img/memories/settings-memories-list.png)",
-        "Step 4 'Test in Chat': describe navigating to chat, sending a message, seeing personalized response; include screenshot ![Memory Recall](/img/memories/chat-memory-recall.png)",
-        "Step 5 'Managing Memories': brief section describing edit (pencil icon) and delete (trash icon with confirmation dialog) actions",
-        "Include a link back to the main Memories page: 'For API reference and programmatic access, see [Memories](/docs/memories)'",
-        "Typecheck passes"
+        "src/schemas.ts exports ResearchResult schema: { title: string, summary: string, sources: string[], confidence: number, followUpQuestions: string[] }",
+        "Exports AgentState schema: { messages: array, notes: array, sources: string[], threadId: string optional, iteration: number, systemPrompt: string optional }",
+        "Exports tool input schemas: WebSearchInput, FileWriterInput, HumanContactInput, NoteTakerInput",
+        "ResearchResult.parse() throws ZodError on invalid data with descriptive messages",
+        "All schema types are exported (inferred with z.infer)",
+        "Tests: valid parse, invalid parse, empty arrays, missing optional fields, edge cases",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Screenshots should already exist in wiki/static/img/memories/ from US-003. Reference them with Docusaurus-compatible image syntax: ![alt text](/img/memories/filename.png). Follow the same tutorial structure as wiki/docs/tools/sandbox-tutorial.md. The MemorySettings component has: search bar, Add Memory button, memory list with edit/delete icons, and MemoryEditDialog for create/edit. Delete shows an AlertDialog confirmation."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Update llm.txt with memories documentation",
-      "description": "As an external AI agent or search engine, I need the public llm.txt to reflect the memories feature so LLM search engines provide accurate information about Orchestra.",
+      "title": "SSE stream client: streamChat async generator",
+      "description": "As a library consumer, I need a typed SSE client that streams LLM responses from the Ruska backend.",
       "acceptanceCriteria": [
-        "Read website/public/llm.txt to understand the current structure and style",
-        "Add a 'Memories' subsection under '## Core Features' (after the existing Prompts or Tools section) with: one-line description of what memories are, that they persist per-user, that they are automatically injected into agent context during conversations, the 5 API endpoints (GET list, GET single, POST create, PUT update, DELETE), and that configuration is available via the Settings UI",
-        "Keep the addition concise (5-10 lines) and consistent with the existing llm.txt bullet-point style",
-        "Typecheck passes"
+        "src/stream-client.ts exports streamChat(request, config): AsyncGenerator<StreamEvent>",
+        "Sends POST /api/llm/stream with x-api-key header and JSON body",
+        "Parses SSE data lines: metadata, messages, values, error, done event types",
+        "Yields typed StreamEvent objects as they arrive",
+        "Exports StreamEvent type and StreamConnectionError class",
+        "Throws StreamConnectionError on HTTP errors (401, 500, network failure)",
+        "Supports thread_id in metadata for conversation continuity",
+        "Tests: valid stream parsing with mocked fetch, HTTP error responses, malformed SSE handling",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Read website/public/llm.txt at /home/ryaneggz/ruska-ai/orchestra/website/public/llm.txt (or the worktree copy). The existing structure has ## Core Features with subsections like ### Projects, ### Assistants, ### Threads, ### Schedules, ### Prompts, ### Tools. Add ### Memories following the same pattern. Also check if there is a worktree copy at /home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-743/website/public/llm.txt."
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Prompt templates and system prompt builder",
+      "description": "As a library consumer, I need composable prompts so the agent's behavior adapts per turn.",
+      "acceptanceCriteria": [
+        "src/prompts/system.ts exports buildSystemPrompt({ topic, phase, noteCount, tools }) returning string",
+        "src/prompts/templates.ts exports reusable fragments: tool description block, error recovery guidance, phase-specific instructions",
+        "System prompt includes local tool definitions (name, description, parameters JSON schema) so the LLM can call them",
+        "Prompt varies by phase: research (gather info), synthesis (combine notes), output (produce ResearchResult JSON)",
+        "Tests: each phase produces distinct prompt content, tool definitions are included, template composition",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Tool registry: definitions, dispatch, registerTool",
+      "description": "As a library consumer, I need a tool registry so I can dispatch tool calls and register custom tools.",
+      "acceptanceCriteria": [
+        "src/tools/index.ts exports TOOL_DEFINITIONS array of { name, description, parameters, local: boolean }",
+        "Exports executeTool(name, args, state): Promise<unknown> dispatcher",
+        "Exports registerTool(definition, handler) for consumer-defined tools",
+        "Exports getServerToolNames() returning names of tools where local is false",
+        "Each tool input is validated with its Zod schema before handler execution",
+        "Unknown tool names throw ToolNotFoundError (exported class)",
+        "Tests: dispatch known tool, unknown tool error, Zod validation failure, registerTool adds to registry, getServerToolNames",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "web_search tool definition (server-delegated)",
+      "description": "As a library consumer, I need web search declared for the backend to execute server-side.",
+      "acceptanceCriteria": [
+        "src/tools/web-search.ts exports tool definition with name web_search, description, and Zod input schema (query: string)",
+        "Tool is marked local: false in registry — NOT executed client-side",
+        "web_search appears in getServerToolNames() output",
+        "When TAVILY_API_KEY env var is set, registers an additional tavily_search tool marked local: true that calls Tavily Search API",
+        "Tests: tool definition shape, local flag is false, server tool name list includes web_search, Tavily fallback registration when key is present",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "file_writer tool (local, with path traversal protection)",
+      "description": "As a library consumer, I need a local file_writer tool so the agent can save structured output to disk.",
+      "acceptanceCriteria": [
+        "src/tools/file-writer.ts exports handler and tool definition",
+        "Input schema: { filename: string, content: string, format?: string } validated with Zod",
+        "Writes file to config.outputDir, creates directory if missing (fs.mkdir recursive)",
+        "Returns { success: true, path: string, size_bytes: number }",
+        "Rejects path traversal: resolved path must start with resolved outputDir, else throws Error",
+        "Marked local: true in registry",
+        "Tests: successful write, path traversal rejection (../etc/passwd), directory auto-creation, return shape validation",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "note_taker tool (local, mutates AgentState)",
+      "description": "As a library consumer, I need a note_taker tool so the agent can accumulate research notes in local state.",
+      "acceptanceCriteria": [
+        "src/tools/note-taker.ts exports handler and tool definition",
+        "Input schema: { note: string, category?: string, source?: string } validated with Zod",
+        "Handler receives AgentState, pushes { note, category, source, timestamp } to state.notes[]",
+        "Returns { success: true, note_count: number, category: string }",
+        "Marked local: true in registry",
+        "Tests: note addition increments count, category defaults to 'general', source is optional, state mutation is correct",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "human_contact tool (local, dependency-injected prompt)",
+      "description": "As a library consumer, I need a human_contact tool so the agent can ask the user a question mid-loop.",
+      "acceptanceCriteria": [
+        "src/tools/human-contact.ts exports handler and tool definition",
+        "Input schema: { question: string, context?: string } validated with Zod",
+        "Handler accepts promptFn: (question: string) => Promise<string> via options (dependency injection, no hardcoded readline)",
+        "Returns { human_response: string, timestamp: string }",
+        "Marked local: true in registry",
+        "Tests: mock promptFn returns expected response, timestamp is ISO format, context is passed through",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Middleware system: types and runner functions",
+      "description": "As a library consumer, I need composable middleware so I can inject behavior into the agent loop.",
+      "acceptanceCriteria": [
+        "src/middleware/index.ts exports Middleware type: { name: string, beforeLLM?, afterLLM?, beforeTool?, afterTool? }",
+        "Exports runBeforeLLM(middlewares, state): AgentState — runs each middleware's beforeLLM in order",
+        "Exports runAfterLLM(middlewares, state, events): void — runs each middleware's afterLLM in order",
+        "Exports runBeforeTool(middlewares, toolName, args): unknown — chains args through each beforeTool",
+        "Exports runAfterTool(middlewares, toolName, result, error?): unknown — chains result through each afterTool",
+        "Tests: middleware ordering is preserved, each hook type invoked correctly, state mutation by beforeLLM propagates",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Error handler middleware (Factor 8/9)",
+      "description": "As a library consumer, I need tool errors wrapped into LLM-readable context so the agent can recover.",
+      "acceptanceCriteria": [
+        "src/middleware/error-handler.ts exports errorHandlerMiddleware conforming to Middleware type",
+        "afterTool hook: if error is present, returns JSON string { error: true, message, tool, suggestion } instead of throwing",
+        "If no error, passes result through unchanged",
+        "Error messages are compact and include the tool name and a recovery suggestion",
+        "Tests: caught error returns error object, no-error passthrough returns original result",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Observability middleware (Factor 12)",
+      "description": "As a library consumer, I need every LLM call and tool execution logged with timing.",
+      "acceptanceCriteria": [
+        "src/middleware/observability.ts exports observabilityMiddleware conforming to Middleware type",
+        "beforeLLM: logs iteration number, message count, model via createLogger",
+        "afterLLM: logs duration (ms), event count, estimated tokens",
+        "beforeTool: logs tool name and args summary",
+        "afterTool: logs tool name, duration, success/failure",
+        "Accepts a Logger instance (from createLogger) via closure or factory function",
+        "Tests: verify logger methods called with expected metadata for each hook",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Context manager middleware (Factor 3)",
+      "description": "As a library consumer, I need automatic context window management so long conversations don't blow up.",
+      "acceptanceCriteria": [
+        "src/middleware/context-manager.ts exports contextManagerMiddleware conforming to Middleware type",
+        "beforeLLM: if messages.length > threshold (default 20), trims oldest messages keeping first (system) and last N messages",
+        "Trimmed messages replaced with a single summary message: { role: 'user', content: '[Context trimmed: N earlier messages removed]' }",
+        "Threshold is configurable via factory function parameter",
+        "Tests: under-threshold leaves messages unchanged, over-threshold trims correctly, summary message format is correct",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Dynamic prompt middleware (Factor 2)",
+      "description": "As a library consumer, I need the system prompt to adapt per turn based on agent state.",
+      "acceptanceCriteria": [
+        "src/middleware/dynamic-prompt.ts exports dynamicPromptMiddleware conforming to Middleware type",
+        "beforeLLM: detects phase — 'research' if notes < 3, 'synthesis' if notes >= 3 and iteration < maxIterations - 2, 'output' if near max iterations",
+        "Sets state.systemPrompt using buildSystemPrompt with detected phase",
+        "Tests: research phase with 0 notes, synthesis phase with 5 notes, output phase near max iterations",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Agent loop: runAgent core engine",
+      "description": "As a library consumer, I need runAgent(topic, config, options?) to orchestrate the full agent loop and return a validated ResearchResult.",
+      "acceptanceCriteria": [
+        "src/agent.ts exports runAgent(topic, config, options?): Promise<ResearchResult>",
+        "Options type: { middlewares?: Middleware[], tools?: ToolDefinition[], onChunk?: (chunk: string) => void, promptFn?: (q: string) => Promise<string> }",
+        "Loop: run beforeLLM middleware → build API request → stream LLM via streamChat → detect tool calls → execute local tools via executeTool → append tool results → run afterLLM → repeat",
+        "Server tools (from getServerToolNames()) sent in API request tools array for backend execution",
+        "Local tools dispatched client-side when tool_calls detected in response",
+        "Final text response parsed with ResearchResult.parse() — throws ZodError if invalid",
+        "Respects config.maxIterations — throws descriptive error if exceeded",
+        "Calls onChunk callback for each streaming messages event",
+        "Thread ID from metadata event preserved in state across turns",
+        "Tests with mocked streamChat: single turn (no tools), multi-turn (tool call + result + final), max iterations exceeded, invalid structured output throws ZodError, middleware hooks invoked",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Package exports: barrel files and public API",
+      "description": "As a library consumer, I need clean entry points so I can import exactly what I need.",
+      "acceptanceCriteria": [
+        "src/index.ts re-exports: runAgent, loadConfig, createLogger, all schemas, all types",
+        "import { runAgent } from '@ruska/agent-ts' resolves correctly",
+        "import { executeTool, registerTool } from '@ruska/agent-ts/tools' resolves correctly",
+        "import { runBeforeLLM, Middleware } from '@ruska/agent-ts/middleware' resolves correctly",
+        "All public types exported: Config, AgentState, ResearchResult, StreamEvent, Middleware, ToolDefinition",
+        "Tests: import resolution smoke tests verifying each export path",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "CI pipeline: GitHub Actions for agent-ts",
+      "description": "As a maintainer, I need CI to run typecheck, build, and tests on every PR.",
+      "acceptanceCriteria": [
+        ".github/workflows/agent-ts.yml exists",
+        "Triggers on push and pull_request to development branch when packages/agent-ts/** changes",
+        "Steps: checkout → setup Node.js → npm ci → npm run typecheck → npm run build → npm run test",
+        "Uses Node.js version matrix: [18, 20]",
+        "Job fails if any step fails",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "README with 12 Factor mapping and usage guide",
+      "description": "As a library consumer, I need documentation to understand the API, add tools, and swap models.",
+      "acceptanceCriteria": [
+        "packages/agent-ts/README.md exists with complete documentation",
+        "Includes 12 Factor to implementation mapping table (all 12 factors)",
+        "Quick start section: install, configure .env, runAgent() example code",
+        "How to add custom tools section with code example",
+        "How to add custom middleware section with code example",
+        "How to swap models (change MODEL env var)",
+        "Text-based architecture diagram showing: consumer → runAgent → streamChat → /api/llm/stream → local tool dispatch → loop",
+        "Package exports reference listing all import paths",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
