@@ -900,6 +900,83 @@ describe("runAgent", () => {
     });
   });
 
+  describe("empty assistantText fallthrough (US-027)", () => {
+    it("throws StructuredOutputError immediately when assistantText is empty and no tool calls", async () => {
+      mockStreamChat.mockReturnValue(
+        mockStream([
+          { type: "messages", data: [{ content: "" }] },
+          { type: "done" },
+        ]),
+      );
+
+      try {
+        await runAgent("test topic", makeConfig({ maxIterations: 5 }));
+        expect.fail("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(StructuredOutputError);
+        expect((err as StructuredOutputError).rawText).toBe("");
+      }
+
+      // Only one call — no silent continuation
+      expect(mockStreamChat).toHaveBeenCalledTimes(1);
+    });
+
+    it("throws StructuredOutputError when stream yields no content at all", async () => {
+      mockStreamChat.mockReturnValue(
+        mockStream([
+          { type: "metadata", data: { thread_id: "t-1" } },
+          { type: "done" },
+        ]),
+      );
+
+      await expect(
+        runAgent("test topic", makeConfig({ maxIterations: 5 })),
+      ).rejects.toThrow(StructuredOutputError);
+
+      expect(mockStreamChat).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("MaxIterationsError uses effectiveMaxIterations (US-027)", () => {
+    it("singleTurn MaxIterationsError reports 1, not config.maxIterations", async () => {
+      // Register a tool so the iteration consumes via tool calls (not empty text)
+      registerTool(
+        {
+          name: "dummy_tool",
+          description: "Dummy",
+          parameters: z.object({ x: z.string() }),
+          local: true,
+        },
+        async () => ({ done: true }),
+      );
+
+      mockStreamChat.mockReturnValue(
+        mockStream([
+          {
+            type: "messages",
+            data: [
+              {
+                content: "",
+                tool_calls: [{ id: "tc-d", name: "dummy_tool", args: { x: "val" } }],
+              },
+            ],
+          },
+          { type: "done" },
+        ]),
+      );
+
+      try {
+        await runAgent("test topic", makeConfig({ maxIterations: 100 }), { singleTurn: true });
+        expect.fail("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(MaxIterationsError);
+        // Should say "1" (effectiveMaxIterations), NOT "100" (config.maxIterations)
+        expect((err as Error).message).toContain("1");
+        expect((err as Error).message).not.toContain("100");
+      }
+    });
+  });
+
   describe("StructuredOutputError (US-023)", () => {
     it("is an instance of Error", () => {
       const err = new StructuredOutputError("some text");

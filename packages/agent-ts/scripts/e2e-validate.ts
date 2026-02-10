@@ -25,6 +25,7 @@ import { registerWebSearch } from "../src/tools/web-search.js";
 import { registerNoteTaker } from "../src/tools/note-taker.js";
 import { registerFileWriter } from "../src/tools/file-writer.js";
 import { registerHumanContact } from "../src/tools/human-contact.js";
+import { createDynamicPromptMiddleware } from "../src/middleware/dynamic-prompt.js";
 import type { Config } from "../src/config.js";
 import type { ResearchResult } from "../src/schemas.js";
 
@@ -95,9 +96,15 @@ async function testSingleTurn(config: Config): Promise<{ pass: boolean; testResu
     return originalFetch(...args);
   };
 
+  // Use dynamicPromptMiddleware so the LLM gets a system prompt with ResearchResult schema
+  // singleTurn uses maxIterations: 1 which triggers output phase via detectPhase()
+  const topic = "What is TypeScript?";
+  const dynamicPrompt = createDynamicPromptMiddleware({ topic, maxIterations: 1 });
+
   try {
-    const result = await runAgent("What is TypeScript?", config, {
+    const result = await runAgent(topic, config, {
       singleTurn: true,
+      middlewares: [dynamicPrompt],
       onChunk: () => {
         chunkCount++;
       },
@@ -199,8 +206,13 @@ async function testMultiTurn(config: Config): Promise<{ pass: boolean; testResul
     return originalFetch(...args);
   };
 
+  // Use dynamicPromptMiddleware so the LLM gets a system prompt with ResearchResult schema
+  const topic = "What is TypeScript?";
+  const dynamicPrompt = createDynamicPromptMiddleware({ topic, maxIterations: 3 });
+
   try {
-    const result = await runAgent("What is TypeScript?", multiTurnConfig, {
+    const result = await runAgent(topic, multiTurnConfig, {
+      middlewares: [dynamicPrompt],
       onChunk: () => {
         chunkCount++;
       },

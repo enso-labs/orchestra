@@ -301,44 +301,47 @@ export async function runAgent(
     }
 
     // --- No tool calls — try to parse final result ---
-    if (assistantText) {
-      // Try to extract JSON from the assistant text
-      const jsonText = extractJSON(assistantText);
-      if (jsonText) {
-        const parsed = JSON.parse(jsonText);
-        return ResearchResultSchema.parse(parsed);
-      }
-
-      // Not valid JSON — handle with retry or throw
-      if (singleTurn) {
-        throw new StructuredOutputError(assistantText);
-      }
-
-      nonJsonRetries++;
-      if (nonJsonRetries > MAX_NON_JSON_RETRIES) {
-        throw new StructuredOutputError(assistantText);
-      }
-
-      // Append assistant text and nudge message asking for JSON output
-      state = {
-        ...state,
-        messages: [
-          ...state.messages,
-          { role: "assistant", content: assistantText },
-          {
-            role: "user",
-            content:
-              "Your response was not valid JSON. Please respond with ONLY a JSON object matching this schema: " +
-              '{ "title": string, "summary": string, "sources": string[], "confidence": number (0-1), "followUpQuestions": string[] }. ' +
-              "Do not include any other text, markdown, or explanation — just the raw JSON object.",
-          },
-        ],
-      };
-      continue;
+    if (!assistantText) {
+      // Empty response with no tool calls is not recoverable
+      throw new StructuredOutputError("");
     }
+
+    // Try to extract JSON from the assistant text
+    const jsonText = extractJSON(assistantText);
+    if (jsonText) {
+      const parsed = JSON.parse(jsonText);
+      return ResearchResultSchema.parse(parsed);
+    }
+
+    // Not valid JSON — handle with retry or throw
+    if (singleTurn) {
+      throw new StructuredOutputError(assistantText);
+    }
+
+    nonJsonRetries++;
+    if (nonJsonRetries > MAX_NON_JSON_RETRIES) {
+      throw new StructuredOutputError(assistantText);
+    }
+
+    // Append assistant text and nudge message asking for JSON output
+    state = {
+      ...state,
+      messages: [
+        ...state.messages,
+        { role: "assistant", content: assistantText },
+        {
+          role: "user",
+          content:
+            "Your response was not valid JSON. Please respond with ONLY a JSON object matching this schema: " +
+            '{ "title": string, "summary": string, "sources": string[], "confidence": number (0-1), "followUpQuestions": string[] }. ' +
+            "Do not include any other text, markdown, or explanation — just the raw JSON object.",
+        },
+      ],
+    };
+    continue;
   }
 
-  throw new MaxIterationsError(config.maxIterations);
+  throw new MaxIterationsError(effectiveMaxIterations);
 }
 
 /** Try to extract a JSON object from text that may contain markdown/prose */
