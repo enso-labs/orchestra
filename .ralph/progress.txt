@@ -20,6 +20,11 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Middleware hooks are optional — only define the hooks your middleware needs (beforeLLM, afterLLM, beforeTool, afterTool)
 - `runBeforeLLM` and `runBeforeTool` chain their outputs; `runAfterLLM` is side-effect only (no chaining)
 - Cannot `vi.spyOn` ESM `node:fs/promises` exports — use real filesystem I/O in tests with temp dirs and cleanup in `afterEach`
+- Mock `streamChat` with `vi.mock("./stream-client.js")` — use async generators for mock streams
+- Agent loop handles tool_calls from `messages` event data: `{ id, name, args }` objects in `tool_calls[]` array
+- `extractJSON()` tries: raw string, code fences, first `{...}` block — handles LLM responses wrapped in prose/markdown
+- Tool results appended as `{ role: "tool", content: "[Tool: name] result" }` messages for next LLM turn
+- Server tools (local: false) are filtered out of local execution — only sent in API request `tools` array
 - Context trimming middleware keeps first message (system) + summary placeholder + last N messages — never loses the system prompt
 - Use factory function pattern for middleware needing dependencies (e.g., `createObservabilityMiddleware(logger)`) — allows DI and per-instance state via closures
 - Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
@@ -245,4 +250,20 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - `getToolDefinitions()` returns Zod-typed parameters — need to map to plain objects for `buildSystemPrompt`'s `ToolDef` interface
   - `beforeLLM` return type is `AgentState | Promise<AgentState>` — use `as AgentState` cast in tests when calling synchronous hooks directly
   - `buildSystemPrompt` uses markdown bold for note count: `**N** research note(s)` — test assertions must match this format
+---
+
+## 2026-02-09 - US-017
+- What was implemented: Agent loop core engine — `runAgent(topic, config, options?)` orchestrating full agent loop with streaming, tool dispatch, and structured output validation
+- Files changed:
+  - packages/agent-ts/src/agent.ts (runAgent, MaxIterationsError, RunAgentOptions, extractJSON, extractTextContent, extractToolCalls)
+  - packages/agent-ts/src/agent.test.ts (21 tests: single turn no tools x5, multi-turn tool calls x3, max iterations x2, invalid output x1, stream error x1, middleware integration x3, API request format x3, promptFn x1, exports x2)
+  - packages/agent-ts/src/index.ts (added runAgent, MaxIterationsError, RunAgentOptions exports)
+- **Learnings for future iterations:**
+  - Mock `streamChat` with `vi.mock("./stream-client.js")` + async generator factory — return different streams per call via `callCount` closure
+  - Backend tool_calls are in `messages` event data as `{ id, name, args }` objects inside `tool_calls[]` array on message payload
+  - `extractJSON()` is critical for handling LLM output that wraps JSON in markdown/prose — tries raw string, code fences, first `{...}` block
+  - Server tools (local: false) must be filtered out from local execution — only include in API request `tools` array
+  - Tool results go back as `{ role: "tool", content: "[Tool: name] result" }` messages for next LLM turn
+  - Don't attempt `JSON.parse()` on non-JSON text on last iteration — let the loop fall through to `MaxIterationsError`
+  - `_resetRegistry()` must be called in `beforeEach` for agent tests that register tools — module-level state persists across tests
 ---

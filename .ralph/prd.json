@@ -311,8 +311,8 @@
         "Tests pass"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Agent loop with runAgent, MaxIterationsError, RunAgentOptions. Mocked streamChat tests: single turn, multi-turn with tools, max iterations, ZodError on invalid output, middleware hooks, stream errors, promptFn injection, thread_id persistence. All 21 tests pass."
     },
     {
       "id": "US-018",
