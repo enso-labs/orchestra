@@ -497,6 +497,27 @@
       "priority": 26,
       "passes": true,
       "notes": "Pure LLM mode: stream-client always sends tools:[], agent.ts removes server tool filtering, adds extractToolCallsFromText for text-based tool call parsing, web_search changed to local:true with simulated results fallback, prompts include toolCallFormatInstructions for LLM tool calling, e2e script verifies tools:[] in all payloads. All 285 tests pass."
+    },
+    {
+      "id": "US-027",
+      "title": "Fix e2e failures: empty assistantText fallthrough, missing system prompt, wrong MaxIterationsError value",
+      "description": "E2E output shows both tests fail with MaxIterationsError. Three root causes: (1) singleTurn throws MaxIterationsError(config.maxIterations=100) instead of MaxIterationsError(1) because the loop-end throw uses config.maxIterations not effectiveMaxIterations, (2) e2e script doesn't use dynamicPromptMiddleware so the LLM gets NO system prompt and no instructions about ResearchResult schema — it just answers naturally with plain text, (3) if assistantText is empty the loop silently continues without triggering any termination path (no JSON check, no StructuredOutputError, no nudge).",
+      "acceptanceCriteria": [
+        "agent.ts: the MaxIterationsError thrown after the loop uses effectiveMaxIterations, not config.maxIterations — so singleTurn throws MaxIterationsError(1) not MaxIterationsError(100)",
+        "agent.ts: when assistantText is empty after streaming AND no tool calls found, throw StructuredOutputError('') immediately instead of silently continuing the loop — an empty response is not recoverable",
+        "e2e-validate.ts: register dynamicPromptMiddleware in the runAgent options for both tests — pass { middlewares: [createDynamicPromptMiddleware({ topic, maxIterations })] } so the LLM gets the system prompt with ResearchResult schema instructions",
+        "e2e-validate.ts: singleTurn test should use the output phase system prompt directly (since it's a single shot, the LLM should produce JSON immediately) — set phase to 'output' in the middleware options OR set maxIterations=1 which triggers output phase via detectPhase()",
+        "e2e-validate.ts: for singleTurn, expect either StructuredOutputError (acceptable) or a valid ResearchResult — NOT MaxIterationsError",
+        "e2e-validate.ts: log the actual assistantText/rawText in the output JSON so we can see what the LLM returned",
+        "Run npm run e2e with backend running and verify: output/ JSON files show either success:true with a ResearchResult OR success:false with rawText containing actual LLM response text (not null)",
+        "Verify singleTurn output has requestCount:1 and no MaxIterationsError",
+        "Verify multiTurn output has requestCount<=3 with nudge messages if needed",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 27,
+      "passes": true,
+      "notes": "Fixed three bugs: (1) MaxIterationsError now uses effectiveMaxIterations (singleTurn reports 1, not config.maxIterations), (2) empty assistantText with no tool calls throws StructuredOutputError immediately instead of silently continuing, (3) e2e script uses createDynamicPromptMiddleware for both tests so LLM gets system prompt with ResearchResult schema. All 288 tests pass."
     }
   ]
 }

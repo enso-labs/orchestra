@@ -35,6 +35,9 @@ Started: Mon Feb  9 21:07:38 MST 2026
 - Tool handlers receive `options` as third arg — use `options.outputDir` for config injection in tests
 - E2E validation: intercept `globalThis.fetch` to count backend requests without needing server log access
 - E2E script lives at `scripts/e2e-validate.ts` — run via `npm run e2e` (requires live backend at RUSKA_API_URL)
+- E2E scripts must register `createDynamicPromptMiddleware({ topic, maxIterations })` so LLM gets system prompt with ResearchResult schema
+- Always use `effectiveMaxIterations` (not `config.maxIterations`) for loop limit comparisons and error messages — singleTurn sets it to 1
+- Empty assistant responses (no text, no tool calls) should throw `StructuredOutputError("")` immediately — don't silently continue the loop
 
 ---
 
@@ -403,4 +406,18 @@ Started: Mon Feb  9 21:07:38 MST 2026
   - web_search simulated results provide a useful fallback for development/testing without Tavily API key
   - The `getServerToolNames()` function still exists in tools/index.ts but returns [] since no tools have `local: false` anymore
   - All 26 user stories now pass — PRD is fully complete
+---
+
+## 2026-02-10 - US-027
+- What was implemented: Fixed three e2e failure root causes
+- Files changed:
+  - packages/agent-ts/src/agent.ts (MaxIterationsError uses effectiveMaxIterations, empty assistantText throws StructuredOutputError immediately)
+  - packages/agent-ts/src/agent.test.ts (3 new tests: empty text StructuredOutputError, no-content StructuredOutputError, singleTurn MaxIterationsError reports 1)
+  - packages/agent-ts/scripts/e2e-validate.ts (added createDynamicPromptMiddleware import, both tests pass dynamicPrompt middleware with maxIterations matching test mode)
+- **Learnings for future iterations:**
+  - `effectiveMaxIterations` must be used everywhere iteration limits matter — the post-loop throw was using `config.maxIterations` instead, causing singleTurn to report 100 instead of 1
+  - Empty assistant responses (no text, no tool calls) must be treated as immediate failures — silently continuing wastes backend requests
+  - E2E scripts must include dynamicPromptMiddleware so the LLM receives system prompt with ResearchResult schema and output instructions — without it the LLM answers naturally in prose
+  - `detectPhase()` with maxIterations=1 returns "output" phase which instructs the LLM to produce JSON immediately — correct for singleTurn
+  - All 27 user stories now pass — PRD is fully complete
 ---
