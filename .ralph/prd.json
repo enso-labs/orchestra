@@ -413,6 +413,25 @@
       "priority": 22,
       "passes": true,
       "notes": "README updated with Development Setup, Manual Validation Steps, Local Testing (npm link), Publishing to npm, Package Locally, Common Issues troubleshooting table, and Apache-2.0 license."
+    },
+    {
+      "id": "US-023",
+      "title": "Fix recursive thread creation: non-JSON retry limit and singleTurn mode",
+      "description": "As a library consumer, I need the agent loop to stop creating backend threads when the LLM doesn't return valid JSON, and I need a singleTurn option for simple queries. Root cause: the backend runs a full LangGraph agent (create_deep_agent) that executes tools autonomously. When the local harness sends tools: ['web_search'], the backend runs its own agent loop, returns plain text, and the local loop silently continues — sending up to maxIterations (15) requests, each creating a new backend thread.",
+      "acceptanceCriteria": [
+        "StructuredOutputError class exported from agent.ts with rawText: string property containing the last LLM response",
+        "Non-JSON responses retry at most 2 times (MAX_NON_JSON_RETRIES = 2) with a nudge user message before throwing StructuredOutputError",
+        "Nudge message appended as { role: 'user' } asking LLM to output ONLY a JSON object matching the ResearchResult schema",
+        "nonJsonRetries counter resets to 0 after any successful tool call turn",
+        "singleTurn option added to RunAgentOptions: when true, sends one request and returns result or throws StructuredOutputError immediately with no retry",
+        "StructuredOutputError re-exported from src/index.ts barrel file",
+        "Tests: non-JSON retry succeeds on 2nd attempt (mock plain text then JSON), retry exhaustion throws StructuredOutputError, singleTurn returns valid JSON in one shot, singleTurn throws on non-JSON with no retry, rawText preserved on error, nonJsonRetries resets after tool call turn, nudge message present in state.messages",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 23,
+      "passes": true,
+      "notes": "StructuredOutputError with rawText, non-JSON retry limit (MAX_NON_JSON_RETRIES=2) with nudge message, singleTurn mode, nonJsonRetries reset after tool calls. All 278 tests pass."
     }
   ]
 }

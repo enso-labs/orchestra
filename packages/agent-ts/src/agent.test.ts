@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { runAgent, MaxIterationsError } from "./agent.js";
+import { runAgent, MaxIterationsError, StructuredOutputError } from "./agent.js";
 import type { RunAgentOptions } from "./agent.js";
 import type { Config } from "./config.js";
 import type { AgentState } from "./schemas.js";
@@ -346,11 +346,27 @@ describe("runAgent", () => {
     });
 
     it("MaxIterationsError includes iteration count in message", async () => {
+      // Use tool calls to consume iterations without triggering non-JSON retries
+      registerTool(
+        {
+          name: "dummy_tool",
+          description: "Dummy",
+          parameters: z.object({ x: z.string() }),
+          local: true,
+        },
+        async () => ({ done: true }),
+      );
+
       mockStreamChat.mockImplementation(() =>
         mockStream([
           {
             type: "messages",
-            data: [{ content: "Still working..." }],
+            data: [
+              {
+                content: "",
+                tool_calls: [{ id: "tc-d", name: "dummy_tool", args: { x: "val" } }],
+              },
+            ],
           },
           { type: "done" },
         ]),
@@ -677,6 +693,231 @@ describe("runAgent", () => {
     });
   });
 
+  describe("non-JSON retry with nudge (US-023)", () => {
+    it("retries non-JSON response and succeeds on 2nd attempt", async () => {
+      let callCount = 0;
+      mockStreamChat.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: plain text (not JSON)
+          return mockStream([
+            { type: "messages", data: [{ content: "I found some interesting results about AI..." }] },
+            { type: "done" },
+          ]);
+        }
+        // Second call: valid JSON after nudge
+        return mockStream([
+          { type: "messages", data: [{ content: JSON.stringify(validResearchResult) }] },
+          { type: "done" },
+        ]);
+      });
+
+      const result = await runAgent("test topic", makeConfig({ maxIterations: 10 }));
+      expect(result).toEqual(validResearchResult);
+      expect(mockStreamChat).toHaveBeenCalledTimes(2);
+    });
+
+    it("throws StructuredOutputError after exhausting retries", async () => {
+      // All responses are plain text
+      mockStreamChat.mockImplementation(() =>
+        mockStream([
+          { type: "messages", data: [{ content: "Still thinking about this topic..." }] },
+          { type: "done" },
+        ]),
+      );
+
+      await expect(
+        runAgent("test topic", makeConfig({ maxIterations: 10 })),
+      ).rejects.toThrow(StructuredOutputError);
+    });
+
+    it("preserves rawText on StructuredOutputError", async () => {
+      const plainText = "This is not JSON at all, just plain text.";
+      mockStreamChat.mockImplementation(() =>
+        mockStream([
+          { type: "messages", data: [{ content: plainText }] },
+          { type: "done" },
+        ]),
+      );
+
+      try {
+        await runAgent("test topic", makeConfig({ maxIterations: 10 }));
+        expect.fail("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(StructuredOutputError);
+        expect((err as StructuredOutputError).rawText).toBe(plainText);
+      }
+    });
+
+    it("nudge message is present in state.messages after non-JSON response", async () => {
+      let callCount = 0;
+      mockStreamChat.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return mockStream([
+            { type: "messages", data: [{ content: "Just some plain text." }] },
+            { type: "done" },
+          ]);
+        }
+        return mockStream([
+          { type: "messages", data: [{ content: JSON.stringify(validResearchResult) }] },
+          { type: "done" },
+        ]);
+      });
+
+      await runAgent("test topic", makeConfig({ maxIterations: 10 }));
+
+      // The second streamChat call should include the nudge user message
+      const secondCallMessages = mockStreamChat.mock.calls[1][0].messages;
+      const nudgeMsg = secondCallMessages.find(
+        (m: { role: string; content: string }) =>
+          m.role === "user" && m.content.includes("not valid JSON"),
+      );
+      expect(nudgeMsg).toBeDefined();
+      expect(nudgeMsg.content).toContain("JSON object");
+      expect(nudgeMsg.content).toContain("title");
+      expect(nudgeMsg.content).toContain("summary");
+    });
+
+    it("resets nonJsonRetries counter after a successful tool call turn", async () => {
+      // Register a local tool
+      registerTool(
+        {
+          name: "test_note",
+          description: "Take note",
+          parameters: z.object({ note: z.string() }),
+          local: true,
+        },
+        async () => ({ success: true, note_count: 1 }),
+      );
+
+      let callCount = 0;
+      mockStreamChat.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // Turn 1: plain text (nonJsonRetries becomes 1)
+          return mockStream([
+            { type: "messages", data: [{ content: "Let me think..." }] },
+            { type: "done" },
+          ]);
+        }
+        if (callCount === 2) {
+          // Turn 2: plain text (nonJsonRetries becomes 2)
+          return mockStream([
+            { type: "messages", data: [{ content: "Still thinking..." }] },
+            { type: "done" },
+          ]);
+        }
+        if (callCount === 3) {
+          // Turn 3: tool call — resets nonJsonRetries to 0
+          return mockStream([
+            {
+              type: "messages",
+              data: [
+                {
+                  content: "",
+                  tool_calls: [{ id: "tc-1", name: "test_note", args: { note: "found it" } }],
+                },
+              ],
+            },
+            { type: "done" },
+          ]);
+        }
+        if (callCount === 4) {
+          // Turn 4: plain text again (nonJsonRetries becomes 1, not 3 — was reset)
+          return mockStream([
+            { type: "messages", data: [{ content: "More thinking..." }] },
+            { type: "done" },
+          ]);
+        }
+        if (callCount === 5) {
+          // Turn 5: valid JSON
+          return mockStream([
+            { type: "messages", data: [{ content: JSON.stringify(validResearchResult) }] },
+            { type: "done" },
+          ]);
+        }
+        return mockStream([{ type: "done" }]);
+      });
+
+      // If nonJsonRetries was NOT reset, it would throw StructuredOutputError at turn 4 (retry 3 > MAX 2)
+      // Since it IS reset, it should succeed
+      const result = await runAgent("test topic", makeConfig({ maxIterations: 15 }));
+      expect(result).toEqual(validResearchResult);
+      expect(mockStreamChat).toHaveBeenCalledTimes(5);
+    });
+  });
+
+  describe("singleTurn mode (US-023)", () => {
+    it("returns valid JSON in one shot", async () => {
+      mockStreamChat.mockReturnValue(
+        mockStream([
+          { type: "messages", data: [{ content: JSON.stringify(validResearchResult) }] },
+          { type: "done" },
+        ]),
+      );
+
+      const result = await runAgent("test topic", makeConfig(), { singleTurn: true });
+      expect(result).toEqual(validResearchResult);
+      expect(mockStreamChat).toHaveBeenCalledTimes(1);
+    });
+
+    it("throws StructuredOutputError on non-JSON with no retry", async () => {
+      mockStreamChat.mockReturnValue(
+        mockStream([
+          { type: "messages", data: [{ content: "Here is some prose about the topic." }] },
+          { type: "done" },
+        ]),
+      );
+
+      await expect(
+        runAgent("test topic", makeConfig(), { singleTurn: true }),
+      ).rejects.toThrow(StructuredOutputError);
+
+      // Only one call — no retries
+      expect(mockStreamChat).toHaveBeenCalledTimes(1);
+    });
+
+    it("rawText preserved on singleTurn StructuredOutputError", async () => {
+      const plainText = "This is not JSON.";
+      mockStreamChat.mockReturnValue(
+        mockStream([
+          { type: "messages", data: [{ content: plainText }] },
+          { type: "done" },
+        ]),
+      );
+
+      try {
+        await runAgent("test topic", makeConfig(), { singleTurn: true });
+        expect.fail("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(StructuredOutputError);
+        expect((err as StructuredOutputError).rawText).toBe(plainText);
+      }
+    });
+  });
+
+  describe("StructuredOutputError (US-023)", () => {
+    it("is an instance of Error", () => {
+      const err = new StructuredOutputError("some text");
+      expect(err).toBeInstanceOf(Error);
+      expect(err.name).toBe("StructuredOutputError");
+    });
+
+    it("has rawText property", () => {
+      const raw = "This is the LLM's raw response text.";
+      const err = new StructuredOutputError(raw);
+      expect(err.rawText).toBe(raw);
+    });
+
+    it("truncates long rawText in message", () => {
+      const longText = "x".repeat(500);
+      const err = new StructuredOutputError(longText);
+      expect(err.message).toContain("...");
+      expect(err.message.length).toBeLessThan(longText.length + 100);
+    });
+  });
+
   describe("exports", () => {
     it("exports runAgent function", () => {
       expect(typeof runAgent).toBe("function");
@@ -687,6 +928,13 @@ describe("runAgent", () => {
       expect(err).toBeInstanceOf(Error);
       expect(err.name).toBe("MaxIterationsError");
       expect(err.message).toContain("10");
+    });
+
+    it("exports StructuredOutputError class", () => {
+      const err = new StructuredOutputError("test");
+      expect(err).toBeInstanceOf(Error);
+      expect(err.name).toBe("StructuredOutputError");
+      expect(err.rawText).toBe("test");
     });
   });
 });

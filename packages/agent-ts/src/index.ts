@@ -1,5 +1,5 @@
 // @ruska/agent-ts barrel file
-export { runAgent, MaxIterationsError } from "./agent.js";
+export { runAgent, MaxIterationsError, StructuredOutputError } from "./agent.js";
 export type { RunAgentOptions } from "./agent.js";
 export { loadConfig } from "./config.js";
 export type { Config } from "./config.js";

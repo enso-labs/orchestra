@@ -23,6 +23,7 @@ export interface RunAgentOptions {
   tools?: ToolDefinition[];
   onChunk?: (chunk: string) => void;
   promptFn?: (question: string) => Promise<string>;
+  singleTurn?: boolean;
 }
 
 interface ToolCall {
@@ -30,6 +31,10 @@ interface ToolCall {
   name: string;
   args: Record<string, unknown>;
 }
+
+// --- Constants ---
+
+const MAX_NON_JSON_RETRIES = 2;
 
 // --- Errors ---
 
@@ -40,6 +45,19 @@ export class MaxIterationsError extends Error {
         `The agent did not produce a final result within the allowed turns.`,
     );
     this.name = "MaxIterationsError";
+  }
+}
+
+export class StructuredOutputError extends Error {
+  rawText: string;
+
+  constructor(rawText: string) {
+    super(
+      `LLM did not return valid JSON matching ResearchResult schema after retries. ` +
+        `Last response: ${rawText.slice(0, 200)}${rawText.length > 200 ? "..." : ""}`,
+    );
+    this.name = "StructuredOutputError";
+    this.rawText = rawText;
   }
 }
 
@@ -98,6 +116,7 @@ export async function runAgent(
   const middlewares = options?.middlewares ?? [];
   const onChunk = options?.onChunk;
   const promptFn = options?.promptFn;
+  const singleTurn = options?.singleTurn ?? false;
 
   const serverToolNames = getServerToolNames();
 
@@ -111,7 +130,10 @@ export async function runAgent(
     threadId: undefined,
   };
 
-  for (let iteration = 0; iteration < config.maxIterations; iteration++) {
+  let nonJsonRetries = 0;
+  const effectiveMaxIterations = singleTurn ? 1 : config.maxIterations;
+
+  for (let iteration = 0; iteration < effectiveMaxIterations; iteration++) {
     state = { ...state, iteration };
 
     // --- Run beforeLLM middleware ---
@@ -179,6 +201,9 @@ export async function runAgent(
     );
 
     if (localToolCalls.length > 0) {
+      // Reset non-JSON retries after a successful tool call turn
+      nonJsonRetries = 0;
+
       // Append assistant message with tool calls before results
       if (assistantText) {
         state = {
@@ -250,14 +275,32 @@ export async function runAgent(
         return ResearchResultSchema.parse(parsed);
       }
 
-      // Not valid JSON — append as assistant message and continue loop
+      // Not valid JSON — handle with retry or throw
+      if (singleTurn) {
+        throw new StructuredOutputError(assistantText);
+      }
+
+      nonJsonRetries++;
+      if (nonJsonRetries > MAX_NON_JSON_RETRIES) {
+        throw new StructuredOutputError(assistantText);
+      }
+
+      // Append assistant text and nudge message asking for JSON output
       state = {
         ...state,
         messages: [
           ...state.messages,
           { role: "assistant", content: assistantText },
+          {
+            role: "user",
+            content:
+              "Your response was not valid JSON. Please respond with ONLY a JSON object matching this schema: " +
+              '{ "title": string, "summary": string, "sources": string[], "confidence": number (0-1), "followUpQuestions": string[] }. ' +
+              "Do not include any other text, markdown, or explanation — just the raw JSON object.",
+          },
         ],
       };
+      continue;
     }
   }
 
