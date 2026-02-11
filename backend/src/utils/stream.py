@@ -14,7 +14,12 @@ from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
-from src.agents import construct_agent, init_backend, prepare_memory_files
+from src.agents import (
+    construct_agent,
+    create_daytona_backend,
+    init_backend,
+    prepare_memory_files,
+)
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
@@ -204,6 +209,7 @@ async def stream_generator(
         service_context.user_id, service_context.memory_service
     )
     files_map = {**memory_files, **files_map}
+    daytona_sandbox = None
     async with get_checkpoint_db() as checkpointer:
         try:
             ctx = ContextSchema(
@@ -223,7 +229,26 @@ async def stream_generator(
                 f"/users/{service_context.user_id}/memories/": store_backend,
                 f"/users/{service_context.user_id}/config/": store_backend,
             }
-            backend = init_backend(runtime, routes=routes)
+
+            # Check for Daytona sandbox request
+            sandbox_type = config["metadata"].get("sandbox")
+            if sandbox_type == "daytona":
+                daytona_sandbox, daytona_backend = create_daytona_backend()
+                if daytona_backend is not None:
+                    from deepagents.backends import CompositeBackend
+
+                    backend = CompositeBackend(default=daytona_backend, routes=routes)
+                else:
+                    backend = init_backend(runtime, routes=routes)
+                    fallback_msg = ujson.dumps(
+                        (
+                            "system",
+                            "Daytona sandbox unavailable, falling back to default sandbox.",
+                        )
+                    )
+                    yield f"data: {fallback_msg}\n\n"
+            else:
+                backend = init_backend(runtime, routes=routes)
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,
@@ -283,6 +308,11 @@ async def stream_generator(
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
         finally:
+            if daytona_sandbox is not None:
+                try:
+                    daytona_sandbox.stop()
+                except Exception as exc:
+                    logger.warning(f"Failed to stop Daytona sandbox: {exc}")
             if service_context.user_id and checkpointer:
                 final_state = await agent.graph.aget_state(config)
                 configurable = {
