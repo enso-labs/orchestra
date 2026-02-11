@@ -203,7 +203,12 @@ async def _execute_agent_stream(
     from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
     from src.schemas.contexts import ContextSchema
-    from src.agents import construct_agent, init_backend, prepare_memory_files
+    from src.agents import (
+        construct_agent,
+        create_daytona_backend,
+        init_backend,
+        prepare_memory_files,
+    )
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger
@@ -234,122 +239,151 @@ async def _execute_agent_stream(
         f"/users/{user_id}/memories/": store_backend,
         f"/users/{user_id}/config/": store_backend,
     }
-    backend = init_backend(runtime, routes=routes)
 
-    agent = await construct_agent(
-        instructions=params.instructions,
-        system_prompt=params.system_prompt,
-        tools=params.tools,
-        model=params.model,
-        subagents=params.subagents,
-        checkpointer=checkpointer,
-        service_context=service_context,
-        backend=backend,
-        memory=memory_sources,
-    )
-    params.input.messages[-1].model = agent.model
+    # Check for Daytona sandbox request
+    daytona_sandbox = None
+    sandbox_type = config.get("metadata", {}).get("sandbox")
+    if sandbox_type == "daytona":
+        from deepagents.backends import CompositeBackend
 
-    # Send metadata event first
-    metadata_event = ujson.dumps(
-        (
-            "metadata",
-            {
-                "thread_id": config["configurable"].get("thread_id"),
-                "assistant_id": config["configurable"].get("assistant_id"),
-                "project_id": config["configurable"].get("project_id"),
-            },
+        daytona_sandbox, daytona_backend = create_daytona_backend()
+        if daytona_backend is not None:
+            backend = CompositeBackend(default=daytona_backend, routes=routes)
+        else:
+            backend = init_backend(runtime, routes=routes)
+            fallback_msg = ujson.dumps(
+                (
+                    "system",
+                    "Daytona sandbox unavailable, falling back to default sandbox.",
+                )
+            )
+            await redis_client.xadd(stream_key, {"data": fallback_msg})
+    else:
+        backend = init_backend(runtime, routes=routes)
+
+    try:
+        agent = await construct_agent(
+            instructions=params.instructions,
+            system_prompt=params.system_prompt,
+            tools=params.tools,
+            model=params.model,
+            subagents=params.subagents,
+            checkpointer=checkpointer,
+            service_context=service_context,
+            backend=backend,
+            memory=memory_sources,
         )
-    )
-    await redis_client.xadd(stream_key, {"data": metadata_event})
+        params.input.messages[-1].model = agent.model
 
-    # Stream to Redis using handle_multi_mode for format consistency
-    async for chunk in agent.astream(
-        params.input,
-        stream_mode=["messages", "values"],
-        config=config,
-        context=ctx_schema,
-    ):
-        # Check for abort signal on every chunk for responsive cancellation
-        if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
-            logger.info(
-                "task_aborted_by_user",
-                extra={
-                    "event": "task_aborted_by_user",
-                    "thread_id": thread_id,
-                    "user_id": user_id,
+        # Send metadata event first
+        metadata_event = ujson.dumps(
+            (
+                "metadata",
+                {
+                    "thread_id": config["configurable"].get("thread_id"),
+                    "assistant_id": config["configurable"].get("assistant_id"),
+                    "project_id": config["configurable"].get("project_id"),
                 },
             )
-            # Send abort acknowledgment to client
-            await redis_client.xadd(
-                stream_key,
-                {"data": ujson.dumps(("aborted", {"reason": "user_requested"}))},
-            )
-            await redis_client.xadd(stream_key, {"done": "true"})
-            await redis_client.expire(stream_key, 300)
-            # Clear abort signal
-            await AbortService.clear_abort_signal(thread_id)
-            return {"status": "aborted", "stream_key": stream_key}
+        )
+        await redis_client.xadd(stream_key, {"data": metadata_event})
 
-        stream_chunk = handle_multi_mode(chunk)
-        if stream_chunk:
-            stream_type = stream_chunk[0]
-            chunk_data = stream_chunk[1]
-            if stream_type == "values" and chunk_data.get("files"):
-                files_map = {**files_map, **chunk_data["files"]}
-            if stream_type == "values" and "todos" in chunk_data:
-                todos_list = chunk_data["todos"]
-            # Serialize to JSON and push to Redis stream
-            data = ujson.dumps(stream_chunk)
-            await redis_client.xadd(stream_key, {"data": data})
+        # Stream to Redis using handle_multi_mode for format consistency
+        async for chunk in agent.astream(
+            params.input,
+            stream_mode=["messages", "values"],
+            config=config,
+            context=ctx_schema,
+        ):
+            # Check for abort signal on every chunk for responsive cancellation
+            if await AbortService.check_abort_signal(
+                thread_id, expected_user_id=user_id
+            ):
+                logger.info(
+                    "task_aborted_by_user",
+                    extra={
+                        "event": "task_aborted_by_user",
+                        "thread_id": thread_id,
+                        "user_id": user_id,
+                    },
+                )
+                # Send abort acknowledgment to client
+                await redis_client.xadd(
+                    stream_key,
+                    {"data": ujson.dumps(("aborted", {"reason": "user_requested"}))},
+                )
+                await redis_client.xadd(stream_key, {"done": "true"})
+                await redis_client.expire(stream_key, 300)
+                # Clear abort signal
+                await AbortService.clear_abort_signal(thread_id)
+                return {"status": "aborted", "stream_key": stream_key}
 
-    # Signal completion
-    await redis_client.xadd(stream_key, {"done": "true"})
-    await redis_client.expire(stream_key, 300)
+            stream_chunk = handle_multi_mode(chunk)
+            if stream_chunk:
+                stream_type = stream_chunk[0]
+                chunk_data = stream_chunk[1]
+                if stream_type == "values" and chunk_data.get("files"):
+                    files_map = {**files_map, **chunk_data["files"]}
+                if stream_type == "values" and "todos" in chunk_data:
+                    todos_list = chunk_data["todos"]
+                # Serialize to JSON and push to Redis stream
+                data = ujson.dumps(stream_chunk)
+                await redis_client.xadd(stream_key, {"data": data})
 
-    logger.info(f"Distributed agent task completed for thread: {thread_id}")
+        # Signal completion
+        await redis_client.xadd(stream_key, {"done": "true"})
+        await redis_client.expire(stream_key, 300)
 
-    # Update thread state with graceful checkpoint error handling
-    if service_context.user_id and checkpointer:
-        try:
-            final_state = await agent.graph.aget_state(config)
+        logger.info(f"Distributed agent task completed for thread: {thread_id}")
 
-            if not final_state or not final_state.values.get("messages"):
+        # Update thread state with graceful checkpoint error handling
+        if service_context.user_id and checkpointer:
+            try:
+                final_state = await agent.graph.aget_state(config)
+
+                if not final_state or not final_state.values.get("messages"):
+                    logger.warning(
+                        f"Checkpoint update resulted in empty state for thread {thread_id}"
+                    )
+
+                configurable = {
+                    **final_state.config.get("configurable", {}),
+                    **config["configurable"],
+                }
+                messages = final_state.values.get("messages", [])
+                if messages:
+                    messages[-1].model = agent.model
+
+                service_context.store.fields = ["messages", "files"]
+                await service_context.thread_service.update(
+                    thread_id=configurable.get("thread_id"),
+                    data={
+                        "thread_id": configurable.get("thread_id"),
+                        "checkpoint_id": configurable.get("checkpoint_id"),
+                        "assistant_id": configurable.get("assistant_id"),
+                        "project_id": configurable.get("project_id"),
+                        "messages": messages,
+                        "todos": todos_list,
+                        "files": files_map,
+                        "updated_at": get_time(),
+                    },
+                )
+                logger.info(f"checkpoint: {ujson.dumps(configurable)}")
+            except CheckpointConnectionError as e:
+                # Log but don't fail - the stream was successful
                 logger.warning(
-                    f"Checkpoint update resulted in empty state for thread {thread_id}"
+                    "checkpoint_final_update_failed",
+                    extra={
+                        "event": "checkpoint_final_update_failed",
+                        "thread_id": thread_id,
+                        "error": str(e),
+                    },
                 )
 
-            configurable = {
-                **final_state.config.get("configurable", {}),
-                **config["configurable"],
-            }
-            messages = final_state.values.get("messages", [])
-            if messages:
-                messages[-1].model = agent.model
-
-            service_context.store.fields = ["messages", "files"]
-            await service_context.thread_service.update(
-                thread_id=configurable.get("thread_id"),
-                data={
-                    "thread_id": configurable.get("thread_id"),
-                    "checkpoint_id": configurable.get("checkpoint_id"),
-                    "assistant_id": configurable.get("assistant_id"),
-                    "project_id": configurable.get("project_id"),
-                    "messages": messages,
-                    "todos": todos_list,
-                    "files": files_map,
-                    "updated_at": get_time(),
-                },
-            )
-            logger.info(f"checkpoint: {ujson.dumps(configurable)}")
-        except CheckpointConnectionError as e:
-            # Log but don't fail - the stream was successful
-            logger.warning(
-                "checkpoint_final_update_failed",
-                extra={
-                    "event": "checkpoint_final_update_failed",
-                    "thread_id": thread_id,
-                    "error": str(e),
-                },
-            )
-
-    return {"status": "complete", "stream_key": stream_key}
+        return {"status": "complete", "stream_key": stream_key}
+    finally:
+        if daytona_sandbox is not None:
+            try:
+                daytona_sandbox.stop()
+            except Exception as exc:
+                logger.warning(f"Failed to stop Daytona sandbox: {exc}")
