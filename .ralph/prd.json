@@ -1,91 +1,106 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/743-update-wiki-for-memories",
-  "description": "Wiki Documentation for Memories Feature - Document the Memories feature with API reference, UI tutorial with screenshots, and llm.txt update",
+  "branchName": "feat/751-daytona-sandbox-backend",
+  "description": "Daytona Sandbox Backend - Integrate DaytonaSandbox as an optional deepagents backend activated via metadata.sandbox=\"daytona\", with fallback to StateBackend and automatic cleanup",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize wiki submodule and add Memories entries to sidebar",
-      "description": "As a documentation reader, I want to find 'Memories' in the wiki navigation so I can learn about the feature.",
+      "title": "Add langchain-daytona dependency to pyproject.toml",
+      "description": "As a developer, I need the langchain-daytona package added to backend dependencies so the DaytonaSandbox backend can be imported.",
       "acceptanceCriteria": [
-        "Run 'git submodule update --init wiki' in the worktree to initialize the wiki submodule",
-        "Add 'memories/index' to the 'Core Features' items array in wiki/sidebars.ts (after 'storage/index')",
-        "Add 'memories/tutorial' to the 'Tutorials' items array in wiki/sidebars.ts",
-        "Create empty placeholder files wiki/docs/memories/index.md and wiki/docs/memories/tutorial.md with basic frontmatter so the sidebar does not break",
+        "Add 'langchain-daytona>=0.1.0' to the [project.dependencies] list in backend/pyproject.toml",
+        "'from langchain_daytona import DaytonaSandbox' succeeds after install",
+        "'from daytona import Daytona' succeeds after install",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "The wiki is a git submodule. In this worktree it is not yet initialized — run 'git submodule update --init wiki' first. Read wiki/sidebars.ts for the current structure. The existing sidebar has: Core Features [assistants/index, threads/index, storage/index] and Tutorials [tools/sandbox-tutorial]. Add memories/index to Core Features and memories/tutorial to Tutorials."
+      "passes": false,
+      "notes": "This is a dependency-only change. Read backend/pyproject.toml to find the correct location in the dependencies list. The package provides both langchain_daytona and daytona modules."
     },
     {
       "id": "US-002",
-      "title": "Write main Memories documentation page (API reference)",
-      "description": "As a developer or API consumer, I want a reference page explaining how memories work and how to interact with them via the API so I can integrate memories into my workflow.",
+      "title": "Add conditional import and create_daytona_backend() factory",
+      "description": "As a developer, I need a create_daytona_backend() factory function in src/agents/__init__.py that creates a Daytona sandbox and wraps it in a backend, or returns (None, None) gracefully.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/index.md with Docusaurus frontmatter: title 'Memories', slug '/memories', sidebar_position 4",
-        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /AGENTS.md",
-        "Include 'How It Works' section describing the lifecycle: create memory -> stored in LangGraph BaseStore -> automatically retrieved via prepare_memory_files() -> injected as markdown into streaming/worker/invoke entry points",
-        "Include 'API Reference' section with curl examples for all 5 endpoints: GET /api/memories (list with limit, offset, query params), GET /api/memories/{memory_id}, POST /api/memories (body: {content, metadata?}), PUT /api/memories/{memory_id} (body: {content, metadata?}), DELETE /api/memories/{memory_id}",
-        "Each curl example uses localhost base URL and includes Authorization: Bearer <token> header",
-        "Each curl example includes an example JSON response matching the backend schemas (Memory: {id, content, metadata, created_at, updated_at}, MemoryListResponse: {memories[], total, limit, offset})",
-        "Include a 'Configuration via UI' section at the bottom linking to the tutorial page at ./tutorial",
-        "Follow the same markdown structure as wiki/docs/assistants/index.md (heading hierarchy, bullet lists, code blocks)",
+        "Add conditional try/except ImportError for Daytona and DaytonaSandbox at module top-level in src/agents/__init__.py",
+        "DaytonaSandbox set to None when package not installed (matches src/tools/code.py pattern for conditional imports)",
+        "create_daytona_backend(api_key: str | None = None) function added and exported",
+        "Returns (sandbox_instance, DaytonaSandbox_backend) tuple on success",
+        "Returns (None, None) when: package missing (DaytonaSandbox is None), Daytona is None, or API key is unset/empty",
+        "Returns (None, None) and logs error when client.create() raises any exception",
+        "Uses DAYTONA_API_KEY from src.constants as fallback when no api_key argument provided",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Read wiki/docs/assistants/index.md and wiki/docs/storage/index.md from the main repo at /home/ryaneggz/ruska-ai/orchestra/wiki/ for the exact Docusaurus page pattern (frontmatter, heading style, admonitions). The API endpoints are defined in backend/src/routes/v0/memory.py. Schemas are in backend/src/schemas/entities/memory.py: Memory(id, content, metadata?, created_at?, updated_at?), MemoryCreate(content, metadata?), MemoryUpdate(content, metadata?), MemoryListResponse(memories, total, limit, offset). Query params for list: limit(default=10, max=100), offset(default=0), query(default=''). Auth uses Bearer token. Use localhost URLs since docs target local dev."
+      "passes": false,
+      "notes": "Read src/agents/__init__.py to understand the existing init_backend() pattern at line ~235 which creates CompositeBackend. Read src/tools/code.py for the conditional import pattern. Read src/constants.py (or wherever DAYTONA_API_KEY is defined) for the constant. The factory should use Daytona() client to create a sandbox, then wrap it with DaytonaSandbox() to get a backend. This depends on #750 having added DAYTONA_API_KEY to src.constants."
     },
     {
       "id": "US-003",
-      "title": "Capture full workflow screenshots with agent-browser",
-      "description": "As a documentation author, I need screenshots of the memories workflow captured in light mode to include in the tutorial page.",
+      "title": "Wire Daytona backend into LLMController (llm.py)",
+      "description": "As a developer, I need LLMController.llm_invoke() to check metadata.sandbox==\"daytona\" and use the Daytona backend instead of StateBackend when requested.",
       "acceptanceCriteria": [
-        "Create directory wiki/static/img/memories/",
-        "Use agent-browser skill to navigate to local dev environment Settings page",
-        "Set browser to light mode",
-        "Capture screenshot of Settings page showing the Memories section (empty state) and save as wiki/static/img/memories/settings-memories-empty.png",
-        "Use agent-browser to click 'Add Memory' and fill in example content like 'I prefer Python for backend development and TypeScript for frontend. My timezone is America/Chicago.'",
-        "Capture screenshot of the Add Memory dialog with content filled in and save as wiki/static/img/memories/settings-add-memory-dialog.png",
-        "Save the memory, then capture screenshot of Settings page showing the created memory in the list and save as wiki/static/img/memories/settings-memories-list.png",
-        "Navigate to chat, send a message that triggers memory recall (e.g., 'What programming languages do I prefer?'), and capture screenshot showing personalized response as wiki/static/img/memories/chat-memory-recall.png"
+        "llm_invoke() in src/controllers/llm.py checks params.metadata for sandbox attribute after resolving assistant config",
+        "When sandbox == 'daytona': calls create_daytona_backend(api_key) to get (daytona_sandbox, daytona_backend)",
+        "When Daytona backend is available: passes it as the default to CompositeBackend (store routes preserved)",
+        "When Daytona backend creation fails: falls back to StateBackend, appends a SystemMessage to params.input.messages notifying user (e.g. 'Daytona sandbox unavailable, falling back to default sandbox.')",
+        "daytona_sandbox.stop() called in the finally block after agent execution completes (only if daytona_sandbox is not None)",
+        "Requests without metadata.sandbox behave identically to current behavior (no regression)",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "The local dev environment must be running: 'make dev' for backend (port 8000) and 'cd frontend && npm run dev' for frontend (port 5173). The Settings page is at http://localhost:5173/settings. You must log in first. The agent-browser skill handles browser automation. Use light mode for all screenshots. The MemorySettings component is in frontend/src/components/settings/MemorySettings.tsx. The settings page is at frontend/src/pages/settings/index.tsx."
+      "passes": false,
+      "notes": "Read src/controllers/llm.py fully. The existing init_backend() is at line ~43 and the finally block is at line ~148. Access sandbox config via getattr(params.metadata, 'sandbox', None) since Config uses extra='allow'. Import create_daytona_backend from src.agents. The CompositeBackend pattern: CompositeBackend(default=daytona_backend, routes=built_routes) replaces the StateBackend default while keeping store routes unchanged."
     },
     {
       "id": "US-004",
-      "title": "Write Memories tutorial page (UI walkthrough with screenshots)",
-      "description": "As a user, I want a step-by-step visual tutorial showing me how to add memories through the Settings page and see them working in chat.",
+      "title": "Wire Daytona backend into stream_generator (stream.py)",
+      "description": "As a developer, I need stream_generator() in src/utils/stream.py to support Daytona backend activation via metadata, with the same fallback and cleanup behavior.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/tutorial.md with frontmatter: title 'Tutorial: Configuring Memories', sidebar_label 'Memory Tutorial', sidebar_position 1",
-        "Step 1 'Navigate to Settings': describe how to reach the Settings page, include screenshot reference ![Settings Memories Empty](/img/memories/settings-memories-empty.png)",
-        "Step 2 'Add a Memory': describe clicking Add Memory button, entering content, saving; include screenshot ![Add Memory Dialog](/img/memories/settings-add-memory-dialog.png)",
-        "Step 3 'Verify Memory Created': describe seeing the memory in the list; include screenshot ![Memories List](/img/memories/settings-memories-list.png)",
-        "Step 4 'Test in Chat': describe navigating to chat, sending a message, seeing personalized response; include screenshot ![Memory Recall](/img/memories/chat-memory-recall.png)",
-        "Step 5 'Managing Memories': brief section describing edit (pencil icon) and delete (trash icon with confirmation dialog) actions",
-        "Include a link back to the main Memories page: 'For API reference and programmatic access, see [Memories](/docs/memories)'",
+        "stream_generator() checks config['metadata'].get('sandbox') for 'daytona'",
+        "When sandbox == 'daytona': calls create_daytona_backend() and uses Daytona as the default backend in CompositeBackend",
+        "When creation fails: falls back to StateBackend via existing init_backend(), yields a system message SSE event notifying the user",
+        "daytona_sandbox.stop() called in the finally block at line ~285 (only if daytona_sandbox is not None)",
+        "Requests without metadata.sandbox behave identically to current behavior",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Screenshots should already exist in wiki/static/img/memories/ from US-003. Reference them with Docusaurus-compatible image syntax: ![alt text](/img/memories/filename.png). Follow the same tutorial structure as wiki/docs/tools/sandbox-tutorial.md. The MemorySettings component has: search bar, Add Memory button, memory list with edit/delete icons, and MemoryEditDialog for create/edit. Delete shows an AlertDialog confirmation."
+      "passes": false,
+      "notes": "Read src/utils/stream.py fully. The stream_generator() function is at line ~226. It already has a finally block at line ~285 for checkpoint cleanup. Add daytona_sandbox.stop() there. The config dict has a 'metadata' key. Import create_daytona_backend from src.agents."
     },
     {
       "id": "US-005",
-      "title": "Update llm.txt with memories documentation",
-      "description": "As an external AI agent or search engine, I need the public llm.txt to reflect the memories feature so LLM search engines provide accurate information about Orchestra.",
+      "title": "Wire Daytona backend into worker task (tasks.py)",
+      "description": "As a developer, I need _execute_agent_stream() in src/workers/tasks.py to support Daytona backend activation, with the same fallback and cleanup behavior.",
       "acceptanceCriteria": [
-        "Read website/public/llm.txt to understand the current structure and style",
-        "Add a 'Memories' subsection under '## Core Features' (after the existing Prompts or Tools section) with: one-line description of what memories are, that they persist per-user, that they are automatically injected into agent context during conversations, the 5 API endpoints (GET list, GET single, POST create, PUT update, DELETE), and that configuration is available via the Settings UI",
-        "Keep the addition concise (5-10 lines) and consistent with the existing llm.txt bullet-point style",
+        "_execute_agent_stream() checks config['metadata'].get('sandbox') for 'daytona'",
+        "When sandbox == 'daytona': calls create_daytona_backend() and uses Daytona as the default backend in CompositeBackend",
+        "When creation fails: falls back to StateBackend via existing init_backend(), writes a system message to the Redis stream",
+        "daytona_sandbox.stop() called in the finally block (only if daytona_sandbox is not None)",
+        "Requests without metadata.sandbox behave identically to current behavior",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Read website/public/llm.txt at /home/ryaneggz/ruska-ai/orchestra/website/public/llm.txt (or the worktree copy). The existing structure has ## Core Features with subsections like ### Projects, ### Assistants, ### Threads, ### Schedules, ### Prompts, ### Tools. Add ### Memories following the same pattern. Also check if there is a worktree copy at /home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-743/website/public/llm.txt."
+      "passes": false,
+      "notes": "Read src/workers/tasks.py fully. The _execute_agent_stream() function is at line ~237. It already calls init_backend(runtime, routes=routes). Add Daytona check before that. Ensure cleanup is in the finally block alongside existing checkpoint and Redis cleanup. Import create_daytona_backend from src.agents."
+    },
+    {
+      "id": "US-006",
+      "title": "Add unit tests for backend factory and wiring",
+      "description": "As a developer, I need unit tests verifying the Daytona backend factory and fallback behavior.",
+      "acceptanceCriteria": [
+        "Tests added to backend/tests/unit/services/test_daytona.py (extend existing file or create if not present)",
+        "Test: create_daytona_backend() returns (None, None) when DaytonaSandbox is None (package not installed)",
+        "Test: create_daytona_backend() returns (None, None) when API key is empty/None",
+        "Test: create_daytona_backend() returns valid (sandbox, backend) tuple with mocked Daytona client",
+        "Test: create_daytona_backend() returns (None, None) and logs error when client.create() raises exception",
+        "Test: sandbox.stop() is called during cleanup (mocked)",
+        "uv run pytest tests/unit/services/test_daytona.py -v passes",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Read backend/tests/unit/services/ directory to see if test_daytona.py already exists from #750. Use unittest.mock to mock Daytona, DaytonaSandbox, and the API key constant. Follow existing test patterns in the test suite. Run tests with: cd backend && uv run pytest tests/unit/services/test_daytona.py -v"
     }
   ]
 }
