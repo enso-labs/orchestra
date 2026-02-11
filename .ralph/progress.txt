@@ -9,4 +9,62 @@ Started: Wed Feb 11 2026
 - Config uses extra="allow" so metadata.sandbox is accessible without schema changes
 - Tests in backend/tests/unit/ and backend/tests/integration/
 
+- `langchain-daytona` depends on `daytona` package but doesn't pin a minimum version; without explicit `daytona>=0.140.0`, uv resolves to old v0.18.1 which uses `daytona_sdk` import name instead of `daytona`
+- Run tests from backend/ dir: `make test`
+- Commit with `-s` flag for sign-off per repo guidelines
+
+---
+
+## 2026-02-11 - US-001
+- What was implemented: Added `langchain-daytona>=0.0.2` and `daytona>=0.140.0` to backend/pyproject.toml dependencies
+- Files changed: backend/pyproject.toml, backend/uv.lock
+- **Learnings for future iterations:**
+  - The PRD specified `>=0.1.0` but only `0.0.2` exists on PyPI. Had to adjust version constraint.
+  - `langchain-daytona` requires `daytona` but doesn't pin a minimum version. Old `daytona` (v0.18.1) installs as `daytona_sdk` not `daytona`. Must explicitly add `daytona>=0.140.0` to ensure correct module name.
+  - `uv sync` resolves from the worktree's backend/ directory
+  - All 373 existing tests pass with the new dependencies
+---
+
+## 2026-02-11 - US-002
+- What was implemented: Added DAYTONA_API_KEY to src/constants and UserTokenKey enum. Added conditional import for Daytona/DaytonaSandbox and create_daytona_backend() factory in src/agents/__init__.py.
+- Files changed: backend/src/constants/__init__.py, backend/src/agents/__init__.py
+- **Learnings for future iterations:**
+  - DaytonaSandbox(sandbox=sandbox) takes a daytona.Sandbox, extends deepagents.backends.sandbox.BaseSandbox which implements BackendProtocol
+  - Daytona client: Daytona(DaytonaConfig(api_key=key)) then client.create() returns a Sandbox
+  - Sandbox has .stop() method for cleanup
+  - DAYTONA_API_KEY was not in constants yet (PRD assumed #750 added it) - had to add it ourselves
+---
+
+## 2026-02-11 - US-003
+- What was implemented: Wired Daytona backend into LLMController.llm_invoke() with sandbox type check, fallback SystemMessage, and cleanup in finally block.
+- Files changed: backend/src/controllers/llm.py
+- **Learnings for future iterations:**
+  - Access sandbox config via getattr(params.metadata, 'sandbox', None) for Pydantic models with extra='allow'
+  - Store routes must be preserved when using Daytona backend - rebuild them and pass to CompositeBackend
+---
+
+## 2026-02-11 - US-004
+- What was implemented: Wired Daytona backend into stream_generator() with sandbox type check, SSE fallback message, and cleanup in finally block.
+- Files changed: backend/src/utils/stream.py
+- **Learnings for future iterations:**
+  - In stream.py, config['metadata'] is a dict (not Pydantic), so use .get('sandbox')
+  - SSE fallback uses ujson.dumps(("system", "message")) format
+---
+
+## 2026-02-11 - US-005
+- What was implemented: Wired Daytona backend into _execute_agent_stream() in tasks.py with sandbox check, Redis stream fallback message, and cleanup in finally block.
+- Files changed: backend/src/workers/tasks.py
+- **Learnings for future iterations:**
+  - tasks.py uses late imports inside function body (imports at function top, not module top)
+  - config.get("metadata", {}).get("sandbox") for dict-based config access
+  - Wrapped agent execution in try/finally for sandbox cleanup while preserving existing error handling
+---
+
+## 2026-02-11 - US-006
+- What was implemented: Added 8 unit tests for create_daytona_backend() in backend/tests/unit/services/test_daytona.py.
+- Files changed: backend/tests/unit/services/test_daytona.py
+- **Learnings for future iterations:**
+  - Tests need env file loaded (make test handles this): `set -a && . $ENV_FILE && set +a`
+  - Use unittest.mock.patch on "src.agents.DaytonaSandbox" etc. for mocking conditional imports
+  - 381 total tests pass (373 original + 8 new)
 ---

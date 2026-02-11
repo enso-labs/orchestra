@@ -14,7 +14,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "This is a dependency-only change. Read backend/pyproject.toml to find the correct location in the dependencies list. The package provides both langchain_daytona and daytona modules."
     },
     {
@@ -32,7 +32,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Read src/agents/__init__.py to understand the existing init_backend() pattern at line ~235 which creates CompositeBackend. Read src/tools/code.py for the conditional import pattern. Read src/constants.py (or wherever DAYTONA_API_KEY is defined) for the constant. The factory should use Daytona() client to create a sandbox, then wrap it with DaytonaSandbox() to get a backend. This depends on #750 having added DAYTONA_API_KEY to src.constants."
     },
     {
@@ -49,7 +49,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Read src/controllers/llm.py fully. The existing init_backend() is at line ~43 and the finally block is at line ~148. Access sandbox config via getattr(params.metadata, 'sandbox', None) since Config uses extra='allow'. Import create_daytona_backend from src.agents. The CompositeBackend pattern: CompositeBackend(default=daytona_backend, routes=built_routes) replaces the StateBackend default while keeping store routes unchanged."
     },
     {
@@ -65,7 +65,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Read src/utils/stream.py fully. The stream_generator() function is at line ~226. It already has a finally block at line ~285 for checkpoint cleanup. Add daytona_sandbox.stop() there. The config dict has a 'metadata' key. Import create_daytona_backend from src.agents."
     },
     {
@@ -81,7 +81,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Read src/workers/tasks.py fully. The _execute_agent_stream() function is at line ~237. It already calls init_backend(runtime, routes=routes). Add Daytona check before that. Ensure cleanup is in the finally block alongside existing checkpoint and Redis cleanup. Import create_daytona_backend from src.agents."
     },
     {
@@ -99,7 +99,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Read backend/tests/unit/services/ directory to see if test_daytona.py already exists from #750. Use unittest.mock to mock Daytona, DaytonaSandbox, and the API key constant. Follow existing test patterns in the test suite. Run tests with: cd backend && uv run pytest tests/unit/services/test_daytona.py -v"
     }
   ]
