@@ -9,7 +9,12 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.schedule import ScheduleCreate
 from src.schemas.entities import LLMRequest
 from src.contexts.service import ServiceContext
-from src.agents import construct_agent, init_config, prepare_memory_files
+from src.agents import (
+    construct_agent,
+    create_daytona_backend,
+    init_config,
+    prepare_memory_files,
+)
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
@@ -105,6 +110,7 @@ class LLMController:
         """
         agent = None
         config = None
+        daytona_sandbox = None
         try:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
@@ -121,7 +127,34 @@ class LLMController:
                 params.input.files = {**memory_files, **existing_files}
 
             async with get_checkpoint_db() as checkpointer:
-                backend = self.init_backend(params)
+                # Check for Daytona sandbox request
+                sandbox_type = getattr(params.metadata, "sandbox", None)
+                if sandbox_type == "daytona":
+                    daytona_sandbox, daytona_backend = create_daytona_backend(
+                        api_key=api_key
+                    )
+                    if daytona_backend is not None:
+                        runtime = self._init_runtime(params)
+                        store_backend = StoreBackend(runtime)
+                        built_routes = {
+                            f"/users/{runtime.context.user_id}/memories/": store_backend,
+                            f"/users/{runtime.context.user_id}/config/": store_backend,
+                        }
+                        backend = CompositeBackend(
+                            default=daytona_backend, routes=built_routes
+                        )
+                    else:
+                        from langchain_core.messages import SystemMessage
+
+                        backend = self.init_backend(params)
+                        params.input.messages.append(
+                            SystemMessage(
+                                content="Daytona sandbox unavailable, falling back to default sandbox."
+                            )
+                        )
+                else:
+                    backend = self.init_backend(params)
+
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,
@@ -146,6 +179,11 @@ class LLMController:
                 await self._update_store(agent, config)
             raise e
         finally:
+            if daytona_sandbox is not None:
+                try:
+                    daytona_sandbox.stop()
+                except Exception as exc:
+                    logger.warning(f"Failed to stop Daytona sandbox: {exc}")
             if self.service_context.user_id and self.service_context.checkpointer:
                 if agent and config:
                     await self._update_store(agent, config)
