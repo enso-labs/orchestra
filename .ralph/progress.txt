@@ -1,107 +1,91 @@
 # Ralph Progress Log
-Started: Thu Feb  5 19:13:20 MST 2026
+Started: Wed Feb 11 14:47:08 MST 2026
+---
 
 ## Codebase Patterns
-- Wiki is a git submodule - must run `git submodule update --init wiki` in worktrees before editing
-- Wiki submodule commits must be done inside the `wiki/` directory first (create branch, commit), then commit the submodule pointer update in the main repo
-- The `bd` pre-commit hook requires `BEADS_DIR=/path/to/main-repo/.beads` env var when committing from worktrees (workaround: `BEADS_DIR=/home/ryaneggz/ruska-ai/orchestra/.beads git commit ...`)
-- Wiki uses Docusaurus; sidebar config is in `wiki/sidebars.ts`; typecheck with `npx tsc --noEmit` from wiki dir
-- Existing broken links in wiki build (sandbox → tools/mcp) are pre-existing, not caused by new changes
-- Docusaurus relative doc links must use `.md` extension (e.g., `./tutorial.md`) when source page has custom `slug`
-- Run `npx tsc --project tsconfig.json --noEmit` from wiki dir (explicit `--project` flag needed)
-- Docusaurus validates image references at build time — all referenced images in markdown must exist in `wiki/static/`
-- `website` is also a git submodule — same init and commit workflow as `wiki`
-- Frontend dev server in worktrees: `npm run dev` may fail due to `dotenv` conflicts; use `npx vite --host` directly after `npm install`
-- Browser screenshots: use `agent-browser set media light` + `agent-browser set viewport 1280 800` before navigating
+- Website is a git submodule — must commit inside `website/` directory, not from orchestra root
+- Website uses Next.js with TypeScript, framer-motion for animations, Tailwind CSS for styling
+- Services page uses `font-montserrat` for body text, `font-space` for hero branding
+- CTA links point to `https://cal.com/ruska-ai/ai-audit`
+- Run typecheck with `npx tsc --noEmit` from `website/` directory
+- Custom CSS animations go in `website/src/app/globals.css` (e.g., marquee, fadeIn)
 
 ---
 
-## 2026-02-05 - US-001
-- Initialized wiki submodule with `git submodule update --init wiki`
-- Added `memories/index` to Core Features items in `wiki/sidebars.ts`
-- Added `memories/tutorial` to Tutorials items in `wiki/sidebars.ts`
-- Created placeholder files `wiki/docs/memories/index.md` and `wiki/docs/memories/tutorial.md` with Docusaurus frontmatter
-- Typecheck passes, build succeeds
-- Files changed: `wiki/sidebars.ts`, `wiki/docs/memories/index.md`, `wiki/docs/memories/tutorial.md`
+## 2026-02-11 - US-001
+- Implemented hero section rebrand: title changed to 'Ruska Automation as a Service', subtitle updated to vendor-agnostic messaging
+- Files changed: website/src/app/services/page.tsx
 - **Learnings for future iterations:**
-  - Wiki submodule must be initialized in worktrees before any edits
-  - The `bd` pre-commit hook fails in worktrees because it can't find `.beads` — set `BEADS_DIR` env var to the main repo's `.beads` dir
-  - Wiki submodule has its own git history — commit inside wiki first, then commit the pointer in the main repo
-  - `bd init --no-db` was needed in the main repo to set up the beads database
+  - Website is a submodule — must `cd website` before git operations
+  - Hero uses `font-space font-bold text-green-500` with drop-shadow for the title
+  - CTA button and scroll indicator were untouched as required
 ---
 
-## 2026-02-05 - US-002
-- Wrote complete Memories API reference page at `wiki/docs/memories/index.md`
-- Includes: Overview, How It Works lifecycle, API Reference with all 5 endpoints (GET list, GET single, POST create, PUT update, DELETE)
-- Each endpoint has curl examples with localhost base URL, Authorization header, and example JSON responses matching backend schemas
-- Includes Configuration via UI section linking to tutorial page
-- Follows same markdown structure as assistants/index.md (heading hierarchy, bullet lists, code blocks)
-- Files changed: `wiki/docs/memories/index.md`
+## 2026-02-11 - US-002
+- Updated problem section: lead-in, 4 pain points, and closer text all updated to AI velocity/expertise gap messaging
+- Files changed: website/src/app/services/page.tsx
 - **Learnings for future iterations:**
-  - Docusaurus links must use `.md` extension for relative doc links (e.g., `./tutorial.md` not `./tutorial`) when the source page has a custom `slug`
-  - Run `npx tsc --project tsconfig.json --noEmit` from wiki dir (explicit project flag needed)
-  - API schemas are at `backend/src/schemas/entities/memory.py`, routes at `backend/src/routes/v0/memory.py`
-  - Memory injection happens via `prepare_memory_files()` in `backend/src/agents/__init__.py`
+  - Pain points use `&apos;` for apostrophes in JSX (not `'`)
+  - Problem section uses red-400 bullet points and muted-foreground text
+  - Closer uses green-500 span for the accent phrase
 ---
 
-## 2026-02-05 - US-004
-- Wrote Memories tutorial page at `wiki/docs/memories/tutorial.md` with step-by-step UI walkthrough
-- Steps: Navigate to Settings, Add a Memory, Verify Memory Created, Test in Chat, Managing Memories (edit/delete)
-- Includes screenshot references for all 4 images, linked back to main Memories page
-- Created placeholder PNG images in `wiki/static/img/memories/` (to be replaced by real screenshots in US-003)
-- Created `wiki/static/img/memories/` directory for screenshot assets
-- Typecheck passes, build succeeds
-- Files changed: `wiki/docs/memories/tutorial.md`, `wiki/static/img/memories/*.png`
+## 2026-02-11 - US-003
+- Updated solution pillars (Identify, Build, Maintain) to vendor-agnostic descriptions
+- Updated solution closer to differentiate from chatbots and one-off consultants
+- Files changed: website/src/app/services/page.tsx
 - **Learnings for future iterations:**
-  - Docusaurus validates image references at build time — all referenced images must exist or the build fails
-  - Placeholder PNGs can be generated with Python's struct/zlib modules when no image tools are installed
-  - MemorySettings component UI: search bar, Add Memory button, memory list with edit (pencil) and delete (trash) icons
-  - MemoryEditDialog handles both create and edit; delete uses AlertDialog confirmation
+  - Solution pillars are defined in `solutionPillars` array at top of file
+  - Closer text is a separate `motion.p` element after the pillars grid
 ---
 
-## 2026-02-05 - US-005
-- Updated `website/public/llm.txt` with Memories documentation
-- Added `### Memories` subsection under `## Core Features` (after Tools) with description, storage details, auto-injection, API endpoints, and UI config note
-- Added `### Memories` subsection under `## API Endpoints` with all 5 endpoints
-- Concise addition (5+5 lines) consistent with existing bullet-point style
-- Files changed: `website/public/llm.txt`
+## 2026-02-11 - US-004
+- Updated Step 2 description to vendor-agnostic, Step 3 retainer from $1,000 to $990
+- Files changed: website/src/app/services/page.tsx
 - **Learnings for future iterations:**
-  - `website` is also a git submodule — must be initialized with `git submodule update --init website`
-  - Same commit workflow as wiki: commit inside submodule first, then commit pointer in main repo
+  - Steps are inline JSX, not data-driven — each step is its own motion.div block
+  - Price text uses `text-muted-foreground` span inside the h3
 ---
 
-## 2026-02-05 - US-003 (BLOCKED)
-- BLOCKED: Local dev environment (backend port 8000, frontend port 5173) is not running
-- Cannot start dev servers — requires database, env file at `$HOME/.env/orchestra/.env.backend`, and full environment setup
-- Placeholder images were created in US-004 so the wiki build doesn't fail
-- To complete US-003: Start `make dev` from `backend/`, `npm run dev` from `frontend/`, then use `agent-browser` to capture real screenshots
-- Image directory already created at `wiki/static/img/memories/` with 4 placeholder PNGs
-- **When completing US-003:**
-  1. Navigate to `http://localhost:5173/settings` (log in first)
-  2. Set browser to light mode
-  3. Capture empty state → `settings-memories-empty.png`
-  4. Click Add Memory, fill content → `settings-add-memory-dialog.png`
-  5. Save and capture list → `settings-memories-list.png`
-  6. Navigate to chat, send memory-related message → `chat-memory-recall.png`
----
-
-## 2026-02-05 - US-003 (COMPLETED)
-- Started backend (`make dev`) and frontend (`npm install && npx vite --host`) dev servers
-- Used `agent-browser` CLI to automate the full screenshot workflow in light mode at 1280x800
-- Logged in with default credentials (admin@example.com / test1234)
-- Deleted existing memory to capture empty state screenshot
-- Workflow: empty state → add memory dialog → memory list → chat with memory recall
-- Replaced all 4 placeholder PNGs with real screenshots (63-107KB each):
-  - `settings-memories-empty.png`: Settings page scrolled to Memories section showing "No memories yet"
-  - `settings-add-memory-dialog.png`: Add Memory dialog with "I prefer Python for backend..." content
-  - `settings-memories-list.png`: Settings page showing the created memory in the list
-  - `chat-memory-recall.png`: Existing thread showing AI recalling user info from memories (name, tech stack, GitHub)
-- Typecheck passes
-- Files changed: `wiki/static/img/memories/*.png` (4 files replaced)
+## 2026-02-11 - US-005
+- Updated about paragraph to mention Claude Code, OpenClaw, and Orchestra tools
+- Files changed: website/src/app/services/page.tsx
 - **Learnings for future iterations:**
-  - Frontend `npm run dev` uses `dotenv` which may conflict in worktrees; use `npx vite --host` directly after `npm install`
-  - `agent-browser set media light` and `agent-browser set viewport 1280 800` should be called before navigating
-  - Default login: admin@example.com / test1234
-  - Chat messages may queue if TaskIQ worker is busy; use existing threads showing memory-powered responses for screenshots
-  - `agent-browser eval` can run JS to scroll — useful for scrolling to specific page sections
+  - About section has headshot image, name, Orchestra link, bio, location, and social links
+  - Orchestra link points to GitHub: https://github.com/enso-labs/orchestra
+---
+
+## 2026-02-11 - US-006
+- Replaced 6 FAQs with 8 new service-value FAQs
+- Files changed: website/src/app/services/page.tsx
+- **Learnings for future iterations:**
+  - FAQs are data-driven via `faqs` array at top of file, rendered by `FAQItem` component
+  - Last 2 FAQs (case studies, outside Utah) kept from original
+---
+
+## 2026-02-11 - US-007
+- Added Technology Ecosystem marquee section between 'What Can Be Automated' and 'How It Works'
+- Defined `techEcosystem` typed array constant with 12 tools (Claude Code, OpenClaw, Orchestra, etc.)
+- Implemented CSS @keyframes marquee animation in globals.css with edge fade mask
+- Duplicated tool list in DOM for seamless infinite scroll loop
+- Files changed: website/src/app/services/page.tsx, website/src/app/globals.css
+- **Learnings for future iterations:**
+  - Marquee uses CSS `@keyframes marquee-scroll` with `translateX(-50%)` for seamless loop
+  - Edge fade uses CSS `mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent)`
+  - Marquee container has `overflow: hidden` to clip scrolling content
+  - Tool cards use `min-w-[200px]` and `flex-shrink-0` to maintain consistent sizing
+---
+
+## 2026-02-11 - US-008
+- Added Service Offerings detail grid section between Solution Pillars ("What I Do") and "What Can Be Automated"
+- Defined `serviceOfferings` typed array constant with 6 service cards
+- 6 cards: Custom Automation Setup, Workflow Integration, Monitoring & Analytics, Security & Data Privacy, Infrastructure Management, Continuous Improvement
+- Each card has icon, bold title, green-400 timeline, description, and 3 green-500 checkmark bullets
+- Responsive grid: md:grid-cols-3, single column on mobile
+- Card styling: rounded-xl, border-border, bg-card (matches existing design)
+- Files changed: website/src/app/services/page.tsx
+- **Learnings for future iterations:**
+  - New data-driven sections follow the pattern: typed array constant at top, mapped via `motion.div` with staggered delay
+  - Section headings use `text-sm font-medium uppercase tracking-widest text-muted-foreground`
+  - Green-400 is used for accent/metadata text (timelines), green-500 for checkmarks/icons
 ---

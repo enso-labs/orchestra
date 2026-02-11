@@ -1,91 +1,349 @@
 {
-  "project": "Orchestra",
-  "branchName": "feat/743-update-wiki-for-memories",
-  "description": "Wiki Documentation for Memories Feature - Document the Memories feature with API reference, UI tutorial with screenshots, and llm.txt update",
+  "project": "Ruska AI Website",
+  "branchName": "ralph/services-rebrand-seo",
+  "description": "Rebrand Services Page from 'Claude Code Automation Systems' to 'Ruska Automation as a Service' + SEO infrastructure (robots.txt, sitemap, OG images, JSON-LD, llm.txt). Add Technology Ecosystem marquee, Service Offerings grid, and trust-building sections inspired by adaptive.biz.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize wiki submodule and add Memories entries to sidebar",
-      "description": "As a documentation reader, I want to find 'Memories' in the wiki navigation so I can learn about the feature.",
+      "title": "Update Services Page Hero Section",
+      "description": "As a visitor, I want to see 'Ruska Automation as a Service' as the hero title so I understand Ruska is the brand (not Claude Code).",
       "acceptanceCriteria": [
-        "Run 'git submodule update --init wiki' in the worktree to initialize the wiki submodule",
-        "Add 'memories/index' to the 'Core Features' items array in wiki/sidebars.ts (after 'storage/index')",
-        "Add 'memories/tutorial' to the 'Tutorials' items array in wiki/sidebars.ts",
-        "Create empty placeholder files wiki/docs/memories/index.md and wiki/docs/memories/tutorial.md with basic frontmatter so the sidebar does not break",
+        "Hero title changed from 'Claude Code Automation Systems' to 'Ruska Automation as a Service' in website/src/app/services/page.tsx (line 186 area)",
+        "Subtitle changed from 'I set up Claude Code as your AI employee. Then I maintain it.' to 'I build AI automation systems for your business. Then I keep them running and improving.' (lines 195-197 area)",
+        "No other hero elements changed (CTA button, scroll indicator stay the same)",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "The wiki is a git submodule. In this worktree it is not yet initialized — run 'git submodule update --init wiki' first. Read wiki/sidebars.ts for the current structure. The existing sidebar has: Core Features [assistants/index, threads/index, storage/index] and Tutorials [tools/sandbox-tutorial]. Add memories/index to Core Features and memories/tutorial to Tutorials."
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Write main Memories documentation page (API reference)",
-      "description": "As a developer or API consumer, I want a reference page explaining how memories work and how to interact with them via the API so I can integrate memories into my workflow.",
+      "title": "Update Problem Section Copy",
+      "description": "As a visitor, I want the problem section to reflect the AI velocity/expertise gap so I understand why I need a partner.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/index.md with Docusaurus frontmatter: title 'Memories', slug '/memories', sidebar_position 4",
-        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /AGENTS.md",
-        "Include 'How It Works' section describing the lifecycle: create memory -> stored in LangGraph BaseStore -> automatically retrieved via prepare_memory_files() -> injected as markdown into streaming/worker/invoke entry points",
-        "Include 'API Reference' section with curl examples for all 5 endpoints: GET /api/memories (list with limit, offset, query params), GET /api/memories/{memory_id}, POST /api/memories (body: {content, metadata?}), PUT /api/memories/{memory_id} (body: {content, metadata?}), DELETE /api/memories/{memory_id}",
-        "Each curl example uses localhost base URL and includes Authorization: Bearer <token> header",
-        "Each curl example includes an example JSON response matching the backend schemas (Memory: {id, content, metadata, created_at, updated_at}, MemoryListResponse: {memories[], total, limit, offset})",
-        "Include a 'Configuration via UI' section at the bottom linking to the tutorial page at ./tutorial",
-        "Follow the same markdown structure as wiki/docs/assistants/index.md (heading hierarchy, bullet lists, code blocks)",
+        "Lead-in text changed from 'You want AI automation for your business.' to 'AI is moving too fast for most businesses to keep up.' in website/src/app/services/page.tsx (line 256 area)",
+        "Pain point 1: 'You don't know where to start' -> 'New AI tools launch every week -- you don't know which ones to trust'",
+        "Pain point 2: 'You tried ChatGPT—it didn't stick' -> 'You don't have in-house AI or security expertise'",
+        "Pain point 3: 'You need something that actually runs reliably' -> 'Managing infrastructure and keeping systems secure takes specialized knowledge'",
+        "Pain point 4: 'You don't have time to figure it out yourself' -> 'You need automation that works reliably, not just impressive demos'",
+        "Closer changed from 'Most AI tools are chat windows. You need a worker.' to 'You need a trusted partner who lives and breathes this stuff. That's where I come in.'",
         "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Read wiki/docs/assistants/index.md and wiki/docs/storage/index.md from the main repo at /home/ryaneggz/ruska-ai/orchestra/wiki/ for the exact Docusaurus page pattern (frontmatter, heading style, admonitions). The API endpoints are defined in backend/src/routes/v0/memory.py. Schemas are in backend/src/schemas/entities/memory.py: Memory(id, content, metadata?, created_at?, updated_at?), MemoryCreate(content, metadata?), MemoryUpdate(content, metadata?), MemoryListResponse(memories, total, limit, offset). Query params for list: limit(default=10, max=100), offset(default=0), query(default=''). Auth uses Bearer token. Use localhost URLs since docs target local dev."
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Capture full workflow screenshots with agent-browser",
-      "description": "As a documentation author, I need screenshots of the memories workflow captured in light mode to include in the tutorial page.",
+      "title": "Update Solution Pillars and Closer",
+      "description": "As a visitor, I want the solution section to be tool-agnostic so I understand Ruska adapts to the best tools.",
       "acceptanceCriteria": [
-        "Create directory wiki/static/img/memories/",
-        "Use agent-browser skill to navigate to local dev environment Settings page",
-        "Set browser to light mode",
-        "Capture screenshot of Settings page showing the Memories section (empty state) and save as wiki/static/img/memories/settings-memories-empty.png",
-        "Use agent-browser to click 'Add Memory' and fill in example content like 'I prefer Python for backend development and TypeScript for frontend. My timezone is America/Chicago.'",
-        "Capture screenshot of the Add Memory dialog with content filled in and save as wiki/static/img/memories/settings-add-memory-dialog.png",
-        "Save the memory, then capture screenshot of Settings page showing the created memory in the list and save as wiki/static/img/memories/settings-memories-list.png",
-        "Navigate to chat, send a message that triggers memory recall (e.g., 'What programming languages do I prefer?'), and capture screenshot showing personalized response as wiki/static/img/memories/chat-memory-recall.png"
+        "In website/src/app/services/page.tsx, 'Identify' description updated to: 'Map your workflows. Find automation opportunities that actually move the needle.'",
+        "'Build' description changed from 'Create Claude Code systems that run in production.' to 'Create production-ready automation systems using proven AI tools and infrastructure.'",
+        "'Maintain' description changed from 'Stay on retainer to improve and add new automations.' to 'Stay on retainer to monitor, improve, and add new automations as your business grows.'",
+        "Solution closer changed from 'Not chatbots. Real automation that handles workflows end-to-end.' to 'Not chatbots. Not consultants who hand you a report and disappear. Real automation systems built with battle-tested tools, secured properly, and maintained long-term.'",
+        "Typecheck passes"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "The local dev environment must be running: 'make dev' for backend (port 8000) and 'cd frontend && npm run dev' for frontend (port 5173). The Settings page is at http://localhost:5173/settings. You must log in first. The agent-browser skill handles browser automation. Use light mode for all screenshots. The MemorySettings component is in frontend/src/components/settings/MemorySettings.tsx. The settings page is at frontend/src/pages/settings/index.tsx."
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Write Memories tutorial page (UI walkthrough with screenshots)",
-      "description": "As a user, I want a step-by-step visual tutorial showing me how to add memories through the Settings page and see them working in chat.",
+      "title": "Update How It Works - Step 2 and Step 3",
+      "description": "As a visitor, I want the pricing steps to reflect vendor-agnostic language and the new retainer minimum.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/tutorial.md with frontmatter: title 'Tutorial: Configuring Memories', sidebar_label 'Memory Tutorial', sidebar_position 1",
-        "Step 1 'Navigate to Settings': describe how to reach the Settings page, include screenshot reference ![Settings Memories Empty](/img/memories/settings-memories-empty.png)",
-        "Step 2 'Add a Memory': describe clicking Add Memory button, entering content, saving; include screenshot ![Add Memory Dialog](/img/memories/settings-add-memory-dialog.png)",
-        "Step 3 'Verify Memory Created': describe seeing the memory in the list; include screenshot ![Memories List](/img/memories/settings-memories-list.png)",
-        "Step 4 'Test in Chat': describe navigating to chat, sending a message, seeing personalized response; include screenshot ![Memory Recall](/img/memories/chat-memory-recall.png)",
-        "Step 5 'Managing Memories': brief section describing edit (pencil icon) and delete (trash icon with confirmation dialog) actions",
-        "Include a link back to the main Memories page: 'For API reference and programmatic access, see [Memories](/docs/memories)'",
+        "In website/src/app/services/page.tsx, Step 2 description changed from 'I build your Claude Code automation system.' to 'I build your custom automation system using proven AI tools and secure infrastructure.'",
+        "Step 3 retainer price changed from '$1,000 - $3,000/mo' to '$990 - $3,000/mo'",
+        "No changes to Step 1 (Discovery Call) or Step 3 description text",
         "Typecheck passes"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Screenshots should already exist in wiki/static/img/memories/ from US-003. Reference them with Docusaurus-compatible image syntax: ![alt text](/img/memories/filename.png). Follow the same tutorial structure as wiki/docs/tools/sandbox-tutorial.md. The MemorySettings component has: search bar, Add Memory button, memory list with edit/delete icons, and MemoryEditDialog for create/edit. Delete shows an AlertDialog confirmation."
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Update llm.txt with memories documentation",
-      "description": "As an external AI agent or search engine, I need the public llm.txt to reflect the memories feature so LLM search engines provide accurate information about Orchestra.",
+      "title": "Update About Section",
+      "description": "As a visitor, I want the about section to mention the tools Ruska uses so I see breadth of capability.",
       "acceptanceCriteria": [
-        "Read website/public/llm.txt to understand the current structure and style",
-        "Add a 'Memories' subsection under '## Core Features' (after the existing Prompts or Tools section) with: one-line description of what memories are, that they persist per-user, that they are automatically injected into agent context during conversations, the 5 API endpoints (GET list, GET single, POST create, PUT update, DELETE), and that configuration is available via the Settings UI",
-        "Keep the addition concise (5-10 lines) and consistent with the existing llm.txt bullet-point style",
+        "In website/src/app/services/page.tsx, about paragraph changed from 'Now I help businesses implement Claude Code systems that actually work in production—not just demos that break after a week.' to 'Now I help businesses implement production-ready AI automation using tools like Claude Code, OpenClaw, and Orchestra. You get the benefits of cutting-edge AI without the headaches of managing it yourself.'",
+        "All other About section content remains unchanged (name, Orchestra link, location, social links)",
         "Typecheck passes"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Read website/public/llm.txt at /home/ryaneggz/ruska-ai/orchestra/website/public/llm.txt (or the worktree copy). The existing structure has ## Core Features with subsections like ### Projects, ### Assistants, ### Threads, ### Schedules, ### Prompts, ### Tools. Add ### Memories following the same pattern. Also check if there is a worktree copy at /home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-743/website/public/llm.txt."
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Replace FAQ Data",
+      "description": "As a visitor, I want the FAQ to address service-value questions so I understand why I'd hire Ruska.",
+      "acceptanceCriteria": [
+        "In website/src/app/services/page.tsx, replace existing 6 FAQs with 8 new FAQs in the faqs array (lines 18-49 area)",
+        "FAQ 1: question='What exactly is Automation as a Service?' answer='I build AI-powered automation systems for your business, then maintain them. You get the benefits of AI automation without hiring a team or managing the infrastructure yourself.'",
+        "FAQ 2: question='Why do I need an integration partner?' answer='AI is moving fast -- new models, tools, and security concerns every month. Most SMBs don\\'t have in-house expertise to vet tools, manage infrastructure, or keep systems secure. I handle all of that so you can focus on your business.'",
+        "FAQ 3: question='What tools and technologies does Ruska use?' answer='I leverage best-in-class AI tools like Claude Code, OpenClaw, and our own Orchestra platform. The tech stack adapts to your needs -- you get results, not vendor lock-in.'",
+        "FAQ 4: question='Can\\'t I just use ChatGPT for this?' answer='ChatGPT is great for answering questions, but it\\'s not built for production automation. I build systems that run reliably in the background -- handling workflows, processing data, and taking action without someone sitting at a chat window.'",
+        "FAQ 5: question='Why a retainer instead of project-based pricing?' answer='AI systems aren\\'t set-and-forget. Your business changes, new tools emerge, and automations need tuning. A retainer means I\\'m continuously improving your systems, not handing off a project and disappearing.'",
+        "FAQ 6: question='How do you handle security and data privacy?' answer='I treat your data like it\\'s mine. All systems follow security best practices: encrypted connections, minimal data exposure, audit trails, and clear data handling policies.'",
+        "FAQ 7: question='Do you have case studies?' answer='I\\'m building my first few this quarter—that\\'s why founding clients get better rates in exchange for being references.' (keep existing answer)",
+        "FAQ 8: question='Do you work with businesses outside Utah?' answer='Yes, for the right fit. But I prefer local clients where we can meet face-to-face.' (keep existing answer)",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add Technology Ecosystem Marquee Section",
+      "description": "As a visitor, I want to see a scrolling marquee of tools and technologies Ruska uses so I trust the breadth of their technical capability.",
+      "acceptanceCriteria": [
+        "In website/src/app/services/page.tsx, add new section between 'What Can Be Automated' and 'How It Works' sections",
+        "Section heading: 'Our Technology Ecosystem' with subheading: 'We integrate with tools you already know and trust'",
+        "Define a typed array constant (techEcosystem or similar) at top of file with tool objects: { name: string, descriptor: string, icon: string }",
+        "Tools included: Claude Code ('AI coding agent'), OpenClaw ('Open-source AI agents'), Orchestra ('Agent orchestration platform'), Anthropic Claude ('Foundation models'), LangGraph ('Multi-agent workflows'), MCP ('Tool protocol standard'), Python ('AI/ML backend'), Docker ('Containerization'), Supabase ('Postgres & vector storage'), Next.js ('Full-stack React'), PostgreSQL ('Relational database'), Tailwind CSS ('Utility-first CSS')",
+        "Render as a horizontal auto-scrolling marquee using CSS @keyframes translateX animation or framer-motion",
+        "Each tool card shows: emoji/text icon, tool name, and short descriptor",
+        "Duplicate the tool list in DOM for seamless infinite scroll loop (no gaps)",
+        "Responsive: cards visible at mobile (3-4) and desktop (5-6)",
+        "Matches dark theme: border-border, bg-card, text-foreground styling",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Service Offerings Detail Grid",
+      "description": "As a visitor, I want to see a detailed breakdown of specific services Ruska offers with timelines and feature bullets.",
+      "acceptanceCriteria": [
+        "In website/src/app/services/page.tsx, add new section after Solution Pillars (between 'What I Do' and 'What Can Be Automated')",
+        "Section heading: 'What's Included'",
+        "Define a typed array constant (serviceOfferings or similar) at top of file",
+        "6 service cards in a responsive grid (md:grid-cols-3, single column on mobile)",
+        "Card 1: Custom Automation Setup (2-4 weeks) - 'Build production-ready AI automation tailored to your workflows.' Bullets: Custom workflow mapping, API & tool integration, Testing & deployment",
+        "Card 2: Workflow Integration (1-2 weeks) - 'Connect your automation to the tools you already use.' Bullets: Multi-platform sync, Real-time triggers, Error handling & retries",
+        "Card 3: Monitoring & Analytics (1 week) - 'Track automation performance and ROI with clear dashboards.' Bullets: Usage analytics, Performance metrics, Cost optimization",
+        "Card 4: Security & Data Privacy (1-2 weeks) - 'Enterprise-grade security built into every system.' Bullets: Encrypted connections, Audit trails, Data handling policies",
+        "Card 5: Infrastructure Management (Ongoing) - 'Reliable hosting, scaling, and disaster recovery handled for you.' Bullets: Auto-scaling, 24/7 monitoring, Backup systems",
+        "Card 6: Continuous Improvement (Ongoing) - 'New automations and optimizations as your business evolves.' Bullets: Feature additions, Performance tuning, New tool adoption",
+        "Each card has: icon, bold title, green-400 timeline text, description, 3 green-500 checkmark bullets",
+        "Card styling: rounded-xl, border-border, bg-card (matches existing design)",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add Trust-Building Sections",
+      "description": "As a visitor, I want to see transparency and ownership guarantees so I feel confident hiring Ruska as a long-term partner.",
+      "acceptanceCriteria": [
+        "In website/src/app/services/page.tsx, add two content blocks inside 'How It Works' section (after the 3 pricing steps, before the founding clients note)",
+        "Block 1 - title: 'You Own Everything', body: 'Every automation, every integration, every line of configuration -- it's yours. If we part ways, you keep everything. No lock-in, no hostage data, no proprietary black boxes.'",
+        "Block 2 - title: 'Full Transparency', body: 'You'll always know exactly what I'm building, why, and how much it costs. No surprise invoices, no scope creep without your approval. I send regular progress updates and you have full visibility into every system.'",
+        "Both blocks styled as accent-bordered cards (border-green-500/30 or similar) to visually differentiate from pricing steps",
+        "Uses framer-motion fade-in animation consistent with surrounding sections",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Update Services Layout Metadata",
+      "description": "As a developer, I need updated metadata for the services page so search engines index the correct branding.",
+      "acceptanceCriteria": [
+        "In website/src/app/services/layout.tsx, title changed to 'Automation as a Service | Ruska AI'",
+        "Description changed to 'AI automation systems built and maintained for your business. Saint George, UT and beyond.'",
+        "Keywords updated: remove 'Claude Code', 'AI employee'; add 'automation as a service', 'AI integration', 'trusted AI partner'",
+        "OG title: 'Automation as a Service | Ruska AI'",
+        "OG/Twitter description: 'AI automation systems built and maintained for your business. Trusted AI integration partner for SMBs.'",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Add JSON-LD Structured Data to Services Page",
+      "description": "As a developer, I need structured data on the services page so search engines display rich results.",
+      "acceptanceCriteria": [
+        "In website/src/app/services/page.tsx, add <script type='application/ld+json'> inside <main> using dangerouslySetInnerHTML",
+        "JSON-LD contains: @context: 'https://schema.org', @type: 'ProfessionalService', name: 'Ruska AI - Automation as a Service', description, url: 'https://ruska.ai/services', founder: { @type: 'Person', name: 'Ryan Eggleston' }, areaServed: 'United States', address: { @type: 'PostalAddress', addressLocality: 'Saint George', addressRegion: 'UT' }, priceRange: '$990 - $5,000', knowsAbout: ['AI automation', 'Claude Code', 'OpenClaw', 'workflow automation', 'agent orchestration']",
+        "JSON is valid (no syntax errors)",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill: view page source of /services, confirm JSON-LD present"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create robots.ts",
+      "description": "As a developer, I need a robots.txt so search engines know what to crawl.",
+      "acceptanceCriteria": [
+        "Create website/src/app/robots.ts using Next.js MetadataRoute.Robots convention",
+        "Export default function returning: rules: { userAgent: '*', allow: '/' }, sitemap: 'https://ruska.ai/sitemap.xml'",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill: navigate to http://localhost:3000/robots.txt, confirm valid output"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Create sitemap.ts",
+      "description": "As a developer, I need a dynamic sitemap so search engines discover all pages.",
+      "acceptanceCriteria": [
+        "Create website/src/app/sitemap.ts using Next.js MetadataRoute.Sitemap convention",
+        "Include static routes: /, /services, /blog",
+        "Dynamically read blog post slugs from the posts directory (check website/src/app/blog/ for post structure) and include /blog/[slug] entries",
+        "Each entry has url (prefixed with https://ruska.ai), lastModified, changeFrequency, priority",
+        "Homepage priority: 1, services: 0.9, blog index: 0.8, blog posts: 0.6",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill: navigate to http://localhost:3000/sitemap.xml, confirm valid sitemap"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Create Default OG Image",
+      "description": "As a developer, I need a default OG image so social shares look professional.",
+      "acceptanceCriteria": [
+        "Create website/src/app/opengraph-image.tsx using Next.js ImageResponse API (from next/og)",
+        "Export const size = { width: 1200, height: 630 } and contentType = 'image/png'",
+        "Dark background (#0a0a0a), green accent (#22c55e)",
+        "'RUSKA' large branding text, tagline: 'AI Agent Orchestration Platform'",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill: navigate to http://localhost:3000/opengraph-image, confirm image renders"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Create Services OG Image",
+      "description": "As a developer, I need a services-specific OG image for social sharing.",
+      "acceptanceCriteria": [
+        "Create website/src/app/services/opengraph-image.tsx using Next.js ImageResponse API (from next/og)",
+        "Export const size = { width: 1200, height: 630 } and contentType = 'image/png'",
+        "Same dark/green theme as default OG (#0a0a0a background, #22c55e accent)",
+        "Title: 'Ruska Automation as a Service', Subtitle: 'AI automation built and maintained for your business'",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill: navigate to http://localhost:3000/services/opengraph-image, confirm image renders"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Update Root Layout Metadata",
+      "description": "As a developer, I need the root layout metadata updated so the entire site has proper SEO descriptions.",
+      "acceptanceCriteria": [
+        "In website/src/app/layout.tsx, APP_DESCRIPTION changed from 'Steerable Harnesses for DeepAgents' to 'AI Agent Orchestration Platform. Build, deploy, and manage AI automation with Orchestra by Ruska AI.'",
+        "Twitter card changed from 'summary' to 'summary_large_image'",
+        "Add keywords to metadata object: ['AI automation', 'agent orchestration', 'Claude Code', 'OpenClaw', 'Orchestra', 'Ruska AI', 'LangGraph', 'MCP']",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill: view page source of homepage, confirm updated meta description and keywords"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Update llm.txt Generator",
+      "description": "As a developer, I need the llm.txt to include services/automation keywords so LLM crawlers surface Ruska for automation queries.",
+      "acceptanceCriteria": [
+        "In website/scripts/generate-llm-txt.mjs, add new section after '## Contact' with heading '## Services - Automation as a Service'",
+        "Section includes: description ('Ruska AI offers managed AI automation for small and medium businesses. We leverage tools including Claude Code, OpenClaw, and our Orchestra platform to build production-ready automation systems.')",
+        "Include '### What We Automate' list: Customer Support, Data Processing, Lead Management, Property Management, Content Operations, Internal Ops",
+        "Include '### How It Works' with 3 steps: 1. Discovery Call (Free), 2. Setup ($2,500 - $5,000), 3. Retainer ($990 - $3,000/mo)",
+        "Include '### Contact for Services' with booking link (https://cal.com/ruska-ai/ai-audit) and email (reggleston@ruska.ai)",
+        "Run npm run prebuild successfully in website dir",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Phase 1 Browser Validation - Services Copy Rebrand + New Sections",
+      "description": "As a developer, I need to validate all copy changes and new sections visually in the browser.",
+      "acceptanceCriteria": [
+        "Start dev server if not running: cd website && npm run dev",
+        "Using agent-browser skill, navigate to http://localhost:3000/services",
+        "Verify hero says 'Ruska Automation as a Service'",
+        "Verify problem section reflects AI velocity / expertise gap messaging",
+        "Verify Technology Ecosystem marquee is visible and scrolling with tool logos",
+        "Verify Service Offerings grid shows 6 cards with timelines and checkmark bullets",
+        "Verify trust-building cards ('You Own Everything', 'Full Transparency') appear in How It Works",
+        "Verify retainer shows $990",
+        "Verify FAQ has 8 questions",
+        "Verify About mentions Claude Code, OpenClaw, Orchestra as tools",
+        "Take full page screenshot for review"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Phase 2 Browser Validation - SEO Infrastructure",
+      "description": "As a developer, I need to validate SEO infrastructure works correctly.",
+      "acceptanceCriteria": [
+        "Using agent-browser skill, navigate to http://localhost:3000/robots.txt - confirm valid robots.txt output with sitemap reference",
+        "Navigate to http://localhost:3000/sitemap.xml - confirm valid sitemap with /, /services, /blog, and blog post entries",
+        "View page source of homepage - confirm updated meta description contains 'AI Agent Orchestration Platform' and keywords meta tag present"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Phase 3 Browser Validation - OG Images + Structured Data",
+      "description": "As a developer, I need to validate OG images render and structured data is present.",
+      "acceptanceCriteria": [
+        "Using agent-browser skill, navigate to http://localhost:3000/opengraph-image - confirm default OG image renders with RUSKA branding",
+        "Navigate to http://localhost:3000/services/opengraph-image - confirm services OG renders with 'Automation as a Service'",
+        "View page source of /services - confirm JSON-LD script tag with ProfessionalService schema is present"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Final Build Verification",
+      "description": "As a developer, I need to confirm the full site builds without errors and no stale branding remains.",
+      "acceptanceCriteria": [
+        "Run 'npm run build' in website dir - completes with no errors",
+        "Take full page screenshot of /services via agent-browser skill",
+        "Grep website/src/app/services/page.tsx for 'Claude Code Automation' - zero matches (tool mentions like 'Claude Code' alone are OK)",
+        "Verify all CTA links still point to https://cal.com/ruska-ai/ai-audit"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
