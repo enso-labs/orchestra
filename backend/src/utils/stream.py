@@ -1,3 +1,4 @@
+import inspect
 import os
 from deepagents.backends import StoreBackend
 from langchain.agents.middleware import PIIDetectionError
@@ -274,12 +275,21 @@ async def stream_generator(
                 )
             )
             yield f"data: {metadata_event}\n\n"
+            astream_kwargs = {
+                "stream_mode": ["messages", "values"],
+                "config": config,
+                "context": ctx,
+            }
+            try:
+                if "subgraphs" in inspect.signature(agent.astream).parameters:
+                    astream_kwargs["subgraphs"] = True
+            except Exception:
+                # Be conservative if signature inspection fails.
+                pass
+
             async for chunk in agent.astream(
                 input,
-                stream_mode=["messages", "values"],
-                config=config,
-                context=ctx,
-                subgraphs=True,
+                **astream_kwargs,
             ):
                 # Serialize and yield each chunk as SSE
                 stream_chunk = handle_multi_mode(chunk)
