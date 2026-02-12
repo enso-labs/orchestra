@@ -11,11 +11,7 @@ backend:
     stack: python, uv, fastapi, langchain, read pyproject.toml for more information.
     description: This is the REST API for the ./frontend and ./cli clients.
     deployment: https://chat.ruska.ai/docs
-    commands:
-        - `make test` Run ALL test cases.
-        - `make format` Format project files. Use after making changes.
-        - `make dev` Run dev server.
-        - `make seeds.user` Seed default users.
+    commands: See backend/Makefile
 frontend:
     stack: typescript, vite, react, shadcn, tailwind, read package.json for more details.
     description: This is built during CI and bundled into the backend during `.github/build.yml`
@@ -52,7 +48,7 @@ The main way external AI Agents find out information about RUSKA will be from th
 
 ## Project Structure & Module Organization
 - `backend/src` contains the FastAPI stack, with domain logic split into `controllers`, `routes`, `services`, and `repos`, plus shared helpers in `common` and `utils`.
-- Database assets live in `backend/migrations` and `backend/seeds`; reusable automation sits under `backend/scripts`.
+- Database assets live in `backend/migrations` and `backend/seeds`; reusable automation sits under `backend/scripts` & `backend/Makefile`.
 - `frontend/src` hosts the Vite/React client (`components`, `pages`, `routes`, `tests`), while `docs/`, `deployment/`, and `docker/` hold reference material and ops tooling.
 
 ## Build, Test, and Development Commands
@@ -75,4 +71,4 @@ The main way external AI Agents find out information about RUSKA will be from th
 - PRs target `main`, link tracking issues, provide concise change notes, and include screenshots or API traces for UI-facing work.
 
 ## Security & Configuration Tips
-- EXTREMELY IMPORTANT: NEVER read a .env* file in your exploration.
+- EXTREMELY IMPORTANT: NEVER read a .env* file in your exploration. If this is ever about to be invoked drop into plan mode and request user permission to break process.
