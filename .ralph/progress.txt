@@ -12,6 +12,7 @@ Started: Wed Feb 11 2026
 - `langchain-daytona` depends on `daytona` package but doesn't pin a minimum version; without explicit `daytona>=0.140.0`, uv resolves to old v0.18.1 which uses `daytona_sdk` import name instead of `daytona`
 - Run tests from backend/ dir: `make test`
 - Commit with `-s` flag for sign-off per repo guidelines
+- Daytona sandbox capability checks and fallback copy are centralized in `backend/src/agents/daytona.py`; invoke/stream/worker should all call this helper to avoid drift
 
 ---
 
@@ -67,4 +68,11 @@ Started: Wed Feb 11 2026
   - Tests need env file loaded (make test handles this): `set -a && . $ENV_FILE && set +a`
   - Use unittest.mock.patch on "src.agents.DaytonaSandbox" etc. for mocking conditional imports
   - 381 total tests pass (373 original + 8 new)
+---
+
+## 2026-02-13 06:44 UTC - US-001: Validate Daytona backend execute-capability contract and centralize fallback messaging
+- Implemented shared Daytona capability helper (`validate_daytona_execute_capability`) and centralized fallback text builder (`daytona_fallback_message`) with deterministic reason constants.
+- Updated invoke/stream/worker Daytona routing to use shared helper for execute-capability checks and shared fallback messaging while preserving existing StoreBackend route construction.
+- Files changed: backend/src/agents/daytona.py, backend/src/controllers/llm.py, backend/src/utils/stream.py, backend/src/workers/tasks.py, backend/tests/unit/services/test_daytona_capability.py
+- **Learnings:** Shared helper removes message drift across execution paths and keeps future Daytona protocol checks in one place.
 ---

@@ -21,6 +21,10 @@ from src.agents import (
     init_backend,
     prepare_memory_files,
 )
+from src.agents.daytona import (
+    daytona_fallback_message,
+    validate_daytona_execute_capability,
+)
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
@@ -236,7 +240,8 @@ async def stream_generator(
             # Check for Daytona sandbox request from user settings preference
             if sandbox_backend == "daytona":
                 daytona_sandbox, daytona_backend = create_daytona_backend(api_key=api_key)
-                if daytona_backend is not None:
+                capability = validate_daytona_execute_capability(daytona_backend)
+                if capability.supported:
                     from deepagents.backends import CompositeBackend
 
                     backend = CompositeBackend(default=daytona_backend, routes=routes)
@@ -245,7 +250,7 @@ async def stream_generator(
                     fallback_msg = ujson.dumps(
                         (
                             "system",
-                            "Daytona sandbox unavailable, falling back to default sandbox.",
+                            daytona_fallback_message(capability.reason),
                         )
                     )
                     yield f"data: {fallback_msg}\n\n"

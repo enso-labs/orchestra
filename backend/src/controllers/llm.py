@@ -18,6 +18,10 @@ from src.agents import (
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
+from src.agents.daytona import (
+    daytona_fallback_message,
+    validate_daytona_execute_capability,
+)
 from src.repos.user_settings_repo import UserSettingsRepo
 from src.utils.llm import resolve_api_key
 from src.utils.logger import logger
@@ -137,7 +141,8 @@ class LLMController:
                     daytona_sandbox, daytona_backend = create_daytona_backend(
                         api_key=api_key
                     )
-                    if daytona_backend is not None:
+                    capability = validate_daytona_execute_capability(daytona_backend)
+                    if capability.supported:
                         runtime = self._init_runtime(params)
                         store_backend = StoreBackend(runtime)
                         built_routes = {
@@ -153,7 +158,7 @@ class LLMController:
                         backend = self.init_backend(params)
                         params.input.messages.append(
                             SystemMessage(
-                                content="Daytona sandbox unavailable, falling back to default sandbox."
+                                content=daytona_fallback_message(capability.reason)
                             )
                         )
                 else:

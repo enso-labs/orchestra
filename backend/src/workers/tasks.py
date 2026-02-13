@@ -211,6 +211,10 @@ async def _execute_agent_stream(
         init_backend,
         prepare_memory_files,
     )
+    from src.agents.daytona import (
+        daytona_fallback_message,
+        validate_daytona_execute_capability,
+    )
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger
@@ -259,14 +263,15 @@ async def _execute_agent_stream(
         from deepagents.backends import CompositeBackend
 
         daytona_sandbox, daytona_backend = create_daytona_backend(api_key=api_key)
-        if daytona_backend is not None:
+        capability = validate_daytona_execute_capability(daytona_backend)
+        if capability.supported:
             backend = CompositeBackend(default=daytona_backend, routes=routes)
         else:
             backend = init_backend(runtime, routes=routes)
             fallback_msg = ujson.dumps(
                 (
                     "system",
-                    "Daytona sandbox unavailable, falling back to default sandbox.",
+                    daytona_fallback_message(capability.reason),
                 )
             )
             await redis_client.xadd(stream_key, {"data": fallback_msg})
