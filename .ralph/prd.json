@@ -117,8 +117,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "daytona_fallback_message() was already absent. init_backend() removed and its logic inlined into resolve_sandbox_backend(). No orphaned imports. 373 tests pass."
     },
     {
       "id": "US-008",
@@ -135,8 +135,8 @@
         "cd frontend && npm run test passes"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "No pre-existing test files for sandbox_backend/daytona existed (test_daytona_cross_path.py, test_stream_daytona_backend_routing.py were already removed). Created new test_daytona.py (11 tests for create_daytona_backend and resolve_sandbox_backend) and test_daytona_capability.py (4 tests for validate_daytona_execute_capability). Total: 388 backend tests pass, 180 frontend tests pass."
     }
   ]
 }

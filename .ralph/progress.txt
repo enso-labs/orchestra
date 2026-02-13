@@ -102,3 +102,35 @@ Started: Thu Feb 13 2026
   - `userSettingsService.ts` is at `frontend/src/lib/services/userSettingsService.ts`
   - Frontend tests: 18 test files, 180 tests, run via `cd frontend && npm run test`
 ---
+
+## 2026-02-13 - US-007
+- Removed `init_backend()` function from `backend/src/agents/__init__.py`
+- Inlined its route-building logic into the fallback path of `resolve_sandbox_backend()`
+- Verified `daytona_fallback_message()` was already absent from `backend/src/agents/daytona.py`
+- Verified `validate_daytona_execute_capability()` is still present and used by `resolve_sandbox_backend()`
+- No orphaned imports found across any modified files
+- All 373 backend tests pass
+- Files changed: `backend/src/agents/__init__.py`
+- **Learnings for future iterations:**
+  - `init_backend()` was only used internally by `resolve_sandbox_backend()` — inlining was straightforward
+  - `daytona_fallback_message()` was removed in a prior branch or never existed in this codebase
+  - The pattern of PRD acceptance criteria describing already-done removals continues (US-005, US-006, US-007)
+---
+
+## 2026-02-13 - US-008
+- Created `backend/tests/unit/agents/test_daytona.py` with 11 tests:
+  - `TestCreateDaytonaBackend`: 4 tests (not installed, missing API key, success, exception handling)
+  - `TestResolveSandboxBackend`: 7 tests (Daytona success path, fallback when not capable, fallback when not installed, sandbox cleanup exception swallowed, silent fallback no messages, callable route factories invoked, non-callable routes used directly)
+- Created `backend/tests/unit/agents/test_daytona_capability.py` with 4 tests:
+  - `TestValidateDaytonaExecuteCapability`: callable execute, None backend, no execute attr, non-callable execute
+- No pre-existing test files for sandbox_backend/daytona existed — `test_daytona_cross_path.py` and `test_stream_daytona_backend_routing.py` were already removed in a prior branch
+- No sandbox_backend references found in any existing test files — already clean
+- All 388 backend tests pass (15 new + 373 existing)
+- All 180 frontend tests pass (3 skipped)
+- Files changed: `backend/tests/unit/agents/test_daytona.py` (new), `backend/tests/unit/agents/test_daytona_capability.py` (new)
+- **Learnings for future iterations:**
+  - Test files for `create_daytona_backend()` must patch `src.agents.Daytona`, `src.agents.DaytonaSandbox`, `src.agents.DaytonaConfig`, and `src.agents.DAYTONA_API_KEY` since the conditional imports resolve at module load time
+  - Tests for `resolve_sandbox_backend()` should patch `src.agents.create_daytona_backend` and `src.agents.daytona.validate_daytona_execute_capability` (note: the validator is patched on the daytona sub-module, not on src.agents directly)
+  - `make test` uses `ENV_FILE=$HOME/.env/orchestra/.env.backend` — tests won't run without it (conftest.py needs POSTGRES_CONNECTION_STRING)
+  - Ruff formatter converts `with patch(...), patch(...):` to parenthesized `with (patch(...), patch(...)):` syntax
+---
