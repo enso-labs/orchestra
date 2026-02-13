@@ -206,6 +206,7 @@ async def stream_generator(
     )
     files_map = {**memory_files, **files_map}
     async with get_checkpoint_db() as checkpointer:
+        agent = None
         try:
             ctx = ContextSchema(
                 model=model,
@@ -293,31 +294,37 @@ async def stream_generator(
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
         finally:
-            if service_context.user_id and checkpointer:
-                final_state = await agent.graph.aget_state(config)
-                configurable = {
-                    **final_state.config.get("configurable", {}),
-                    **config["configurable"],
-                }
-                messages = final_state.values.get("messages", [])
+            try:
+                if service_context.user_id and checkpointer and agent:
+                    final_state = await agent.graph.aget_state(config)
+                    configurable = {
+                        **final_state.config.get("configurable", {}),
+                        **config["configurable"],
+                    }
+                    messages = final_state.values.get("messages", [])
 
-                # Update the store with the final messages and files
-                service_context.store.fields = ["messages", "files"]
-                await service_context.thread_service.update(
-                    thread_id=configurable.get("thread_id"),
-                    data={
-                        "thread_id": configurable.get("thread_id"),
-                        "checkpoint_id": configurable.get("checkpoint_id"),
-                        "assistant_id": configurable.get("assistant_id"),
-                        "project_id": configurable.get("project_id"),
-                        "messages": messages,
-                        "todos": todos_list,
-                        "files": files_map,
-                        "updated_at": get_time(),
-                    },
-                )
-                # Log the update for debugging
-                logger.info(f"checkpoint: {ujson.dumps(configurable)}")
+                    # Update the store with the final messages and files
+                    service_context.store.fields = ["messages", "files"]
+                    await service_context.thread_service.update(
+                        thread_id=configurable.get("thread_id"),
+                        data={
+                            "thread_id": configurable.get("thread_id"),
+                            "checkpoint_id": configurable.get("checkpoint_id"),
+                            "assistant_id": configurable.get("assistant_id"),
+                            "project_id": configurable.get("project_id"),
+                            "messages": messages,
+                            "todos": todos_list,
+                            "files": files_map,
+                            "updated_at": get_time(),
+                        },
+                    )
+                    # Log the update for debugging
+                    logger.info(f"checkpoint: {ujson.dumps(configurable)}")
+            except Exception as e:
+                logger.exception("Failed to persist final checkpoint state: %s", e)
+
+        # Ensure frontend gets an explicit terminal signal to clear loading state.
+        yield "data: [DONE]\n\n"
 
 
 ###########################################################################
