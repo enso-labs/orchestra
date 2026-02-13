@@ -77,7 +77,8 @@ async def test_engine():
     # Remove sslmode from query parameters
     query_params = dict(url.query)
     query_params.pop("sslmode", None)
-    url = url.update_query_dict(query_params)
+    # Replace query params entirely so removed keys (like sslmode) do not persist.
+    url = url.update_query_dict(query_params, append=False)
 
     try:
         engine = create_async_engine(
