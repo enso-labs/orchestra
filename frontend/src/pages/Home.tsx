@@ -11,7 +11,7 @@ export default function Home() {
 	const { messages, useModelsEffect, viewMode, filesMap } = useChatContext();
 	const { setAgent } = useAgentContext();
 
-	// Fetch models for the SelectModel component
+	// Fetch available models
 	useModelsEffect();
 
 	useEffect(() => {
