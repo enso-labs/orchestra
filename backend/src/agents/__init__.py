@@ -241,18 +241,6 @@ def init_config(
     )
 
 
-def init_backend(runtime: ToolRuntime, *, routes):
-    """Factory function that creates a CompositeBackend with custom routes."""
-    built_routes = {}
-    for prefix, backend_or_factory in routes.items():
-        if callable(backend_or_factory):
-            built_routes[prefix] = backend_or_factory(runtime)
-        else:
-            built_routes[prefix] = backend_or_factory
-    default_state = StateBackend(runtime)
-    return CompositeBackend(default=default_state, routes=built_routes)
-
-
 def create_daytona_backend():
     """Create a Daytona sandbox and return (sandbox, backend).
 
@@ -303,7 +291,14 @@ def resolve_sandbox_backend(
                 pass
 
     # Fallback: plain StateBackend (silent, no messages)
-    backend = init_backend(runtime, routes=routes)
+    built_routes = {}
+    for prefix, backend_or_factory in routes.items():
+        if callable(backend_or_factory):
+            built_routes[prefix] = backend_or_factory(runtime)
+        else:
+            built_routes[prefix] = backend_or_factory
+    default_state = StateBackend(runtime)
+    backend = CompositeBackend(default=default_state, routes=built_routes)
     return backend, None
 
 
