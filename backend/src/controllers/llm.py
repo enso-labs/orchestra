@@ -1,4 +1,3 @@
-from deepagents.backends import StoreBackend
 from langchain.tools import ToolRuntime
 import ujson
 
@@ -118,12 +117,7 @@ class LLMController:
 
             async with get_checkpoint_db() as checkpointer:
                 runtime = self._init_runtime(params)
-                store_backend = StoreBackend(runtime)
-                routes = {
-                    f"/users/{runtime.context.user_id}/memories/": store_backend,
-                    f"/users/{runtime.context.user_id}/config/": store_backend,
-                }
-                backend, _sandbox = resolve_sandbox_backend(runtime, routes=routes)
+                backend, _sandbox = resolve_sandbox_backend(runtime)
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,

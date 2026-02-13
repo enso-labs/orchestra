@@ -265,7 +265,7 @@ def create_daytona_backend():
 
 
 def resolve_sandbox_backend(
-    runtime: ToolRuntime, *, routes: dict
+    runtime: ToolRuntime,
 ) -> tuple[CompositeBackend, Any]:
     """Try Daytona first, silently fall back to StateBackend.
 
@@ -277,10 +277,7 @@ def resolve_sandbox_backend(
     if daytona_backend is not None:
         supported, _reason = validate_daytona_execute_capability(daytona_backend)
         if supported:
-            built_routes = dict(routes)
-            built_routes[""] = daytona_backend
-            default_state = StateBackend(runtime)
-            backend = CompositeBackend(default=default_state, routes=built_routes)
+            backend = CompositeBackend(default=daytona_backend, routes={})
             return backend, sandbox
 
         # Daytona not capable — clean up sandbox silently
@@ -291,14 +288,8 @@ def resolve_sandbox_backend(
                 pass
 
     # Fallback: plain StateBackend (silent, no messages)
-    built_routes = {}
-    for prefix, backend_or_factory in routes.items():
-        if callable(backend_or_factory):
-            built_routes[prefix] = backend_or_factory(runtime)
-        else:
-            built_routes[prefix] = backend_or_factory
     default_state = StateBackend(runtime)
-    backend = CompositeBackend(default=default_state, routes=built_routes)
+    backend = CompositeBackend(default=default_state, routes={})
     return backend, None
 
 

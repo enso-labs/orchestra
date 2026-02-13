@@ -1,6 +1,5 @@
 import inspect
 import os
-from deepagents.backends import StoreBackend
 from langchain.agents.middleware import PIIDetectionError
 from langchain.tools import ToolRuntime
 import ujson
@@ -220,12 +219,7 @@ async def stream_generator(
                 stream_writer=lambda _: None,
                 config=config,
             )
-            store_backend = StoreBackend(runtime)
-            routes = {
-                f"/users/{service_context.user_id}/memories/": store_backend,
-                f"/users/{service_context.user_id}/config/": store_backend,
-            }
-            backend, _sandbox = resolve_sandbox_backend(runtime, routes=routes)
+            backend, _sandbox = resolve_sandbox_backend(runtime)
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,

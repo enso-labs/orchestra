@@ -200,7 +200,6 @@ async def _execute_agent_stream(
     precedence over memory files. The resulting memory sources are passed to
     ``construct_agent()`` so that MemoryMiddleware is activated.
     """
-    from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
     from src.schemas.contexts import ContextSchema
     from src.agents import (
@@ -233,12 +232,7 @@ async def _execute_agent_stream(
         stream_writer=lambda _: None,
         config=config,
     )
-    store_backend = StoreBackend(runtime)
-    routes = {
-        f"/users/{user_id}/memories/": store_backend,
-        f"/users/{user_id}/config/": store_backend,
-    }
-    backend, _sandbox = resolve_sandbox_backend(runtime, routes=routes)
+    backend, _sandbox = resolve_sandbox_backend(runtime)
 
     agent = await construct_agent(
         instructions=params.instructions,
