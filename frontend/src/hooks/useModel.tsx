@@ -1,11 +1,10 @@
 import { listModels, ModelsResponse } from "@/lib/services/modelService";
 import { getSettings } from "@/lib/services/userSettingsService";
 import { getAuthToken } from "@/lib/utils/auth";
-import { useQueryState } from "nuqs";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function useModel() {
-	const [model, setModel] = useQueryState("model");
+	const [model, setModelState] = useState<string | null>(null);
 	const [models, setModels] = useState<ModelsResponse>({
 		default: "",
 		free: [],
@@ -40,12 +39,17 @@ export function useModel() {
 		fetchUserDefault();
 	}, []);
 
+	// Internal setter used for thread/agent loading (not for user-facing model switching)
+	const setModel = useCallback((value: string | null) => {
+		setModelState(value);
+	}, []);
+
+	// Used by agent-create-form to update model selection for agent configuration
 	const updateQueryStateModel = (model: string) => {
 		setModel(model);
 	};
 
 	// Reset model to user's default (or system default)
-	// This clears the URL query param so the default can be re-applied
 	const resetToDefault = () => {
 		setModel(null);
 	};
@@ -56,10 +60,10 @@ export function useModel() {
 		if (!model && (userDefault !== null || models.default)) {
 			const effectiveDefault = userDefault ?? models.default;
 			if (effectiveDefault) {
-				setModel(effectiveDefault);
+				setModelState(effectiveDefault);
 			}
 		}
-	}, [model, models.default, userDefault, setModel]);
+	}, [model, models.default, userDefault]);
 
 	return {
 		model,
