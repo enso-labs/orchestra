@@ -84,3 +84,21 @@ Started: Thu Feb 13 2026
   - PRD acceptance criteria may describe removals that are already done — always verify current state before making changes
   - `make format` may reformat imports touched in previous stories — include those formatting fixes in the next commit
 ---
+
+## 2026-02-13 - US-006
+- Verified all sandbox_backend frontend infrastructure was already absent from the codebase
+- No `SandboxBackendSettings.tsx` component exists (or test file)
+- No `SandboxBackend` type, `sandbox_backend` field, or `updateSandboxBackend()` in `userSettingsService.ts`
+- No `settings/index.tsx` imports `<SandboxBackendSettings />`
+- No `userSettingsService.test.ts` exists
+- No `sandbox_backend` or `SandboxBackend` references found anywhere in `frontend/src/`
+- Frontend typecheck passes: 0 errors
+- Frontend tests pass: 180 passed, 3 skipped
+- Files changed: None (just PRD and progress updates)
+- **Learnings for future iterations:**
+  - The sandbox_backend frontend infrastructure was removed prior to this branch (or never existed in current form)
+  - Same pattern as US-005 — PRD acceptance criteria describe removals that are already done
+  - Settings components live in `frontend/src/components/settings/` (currently: ModelVisibility, ApiTokens, UserApiKeys, DefaultModel, Memory)
+  - `userSettingsService.ts` is at `frontend/src/lib/services/userSettingsService.ts`
+  - Frontend tests: 18 test files, 180 tests, run via `cd frontend && npm run test`
+---
