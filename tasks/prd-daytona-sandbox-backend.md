@@ -4,7 +4,7 @@
 
 Integrate `DaytonaSandbox` as an optional deepagents backend, giving agents full filesystem and execute tools in an isolated Daytona cloud sandbox. This replaces the in-memory `StateBackend` emulation with a real Linux environment where agents can install packages, read/write files, and execute commands.
 
-Activated opt-in via `metadata.sandbox = "daytona"` on the request `Config` (which allows extra fields). When Daytona is unavailable or creation fails, the system falls back to `StateBackend` and notifies the user via a system message in the response.
+Activated opt-in via persisted user setting `sandbox_backend = "daytona"` in `/settings` (not a per-request metadata flag and not a selectable tool). When Daytona is unavailable or creation fails, the system falls back to `StateBackend` and notifies the user via a system message in the response.
 
 This is the second of two Daytona integration issues. It depends on [#750](https://github.com/ruska-ai/orchestra/issues/750) (Data Analysis Tool) for shared `DAYTONA_API_KEY` constants and `.example.env` setup.
 
@@ -14,12 +14,12 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 
 ## Goals
 
-- Add `DaytonaSandbox` as an optional deepagents backend activated via `metadata.sandbox = "daytona"`
+- Add `DaytonaSandbox` as an optional deepagents backend activated via persisted user setting `sandbox_backend = "daytona"`
 - Provide a `create_daytona_backend()` factory in `src/agents/__init__.py` that returns `(sandbox, backend)` or `(None, None)`
 - Wire the Daytona backend through all three agent entry points: `llm.py` (invoke), `stream.py` (stream), `tasks.py` (worker)
 - Fall back to `StateBackend` with a user-visible system message when Daytona is unavailable or fails
 - Clean up sandbox resources (`sandbox.stop()`) in `finally` blocks to prevent orphaned cloud instances
-- Maintain full backward compatibility — requests without `metadata.sandbox` behave identically to today
+- Maintain full backward compatibility — requests without `sandbox_backend` behave identically to today
 
 ## User Stories
 
@@ -47,15 +47,15 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-003: Wire Daytona Backend into LLMController (llm.py)
-**Description:** As a developer, I need `LLMController.llm_invoke()` to check `metadata.sandbox == "daytona"` and use the Daytona backend instead of `StateBackend` when requested.
+**Description:** As a developer, I need `LLMController.llm_invoke()` to check persisted user setting `sandbox_backend == "daytona"` and use the Daytona backend instead of `StateBackend` when requested.
 
 **Acceptance Criteria:**
-- [ ] `llm_invoke()` in `src/controllers/llm.py` checks `params.metadata.sandbox` after resolving assistant config
+- [ ] `llm_invoke()` in `src/controllers/llm.py` resolves user settings and checks `sandbox_backend` after resolving assistant config
 - [ ] When `sandbox == "daytona"`: calls `create_daytona_backend(api_key)` to get `(daytona_sandbox, daytona_backend)`
 - [ ] When Daytona backend is available: passes it as the default to `CompositeBackend` (store routes preserved)
 - [ ] When Daytona backend creation fails: falls back to `StateBackend`, appends a system message to `params.input.messages` notifying the user (e.g. "Daytona sandbox unavailable, falling back to default sandbox.")
 - [ ] `daytona_sandbox.stop()` called in the `finally` block after agent execution completes
-- [ ] Requests without `metadata.sandbox` behave identically to current behavior (no regression)
+- [ ] Requests without `sandbox_backend` behave identically to current behavior (no regression)
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-004: Wire Daytona Backend into stream_generator (stream.py)
@@ -66,7 +66,7 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 - [ ] When `sandbox == "daytona"`: calls `create_daytona_backend()` and uses Daytona as the default backend in `CompositeBackend`
 - [ ] When creation fails: falls back to `StateBackend` via existing `init_backend()`, yields a system message SSE event notifying the user
 - [ ] `daytona_sandbox.stop()` called in the `finally` block (alongside existing checkpoint cleanup)
-- [ ] Requests without `metadata.sandbox` behave identically to current behavior
+- [ ] Requests without `sandbox_backend` behave identically to current behavior
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-005: Wire Daytona Backend into Worker Task (tasks.py)
@@ -77,7 +77,7 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 - [ ] When `sandbox == "daytona"`: calls `create_daytona_backend()` and uses Daytona as the default backend in `CompositeBackend`
 - [ ] When creation fails: falls back to `StateBackend` via existing `init_backend()`, writes a system message to the Redis stream
 - [ ] `daytona_sandbox.stop()` called in the `finally` block (alongside existing checkpoint and Redis cleanup)
-- [ ] Requests without `metadata.sandbox` behave identically to current behavior
+- [ ] Requests without `sandbox_backend` behave identically to current behavior
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-006: Unit Tests for Backend Factory and Wiring
@@ -95,27 +95,27 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 
 ## Functional Requirements
 
-- FR-1: When `metadata.sandbox == "daytona"` is set on a request, the system must attempt to create a `DaytonaSandbox` backend via `create_daytona_backend()`
+- FR-1: When `sandbox_backend == "daytona"` is set in user settings, the system must attempt to create a `DaytonaSandbox` backend via `create_daytona_backend()`
 - FR-2: The `DaytonaSandbox` backend must be used as the `default` in `CompositeBackend`, with existing store routes (`/users/{id}/memories/`, `/users/{id}/config/`) preserved on `StoreBackend`
 - FR-3: When Daytona backend creation fails (package missing, key unset, API error), the system must fall back to `StateBackend` and notify the user via a system message
 - FR-4: The system must call `sandbox.stop()` in a `finally` block after every agent execution to prevent orphaned cloud sandboxes
 - FR-5: All Daytona imports must be conditional (`try/except ImportError`) so the system runs without Daytona packages installed
 - FR-6: The factory must accept an optional `api_key` parameter, falling back to `DAYTONA_API_KEY` from `src.constants`
-- FR-7: Requests without `metadata.sandbox` must behave identically to current behavior (zero regression)
+- FR-7: Requests without `sandbox_backend` must behave identically to current behavior (zero regression)
 - FR-8: The Daytona backend must be wired through all three entry points: `llm_invoke()`, `stream_generator()`, and `_execute_agent_stream()`
 
 ## Non-Goals (Out of Scope)
 
 - **No `daytona_sandbox` tool** — that is covered by [#750](https://github.com/ruska-ai/orchestra/issues/750)
 - **No constants/env changes** — `DAYTONA_API_KEY` is added by #750
-- **No frontend changes** — activation is via request metadata, not UI
+- **No Manage Tools integration** — Daytona is backend infrastructure and must not be shown as a selectable tool
 - **No persistent sandbox sessions** — each request creates and destroys a sandbox
-- **No `sandbox` field on Config schema** — use `extra="allow"` behavior of the existing Config model
-- **No assistant-level sandbox config** — activation is per-request via metadata only
+- **No request-metadata sandbox toggle** — backend selection is resolved from persisted user settings
+- **No assistant-level sandbox config** — activation is via user settings
 
 ## Technical Considerations
 
-- **Config `extra="allow"`:** The `Config` schema at `src/schemas/entities/llm.py:25` uses `ConfigDict(extra="allow")`, so `metadata.sandbox` is accessible without schema changes. Access it via `getattr(params.metadata, "sandbox", None)` or `config["metadata"].get("sandbox")`.
+- **Settings-driven backend routing:** Backend selection should be resolved from persisted user settings (`sandbox_backend`) and threaded through invoke/stream/worker paths consistently.
 - **CompositeBackend pattern:** Existing `init_backend()` at `src/agents/__init__.py:235` creates `CompositeBackend(default=StateBackend(runtime), routes=built_routes)`. For Daytona, replace the `default` with `DaytonaSandbox` while keeping routes unchanged.
 - **Three entry points:** Backend is constructed in three places today:
   - `LLMController.init_backend()` at `src/controllers/llm.py:43` — used by `llm_invoke()`
@@ -133,9 +133,9 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 |------|--------|-------------|
 | `backend/pyproject.toml` | EDIT | Add `langchain-daytona>=0.1.0` |
 | `backend/src/agents/__init__.py` | EDIT | Add conditional import + `create_daytona_backend()` factory |
-| `backend/src/controllers/llm.py` | EDIT | Check `metadata.sandbox`, create Daytona backend, cleanup in `finally` |
-| `backend/src/utils/stream.py` | EDIT | Check `metadata.sandbox`, create Daytona backend, cleanup in `finally` |
-| `backend/src/workers/tasks.py` | EDIT | Check `metadata.sandbox`, create Daytona backend, cleanup in `finally` |
+| `backend/src/controllers/llm.py` | EDIT | Resolve settings `sandbox_backend`, create Daytona backend, cleanup in `finally` |
+| `backend/src/utils/stream.py` | EDIT | Use resolved `sandbox_backend`, create Daytona backend, cleanup in `finally` |
+| `backend/src/workers/tasks.py` | EDIT | Resolve settings `sandbox_backend`, create Daytona backend, cleanup in `finally` |
 | `backend/tests/unit/services/test_daytona.py` | EDIT/CREATE | Backend factory + cleanup tests |
 
 ## Success Metrics
@@ -143,7 +143,7 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 - Zero orphaned Daytona sandbox instances after agent execution (verified via `finally` block cleanup)
 - Fallback to `StateBackend` with user notification when Daytona unavailable — no silent failures
 - `make test` passes with no regressions
-- Requests without `metadata.sandbox` produce identical behavior to current codebase
+- Requests without `sandbox_backend` produce identical behavior to current codebase
 
 ## Open Questions
 

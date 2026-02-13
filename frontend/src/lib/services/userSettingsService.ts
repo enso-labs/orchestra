@@ -5,9 +5,12 @@ export interface ProviderKeyStatus {
 	is_set: boolean;
 }
 
+export type SandboxBackend = "daytona";
+
 export interface UserSettingsResponse {
 	default_model: string | null;
 	provider_keys: ProviderKeyStatus[];
+	sandbox_backend: SandboxBackend | null;
 }
 
 export const getSettings = async (): Promise<UserSettingsResponse> => {
@@ -39,5 +42,14 @@ export const deleteProviderKey = async (
 	const response = await apiClient.delete(
 		`/settings/provider-keys/${provider}`,
 	);
+	return response.data;
+};
+
+export const updateSandboxBackend = async (
+	sandboxBackend: SandboxBackend | null,
+): Promise<UserSettingsResponse> => {
+	const response = await apiClient.put("/settings/sandbox-backend", {
+		sandbox_backend: sandboxBackend,
+	});
 	return response.data;
 };

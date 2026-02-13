@@ -1,8 +1,16 @@
 import apiClient from "@/lib/utils/apiClient";
 
+const EXCLUDED_PLATFORM_TOOL_NAMES = new Set(["daytona_sandbox"]);
+
+const filterExcludedTools = (tools: any[] = []) =>
+	tools.filter((tool) => !EXCLUDED_PLATFORM_TOOL_NAMES.has(tool?.name));
+
 export const listTools = async () => {
 	const response = await apiClient.get("/tools");
-	return response.data;
+	return {
+		...response.data,
+		tools: filterExcludedTools(response.data?.tools || []),
+	};
 };
 
 export const createTool = async (tool: any) => {

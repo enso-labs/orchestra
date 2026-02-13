@@ -37,6 +37,25 @@ describe("toolService", () => {
 		});
 	});
 
+	describe("listTools", () => {
+		it("should exclude daytona_sandbox from platform tool listings", async () => {
+			const mockTools = [
+				{ name: "search_engine", tags: ["platform"] },
+				{ name: "daytona_sandbox", tags: ["platform"] },
+			];
+			(apiClient.get as any).mockResolvedValue({
+				data: { tools: mockTools },
+			});
+
+			const result = await toolService.listTools();
+
+			expect(apiClient.get).toHaveBeenCalledWith("/tools");
+			expect(result.tools).toEqual([
+				{ name: "search_engine", tags: ["platform"] },
+			]);
+		});
+	});
+
 	describe("getUserTools", () => {
 		it("should filter tools with 'custom' tag", async () => {
 			const mockTools = [
