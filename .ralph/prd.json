@@ -1,91 +1,142 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/743-update-wiki-for-memories",
-  "description": "Wiki Documentation for Memories Feature - Document the Memories feature with API reference, UI tutorial with screenshots, and llm.txt update",
+  "branchName": "ralph/daytona-default-sandbox",
+  "description": "Make Daytona the Default Sandbox Backend - Consolidate duplicated routing into resolve_sandbox_backend(), remove sandbox_backend settings infrastructure, silent fallback to StateBackend",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize wiki submodule and add Memories entries to sidebar",
-      "description": "As a documentation reader, I want to find 'Memories' in the wiki navigation so I can learn about the feature.",
+      "title": "Create unified resolve_sandbox_backend() helper",
+      "description": "As a developer, I want a single function that tries Daytona first and falls back to StateBackend so that all execution paths share one source of truth.",
       "acceptanceCriteria": [
-        "Run 'git submodule update --init wiki' in the worktree to initialize the wiki submodule",
-        "Add 'memories/index' to the 'Core Features' items array in wiki/sidebars.ts (after 'storage/index')",
-        "Add 'memories/tutorial' to the 'Tutorials' items array in wiki/sidebars.ts",
-        "Create empty placeholder files wiki/docs/memories/index.md and wiki/docs/memories/tutorial.md with basic frontmatter so the sidebar does not break",
+        "resolve_sandbox_backend(runtime, *, routes) added to backend/src/agents/__init__.py after create_daytona_backend()",
+        "Function returns tuple[CompositeBackend, Any] (backend, daytona_sandbox_or_None)",
+        "When Daytona capability is supported, returns Daytona-backed CompositeBackend and sandbox reference",
+        "When Daytona capability is not supported, stops sandbox (if created, wrapped in try/except) and returns StateBackend-backed CompositeBackend with None",
+        "Fallback is completely silent (no log messages, no SystemMessage, no SSE events)",
+        "Import validate_daytona_execute_capability from src.agents.daytona",
+        "init_backend() function removed from backend/src/agents/__init__.py",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "The wiki is a git submodule. In this worktree it is not yet initialized — run 'git submodule update --init wiki' first. Read wiki/sidebars.ts for the current structure. The existing sidebar has: Core Features [assistants/index, threads/index, storage/index] and Tutorials [tools/sandbox-tutorial]. Add memories/index to Core Features and memories/tutorial to Tutorials."
+      "notes": "init_backend() kept for now as callers still exist in stream.py and tasks.py; will be removed in US-007 after all callers are migrated."
     },
     {
       "id": "US-002",
-      "title": "Write main Memories documentation page (API reference)",
-      "description": "As a developer or API consumer, I want a reference page explaining how memories work and how to interact with them via the API so I can integrate memories into my workflow.",
+      "title": "Simplify invoke execution path in llm.py",
+      "description": "As a developer, I want the invoke path in llm.py to use the shared helper so that sandbox routing is not duplicated.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/index.md with Docusaurus frontmatter: title 'Memories', slug '/memories', sidebar_position 4",
-        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /AGENTS.md",
-        "Include 'How It Works' section describing the lifecycle: create memory -> stored in LangGraph BaseStore -> automatically retrieved via prepare_memory_files() -> injected as markdown into streaming/worker/invoke entry points",
-        "Include 'API Reference' section with curl examples for all 5 endpoints: GET /api/memories (list with limit, offset, query params), GET /api/memories/{memory_id}, POST /api/memories (body: {content, metadata?}), PUT /api/memories/{memory_id} (body: {content, metadata?}), DELETE /api/memories/{memory_id}",
-        "Each curl example uses localhost base URL and includes Authorization: Bearer <token> header",
-        "Each curl example includes an example JSON response matching the backend schemas (Memory: {id, content, metadata, created_at, updated_at}, MemoryListResponse: {memories[], total, limit, offset})",
-        "Include a 'Configuration via UI' section at the bottom linking to the tutorial page at ./tutorial",
-        "Follow the same markdown structure as wiki/docs/assistants/index.md (heading hierarchy, bullet lists, code blocks)",
+        "_resolve_user_settings() returns 2-tuple (model, api_key) instead of 3-tuple",
+        "All settings.sandbox_backend references removed from _resolve_user_settings()",
+        "llm_invoke() replaces the ~25-line conditional block with a call to resolve_sandbox_backend()",
+        "self.init_backend() method deleted from the controller class",
+        "Imports updated: add resolve_sandbox_backend, remove create_daytona_backend, daytona_fallback_message, validate_daytona_execute_capability",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Read wiki/docs/assistants/index.md and wiki/docs/storage/index.md from the main repo at /home/ryaneggz/ruska-ai/orchestra/wiki/ for the exact Docusaurus page pattern (frontmatter, heading style, admonitions). The API endpoints are defined in backend/src/routes/v0/memory.py. Schemas are in backend/src/schemas/entities/memory.py: Memory(id, content, metadata?, created_at?, updated_at?), MemoryCreate(content, metadata?), MemoryUpdate(content, metadata?), MemoryListResponse(memories, total, limit, offset). Query params for list: limit(default=10, max=100), offset(default=0), query(default=''). Auth uses Bearer token. Use localhost URLs since docs target local dev."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Capture full workflow screenshots with agent-browser",
-      "description": "As a documentation author, I need screenshots of the memories workflow captured in light mode to include in the tutorial page.",
+      "title": "Simplify stream execution path in stream.py",
+      "description": "As a developer, I want the stream path in stream.py to use the shared helper so that sandbox routing is not duplicated.",
       "acceptanceCriteria": [
-        "Create directory wiki/static/img/memories/",
-        "Use agent-browser skill to navigate to local dev environment Settings page",
-        "Set browser to light mode",
-        "Capture screenshot of Settings page showing the Memories section (empty state) and save as wiki/static/img/memories/settings-memories-empty.png",
-        "Use agent-browser to click 'Add Memory' and fill in example content like 'I prefer Python for backend development and TypeScript for frontend. My timezone is America/Chicago.'",
-        "Capture screenshot of the Add Memory dialog with content filled in and save as wiki/static/img/memories/settings-add-memory-dialog.png",
-        "Save the memory, then capture screenshot of Settings page showing the created memory in the list and save as wiki/static/img/memories/settings-memories-list.png",
-        "Navigate to chat, send a message that triggers memory recall (e.g., 'What programming languages do I prefer?'), and capture screenshot showing personalized response as wiki/static/img/memories/chat-memory-recall.png"
+        "sandbox_backend parameter removed from stream_generator() signature",
+        "Conditional sandbox routing block replaced with call to resolve_sandbox_backend()",
+        "Imports updated: replace create_daytona_backend, init_backend with resolve_sandbox_backend, remove daytona-specific imports",
+        "llm_stream() in llm.py no longer passes sandbox_backend to stream_generator()",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "The local dev environment must be running: 'make dev' for backend (port 8000) and 'cd frontend && npm run dev' for frontend (port 5173). The Settings page is at http://localhost:5173/settings. You must log in first. The agent-browser skill handles browser automation. Use light mode for all screenshots. The MemorySettings component is in frontend/src/components/settings/MemorySettings.tsx. The settings page is at frontend/src/pages/settings/index.tsx."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Write Memories tutorial page (UI walkthrough with screenshots)",
-      "description": "As a user, I want a step-by-step visual tutorial showing me how to add memories through the Settings page and see them working in chat.",
+      "title": "Simplify worker execution path in tasks.py",
+      "description": "As a developer, I want the worker path in tasks.py to use the shared helper so that sandbox routing is not duplicated.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/tutorial.md with frontmatter: title 'Tutorial: Configuring Memories', sidebar_label 'Memory Tutorial', sidebar_position 1",
-        "Step 1 'Navigate to Settings': describe how to reach the Settings page, include screenshot reference ![Settings Memories Empty](/img/memories/settings-memories-empty.png)",
-        "Step 2 'Add a Memory': describe clicking Add Memory button, entering content, saving; include screenshot ![Add Memory Dialog](/img/memories/settings-add-memory-dialog.png)",
-        "Step 3 'Verify Memory Created': describe seeing the memory in the list; include screenshot ![Memories List](/img/memories/settings-memories-list.png)",
-        "Step 4 'Test in Chat': describe navigating to chat, sending a message, seeing personalized response; include screenshot ![Memory Recall](/img/memories/chat-memory-recall.png)",
-        "Step 5 'Managing Memories': brief section describing edit (pencil icon) and delete (trash icon with confirmation dialog) actions",
-        "Include a link back to the main Memories page: 'For API reference and programmatic access, see [Memories](/docs/memories)'",
+        "sandbox_backend lookup from UserSettingsRepo removed from _execute_agent_stream()",
+        "api_key resolution kept intact",
+        "Conditional sandbox routing block replaced with call to resolve_sandbox_backend()",
+        "Inner imports updated: replace create_daytona_backend, init_backend with resolve_sandbox_backend, remove daytona-specific imports",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Screenshots should already exist in wiki/static/img/memories/ from US-003. Reference them with Docusaurus-compatible image syntax: ![alt text](/img/memories/filename.png). Follow the same tutorial structure as wiki/docs/tools/sandbox-tutorial.md. The MemorySettings component has: search bar, Add Memory button, memory list with edit/delete icons, and MemoryEditDialog for create/edit. Delete shows an AlertDialog confirmation."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Update llm.txt with memories documentation",
-      "description": "As an external AI agent or search engine, I need the public llm.txt to reflect the memories feature so LLM search engines provide accurate information about Orchestra.",
+      "title": "Remove sandbox_backend from backend settings infrastructure",
+      "description": "As a developer, I want to remove all sandbox_backend references from the settings schema, repo, and API so that the dead configuration surface is eliminated.",
       "acceptanceCriteria": [
-        "Read website/public/llm.txt to understand the current structure and style",
-        "Add a 'Memories' subsection under '## Core Features' (after the existing Prompts or Tools section) with: one-line description of what memories are, that they persist per-user, that they are automatically injected into agent context during conversations, the 5 API endpoints (GET list, GET single, POST create, PUT update, DELETE), and that configuration is available via the Settings UI",
-        "Keep the addition concise (5-10 lines) and consistent with the existing llm.txt bullet-point style",
+        "sandbox_backend field removed from UserSettings model in backend/src/schemas/entities/settings.py",
+        "sandbox_backend field removed from UserSettingsResponse model in settings.py",
+        "UpdateSandboxBackendRequest class deleted from settings.py",
+        "set_sandbox_backend() method deleted from backend/src/repos/user_settings_repo.py",
+        "PUT /settings/sandbox-backend endpoint deleted from backend/src/routes/v0/settings.py",
+        "_VALID_SANDBOX_BACKENDS constant deleted from settings route file",
+        "sandbox_backend=... removed from all UserSettingsResponse(...) constructors in route file",
+        "GET /settings response no longer includes sandbox_backend field",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Read website/public/llm.txt at /home/ryaneggz/ruska-ai/orchestra/website/public/llm.txt (or the worktree copy). The existing structure has ## Core Features with subsections like ### Projects, ### Assistants, ### Threads, ### Schedules, ### Prompts, ### Tools. Add ### Memories following the same pattern. Also check if there is a worktree copy at /home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-743/website/public/llm.txt."
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Remove sandbox_backend from frontend",
+      "description": "As a user, I should no longer see a sandbox backend selector in the settings page since it serves no purpose.",
+      "acceptanceCriteria": [
+        "frontend/src/components/settings/SandboxBackendSettings.tsx deleted",
+        "frontend/src/components/settings/SandboxBackendSettings.test.tsx deleted",
+        "SandboxBackend type removed from userSettingsService.ts",
+        "sandbox_backend removed from UserSettingsResponse in userSettingsService.ts",
+        "updateSandboxBackend() function deleted from userSettingsService.ts",
+        "<SandboxBackendSettings /> import and usage removed from settings/index.tsx",
+        "frontend/src/tests/services/userSettingsService.test.ts deleted (only tested sandbox_backend)",
+        "Frontend typecheck passes (cd frontend && npx tsc --noEmit)",
+        "Verify in browser using agent-browser skill: settings page loads without sandbox backend section"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Clean up dead backend code",
+      "description": "As a developer, I want dead code removed so that the codebase stays lean and navigable.",
+      "acceptanceCriteria": [
+        "daytona_fallback_message() removed from backend/src/agents/daytona.py",
+        "validate_daytona_execute_capability() and constants kept in daytona.py (still used by new helper)",
+        "init_backend fully removed from backend/src/agents/__init__.py (no remaining callers)",
+        "No orphaned imports across all modified files",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Update and rewrite unit tests",
+      "description": "As a developer, I want the test suite to validate the new always-Daytona behavior so that regressions are caught.",
+      "acceptanceCriteria": [
+        "test_daytona.py: create_daytona_backend() calls updated (remove api_key= arg)",
+        "test_daytona.py: New tests added for resolve_sandbox_backend() (Daytona success path, fallback path, sandbox cleanup on fallback)",
+        "test_daytona_capability.py: Kept as-is (still valid)",
+        "test_daytona_cross_path.py: Rewritten to remove all sandbox_backend params, assert Daytona is always attempted, assert silent fallback (no SystemMessage/SSE/Redis fallback messages)",
+        "test_stream_daytona_backend_routing.py: Rewritten to remove sandbox_backend param from all stream_generator() calls, test always-Daytona with silent fallback",
+        "All other test files referencing sandbox_backend: assertions/mocks removed",
+        "cd backend && make test passes",
+        "cd frontend && npm run test passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

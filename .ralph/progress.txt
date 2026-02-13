@@ -1,107 +1,30 @@
 # Ralph Progress Log
-Started: Thu Feb  5 19:13:20 MST 2026
+Started: Thu Feb 13 2026
 
 ## Codebase Patterns
-- Wiki is a git submodule - must run `git submodule update --init wiki` in worktrees before editing
-- Wiki submodule commits must be done inside the `wiki/` directory first (create branch, commit), then commit the submodule pointer update in the main repo
-- The `bd` pre-commit hook requires `BEADS_DIR=/path/to/main-repo/.beads` env var when committing from worktrees (workaround: `BEADS_DIR=/home/ryaneggz/ruska-ai/orchestra/.beads git commit ...`)
-- Wiki uses Docusaurus; sidebar config is in `wiki/sidebars.ts`; typecheck with `npx tsc --noEmit` from wiki dir
-- Existing broken links in wiki build (sandbox → tools/mcp) are pre-existing, not caused by new changes
-- Docusaurus relative doc links must use `.md` extension (e.g., `./tutorial.md`) when source page has custom `slug`
-- Run `npx tsc --project tsconfig.json --noEmit` from wiki dir (explicit `--project` flag needed)
-- Docusaurus validates image references at build time — all referenced images in markdown must exist in `wiki/static/`
-- `website` is also a git submodule — same init and commit workflow as `wiki`
-- Frontend dev server in worktrees: `npm run dev` may fail due to `dotenv` conflicts; use `npx vite --host` directly after `npm install`
-- Browser screenshots: use `agent-browser set media light` + `agent-browser set viewport 1280 800` before navigating
+- Backend stack: Python 3.12+, uv, FastAPI, LangChain
+- Three entry points for backend: llm.py (invoke), stream.py (stream), tasks.py (worker)
+- Backend init: CompositeBackend(default=StateBackend, routes=built_routes)
+- Tests: `cd backend && make test` (requires ENV_FILE=$HOME/.env/orchestra/.env.backend)
+- Frontend tests: `cd frontend && npm run test`
+- Commit with `-s` flag for sign-off per repo guidelines
+- Daytona helpers in `backend/src/agents/daytona.py`
+- Settings: schema in schemas/entities/settings.py, repo in repos/user_settings_repo.py, routes in routes/v0/settings.py
 
 ---
 
-## 2026-02-05 - US-001
-- Initialized wiki submodule with `git submodule update --init wiki`
-- Added `memories/index` to Core Features items in `wiki/sidebars.ts`
-- Added `memories/tutorial` to Tutorials items in `wiki/sidebars.ts`
-- Created placeholder files `wiki/docs/memories/index.md` and `wiki/docs/memories/tutorial.md` with Docusaurus frontmatter
-- Typecheck passes, build succeeds
-- Files changed: `wiki/sidebars.ts`, `wiki/docs/memories/index.md`, `wiki/docs/memories/tutorial.md`
+## 2026-02-13 - US-001
+- Implemented `resolve_sandbox_backend(runtime, *, routes)` in `backend/src/agents/__init__.py`
+- Created `backend/src/agents/daytona.py` with `validate_daytona_execute_capability()`
+- Added `create_daytona_backend()` factory function (no api_key param — uses DAYTONA_API_KEY constant)
+- Added Daytona conditional imports (daytona, langchain_daytona) with None fallbacks
+- Added `DAYTONA_API_KEY` to UserTokenKey enum and constants
+- Added `daytona>=0.140.0` and `langchain-daytona>=0.0.2` to pyproject.toml
+- `init_backend()` kept for now — callers in stream.py and tasks.py still use it; will be removed in US-007
+- Files changed: `backend/src/agents/__init__.py`, `backend/src/agents/daytona.py` (new), `backend/src/constants/__init__.py`, `backend/pyproject.toml`
 - **Learnings for future iterations:**
-  - Wiki submodule must be initialized in worktrees before any edits
-  - The `bd` pre-commit hook fails in worktrees because it can't find `.beads` — set `BEADS_DIR` env var to the main repo's `.beads` dir
-  - Wiki submodule has its own git history — commit inside wiki first, then commit the pointer in the main repo
-  - `bd init --no-db` was needed in the main repo to set up the beads database
----
-
-## 2026-02-05 - US-002
-- Wrote complete Memories API reference page at `wiki/docs/memories/index.md`
-- Includes: Overview, How It Works lifecycle, API Reference with all 5 endpoints (GET list, GET single, POST create, PUT update, DELETE)
-- Each endpoint has curl examples with localhost base URL, Authorization header, and example JSON responses matching backend schemas
-- Includes Configuration via UI section linking to tutorial page
-- Follows same markdown structure as assistants/index.md (heading hierarchy, bullet lists, code blocks)
-- Files changed: `wiki/docs/memories/index.md`
-- **Learnings for future iterations:**
-  - Docusaurus links must use `.md` extension for relative doc links (e.g., `./tutorial.md` not `./tutorial`) when the source page has a custom `slug`
-  - Run `npx tsc --project tsconfig.json --noEmit` from wiki dir (explicit project flag needed)
-  - API schemas are at `backend/src/schemas/entities/memory.py`, routes at `backend/src/routes/v0/memory.py`
-  - Memory injection happens via `prepare_memory_files()` in `backend/src/agents/__init__.py`
----
-
-## 2026-02-05 - US-004
-- Wrote Memories tutorial page at `wiki/docs/memories/tutorial.md` with step-by-step UI walkthrough
-- Steps: Navigate to Settings, Add a Memory, Verify Memory Created, Test in Chat, Managing Memories (edit/delete)
-- Includes screenshot references for all 4 images, linked back to main Memories page
-- Created placeholder PNG images in `wiki/static/img/memories/` (to be replaced by real screenshots in US-003)
-- Created `wiki/static/img/memories/` directory for screenshot assets
-- Typecheck passes, build succeeds
-- Files changed: `wiki/docs/memories/tutorial.md`, `wiki/static/img/memories/*.png`
-- **Learnings for future iterations:**
-  - Docusaurus validates image references at build time — all referenced images must exist or the build fails
-  - Placeholder PNGs can be generated with Python's struct/zlib modules when no image tools are installed
-  - MemorySettings component UI: search bar, Add Memory button, memory list with edit (pencil) and delete (trash) icons
-  - MemoryEditDialog handles both create and edit; delete uses AlertDialog confirmation
----
-
-## 2026-02-05 - US-005
-- Updated `website/public/llm.txt` with Memories documentation
-- Added `### Memories` subsection under `## Core Features` (after Tools) with description, storage details, auto-injection, API endpoints, and UI config note
-- Added `### Memories` subsection under `## API Endpoints` with all 5 endpoints
-- Concise addition (5+5 lines) consistent with existing bullet-point style
-- Files changed: `website/public/llm.txt`
-- **Learnings for future iterations:**
-  - `website` is also a git submodule — must be initialized with `git submodule update --init website`
-  - Same commit workflow as wiki: commit inside submodule first, then commit pointer in main repo
----
-
-## 2026-02-05 - US-003 (BLOCKED)
-- BLOCKED: Local dev environment (backend port 8000, frontend port 5173) is not running
-- Cannot start dev servers — requires database, env file at `$HOME/.env/orchestra/.env.backend`, and full environment setup
-- Placeholder images were created in US-004 so the wiki build doesn't fail
-- To complete US-003: Start `make dev` from `backend/`, `npm run dev` from `frontend/`, then use `agent-browser` to capture real screenshots
-- Image directory already created at `wiki/static/img/memories/` with 4 placeholder PNGs
-- **When completing US-003:**
-  1. Navigate to `http://localhost:5173/settings` (log in first)
-  2. Set browser to light mode
-  3. Capture empty state → `settings-memories-empty.png`
-  4. Click Add Memory, fill content → `settings-add-memory-dialog.png`
-  5. Save and capture list → `settings-memories-list.png`
-  6. Navigate to chat, send memory-related message → `chat-memory-recall.png`
----
-
-## 2026-02-05 - US-003 (COMPLETED)
-- Started backend (`make dev`) and frontend (`npm install && npx vite --host`) dev servers
-- Used `agent-browser` CLI to automate the full screenshot workflow in light mode at 1280x800
-- Logged in with default credentials (admin@example.com / test1234)
-- Deleted existing memory to capture empty state screenshot
-- Workflow: empty state → add memory dialog → memory list → chat with memory recall
-- Replaced all 4 placeholder PNGs with real screenshots (63-107KB each):
-  - `settings-memories-empty.png`: Settings page scrolled to Memories section showing "No memories yet"
-  - `settings-add-memory-dialog.png`: Add Memory dialog with "I prefer Python for backend..." content
-  - `settings-memories-list.png`: Settings page showing the created memory in the list
-  - `chat-memory-recall.png`: Existing thread showing AI recalling user info from memories (name, tech stack, GitHub)
-- Typecheck passes
-- Files changed: `wiki/static/img/memories/*.png` (4 files replaced)
-- **Learnings for future iterations:**
-  - Frontend `npm run dev` uses `dotenv` which may conflict in worktrees; use `npx vite --host` directly after `npm install`
-  - `agent-browser set media light` and `agent-browser set viewport 1280 800` should be called before navigating
-  - Default login: admin@example.com / test1234
-  - Chat messages may queue if TaskIQ worker is busy; use existing threads showing memory-powered responses for screenshots
-  - `agent-browser eval` can run JS to scroll — useful for scrolling to specific page sections
+  - Pyright reports `Daytona(...)` as "Object of type None cannot be called" due to the conditional import fallback to None — use `# type: ignore[misc]` on that call
+  - `create_daytona_backend()` no longer takes an `api_key` parameter; it always uses `DAYTONA_API_KEY` from constants
+  - The resolve function silently falls back (no logging, no messages) when Daytona is unavailable
+  - Baseline pyright error count for `__init__.py` is 40 (pre-existing, not from these changes)
 ---
