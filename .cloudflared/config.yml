@@ -1,0 +1,7 @@
+tunnel: d2c84260-af4b-438d-a532-e4fcf23d1d2e
+ingress:
+  - hostname: frontend.ruska.dev
+    service: http://localhost:5173
+  - hostname: backend.ruska.dev
+    service: http://localhost:8000
+  - service: http_status:404

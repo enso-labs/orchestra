@@ -76,3 +76,46 @@ Started: Wed Feb 11 2026
 - Files changed: backend/src/agents/daytona.py, backend/src/controllers/llm.py, backend/src/utils/stream.py, backend/src/workers/tasks.py, backend/tests/unit/services/test_daytona_capability.py
 - **Learnings:** Shared helper removes message drift across execution paths and keeps future Daytona protocol checks in one place.
 ---
+
+## 2026-02-13 07:37 UTC - US-002: Apply execute-capable Daytona routing in llm invoke path
+- llm_invoke already wired with shared capability helper from US-001; this story added targeted test coverage
+- Added 2 new tests: (1) backend exists but lacks execute() → fallback with SystemMessage + sandbox cleanup, (2) Daytona success path creates CompositeBackend with store routes
+- Files changed: backend/tests/unit/controllers/test_llm_invoke_backend_routing.py
+- All 5 Daytona routing tests pass; 7 pre-existing failures in unrelated test_search.py and TestResolveUserSettings (env leak)
+- **Learnings:** `make test` requires `ENV_FILE=$HOME/.env/orchestra/.env.backend`; pytest takes ~35s for full suite; pre-existing search test failures due to Exa provider not being mocked
+---
+
+## 2026-02-13 08:14 UTC - US-004: Apply execute-capable Daytona routing in distributed worker path
+- Worker path (_execute_agent_stream) already had Daytona routing with validate_daytona_execute_capability from US-001
+- Added 2 new tests: (1) backend exists but lacks execute() → fallback Redis message + sandbox cleanup + done marker intact, (2) Daytona success path creates CompositeBackend with store routes and no fallback messages
+- Files changed: backend/tests/unit/workers/test_tasks.py
+- All 5 worker Daytona routing tests pass (3 existing + 2 new)
+- **Learnings:** Worker tests use pytest fixtures (conftest.py fake_redis) unlike llm invoke tests which use unittest.IsolatedAsyncioTestCase
+---
+
+## 2026-02-13 09:20 UTC - US-005: Add cross-path tests for execute availability and command execution behavior
+- Added 13 new tests in backend/tests/unit/test_daytona_cross_path.py
+- TestCrossPathCapabilityConsistency (5 tests): validates shared capability checker and fallback messaging are deterministic
+- TestInvokePathDaytona (2 tests): execute-capable success with CompositeBackend + execute-unavailable fallback with SystemMessage
+- TestStreamPathDaytona (2 tests): execute-capable success (no SSE fallback) + execute-unavailable SSE fallback with reason
+- TestWorkerPathDaytona (2 tests): execute-capable success (no Redis fallback) + execute-unavailable Redis fallback with reason
+- TestCommandExecutionFlowInvoked (2 tests): proves execute-capable backend is wired as CompositeBackend.default in invoke and stream paths
+- Files changed: backend/tests/unit/test_daytona_cross_path.py
+- **Learnings:** Worker tests require patching at `src.agents.*` (not `src.workers.tasks.*`) for late imports; _execute_agent_stream takes params/config/files_map/todos_list/service_context/checkpointer/user_id/thread_id/stream_key/redis_client
+---
+
+## 2026-02-13 10:25 UTC - US-006: Document Daytona execute prerequisites, verification steps, and troubleshooting
+- Created comprehensive docs/daytona-sandbox.md covering:
+  - Package prerequisites (langchain-daytona>=0.0.2, daytona>=0.140.0) with version warnings
+  - Environment variables (DAYTONA_API_KEY) and sandbox configuration
+  - Architecture overview of all three execution paths (invoke, stream, worker)
+  - Key source file reference table
+  - Reproducible verification checklist (7 steps: deps, imports, env, unit tests, invoke, stream, worker)
+  - Fallback message interpretation with reason-to-fix mapping
+  - Troubleshooting matrix for common issues (wrong version, missing packages, missing API key, etc.)
+  - Diagnostic shell commands for quick checks
+  - Known limitations section
+- Files changed: docs/daytona-sandbox.md
+- All 17 Daytona-specific tests pass
+- **Learnings:** docs/ directory only had index.html and slides previously; markdown docs are a new addition
+---
