@@ -740,12 +740,8 @@ export default function useChat(): ChatContextType {
 		setMetadata,
 		controller,
 		setController,
-		// model,
-		// setModel,
 		// state,
 		// setState,
-		// systemMessage,
-		// setSystemMessage,
 		// NEW
 		handleTextareaResize,
 		clearMessages,
