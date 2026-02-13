@@ -121,6 +121,86 @@ class TestLLMInvokeBackendRouting(unittest.IsolatedAsyncioTestCase):
         )
 
 
+    @patch("src.controllers.llm.get_checkpoint_db", return_value=_DummyCheckpointCtx())
+    @patch("src.controllers.llm.prepare_memory_files", new_callable=AsyncMock)
+    @patch("src.controllers.llm.construct_agent", new_callable=AsyncMock)
+    @patch("src.controllers.llm.create_daytona_backend")
+    async def test_invoke_falls_back_when_backend_lacks_execute(
+        self,
+        mock_create_daytona_backend,
+        mock_construct_agent,
+        mock_prepare_memory_files,
+        _mock_get_checkpoint_db,
+    ):
+        """When Daytona backend exists but has no execute(), fallback with notice."""
+        req = self._request()
+        mock_prepare_memory_files.return_value = ({}, [])
+        mock_construct_agent.return_value = _FakeAgent()
+
+        daytona_sandbox = MagicMock()
+        # Create a backend object that deliberately lacks execute()
+        daytona_backend = object()  # plain object has no execute attribute
+        mock_create_daytona_backend.return_value = (daytona_sandbox, daytona_backend)
+        self.controller._resolve_user_settings = AsyncMock(
+            return_value=(req.model, "k", "daytona")
+        )
+
+        await self.controller.llm_invoke(req)
+
+        # Should have fallback message appended
+        self.assertTrue(
+            any(
+                isinstance(m, SystemMessage)
+                and "falling back to default sandbox" in str(m.content)
+                for m in req.input.messages
+            )
+        )
+        # Sandbox should still be cleaned up
+        daytona_sandbox.stop.assert_called_once()
+
+    @patch("src.controllers.llm.get_checkpoint_db", return_value=_DummyCheckpointCtx())
+    @patch("src.controllers.llm.prepare_memory_files", new_callable=AsyncMock)
+    @patch("src.controllers.llm.construct_agent", new_callable=AsyncMock)
+    @patch("src.controllers.llm.create_daytona_backend")
+    async def test_invoke_daytona_success_passes_store_routes(
+        self,
+        mock_create_daytona_backend,
+        mock_construct_agent,
+        mock_prepare_memory_files,
+        _mock_get_checkpoint_db,
+    ):
+        """When Daytona succeeds, CompositeBackend should include store routes for memories/config."""
+        req = self._request()
+        mock_prepare_memory_files.return_value = ({}, [])
+        fake_agent = _FakeAgent()
+        mock_construct_agent.return_value = fake_agent
+
+        daytona_sandbox = MagicMock()
+        daytona_backend = MagicMock()  # MagicMock has execute, so capability passes
+        mock_create_daytona_backend.return_value = (daytona_sandbox, daytona_backend)
+        self.controller._resolve_user_settings = AsyncMock(
+            return_value=(req.model, "k", "daytona")
+        )
+
+        await self.controller.llm_invoke(req)
+
+        # Verify construct_agent was called with a backend
+        call_kwargs = mock_construct_agent.call_args[1]
+        backend = call_kwargs["backend"]
+        # Backend should be a CompositeBackend (not just the raw daytona_backend)
+        from deepagents.backends import CompositeBackend
+        self.assertIsInstance(backend, CompositeBackend)
+
+        # No fallback message should be appended
+        self.assertFalse(
+            any(
+                isinstance(m, SystemMessage)
+                and "falling back" in str(m.content)
+                for m in req.input.messages
+            )
+        )
+
+
 class TestResolveUserSettings(unittest.IsolatedAsyncioTestCase):
     async def test_resolve_user_settings_returns_sandbox_backend_preference(self):
         from src.repos.user_settings_repo import UserSettingsRepo
