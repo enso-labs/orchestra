@@ -1,4 +1,4 @@
-from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
+from deepagents.backends import StoreBackend
 from langchain.tools import ToolRuntime
 import ujson
 
@@ -9,7 +9,12 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.schedule import ScheduleCreate
 from src.schemas.entities import LLMRequest
 from src.contexts.service import ServiceContext
-from src.agents import construct_agent, init_config, prepare_memory_files
+from src.agents import (
+    construct_agent,
+    init_config,
+    prepare_memory_files,
+    resolve_sandbox_backend,
+)
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
@@ -39,15 +44,6 @@ class LLMController:
             stream_writer=lambda _: None,
             config=self.service_context.config,
         )
-
-    def init_backend(self, request: LLMRequest) -> CompositeBackend:
-        runtime = self._init_runtime(request)
-        store_backend = StoreBackend(runtime)
-        built_routes = {
-            f"/users/{runtime.context.user_id}/memories/": store_backend,
-            f"/users/{runtime.context.user_id}/config/": store_backend,
-        }
-        return CompositeBackend(default=StateBackend(runtime), routes=built_routes)
 
     async def _update_store(self, agent: Orchestra, config: RunnableConfig) -> None:
         final_state = await agent.graph.aget_state(config)
@@ -121,7 +117,13 @@ class LLMController:
                 params.input.files = {**memory_files, **existing_files}
 
             async with get_checkpoint_db() as checkpointer:
-                backend = self.init_backend(params)
+                runtime = self._init_runtime(params)
+                store_backend = StoreBackend(runtime)
+                routes = {
+                    f"/users/{runtime.context.user_id}/memories/": store_backend,
+                    f"/users/{runtime.context.user_id}/config/": store_backend,
+                }
+                backend, _sandbox = resolve_sandbox_backend(runtime, routes=routes)
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,
