@@ -160,7 +160,7 @@ export default function SharedThreadPage() {
 	// On mobile: vertical layout (stacked), on desktop: horizontal layout (side-by-side)
 	if (hasFiles) {
 		return (
-			<NoAuthLayout showModelSelector={false}>
+			<NoAuthLayout>
 				<div className="flex flex-col w-full h-[calc(100vh-8rem)]">
 					<Header />
 					<div className="flex-1 min-h-0">
@@ -207,7 +207,7 @@ export default function SharedThreadPage() {
 
 	// Default layout without files
 	return (
-		<NoAuthLayout showModelSelector={false}>
+		<NoAuthLayout>
 			<div className="flex flex-col max-w-4xl mx-auto w-full h-[calc(100vh-8rem)]">
 				<Header />
 

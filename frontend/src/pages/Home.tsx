@@ -23,7 +23,7 @@ export default function Home() {
 
 	if (messages.length === 0 && viewMode === "chat" && filesMap.size === 0) {
 		return (
-			<NoAuthLayout showModelSelector={true}>
+			<NoAuthLayout>
 				<HomeSection />
 			</NoAuthLayout>
 		);

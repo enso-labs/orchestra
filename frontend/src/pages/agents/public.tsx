@@ -71,7 +71,7 @@ export default function PublicAgentPage() {
 	// Show agent info header before chat starts
 	if (messages.length === 0) {
 		return (
-			<NoAuthLayout showModelSelector={false}>
+			<NoAuthLayout>
 				<AgentSection agent={publicAgent} showAgentMenu={false} />
 			</NoAuthLayout>
 		);

@@ -1,14 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
-import SelectModel from "@/components/lists/SelectModel";
 import { useAppContext } from "@/context/AppContext";
 
 export default function NoAuthLayout({
 	children,
-	showModelSelector = false,
 }: {
 	children: React.ReactNode;
-	showModelSelector?: boolean;
 }) {
 	const { appVersion } = useAppContext();
 	const location = useLocation();
@@ -28,7 +25,6 @@ export default function NoAuthLayout({
 				)}
 				<div className="absolute top-4 right-4">
 					<div className="flex flex-row gap-2 items-center">
-						{showModelSelector && <SelectModel />}
 						<ColorModeButton />
 					</div>
 				</div>
