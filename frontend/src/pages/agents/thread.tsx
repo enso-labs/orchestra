@@ -111,7 +111,7 @@ function AgentThreadPage() {
 							</TabsList>
 						</Tabs>
 					</div>
-					<ChatNav sidebarTrigger={null} showModelSelector={false} />
+					<ChatNav sidebarTrigger={null} showModelBadge={false} />
 				</div>
 
 				<Tabs

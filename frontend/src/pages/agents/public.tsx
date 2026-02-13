@@ -80,7 +80,7 @@ export default function PublicAgentPage() {
 	// Chat in progress
 	return (
 		<div className="h-full flex flex-col bg-background overflow-hidden">
-			<ChatPanel chatNav={<ChatNav showModelSelector={false} />} />
+			<ChatPanel chatNav={<ChatNav showModelBadge={false} />} />
 		</div>
 	);
 }

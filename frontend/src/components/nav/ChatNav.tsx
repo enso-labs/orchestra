@@ -1,5 +1,5 @@
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
-import SelectModel from "../lists/SelectModel";
+import { ModelBadge } from "@/components/badges/ModelBadge";
 import NewThreadButton from "../buttons/NewThreadButton";
 import ShareButton from "../buttons/thread-share-button";
 import { LayoutGrid, MessageSquare } from "lucide-react";
@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 
 export function ChatNav({
 	sidebarTrigger,
-	showModelSelector = true,
+	showModelBadge = true,
 }: {
 	sidebarTrigger?: React.ReactNode | undefined;
-	showModelSelector?: boolean;
+	showModelBadge?: boolean;
 }) {
-	const { viewMode, setViewMode, filesMap } = useChatContext();
+	const { viewMode, setViewMode, filesMap, model } = useChatContext();
 	const hasFiles = filesMap.size > 0;
 
 	return (
@@ -51,10 +51,8 @@ export function ChatNav({
 							</div>
 						)}
 
-						{showModelSelector && (
-							<div className="w-56">
-								<SelectModel />
-							</div>
+						{showModelBadge && model && (
+							<ModelBadge model={model} />
 						)}
 						<ShareButton />
 						<NewThreadButton />

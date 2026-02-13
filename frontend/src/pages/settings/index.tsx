@@ -14,7 +14,7 @@ export default function SettingsPage() {
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 				<ChatNav
 					sidebarTrigger={<SidebarTrigger />}
-					showModelSelector={false}
+					showModelBadge={false}
 				/>
 				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					<div className="flex-1 min-h-0">
