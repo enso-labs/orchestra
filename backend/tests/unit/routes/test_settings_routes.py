@@ -149,6 +149,7 @@ async def test_get_settings_empty(settings_client: AsyncClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert data["default_model"] is None
+    assert data["sandbox_backend"] is None
     assert isinstance(data["provider_keys"], list)
     assert len(data["provider_keys"]) > 0
     for pk in data["provider_keys"]:
@@ -167,6 +168,7 @@ async def test_set_default_model(settings_client: AsyncClient) -> None:
     )
     assert resp.status_code == 200
     assert resp.json()["default_model"] == "anthropic/claude-3"
+    assert "sandbox_backend" in resp.json()
 
 
 @pytest.mark.asyncio

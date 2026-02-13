@@ -27,6 +27,7 @@ async def get_settings(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        sandbox_backend=settings.sandbox_backend,
         provider_keys=statuses,
     )
 
@@ -42,6 +43,7 @@ async def update_default_model(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        sandbox_backend=settings.sandbox_backend,
         provider_keys=statuses,
     )
 
@@ -60,6 +62,7 @@ async def upsert_provider_key(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        sandbox_backend=settings.sandbox_backend,
         provider_keys=statuses,
     )
 
@@ -80,5 +83,6 @@ async def delete_provider_key(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        sandbox_backend=settings.sandbox_backend,
         provider_keys=statuses,
     )

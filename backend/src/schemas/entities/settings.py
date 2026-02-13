@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 from src.schemas.entities.store import BaseEntity
@@ -20,6 +20,13 @@ class UserSettings(BaseEntity):
     default_model: Optional[str] = Field(
         default=None, description="User's default AI model identifier"
     )
+    sandbox_backend: Optional[Literal["daytona"]] = Field(
+        default=None,
+        description=(
+            "Optional deep-agent sandbox backend preference. "
+            "Unset keeps legacy/default backend behavior."
+        ),
+    )
     encrypted_keys: Optional[str] = Field(
         default=None, description="Fernet-encrypted JSON blob of provider API keys"
     )
@@ -29,6 +36,7 @@ class UserSettingsResponse(BaseModel):
     """API response model – never includes raw keys."""
 
     default_model: Optional[str] = None
+    sandbox_backend: Optional[Literal["daytona"]] = None
     provider_keys: list[ProviderKeyStatus] = Field(default_factory=list)
 
 

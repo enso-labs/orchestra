@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 import uuid
 from datetime import datetime, timezone
 
@@ -67,6 +67,15 @@ class UserSettingsRepo(BaseRepo):
     async def set_default_model(self, model: Optional[str]) -> UserSettings:
         settings = await self._get_or_create()
         settings.default_model = model
+        settings.updated_at = datetime.now(timezone.utc)
+        await self._set(_SETTINGS_KEY, settings)
+        return settings
+
+    async def set_sandbox_backend(
+        self, backend: Optional[Literal["daytona"]]
+    ) -> UserSettings:
+        settings = await self._get_or_create()
+        settings.sandbox_backend = backend
         settings.updated_at = datetime.now(timezone.utc)
         await self._set(_SETTINGS_KEY, settings)
         return settings

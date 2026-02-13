@@ -42,6 +42,7 @@ class TestUserSettingsRepo(unittest.IsolatedAsyncioTestCase):
         """Fresh user returns empty settings with all providers is_set=False."""
         settings, statuses = await self.repo.get_settings()
         self.assertIsNone(settings.default_model)
+        self.assertIsNone(settings.sandbox_backend)
         self.assertIsNone(settings.encrypted_keys)
         # Every UserTokenKey should appear with is_set=False
         self.assertEqual(len(statuses), len(UserTokenKey))
@@ -64,6 +65,37 @@ class TestUserSettingsRepo(unittest.IsolatedAsyncioTestCase):
         await self.repo.set_default_model(None)
         settings, _ = await self.repo.get_settings()
         self.assertIsNone(settings.default_model)
+
+    async def test_set_sandbox_backend(self, _dec, _enc):
+        """Setting sandbox backend persists and is returned."""
+        await self.repo.set_sandbox_backend("daytona")
+        settings, _ = await self.repo.get_settings()
+        self.assertEqual(settings.sandbox_backend, "daytona")
+
+    async def test_clear_sandbox_backend(self, _dec, _enc):
+        """Setting sandbox backend to None clears the preference."""
+        await self.repo.set_sandbox_backend("daytona")
+        await self.repo.set_sandbox_backend(None)
+        settings, _ = await self.repo.get_settings()
+        self.assertIsNone(settings.sandbox_backend)
+
+    async def test_legacy_settings_without_sandbox_backend(self, _dec, _enc):
+        """Legacy records missing sandbox_backend still validate and load."""
+        await self.store.aput(
+            namespace=(TEST_USER_ID, "user_settings"),
+            key="default",
+            value={
+                "id": "legacy-settings-id",
+                "user_id": TEST_USER_ID,
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z",
+                "default_model": "openai/gpt-4",
+            },
+        )
+
+        settings, _ = await self.repo.get_settings()
+        self.assertEqual(settings.default_model, "openai/gpt-4")
+        self.assertIsNone(settings.sandbox_backend)
 
     # ------------------------------------------------------------------
     # upsert / delete provider key
