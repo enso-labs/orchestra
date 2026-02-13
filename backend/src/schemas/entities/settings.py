@@ -54,3 +54,12 @@ class UpsertProviderKeyRequest(BaseModel):
 
     provider: str = Field(..., description="Provider name matching UserTokenKey enum")
     api_key: str = Field(..., description="The API key value to store (encrypted)")
+
+
+class UpdateSandboxBackendRequest(BaseModel):
+    """Request to set/clear a user's sandbox backend preference."""
+
+    sandbox_backend: Optional[str] = Field(
+        default=None,
+        description="Sandbox backend preference. Use 'daytona' or null to clear.",
+    )

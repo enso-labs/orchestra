@@ -137,6 +137,14 @@ async def test_put_default_model_requires_auth(no_auth_client: AsyncClient) -> N
     assert resp.status_code in (401, 403)
 
 
+@pytest.mark.asyncio
+async def test_put_sandbox_backend_requires_auth(no_auth_client: AsyncClient) -> None:
+    resp = await no_auth_client.put(
+        "/api/settings/sandbox-backend", json={"sandbox_backend": "daytona"}
+    )
+    assert resp.status_code in (401, 403)
+
+
 # ---------------------------------------------------------------------------
 # Tests: GET /settings
 # ---------------------------------------------------------------------------
@@ -181,6 +189,50 @@ async def test_clear_default_model(settings_client: AsyncClient) -> None:
     )
     assert resp.status_code == 200
     assert resp.json()["default_model"] is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: PUT /settings/sandbox-backend
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_set_sandbox_backend(settings_client: AsyncClient) -> None:
+    resp = await settings_client.put(
+        "/api/settings/sandbox-backend", json={"sandbox_backend": "daytona"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["sandbox_backend"] == "daytona"
+
+    get_resp = await settings_client.get("/api/settings")
+    assert get_resp.status_code == 200
+    assert get_resp.json()["sandbox_backend"] == "daytona"
+
+
+@pytest.mark.asyncio
+async def test_clear_sandbox_backend(settings_client: AsyncClient) -> None:
+    await settings_client.put(
+        "/api/settings/sandbox-backend", json={"sandbox_backend": "daytona"}
+    )
+    resp = await settings_client.put(
+        "/api/settings/sandbox-backend", json={"sandbox_backend": None}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["sandbox_backend"] is None
+
+
+@pytest.mark.asyncio
+async def test_set_invalid_sandbox_backend_returns_400(
+    settings_client: AsyncClient,
+) -> None:
+    resp = await settings_client.put(
+        "/api/settings/sandbox-backend", json={"sandbox_backend": "docker"}
+    )
+    assert resp.status_code == 400
+    assert (
+        resp.json()["detail"]
+        == "Invalid sandbox_backend 'docker'. Must be one of: ['daytona'] or null"
+    )
 
 
 # ---------------------------------------------------------------------------
