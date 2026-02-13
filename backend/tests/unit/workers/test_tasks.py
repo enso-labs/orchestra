@@ -404,3 +404,216 @@ class TestExecuteAgentStreamBackendRouting:
         mock_create_daytona_backend.assert_not_called()
         mock_init_backend.assert_called_once()
         assert result["status"] == "complete"
+
+    @pytest.mark.asyncio
+    @patch("src.workers.tasks.resolve_api_key")
+    @patch("src.workers.tasks.UserSettingsRepo")
+    @patch("src.agents.create_daytona_backend")
+    @patch("src.agents.init_backend")
+    @patch("src.agents.construct_agent", new_callable=AsyncMock)
+    @patch("src.agents.prepare_memory_files", new_callable=AsyncMock)
+    async def test_execute_agent_stream_falls_back_when_backend_lacks_execute(
+        self,
+        mock_prepare_memory_files,
+        mock_construct_agent,
+        mock_init_backend,
+        mock_create_daytona_backend,
+        mock_user_settings_repo,
+        mock_resolve_api_key,
+    ):
+        """When Daytona backend exists but lacks execute(), fall back with Redis notice and clean up sandbox."""
+        from src.workers.tasks import _execute_agent_stream
+
+        mock_prepare_memory_files.return_value = ({}, [])
+        mock_resolve_api_key.return_value = "k"
+        mock_init_backend.return_value = MagicMock()
+
+        daytona_sandbox = MagicMock()
+        # plain object has no execute attribute — capability check should fail
+        daytona_backend = object()
+        mock_create_daytona_backend.return_value = (daytona_sandbox, daytona_backend)
+
+        repo_instance = MagicMock()
+        repo_instance._get_or_create = AsyncMock(
+            return_value=MagicMock(sandbox_backend="daytona")
+        )
+        repo_instance._decrypt_keys.return_value = {}
+        mock_user_settings_repo.return_value = repo_instance
+
+        fake_agent = MagicMock()
+        fake_agent.model = "openai/gpt-4o-mini"
+        fake_agent.graph.aget_state = AsyncMock(
+            return_value=MagicMock(config={"configurable": {}}, values={"messages": []})
+        )
+        mock_construct_agent.return_value = fake_agent
+
+        class _EmptyAstream:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                raise StopAsyncIteration
+
+        fake_agent.astream = lambda *_args, **_kwargs: _EmptyAstream()
+
+        redis_client = MagicMock()
+        redis_client.xadd = AsyncMock()
+        redis_client.expire = AsyncMock()
+
+        service_context = MagicMock()
+        service_context.llm_service.assistant = AsyncMock(side_effect=lambda p: p)
+        service_context.memory_service = MagicMock()
+        service_context.store = MagicMock()
+        service_context.user_id = "user-1"
+        service_context.thread_service.update = AsyncMock()
+
+        params = MagicMock()
+        params.model = "openai/gpt-4o-mini"
+        params.instructions = "i"
+        params.system_prompt = "s"
+        params.tools = []
+        params.subagents = []
+        params.input = MagicMock()
+        params.input.messages = [MagicMock()]
+
+        result = await _execute_agent_stream(
+            params=params,
+            config={"configurable": {"thread_id": "t1", "assistant_id": None, "project_id": None}},
+            files_map={},
+            todos_list=[],
+            service_context=service_context,
+            checkpointer=MagicMock(),
+            user_id="user-1",
+            thread_id="t1",
+            stream_key="agent:stream:t1",
+            redis_client=redis_client,
+        )
+
+        # Should fall back to default backend
+        mock_init_backend.assert_called_once()
+
+        # Should write fallback notice to Redis stream
+        fallback_calls = [
+            call for call in redis_client.xadd.call_args_list
+            if call.args and len(call.args) > 1
+            and isinstance(call.args[1], dict)
+            and "data" in call.args[1]
+            and "falling back to default sandbox" in str(call.args[1]["data"])
+        ]
+        assert len(fallback_calls) == 1, "Expected exactly one fallback message in Redis stream"
+
+        # Sandbox should still be cleaned up
+        daytona_sandbox.stop.assert_called_once()
+
+        # Done marker and checkpoint update should still happen
+        done_calls = [
+            call for call in redis_client.xadd.call_args_list
+            if call.args and len(call.args) > 1
+            and isinstance(call.args[1], dict)
+            and "done" in call.args[1]
+        ]
+        assert len(done_calls) == 1, "Expected done marker in Redis stream"
+        assert result["status"] == "complete"
+
+    @pytest.mark.asyncio
+    @patch("src.workers.tasks.resolve_api_key")
+    @patch("src.workers.tasks.UserSettingsRepo")
+    @patch("src.agents.create_daytona_backend")
+    @patch("src.agents.init_backend")
+    @patch("src.agents.construct_agent", new_callable=AsyncMock)
+    @patch("src.agents.prepare_memory_files", new_callable=AsyncMock)
+    async def test_execute_agent_stream_daytona_success_uses_composite_with_store_routes(
+        self,
+        mock_prepare_memory_files,
+        mock_construct_agent,
+        mock_init_backend,
+        mock_create_daytona_backend,
+        mock_user_settings_repo,
+        mock_resolve_api_key,
+    ):
+        """When Daytona backend has execute(), CompositeBackend with store routes is used."""
+        from src.workers.tasks import _execute_agent_stream
+        from deepagents.backends import CompositeBackend
+
+        mock_prepare_memory_files.return_value = ({}, [])
+        mock_resolve_api_key.return_value = "k"
+
+        daytona_sandbox = MagicMock()
+        daytona_backend = MagicMock()  # MagicMock has execute, so capability passes
+        mock_create_daytona_backend.return_value = (daytona_sandbox, daytona_backend)
+
+        repo_instance = MagicMock()
+        repo_instance._get_or_create = AsyncMock(
+            return_value=MagicMock(sandbox_backend="daytona")
+        )
+        repo_instance._decrypt_keys.return_value = {}
+        mock_user_settings_repo.return_value = repo_instance
+
+        fake_agent = MagicMock()
+        fake_agent.model = "openai/gpt-4o-mini"
+        fake_agent.graph.aget_state = AsyncMock(
+            return_value=MagicMock(config={"configurable": {}}, values={"messages": []})
+        )
+        mock_construct_agent.return_value = fake_agent
+
+        class _EmptyAstream:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                raise StopAsyncIteration
+
+        fake_agent.astream = lambda *_args, **_kwargs: _EmptyAstream()
+
+        redis_client = MagicMock()
+        redis_client.xadd = AsyncMock()
+        redis_client.expire = AsyncMock()
+
+        service_context = MagicMock()
+        service_context.llm_service.assistant = AsyncMock(side_effect=lambda p: p)
+        service_context.memory_service = MagicMock()
+        service_context.store = MagicMock()
+        service_context.user_id = "user-1"
+        service_context.thread_service.update = AsyncMock()
+
+        params = MagicMock()
+        params.model = "openai/gpt-4o-mini"
+        params.instructions = "i"
+        params.system_prompt = "s"
+        params.tools = []
+        params.subagents = []
+        params.input = MagicMock()
+        params.input.messages = [MagicMock()]
+
+        result = await _execute_agent_stream(
+            params=params,
+            config={"configurable": {"thread_id": "t1", "assistant_id": None, "project_id": None}},
+            files_map={},
+            todos_list=[],
+            service_context=service_context,
+            checkpointer=MagicMock(),
+            user_id="user-1",
+            thread_id="t1",
+            stream_key="agent:stream:t1",
+            redis_client=redis_client,
+        )
+
+        # init_backend should NOT have been called (Daytona succeeded)
+        mock_init_backend.assert_not_called()
+
+        # construct_agent should receive a CompositeBackend
+        call_kwargs = mock_construct_agent.call_args[1]
+        assert isinstance(call_kwargs["backend"], CompositeBackend)
+
+        # No fallback messages in Redis
+        fallback_calls = [
+            call for call in redis_client.xadd.call_args_list
+            if call.args and len(call.args) > 1
+            and isinstance(call.args[1], dict)
+            and "data" in call.args[1]
+            and "falling back" in str(call.args[1].get("data", ""))
+        ]
+        assert len(fallback_calls) == 0
+
+        daytona_sandbox.stop.assert_called_once()
+        assert result["status"] == "complete"
