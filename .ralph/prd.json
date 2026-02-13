@@ -34,8 +34,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "_resolve_user_settings() was already a 2-tuple; no sandbox_backend or daytona imports existed in llm.py to remove."
     },
     {
       "id": "US-003",
@@ -49,8 +49,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "stream_generator() never had sandbox_backend param or daytona-specific imports. Only change needed: replace init_backend with resolve_sandbox_backend."
     },
     {
       "id": "US-004",
@@ -64,8 +64,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "tasks.py had no sandbox_backend lookup from UserSettingsRepo or daytona-specific imports — only init_backend() call needed replacing with resolve_sandbox_backend()."
     },
     {
       "id": "US-005",
@@ -83,8 +83,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "All sandbox_backend settings infrastructure (field, request model, repo method, endpoint, constants) was already absent from the codebase — no changes needed. Typecheck passes with 0 errors on all settings files."
     },
     {
       "id": "US-006",

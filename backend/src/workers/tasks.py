@@ -203,7 +203,11 @@ async def _execute_agent_stream(
     from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
     from src.schemas.contexts import ContextSchema
-    from src.agents import construct_agent, resolve_sandbox_backend, prepare_memory_files
+    from src.agents import (
+        construct_agent,
+        resolve_sandbox_backend,
+        prepare_memory_files,
+    )
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger

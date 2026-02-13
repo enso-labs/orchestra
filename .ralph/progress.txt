@@ -10,6 +10,8 @@ Started: Thu Feb 13 2026
 - Commit with `-s` flag for sign-off per repo guidelines
 - Daytona helpers in `backend/src/agents/daytona.py`
 - Settings: schema in schemas/entities/settings.py, repo in repos/user_settings_repo.py, routes in routes/v0/settings.py
+- Worker tasks: `backend/src/workers/tasks.py` (NOT `utils/tasks.py`)
+- After US-004: all 3 execution paths use `resolve_sandbox_backend()` — `init_backend()` only called from within `resolve_sandbox_backend()`
 
 ---
 
@@ -27,4 +29,58 @@ Started: Thu Feb 13 2026
   - `create_daytona_backend()` no longer takes an `api_key` parameter; it always uses `DAYTONA_API_KEY` from constants
   - The resolve function silently falls back (no logging, no messages) when Daytona is unavailable
   - Baseline pyright error count for `__init__.py` is 40 (pre-existing, not from these changes)
+---
+
+## 2026-02-13 - US-002
+- Replaced `self.init_backend(params)` in `llm_invoke()` with `resolve_sandbox_backend(runtime, routes=routes)`
+- Deleted `init_backend()` method from `LLMController` class
+- Updated imports: added `resolve_sandbox_backend`, removed unused `CompositeBackend` and `StateBackend`
+- `_resolve_user_settings()` was already returning a 2-tuple `(model, api_key)` — no changes needed
+- No `sandbox_backend`, `create_daytona_backend`, `daytona_fallback_message`, or `validate_daytona_execute_capability` imports existed in llm.py
+- Files changed: `backend/src/controllers/llm.py`
+- **Learnings for future iterations:**
+  - llm.py `_init_runtime()` creates a ToolRuntime suitable for passing to `resolve_sandbox_backend()` — reuse it
+  - Baseline pyright error count for llm.py is 24 (pre-existing); after changes it's 23
+  - The invoke path now creates runtime + StoreBackend routes inline, same pattern as stream.py
+---
+
+## 2026-02-13 - US-003
+- Replaced `init_backend(runtime, routes=routes)` with `resolve_sandbox_backend(runtime, routes=routes)` in `stream_generator()`
+- Updated import: replaced `init_backend` with `resolve_sandbox_backend` from `src.agents`
+- `stream_generator()` never had a `sandbox_backend` parameter or daytona-specific imports — only the backend factory call needed changing
+- `llm_stream()` in llm.py was already clean (no `sandbox_backend` arg passed to `stream_generator`)
+- Files changed: `backend/src/utils/stream.py`
+- **Learnings for future iterations:**
+  - Baseline pyright error count for stream.py is 20 (pre-existing, not from these changes)
+  - stream.py is in `utils/` not `controllers/` — the stream generator is a utility, not a controller
+  - After US-003, only tasks.py still uses `init_backend()` — it's the last caller to migrate (US-004)
+---
+
+## 2026-02-13 - US-004
+- Replaced `init_backend(runtime, routes=routes)` with `resolve_sandbox_backend(runtime, routes=routes)` in `_execute_agent_stream()`
+- Updated import: replaced `init_backend` with `resolve_sandbox_backend` from `src.agents`
+- tasks.py had no `sandbox_backend` lookup from `UserSettingsRepo`, no daytona-specific imports, and no `api_key` resolution related to sandbox — only the backend factory call needed changing
+- `api_key` resolution left intact (not present in this path anyway)
+- Files changed: `backend/src/workers/tasks.py`
+- **Learnings for future iterations:**
+  - tasks.py is in `workers/` not `utils/` — the PRD title says "tasks.py" but the path is `src/workers/tasks.py`
+  - Baseline pyright error count for tasks.py is 26 (pre-existing, not from these changes)
+  - After US-004, all three execution paths (llm.py invoke, stream.py stream, tasks.py worker) now use `resolve_sandbox_backend()`
+  - `init_backend()` in `__init__.py` now has no direct callers except `resolve_sandbox_backend()` itself — ready for cleanup in US-007
+---
+
+## 2026-02-13 - US-005
+- Verified all sandbox_backend settings infrastructure was already absent from the codebase
+- No `sandbox_backend` field in UserSettings or UserSettingsResponse models
+- No `UpdateSandboxBackendRequest` class in settings.py
+- No `set_sandbox_backend()` method in user_settings_repo.py
+- No `PUT /settings/sandbox-backend` endpoint or `_VALID_SANDBOX_BACKENDS` constant in routes/v0/settings.py
+- No `sandbox_backend=...` in any UserSettingsResponse constructor
+- Pyright reports 0 errors on all three settings files
+- Only change: `make format` reformatted an import in tasks.py (cosmetic)
+- Files changed: None (just formatting)
+- **Learnings for future iterations:**
+  - The sandbox_backend settings infrastructure was removed prior to this branch (or never existed in current form)
+  - PRD acceptance criteria may describe removals that are already done — always verify current state before making changes
+  - `make format` may reformat imports touched in previous stories — include those formatting fixes in the next commit
 ---
