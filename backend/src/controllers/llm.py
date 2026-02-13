@@ -196,7 +196,7 @@ class LLMController:
         assistant = await self.service_context.llm_service.assistant(params)
 
         # Resolve user-configured API key/default model and sandbox backend
-        assistant.model, api_key, _sandbox_backend = await self._resolve_user_settings(
+        assistant.model, api_key, sandbox_backend = await self._resolve_user_settings(
             assistant.model
         )
 
@@ -210,6 +210,7 @@ class LLMController:
             service_context=self.service_context,
             instructions=assistant.instructions,
             api_key=api_key,
+            sandbox_backend=sandbox_backend,
         )
 
     async def llm_task(self, job: ScheduleCreate):

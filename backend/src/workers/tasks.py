@@ -19,6 +19,8 @@ import ujson
 import redis.asyncio as redis
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
+from src.repos.user_settings_repo import UserSettingsRepo
+from src.utils.llm import resolve_api_key
 from src.workers.broker import broker, REDIS_URL
 
 
@@ -240,13 +242,23 @@ async def _execute_agent_stream(
         f"/users/{user_id}/config/": store_backend,
     }
 
-    # Check for Daytona sandbox request
+    # Check user sandbox backend preference
     daytona_sandbox = None
-    sandbox_type = config.get("metadata", {}).get("sandbox")
-    if sandbox_type == "daytona":
+    sandbox_backend = None
+    api_key = None
+    if user_id:
+        settings_repo = UserSettingsRepo(user_id, service_context.store)
+        settings = await settings_repo._get_or_create()
+        sandbox_backend = settings.sandbox_backend
+
+        if params.model:
+            user_keys = settings_repo._decrypt_keys(settings)
+            api_key = resolve_api_key(params.model, user_keys if user_keys else None)
+
+    if sandbox_backend == "daytona":
         from deepagents.backends import CompositeBackend
 
-        daytona_sandbox, daytona_backend = create_daytona_backend()
+        daytona_sandbox, daytona_backend = create_daytona_backend(api_key=api_key)
         if daytona_backend is not None:
             backend = CompositeBackend(default=daytona_backend, routes=routes)
         else:

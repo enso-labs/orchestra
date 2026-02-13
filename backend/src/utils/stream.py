@@ -196,6 +196,7 @@ async def stream_generator(
     service_context: ServiceContext,
     instructions: str = None,
     api_key: str | None = None,
+    sandbox_backend: str | None = None,
 ):
     """Stream agent responses as Server-Sent Events.
 
@@ -232,10 +233,9 @@ async def stream_generator(
                 f"/users/{service_context.user_id}/config/": store_backend,
             }
 
-            # Check for Daytona sandbox request
-            sandbox_type = config["metadata"].get("sandbox")
-            if sandbox_type == "daytona":
-                daytona_sandbox, daytona_backend = create_daytona_backend()
+            # Check for Daytona sandbox request from user settings preference
+            if sandbox_backend == "daytona":
+                daytona_sandbox, daytona_backend = create_daytona_backend(api_key=api_key)
                 if daytona_backend is not None:
                     from deepagents.backends import CompositeBackend
 
