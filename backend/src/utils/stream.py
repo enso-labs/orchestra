@@ -15,7 +15,7 @@ from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
-from src.agents import construct_agent, init_backend, prepare_memory_files
+from src.agents import construct_agent, resolve_sandbox_backend, prepare_memory_files
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
@@ -225,7 +225,7 @@ async def stream_generator(
                 f"/users/{service_context.user_id}/memories/": store_backend,
                 f"/users/{service_context.user_id}/config/": store_backend,
             }
-            backend = init_backend(runtime, routes=routes)
+            backend, _sandbox = resolve_sandbox_backend(runtime, routes=routes)
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,
