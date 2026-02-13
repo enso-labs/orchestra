@@ -80,7 +80,6 @@ class TestResolveSandboxBackend:
         mock_daytona_backend = MagicMock()
         mock_daytona_backend.execute = MagicMock()  # has execute method
         mock_runtime = MagicMock()
-        mock_routes = {"/some/route": MagicMock()}
 
         with (
             patch(
@@ -94,10 +93,11 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            backend, sandbox = resolve_sandbox_backend(mock_runtime, routes=mock_routes)
+            backend, sandbox = resolve_sandbox_backend(mock_runtime)
 
             assert sandbox is mock_sandbox
             assert backend is not None
+            assert backend.routes == {}
 
     def test_fallback_when_daytona_not_capable(self):
         """When Daytona is not capable, falls back to StateBackend and cleans up sandbox."""
@@ -117,10 +117,11 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            result_backend, sandbox = resolve_sandbox_backend(mock_runtime, routes={})
+            result_backend, sandbox = resolve_sandbox_backend(mock_runtime)
 
             assert sandbox is None
             assert result_backend is not None
+            assert result_backend.routes == {}
             mock_sandbox.stop.assert_called_once()
 
     def test_fallback_when_daytona_not_installed(self):
@@ -133,10 +134,11 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            result_backend, sandbox = resolve_sandbox_backend(mock_runtime, routes={})
+            result_backend, sandbox = resolve_sandbox_backend(mock_runtime)
 
             assert sandbox is None
             assert result_backend is not None
+            assert result_backend.routes == {}
 
     def test_sandbox_cleanup_exception_is_swallowed(self):
         """When sandbox.stop() throws, the exception is silently swallowed."""
@@ -158,10 +160,11 @@ class TestResolveSandboxBackend:
             from src.agents import resolve_sandbox_backend
 
             # Should not raise
-            cleanup_backend, sandbox = resolve_sandbox_backend(mock_runtime, routes={})
+            cleanup_backend, sandbox = resolve_sandbox_backend(mock_runtime)
 
             assert sandbox is None
             assert cleanup_backend is not None
+            assert cleanup_backend.routes == {}
             mock_sandbox.stop.assert_called_once()
 
     def test_silent_fallback_no_messages(self):
@@ -177,50 +180,11 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            result_backend, sandbox = resolve_sandbox_backend(mock_runtime, routes={})
+            result_backend, sandbox = resolve_sandbox_backend(mock_runtime)
 
             assert sandbox is None
             assert result_backend is not None
+            assert result_backend.routes == {}
             # No fallback warning/info logged — fallback is completely silent
             mock_logger.warning.assert_not_called()
             mock_logger.info.assert_not_called()
-
-    def test_routes_are_passed_through_on_fallback(self):
-        """On fallback, callable route factories are invoked with runtime."""
-        mock_runtime = MagicMock()
-        mock_route_backend = MagicMock()
-        route_factory = MagicMock(return_value=mock_route_backend)
-        routes = {"/store": route_factory}
-
-        with patch(
-            "src.agents.create_daytona_backend",
-            return_value=(None, None),
-        ):
-            from src.agents import resolve_sandbox_backend
-
-            result_backend, sandbox = resolve_sandbox_backend(
-                mock_runtime, routes=routes
-            )
-
-            route_factory.assert_called_once_with(mock_runtime)
-            assert sandbox is None
-            assert result_backend is not None
-
-    def test_non_callable_routes_used_directly_on_fallback(self):
-        """On fallback, non-callable route values are used as-is."""
-        mock_runtime = MagicMock()
-        static_backend = MagicMock()
-        routes = {"/static": static_backend}
-
-        with patch(
-            "src.agents.create_daytona_backend",
-            return_value=(None, None),
-        ):
-            from src.agents import resolve_sandbox_backend
-
-            result_backend, sandbox = resolve_sandbox_backend(
-                mock_runtime, routes=routes
-            )
-
-            assert sandbox is None
-            assert result_backend is not None
