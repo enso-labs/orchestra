@@ -59,22 +59,22 @@ This is the second of two Daytona integration issues. It depends on [#750](https
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-004: Wire Daytona Backend into stream_generator (stream.py)
-**Description:** As a developer, I need `stream_generator()` in `src/utils/stream.py` to support Daytona backend activation via metadata, with the same fallback and cleanup behavior.
+**Description:** As a developer, I need `stream_generator()` in `src/utils/stream.py` to support Daytona backend activation via resolved user settings (`sandbox_backend`), with the same fallback and cleanup behavior.
 
 **Acceptance Criteria:**
-- [ ] `stream_generator()` checks `config["metadata"].get("sandbox")` for `"daytona"`
-- [ ] When `sandbox == "daytona"`: calls `create_daytona_backend()` and uses Daytona as the default backend in `CompositeBackend`
+- [ ] `stream_generator()` receives resolved `sandbox_backend` from settings resolution (not request metadata)
+- [ ] When `sandbox_backend == "daytona"`: calls `create_daytona_backend()` and uses Daytona as the default backend in `CompositeBackend`
 - [ ] When creation fails: falls back to `StateBackend` via existing `init_backend()`, yields a system message SSE event notifying the user
 - [ ] `daytona_sandbox.stop()` called in the `finally` block (alongside existing checkpoint cleanup)
 - [ ] Requests without `sandbox_backend` behave identically to current behavior
 - [ ] Typecheck/lint passes (`make format`)
 
 ### US-005: Wire Daytona Backend into Worker Task (tasks.py)
-**Description:** As a developer, I need `_execute_agent_stream()` in `src/workers/tasks.py` to support Daytona backend activation, with the same fallback and cleanup behavior.
+**Description:** As a developer, I need `_execute_agent_stream()` in `src/workers/tasks.py` to support Daytona backend activation via user settings (`sandbox_backend`), with the same fallback and cleanup behavior.
 
 **Acceptance Criteria:**
-- [ ] `_execute_agent_stream()` checks `config["metadata"].get("sandbox")` for `"daytona"`
-- [ ] When `sandbox == "daytona"`: calls `create_daytona_backend()` and uses Daytona as the default backend in `CompositeBackend`
+- [ ] `_execute_agent_stream()` resolves user settings and checks `sandbox_backend` for `"daytona"`
+- [ ] When `sandbox_backend == "daytona"`: calls `create_daytona_backend()` and uses Daytona as the default backend in `CompositeBackend`
 - [ ] When creation fails: falls back to `StateBackend` via existing `init_backend()`, writes a system message to the Redis stream
 - [ ] `daytona_sandbox.stop()` called in the `finally` block (alongside existing checkpoint and Redis cleanup)
 - [ ] Requests without `sandbox_backend` behave identically to current behavior
