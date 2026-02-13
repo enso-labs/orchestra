@@ -75,14 +75,17 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
-    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None]:
-        """Resolve user default model and API key.
+    async def _resolve_user_settings(
+        self, model: str
+    ) -> tuple[str, str | None, str | None]:
+        """Resolve user default model, API key, and sandbox backend preference.
 
-        Returns (model, api_key) where model may be overridden by user default
-        and api_key is the resolved key for the provider.
+        Returns ``(model, api_key, sandbox_backend)`` where model may be
+        overridden by user default, api_key is resolved for the provider, and
+        sandbox_backend is the persisted user preference (e.g. ``"daytona"``).
         """
         if not self.user_id:
-            return model, None
+            return model, None, None
 
         settings_repo = UserSettingsRepo(self.user_id, self.store)
         settings = await settings_repo._get_or_create()
@@ -94,10 +97,10 @@ class LLMController:
 
         # Guard against None model before resolving API key
         if not model:
-            return model, None
+            return model, None, settings.sandbox_backend
 
         api_key = resolve_api_key(model, user_keys if user_keys else None)
-        return model, api_key
+        return model, api_key, settings.sandbox_backend
 
     async def llm_invoke(self, params: LLMRequest):
         """Invoke the agent synchronously and return the final response.
@@ -115,8 +118,10 @@ class LLMController:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
 
-            # Resolve user-configured API key and default model
-            params.model, api_key = await self._resolve_user_settings(params.model)
+            # Resolve user-configured API key/default model and sandbox backend
+            params.model, api_key, sandbox_backend = await self._resolve_user_settings(
+                params.model
+            )
 
             # Load user memories into files_map for MemoryMiddleware
             memory_files, memory_sources = await prepare_memory_files(
@@ -127,9 +132,8 @@ class LLMController:
                 params.input.files = {**memory_files, **existing_files}
 
             async with get_checkpoint_db() as checkpointer:
-                # Check for Daytona sandbox request
-                sandbox_type = getattr(params.metadata, "sandbox", None)
-                if sandbox_type == "daytona":
+                # Check user sandbox backend preference
+                if sandbox_backend == "daytona":
                     daytona_sandbox, daytona_backend = create_daytona_backend(
                         api_key=api_key
                     )
@@ -191,8 +195,10 @@ class LLMController:
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)
 
-        # Resolve user-configured API key and default model
-        assistant.model, api_key = await self._resolve_user_settings(assistant.model)
+        # Resolve user-configured API key/default model and sandbox backend
+        assistant.model, api_key, _sandbox_backend = await self._resolve_user_settings(
+            assistant.model
+        )
 
         return stream_generator(
             input=assistant.input,
