@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from src.repos.base_repo import BaseRepo
-from src.schemas.entities.settings import UserSettings, ProviderKeyStatus
+from src.schemas.entities.settings import UserSettings, ProviderKeyStatus, SandboxType
 from src.utils.security import encrypt_value, decrypt_value
 from src.constants import UserTokenKey
 
@@ -67,6 +67,19 @@ class UserSettingsRepo(BaseRepo):
     async def set_default_model(self, model: Optional[str]) -> UserSettings:
         settings = await self._get_or_create()
         settings.default_model = model
+        settings.updated_at = datetime.now(timezone.utc)
+        await self._set(_SETTINGS_KEY, settings)
+        return settings
+
+    async def set_default_sandbox(self, sandbox: Optional[str]) -> UserSettings:
+        if sandbox is not None:
+            valid = [e.value for e in SandboxType]
+            if sandbox not in valid:
+                raise ValueError(
+                    f"Invalid sandbox '{sandbox}'. Must be one of: {valid}"
+                )
+        settings = await self._get_or_create()
+        settings.default_sandbox = sandbox
         settings.updated_at = datetime.now(timezone.utc)
         await self._set(_SETTINGS_KEY, settings)
         return settings

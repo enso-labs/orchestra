@@ -1,3 +1,36 @@
 # Ralph Progress: Extensible Sandbox/Backend Selection (#769)
 # Branch: feat/769-deep-agent-backend-sandbox-patterns
 # Started: 2026-02-13
+
+## Codebase Patterns
+- `make format` (ruff) must be run from `backend/` directory, not project root
+- Schema entities are exported through `backend/src/schemas/entities/__init__.py` - add new types there
+- Settings patterns: UserSettings (entity), UserSettingsResponse (API response), Update*Request (request body)
+- Existing settings use Optional[str] for nullable fields (not the enum type directly)
+- Ruff format may reformat test files with long lines - include those in commits
+- test_worker_model_resolution.py has 5 pre-existing failures (src.agents.init_backend missing) — ignore these
+- Repo tests use @patch decorators on the class; each test method gets injected positional args (_dec, _enc)
+
+## 2026-02-13 - US-001
+- What was implemented: SandboxType enum, default_sandbox fields on UserSettings and UserSettingsResponse, UpdateDefaultSandboxRequest schema
+- Files changed:
+  - backend/src/schemas/entities/settings.py (enum + fields + request model)
+  - backend/src/schemas/entities/__init__.py (exports)
+  - backend/tests/unit/controllers/test_llm_model_resolution.py (ruff format)
+  - backend/tests/unit/workers/test_worker_model_resolution.py (ruff format)
+- **Learnings for future iterations:**
+  - The `make format` and `make test` commands are in `backend/Makefile`, not root Makefile
+  - Ruff format reformats long lines in test files - commit those too
+  - UserSettingsResponse uses simple defaults (Optional[str] = None), not Field() for basic optional fields
+---
+
+## 2026-02-13 - US-002
+- What was implemented: set_default_sandbox(sandbox) repo method with SandboxType validation, plus 3 unit tests
+- Files changed:
+  - backend/src/repos/user_settings_repo.py (new set_default_sandbox method + SandboxType import)
+  - backend/tests/unit/repos/test_user_settings_repo.py (3 new tests: set, clear, invalid)
+- **Learnings for future iterations:**
+  - test_worker_model_resolution.py has 5 pre-existing failures (src.agents.init_backend missing) — not caused by our changes
+  - Repo test pattern: @patch decorators on class inject _dec, _enc positional args into every test method
+  - set_default_sandbox mirrors set_default_model exactly, but adds enum validation before persisting
+---
