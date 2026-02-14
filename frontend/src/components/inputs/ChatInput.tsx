@@ -11,6 +11,8 @@ import { useProjectContext } from "@/context/ProjectContext";
 import { X, Folder, FolderCode } from "lucide-react";
 import { Button } from "../ui/button";
 import QueuePanel from "../panels/QueuePanel";
+import { ModelBadge } from "@/components/badges/ModelBadge";
+import { useNavigate } from "react-router";
 
 export default function ChatInput({
 	showAgentMenu = false,
@@ -19,6 +21,7 @@ export default function ChatInput({
 }) {
 	const [isRecording, setIsRecording] = useState(false);
 	const { isLikelyMobile } = useAppHook();
+	const navigate = useNavigate();
 	const { selectedProject, selectProject } = useProjectContext();
 	const {
 		query,
@@ -42,6 +45,7 @@ export default function ChatInput({
 		filesMap,
 		inputRef,
 		enqueue,
+		displayModel,
 	} = useChatContext();
 
 	// Helper to enqueue and clear input
@@ -174,6 +178,15 @@ export default function ChatInput({
 					)}
 				</div>
 				<div className="flex items-center gap-2">
+					{displayModel && (
+						<button
+							onClick={() => navigate("/settings")}
+							title="Change default model"
+							className="cursor-pointer hover:opacity-80 transition-opacity"
+						>
+							<ModelBadge model={displayModel} />
+						</button>
+					)}
 					<ChatSubmitButton
 						abortQuery={abortQuery}
 						handleSubmit={handleSubmit}

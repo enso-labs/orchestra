@@ -25,6 +25,7 @@ export const Message = memo(
 		filesMap,
 		viewMode,
 		ttft,
+		displayModel,
 	}: {
 		message: any;
 		isLatest?: boolean;
@@ -35,6 +36,7 @@ export const Message = memo(
 		filesMap: Map<string, any>;
 		viewMode: string;
 		ttft?: number | null;
+		displayModel?: string | null;
 	}) {
 		const ICON_SIZE = 4;
 		const [isEditing, setIsEditing] = useState(false);
@@ -212,6 +214,7 @@ export const Message = memo(
 							<button className="text-sm text-muted-foreground">
 								{message.model ||
 									latestHumanMessage(messages)?.model ||
+									displayModel ||
 									"Unknown model"}
 							</button>
 
@@ -239,7 +242,8 @@ export const Message = memo(
 			prevProps.streamingRate === nextProps.streamingRate &&
 			prevProps.viewMode === nextProps.viewMode &&
 			prevProps.filesMap === nextProps.filesMap &&
-			prevProps.ttft === nextProps.ttft
+			prevProps.ttft === nextProps.ttft &&
+			prevProps.displayModel === nextProps.displayModel
 		);
 	},
 );
@@ -255,6 +259,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 		submitStartTime,
 		appendToQuery,
 		todos,
+		displayModel,
 	} = useChatContext();
 	const [elapsedTime, setElapsedTime] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -418,6 +423,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 									filesMap={filesMap}
 									viewMode={viewMode}
 									ttft={ttft}
+									displayModel={displayModel}
 								/>
 							</div>
 						);

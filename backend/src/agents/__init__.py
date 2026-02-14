@@ -102,7 +102,7 @@ def init_graph(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
     system_prompt: str = None,
-    model: str = DEFAULT_CHAT_MODEL,
+    model: str | None = None,
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,

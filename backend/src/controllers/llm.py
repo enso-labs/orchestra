@@ -17,6 +17,7 @@ from src.repos.user_settings_repo import UserSettingsRepo
 from src.utils.llm import resolve_api_key
 from src.utils.logger import logger
 from src.utils.format import get_time
+from src.constants.llm import DEFAULT_CHAT_MODEL
 
 
 class LLMController:
@@ -77,6 +78,9 @@ class LLMController:
         and api_key is the resolved key for the provider.
         """
         if not self.user_id:
+            # Unauthenticated users: fall back to system default if no model
+            if not model:
+                model = DEFAULT_CHAT_MODEL
             return model, None
 
         settings_repo = UserSettingsRepo(self.user_id, self.store)
@@ -86,6 +90,10 @@ class LLMController:
         # Apply user default model when request has no explicit model
         if not model and settings.default_model:
             model = settings.default_model
+
+        # Final fallback to system default
+        if not model:
+            model = DEFAULT_CHAT_MODEL
 
         # Guard against None model before resolving API key
         if not model:
