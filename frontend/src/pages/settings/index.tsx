@@ -1,5 +1,6 @@
 import { ApiTokensSettings } from "@/components/settings/ApiTokensSettings";
 import { DefaultModelSettings } from "@/components/settings/DefaultModelSettings";
+import { SandboxSettings } from "@/components/settings/SandboxSettings";
 import { MemorySettings } from "@/components/settings/MemorySettings";
 import { ModelVisibilitySettings } from "@/components/settings/ModelVisibilitySettings";
 import { UserApiKeysSettings } from "@/components/settings/UserApiKeysSettings";
@@ -27,6 +28,7 @@ export default function SettingsPage() {
 								</div>
 
 								<DefaultModelSettings />
+								<SandboxSettings />
 								<UserApiKeysSettings />
 								<ApiTokensSettings />
 								<ModelVisibilitySettings />
