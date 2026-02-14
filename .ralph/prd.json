@@ -188,7 +188,7 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the pattern from frontend/src/context/AgentContext.tsx for SkillContext. Hook should handle loading, error, and refresh states."
     },
     {
@@ -207,7 +207,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Import SkillService and useSkillContext. Fetch skills on menu open. Show Switch for each skill inline. Badge count is skills.filter(s => !s.disabled).length."
     },
     {
@@ -226,7 +226,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the layout pattern from frontend/src/pages/agents/index.tsx. Use ChatLayout wrapper. shadcn Switch, Button, Badge, Input components."
     },
     {

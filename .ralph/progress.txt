@@ -10,6 +10,8 @@ Branch: feat/773-skills-crud
 - Unit tests can be run individually: `uv run pytest tests/unit/repos/test_skill_repo.py -v`
 - Schema entities follow pattern in `backend/src/schemas/entities/memory.py` — BaseModel with Create/Update/ListResponse variants
 - Commits must be signed: `git commit -s`
+- Frontend hooks: state + handlers in `hooks/use<Entity>.ts`, context wrapper in `context/<Entity>Context.tsx` (see AgentContext pattern)
+- Frontend typecheck: `cd frontend && npx tsc --noEmit`
 ---
 
 ## 2026-02-14 - US-001
@@ -102,4 +104,47 @@ Thread: N/A
   - Services re-export from `index.ts` with `export { default as <Name>Service } from "./<name>Service"`
   - search() is POST (not GET) to match backend SearchFilter body pattern
   - toggle() uses PATCH method
+---
+
+## 2026-02-14 - US-011
+Thread: N/A
+- Created `frontend/src/hooks/useSkill.ts` with useSkill() hook (skill, skills, isLoadingSkills state + handlers)
+- Created `frontend/src/context/SkillContext.tsx` with SkillProvider and useSkillContext()
+- Files changed: `frontend/src/hooks/useSkill.ts` (new), `frontend/src/context/SkillContext.tsx` (new)
+- **Learnings for future iterations:**
+  - Hook pattern: useState for state, async handler functions prefixed with `handle`, useEffect wrappers prefixed with `useEffect`
+  - Context pattern: createContext({}), Provider spreads hook return values, useContext consumer with `: any` return type
+  - handleToggleSkill refreshes the full skills list after toggling to keep state in sync
+  - Skill state uses `null` for single skill (not an empty object) since skills are identified by name
+---
+
+## 2026-02-14 - US-012
+Thread: N/A
+- Added Skills section to BaseToolMenu with inline Switch toggles for each skill
+- Added active skill count Badge on the + trigger button
+- Added "Manage Skills" link navigating to /skills with ChevronRight icon
+- Added "Tools" DropdownMenuGroup with "Manage Tools" placeholder link to /tools
+- Skills are fetched on menu open via SkillService.search()
+- Files changed: `frontend/src/components/menus/BaseToolMenu.tsx` (modified)
+- **Learnings for future iterations:**
+  - BaseToolMenu uses local state (not context) for skills — fetches on `open` state change to keep dropdown fresh
+  - DropdownMenuItem `onSelect={(e) => e.preventDefault()}` prevents menu from closing when toggling Switch
+  - DropdownMenuLabel is available from shadcn dropdown-menu for section headers
+  - Badge component works well for notification counts with `absolute` positioning on parent `relative` container
+---
+
+## 2026-02-14 - US-013
+Thread: N/A
+- Created `frontend/src/pages/skills/index.tsx` — Skills list page with search, toggle, edit, and delete
+- Header with "Skills" title, subtitle, "Create Skill" button
+- Search input filters by name and description, with skill count display
+- Each skill row: name, description (truncated), tag badges, Switch toggle, Edit/Delete action buttons
+- Toggle calls SkillService.toggle() and refreshes list
+- Delete shows AlertDialog confirmation before calling SkillService.delete()
+- Wrapped in ChatLayout with ChatNav
+- Files changed: `frontend/src/pages/skills/index.tsx` (new)
+- **Learnings for future iterations:**
+  - AlertDialog from shadcn works well for delete confirmations — trigger wraps the button, action gets the onClick handler
+  - Skills list page uses useSkillContext() from SkillContext rather than local state (unlike BaseToolMenu which uses local state)
+  - Search filtering on both `name` and `description` gives better UX than name-only
 ---
