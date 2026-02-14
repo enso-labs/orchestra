@@ -10,14 +10,14 @@ import { render, screen } from "@testing-library/react";
  * 3. Agent create form model selector still works
  */
 
-// --- ChatNav integration: badge not selector ---
+// --- ChatNav no longer has ModelBadge (moved to ChatInput) ---
 
 describe("ChatNav model display integration", () => {
 	beforeEach(() => {
 		vi.resetModules();
 	});
 
-	it("ChatNav source does not import SelectModel", async () => {
+	it("ChatNav source does not import SelectModel or ModelBadge (moved to ChatInput)", async () => {
 		const fs = await import("node:fs");
 		const path = await import("node:path");
 		const source = fs.readFileSync(
@@ -25,12 +25,20 @@ describe("ChatNav model display integration", () => {
 			"utf-8",
 		);
 		expect(source).not.toContain("SelectModel");
+		expect(source).not.toContain("ModelBadge");
+	});
+
+	it("ChatInput source imports ModelBadge", async () => {
+		const fs = await import("node:fs");
+		const path = await import("node:path");
+		const source = fs.readFileSync(
+			path.resolve(process.cwd(), "src/components/inputs/ChatInput.tsx"),
+			"utf-8",
+		);
 		expect(source).toContain("ModelBadge");
 	});
 
-	it("ChatNav renders ModelBadge with model from context (unit-level check)", async () => {
-		// This verifies via the existing ChatNav.test.tsx pattern — 
-		// we re-verify the badge is rendered by importing ModelBadge directly
+	it("ModelBadge renders correctly as a standalone component", async () => {
 		const { ModelBadge } = await import("@/components/badges/ModelBadge");
 		render(<ModelBadge model="openai:gpt-4o" />);
 
@@ -38,25 +46,9 @@ describe("ChatNav model display integration", () => {
 		expect(badge).toBeInTheDocument();
 		expect(badge).toHaveTextContent("gpt-4o");
 
-		// No interactive elements
+		// No interactive elements inside the badge itself
 		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
 		expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-	});
-
-	it("ModelBadge is not interactive (no click/change handlers)", async () => {
-		const { ModelBadge } = await import(
-			"@/components/badges/ModelBadge"
-		);
-		const { container } = render(<ModelBadge model="anthropic:claude-sonnet-4-20250514" />);
-
-		const badge = screen.getByTestId("model-badge");
-		expect(badge).toBeInTheDocument();
-		expect(badge.tagName.toLowerCase()).toBe("span");
-
-		// No buttons, selects, or inputs inside
-		expect(container.querySelector("button")).toBeNull();
-		expect(container.querySelector("select")).toBeNull();
-		expect(container.querySelector("input")).toBeNull();
 	});
 });
 

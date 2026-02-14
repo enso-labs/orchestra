@@ -13,70 +13,62 @@ vi.mock("@/lib/services/modelService", () => ({
 	}),
 }));
 
-vi.mock("@/lib/services/userSettingsService", () => ({
-	getSettings: vi.fn().mockResolvedValue({
-		default_model: "anthropic:claude-sonnet-4-20250514",
-	}),
-}));
-
-vi.mock("@/lib/utils/auth", () => ({
-	getAuthToken: vi.fn().mockReturnValue("fake-token"),
-}));
-
 describe("useModel", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it("initializes with null model before defaults resolve", () => {
+	it("initializes with null model (server resolves default)", () => {
 		const { result } = renderHook(() => useModel());
-		// Before effects run, model starts as null
 		expect(result.current.model).toBeNull();
 	});
 
-	it("resolves model from user settings default", async () => {
+	it("model stays null for new conversations (no auto-resolution)", async () => {
+		const { result } = renderHook(() => {
+			const hook = useModel();
+			hook.useModelsEffect();
+			return hook;
+		});
+
+		// Wait for models to load
+		await waitFor(() => {
+			expect(result.current.models.default).toBe("openai:gpt-4o");
+		});
+
+		// model should still be null — no client-side auto-resolution
+		expect(result.current.model).toBeNull();
+	});
+
+	it("displayModel returns models.default when model is null", async () => {
+		const { result } = renderHook(() => {
+			const hook = useModel();
+			hook.useModelsEffect();
+			return hook;
+		});
+
+		await waitFor(() => {
+			expect(result.current.displayModel).toBe("openai:gpt-4o");
+		});
+
+		// model is null, displayModel falls back to models.default
+		expect(result.current.model).toBeNull();
+		expect(result.current.displayModel).toBe("openai:gpt-4o");
+	});
+
+	it("displayModel returns explicit model when set", () => {
 		const { result } = renderHook(() => useModel());
 
-		await waitFor(() => {
-			expect(result.current.model).toBe("anthropic:claude-sonnet-4-20250514");
+		act(() => {
+			result.current.setModel("anthropic:claude-sonnet-4-20250514");
 		});
-	});
 
-	it("falls back to system default when user settings unavailable", async () => {
-		const { getSettings } = await import(
-			"@/lib/services/userSettingsService"
+		expect(result.current.model).toBe("anthropic:claude-sonnet-4-20250514");
+		expect(result.current.displayModel).toBe(
+			"anthropic:claude-sonnet-4-20250514",
 		);
-		vi.mocked(getSettings).mockRejectedValueOnce(new Error("fail"));
-
-		// useModelsEffect returns a function containing useEffect, so we need
-		// a wrapper component that calls it during render
-		const { result } = renderHook(() => {
-			const hook = useModel();
-			hook.useModelsEffect();
-			return hook;
-		});
-
-		await waitFor(() => {
-			expect(result.current.model).toBe("openai:gpt-4o");
-		});
 	});
 
-	it("falls back to system default when no auth token", async () => {
-		const { getAuthToken } = await import("@/lib/utils/auth");
-		vi.mocked(getAuthToken).mockReturnValueOnce(null);
-
-		const { result } = renderHook(() => {
-			const hook = useModel();
-			hook.useModelsEffect();
-			return hook;
-		});
-
-		await waitFor(() => {
-			expect(result.current.model).toBe("openai:gpt-4o");
-		});
-	});
-
-	it("setModel updates model value (for thread loading)", async () => {
+	it("setModel updates model value (for thread loading)", () => {
 		const { result } = renderHook(() => useModel());
 
 		act(() => {
@@ -86,7 +78,7 @@ describe("useModel", () => {
 		expect(result.current.model).toBe("openai:gpt-4o-mini");
 	});
 
-	it("resetToDefault clears model so default re-applies", async () => {
+	it("resetToDefault clears model to null", () => {
 		const { result } = renderHook(() => useModel());
 
 		// Set a specific model first
@@ -100,10 +92,7 @@ describe("useModel", () => {
 			result.current.resetToDefault();
 		});
 
-		// After reset, model goes to null then effect sets it to user default
-		await waitFor(() => {
-			expect(result.current.model).toBe("anthropic:claude-sonnet-4-20250514");
-		});
+		expect(result.current.model).toBeNull();
 	});
 
 	it("updateQueryStateModel updates model value", () => {
@@ -137,6 +126,7 @@ describe("useModel", () => {
 		expect(result.current).toHaveProperty("setModel");
 		expect(result.current).toHaveProperty("updateQueryStateModel");
 		expect(result.current).toHaveProperty("resetToDefault");
+		expect(result.current).toHaveProperty("displayModel");
 		expect(result.current).toHaveProperty("models");
 		expect(result.current).toHaveProperty("useModelsEffect");
 		expect(typeof result.current.setModel).toBe("function");

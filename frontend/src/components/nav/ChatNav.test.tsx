@@ -12,11 +12,6 @@ vi.mock("@/context/ChatContext", () => ({
 vi.mock("@/components/buttons/ColorModeButton", () => ({
 	ColorModeButton: () => <button data-testid="color-mode-button" />,
 }));
-vi.mock("@/components/badges/ModelBadge", () => ({
-	ModelBadge: ({ model }: { model: string }) => (
-		<span data-testid="model-badge">{model}</span>
-	),
-}));
 vi.mock("../buttons/NewThreadButton", () => ({
 	default: () => <button data-testid="new-thread-button" />,
 }));
@@ -30,7 +25,6 @@ const defaultContext = {
 	viewMode: "chat" as const,
 	setViewMode: vi.fn(),
 	filesMap: new Map(),
-	model: "openai:gpt-4o",
 };
 
 describe("ChatNav", () => {
@@ -38,50 +32,26 @@ describe("ChatNav", () => {
 		mockUseChatContext.mockReturnValue(defaultContext);
 	});
 
-	it("renders ModelBadge with the current model from context", () => {
+	it("does not render ModelBadge (moved to ChatInput)", () => {
 		render(<ChatNav />);
-		const badge = screen.getByTestId("model-badge");
-		expect(badge).toBeInTheDocument();
-		expect(badge).toHaveTextContent("openai:gpt-4o");
+		expect(screen.queryByTestId("model-badge")).not.toBeInTheDocument();
 	});
 
 	it("does not render SelectModel", () => {
 		render(<ChatNav />);
-		// SelectModel is not imported or rendered — no combobox/listbox should exist
 		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
 	});
 
-	it("hides ModelBadge when showModelBadge is false", () => {
-		render(<ChatNav showModelBadge={false} />);
-		expect(screen.queryByTestId("model-badge")).not.toBeInTheDocument();
-	});
-
-	it("shows ModelBadge by default (showModelBadge defaults to true)", () => {
-		render(<ChatNav />);
-		expect(screen.getByTestId("model-badge")).toBeInTheDocument();
-	});
-
-	it("does not render ModelBadge when model is empty/falsy", () => {
-		mockUseChatContext.mockReturnValue({ ...defaultContext, model: "" });
+	it("does not accept showModelBadge prop (removed)", () => {
+		// ChatNav no longer has showModelBadge prop
 		render(<ChatNav />);
 		expect(screen.queryByTestId("model-badge")).not.toBeInTheDocument();
 	});
 
-	it("renders ModelBadge with anthropic model", () => {
-		mockUseChatContext.mockReturnValue({
-			...defaultContext,
-			model: "anthropic:claude-sonnet-4-20250514",
-		});
+	it("renders core nav elements", () => {
 		render(<ChatNav />);
-		expect(screen.getByTestId("model-badge")).toHaveTextContent(
-			"anthropic:claude-sonnet-4-20250514",
-		);
-	});
-
-	it("does not accept showModelSelector prop (removed)", () => {
-		// TypeScript would catch this, but verify the component signature
-		// by confirming showModelBadge works and old prop is gone
-		render(<ChatNav showModelBadge={true} />);
-		expect(screen.getByTestId("model-badge")).toBeInTheDocument();
+		expect(screen.getByTestId("color-mode-button")).toBeInTheDocument();
+		expect(screen.getByTestId("new-thread-button")).toBeInTheDocument();
+		expect(screen.getByTestId("share-button")).toBeInTheDocument();
 	});
 });

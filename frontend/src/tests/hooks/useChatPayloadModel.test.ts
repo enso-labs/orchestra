@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useAgent, INIT_AGENT_STATE } from "@/hooks/useAgent";
 
-// Mock useModel to simulate settings-based model resolution
-const mockModel = vi.fn(() => "openai:gpt-4o");
+// Mock useModel to return null model for default conversations (server resolves)
+const mockModel = vi.fn(() => null as string | null);
 const mockUseModelsEffect = vi.fn();
 const mockUpdateQueryStateModel = vi.fn();
 
@@ -32,37 +32,36 @@ vi.mock("@/lib/config/tool", () => ({
 describe("Chat payload model consistency via useAgent", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockModel.mockReturnValue("openai:gpt-4o");
+		mockModel.mockReturnValue(null);
 		Object.defineProperty(window, "localStorage", {
 			value: { getItem: vi.fn(() => null), setItem: vi.fn() },
 			writable: true,
 		});
 	});
 
-	it("agent.model syncs from useModel (settings default)", async () => {
+	it("agent.model stays empty when useModel returns null (server resolves)", async () => {
 		const { result } = renderHook(() => useAgent());
 
-		// useAgent syncs model from useModel into agent.model via useEffect
+		// useAgent sync effect guards on `if (model && ...)`, so agent.model stays ""
+		expect(result.current.agent.model).toBe("");
+	});
+
+	it("agent.model syncs when useModel returns explicit model (thread loading)", async () => {
+		mockModel.mockReturnValue("anthropic:claude-sonnet-4-20250514");
+		const { result } = renderHook(() => useAgent());
+
 		await waitFor(() => {
-			expect(result.current.agent.model).toBe("openai:gpt-4o");
+			expect(result.current.agent.model).toBe(
+				"anthropic:claude-sonnet-4-20250514",
+			);
 		});
 	});
 
-	it("agent.model updates when settings default changes", async () => {
-		mockModel.mockReturnValue("anthropic:claude-3.5-sonnet");
+	it("payload sends empty model for default chat (server resolves)", async () => {
+		// model is null → agent.model stays ""
 		const { result } = renderHook(() => useAgent());
 
-		await waitFor(() => {
-			expect(result.current.agent.model).toBe("anthropic:claude-3.5-sonnet");
-		});
-	});
-
-	it("agent.model is used in payload structure (non-public agent)", async () => {
-		const { result } = renderHook(() => useAgent());
-
-		await waitFor(() => {
-			expect(result.current.agent.model).toBe("openai:gpt-4o");
-		});
+		expect(result.current.agent.model).toBe("");
 
 		// Simulate what useChat does: build payload from agent
 		const agent = result.current.agent;
@@ -77,22 +76,7 @@ describe("Chat payload model consistency via useAgent", () => {
 			subagents: agent.subagents,
 		};
 
-		expect(payload.model).toBe("openai:gpt-4o");
-	});
-
-	it("public agent payload uses empty model string", async () => {
-		const { result } = renderHook(() => useAgent());
-
-		await waitFor(() => {
-			expect(result.current.agent.model).toBe("openai:gpt-4o");
-		});
-
-		// For public agents, useChat sends model: ""
-		const agent = { ...result.current.agent, public: true };
-		const payload = agent.public
-			? { input: { messages: [] }, metadata: {}, model: "" }
-			: { model: agent.model };
-
+		// Empty string sent to server → server resolves from user settings
 		expect(payload.model).toBe("");
 	});
 

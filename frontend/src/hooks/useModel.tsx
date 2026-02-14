@@ -1,6 +1,4 @@
 import { listModels, ModelsResponse } from "@/lib/services/modelService";
-import { getSettings } from "@/lib/services/userSettingsService";
-import { getAuthToken } from "@/lib/utils/auth";
 import { useCallback, useEffect, useState } from "react";
 
 export function useModel() {
@@ -10,7 +8,6 @@ export function useModel() {
 		free: [],
 		models: [],
 	});
-	const [userDefault, setUserDefault] = useState<string | null>(null);
 
 	const useModelsEffect = () => {
 		useEffect(() => {
@@ -22,23 +19,6 @@ export function useModel() {
 		}, []);
 	};
 
-	// Fetch user's default model preference (only when authenticated)
-	useEffect(() => {
-		const fetchUserDefault = async () => {
-			// Skip if user is not authenticated to avoid 401 loops on login page
-			const token = getAuthToken();
-			if (!token) return;
-
-			try {
-				const settings = await getSettings();
-				setUserDefault(settings.default_model);
-			} catch {
-				// If settings fetch fails, fall back to server default
-			}
-		};
-		fetchUserDefault();
-	}, []);
-
 	// Internal setter used for thread/agent loading (not for user-facing model switching)
 	const setModel = useCallback((value: string | null) => {
 		setModelState(value);
@@ -49,27 +29,20 @@ export function useModel() {
 		setModel(model);
 	};
 
-	// Reset model to user's default (or system default)
+	// Reset model to null — server will resolve the user's default
 	const resetToDefault = () => {
 		setModel(null);
 	};
 
-	useEffect(() => {
-		// Only set default model when no explicit model is selected
-		// User default takes precedence over server-wide default
-		if (!model && (userDefault !== null || models.default)) {
-			const effectiveDefault = userDefault ?? models.default;
-			if (effectiveDefault) {
-				setModelState(effectiveDefault);
-			}
-		}
-	}, [model, models.default, userDefault]);
+	// Display-only model: shows what will be used without sending it in payloads
+	const displayModel = model || models.default || null;
 
 	return {
 		model,
 		setModel,
 		updateQueryStateModel,
 		resetToDefault,
+		displayModel,
 		models,
 		useModelsEffect,
 	};

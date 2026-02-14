@@ -92,7 +92,7 @@ function AgentEditPage() {
 							</TabsList>
 						</Tabs>
 					</div>
-					<ChatNav sidebarTrigger={null} showModelBadge={false} />
+					<ChatNav sidebarTrigger={null} />
 				</div>
 
 				<Tabs
