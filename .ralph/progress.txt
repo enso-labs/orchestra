@@ -10,6 +10,7 @@
 - Ruff format may reformat test files with long lines - include those in commits
 - test_worker_model_resolution.py has 5 pre-existing failures (src.agents.init_backend missing) — ignore these
 - Repo tests use @patch decorators on the class; each test method gets injected positional args (_dec, _enc)
+- resolve_sandbox_backend(runtime, sandbox_type=None) dispatches via _SANDBOX_FACTORIES; callers pass sandbox_type from user settings
 
 ## 2026-02-13 - US-001
 - What was implemented: SandboxType enum, default_sandbox fields on UserSettings and UserSettingsResponse, UpdateDefaultSandboxRequest schema
@@ -33,4 +34,28 @@
   - test_worker_model_resolution.py has 5 pre-existing failures (src.agents.init_backend missing) — not caused by our changes
   - Repo test pattern: @patch decorators on class inject _dec, _enc positional args into every test method
   - set_default_sandbox mirrors set_default_model exactly, but adds enum validation before persisting
+---
+
+## 2026-02-13 - US-003
+- What was implemented: PUT /settings/default-sandbox endpoint with ValueError→400 handling, all existing endpoint responses updated to include default_sandbox field, plus 3 route tests
+- Files changed:
+  - backend/src/routes/v0/settings.py (new endpoint + import + all responses include default_sandbox)
+  - backend/tests/unit/routes/test_settings_routes.py (3 new tests: includes_default_sandbox, set_default_sandbox, invalid_sandbox_returns_400)
+- **Learnings for future iterations:**
+  - Route tests use settings_client fixture with InMemoryStore + mocked encryption — no env vars needed
+  - The `make test` command from backend/ directory handles env setup; running `uv run pytest` directly fails due to missing POSTGRES_CONNECTION_STRING
+  - Pattern for new settings endpoints: mirror update_default_model but wrap in try/except ValueError for validation
+  - All settings responses should include ALL fields from UserSettingsResponse to keep API consistent
+---
+
+## 2026-02-13 - US-004
+- What was implemented: Registry pattern in resolve_sandbox_backend with sandbox_type dispatch
+- Files changed:
+  - backend/src/agents/__init__.py (_create_daytona_backend_checked, _create_state_backend, _SANDBOX_FACTORIES dict, updated resolve_sandbox_backend signature)
+  - backend/tests/unit/agents/test_daytona.py (4 new dispatch tests in TestResolveSandboxBackendDispatch class)
+- **Learnings for future iterations:**
+  - Existing TestResolveSandboxBackend tests still pass with the new signature since sandbox_type defaults to None
+  - The dispatch pattern: _SANDBOX_FACTORIES maps type strings to factory callables; resolve_sandbox_backend checks if type is in dict, then dispatches accordingly
+  - _create_daytona_backend_checked returns None (not a tuple) on failure, so callers check `if result is not None`
+  - test_explicit_state_skips_daytona verifies create_daytona_backend is never called using assert_not_called()
 ---

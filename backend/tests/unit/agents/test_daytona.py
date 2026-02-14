@@ -188,3 +188,83 @@ class TestResolveSandboxBackend:
             # No fallback warning/info logged — fallback is completely silent
             mock_logger.warning.assert_not_called()
             mock_logger.info.assert_not_called()
+
+
+class TestResolveSandboxBackendDispatch:
+    """Tests for sandbox_type dispatch in resolve_sandbox_backend()."""
+
+    def test_auto_uses_daytona_when_available(self):
+        """sandbox_type=None (auto) uses Daytona when it is available."""
+        mock_sandbox = MagicMock()
+        mock_daytona_backend = MagicMock()
+        mock_daytona_backend.execute = MagicMock()
+        mock_runtime = MagicMock()
+
+        with (
+            patch(
+                "src.agents.create_daytona_backend",
+                return_value=(mock_sandbox, mock_daytona_backend),
+            ),
+            patch(
+                "src.agents.daytona.validate_daytona_execute_capability",
+                return_value=(True, None),
+            ),
+        ):
+            from src.agents import resolve_sandbox_backend
+
+            backend, sandbox = resolve_sandbox_backend(mock_runtime, sandbox_type=None)
+
+            assert sandbox is mock_sandbox
+            assert backend is not None
+
+    def test_auto_falls_back_to_state(self):
+        """sandbox_type=None (auto) falls back to StateBackend when Daytona is unavailable."""
+        mock_runtime = MagicMock()
+
+        with patch(
+            "src.agents.create_daytona_backend",
+            return_value=(None, None),
+        ):
+            from src.agents import resolve_sandbox_backend
+
+            backend, sandbox = resolve_sandbox_backend(mock_runtime, sandbox_type=None)
+
+            assert sandbox is None
+            assert backend is not None
+            assert backend.routes == {}
+
+    def test_explicit_state_skips_daytona(self):
+        """sandbox_type='state' never calls create_daytona_backend."""
+        mock_runtime = MagicMock()
+
+        with patch(
+            "src.agents.create_daytona_backend",
+        ) as mock_create_daytona:
+            from src.agents import resolve_sandbox_backend
+
+            backend, sandbox = resolve_sandbox_backend(
+                mock_runtime, sandbox_type="state"
+            )
+
+            assert sandbox is None
+            assert backend is not None
+            assert backend.routes == {}
+            mock_create_daytona.assert_not_called()
+
+    def test_explicit_daytona_falls_back_gracefully(self):
+        """sandbox_type='daytona' falls back to StateBackend if Daytona is unavailable."""
+        mock_runtime = MagicMock()
+
+        with patch(
+            "src.agents.create_daytona_backend",
+            return_value=(None, None),
+        ):
+            from src.agents import resolve_sandbox_backend
+
+            backend, sandbox = resolve_sandbox_backend(
+                mock_runtime, sandbox_type="daytona"
+            )
+
+            assert sandbox is None
+            assert backend is not None
+            assert backend.routes == {}

@@ -264,12 +264,13 @@ def create_daytona_backend():
         return None, None
 
 
-def resolve_sandbox_backend(
+def _create_daytona_backend_checked(
     runtime: ToolRuntime,
-) -> tuple[CompositeBackend, Any]:
-    """Try Daytona first, silently fall back to StateBackend.
+) -> tuple[CompositeBackend, Any] | None:
+    """Try to create a Daytona-backed CompositeBackend.
 
-    Returns ``(backend, daytona_sandbox_or_None)``.
+    Returns ``(backend, sandbox)`` on success, or ``None`` if Daytona is
+    unavailable or not capable.  Cleans up the sandbox on failure.
     """
     from src.agents.daytona import validate_daytona_execute_capability
 
@@ -287,10 +288,50 @@ def resolve_sandbox_backend(
             except Exception:
                 pass
 
-    # Fallback: plain StateBackend (silent, no messages)
+    return None
+
+
+def _create_state_backend(
+    runtime: ToolRuntime,
+) -> tuple[CompositeBackend, None]:
+    """Create a plain StateBackend-backed CompositeBackend."""
     default_state = StateBackend(runtime)
     backend = CompositeBackend(default=default_state, routes={})
     return backend, None
+
+
+_SANDBOX_FACTORIES: dict[str, Callable] = {
+    "daytona": _create_daytona_backend_checked,
+    "state": _create_state_backend,
+}
+
+
+def resolve_sandbox_backend(
+    runtime: ToolRuntime,
+    sandbox_type: str | None = None,
+) -> tuple[CompositeBackend, Any]:
+    """Resolve a sandbox backend based on *sandbox_type*.
+
+    Dispatch rules:
+    * ``None`` / ``"auto"`` — try Daytona first, fall back to State.
+    * ``"state"`` — use StateBackend directly (never attempts Daytona).
+    * ``"daytona"`` — try Daytona, fall back to State if unavailable.
+    * Any unknown value — treated as ``"auto"``.
+
+    Returns ``(backend, daytona_sandbox_or_None)``.
+    """
+    effective = sandbox_type if sandbox_type in _SANDBOX_FACTORIES else None
+
+    if effective == "state":
+        return _create_state_backend(runtime)
+
+    # "daytona" or auto (None) — try Daytona first
+    result = _create_daytona_backend_checked(runtime)
+    if result is not None:
+        return result
+
+    # Fallback: plain StateBackend (silent, no messages)
+    return _create_state_backend(runtime)
 
 
 ################################################################################
