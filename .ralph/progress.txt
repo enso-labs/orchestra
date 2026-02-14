@@ -11,6 +11,8 @@
 - test_worker_model_resolution.py has 5 pre-existing failures (src.agents.init_backend missing) — ignore these
 - Repo tests use @patch decorators on the class; each test method gets injected positional args (_dec, _enc)
 - resolve_sandbox_backend(runtime, sandbox_type=None) dispatches via _SANDBOX_FACTORIES; callers pass sandbox_type from user settings
+- Frontend settings service pattern: type alias for enum, add field to response interface, add API call function mirroring updateDefaultModel
+- Frontend `npm install` needed in worktrees before `npm run test` or `npm run build`
 
 ## 2026-02-13 - US-001
 - What was implemented: SandboxType enum, default_sandbox fields on UserSettings and UserSettingsResponse, UpdateDefaultSandboxRequest schema
@@ -83,4 +85,26 @@
   - _execute_agent_stream already fetches settings via UserSettingsRepo._get_or_create() — just read default_sandbox from it
   - Use getattr(settings, "default_sandbox", None) for forward compatibility (same pattern as LLMController)
   - default_sandbox variable must be initialized before the if/else block since settings is only available inside `if user_id:`
+---
+
+## 2026-02-13 - US-008
+- What was implemented: SandboxType type alias, default_sandbox field on UserSettingsResponse interface, updateDefaultSandbox() API function
+- Files changed:
+  - frontend/src/lib/services/userSettingsService.ts (SandboxType type, default_sandbox field, updateDefaultSandbox function)
+- **Learnings for future iterations:**
+  - Frontend settings service pattern: mirror updateDefaultModel for new settings — same return type, same PUT pattern
+  - UserSettingsResponse is only used within userSettingsService.ts itself; consuming components import functions not types
+  - `npm install` is required in worktrees before running tests/build since node_modules aren't shared
+  - 2 test suites are pre-skipped (threadService, App) and 3 individual tests skipped — all pre-existing
+---
+
+## 2026-02-13 - US-009
+- What was implemented: SandboxSettings.tsx frontend component with Card + Select dropdown pattern
+- Files changed:
+  - frontend/src/components/settings/SandboxSettings.tsx (new file — Card with Select dropdown, 3 options: Auto/Daytona/Local)
+- **Learnings for future iterations:**
+  - Used Radix Select (from components/ui/select.tsx) instead of the Popover+Command combo used by DefaultModelSettings — simpler for fixed option lists
+  - When sandbox is "auto" (or null from API), we send null to the API; display maps null → "auto"
+  - Component is standalone — doesn't need to be wired into Settings page until US-010
+  - Browser verification of an unmounted component is limited to typecheck + build pass; real browser test happens in US-010 when it's wired in
 ---
