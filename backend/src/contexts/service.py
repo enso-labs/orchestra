@@ -12,6 +12,7 @@ from langgraph.store.base import BaseStore
 from src.utils.logger import logger
 from src.services.memory import MemoryService
 from src.services.tool import ToolService
+from src.services.skill import SkillService
 from src.services.db import get_store_in_memory
 
 
@@ -37,6 +38,7 @@ class ServiceContext:
         self.prompt_service = PromptService(user_id=self.user_id, store=store)
         self.project_service = ProjectService(user_id=self.user_id, store=store)
         self.schedule_service = ScheduleService(user_id=self.user_id, store=store)
+        self.skill_service = SkillService(user_id=self.user_id, store=store)
         self.assistant_service = AssistantService(user_id=self.user_id, store=store)
         self.llm_service = LLMService(
             user_id=self.user_id,
