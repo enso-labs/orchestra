@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ShieldCheck, ShieldOff, Globe } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+	Plus,
+	ShieldCheck,
+	ShieldOff,
+	Globe,
+	ChevronRight,
+	Sparkles,
+	Wrench,
+} from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -8,6 +18,7 @@ import {
 	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
+	DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
 	Dialog,
@@ -20,6 +31,9 @@ import { Input } from "@/components/ui/input";
 import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
 import ImageUpload from "../inputs/ImageUpload";
+import SkillService from "@/lib/services/skillService";
+import type { Skill } from "@/lib/entities/skill";
+import { useNavigate } from "react-router-dom";
 
 const DEFAULT_AGENT_TOOLS = [
 	"web_search",
@@ -41,10 +55,32 @@ export function BaseToolMenu() {
 		setPiiAnonymizeCheck,
 	} = useAgentContext();
 	const { addFile, setViewMode } = useChatContext();
+	const navigate = useNavigate();
 	const [open, setOpen] = useState<boolean>(false);
 	const [showFileDialog, setShowFileDialog] = useState(false);
 	const [newFilePath, setNewFilePath] = useState("");
 	const [pathError, setPathError] = useState("");
+	const [skills, setSkills] = useState<Skill[]>([]);
+
+	const activeSkillCount = skills.filter((s) => !s.disabled).length;
+
+	const fetchSkills = async () => {
+		try {
+			const response = await SkillService.search({ limit: 500 });
+			setSkills(response.skills);
+		} catch (error) {
+			console.error("Failed to fetch skills:", error);
+		}
+	};
+
+	const handleToggleSkill = async (name: string) => {
+		try {
+			await SkillService.toggle(name);
+			await fetchSkills();
+		} catch (error) {
+			console.error("Failed to toggle skill:", error);
+		}
+	};
 
 	// Validate file path
 	const validatePath = (path: string): string => {
@@ -78,6 +114,12 @@ export function BaseToolMenu() {
 	}, []);
 
 	useEffect(() => {
+		if (open) {
+			fetchSkills();
+		}
+	}, [open]);
+
+	useEffect(() => {
 		localStorage.setItem("enso:tool:search", JSON.stringify(webSearchCheck));
 		if (webSearchCheck) {
 			setAgent({
@@ -102,9 +144,14 @@ export function BaseToolMenu() {
 						onClick={() => setOpen(!open)}
 						size="icon"
 						variant="outline"
-						className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+						className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer relative"
 					>
 						<Plus className="h-5 w-5" />
+						{activeSkillCount > 0 && (
+							<Badge className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center rounded-full">
+								{activeSkillCount}
+							</Badge>
+						)}
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent
@@ -163,6 +210,69 @@ export function BaseToolMenu() {
 								</span>
 							</DropdownMenuItem>
 						)}
+					</DropdownMenuGroup>
+
+					{/* Skills Section */}
+					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+					<DropdownMenuGroup>
+						<DropdownMenuLabel className="text-xs text-muted-foreground">
+							Skills
+						</DropdownMenuLabel>
+						{skills.map((skill) => (
+							<DropdownMenuItem
+								key={skill.name}
+								className="flex items-center justify-between cursor-pointer text-base rounded-lg"
+								onSelect={(e) => e.preventDefault()}
+							>
+								<span className="truncate">{skill.name}</span>
+								<Switch
+									checked={!skill.disabled}
+									onCheckedChange={() => handleToggleSkill(skill.name)}
+								/>
+							</DropdownMenuItem>
+						))}
+						{skills.length === 0 && (
+							<DropdownMenuItem
+								disabled
+								className="text-sm text-muted-foreground"
+							>
+								No skills yet
+							</DropdownMenuItem>
+						)}
+						<DropdownMenuItem
+							onClick={() => {
+								setOpen(false);
+								navigate("/skills");
+							}}
+							className="flex items-center justify-between cursor-pointer text-base rounded-lg"
+						>
+							<span className="flex items-center gap-2">
+								<Sparkles className="h-4 w-4" />
+								Manage Skills
+							</span>
+							<ChevronRight className="h-4 w-4" />
+						</DropdownMenuItem>
+					</DropdownMenuGroup>
+
+					{/* Tools Section */}
+					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+					<DropdownMenuGroup>
+						<DropdownMenuLabel className="text-xs text-muted-foreground">
+							Tools
+						</DropdownMenuLabel>
+						<DropdownMenuItem
+							onClick={() => {
+								setOpen(false);
+								navigate("/tools");
+							}}
+							className="flex items-center justify-between cursor-pointer text-base rounded-lg"
+						>
+							<span className="flex items-center gap-2">
+								<Wrench className="h-4 w-4" />
+								Manage Tools
+							</span>
+							<ChevronRight className="h-4 w-4" />
+						</DropdownMenuItem>
 					</DropdownMenuGroup>
 				</DropdownMenuContent>
 			</DropdownMenu>
