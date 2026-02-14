@@ -67,10 +67,12 @@ def _mock_agent(model_name):
         yield  # noqa: unreachable — makes this an async generator
 
     agent.astream = empty_astream
-    agent.graph.aget_state = AsyncMock(return_value=MagicMock(
-        config={"configurable": {}},
-        values={"messages": []},
-    ))
+    agent.graph.aget_state = AsyncMock(
+        return_value=MagicMock(
+            config={"configurable": {}},
+            values={"messages": []},
+        )
+    )
     return agent
 
 
@@ -105,8 +107,14 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value=None),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
             patch(_PATCHES["init_backend"]),
         ):
             instance = MockRepo.return_value
@@ -144,8 +152,14 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value=None),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
             patch(_PATCHES["init_backend"]),
         ):
             instance = MockRepo.return_value
@@ -184,8 +198,14 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value="sk-test"),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
             patch(_PATCHES["init_backend"]),
         ):
             instance = MockRepo.return_value
@@ -224,8 +244,14 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value=expected_key),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
             patch(_PATCHES["init_backend"]),
         ):
             instance = MockRepo.return_value
@@ -261,8 +287,14 @@ class TestWorkerModelResolution:
         ctx = _make_service_context(user_id="")
 
         with (
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
             patch(_PATCHES["init_backend"]),
         ):
             mock_construct.return_value = _mock_agent(DEFAULT_CHAT_MODEL)
