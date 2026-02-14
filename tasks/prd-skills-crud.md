@@ -276,7 +276,12 @@ cd frontend && npm i && npm run dev
 ## Open Questions
 
 - Should there be a maximum number of skills per user?
+> No
 - Should skill content size be limited (e.g., max 50KB per SKILL.md)?
+> Yes
 - Should we support bulk enable/disable of skills?
+> Yes, would need to be well-thought out.
 - Should the skill editor include a preview pane for rendered markdown?
+> Yes, ideally default mode is preview to optimize readability. Edit more is rendered markdown mode.
 - Should skills be scoped per-assistant or global per-user? (Current design: global per-user)
+> Global per-user for now. We will perform changes for assistant scope in later PR.
