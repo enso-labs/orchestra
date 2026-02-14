@@ -292,7 +292,7 @@
         "IMPORTANT: Wiki changes must be committed directly to the wiki repo (not the main Orchestra repo)"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "The wiki is a separate Docusaurus project. Changes go to the wiki repo directly. Include curl examples with Authorization headers for all 6 endpoints."
     }
   ]

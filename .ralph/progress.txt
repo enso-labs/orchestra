@@ -12,6 +12,8 @@ Branch: feat/773-skills-crud
 - Commits must be signed: `git commit -s`
 - Frontend hooks: state + handlers in `hooks/use<Entity>.ts`, context wrapper in `context/<Entity>Context.tsx` (see AgentContext pattern)
 - Frontend typecheck: `cd frontend && npx tsc --noEmit`
+- Wiki is a git submodule — commit changes in `/wiki/` directory directly, not through main repo
+- Wiki build: `cd wiki && npm install && npm run build` (Docusaurus)
 ---
 
 ## 2026-02-14 - US-001
@@ -193,4 +195,20 @@ Thread: N/A
   - Sidebar nav links use `SidebarGroup` > `SidebarGroupLabel asChild` > `Link` pattern (same as Assistants)
   - `Sparkles` icon from lucide-react works well for the Skills concept
   - Browser verification requires both frontend dev server AND backend running with auth — typecheck is sufficient for routing validation
+---
+
+## 2026-02-14 - US-017
+Thread: N/A
+- Created `wiki/docs/skills/index.md` — Full Skills documentation page
+- Sections: Overview, How It Works, Skill Data Model, API Reference (all 6 endpoints with curl examples), Using Skills with Agents, UI Guide, Best Practices, Related Documentation
+- Updated `wiki/sidebars.ts` — Added `skills/index` to "Core Features" category (after memories, before agents-md)
+- Wiki builds successfully (`npm run build` — all pre-existing broken link warnings are unrelated)
+- Committed directly to wiki submodule repo on master branch
+- Files changed: `wiki/docs/skills/index.md` (new), `wiki/sidebars.ts` (modified)
+- **Learnings for future iterations:**
+  - Wiki is a git submodule (`git@github.com:ruska-ai/wiki.git`) — changes must be committed in the submodule directory, not the main repo
+  - Wiki uses Docusaurus with `npm run build` for validation
+  - `npm install` is needed before first build if `node_modules` doesn't exist
+  - Documentation follows pattern: frontmatter (title, slug, sidebar_position), overview section, API reference with curl examples, UI guide, best practices
+  - Pre-existing broken link warnings exist in other docs pages — don't need to fix these for new pages
 ---
