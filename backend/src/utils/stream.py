@@ -190,6 +190,7 @@ async def stream_generator(
     service_context: ServiceContext,
     instructions: str = None,
     api_key: str | None = None,
+    sandbox_type: str | None = None,
 ):
     """Stream agent responses as Server-Sent Events.
 
@@ -219,7 +220,9 @@ async def stream_generator(
                 stream_writer=lambda _: None,
                 config=config,
             )
-            backend, _sandbox = resolve_sandbox_backend(runtime)
+            backend, _sandbox = resolve_sandbox_backend(
+                runtime, sandbox_type=sandbox_type
+            )
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,

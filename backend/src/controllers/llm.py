@@ -66,17 +66,20 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
-    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None]:
-        """Resolve user default model and API key.
+    async def _resolve_user_settings(
+        self, model: str
+    ) -> tuple[str, str | None, str | None]:
+        """Resolve user default model, API key, and sandbox preference.
 
-        Returns (model, api_key) where model may be overridden by user default
-        and api_key is the resolved key for the provider.
+        Returns (model, api_key, default_sandbox) where model may be overridden
+        by user default, api_key is the resolved key for the provider, and
+        default_sandbox is the user's sandbox backend preference.
         """
         if not self.user_id:
             # Unauthenticated users: fall back to system default if no model
             if not model:
                 model = DEFAULT_CHAT_MODEL
-            return model, None
+            return model, None, None
 
         settings_repo = UserSettingsRepo(self.user_id, self.store)
         settings = await settings_repo._get_or_create()
@@ -90,12 +93,15 @@ class LLMController:
         if not model:
             model = DEFAULT_CHAT_MODEL
 
+        # Read sandbox preference from settings
+        default_sandbox = getattr(settings, "default_sandbox", None)
+
         # Guard against None model before resolving API key
         if not model:
-            return model, None
+            return model, None, default_sandbox
 
         api_key = resolve_api_key(model, user_keys if user_keys else None)
-        return model, api_key
+        return model, api_key, default_sandbox
 
     async def llm_invoke(self, params: LLMRequest):
         """Invoke the agent synchronously and return the final response.
@@ -112,8 +118,10 @@ class LLMController:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
 
-            # Resolve user-configured API key and default model
-            params.model, api_key = await self._resolve_user_settings(params.model)
+            # Resolve user-configured API key, default model, and sandbox
+            params.model, api_key, default_sandbox = await self._resolve_user_settings(
+                params.model
+            )
 
             # Load user memories into files_map for MemoryMiddleware
             memory_files, memory_sources = await prepare_memory_files(
@@ -125,7 +133,9 @@ class LLMController:
 
             async with get_checkpoint_db() as checkpointer:
                 runtime = self._init_runtime(params)
-                backend, _sandbox = resolve_sandbox_backend(runtime)
+                backend, _sandbox = resolve_sandbox_backend(
+                    runtime, sandbox_type=default_sandbox
+                )
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,
@@ -157,8 +167,10 @@ class LLMController:
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)
 
-        # Resolve user-configured API key and default model
-        assistant.model, api_key = await self._resolve_user_settings(assistant.model)
+        # Resolve user-configured API key, default model, and sandbox
+        assistant.model, api_key, default_sandbox = await self._resolve_user_settings(
+            assistant.model
+        )
 
         return stream_generator(
             input=assistant.input,
@@ -170,6 +182,7 @@ class LLMController:
             service_context=self.service_context,
             instructions=assistant.instructions,
             api_key=api_key,
+            sandbox_type=default_sandbox,
         )
 
     async def llm_task(self, job: ScheduleCreate):
