@@ -29,6 +29,9 @@ import ProjectPage from "@/pages/projects/ProjectPage";
 import ThreadPage from "@/pages/threads/ThreadPage";
 import AgentThreadPage from "@/pages/agents/thread";
 import SettingsPage from "@/pages/settings";
+import SkillsIndexPage from "@/pages/skills";
+import SkillCreatePage from "@/pages/skills/create";
+import SkillEditPage from "@/pages/skills/edit";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -173,6 +176,30 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<SettingsPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/skills"
+						element={
+							<PrivateRoute>
+								<SkillsIndexPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/skills/create"
+						element={
+							<PrivateRoute>
+								<SkillCreatePage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/skills/:skillName/edit"
+						element={
+							<PrivateRoute>
+								<SkillEditPage />
 							</PrivateRoute>
 						}
 					/>

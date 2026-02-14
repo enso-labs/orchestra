@@ -14,6 +14,7 @@ import {
 	Loader2,
 	Search,
 	Calendar,
+	Sparkles,
 } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 // import { VersionSwitcher } from "@/components/menus/version-switcher";
@@ -870,6 +871,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							<Link to="/assistants" className="flex items-center w-full">
 								<Bot className="w-4 h-4 mr-2" />
 								Assistants
+							</Link>
+						</SidebarGroupLabel>
+					</SidebarGroup>
+
+					{/* Skills Link */}
+					<SidebarGroup className="border-b border-sidebar-border">
+						<SidebarGroupLabel
+							asChild
+							className={`
+								group/label text-sidebar-foreground hover:bg-sidebar-accent
+								hover:text-sidebar-accent-foreground text-sm
+							`}
+						>
+							<Link to="/skills" className="flex items-center w-full">
+								<Sparkles className="w-4 h-4 mr-2" />
+								Skills
 							</Link>
 						</SidebarGroupLabel>
 					</SidebarGroup>

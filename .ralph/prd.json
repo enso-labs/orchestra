@@ -243,7 +243,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Use shadcn Tabs, FormField, Input, Textarea, Switch components. MonacoEditor for markdown. Name field validates kebab-case pattern."
     },
     {
@@ -262,7 +262,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "Use useParams() to get skillName. Reuse similar layout to create page. Delete navigates back to /skills after confirmation."
     },
     {
@@ -276,7 +276,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "Follow existing route patterns in AppRoutes.tsx. Lazy-load pages. Sidebar link follows existing nav group pattern."
     },
     {

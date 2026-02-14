@@ -148,3 +148,49 @@ Thread: N/A
   - Skills list page uses useSkillContext() from SkillContext rather than local state (unlike BaseToolMenu which uses local state)
   - Search filtering on both `name` and `description` gives better UX than name-only
 ---
+
+## 2026-02-14 - US-014
+Thread: N/A
+- Created `frontend/src/pages/skills/create.tsx` — Skill create page with two-tab layout
+- "Editor" tab: MonacoEditor in markdown mode for SKILL.md content
+- "Settings" tab: Zod-validated form with name (kebab-case), description, tags, allowed_tools, license, disabled toggle
+- Uses react-hook-form with zodResolver for form state management
+- Submit calls SkillService.create() and navigates to /skills on success
+- Wrapped in ChatLayout with ChatNav, follows PromptCreatePage pattern
+- Files changed: `frontend/src/pages/skills/create.tsx` (new)
+- **Learnings for future iterations:**
+  - MonacoEditor `handleChange` + `form.setValue()` with `shouldValidate: true` keeps form in sync with editor content
+  - Tags and allowed_tools stored as comma-separated strings in form, split to arrays on submit
+  - Switch for disabled field is inverted (checked = enabled, unchecked = disabled) for better UX
+  - Browser testing not possible until routing (US-016) is wired up — typecheck is sufficient for component validation
+---
+
+## 2026-02-14 - US-015
+Thread: N/A
+- Created `frontend/src/pages/skills/edit.tsx` — Skill edit page with two-tab layout (Editor + Settings)
+- Loads existing skill by `skillName` URL param via `SkillService.get()`
+- Pre-populates all form fields with existing skill data (tags/allowed_tools joined as comma-separated)
+- Toggle (Switch) and Delete (AlertDialog confirmation) buttons in page header
+- Name field shown as read-only disabled input (skill key can't change)
+- Submit calls `SkillService.update()` and shows success feedback
+- Wrapped in ChatLayout with ChatNav
+- Files changed: `frontend/src/pages/skills/edit.tsx` (new)
+- **Learnings for future iterations:**
+  - Edit page omits `name` from Zod schema since it's read-only — displayed as a plain disabled Input outside the form
+  - `form.reset()` in useEffect after loading skill data pre-populates all fields correctly
+  - Toggle in header uses local `skill` state + `form.setValue("disabled", ...)` to keep header switch and settings tab switch in sync
+  - AlertDialog works well for inline delete confirmation in the header (same pattern as skills list page)
+---
+
+## 2026-02-14 - US-016
+Thread: N/A
+- Added 3 skill routes to `AppRoutes.tsx`: `/skills` (SkillsIndexPage), `/skills/create` (SkillCreatePage), `/skills/:skillName/edit` (SkillEditPage)
+- All routes wrapped in `PrivateRoute` following existing pattern
+- Added "Skills" nav link with `Sparkles` icon to `app-sidebar.tsx` after Assistants SidebarGroup
+- Files changed: `frontend/src/routes/AppRoutes.tsx` (modified), `frontend/src/components/drawers/app-sidebar.tsx` (modified)
+- **Learnings for future iterations:**
+  - Existing codebase uses direct imports (not lazy loading) for route pages
+  - Sidebar nav links use `SidebarGroup` > `SidebarGroupLabel asChild` > `Link` pattern (same as Assistants)
+  - `Sparkles` icon from lucide-react works well for the Skills concept
+  - Browser verification requires both frontend dev server AND backend running with auth — typecheck is sufficient for routing validation
+---
