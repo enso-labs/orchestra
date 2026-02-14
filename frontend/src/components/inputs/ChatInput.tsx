@@ -137,16 +137,12 @@ export default function ChatInput({
 					}
 				}}
 			/>
-			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
-				<div className="flex items-center gap-1">
+			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0 overflow-hidden">
+				<div className="flex items-center gap-1 min-w-0 flex-1">
 					<div className="flex gap-1">
 						{/* <ImageUpload /> */}
 						<BaseToolMenu />
-						{showAgentMenu && (
-							<div className="max-w-62">
-								<AgentMenu />
-							</div>
-						)}
+
 						{/* File toggle button */}
 						<Button
 							variant={viewMode === "editor" ? "secondary" : "default"}
@@ -162,6 +158,7 @@ export default function ChatInput({
 								</span>
 							)}
 						</Button>
+						{showAgentMenu && <AgentMenu />}
 					</div>
 
 					{metadata?.project_id && selectedProject && (

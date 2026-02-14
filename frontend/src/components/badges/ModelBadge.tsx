@@ -44,7 +44,7 @@ export function ModelBadge({ model, className }: ModelBadgeProps) {
 			)}
 		>
 			{icon}
-			<span className="truncate max-w-[150px]">{label}</span>
+			<span className="truncate max-w-[80px] sm:max-w-[150px]">{label}</span>
 		</span>
 	);
 }
