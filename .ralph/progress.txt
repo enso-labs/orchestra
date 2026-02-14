@@ -108,3 +108,14 @@
   - Component is standalone — doesn't need to be wired into Settings page until US-010
   - Browser verification of an unmounted component is limited to typecheck + build pass; real browser test happens in US-010 when it's wired in
 ---
+
+## 2026-02-14 - US-010
+- What was implemented: Wired SandboxSettings component into the Settings page between DefaultModelSettings and UserApiKeysSettings
+- Files changed:
+  - frontend/src/pages/settings/index.tsx (added import + render of SandboxSettings)
+- **Learnings for future iterations:**
+  - Settings page uses tab indentation — the Write tool preserves tabs correctly
+  - The Edit tool may fail with tab-indented files if you copy-paste from Read output (which displays tabs as spaces)
+  - Browser verification requires a running local dev server; production won't reflect uncommitted changes
+  - This was a minimal 2-line change — import + render between existing components
+---
