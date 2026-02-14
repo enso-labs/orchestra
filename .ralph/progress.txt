@@ -59,3 +59,28 @@
   - _create_daytona_backend_checked returns None (not a tuple) on failure, so callers check `if result is not None`
   - test_explicit_state_skips_daytona verifies create_daytona_backend is never called using assert_not_called()
 ---
+
+## 2026-02-13 - US-005
+- What was implemented: Wired sandbox_type through LLMController — _resolve_user_settings returns 3-tuple (model, api_key, default_sandbox), llm_invoke and llm_stream both pass sandbox_type to resolve_sandbox_backend/stream_generator
+- Also completed US-006: added sandbox_type parameter to stream_generator() and passed it to resolve_sandbox_backend()
+- Files changed:
+  - backend/src/controllers/llm.py (_resolve_user_settings 3-tuple, llm_invoke sandbox_type, llm_stream sandbox_type)
+  - backend/src/utils/stream.py (sandbox_type parameter + forwarding to resolve_sandbox_backend)
+  - backend/tests/unit/controllers/test_llm_model_resolution.py (FakeSettings.default_sandbox, 3-tuple unpacking in all tests, new test_default_sandbox_returned_from_settings)
+- **Learnings for future iterations:**
+  - FakeSettings in test_llm_model_resolution.py needs all fields that _resolve_user_settings reads via getattr
+  - US-005 and US-006 are tightly coupled — stream_generator must accept sandbox_type for llm_stream to pass it
+  - Using getattr(settings, "default_sandbox", None) is safer than direct attribute access for forward compatibility
+  - Ruff reformats multi-line tuple unpacking — let it handle formatting
+---
+
+## 2026-02-13 - US-006 & US-007
+- US-006 was already implemented during US-005 iteration — marked as passes:true
+- US-007: Wired sandbox_type through _execute_agent_stream in worker tasks
+- Files changed:
+  - backend/src/workers/tasks.py (read default_sandbox from settings, pass to resolve_sandbox_backend)
+- **Learnings for future iterations:**
+  - _execute_agent_stream already fetches settings via UserSettingsRepo._get_or_create() — just read default_sandbox from it
+  - Use getattr(settings, "default_sandbox", None) for forward compatibility (same pattern as LLMController)
+  - default_sandbox variable must be initialized before the if/else block since settings is only available inside `if user_id:`
+---

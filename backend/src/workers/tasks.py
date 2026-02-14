@@ -222,10 +222,12 @@ async def _execute_agent_stream(
     from src.constants.llm import DEFAULT_CHAT_MODEL
 
     api_key = None
+    default_sandbox = None
     if user_id:
         settings_repo = UserSettingsRepo(user_id, service_context.store)
         settings = await settings_repo._get_or_create()
         user_keys = settings_repo._decrypt_keys(settings)
+        default_sandbox = getattr(settings, "default_sandbox", None)
         if not params.model and settings.default_model:
             params.model = settings.default_model
         if not params.model:
@@ -252,7 +254,7 @@ async def _execute_agent_stream(
         stream_writer=lambda _: None,
         config=config,
     )
-    backend, _sandbox = resolve_sandbox_backend(runtime)
+    backend, _sandbox = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
 
     agent = await construct_agent(
         instructions=params.instructions,
