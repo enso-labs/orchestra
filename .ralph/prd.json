@@ -1,0 +1,299 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/773-skills-crud",
+  "description": "Skills CRUD - Full CRUD management for reusable agent skills with API, persistence, agent integration, and frontend UI",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create SavedSkill Pydantic data model",
+      "description": "As a developer, I need a Pydantic model for skills so they can be validated, serialized, and stored consistently in LangGraph Store.",
+      "acceptanceCriteria": [
+        "New file `backend/src/schemas/entities/skill.py` with `SavedSkill(BaseModel)`",
+        "Fields: `name` (str), `description` (str, max 1024), `content` (str, SKILL.md body), `tags` (list[str]), `disabled` (bool, default False), `metadata` (dict), `allowed_tools` (list[str]), `license` (Optional[str]), `compatibility` (Optional[str]), `created_at` (datetime), `updated_at` (datetime)",
+        "Name validation regex: `^[a-z0-9]+(-[a-z0-9]+)*$` (kebab-case)",
+        "`to_skill_md()` method that reconstructs full SKILL.md content with YAML frontmatter from model fields",
+        "Add `SkillCreate` and `SkillUpdate` request schemas, and `SkillListResponse` response schema",
+        "Typecheck passes (`make format`)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Follow existing pattern in backend/src/schemas/entities/memory.py. Include SkillCreate (name, description, content, tags, allowed_tools, license, compatibility), SkillUpdate (all optional), and SkillListResponse (skills list, total, limit, offset)."
+    },
+    {
+      "id": "US-002",
+      "title": "Create SkillRepo for LangGraph Store persistence",
+      "description": "As a developer, I need a repository layer for skills that follows the existing BaseRepo/MemoryRepo pattern so skill data is persisted in LangGraph Store.",
+      "acceptanceCriteria": [
+        "New file `backend/src/repos/skill_repo.py` with `SkillRepo(BaseRepo)`",
+        "Constructor: `__init__(self, user_id: str, store: Optional[BaseStore] = None)` calling `super().__init__(user_id=user_id, store=store, entity_type=\"skills\")`",
+        "Methods: `create(skill: SavedSkill)`, `get(skill_name: str)`, `update(skill_name: str, ...)`, `delete(skill_name: str)`, `list(limit, offset, query)`",
+        "Uses `(user_id, \"skills\")` namespace via BaseRepo",
+        "Returns `SavedSkill` instances (no encryption needed, unlike ToolRepo)",
+        "Typecheck passes (`make format`)"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Follow the exact pattern from backend/src/repos/memory_repo.py. Key is skill_name (not UUID). Use _set, _get, _delete, _search helpers from BaseRepo."
+    },
+    {
+      "id": "US-003",
+      "title": "Create SkillService business logic layer",
+      "description": "As a developer, I need a service layer that wraps the repo and adds business logic like toggle and enabled-skill filtering.",
+      "acceptanceCriteria": [
+        "New file `backend/src/services/skill.py` with `SkillService`",
+        "Constructor: `__init__(self, user_id: str, store: BaseStore)` creating internal `SkillRepo`",
+        "Methods: `create()`, `get()`, `update()`, `toggle()` (flips `disabled` field), `search()`, `search_enabled()` (filters `disabled=False`), `delete()`",
+        "`toggle()` returns the updated skill with flipped disabled state",
+        "`search_enabled()` returns only skills where `disabled=False`",
+        "Typecheck passes (`make format`)"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Follow pattern from backend/src/services/memory.py but use SkillRepo internally. search_enabled filters the result of search() where disabled=False."
+    },
+    {
+      "id": "US-004",
+      "title": "Wire SkillService into ServiceContext",
+      "description": "As a developer, I need SkillService available through ServiceContext so routes and controllers can access it.",
+      "acceptanceCriteria": [
+        "Edit `backend/src/contexts/service.py`",
+        "Add import: `from src.services.skill import SkillService`",
+        "Add in `__init__()`: `self.skill_service = SkillService(user_id=self.user_id, store=store)`",
+        "Typecheck passes (`make format`)"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Two-line change following existing pattern of tool_service, memory_service, etc. in backend/src/contexts/service.py."
+    },
+    {
+      "id": "US-005",
+      "title": "Create skill CRUD API routes",
+      "description": "As a user, I want REST API endpoints to manage my skills so I can create, read, update, toggle, and delete skills programmatically.",
+      "acceptanceCriteria": [
+        "New file `backend/src/routes/v0/skill.py` with FastAPI router (prefix `/skills`, tags `[\"Skill\"]`)",
+        "`POST /skills/search` — List/search skills (query, limit, offset in request body)",
+        "`POST /skills` — Create a new skill (201 response)",
+        "`GET /skills/{skill_name}` — Get a single skill by name",
+        "`PUT /skills/{skill_name}` — Update an existing skill",
+        "`PATCH /skills/{skill_name}/toggle` — Toggle the disabled flag",
+        "`DELETE /skills/{skill_name}` — Delete a skill (204 response)",
+        "All endpoints use `Depends(verify_credentials)` and `Depends(get_store)` with `_get_repo()` helper",
+        "Edit `backend/src/routes/v0/__init__.py` to import and register skill router",
+        "Typecheck passes (`make format`)"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Follow the exact pattern from backend/src/routes/v0/memory.py. Use _get_repo() helper, verify_credentials, get_store dependencies. Register in __init__.py like: `from .skill import router as skill` then `app.include_router(skill, prefix=prefix)`."
+    },
+    {
+      "id": "US-006",
+      "title": "Integrate skills into agent invocation",
+      "description": "As a user, I want my enabled skills to be automatically available to the agent when I chat, so the agent can discover and use relevant skills.",
+      "acceptanceCriteria": [
+        "Add `prepare_skill_files()` function in `backend/src/agents/__init__.py` following `prepare_memory_files()` pattern at lines 73-107",
+        "Function fetches enabled skills via `SkillService.search_enabled()`",
+        "Creates files map: `{\"/skills/<name>/SKILL.md\": create_file_data(skill.to_skill_md())}` for each enabled skill",
+        "Returns `(files_map, [\"/skills/\"])` when skills exist, or `({}, None)` when no enabled skills",
+        "In `backend/src/controllers/llm.py` `llm_invoke()`: call `prepare_skill_files()`, merge skill files as base layer `{**skill_files, **memory_files, **existing_files}`, pass skill sources to `construct_agent(skills=...)`",
+        "In `backend/src/utils/stream.py` `stream_generator()`: call `prepare_skill_files()`, merge skill files as base layer before memory files, pass skill sources to `construct_agent(skills=...)`",
+        "Agent works normally when no skills are enabled (empty files, None sources)",
+        "Typecheck passes (`make format`)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "The `skills` parameter is already supported by `create_deep_agent()` and threaded through `init_graph()` and `construct_agent()`. Just need to add the prepare function and wire it in the two entry points (llm_invoke and stream_generator). Skill files are the base layer — memory files override, then user files override both: `{**skill_files, **memory_files, **user_files}`."
+    },
+    {
+      "id": "US-007",
+      "title": "Write SkillRepo unit tests",
+      "description": "As a developer, I need unit tests for SkillRepo to verify CRUD operations work correctly with InMemoryStore.",
+      "acceptanceCriteria": [
+        "New file `backend/tests/unit/repos/test_skill_repo.py`",
+        "Test create skill and verify returned SavedSkill has correct fields",
+        "Test get skill by name returns correct skill",
+        "Test get non-existent skill returns None",
+        "Test update skill modifies fields and updates updated_at",
+        "Test delete skill removes it from store",
+        "Test list skills with pagination (limit/offset)",
+        "Test list skills with search query filter",
+        "All tests pass (`make test`)"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Use InMemoryStore from langgraph.store.memory. Follow test patterns from existing repo tests in backend/tests/unit/repos/."
+    },
+    {
+      "id": "US-008",
+      "title": "Write SkillService unit tests",
+      "description": "As a developer, I need unit tests for SkillService to verify service logic, toggle behavior, and search_enabled filtering.",
+      "acceptanceCriteria": [
+        "New file `backend/tests/unit/services/test_skill_service.py`",
+        "Test create skill through service",
+        "Test toggle flips disabled field from False to True and back",
+        "Test search_enabled returns only skills where disabled=False",
+        "Test search returns all skills regardless of disabled state",
+        "Test update through service",
+        "Test delete through service",
+        "All tests pass (`make test`)"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Use InMemoryStore. Create SkillService with test user_id. Create mix of enabled/disabled skills to test filtering."
+    },
+    {
+      "id": "US-009",
+      "title": "Write prepare_skill_files unit tests",
+      "description": "As a developer, I need unit tests for prepare_skill_files to verify file generation, disabled skill exclusion, and SKILL.md format output.",
+      "acceptanceCriteria": [
+        "New file `backend/tests/unit/agents/test_prepare_skill_files.py`",
+        "Test returns ({}, None) when no skills exist",
+        "Test returns ({}, None) when all skills are disabled",
+        "Test generates correct /skills/<name>/SKILL.md paths for enabled skills",
+        "Test SKILL.md content includes YAML frontmatter with skill metadata",
+        "Test disabled skills are excluded from output",
+        "Test returns correct skill source paths list",
+        "All tests pass (`make test`)"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Use InMemoryStore with SkillService to set up test data. Verify the to_skill_md() output format and file map structure."
+    },
+    {
+      "id": "US-010",
+      "title": "Create frontend SkillService API client",
+      "description": "As a frontend developer, I need a TypeScript service class to communicate with the skills API endpoints.",
+      "acceptanceCriteria": [
+        "New file `frontend/src/lib/services/skillService.ts`",
+        "`Skill` type with fields: `name`, `description`, `content`, `tags`, `disabled`, `metadata`, `allowed_tools`, `license?`, `compatibility?`, `created_at?`, `updated_at?`",
+        "`SkillService` class with static methods: `search()`, `create()`, `get()`, `update()`, `toggle()` (PATCH), `delete()`",
+        "Follows existing service patterns (e.g., `memoryService.ts`)",
+        "Export from `frontend/src/lib/services/index.ts`",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Follow the pattern from frontend/src/lib/services/memoryService.ts. Use axios with API_URL. search() is POST /skills/search, toggle() is PATCH /skills/{name}/toggle."
+    },
+    {
+      "id": "US-011",
+      "title": "Create useSkill hook and SkillContext provider",
+      "description": "As a frontend developer, I need React state management for skills that fetches from the backend (not localStorage) so skill state is consistent across the app.",
+      "acceptanceCriteria": [
+        "New file `frontend/src/hooks/useSkill.ts` with `useSkill()` hook",
+        "State: `skill`, `skills`, `isLoadingSkills`",
+        "Methods: `handleGetSkills`, `handleToggleSkill`, `useEffectGetSkills`, `useEffectGetSkill`",
+        "`handleToggleSkill(name)` calls `SkillService.toggle()` then refreshes from backend",
+        "New file `frontend/src/context/SkillContext.tsx` with `SkillProvider` and `useSkillContext()`",
+        "Follows existing context pattern (e.g., `AgentContext.tsx`)",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Follow the pattern from frontend/src/context/AgentContext.tsx for SkillContext. Hook should handle loading, error, and refresh states."
+    },
+    {
+      "id": "US-012",
+      "title": "Add Skills section to BaseToolMenu (+ button)",
+      "description": "As a user, I want to see and toggle my skills directly from the chat input's + button so I can quickly enable/disable skills without leaving the conversation.",
+      "acceptanceCriteria": [
+        "Edit `frontend/src/components/menus/BaseToolMenu.tsx`",
+        "Add `DropdownMenuSeparator` + \"Skills\" `DropdownMenuGroup` after existing menu items",
+        "Each skill shown as `DropdownMenuItem` with name + `Switch` toggle",
+        "Switch `onCheckedChange` calls `SkillService.toggle(name)` and refreshes state",
+        "\"Manage Skills\" link item with `ChevronRight` icon navigating to `/skills`",
+        "Add \"Tools\" `DropdownMenuGroup` with \"Manage Tools\" placeholder link",
+        "Active skill count shown as badge on the `+` trigger button",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Import SkillService and useSkillContext. Fetch skills on menu open. Show Switch for each skill inline. Badge count is skills.filter(s => !s.disabled).length."
+    },
+    {
+      "id": "US-013",
+      "title": "Create Skills list page",
+      "description": "As a user, I want a /skills page that lists all my skills with search, toggle, and action controls so I can manage my skill library.",
+      "acceptanceCriteria": [
+        "New file `frontend/src/pages/skills/index.tsx`",
+        "Header with \"Skills\" title, subtitle, and \"Create Skill\" button",
+        "Search/filter text input to filter by name/description, with skill count display",
+        "Each skill row shows: name, description (truncated), tag badges, Switch toggle, Edit/Delete action buttons",
+        "Toggle calls `SkillService.toggle()` and refreshes list from backend",
+        "Delete shows confirmation before calling `SkillService.delete()`",
+        "Wrapped in `ChatLayout` component (follows `pages/agents/index.tsx` pattern)",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Follow the layout pattern from frontend/src/pages/agents/index.tsx. Use ChatLayout wrapper. shadcn Switch, Button, Badge, Input components."
+    },
+    {
+      "id": "US-014",
+      "title": "Create Skill create page",
+      "description": "As a user, I want an editor page to create new skills with a markdown editor for SKILL.md content and a settings form for metadata.",
+      "acceptanceCriteria": [
+        "New file `frontend/src/pages/skills/create.tsx`",
+        "Two-tab layout: \"Editor\" tab (MonacoEditor in markdown mode for SKILL.md content) + \"Settings\" tab (form fields for name, description, tags, allowed_tools, license, disabled toggle)",
+        "Zod validation for form fields, react-hook-form for state management",
+        "Submit calls `SkillService.create()` and navigates to `/skills` on success",
+        "Wrapped in `ChatLayout` component",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Use shadcn Tabs, FormField, Input, Textarea, Switch components. MonacoEditor for markdown. Name field validates kebab-case pattern."
+    },
+    {
+      "id": "US-015",
+      "title": "Create Skill edit page",
+      "description": "As a user, I want an editor page to edit existing skills, pre-populated with current data, with toggle and delete controls in the header.",
+      "acceptanceCriteria": [
+        "New file `frontend/src/pages/skills/edit.tsx`",
+        "Same two-tab layout as create page: \"Editor\" + \"Settings\" tabs",
+        "Loads existing skill by `skillName` URL param via `SkillService.get()`",
+        "Pre-populates all form fields with existing skill data",
+        "Toggle and Delete buttons in page header",
+        "Submit calls `SkillService.update()` and shows success feedback",
+        "Wrapped in `ChatLayout` component",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "Use useParams() to get skillName. Reuse similar layout to create page. Delete navigates back to /skills after confirmation."
+    },
+    {
+      "id": "US-016",
+      "title": "Add frontend routing and navigation",
+      "description": "As a user, I want to navigate to skill pages from the sidebar and via URL so skills are accessible throughout the app.",
+      "acceptanceCriteria": [
+        "Edit `frontend/src/routes/AppRoutes.tsx` with 3 new routes: `/skills` -> SkillsIndexPage, `/skills/create` -> SkillCreatePage, `/skills/:skillName/edit` -> SkillEditPage (all PrivateRoute)",
+        "Edit `frontend/src/components/drawers/app-sidebar.tsx` — Add \"Skills\" nav link with `Sparkles` icon after Assistants SidebarGroup",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "Follow existing route patterns in AppRoutes.tsx. Lazy-load pages. Sidebar link follows existing nav group pattern."
+    },
+    {
+      "id": "US-017",
+      "title": "Create wiki documentation for Skills feature",
+      "description": "As a user or developer, I want documentation explaining what skills are, how to use the API, and how to manage skills in the UI.",
+      "acceptanceCriteria": [
+        "New file `wiki/docs/skills/index.md`",
+        "Sections: What are Skills, API curl examples for all CRUD operations (search, create, get, update, toggle, delete), Using Skills with Agents, UI Guide, Best Practices",
+        "Follows pattern from `wiki/docs/tools/tools.md`",
+        "Edit `wiki/sidebars.ts` — Add `\"skills/index\"` to \"Core Features\" category",
+        "Wiki builds successfully (`cd wiki && npm run build`)",
+        "IMPORTANT: Wiki changes must be committed directly to the wiki repo (not the main Orchestra repo)"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "The wiki is a separate Docusaurus project. Changes go to the wiki repo directly. Include curl examples with Authorization headers for all 6 endpoints."
+    }
+  ]
+}
