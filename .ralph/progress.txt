@@ -2,4 +2,104 @@
 Started: Fri Feb 14 2026
 Feature: Skills CRUD (Issue #773)
 Branch: feat/773-skills-crud
+
+## Codebase Patterns
+- Backend format: `cd backend && make format` (runs `uvx ruff format`)
+- Backend lint: `uvx ruff check <file>` for quick lint checks
+- Backend tests: `cd backend && set -a && . $HOME/.env/orchestra/.env.backend && set +a && uv run pytest` (env required)
+- Unit tests can be run individually: `uv run pytest tests/unit/repos/test_skill_repo.py -v`
+- Schema entities follow pattern in `backend/src/schemas/entities/memory.py` — BaseModel with Create/Update/ListResponse variants
+- Commits must be signed: `git commit -s`
+---
+
+## 2026-02-14 - US-001
+Thread: N/A
+- Created `backend/src/schemas/entities/skill.py` with SavedSkill, SkillCreate, SkillUpdate, SkillListResponse models
+- Files changed: `backend/src/schemas/entities/skill.py` (new)
+- **Learnings for future iterations:**
+  - `make format` must be run from `backend/` directory, not repo root
+  - Schema pattern: BaseModel for entity, Create (required fields only), Update (all optional), ListResponse (list + pagination)
+  - Name validation uses `@field_validator` with regex for kebab-case
+  - `to_skill_md()` uses PyYAML for frontmatter generation
+---
+
+## 2026-02-14 - US-002
+Thread: N/A
+- Created `backend/src/repos/skill_repo.py` with SkillRepo(BaseRepo) for CRUD operations
+- Added "skills" entity type to `BaseRepo._format()` in `backend/src/repos/base_repo.py`
+- Files changed: `backend/src/repos/skill_repo.py` (new), `backend/src/repos/base_repo.py` (modified)
+- **Learnings for future iterations:**
+  - When adding a new entity repo, must also register entity_type in `BaseRepo._format()`
+  - SkillRepo uses skill_name as key (not UUID) since skills are identified by kebab-case name
+  - `base_repo.py` has a pre-existing F811 lint issue (Document import redefinition) — not our fault
+---
+
+## 2026-02-14 - US-003
+Thread: N/A
+- Created `backend/src/services/skill.py` with SkillService wrapping SkillRepo
+- Files changed: `backend/src/services/skill.py` (new)
+---
+
+## 2026-02-14 - US-004
+Thread: N/A
+- Wired SkillService into ServiceContext (import + init)
+- Files changed: `backend/src/contexts/service.py` (modified)
+---
+
+## 2026-02-14 - US-005
+Thread: N/A
+- Created REST API routes for skills: search, create, get, update, toggle, delete
+- Registered skill router in `__init__.py`
+- Files changed: `backend/src/routes/v0/skill.py` (new), `backend/src/routes/v0/__init__.py` (modified)
+- **Learnings for future iterations:**
+  - Routes use `_get_service()` helper (not `_get_repo()`) to use service layer
+  - Search endpoint is POST (not GET) to accept body with query/limit/offset
+---
+
+## 2026-02-14 - US-006
+Thread: N/A
+- Added `prepare_skill_files()` in `backend/src/agents/__init__.py`
+- Wired into `llm_invoke()` and `stream_generator()` with skills as base layer
+- Files changed: `backend/src/agents/__init__.py`, `backend/src/controllers/llm.py`, `backend/src/utils/stream.py`
+- **Learnings for future iterations:**
+  - File merge order: `{**skill_files, **memory_files, **user_files}` — skills base, memories override, user top
+  - Memory sources merge: `(skill_sources or []) + (memory_sources or []) or None`
+  - `agents/__init__.py` has pre-existing F401 lint issue (create_agent unused import)
+---
+
+## 2026-02-14 - US-007
+Thread: N/A
+- Created `backend/tests/unit/repos/test_skill_repo.py` — 9 tests all passing
+- Files changed: `backend/tests/unit/repos/test_skill_repo.py` (new)
+---
+
+## 2026-02-14 - US-008
+Thread: N/A
+- Created `backend/tests/unit/services/test_skill_service.py` — 8 tests all passing
+- Files changed: `backend/tests/unit/services/test_skill_service.py` (new)
+---
+
+## 2026-02-14 - US-009
+Thread: N/A
+- Created `backend/tests/unit/agents/test_prepare_skill_files.py` — 8 tests all passing
+- Files changed: `backend/tests/unit/agents/test_prepare_skill_files.py` (new)
+- **Learnings for future iterations:**
+  - Tests use real InMemoryStore + SkillService for integration-style unit testing
+  - `conftest.py` requires env vars to load, but unit tests work fine with env loaded
+  - All 25 skill-related tests pass: 9 repo + 8 service + 8 prepare_skill_files
+---
+
+## 2026-02-14 - US-010
+Thread: N/A
+- Created `frontend/src/lib/entities/skill.ts` with Skill, SkillListResponse, SkillCreateRequest, SkillUpdateRequest types
+- Created `frontend/src/lib/services/skillService.ts` with SkillService class (search, get, create, update, toggle, delete)
+- Updated `frontend/src/lib/entities/index.ts` to re-export skill types
+- Updated `frontend/src/lib/services/index.ts` to re-export SkillService
+- Files changed: `frontend/src/lib/entities/skill.ts` (new), `frontend/src/lib/services/skillService.ts` (new), `frontend/src/lib/entities/index.ts` (modified), `frontend/src/lib/services/index.ts` (modified)
+- **Learnings for future iterations:**
+  - Frontend services follow pattern: default class export with static methods, using `apiClient` from `@/lib/utils/apiClient`
+  - Entity types go in `frontend/src/lib/entities/<name>.ts` and get re-exported from `index.ts` via `export * from "./<name>"`
+  - Services re-export from `index.ts` with `export { default as <Name>Service } from "./<name>Service"`
+  - search() is POST (not GET) to match backend SearchFilter body pattern
+  - toggle() uses PATCH method
 ---

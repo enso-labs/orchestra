@@ -54,6 +54,7 @@ export type Server = {
 };
 
 export * from "./memory";
+export * from "./skill";
 
 export type DashboardTabOption = "agents" | "workflows" | "servers";
 

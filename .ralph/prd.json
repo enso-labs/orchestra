@@ -16,7 +16,7 @@
         "Typecheck passes (`make format`)"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Follow existing pattern in backend/src/schemas/entities/memory.py. Include SkillCreate (name, description, content, tags, allowed_tools, license, compatibility), SkillUpdate (all optional), and SkillListResponse (skills list, total, limit, offset)."
     },
     {
@@ -32,7 +32,7 @@
         "Typecheck passes (`make format`)"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the exact pattern from backend/src/repos/memory_repo.py. Key is skill_name (not UUID). Use _set, _get, _delete, _search helpers from BaseRepo."
     },
     {
@@ -48,7 +48,7 @@
         "Typecheck passes (`make format`)"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Follow pattern from backend/src/services/memory.py but use SkillRepo internally. search_enabled filters the result of search() where disabled=False."
     },
     {
@@ -62,7 +62,7 @@
         "Typecheck passes (`make format`)"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Two-line change following existing pattern of tool_service, memory_service, etc. in backend/src/contexts/service.py."
     },
     {
@@ -82,7 +82,7 @@
         "Typecheck passes (`make format`)"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the exact pattern from backend/src/routes/v0/memory.py. Use _get_repo() helper, verify_credentials, get_store dependencies. Register in __init__.py like: `from .skill import router as skill` then `app.include_router(skill, prefix=prefix)`."
     },
     {
@@ -100,7 +100,7 @@
         "Typecheck passes (`make format`)"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "The `skills` parameter is already supported by `create_deep_agent()` and threaded through `init_graph()` and `construct_agent()`. Just need to add the prepare function and wire it in the two entry points (llm_invoke and stream_generator). Skill files are the base layer — memory files override, then user files override both: `{**skill_files, **memory_files, **user_files}`."
     },
     {
@@ -119,7 +119,7 @@
         "All tests pass (`make test`)"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Use InMemoryStore from langgraph.store.memory. Follow test patterns from existing repo tests in backend/tests/unit/repos/."
     },
     {
@@ -137,7 +137,7 @@
         "All tests pass (`make test`)"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Use InMemoryStore. Create SkillService with test user_id. Create mix of enabled/disabled skills to test filtering."
     },
     {
@@ -155,7 +155,7 @@
         "All tests pass (`make test`)"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Use InMemoryStore with SkillService to set up test data. Verify the to_skill_md() output format and file map structure."
     },
     {
@@ -171,7 +171,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the pattern from frontend/src/lib/services/memoryService.ts. Use axios with API_URL. search() is POST /skills/search, toggle() is PATCH /skills/{name}/toggle."
     },
     {
