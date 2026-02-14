@@ -130,6 +130,29 @@ class TestUserSettingsRepo(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(result)
 
     # ------------------------------------------------------------------
+    # set_default_sandbox
+    # ------------------------------------------------------------------
+
+    async def test_set_default_sandbox(self, _dec, _enc):
+        """Setting a default sandbox persists and is returned."""
+        await self.repo.set_default_sandbox("daytona")
+        settings, _ = await self.repo.get_settings()
+        self.assertEqual(settings.default_sandbox, "daytona")
+
+    async def test_clear_default_sandbox(self, _dec, _enc):
+        """Setting sandbox to None clears the default."""
+        await self.repo.set_default_sandbox("state")
+        await self.repo.set_default_sandbox(None)
+        settings, _ = await self.repo.get_settings()
+        self.assertIsNone(settings.default_sandbox)
+
+    async def test_set_invalid_sandbox_raises(self, _dec, _enc):
+        """Setting an invalid sandbox value raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            await self.repo.set_default_sandbox("invalid_backend")
+        self.assertIn("Invalid sandbox", str(ctx.exception))
+
+    # ------------------------------------------------------------------
     # invalid provider rejection
     # ------------------------------------------------------------------
 

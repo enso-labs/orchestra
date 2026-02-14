@@ -21,9 +21,10 @@ from src.schemas.entities import LLMRequest
 class FakeSettings:
     """Minimal stand-in for user settings."""
 
-    def __init__(self, default_model=None, encrypted_keys=None):
+    def __init__(self, default_model=None, encrypted_keys=None, default_sandbox=None):
         self.default_model = default_model
         self.encrypted_keys = encrypted_keys
+        self.default_sandbox = default_sandbox
 
 
 class FakeMessage:
@@ -67,10 +68,12 @@ def _mock_agent(model_name):
         yield  # noqa: unreachable — makes this an async generator
 
     agent.astream = empty_astream
-    agent.graph.aget_state = AsyncMock(return_value=MagicMock(
-        config={"configurable": {}},
-        values={"messages": []},
-    ))
+    agent.graph.aget_state = AsyncMock(
+        return_value=MagicMock(
+            config={"configurable": {}},
+            values={"messages": []},
+        )
+    )
     return agent
 
 
@@ -88,7 +91,7 @@ _PATCHES = {
     "resolve_api_key": "src.utils.llm.resolve_api_key",
     "prepare_memory": "src.agents.prepare_memory_files",
     "construct_agent": "src.agents.construct_agent",
-    "init_backend": "src.agents.init_backend",
+    "init_backend": "src.agents.resolve_sandbox_backend",
 }
 
 
@@ -105,9 +108,18 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value=None),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
-            patch(_PATCHES["init_backend"]),
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
+            patch(
+                _PATCHES["init_backend"],
+                return_value=(MagicMock(), None),
+            ),
         ):
             instance = MockRepo.return_value
             instance._get_or_create = AsyncMock(
@@ -144,9 +156,18 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value=None),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
-            patch(_PATCHES["init_backend"]),
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
+            patch(
+                _PATCHES["init_backend"],
+                return_value=(MagicMock(), None),
+            ),
         ):
             instance = MockRepo.return_value
             instance._get_or_create = AsyncMock(
@@ -184,9 +205,18 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value="sk-test"),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
-            patch(_PATCHES["init_backend"]),
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
+            patch(
+                _PATCHES["init_backend"],
+                return_value=(MagicMock(), None),
+            ),
         ):
             instance = MockRepo.return_value
             instance._get_or_create = AsyncMock(
@@ -224,9 +254,18 @@ class TestWorkerModelResolution:
         with (
             patch(_PATCHES["settings_repo"]) as MockRepo,
             patch(_PATCHES["resolve_api_key"], return_value=expected_key),
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
-            patch(_PATCHES["init_backend"]),
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
+            patch(
+                _PATCHES["init_backend"],
+                return_value=(MagicMock(), None),
+            ),
         ):
             instance = MockRepo.return_value
             instance._get_or_create = AsyncMock(
@@ -261,9 +300,18 @@ class TestWorkerModelResolution:
         ctx = _make_service_context(user_id="")
 
         with (
-            patch(_PATCHES["prepare_memory"], new_callable=AsyncMock, return_value=({}, [])),
-            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
-            patch(_PATCHES["init_backend"]),
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({}, []),
+            ),
+            patch(
+                _PATCHES["construct_agent"], new_callable=AsyncMock
+            ) as mock_construct,
+            patch(
+                _PATCHES["init_backend"],
+                return_value=(MagicMock(), None),
+            ),
         ):
             mock_construct.return_value = _mock_agent(DEFAULT_CHAT_MODEL)
 

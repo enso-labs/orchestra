@@ -200,10 +200,13 @@ async def _execute_agent_stream(
     precedence over memory files. The resulting memory sources are passed to
     ``construct_agent()`` so that MemoryMiddleware is activated.
     """
-    from deepagents.backends import StoreBackend
     from langchain.tools import ToolRuntime
     from src.schemas.contexts import ContextSchema
-    from src.agents import construct_agent, init_backend, prepare_memory_files
+    from src.agents import (
+        construct_agent,
+        resolve_sandbox_backend,
+        prepare_memory_files,
+    )
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger
@@ -219,10 +222,12 @@ async def _execute_agent_stream(
     from src.constants.llm import DEFAULT_CHAT_MODEL
 
     api_key = None
+    default_sandbox = None
     if user_id:
         settings_repo = UserSettingsRepo(user_id, service_context.store)
         settings = await settings_repo._get_or_create()
         user_keys = settings_repo._decrypt_keys(settings)
+        default_sandbox = getattr(settings, "default_sandbox", None)
         if not params.model and settings.default_model:
             params.model = settings.default_model
         if not params.model:
@@ -249,12 +254,7 @@ async def _execute_agent_stream(
         stream_writer=lambda _: None,
         config=config,
     )
-    store_backend = StoreBackend(runtime)
-    routes = {
-        f"/users/{user_id}/memories/": store_backend,
-        f"/users/{user_id}/config/": store_backend,
-    }
-    backend = init_backend(runtime, routes=routes)
+    backend, _sandbox = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
 
     agent = await construct_agent(
         instructions=params.instructions,

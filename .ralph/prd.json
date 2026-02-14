@@ -1,91 +1,164 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/743-update-wiki-for-memories",
-  "description": "Wiki Documentation for Memories Feature - Document the Memories feature with API reference, UI tutorial with screenshots, and llm.txt update",
+  "branchName": "feat/769-deep-agent-backend-sandbox-patterns",
+  "description": "Extensible Sandbox/Backend Selection - Re-introduce user-configurable sandbox selection using enum + registry dict + factory function pattern so adding new backends requires ~3 lines of code",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize wiki submodule and add Memories entries to sidebar",
-      "description": "As a documentation reader, I want to find 'Memories' in the wiki navigation so I can learn about the feature.",
+      "title": "Add SandboxType enum and schema fields",
+      "description": "As a developer, I need a SandboxType enum and schema fields so the system has a typed, validated representation of sandbox choices.",
       "acceptanceCriteria": [
-        "Run 'git submodule update --init wiki' in the worktree to initialize the wiki submodule",
-        "Add 'memories/index' to the 'Core Features' items array in wiki/sidebars.ts (after 'storage/index')",
-        "Add 'memories/tutorial' to the 'Tutorials' items array in wiki/sidebars.ts",
-        "Create empty placeholder files wiki/docs/memories/index.md and wiki/docs/memories/tutorial.md with basic frontmatter so the sidebar does not break",
-        "Typecheck passes"
+        "SandboxType(str, Enum) added to backend/src/schemas/entities/settings.py with values 'auto', 'daytona', 'state'",
+        "default_sandbox: Optional[str] = None field added to UserSettings entity",
+        "default_sandbox: Optional[str] = None field added to UserSettingsResponse model",
+        "UpdateDefaultSandboxRequest(BaseModel) added with sandbox: Optional[str] field",
+        "Typecheck passes (make format)"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "The wiki is a git submodule. In this worktree it is not yet initialized — run 'git submodule update --init wiki' first. Read wiki/sidebars.ts for the current structure. The existing sidebar has: Core Features [assistants/index, threads/index, storage/index] and Tutorials [tools/sandbox-tutorial]. Add memories/index to Core Features and memories/tutorial to Tutorials."
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Write main Memories documentation page (API reference)",
-      "description": "As a developer or API consumer, I want a reference page explaining how memories work and how to interact with them via the API so I can integrate memories into my workflow.",
+      "title": "Add set_default_sandbox repo method with unit tests",
+      "description": "As a developer, I need a repository method to persist the user's sandbox preference so it can be read back on every agent invocation.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/index.md with Docusaurus frontmatter: title 'Memories', slug '/memories', sidebar_position 4",
-        "Include 'Overview' section explaining: memories are persistent per-user context stored via LangGraph BaseStore, namespaced by user ID, automatically injected into agent context as /AGENTS.md",
-        "Include 'How It Works' section describing the lifecycle: create memory -> stored in LangGraph BaseStore -> automatically retrieved via prepare_memory_files() -> injected as markdown into streaming/worker/invoke entry points",
-        "Include 'API Reference' section with curl examples for all 5 endpoints: GET /api/memories (list with limit, offset, query params), GET /api/memories/{memory_id}, POST /api/memories (body: {content, metadata?}), PUT /api/memories/{memory_id} (body: {content, metadata?}), DELETE /api/memories/{memory_id}",
-        "Each curl example uses localhost base URL and includes Authorization: Bearer <token> header",
-        "Each curl example includes an example JSON response matching the backend schemas (Memory: {id, content, metadata, created_at, updated_at}, MemoryListResponse: {memories[], total, limit, offset})",
-        "Include a 'Configuration via UI' section at the bottom linking to the tutorial page at ./tutorial",
-        "Follow the same markdown structure as wiki/docs/assistants/index.md (heading hierarchy, bullet lists, code blocks)",
-        "Typecheck passes"
+        "set_default_sandbox(sandbox) method added to UserSettingsRepo in backend/src/repos/user_settings_repo.py, mirroring set_default_model()",
+        "Method validates input against SandboxType enum values; raises ValueError for invalid input",
+        "None input clears the setting (same as clearing default model)",
+        "Unit test added: test_set_default_sandbox stores and returns the value",
+        "Unit test added: test_clear_default_sandbox null clears the value",
+        "Unit test added: test_set_invalid_sandbox_raises rejects invalid values",
+        "make test passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Read wiki/docs/assistants/index.md and wiki/docs/storage/index.md from the main repo at /home/ryaneggz/ruska-ai/orchestra/wiki/ for the exact Docusaurus page pattern (frontmatter, heading style, admonitions). The API endpoints are defined in backend/src/routes/v0/memory.py. Schemas are in backend/src/schemas/entities/memory.py: Memory(id, content, metadata?, created_at?, updated_at?), MemoryCreate(content, metadata?), MemoryUpdate(content, metadata?), MemoryListResponse(memories, total, limit, offset). Query params for list: limit(default=10, max=100), offset(default=0), query(default=''). Auth uses Bearer token. Use localhost URLs since docs target local dev."
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Capture full workflow screenshots with agent-browser",
-      "description": "As a documentation author, I need screenshots of the memories workflow captured in light mode to include in the tutorial page.",
+      "title": "Add PUT /settings/default-sandbox endpoint with route tests",
+      "description": "As a frontend client, I need an API endpoint to update the user's default sandbox setting.",
       "acceptanceCriteria": [
-        "Create directory wiki/static/img/memories/",
-        "Use agent-browser skill to navigate to local dev environment Settings page",
-        "Set browser to light mode",
-        "Capture screenshot of Settings page showing the Memories section (empty state) and save as wiki/static/img/memories/settings-memories-empty.png",
-        "Use agent-browser to click 'Add Memory' and fill in example content like 'I prefer Python for backend development and TypeScript for frontend. My timezone is America/Chicago.'",
-        "Capture screenshot of the Add Memory dialog with content filled in and save as wiki/static/img/memories/settings-add-memory-dialog.png",
-        "Save the memory, then capture screenshot of Settings page showing the created memory in the list and save as wiki/static/img/memories/settings-memories-list.png",
-        "Navigate to chat, send a message that triggers memory recall (e.g., 'What programming languages do I prefer?'), and capture screenshot showing personalized response as wiki/static/img/memories/chat-memory-recall.png"
+        "PUT /settings/default-sandbox endpoint added to backend/src/routes/v0/settings.py, mirroring update_default_model",
+        "Endpoint accepts UpdateDefaultSandboxRequest body",
+        "ValueError from repo is caught and returns HTTP 400",
+        "All existing settings endpoint responses updated to include default_sandbox field",
+        "Route test added: test_get_settings_includes_default_sandbox verifies field in GET response",
+        "Route test added: test_set_default_sandbox verifies PUT stores and returns value",
+        "Route test added: test_set_invalid_sandbox_returns_400 verifies invalid input returns 400",
+        "make test passes"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "The local dev environment must be running: 'make dev' for backend (port 8000) and 'cd frontend && npm run dev' for frontend (port 5173). The Settings page is at http://localhost:5173/settings. You must log in first. The agent-browser skill handles browser automation. Use light mode for all screenshots. The MemorySettings component is in frontend/src/components/settings/MemorySettings.tsx. The settings page is at frontend/src/pages/settings/index.tsx."
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Write Memories tutorial page (UI walkthrough with screenshots)",
-      "description": "As a user, I want a step-by-step visual tutorial showing me how to add memories through the Settings page and see them working in chat.",
+      "title": "Implement registry pattern in resolve_sandbox_backend with dispatch tests",
+      "description": "As a developer, I need resolve_sandbox_backend() to accept a sandbox_type parameter and dispatch to the correct factory, so the function is extensible without modifying its core logic.",
       "acceptanceCriteria": [
-        "Create wiki/docs/memories/tutorial.md with frontmatter: title 'Tutorial: Configuring Memories', sidebar_label 'Memory Tutorial', sidebar_position 1",
-        "Step 1 'Navigate to Settings': describe how to reach the Settings page, include screenshot reference ![Settings Memories Empty](/img/memories/settings-memories-empty.png)",
-        "Step 2 'Add a Memory': describe clicking Add Memory button, entering content, saving; include screenshot ![Add Memory Dialog](/img/memories/settings-add-memory-dialog.png)",
-        "Step 3 'Verify Memory Created': describe seeing the memory in the list; include screenshot ![Memories List](/img/memories/settings-memories-list.png)",
-        "Step 4 'Test in Chat': describe navigating to chat, sending a message, seeing personalized response; include screenshot ![Memory Recall](/img/memories/chat-memory-recall.png)",
-        "Step 5 'Managing Memories': brief section describing edit (pencil icon) and delete (trash icon with confirmation dialog) actions",
-        "Include a link back to the main Memories page: 'For API reference and programmatic access, see [Memories](/docs/memories)'",
-        "Typecheck passes"
+        "_create_daytona_backend_checked(runtime) factory extracted in backend/src/agents/__init__.py wrapping existing Daytona creation logic",
+        "_create_state_backend(runtime) factory extracted creating StateBackend",
+        "_SANDBOX_FACTORIES dict maps SandboxType values to factory callables",
+        "resolve_sandbox_backend(runtime, sandbox_type=None) dispatches: None/'auto' tries Daytona then falls back to State; 'state' uses State directly; 'daytona' tries Daytona then falls back; unknown treats as auto",
+        "Unit test added: test_auto_uses_daytona_when_available (sandbox_type=None uses Daytona)",
+        "Unit test added: test_auto_falls_back_to_state (sandbox_type=None falls back when unavailable)",
+        "Unit test added: test_explicit_state_skips_daytona (sandbox_type='state' never calls create_daytona_backend)",
+        "Unit test added: test_explicit_daytona_falls_back_gracefully (sandbox_type='daytona' falls back if unavailable)",
+        "make test passes"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Screenshots should already exist in wiki/static/img/memories/ from US-003. Reference them with Docusaurus-compatible image syntax: ![alt text](/img/memories/filename.png). Follow the same tutorial structure as wiki/docs/tools/sandbox-tutorial.md. The MemorySettings component has: search bar, Add Memory button, memory list with edit/delete icons, and MemoryEditDialog for create/edit. Delete shows an AlertDialog confirmation."
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Update llm.txt with memories documentation",
-      "description": "As an external AI agent or search engine, I need the public llm.txt to reflect the memories feature so LLM search engines provide accurate information about Orchestra.",
+      "title": "Wire sandbox_type through LLMController",
+      "description": "As a user, I want my sandbox preference applied when I invoke or stream an agent, so my setting is respected in all execution paths.",
       "acceptanceCriteria": [
-        "Read website/public/llm.txt to understand the current structure and style",
-        "Add a 'Memories' subsection under '## Core Features' (after the existing Prompts or Tools section) with: one-line description of what memories are, that they persist per-user, that they are automatically injected into agent context during conversations, the 5 API endpoints (GET list, GET single, POST create, PUT update, DELETE), and that configuration is available via the Settings UI",
-        "Keep the addition concise (5-10 lines) and consistent with the existing llm.txt bullet-point style",
-        "Typecheck passes"
+        "_resolve_user_settings() in backend/src/controllers/llm.py returns 3-tuple (model, api_key, default_sandbox) instead of 2-tuple",
+        "default_sandbox read from the already-fetched settings object",
+        "sandbox_type passed to resolve_sandbox_backend() in llm_invoke()",
+        "sandbox_type passed through to stream_generator() in llm_stream()",
+        "make test passes"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Read website/public/llm.txt at /home/ryaneggz/ruska-ai/orchestra/website/public/llm.txt (or the worktree copy). The existing structure has ## Core Features with subsections like ### Projects, ### Assistants, ### Threads, ### Schedules, ### Prompts, ### Tools. Add ### Memories following the same pattern. Also check if there is a worktree copy at /home/ryaneggz/ruska-ai/orchestra/.worktrees/feat-743/website/public/llm.txt."
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Wire sandbox_type through stream_generator",
+      "description": "As a developer, I need stream_generator() to accept and forward the sandbox preference so streaming execution uses the correct backend.",
+      "acceptanceCriteria": [
+        "sandbox_type: str | None = None parameter added to stream_generator() in backend/src/utils/stream.py",
+        "Parameter passed to resolve_sandbox_backend(runtime, sandbox_type)",
+        "make test passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Wire sandbox_type through worker tasks",
+      "description": "As a developer, I need _execute_agent_stream() in the distributed worker to read and forward the sandbox preference from user settings.",
+      "acceptanceCriteria": [
+        "settings.default_sandbox read from the already-fetched settings object in _execute_agent_stream() in backend/src/workers/tasks.py",
+        "Value passed to resolve_sandbox_backend(runtime, sandbox_type)",
+        "make test passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Frontend service types and API call",
+      "description": "As a frontend developer, I need TypeScript types and an API function to interact with the new sandbox settings endpoint.",
+      "acceptanceCriteria": [
+        "SandboxType type exported in frontend/src/lib/services/userSettingsService.ts: 'auto' | 'daytona' | 'state'",
+        "default_sandbox: string | null field added to UserSettingsResponse interface",
+        "updateDefaultSandbox(sandbox: string | null) function added that PUTs to /settings/default-sandbox",
+        "npm run test passes",
+        "npm run build passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "SandboxSettings frontend component",
+      "description": "As a user, I want a dropdown in the Settings page to choose my default sandbox backend.",
+      "acceptanceCriteria": [
+        "New file frontend/src/components/settings/SandboxSettings.tsx created",
+        "Follows DefaultModelSettings.tsx pattern (Card + Select dropdown)",
+        "3 options displayed: Auto (Recommended), Daytona, Local",
+        "Current value fetched from getSettings() on mount",
+        "Selection calls updateDefaultSandbox() and shows toast on success/error",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Wire SandboxSettings into Settings page",
+      "description": "As a user, I want the sandbox selector visible on the Settings page between existing settings sections.",
+      "acceptanceCriteria": [
+        "SandboxSettings imported in frontend/src/pages/settings/index.tsx",
+        "Rendered between <DefaultModelSettings /> and <UserApiKeysSettings />",
+        "npm run test passes",
+        "npm run build passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
     }
   ]
 }

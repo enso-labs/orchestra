@@ -5,6 +5,7 @@ from src.schemas.models import User
 from src.schemas.entities.settings import (
     UserSettingsResponse,
     UpdateDefaultModelRequest,
+    UpdateDefaultSandboxRequest,
     UpsertProviderKeyRequest,
 )
 from src.repos.user_settings_repo import UserSettingsRepo
@@ -27,6 +28,7 @@ async def get_settings(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        default_sandbox=settings.default_sandbox,
         provider_keys=statuses,
     )
 
@@ -42,6 +44,26 @@ async def update_default_model(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        default_sandbox=settings.default_sandbox,
+        provider_keys=statuses,
+    )
+
+
+@router.put("/settings/default-sandbox", response_model=UserSettingsResponse)
+async def update_default_sandbox(
+    req: UpdateDefaultSandboxRequest,
+    user: User = Depends(verify_credentials),
+    store: BaseStore = Depends(get_store),
+) -> UserSettingsResponse:
+    repo = _get_repo(user, store)
+    try:
+        await repo.set_default_sandbox(req.sandbox)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    settings, statuses = await repo.get_settings()
+    return UserSettingsResponse(
+        default_model=settings.default_model,
+        default_sandbox=settings.default_sandbox,
         provider_keys=statuses,
     )
 
@@ -60,6 +82,7 @@ async def upsert_provider_key(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        default_sandbox=settings.default_sandbox,
         provider_keys=statuses,
     )
 
@@ -80,5 +103,6 @@ async def delete_provider_key(
     settings, statuses = await repo.get_settings()
     return UserSettingsResponse(
         default_model=settings.default_model,
+        default_sandbox=settings.default_sandbox,
         provider_keys=statuses,
     )

@@ -1,7 +1,17 @@
+from enum import Enum
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from src.schemas.entities.store import BaseEntity
+
+
+class SandboxType(str, Enum):
+    """Supported sandbox backend types."""
+
+    AUTO = "auto"
+    DAYTONA = "daytona"
+    STATE = "state"
 
 
 class ProviderKeyStatus(BaseModel):
@@ -23,12 +33,16 @@ class UserSettings(BaseEntity):
     encrypted_keys: Optional[str] = Field(
         default=None, description="Fernet-encrypted JSON blob of provider API keys"
     )
+    default_sandbox: Optional[str] = Field(
+        default=None, description="User's default sandbox backend type"
+    )
 
 
 class UserSettingsResponse(BaseModel):
     """API response model – never includes raw keys."""
 
     default_model: Optional[str] = None
+    default_sandbox: Optional[str] = None
     provider_keys: list[ProviderKeyStatus] = Field(default_factory=list)
 
 
@@ -38,6 +52,15 @@ class UpdateDefaultModelRequest(BaseModel):
     model: Optional[str] = Field(
         default=None,
         description="Model identifier to set as default, or null to clear",
+    )
+
+
+class UpdateDefaultSandboxRequest(BaseModel):
+    """Request to set a user's default sandbox backend."""
+
+    sandbox: Optional[str] = Field(
+        default=None,
+        description="Sandbox type to set as default, or null to clear",
     )
 
 

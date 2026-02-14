@@ -1,5 +1,7 @@
 import apiClient from "@/lib/utils/apiClient";
 
+export type SandboxType = "auto" | "daytona" | "state";
+
 export interface ProviderKeyStatus {
 	provider: string;
 	is_set: boolean;
@@ -7,6 +9,7 @@ export interface ProviderKeyStatus {
 
 export interface UserSettingsResponse {
 	default_model: string | null;
+	default_sandbox: string | null;
 	provider_keys: ProviderKeyStatus[];
 }
 
@@ -19,6 +22,15 @@ export const updateDefaultModel = async (
 	model: string | null,
 ): Promise<UserSettingsResponse> => {
 	const response = await apiClient.put("/settings/default-model", { model });
+	return response.data;
+};
+
+export const updateDefaultSandbox = async (
+	sandbox: string | null,
+): Promise<UserSettingsResponse> => {
+	const response = await apiClient.put("/settings/default-sandbox", {
+		sandbox,
+	});
 	return response.data;
 };
 

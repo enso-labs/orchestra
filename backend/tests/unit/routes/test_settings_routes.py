@@ -241,3 +241,49 @@ async def test_delete_invalid_provider_returns_400(
     resp = await settings_client.delete("/api/settings/provider-keys/BAD_PROVIDER")
     assert resp.status_code == 400
     assert "Invalid provider" in resp.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Tests: GET /settings includes default_sandbox
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_settings_includes_default_sandbox(
+    settings_client: AsyncClient,
+) -> None:
+    """GET /settings response includes the default_sandbox field (null by default)."""
+    resp = await settings_client.get("/api/settings")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "default_sandbox" in data
+    assert data["default_sandbox"] is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: PUT /settings/default-sandbox
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_set_default_sandbox(settings_client: AsyncClient) -> None:
+    """PUT /settings/default-sandbox stores and returns the value."""
+    resp = await settings_client.put(
+        "/api/settings/default-sandbox", json={"sandbox": "daytona"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["default_sandbox"] == "daytona"
+
+    # Verify it persists via GET
+    get_resp = await settings_client.get("/api/settings")
+    assert get_resp.json()["default_sandbox"] == "daytona"
+
+
+@pytest.mark.asyncio
+async def test_set_invalid_sandbox_returns_400(settings_client: AsyncClient) -> None:
+    """PUT /settings/default-sandbox with invalid value returns HTTP 400."""
+    resp = await settings_client.put(
+        "/api/settings/default-sandbox", json={"sandbox": "invalid_backend"}
+    )
+    assert resp.status_code == 400
+    assert "Invalid sandbox" in resp.json()["detail"]

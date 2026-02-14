@@ -20,7 +20,16 @@ from deepagents.backends import CompositeBackend, StateBackend
 from deepagents.backends.utils import create_file_data
 
 
-from src.constants import APP_ENV
+# Conditional import for Daytona sandbox support
+try:
+    from daytona import Daytona, DaytonaConfig
+    from langchain_daytona import DaytonaSandbox
+except ImportError:
+    Daytona = None  # type: ignore[assignment,misc]
+    DaytonaConfig = None  # type: ignore[assignment,misc]
+    DaytonaSandbox = None  # type: ignore[assignment,misc]
+
+from src.constants import APP_ENV, DAYTONA_API_KEY
 from src.contexts.service import ServiceContext
 from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
 from src.schemas.entities.llm import Assistant, LLMInput
@@ -232,16 +241,97 @@ def init_config(
     )
 
 
-def init_backend(runtime: ToolRuntime, *, routes):
-    """Factory function that creates a CompositeBackend with custom routes."""
-    built_routes = {}
-    for prefix, backend_or_factory in routes.items():
-        if callable(backend_or_factory):
-            built_routes[prefix] = backend_or_factory(runtime)
-        else:
-            built_routes[prefix] = backend_or_factory
+def create_daytona_backend():
+    """Create a Daytona sandbox and return (sandbox, backend).
+
+    Returns ``(None, None)`` when the package is not installed, the API key is
+    missing, or sandbox creation fails for any reason.
+    """
+    if DaytonaSandbox is None or Daytona is None:
+        return None, None
+
+    key = DAYTONA_API_KEY
+    if not key:
+        return None, None
+
+    try:
+        client = Daytona(DaytonaConfig(api_key=key))  # type: ignore[misc]
+        sandbox = client.create()
+        backend = DaytonaSandbox(sandbox=sandbox)
+        return sandbox, backend
+    except Exception as exc:
+        logger.error(f"Failed to create Daytona sandbox: {exc}")
+        return None, None
+
+
+def _create_daytona_backend_checked(
+    runtime: ToolRuntime,
+) -> tuple[CompositeBackend, Any] | None:
+    """Try to create a Daytona-backed CompositeBackend.
+
+    Returns ``(backend, sandbox)`` on success, or ``None`` if Daytona is
+    unavailable or not capable.  Cleans up the sandbox on failure.
+    """
+    from src.agents.daytona import validate_daytona_execute_capability
+
+    sandbox, daytona_backend = create_daytona_backend()
+    if daytona_backend is not None:
+        supported, _reason = validate_daytona_execute_capability(daytona_backend)
+        if supported:
+            backend = CompositeBackend(default=daytona_backend, routes={})
+            return backend, sandbox
+
+        # Daytona not capable — clean up sandbox silently
+        if sandbox is not None:
+            try:
+                sandbox.stop()
+            except Exception:
+                pass
+
+    return None
+
+
+def _create_state_backend(
+    runtime: ToolRuntime,
+) -> tuple[CompositeBackend, None]:
+    """Create a plain StateBackend-backed CompositeBackend."""
     default_state = StateBackend(runtime)
-    return CompositeBackend(default=default_state, routes=built_routes)
+    backend = CompositeBackend(default=default_state, routes={})
+    return backend, None
+
+
+_SANDBOX_FACTORIES: dict[str, Callable] = {
+    "daytona": _create_daytona_backend_checked,
+    "state": _create_state_backend,
+}
+
+
+def resolve_sandbox_backend(
+    runtime: ToolRuntime,
+    sandbox_type: str | None = None,
+) -> tuple[CompositeBackend, Any]:
+    """Resolve a sandbox backend based on *sandbox_type*.
+
+    Dispatch rules:
+    * ``None`` / ``"auto"`` — try Daytona first, fall back to State.
+    * ``"state"`` — use StateBackend directly (never attempts Daytona).
+    * ``"daytona"`` — try Daytona, fall back to State if unavailable.
+    * Any unknown value — treated as ``"auto"``.
+
+    Returns ``(backend, daytona_sandbox_or_None)``.
+    """
+    effective = sandbox_type if sandbox_type in _SANDBOX_FACTORIES else None
+
+    if effective == "state":
+        return _create_state_backend(runtime)
+
+    # "daytona" or auto (None) — try Daytona first
+    result = _create_daytona_backend_checked(runtime)
+    if result is not None:
+        return result
+
+    # Fallback: plain StateBackend (silent, no messages)
+    return _create_state_backend(runtime)
 
 
 ################################################################################

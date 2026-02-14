@@ -8,10 +8,12 @@ from src.schemas.entities.llm import *
 from src.schemas.entities.store import Thread
 from src.schemas.entities.auth import ApiToken
 from src.schemas.entities.settings import (
+    SandboxType,
     UserSettings,
     UserSettingsResponse,
     ProviderKeyStatus,
     UpdateDefaultModelRequest,
+    UpdateDefaultSandboxRequest,
     UpsertProviderKeyRequest,
 )
 from src.schemas.entities.hitl import (
