@@ -11,7 +11,7 @@ export default function Home() {
 	const { messages, useModelsEffect, viewMode, filesMap } = useChatContext();
 	const { setAgent } = useAgentContext();
 
-	// Fetch models for the SelectModel component
+	// Fetch available models
 	useModelsEffect();
 
 	useEffect(() => {
@@ -23,7 +23,7 @@ export default function Home() {
 
 	if (messages.length === 0 && viewMode === "chat" && filesMap.size === 0) {
 		return (
-			<NoAuthLayout showModelSelector={true}>
+			<NoAuthLayout>
 				<HomeSection />
 			</NoAuthLayout>
 		);

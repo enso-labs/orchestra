@@ -11,6 +11,8 @@ import { useProjectContext } from "@/context/ProjectContext";
 import { X, Folder, FolderCode } from "lucide-react";
 import { Button } from "../ui/button";
 import QueuePanel from "../panels/QueuePanel";
+import { ModelBadge } from "@/components/badges/ModelBadge";
+import { useNavigate } from "react-router";
 
 export default function ChatInput({
 	showAgentMenu = false,
@@ -19,6 +21,7 @@ export default function ChatInput({
 }) {
 	const [isRecording, setIsRecording] = useState(false);
 	const { isLikelyMobile } = useAppHook();
+	const navigate = useNavigate();
 	const { selectedProject, selectProject } = useProjectContext();
 	const {
 		query,
@@ -42,6 +45,7 @@ export default function ChatInput({
 		filesMap,
 		inputRef,
 		enqueue,
+		displayModel,
 	} = useChatContext();
 
 	// Helper to enqueue and clear input
@@ -133,16 +137,12 @@ export default function ChatInput({
 					}
 				}}
 			/>
-			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0">
-				<div className="flex items-center gap-1">
+			<div className="flex justify-between items-center bg-background border border-input rounded-b-3xl border-t-0 overflow-hidden">
+				<div className="flex items-center gap-1 min-w-0 flex-1">
 					<div className="flex gap-1">
 						{/* <ImageUpload /> */}
 						<BaseToolMenu />
-						{showAgentMenu && (
-							<div className="max-w-62">
-								<AgentMenu />
-							</div>
-						)}
+
 						{/* File toggle button */}
 						<Button
 							variant={viewMode === "editor" ? "secondary" : "default"}
@@ -158,6 +158,7 @@ export default function ChatInput({
 								</span>
 							)}
 						</Button>
+						{showAgentMenu && <AgentMenu />}
 					</div>
 
 					{metadata?.project_id && selectedProject && (
@@ -174,6 +175,15 @@ export default function ChatInput({
 					)}
 				</div>
 				<div className="flex items-center gap-2">
+					{displayModel && (
+						<button
+							onClick={() => navigate("/settings")}
+							title="Change default model"
+							className="cursor-pointer hover:opacity-80 transition-opacity"
+						>
+							<ModelBadge model={displayModel} />
+						</button>
+					)}
 					<ChatSubmitButton
 						abortQuery={abortQuery}
 						handleSubmit={handleSubmit}

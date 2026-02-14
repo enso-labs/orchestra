@@ -216,6 +216,26 @@ async def _execute_agent_stream(
     # Get assistant config if needed
     params = await service_context.llm_service.assistant(params)
 
+    # Resolve user default model and API key (mirrors LLMController._resolve_user_settings)
+    from src.repos.user_settings_repo import UserSettingsRepo
+    from src.utils.llm import resolve_api_key
+    from src.constants.llm import DEFAULT_CHAT_MODEL
+
+    api_key = None
+    if user_id:
+        settings_repo = UserSettingsRepo(user_id, service_context.store)
+        settings = await settings_repo._get_or_create()
+        user_keys = settings_repo._decrypt_keys(settings)
+        if not params.model and settings.default_model:
+            params.model = settings.default_model
+        if not params.model:
+            params.model = DEFAULT_CHAT_MODEL
+        if params.model:
+            api_key = resolve_api_key(params.model, user_keys if user_keys else None)
+    else:
+        if not params.model:
+            params.model = DEFAULT_CHAT_MODEL
+
     # Load user memories and merge into files_map
     memory_files, memory_sources = await prepare_memory_files(
         user_id, service_context.memory_service
@@ -244,6 +264,7 @@ async def _execute_agent_stream(
         service_context=service_context,
         backend=backend,
         memory=memory_sources,
+        api_key=api_key,
     )
     params.input.messages[-1].model = agent.model
 

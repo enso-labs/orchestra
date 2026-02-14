@@ -200,7 +200,7 @@ class PublicAssistant(BaseModel):
 
 class LLMRequest(BaseModel):
     input: LLMInput
-    model: Optional[str] = Field(default=DEFAULT_CHAT_MODEL)
+    model: Optional[str] = Field(default=None)
     system_prompt: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
     instructions: Optional[str] = Field(default="", exclude=True)
     tools: Optional[List[Any]] = Field(default_factory=list)

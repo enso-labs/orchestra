@@ -284,7 +284,6 @@ function AgentIndexPage() {
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 				<ChatNav
 					sidebarTrigger={<SidebarTrigger />}
-					showModelSelector={false}
 				/>
 				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					{/* Fixed header section */}
