@@ -12,6 +12,7 @@ from src.agents import (
     construct_agent,
     init_config,
     prepare_memory_files,
+    prepare_skill_files,
     resolve_sandbox_backend,
 )
 from src.services.db import get_checkpoint_db
@@ -123,13 +124,19 @@ class LLMController:
                 params.model
             )
 
+            # Load user skills into files_map (base layer)
+            skill_files, skill_sources = await prepare_skill_files(
+                self.user_id, self.service_context.skill_service
+            )
+
             # Load user memories into files_map for MemoryMiddleware
             memory_files, memory_sources = await prepare_memory_files(
                 self.user_id, self.service_context.memory_service
             )
-            if memory_files:
-                existing_files = params.input.files or {}
-                params.input.files = {**memory_files, **existing_files}
+
+            # Merge: skills (base) -> memories -> user files (top)
+            existing_files = params.input.files or {}
+            params.input.files = {**skill_files, **memory_files, **existing_files}
 
             async with get_checkpoint_db() as checkpointer:
                 runtime = self._init_runtime(params)
@@ -146,7 +153,7 @@ class LLMController:
                     backend=backend,
                     service_context=self.service_context,
                     api_key=api_key,
-                    memory=memory_sources,
+                    memory=(skill_sources or []) + (memory_sources or []) or None,
                 )
                 response = await agent.invoke(
                     params.input,

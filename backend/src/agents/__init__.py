@@ -2,6 +2,7 @@ from typing import Callable, Type, Literal, Any, AsyncGenerator, Optional, TYPE_
 
 if TYPE_CHECKING:
     from src.services.memory import MemoryService
+    from src.services.skill import SkillService
 
 from uuid import uuid4
 from langchain.tools import ToolRuntime
@@ -105,6 +106,38 @@ async def prepare_memory_files(
     content = "\n".join(bullet_lines)
     files_map = {"/AGENTS.md": create_file_data(content)}
     return files_map, ["/AGENTS.md"]
+
+
+async def prepare_skill_files(
+    user_id: str | None,
+    skill_svc: "SkillService",
+) -> tuple[dict, list[str] | None]:
+    """Fetch enabled user skills and format them as StateBackend files.
+
+    Returns a (files_map, skill_sources) tuple. Each enabled skill becomes
+    a ``/skills/<name>/SKILL.md`` file. When no skills are available the
+    tuple is ``({}, None)``.
+    """
+    if not user_id:
+        return {}, None
+
+    try:
+        skills, _total = await skill_svc.search_enabled(limit=1000)
+    except Exception as exc:
+        logger.warning(f"Failed to fetch skills for user {user_id}: {exc}")
+        return {}, None
+
+    if not skills:
+        return {}, None
+
+    files_map = {}
+    sources = []
+    for skill in skills:
+        path = f"/skills/{skill.name}/SKILL.md"
+        files_map[path] = create_file_data(skill.to_skill_md())
+        sources.append("/skills/")
+
+    return files_map, sources
 
 
 def init_graph(
