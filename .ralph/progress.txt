@@ -249,3 +249,22 @@ Thread: N/A
   - AlertDialog trigger buttons wrapped in AlertDialogTrigger need parent button click, not the trigger click
   - Use `--profile` flag with agent-browser to persist login session across navigations
 ---
+
+## 2026-02-15 - US-020
+Thread: N/A
+- Implemented `sync_skill_files_to_store()` async function in `backend/src/agents/__init__.py`
+- Function scans files_map for `/skills/<name>/SKILL.md` paths, parses YAML frontmatter, creates/updates skills via SkillService
+- Wired into `stream_generator()` finally block in `backend/src/utils/stream.py`
+- Wired into `llm_invoke()` finally block in `backend/src/controllers/llm.py`
+- Returns count of synced skills, logged at INFO level when > 0
+- Files changed:
+  - `backend/src/agents/__init__.py` — added `sync_skill_files_to_store()` function (~85 lines)
+  - `backend/src/utils/stream.py` — added import + sync call in finally block
+  - `backend/src/controllers/llm.py` — added import + sync call in finally block (gets final files from agent state)
+- **Learnings for future iterations:**
+  - `create_file_data()` returns `{"content": [lines], "created_at": ..., "modified_at": ...}` — content is a list of strings, must join with newline
+  - `split_front_matter()` raises `ValueError` on invalid YAML, returns `(None, body)` when no frontmatter exists
+  - `llm_invoke()` needs to call `agent.graph.aget_state(config)` to get final files_map (files may change during agent execution)
+  - `stream_generator()` already tracks `files_map` variable throughout streaming, so can use it directly in finally block
+  - Worktree PRD (`prd.json`) was missing US-020-025 — needed to add them from root PRD
+---
