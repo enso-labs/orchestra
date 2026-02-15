@@ -11,6 +11,7 @@ import ReactMarkdown from "react-markdown";
 // Use to create links in markdown
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { ImagePreviewModal } from "../inputs/ImagePreviewModal";
 import useImageHook from "@/hooks/useImageHook";
 import { useTheme } from "@/hooks/useTheme";
@@ -357,6 +358,7 @@ const BaseCard = ({ content }: { content: string }) => {
 			}}
 			remarkPlugins={[
 				remarkGfm,
+				remarkBreaks,
 				// remarkMath,
 			]}
 			rehypePlugins={[[rehypeSanitize, footnoteSchema]]}
