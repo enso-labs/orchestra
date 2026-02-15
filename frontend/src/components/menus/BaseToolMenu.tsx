@@ -9,7 +9,6 @@ import {
 	Globe,
 	ChevronRight,
 	Sparkles,
-	Wrench,
 } from "lucide-react";
 import {
 	DropdownMenu,
@@ -249,27 +248,6 @@ export function BaseToolMenu() {
 							<span className="flex items-center gap-2">
 								<Sparkles className="h-4 w-4" />
 								Manage Skills
-							</span>
-							<ChevronRight className="h-4 w-4" />
-						</DropdownMenuItem>
-					</DropdownMenuGroup>
-
-					{/* Tools Section */}
-					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
-					<DropdownMenuGroup>
-						<DropdownMenuLabel className="text-xs text-muted-foreground">
-							Tools
-						</DropdownMenuLabel>
-						<DropdownMenuItem
-							onClick={() => {
-								setOpen(false);
-								navigate("/tools");
-							}}
-							className="flex items-center justify-between cursor-pointer text-base rounded-lg"
-						>
-							<span className="flex items-center gap-2">
-								<Wrench className="h-4 w-4" />
-								Manage Tools
 							</span>
 							<ChevronRight className="h-4 w-4" />
 						</DropdownMenuItem>
