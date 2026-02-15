@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Save, ArrowLeft } from "lucide-react";
+import { Save, ArrowLeft, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import {
 	Form,
 	FormControl,
@@ -17,6 +18,17 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SkillService from "@/lib/services/skillService";
@@ -53,6 +65,7 @@ type FormValues = z.infer<typeof formSchema>;
 function SkillCreatePage() {
 	const navigate = useNavigate();
 	const [isSaving, setIsSaving] = useState(false);
+	const [isGenerating, setIsGenerating] = useState(false);
 	const [activeTab, setActiveTab] = useState("editor");
 
 	const form = useForm<FormValues>({
@@ -67,6 +80,40 @@ function SkillCreatePage() {
 			disabled: false,
 		},
 	});
+
+	const handleGenerate = async () => {
+		try {
+			setIsGenerating(true);
+			const name = form.getValues("name").trim();
+			const description = form.getValues("description").trim();
+			const tagsStr = form.getValues("tags");
+			const tags = tagsStr
+				? tagsStr.split(",").map((t) => t.trim()).filter(Boolean)
+				: [];
+
+			const result = await SkillService.generate({
+				name,
+				description,
+				tags: tags.length > 0 ? tags : undefined,
+			});
+
+			form.setValue("content", result.content, { shouldValidate: true });
+			if (!tagsStr && result.tags.length > 0) {
+				form.setValue("tags", result.tags.join(", "));
+			}
+			setActiveTab("editor");
+			toast.success("Skill content generated successfully");
+		} catch (error) {
+			console.error("Failed to generate skill:", error);
+			toast.error("Failed to generate skill content. Please try again.");
+		} finally {
+			setIsGenerating(false);
+		}
+	};
+
+	const canGenerate =
+		form.watch("name").trim().length > 0 &&
+		form.watch("description").trim().length > 0;
 
 	const onSubmit = async (values: FormValues) => {
 		try {
@@ -123,14 +170,54 @@ function SkillCreatePage() {
 								</p>
 							</div>
 						</div>
-						<Button
-							onClick={form.handleSubmit(onSubmit)}
-							disabled={isSaving}
-							className="flex items-center gap-2"
-						>
-							<Save className="h-4 w-4" />
-							{isSaving ? "Saving..." : "Save Skill"}
-						</Button>
+						<div className="flex items-center gap-2">
+							{form.watch("content").trim() ? (
+								<AlertDialog>
+									<AlertDialogTrigger asChild>
+										<Button
+											variant="secondary"
+											disabled={!canGenerate || isGenerating}
+											className="flex items-center gap-2"
+										>
+											<Sparkles className="h-4 w-4" />
+											{isGenerating ? "Generating..." : "Generate with AI"}
+										</Button>
+									</AlertDialogTrigger>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>Overwrite editor content?</AlertDialogTitle>
+											<AlertDialogDescription>
+												The editor already has content. Generating will replace it with AI-generated content. This cannot be undone.
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel>Cancel</AlertDialogCancel>
+											<AlertDialogAction onClick={handleGenerate}>
+												Generate
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
+							) : (
+								<Button
+									variant="secondary"
+									onClick={handleGenerate}
+									disabled={!canGenerate || isGenerating}
+									className="flex items-center gap-2"
+								>
+									<Sparkles className="h-4 w-4" />
+									{isGenerating ? "Generating..." : "Generate with AI"}
+								</Button>
+							)}
+							<Button
+								onClick={form.handleSubmit(onSubmit)}
+								disabled={isSaving}
+								className="flex items-center gap-2"
+							>
+								<Save className="h-4 w-4" />
+								{isSaving ? "Saving..." : "Save Skill"}
+							</Button>
+						</div>
 					</div>
 				</div>
 

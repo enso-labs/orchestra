@@ -408,3 +408,22 @@ Thread: N/A
   - Generate endpoint does NOT persist skills — it returns the generated content for user review before they decide to create
   - `SkillGenerateRequest` reuses the same kebab-case name validation as `SkillCreate`
 ---
+
+## 2026-02-14 - US-031
+Thread: N/A
+- Added `generate()` static method to `frontend/src/lib/services/skillService.ts`
+- Added "Generate with AI" button with `Sparkles` icon (secondary variant) to skill create page header
+- Button enabled only when name + description fields are filled in (via `canGenerate` reactive check)
+- Shows `AlertDialog` confirmation if editor already has content to prevent accidental overwrite
+- Loading state with "Generating..." text and spinner during API call
+- Success/error feedback via `sonner` toast notifications
+- Auto-fills tags from AI response if tags field is empty
+- Switches to Editor tab after generation to show the result
+- Files changed: `frontend/src/lib/services/skillService.ts` (modified), `frontend/src/pages/skills/create.tsx` (modified)
+- **Learnings for future iterations:**
+  - `form.watch("content").trim()` used as reactive check for whether editor has existing content (controls AlertDialog vs direct click)
+  - `form.getValues()` used in handler (not `watch`) since we need point-in-time values, not reactive subscriptions
+  - AlertDialog wrapping a Button requires `AlertDialogTrigger asChild` to avoid double-button nesting
+  - Tab files use literal tab characters — Edit tool may fail on tab-indented JSX; use Python script for replacements
+  - `sonner` toast (`toast.success()`, `toast.error()`) is the project standard for user feedback
+---

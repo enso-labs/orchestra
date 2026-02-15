@@ -516,7 +516,7 @@
         "Typecheck passes"
       ],
       "priority": 31,
-      "passes": false,
+      "passes": true,
       "notes": "Add generate() method to frontend SkillService. Button uses Sparkles icon, secondary variant. Enabled only when name + description filled. Shows confirmation if editor has content to prevent accidental overwrite."
     },
     {

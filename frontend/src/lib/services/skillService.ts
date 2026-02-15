@@ -55,4 +55,16 @@ export default class SkillService {
 	static async delete(skillName: string): Promise<void> {
 		await apiClient.delete(`${this.BASE_URL}/${skillName}`);
 	}
+
+	static async generate(payload: {
+		name: string;
+		description: string;
+		tags?: string[];
+	}): Promise<{ content: string; description: string; tags: string[] }> {
+		const response = await apiClient.post(
+			`${this.BASE_URL}/generate`,
+			payload,
+		);
+		return response.data;
+	}
 }
