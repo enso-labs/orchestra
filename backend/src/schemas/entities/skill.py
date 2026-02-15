@@ -79,3 +79,24 @@ class SkillListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class SkillGenerateRequest(BaseModel):
+    name: str
+    description: str = Field(max_length=1024)
+    tags: list[str] = Field(default_factory=list)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", v):
+            raise ValueError(
+                "Name must be kebab-case: lowercase alphanumeric with hyphens"
+            )
+        return v
+
+
+class SkillGenerateResponse(BaseModel):
+    content: str
+    description: str
+    tags: list[str]

@@ -394,3 +394,17 @@ Thread: N/A
   - `DEFAULT_CHAT_MODEL_BASIC` resolves to the cheapest available model (e.g., gemini-3-flash-preview or gpt-5-nano)
   - The generate() method returns a dict (not a Pydantic model) for flexibility in the route handler
 ---
+
+## 2026-02-14 - US-030
+Thread: N/A
+- Added `SkillGenerateRequest` and `SkillGenerateResponse` schemas to `backend/src/schemas/entities/skill.py`
+- Added `POST /skills/generate` endpoint to `backend/src/routes/v0/skill.py`
+- Route declared BEFORE `/{skill_name}` catch-all to avoid FastAPI treating "generate" as a skill_name
+- Endpoint uses `SkillGeneratorService` to generate content, does NOT persist — returns for user review
+- Uses `Depends(verify_credentials)` and `Depends(get_store)` for auth consistency
+- Files changed: `backend/src/schemas/entities/skill.py` (modified), `backend/src/routes/v0/skill.py` (modified)
+- **Learnings for future iterations:**
+  - FastAPI route ordering matters — `/generate` must be declared before `/{skill_name}` to avoid the path parameter catching "generate" as a name
+  - Generate endpoint does NOT persist skills — it returns the generated content for user review before they decide to create
+  - `SkillGenerateRequest` reuses the same kebab-case name validation as `SkillCreate`
+---

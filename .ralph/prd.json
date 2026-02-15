@@ -499,7 +499,7 @@
         "Typecheck/lint passes (`make format`)"
       ],
       "priority": 30,
-      "passes": false,
+      "passes": true,
       "notes": "Add SkillGenerateRequest (name, description, tags) and SkillGenerateResponse (content, description, tags) to skill.py schemas. Route must be declared BEFORE /{skill_name} to avoid FastAPI treating 'generate' as a skill_name."
     },
     {

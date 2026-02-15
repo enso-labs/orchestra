@@ -5,12 +5,15 @@ from src.schemas.entities import SearchFilter
 from src.schemas.entities.skill import (
     SavedSkill,
     SkillCreate,
+    SkillGenerateRequest,
+    SkillGenerateResponse,
     SkillListResponse,
     SkillUpdate,
 )
 from src.schemas.models import ProtectedUser
 from src.services.db import get_store
 from src.services.skill import SkillService
+from src.services.skill_generator import SkillGeneratorService
 from src.utils.auth import verify_credentials
 from src.utils.logger import logger
 
@@ -54,6 +57,28 @@ async def create_skill(
         return await service.create(body)
     except Exception as e:
         logger.exception(f"Error creating skill: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        ) from e
+
+
+@router.post("/generate", response_model=SkillGenerateResponse)
+async def generate_skill(
+    body: SkillGenerateRequest,
+    user: ProtectedUser = Depends(verify_credentials),
+    store: BaseStore = Depends(get_store),
+) -> SkillGenerateResponse:
+    try:
+        generator = SkillGeneratorService()
+        result = await generator.generate(
+            name=body.name,
+            description=body.description,
+            tags=body.tags,
+        )
+        return SkillGenerateResponse(**result)
+    except Exception as e:
+        logger.exception(f"Error generating skill: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
