@@ -212,5 +212,98 @@ class TestSyncSkillFilesEdgeCases(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(skill.description, "Skill: no-fm")
 
 
+class TestSyncSkillFilesFinalStatePreference(unittest.IsolatedAsyncioTestCase):
+    """Tests verifying that final_state files take priority over accumulated files_map.
+
+    These tests validate the contract used by stream_generator() where
+    final_state.values.get("files", {}) is preferred over the streaming-
+    accumulated files_map.
+    """
+
+    async def test_final_state_files_sync_when_accumulated_empty(self) -> None:
+        """Accumulated files_map is empty but final_state files contain SKILL.md."""
+        store = InMemoryStore()
+        service = SkillService(user_id=TEST_USER_ID, store=store)
+
+        # Simulate final_state files (the authoritative source)
+        final_state_files = {
+            "/skills/from-final/SKILL.md": _make_file_data(
+                _make_skill_md(name="from-final", description="From final state")
+            ),
+        }
+
+        # Accumulated files_map is empty (streaming missed the file)
+        accumulated_files = {}
+
+        # Sync with final_state files (what stream_generator would do)
+        count = await sync_skill_files_to_store(
+            final_state_files, TEST_USER_ID, service
+        )
+        self.assertEqual(count, 1)
+
+        skill = await service.get("from-final")
+        self.assertIsNotNone(skill)
+        self.assertEqual(skill.description, "From final state")
+
+        # Sync with accumulated (empty) would produce 0
+        store2 = InMemoryStore()
+        service2 = SkillService(user_id=TEST_USER_ID, store=store2)
+        count2 = await sync_skill_files_to_store(
+            accumulated_files, TEST_USER_ID, service2
+        )
+        self.assertEqual(count2, 0)
+
+    async def test_final_state_overrides_stale_accumulated(self) -> None:
+        """files_map has stale content, final_state has the correct version."""
+        store = InMemoryStore()
+        service = SkillService(user_id=TEST_USER_ID, store=store)
+
+        # Stale accumulated version
+        stale_files = {
+            "/skills/my-skill/SKILL.md": _make_file_data(
+                _make_skill_md(name="my-skill", description="Stale version")
+            ),
+        }
+
+        # Final state has correct version
+        final_state_files = {
+            "/skills/my-skill/SKILL.md": _make_file_data(
+                _make_skill_md(name="my-skill", description="Correct version")
+            ),
+        }
+
+        # Sync with final_state files (preferred path)
+        count = await sync_skill_files_to_store(
+            final_state_files, TEST_USER_ID, service
+        )
+        self.assertEqual(count, 1)
+
+        skill = await service.get("my-skill")
+        self.assertIsNotNone(skill)
+        self.assertEqual(skill.description, "Correct version")
+
+    async def test_fallback_to_accumulated_when_final_state_unavailable(self) -> None:
+        """When final_state is unavailable, accumulated files_map is used."""
+        store = InMemoryStore()
+        service = SkillService(user_id=TEST_USER_ID, store=store)
+
+        # Accumulated files_map (fallback when final_state is None)
+        accumulated_files = {
+            "/skills/fallback-skill/SKILL.md": _make_file_data(
+                _make_skill_md(name="fallback-skill", description="From accumulated")
+            ),
+        }
+
+        # Sync with accumulated (simulates final_state being None)
+        count = await sync_skill_files_to_store(
+            accumulated_files, TEST_USER_ID, service
+        )
+        self.assertEqual(count, 1)
+
+        skill = await service.get("fallback-skill")
+        self.assertIsNotNone(skill)
+        self.assertEqual(skill.description, "From accumulated")
+
+
 if __name__ == "__main__":
     unittest.main()
