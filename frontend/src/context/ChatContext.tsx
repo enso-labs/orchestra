@@ -164,7 +164,25 @@ export default function ChatProvider({
 		try {
 			const memoryFiles = await MemoryService.getFiles();
 			if (memoryFiles && Object.keys(memoryFiles).length > 0) {
-				const files = new Map(Object.entries(memoryFiles));
+				const now = new Date().toISOString();
+				const files = new Map(
+					Object.entries(memoryFiles).map(([path, fileData]) => {
+						const raw = fileData.content as string[] | string | undefined;
+						return [
+							path,
+							{
+								...fileData,
+								content: Array.isArray(raw)
+									? raw
+									: typeof raw === "string"
+										? raw.split("\n")
+										: [],
+								created_at: fileData.created_at || now,
+								modified_at: fileData.modified_at || now,
+							},
+						];
+					}),
+				);
 				importFiles(files);
 			}
 		} catch (error) {
