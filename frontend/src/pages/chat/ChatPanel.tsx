@@ -32,7 +32,7 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 	const hasFiles = filesMap.size > 0;
 
 	// Show AgentSection only when in chat mode with no messages and no files
-	if (agent && messages.length === 0 && viewMode === "chat" && !hasFiles) {
+	if (agent && messages.length === 0 && viewMode === "chat") {
 		return (
 			<ChatLayout>
 				{chatNav}

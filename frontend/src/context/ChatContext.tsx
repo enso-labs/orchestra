@@ -167,21 +167,23 @@ export default function ChatProvider({
 		}
 	}, [messagesLength, clearFileSystem, clearQueue]);
 
-	// Load memory files into filesystem on mount
-	useEffect(() => {
-		const loadMemoryFiles = async () => {
-			try {
-				const memoryFiles = await MemoryService.getFiles();
-				if (memoryFiles && Object.keys(memoryFiles).length > 0) {
-					const filesMap = new Map(Object.entries(memoryFiles));
-					importFiles(filesMap);
+	// Load memory files into filesystem — called from pages that require auth
+	const useMemoryFilesEffect = () => {
+		useEffect(() => {
+			const loadMemoryFiles = async () => {
+				try {
+					const memoryFiles = await MemoryService.getFiles();
+					if (memoryFiles && Object.keys(memoryFiles).length > 0) {
+						const filesMap = new Map(Object.entries(memoryFiles));
+						importFiles(filesMap);
+					}
+				} catch (error) {
+					console.error("Failed to load memory files:", error);
 				}
-			} catch (error) {
-				console.error("Failed to load memory files:", error);
-			}
-		};
-		loadMemoryFiles();
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+			};
+			loadMemoryFiles();
+		}, []);
+	};
 
 	return (
 		<ChatContext.Provider
@@ -193,6 +195,7 @@ export default function ChatProvider({
 				...modelsHooks,
 				...fileSystemHooks,
 				...queueHooks,
+				useMemoryFilesEffect,
 			}}
 		>
 			{children}

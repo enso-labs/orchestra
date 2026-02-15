@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Brain, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,15 +26,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Memory } from "@/lib/entities/memory";
 import MemoryService from "@/lib/services/memoryService";
-import { MemoryEditDialog } from "@/components/settings/MemoryEditDialog";
 
 export function MemorySettings() {
+	const navigate = useNavigate();
 	const [memories, setMemories] = useState<Memory[]>([]);
 	const [total, setTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [query, setQuery] = useState("");
-	const [editDialogOpen, setEditDialogOpen] = useState(false);
-	const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<Memory | null>(null);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -111,13 +110,11 @@ export function MemorySettings() {
 	};
 
 	const openCreate = () => {
-		setEditingMemory(null);
-		setEditDialogOpen(true);
+		navigate("/memories/create");
 	};
 
 	const openEdit = (memory: Memory) => {
-		setEditingMemory(memory);
-		setEditDialogOpen(true);
+		navigate(`/memories/${encodeURIComponent(memory.id)}/edit`);
 	};
 
 	return (
@@ -221,13 +218,6 @@ export function MemorySettings() {
 					)}
 				</CardContent>
 			</Card>
-
-			<MemoryEditDialog
-				open={editDialogOpen}
-				onOpenChange={setEditDialogOpen}
-				memory={editingMemory}
-				onSaved={() => fetchMemories(query)}
-			/>
 
 			<AlertDialog
 				open={!!deleteTarget}
