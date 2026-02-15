@@ -93,18 +93,25 @@ async def prepare_memory_files(
     if not memories:
         return {}, None
 
-    bullet_lines = []
+    files_map = {}
+    sources = []
     for mem in memories:
         data = mem.dict()
         value = data.get("value", {})
-        text = (
-            value.get("content", str(value)) if isinstance(value, dict) else str(value)
-        )
-        bullet_lines.append(text)
+        if isinstance(value, dict):
+            # Skip disabled memories
+            if not value.get("enabled", True):
+                continue
+            mem_id = value.get("id", "AGENTS.md")
+            content = value.get("content", str(value))
+        else:
+            mem_id = "AGENTS.md"
+            content = str(value)
+        path = f"/{mem_id}" if not mem_id.startswith("/") else mem_id
+        files_map[path] = create_file_data(content)
+        sources.append(path)
 
-    content = "\n".join(bullet_lines)
-    files_map = {"/AGENTS.md": create_file_data(content)}
-    return files_map, ["/AGENTS.md"]
+    return files_map, sources if sources else None
 
 
 def init_graph(

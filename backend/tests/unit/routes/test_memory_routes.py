@@ -107,16 +107,27 @@ async def test_list_memories_requires_auth(no_auth_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_create_memory(memory_client: AsyncClient) -> None:
-    resp = await memory_client.post("/api/memories", json={"content": "test memory"})
+    resp = await memory_client.post(
+        "/api/memories", json={"content": "test memory", "path": "AGENTS.md"}
+    )
     assert resp.status_code == 201
     data = resp.json()
     assert data["content"] == "test memory"
-    assert data["id"].startswith("memory_")
+    assert data["id"] == "AGENTS.md"
+    assert data["enabled"] is True
+
+
+@pytest.mark.asyncio
+async def test_create_memory_requires_path(memory_client: AsyncClient) -> None:
+    resp = await memory_client.post("/api/memories", json={"content": "test memory"})
+    assert resp.status_code == 422  # validation error — path is required
 
 
 @pytest.mark.asyncio
 async def test_get_memory(memory_client: AsyncClient) -> None:
-    create_resp = await memory_client.post("/api/memories", json={"content": "get me"})
+    create_resp = await memory_client.post(
+        "/api/memories", json={"content": "get me", "path": "USER.md"}
+    )
     memory_id = create_resp.json()["id"]
 
     resp = await memory_client.get(f"/api/memories/{memory_id}")
@@ -133,7 +144,7 @@ async def test_get_memory_not_found(memory_client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_update_memory(memory_client: AsyncClient) -> None:
     create_resp = await memory_client.post(
-        "/api/memories", json={"content": "original"}
+        "/api/memories", json={"content": "original", "path": "AGENTS.md"}
     )
     memory_id = create_resp.json()["id"]
 
@@ -145,6 +156,20 @@ async def test_update_memory(memory_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_update_memory_with_enabled(memory_client: AsyncClient) -> None:
+    create_resp = await memory_client.post(
+        "/api/memories", json={"content": "test", "path": "AGENTS.md"}
+    )
+    memory_id = create_resp.json()["id"]
+
+    resp = await memory_client.put(
+        f"/api/memories/{memory_id}", json={"content": "test", "enabled": False}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["enabled"] is False
+
+
+@pytest.mark.asyncio
 async def test_update_memory_not_found(memory_client: AsyncClient) -> None:
     resp = await memory_client.put("/api/memories/nonexistent", json={"content": "x"})
     assert resp.status_code == 404
@@ -153,7 +178,7 @@ async def test_update_memory_not_found(memory_client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_delete_memory(memory_client: AsyncClient) -> None:
     create_resp = await memory_client.post(
-        "/api/memories", json={"content": "delete me"}
+        "/api/memories", json={"content": "delete me", "path": "DELETE.md"}
     )
     memory_id = create_resp.json()["id"]
 
@@ -175,7 +200,9 @@ async def test_delete_memory_not_found(memory_client: AsyncClient) -> None:
 async def test_list_memories_with_pagination(memory_client: AsyncClient) -> None:
     # Create 3 memories
     for i in range(3):
-        await memory_client.post("/api/memories", json={"content": f"memory {i}"})
+        await memory_client.post(
+            "/api/memories", json={"content": f"memory {i}", "path": f"file_{i}.md"}
+        )
 
     resp = await memory_client.get("/api/memories?limit=2&offset=0")
     assert resp.status_code == 200
@@ -184,3 +211,79 @@ async def test_list_memories_with_pagination(memory_client: AsyncClient) -> None
     assert data["total"] == 3
     assert data["limit"] == 2
     assert data["offset"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Tests: GET /files endpoint
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_memory_files(memory_client: AsyncClient) -> None:
+    await memory_client.post(
+        "/api/memories", json={"content": "agent instructions", "path": "AGENTS.md"}
+    )
+    await memory_client.post(
+        "/api/memories", json={"content": "user prefs", "path": "USER.md"}
+    )
+
+    resp = await memory_client.get("/api/memories/files")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "/AGENTS.md" in data
+    assert "/USER.md" in data
+    assert "content" in data["/AGENTS.md"]
+    assert "created_at" in data["/AGENTS.md"]
+
+
+@pytest.mark.asyncio
+async def test_get_memory_files_excludes_disabled(memory_client: AsyncClient) -> None:
+    await memory_client.post(
+        "/api/memories", json={"content": "enabled", "path": "AGENTS.md"}
+    )
+    await memory_client.post(
+        "/api/memories", json={"content": "will disable", "path": "USER.md"}
+    )
+    # Disable USER.md
+    await memory_client.patch("/api/memories/USER.md/toggle")
+
+    resp = await memory_client.get("/api/memories/files")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "/AGENTS.md" in data
+    assert "/USER.md" not in data
+
+
+@pytest.mark.asyncio
+async def test_get_memory_files_empty(memory_client: AsyncClient) -> None:
+    resp = await memory_client.get("/api/memories/files")
+    assert resp.status_code == 200
+    assert resp.json() == {}
+
+
+# ---------------------------------------------------------------------------
+# Tests: PATCH /{id}/toggle endpoint
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_toggle_memory(memory_client: AsyncClient) -> None:
+    await memory_client.post(
+        "/api/memories", json={"content": "test", "path": "AGENTS.md"}
+    )
+
+    # Toggle off
+    resp = await memory_client.patch("/api/memories/AGENTS.md/toggle")
+    assert resp.status_code == 200
+    assert resp.json()["enabled"] is False
+
+    # Toggle back on
+    resp2 = await memory_client.patch("/api/memories/AGENTS.md/toggle")
+    assert resp2.status_code == 200
+    assert resp2.json()["enabled"] is True
+
+
+@pytest.mark.asyncio
+async def test_toggle_memory_not_found(memory_client: AsyncClient) -> None:
+    resp = await memory_client.patch("/api/memories/nonexistent/toggle")
+    assert resp.status_code == 404
