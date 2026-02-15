@@ -302,6 +302,7 @@ async def stream_generator(
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
         finally:
+            final_state = None
             try:
                 if service_context.user_id and checkpointer and agent:
                     final_state = await agent.graph.aget_state(config)
@@ -332,9 +333,19 @@ async def stream_generator(
                 logger.exception("Failed to persist final checkpoint state: %s", e)
 
             # Auto-sync any agent-created skill files to LangGraph Store
+            # Prefer authoritative final agent state over streaming-accumulated files_map
             try:
+                if final_state is not None:
+                    sync_files = final_state.values.get("files", {})
+                    if len(sync_files) != len(files_map):
+                        logger.debug(
+                            f"Skill sync: accumulated {len(files_map)} files, "
+                            f"final state {len(sync_files)} files"
+                        )
+                else:
+                    sync_files = files_map
                 synced = await sync_skill_files_to_store(
-                    files_map, service_context.user_id, service_context.skill_service
+                    sync_files, service_context.user_id, service_context.skill_service
                 )
                 if synced > 0:
                     logger.info(f"Auto-synced {synced} skill(s) to store")
