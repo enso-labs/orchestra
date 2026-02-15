@@ -285,3 +285,14 @@ Thread: N/A
   - Skills use SkillsMiddleware for progressive disclosure, memory uses MemoryMiddleware — they should not be combined
   - Pre-existing lint issues in `agents/__init__.py` (F401 unused import) and `stream.py` (F821 undefined name) — don't fix these in unrelated stories
 ---
+
+## 2026-02-15 - US-022
+Thread: N/A
+- Removed the entire Tools Section block from `BaseToolMenu.tsx` (DropdownMenuSeparator + DropdownMenuGroup with "Manage Tools" link)
+- Removed unused `Wrench` import from lucide-react (confirmed it's used in 5 other files, safe to remove from this file only)
+- Frontend typecheck passes cleanly
+- Files changed: `frontend/src/components/menus/BaseToolMenu.tsx` (modified — 22 lines deleted)
+- **Learnings for future iterations:**
+  - Always check if an icon import is used in other files before removing — `Wrench` is used in 5 other components
+  - DropdownMenuLabel is still needed for the Skills section, so only remove the Tools-specific elements
+---

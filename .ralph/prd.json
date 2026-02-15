@@ -372,7 +372,7 @@
         "Typecheck passes (`npx tsc --noEmit`)"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": "Delete the DropdownMenuSeparator + DropdownMenuGroup for Tools (lines ~257-276). Check if Wrench icon is used elsewhere before removing import."
     },
     {
