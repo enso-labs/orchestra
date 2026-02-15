@@ -407,7 +407,7 @@
         "All tests pass (`make test`)"
       ],
       "priority": 24,
-      "passes": false,
+      "passes": true,
       "notes": "Follow same test pattern as test_prepare_skill_files.py. Use InMemoryStore with real SkillService. Test both create and update paths."
     },
     {

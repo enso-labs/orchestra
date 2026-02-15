@@ -308,3 +308,15 @@ Thread: N/A
   - Sidebar file uses tab indentation — Edit tool may struggle with tab characters, use `sed` for line-range deletions
   - Always verify icon imports are used in other files before removing — `Sparkles` is used in 3 other components
 ---
+
+## 2026-02-15 - US-024
+Thread: N/A
+- Created `backend/tests/unit/agents/test_sync_skill_files.py` — 12 tests all passing
+- Tests cover: empty/none files_map, none user_id, non-skill path ignoring, new skill creation from valid SKILL.md, skill name extraction from path, multiple skills sync, existing skill update (not duplicated), empty content skipping, whitespace-only content skipping, invalid YAML frontmatter skipping, and no-frontmatter graceful handling
+- All 63 skill-related tests pass (12 new + 51 existing)
+- Files changed: `backend/tests/unit/agents/test_sync_skill_files.py` (new — 216 lines)
+- **Learnings for future iterations:**
+  - `_make_file_data()` helper simulates `create_file_data()` output by splitting content into lines list
+  - `split_front_matter()` returns `(None, body)` when no frontmatter exists — `sync_skill_files_to_store` handles this by using defaults
+  - Running tests from worktree backend dir: `cd .worktrees/feat-773/backend && set -a && . $HOME/.env/orchestra/.env.backend && set +a && uv run pytest`
+---
