@@ -83,7 +83,7 @@ worktree_path: "$WORKSPACE/.worktrees/fix-[issue#]"
 | Branch / Commit | <!-- e.g., `development @ abc1234` --> |
 | Browser | <!-- e.g., Chrome 120, Firefox 121, N/A for backend --> |
 | OS | <!-- e.g., macOS 15, Ubuntu 24.04 --> |
-| Node version | <!-- e.g., 20.x --> |
+| Node version | <!-- e.g., 22.x --> |
 | Python version | <!-- e.g., 3.12.x --> |
 
 ---
