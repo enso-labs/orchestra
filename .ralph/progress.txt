@@ -212,3 +212,17 @@ Thread: N/A
   - Documentation follows pattern: frontmatter (title, slug, sidebar_position), overview section, API reference with curl examples, UI guide, best practices
   - Pre-existing broken link warnings exist in other docs pages — don't need to fix these for new pages
 ---
+
+## 2026-02-14 - US-018
+Thread: N/A
+- Verified SkillProvider fix already committed in `9b709baa` — SkillProvider wraps ProjectProvider inside AgentProvider in main.tsx
+- Browser verified: /skills page renders with Skills title, search bar, empty state (no white screen, no errors)
+- Browser verified: /skills/create page renders with Editor/Settings tabs and MonacoEditor
+- No console errors related to `useEffectGetSkills` or `SkillContext`
+- Frontend typecheck passes cleanly
+- Files changed: `.ralph/prd.json` (updated passes: true)
+- **Learnings for future iterations:**
+  - When verifying a fix that was already committed, still need to browser test and update PRD
+  - Dev server from main worktree (:5173) won't serve this worktree's code — must start a new dev server on another port
+  - Login required before accessing private routes in browser testing
+---
