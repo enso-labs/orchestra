@@ -327,7 +327,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": "Full end-to-end validation of all skills UI after the SkillProvider fix. Test the complete CRUD flow: create skill, view in list, edit skill, toggle skill, delete skill, and verify BaseToolMenu integration."
     }
   ]

@@ -14,6 +14,8 @@ Branch: feat/773-skills-crud
 - Frontend typecheck: `cd frontend && npx tsc --noEmit`
 - Wiki is a git submodule — commit changes in `/wiki/` directory directly, not through main repo
 - Wiki build: `cd wiki && npm install && npm run build` (Docusaurus)
+- Browser testing: Monaco editor content must be set via `eval` with `window.monaco.editor.getEditors()[0].setValue()` — agent-browser `type` hangs on Monaco
+- Browser testing: Use CSS selectors for icon-only buttons when accessibility refs are unreliable (e.g., `.text-destructive` for trash icon)
 ---
 
 ## 2026-02-14 - US-001
@@ -225,4 +227,25 @@ Thread: N/A
   - When verifying a fix that was already committed, still need to browser test and update PRD
   - Dev server from main worktree (:5173) won't serve this worktree's code — must start a new dev server on another port
   - Login required before accessing private routes in browser testing
+---
+
+## 2026-02-14 - US-019
+Thread: N/A
+- Full end-to-end browser validation of all skills pages after SkillProvider fix
+- **Validated flows:**
+  - /skills page: renders with search, create button, empty state, skill count
+  - /skills/create: Editor tab (MonacoEditor) + Settings tab (all form fields), submit creates skill and redirects
+  - /skills/:name/edit: loads with pre-populated form data (name disabled, description, tags, allowed_tools, license, enabled switch)
+  - Search: filters by name/description, shows "No skills match" for non-matching, clears properly
+  - Toggle: switch toggles on/off, persists after page reload
+  - Delete: AlertDialog confirmation appears, skill removed after confirming, returns to empty state
+  - BaseToolMenu (+): Skills section shows with skill toggle switches, "Manage Skills" link navigates to /skills
+  - Sidebar: "Skills" nav link visible with Sparkles icon
+- Files changed: `.ralph/prd.json` (updated passes: true)
+- **Learnings for future iterations:**
+  - Monaco editor can't be typed into via agent-browser `type` — use `eval` with `window.monaco.editor.getEditors()[0].setValue()` instead
+  - Use CSS selectors like `.text-destructive` to target specific icon buttons when refs are unreliable
+  - `agent-browser click "button.rounded-full.ml-1"` works to target the BaseToolMenu + trigger button
+  - AlertDialog trigger buttons wrapped in AlertDialogTrigger need parent button click, not the trigger click
+  - Use `--profile` flag with agent-browser to persist login session across navigations
 ---
