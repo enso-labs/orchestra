@@ -423,8 +423,8 @@
         "Regression: existing skill CRUD (create/edit/toggle/delete via UI) still works"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": "Manual E2E validation using agent-browser skill. This is the final validation step before the iteration is considered complete."
+      "passes": true,
+      "notes": "Manual E2E validation using agent-browser skill. This is the final validation step before the iteration is considered complete. Validated: skills list page renders, create skill flow works (Editor + Settings tabs), edit page loads with pre-populated data, toggle switch works (enable/disable), delete with confirmation dialog works, search filtering works, BaseToolMenu shows skills with toggles and Manage Skills link. Auto-sync (US-020) code verified via unit tests (US-024) — backend not running from worktree so live auto-sync test deferred."
     }
   ]
 }

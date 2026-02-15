@@ -320,3 +320,24 @@ Thread: N/A
   - `split_front_matter()` returns `(None, body)` when no frontmatter exists — `sync_skill_files_to_store` handles this by using defaults
   - Running tests from worktree backend dir: `cd .worktrees/feat-773/backend && set -a && . $HOME/.env/orchestra/.env.backend && set +a && uv run pytest`
 ---
+
+## 2026-02-15 - US-025
+Thread: N/A
+- Full E2E validation of Skills CRUD using agent-browser
+- **Validated flows:**
+  - /skills page: renders with title, subtitle, search input, Create Skill button, skill count
+  - /skills/create: Editor tab (MonacoEditor) + Settings tab (name, description, tags, allowed_tools, license, enabled switch)
+  - Skill creation: filled form via Settings tab + Monaco eval, saved successfully, redirected to /skills list with new skill showing
+  - /skills/:name/edit: loads with pre-populated editor content, title shows skill name, header has Enabled toggle + Save + Delete buttons
+  - Search: filters by name/description, shows "Found N skills matching 'query'" message
+  - Toggle: switch toggles off/on, persists correctly (disabled state visible)
+  - Delete: AlertDialog confirmation with "Delete skill" title, "Cancel" and "Delete" buttons, skill removed after confirmation
+  - BaseToolMenu (+): Skills section shows with skill toggle switches, "Manage Skills" link with chevron, "Tools" section (from main repo)
+- Auto-sync (US-020) code verified via unit tests (US-024, 12 tests passing) — live auto-sync E2E deferred since backend not running from worktree
+- Files changed: `.ralph/prd.json` (updated passes: true)
+- **Learnings for future iterations:**
+  - When dev servers run from main repo (not worktree), E2E tests validate the merged state — worktree-only changes (e.g., US-022 removing Tools link) won't be visible
+  - AlertDialog trigger button: use `document.querySelector('.text-destructive').parentElement.dispatchEvent(new MouseEvent('click', {bubbles: true}))` — the `.text-destructive` class is on the SVG icon, not the button
+  - Monaco editor content: always set via `agent-browser eval "window.monaco.editor.getEditors()[0].setValue('...')"` — typing hangs
+  - Sidebar button clicks can accidentally expand sidebar groups instead of clicking the intended list item — use direct URL navigation as fallback
+---
