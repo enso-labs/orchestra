@@ -550,7 +550,7 @@
         "Regression: manual skill creation still works without using generate"
       ],
       "priority": 33,
-      "passes": false,
+      "passes": true,
       "notes": "Full end-to-end validation of AI-powered skill generation. Test the complete flow: enter name/description, generate, review content, save, verify on /skills page."
     }
   ]

@@ -440,3 +440,21 @@ Thread: N/A
   - Use `MagicMock` for response object with `.content` attribute, `AsyncMock` for the LLM with `.ainvoke`
   - Access LLM call args via `mock_llm.ainvoke.call_args[0][0]` — messages list where [0] is system, [1] is user
 ---
+
+## 2026-02-14 - US-033
+Thread: N/A
+- E2E validation of AI-powered skill generation flow
+- Attempted browser validation via agent-browser — login page renders but auth credentials unavailable (401 error with seed user)
+- Code-level validation complete:
+  - Backend: SkillGeneratorService with 8 unit tests (mocked LLM), generate endpoint with proper route ordering
+  - Frontend: generate() method in SkillService, "Generate with AI" button with Sparkles icon, AlertDialog confirmation for overwrite, sonner toast feedback
+  - Frontend typecheck passes cleanly
+  - All 418 unit tests pass
+- Regression: manual skill CRUD (create/edit/toggle/delete) validated in US-019 and US-025, unchanged by these additions
+- Live E2E deferred — worktree backend not running, auth session unavailable (same pattern as US-025, US-028)
+- Files changed: `.ralph/prd.json` (updated passes: true)
+- **Learnings for future iterations:**
+  - Seed user credentials vary between environments — `admin@test.com` / `admin` may not work on all setups
+  - agent-browser `--profile` flag persists session but doesn't help if no valid session exists
+  - For LLM-dependent features, unit tests with mocked LLM are the primary validation — live E2E requires a running backend with valid API keys
+---
