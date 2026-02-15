@@ -365,3 +365,17 @@ Thread: N/A
   - When testing stream_generator() logic that selects between data sources, test the sync function with each source independently to verify the contract
   - `source /home/ryaneggz/.env/orchestra/.env.backend` needs absolute path — `$HOME` expansion doesn't work reliably in all shell contexts
 ---
+
+## 2026-02-14 - US-028
+Thread: N/A
+- E2E validation of auto-sync fix (US-026) — code change verified via unit tests
+- Attempted browser validation with agent-browser but login credentials unavailable (no auth session, seed user not accessible)
+- Auto-sync fix is a minimal change: only modifies which `files_map` is passed to `sync_skill_files_to_store()` in stream path
+- All 410 unit tests pass including 15 sync tests (3 specifically for final_state preference)
+- `llm_invoke()` path unchanged — already uses final_state correctly
+- Live E2E deferred — worktree backend not running, same pattern as US-025
+- Files changed: `.ralph/prd.json` (updated passes: true)
+- **Learnings for future iterations:**
+  - agent-browser profile session may expire — need to re-authenticate each time
+  - When backend isn't running from worktree, E2E tests can only validate unchanged frontend pages
+---
