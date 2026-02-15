@@ -294,6 +294,41 @@
       "priority": 17,
       "passes": true,
       "notes": "The wiki is a separate Docusaurus project. Changes go to the wiki repo directly. Include curl examples with Authorization headers for all 6 endpoints."
+    },
+    {
+      "id": "US-018",
+      "title": "Fix: Add SkillProvider to React provider tree",
+      "description": "As a user, I need the /skills page to render without crashing. The SkillProvider context was never added to the provider tree in main.tsx, causing useSkillContext() to return an empty object and crash with 'useEffectGetSkills2 is not a function'.",
+      "acceptanceCriteria": [
+        "Edit `frontend/src/main.tsx` — import `SkillProvider` from `./context/SkillContext`",
+        "Wrap `<SkillProvider>` around `<ProjectProvider>` inside `<AgentProvider>` in the provider chain",
+        "Navigate to http://localhost:5173/skills — page renders with Skills title, search bar, and empty state (no white screen)",
+        "No console errors related to `useEffectGetSkills` or `SkillContext`",
+        "Navigate to http://localhost:5173/skills/create — create page renders with Editor/Settings tabs",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "ROOT CAUSE: SkillProvider was defined in context/SkillContext.tsx but never imported/wrapped in main.tsx. The useSkillContext() hook returned the default empty createContext({}) value, so destructured methods like useEffectGetSkills were undefined. FIX: Add SkillProvider between AgentProvider and ProjectProvider in main.tsx provider chain."
+    },
+    {
+      "id": "US-019",
+      "title": "Validate all skills pages end-to-end in browser",
+      "description": "As a developer, I need to validate that all skills pages (/skills, /skills/create, /skills/:name/edit) and the BaseToolMenu skills section work correctly end-to-end after the provider fix.",
+      "acceptanceCriteria": [
+        "Navigate to /skills — page renders, search input works, 'Create Skill' button navigates to /skills/create",
+        "Navigate to /skills/create — Editor tab shows MonacoEditor, Settings tab shows form fields, submit creates a skill and redirects to /skills",
+        "Navigate to /skills — newly created skill appears in list with name, description, tags, toggle switch, edit/delete buttons",
+        "Click edit on a skill — /skills/:name/edit page loads with pre-populated form data",
+        "Toggle a skill on the list page — switch state changes, persists on page reload",
+        "Delete a skill — confirmation dialog appears, skill is removed after confirming",
+        "Open chat page, click + button — Skills section visible in dropdown with toggles and 'Manage Skills' link",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": "Full end-to-end validation of all skills UI after the SkillProvider fix. Test the complete CRUD flow: create skill, view in list, edit skill, toggle skill, delete skill, and verify BaseToolMenu integration."
     }
   ]
 }

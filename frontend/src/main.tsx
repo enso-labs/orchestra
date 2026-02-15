@@ -8,6 +8,7 @@ import ProjectProvider from "./context/ProjectContext";
 import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
 import { PromptProvider } from "./context/PromptContext";
+import SkillProvider from "./context/SkillContext";
 import { NuqsAdapter } from "nuqs/adapters/react";
 
 // Register service worker
@@ -31,13 +32,15 @@ createRoot(document.getElementById("root")!).render(
 			<NuqsAdapter>
 				<AppProvider>
 					<AgentProvider>
-						<ProjectProvider>
-							<PromptProvider>
-								<ChatProvider>
-									<AppRoutes />
-								</ChatProvider>
-							</PromptProvider>
-						</ProjectProvider>
+						<SkillProvider>
+							<ProjectProvider>
+								<PromptProvider>
+									<ChatProvider>
+										<AppRoutes />
+									</ChatProvider>
+								</PromptProvider>
+							</ProjectProvider>
+						</SkillProvider>
 					</AgentProvider>
 				</AppProvider>
 			</NuqsAdapter>
