@@ -285,3 +285,183 @@ cd frontend && npm i && npm run dev
 > Yes, ideally default mode is preview to optimize readability. Edit more is rendered markdown mode.
 - Should skills be scoped per-assistant or global per-user? (Current design: global per-user)
 > Global per-user for now. We will perform changes for assistant scope in later PR.
+
+---
+
+## Iteration 2: Skills Auto-Sync & Progressive Disclosure
+
+Iteration 1 (US-001 through US-019) delivered the full Skills CRUD feature: backend model/repo/service/routes, frontend pages/hooks/context, agent invocation integration, tests, and wiki docs.
+
+However, iteration 1 only supports skills created via the `/skills` UI pages. The **super agent** (DeepAgent) can write files to `/skills/<name>/SKILL.md` during a chat session using `write_file`/`edit_file` tools, but those files live only in ephemeral `StateBackend` memory and don't persist to LangGraph Store across sessions.
+
+This iteration adds:
+1. **Auto-sync**: Agent-created skills auto-persist to LangGraph Store at session end
+2. **Skills parameter separation**: Use `create_deep_agent(skills=...)` for progressive disclosure via `SkillsMiddleware` instead of lumping skills into `memory=`
+3. **UI cleanup**: Remove broken "Manage Tools" link and redundant sidebar nav
+
+### US-020: Auto-sync agent-created skills to LangGraph Store
+**Description:** As a developer, I need agent-created skill files to automatically persist to LangGraph Store when a session ends, so skills created during chat are available in future sessions.
+
+**Acceptance Criteria:**
+- [ ] Add `sync_skill_files_to_store()` async function in `backend/src/agents/__init__.py`
+- [ ] Function scans `files_map` for paths matching `/skills/<name>/SKILL.md` pattern
+- [ ] Parses YAML frontmatter via `split_front_matter()`, creates/updates skills via `SkillService`
+- [ ] Wired into `stream_generator()` finally block in `backend/src/utils/stream.py`
+- [ ] Wired into `llm_invoke()` finally block in `backend/src/controllers/llm.py`
+- [ ] Returns count of synced skills, logged when > 0
+- [ ] Typecheck/lint passes (`make format`)
+
+### US-021: Separate skills parameter from memory parameter
+**Description:** As a developer, I need the `skills` parameter separated from `memory` in the agent construction chain so DeepAgent uses `SkillsMiddleware` for progressive disclosure instead of loading skills as flat memory.
+
+**Acceptance Criteria:**
+- [ ] Add `skills: list[str] | None = None` parameter to `init_graph()`, `construct_agent()`, `Orchestra.__init__()`
+- [ ] Thread `skills=skills` through the chain: `Orchestra.__init__` -> `init_graph()` -> `create_deep_agent()`
+- [ ] In `llm_invoke()`: pass `memory=memory_sources, skills=skill_sources` (not combined)
+- [ ] In `stream_generator()`: same separation of memory and skills parameters
+- [ ] Typecheck/lint passes (`make format`)
+
+### US-022: Remove "Manage Tools" link from BaseToolMenu
+**Description:** As a user, I should not see a broken "Manage Tools" link in the + menu since the `/tools` route does not exist.
+
+**Acceptance Criteria:**
+- [ ] Delete the entire "Tools Section" block from `frontend/src/components/menus/BaseToolMenu.tsx`
+- [ ] Remove the `Wrench` import from lucide-react if no longer used elsewhere
+- [ ] Typecheck passes (`npx tsc --noEmit`)
+
+### US-023: Remove Skills sidebar nav link
+**Description:** As a user, I should access skills only through the BaseToolMenu's "Manage Skills" link, not a redundant sidebar entry.
+
+**Acceptance Criteria:**
+- [ ] Delete the Skills `SidebarGroup` block from `frontend/src/components/drawers/app-sidebar.tsx`
+- [ ] Remove the `Sparkles` import from lucide-react if no longer used elsewhere
+- [ ] The `/skills` routes remain accessible via BaseToolMenu's "Manage Skills" link
+- [ ] Typecheck passes (`npx tsc --noEmit`)
+
+### US-024: Unit tests for sync_skill_files_to_store
+**Description:** As a developer, I need comprehensive unit tests for the auto-sync function to verify correctness of skill file detection, parsing, and persistence.
+
+**Acceptance Criteria:**
+- [ ] New file `backend/tests/unit/agents/test_sync_skill_files.py`
+- [ ] Test: empty files_map returns 0 synced
+- [ ] Test: files not matching `/skills/<name>/SKILL.md` pattern are ignored
+- [ ] Test: valid SKILL.md with frontmatter creates new skill via SkillService
+- [ ] Test: existing skill is updated (not duplicated)
+- [ ] Test: invalid YAML frontmatter is skipped with warning
+- [ ] Test: empty content files are skipped
+- [ ] Test: multiple skills in files_map are all synced
+- [ ] Test: skill name extracted correctly from path
+- [ ] Uses `InMemoryStore` + real `SkillService` (same pattern as `test_prepare_skill_files.py`)
+- [ ] All tests pass (`make test`)
+
+### US-025: E2E validation with agent-browser
+**Description:** As a developer, I need to validate the full auto-sync flow end-to-end using the agent-browser skill.
+
+**Acceptance Criteria:**
+- [ ] Create a skill via chat: tell agent to "create a skill called test-auto-sync at /skills/test-auto-sync/SKILL.md"
+- [ ] Verify agent writes the file (check agent response)
+- [ ] After session ends, verify skill appears in `/skills` list page
+- [ ] Start a new chat session, verify the skill is loaded (agent can reference it)
+- [ ] Delete the test skill via UI
+- [ ] Regression: existing skill CRUD (create/edit/toggle/delete via UI) still works
+
+---
+
+## Iteration 3: Auto-Sync Fix & AI-Powered Skill Generation
+
+Iteration 2 (US-020 through US-025) added auto-sync of agent-created skills, skills parameter separation, UI cleanup, and unit tests.
+
+However, a bug was discovered: agent-generated skills don't appear on the `/skills` page after a chat session ends. Additionally, a feature request was raised for "Generate with AI" — using a skill-builder-agent pattern to generate best-practice SKILL.md templates from the create page.
+
+**PR comment:** [#774 (comment)](https://github.com/ruska-ai/orchestra/pull/774#issuecomment-3903208976)
+
+This iteration adds:
+1. **Bug fix**: Auto-sync uses final agent state instead of incomplete streaming-accumulated files
+2. **Feature**: AI-powered skill template generation from the create page
+
+### US-026: Fix auto-sync to use final agent state in stream path
+**Description:** As a developer, I need the auto-sync function in `stream_generator()` to use the authoritative final agent state instead of the streaming-accumulated `files_map`, which may be incomplete if the agent writes a skill file in its last tool call.
+
+**Acceptance Criteria:**
+- [ ] In `stream_generator()` finally block in `backend/src/utils/stream.py`: use `final_state.values.get("files", {})` for sync instead of accumulated `files_map`
+- [ ] Guard with check that `final_state` is available; fall back to `files_map` if not
+- [ ] Add debug log showing file count difference between accumulated and final state
+- [ ] `llm_invoke()` path already correct — no changes needed
+- [ ] Typecheck/lint passes (`make format`)
+
+### US-027: Unit test for stream sync using final_state files
+**Description:** As a developer, I need unit tests that verify the auto-sync function correctly prefers final agent state files over accumulated streaming files.
+
+**Acceptance Criteria:**
+- [ ] Add tests to `backend/tests/unit/agents/test_sync_skill_files.py`
+- [ ] Test: accumulated `files_map` empty but `final_state` files contain SKILL.md — sync persists the skill
+- [ ] Test: `files_map` has stale content, `final_state` has correct version — sync uses final state version
+- [ ] Test: `final_state` unavailable — sync falls back to `files_map`
+- [ ] All tests pass (`make test`)
+
+### US-028: E2E validation of auto-sync fix
+**Description:** As a developer, I need to validate that the auto-sync bug fix works end-to-end using the agent-browser skill.
+
+**Acceptance Criteria:**
+- [ ] Tell agent to create skill at `/skills/test-sync-fix/SKILL.md`
+- [ ] Verify skill appears on `/skills` page after session ends
+- [ ] Verify skill loads in next chat session
+- [ ] Regression: manual CRUD still works
+
+### US-029: Create skill template generation service
+**Description:** As a developer, I need a backend service that uses an LLM to generate best-practice SKILL.md templates based on a name, description, and tags, following the skill-builder-agent pattern.
+
+**Acceptance Criteria:**
+- [ ] New file `backend/src/services/skill_generator.py` with `SkillGeneratorService`
+- [ ] Uses `init_chat_model()` with `DEFAULT_CHAT_MODEL_BASIC`
+- [ ] System prompt embeds skill-builder-agent best practices (SKILL.md structure, conciseness <5000 words, imperative form, progressive disclosure, realistic examples)
+- [ ] Method: `async generate(name, description, tags) -> dict` returning `{content, description, tags}`
+- [ ] Follow pattern from `backend/src/services/prompt/optimize.py`
+- [ ] Typecheck/lint passes (`make format`)
+
+### US-030: Create skill generation API endpoint
+**Description:** As a user, I want an API endpoint that generates a SKILL.md template using AI so I can get a high-quality starting point for new skills.
+
+**Acceptance Criteria:**
+- [ ] New schemas: `SkillGenerateRequest`, `SkillGenerateResponse` in `backend/src/schemas/entities/skill.py`
+- [ ] New endpoint: `POST /skills/generate` in `backend/src/routes/v0/skill.py`
+- [ ] Route declared BEFORE `/{skill_name}` catch-all to avoid path conflicts
+- [ ] Endpoint does NOT persist — returns generated content for user review
+- [ ] Endpoint uses `Depends(verify_credentials)` and `Depends(get_store)`
+- [ ] Typecheck/lint passes (`make format`)
+
+### US-031: Add "Generate with AI" button to skill create page
+**Description:** As a user, I want a "Generate with AI" button on the skill create page so I can get a high-quality SKILL.md template generated from my name and description.
+
+**Acceptance Criteria:**
+- [ ] Add `generate()` static method to `frontend/src/lib/services/skillService.ts`
+- [ ] Add button with `Sparkles` icon in create page header (secondary variant)
+- [ ] Button enabled only when name + description fields are filled in
+- [ ] On click: calls `SkillService.generate()`, populates content field, auto-fills tags if empty
+- [ ] Loading spinner shown during generation, error toast on failure
+- [ ] Confirmation dialog if editor already has content (to prevent accidental overwrite)
+- [ ] Typecheck passes
+
+### US-032: Unit tests for SkillGeneratorService
+**Description:** As a developer, I need unit tests for the skill generator service to verify correct SKILL.md generation with proper structure and content.
+
+**Acceptance Criteria:**
+- [ ] New file `backend/tests/unit/services/test_skill_generator.py`
+- [ ] Mock LLM via `unittest.mock.patch` on `init_chat_model`
+- [ ] Test: generated content includes YAML frontmatter with skill metadata
+- [ ] Test: generated content includes expected sections
+- [ ] Test: skill name is included in output
+- [ ] Test: tags are passed through to output
+- [ ] Test: content respects word count limit (<5000 words)
+- [ ] All tests pass (`make test`)
+
+### US-033: E2E validation of AI-powered skill generation
+**Description:** As a developer, I need to validate the full AI-powered skill generation flow end-to-end using the agent-browser skill.
+
+**Acceptance Criteria:**
+- [ ] Navigate to `/skills/create` page
+- [ ] Enter skill name and description
+- [ ] Click "Generate with AI" button
+- [ ] Verify generated content appears in the editor
+- [ ] Save the skill and verify it appears on `/skills` list page
+- [ ] Regression: manual skill creation still works without using generate

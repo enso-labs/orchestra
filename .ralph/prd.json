@@ -425,6 +425,133 @@
       "priority": 25,
       "passes": true,
       "notes": "Manual E2E validation using agent-browser skill. This is the final validation step before the iteration is considered complete. Validated: skills list page renders, create skill flow works (Editor + Settings tabs), edit page loads with pre-populated data, toggle switch works (enable/disable), delete with confirmation dialog works, search filtering works, BaseToolMenu shows skills with toggles and Manage Skills link. Auto-sync (US-020) code verified via unit tests (US-024) — backend not running from worktree so live auto-sync test deferred."
+    },
+    {
+      "id": "US-026",
+      "title": "Fix auto-sync to use final agent state in stream path",
+      "description": "As a developer, I need the auto-sync function in stream_generator() to use the authoritative final agent state instead of the streaming-accumulated files_map, which may be incomplete if the agent writes a skill file in its last tool call.",
+      "acceptanceCriteria": [
+        "In `stream_generator()` finally block in `backend/src/utils/stream.py`: use `final_state.values.get(\"files\", {})` for sync instead of accumulated `files_map`",
+        "Guard with check that `final_state` is available; fall back to `files_map` if not",
+        "Add debug log showing file count difference between accumulated and final state",
+        "`llm_invoke()` path already correct — no changes needed",
+        "Typecheck/lint passes (`make format`)"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": "Root cause: stream_generator() passes streaming-accumulated files_map to sync_skill_files_to_store(). This files_map is built incrementally from chunks and may be incomplete. Fix: use final_state.values.get('files', {}) which is already fetched at line 307. llm_invoke() already uses final_state correctly."
+    },
+    {
+      "id": "US-027",
+      "title": "Unit test for stream sync using final_state files",
+      "description": "As a developer, I need unit tests that verify the auto-sync function correctly prefers final agent state files over accumulated streaming files.",
+      "acceptanceCriteria": [
+        "Add tests to `backend/tests/unit/agents/test_sync_skill_files.py`",
+        "Test: accumulated `files_map` empty but `final_state` files contain SKILL.md — sync persists the skill",
+        "Test: `files_map` has stale content, `final_state` has correct version — sync uses final state version",
+        "Test: `final_state` unavailable — sync falls back to `files_map`",
+        "All tests pass (`make test`)"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": "Add to existing test_sync_skill_files.py. Test the final_state preference logic added in US-026. Use InMemoryStore with real SkillService."
+    },
+    {
+      "id": "US-028",
+      "title": "E2E validation of auto-sync fix",
+      "description": "As a developer, I need to validate that the auto-sync bug fix works end-to-end using the agent-browser skill.",
+      "acceptanceCriteria": [
+        "Tell agent to create skill at `/skills/test-sync-fix/SKILL.md`",
+        "Verify skill appears on `/skills` page after session ends",
+        "Verify skill loads in next chat session",
+        "Regression: manual CRUD still works"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": "Manual E2E validation using agent-browser skill. Validates that the stream_generator() auto-sync fix (US-026) works in practice."
+    },
+    {
+      "id": "US-029",
+      "title": "Create skill template generation service",
+      "description": "As a developer, I need a backend service that uses an LLM to generate best-practice SKILL.md templates based on a name, description, and tags, following the skill-builder-agent pattern.",
+      "acceptanceCriteria": [
+        "New file `backend/src/services/skill_generator.py` with `SkillGeneratorService`",
+        "Uses `init_chat_model()` with `DEFAULT_CHAT_MODEL_BASIC`",
+        "System prompt embeds skill-builder-agent best practices (SKILL.md structure, conciseness <5000 words, imperative form, progressive disclosure, realistic examples)",
+        "Method: `async generate(name, description, tags) -> dict` returning `{content, description, tags}`",
+        "Follow pattern from `backend/src/services/prompt/optimize.py`",
+        "Typecheck/lint passes (`make format`)"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": "Follow pattern from backend/src/services/prompt/optimize.py. Use init_chat_model() with DEFAULT_CHAT_MODEL_BASIC. System prompt should embed skill-builder-agent best practices from https://raw.githubusercontent.com/ryaneggz/ralph/refs/heads/master/.claude/agents/skill-builder.md."
+    },
+    {
+      "id": "US-030",
+      "title": "Create skill generation API endpoint",
+      "description": "As a user, I want an API endpoint that generates a SKILL.md template using AI so I can get a high-quality starting point for new skills.",
+      "acceptanceCriteria": [
+        "New schemas: `SkillGenerateRequest`, `SkillGenerateResponse` in `backend/src/schemas/entities/skill.py`",
+        "New endpoint: `POST /skills/generate` in `backend/src/routes/v0/skill.py`",
+        "Route declared BEFORE `/{skill_name}` catch-all to avoid path conflicts",
+        "Endpoint does NOT persist — returns generated content for user review",
+        "Endpoint uses `Depends(verify_credentials)` and `Depends(get_store)`",
+        "Typecheck/lint passes (`make format`)"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": "Add SkillGenerateRequest (name, description, tags) and SkillGenerateResponse (content, description, tags) to skill.py schemas. Route must be declared BEFORE /{skill_name} to avoid FastAPI treating 'generate' as a skill_name."
+    },
+    {
+      "id": "US-031",
+      "title": "Add Generate with AI button to skill create page",
+      "description": "As a user, I want a Generate with AI button on the skill create page so I can get a high-quality SKILL.md template generated from my name and description.",
+      "acceptanceCriteria": [
+        "Add `generate()` static method to `frontend/src/lib/services/skillService.ts`",
+        "Add button with `Sparkles` icon in create page header (secondary variant)",
+        "Button enabled only when name + description fields are filled in",
+        "On click: calls `SkillService.generate()`, populates content field, auto-fills tags if empty",
+        "Loading spinner shown during generation, error toast on failure",
+        "Confirmation dialog if editor already has content (to prevent accidental overwrite)",
+        "Typecheck passes"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": "Add generate() method to frontend SkillService. Button uses Sparkles icon, secondary variant. Enabled only when name + description filled. Shows confirmation if editor has content to prevent accidental overwrite."
+    },
+    {
+      "id": "US-032",
+      "title": "Unit tests for SkillGeneratorService",
+      "description": "As a developer, I need unit tests for the skill generator service to verify correct SKILL.md generation with proper structure and content.",
+      "acceptanceCriteria": [
+        "New file `backend/tests/unit/services/test_skill_generator.py`",
+        "Mock LLM via `unittest.mock.patch` on `init_chat_model`",
+        "Test: generated content includes YAML frontmatter with skill metadata",
+        "Test: generated content includes expected sections",
+        "Test: skill name is included in output",
+        "Test: tags are passed through to output",
+        "Test: content respects word count limit (<5000 words)",
+        "All tests pass (`make test`)"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": "Mock LLM via unittest.mock.patch on init_chat_model. Verify output structure: YAML frontmatter, sections, name inclusion, tag passthrough, word count."
+    },
+    {
+      "id": "US-033",
+      "title": "E2E validation of AI-powered skill generation",
+      "description": "As a developer, I need to validate the full AI-powered skill generation flow end-to-end using the agent-browser skill.",
+      "acceptanceCriteria": [
+        "Navigate to `/skills/create` page",
+        "Enter skill name and description",
+        "Click Generate with AI button",
+        "Verify generated content appears in the editor",
+        "Save the skill and verify it appears on `/skills` list page",
+        "Regression: manual skill creation still works without using generate"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": "Full end-to-end validation of AI-powered skill generation. Test the complete flow: enter name/description, generate, review content, save, verify on /skills page."
     }
   ]
 }
