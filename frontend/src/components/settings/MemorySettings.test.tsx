@@ -16,6 +16,7 @@ const mockList = vi.fn();
 const mockDelete = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
+const mockToggle = vi.fn();
 
 vi.mock("@/lib/services/memoryService", () => ({
 	default: {
@@ -23,6 +24,7 @@ vi.mock("@/lib/services/memoryService", () => ({
 		delete: (...args: any[]) => mockDelete(...args),
 		create: (...args: any[]) => mockCreate(...args),
 		update: (...args: any[]) => mockUpdate(...args),
+		toggle: (...args: any[]) => mockToggle(...args),
 	},
 }));
 
@@ -44,14 +46,16 @@ vi.mock("@/components/settings/MemoryEditDialog", () => ({
 
 const sampleMemories = [
 	{
-		id: "memory_1",
+		id: "AGENTS.md",
 		content: "User prefers dark mode",
+		enabled: true,
 		created_at: "2026-01-01T00:00:00Z",
 		updated_at: "2026-01-01T00:00:00Z",
 	},
 	{
-		id: "memory_2",
+		id: "USER.md",
 		content: "User works with Python",
+		enabled: true,
 		created_at: "2026-01-02T00:00:00Z",
 		updated_at: "2026-01-02T00:00:00Z",
 	},
@@ -67,6 +71,7 @@ describe("MemorySettings", () => {
 			offset: 0,
 		});
 		mockDelete.mockResolvedValue(undefined);
+		mockToggle.mockResolvedValue({ ...sampleMemories[0], enabled: false });
 	});
 
 	it("renders loading skeletons then memories", async () => {
@@ -77,6 +82,56 @@ describe("MemorySettings", () => {
 		});
 		expect(screen.getByText("User works with Python")).toBeInTheDocument();
 		expect(screen.getByText("2 memories")).toBeInTheDocument();
+	});
+
+	it("displays file paths as labels", async () => {
+		render(<MemorySettings />);
+		await waitFor(() => {
+			expect(screen.getByText("AGENTS.md")).toBeInTheDocument();
+		});
+		expect(screen.getByText("USER.md")).toBeInTheDocument();
+	});
+
+	it("shows toggle switches for each memory", async () => {
+		render(<MemorySettings />);
+		await waitFor(() => {
+			expect(screen.getByText("User prefers dark mode")).toBeInTheDocument();
+		});
+		const toggles = screen.getAllByRole("switch");
+		expect(toggles).toHaveLength(2);
+	});
+
+	it("calls toggle service on switch click", async () => {
+		render(<MemorySettings />);
+		await waitFor(() => {
+			expect(screen.getByText("User prefers dark mode")).toBeInTheDocument();
+		});
+
+		const toggles = screen.getAllByRole("switch");
+		fireEvent.click(toggles[0]);
+
+		await waitFor(() => {
+			expect(mockToggle).toHaveBeenCalledWith("AGENTS.md");
+		});
+	});
+
+	it("dims disabled memories", async () => {
+		mockList.mockResolvedValue({
+			memories: [{ ...sampleMemories[0], enabled: false }, sampleMemories[1]],
+			total: 2,
+			limit: 100,
+			offset: 0,
+		});
+		render(<MemorySettings />);
+		await waitFor(() => {
+			expect(screen.getByText("AGENTS.md")).toBeInTheDocument();
+		});
+
+		// The parent container of the disabled memory should have opacity-50
+		const agentsRow = screen
+			.getByText("AGENTS.md")
+			.closest("[class*='opacity-50']");
+		expect(agentsRow).toBeInTheDocument();
 	});
 
 	it("shows empty state when no memories", async () => {
@@ -178,7 +233,7 @@ describe("MemorySettings", () => {
 		fireEvent.click(screen.getByText("Delete"));
 
 		await waitFor(() => {
-			expect(mockDelete).toHaveBeenCalledWith("memory_1");
+			expect(mockDelete).toHaveBeenCalledWith("AGENTS.md");
 		});
 
 		// Memory should be removed optimistically

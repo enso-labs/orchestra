@@ -6,6 +6,7 @@ import useThread from "@/hooks/useThread";
 import useModel from "@/hooks/useModel";
 import useFileSystem, { type FileData } from "@/hooks/useFileSystem";
 import useMessageQueue from "@/hooks/useMessageQueue";
+import MemoryService from "@/lib/services/memoryService";
 
 // Re-export FileData type for consumers
 export type {
@@ -165,6 +166,22 @@ export default function ChatProvider({
 			clearQueue();
 		}
 	}, [messagesLength, clearFileSystem, clearQueue]);
+
+	// Load memory files into filesystem on mount
+	useEffect(() => {
+		const loadMemoryFiles = async () => {
+			try {
+				const memoryFiles = await MemoryService.getFiles();
+				if (memoryFiles && Object.keys(memoryFiles).length > 0) {
+					const filesMap = new Map(Object.entries(memoryFiles));
+					importFiles(filesMap);
+				}
+			} catch (error) {
+				console.error("Failed to load memory files:", error);
+			}
+		};
+		loadMemoryFiles();
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return (
 		<ChatContext.Provider

@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -92,6 +93,23 @@ export function MemorySettings() {
 		}
 	};
 
+	const handleToggle = async (memory: Memory) => {
+		const prevMemories = memories;
+		// Optimistic toggle
+		setMemories((m) =>
+			m.map((mem) =>
+				mem.id === memory.id ? { ...mem, enabled: !mem.enabled } : mem,
+			),
+		);
+		try {
+			await MemoryService.toggle(memory.id);
+		} catch {
+			// Rollback
+			setMemories(prevMemories);
+			toast.error("Failed to toggle memory");
+		}
+	};
+
 	const openCreate = () => {
 		setEditingMemory(null);
 		setEditDialogOpen(true);
@@ -151,30 +169,44 @@ export function MemorySettings() {
 								{memories.map((memory) => (
 									<div
 										key={memory.id}
-										className="group flex items-start justify-between gap-2 rounded-md border p-3 hover:bg-muted/50"
+										className={`group flex items-start justify-between gap-2 rounded-md border p-3 hover:bg-muted/50 ${!memory.enabled ? "opacity-50" : ""}`}
 									>
-										<p className="text-sm flex-1 whitespace-pre-wrap">
-											{memory.content}
-										</p>
-										<div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7"
-												aria-label="Edit memory"
-												onClick={() => openEdit(memory)}
-											>
-												<Pencil className="h-3.5 w-3.5" />
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-destructive"
-												aria-label="Delete memory"
-												onClick={() => setDeleteTarget(memory)}
-											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</Button>
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center gap-2 mb-1">
+												<span className="text-xs font-mono font-medium text-muted-foreground">
+													{memory.id}
+												</span>
+											</div>
+											<p className="text-sm whitespace-pre-wrap truncate">
+												{memory.content}
+											</p>
+										</div>
+										<div className="flex items-center gap-1 shrink-0">
+											<Switch
+												checked={memory.enabled}
+												onCheckedChange={() => handleToggle(memory)}
+												aria-label="Toggle memory"
+											/>
+											<div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-7 w-7"
+													aria-label="Edit memory"
+													onClick={() => openEdit(memory)}
+												>
+													<Pencil className="h-3.5 w-3.5" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-7 w-7 text-destructive"
+													aria-label="Delete memory"
+													onClick={() => setDeleteTarget(memory)}
+												>
+													<Trash2 className="h-3.5 w-3.5" />
+												</Button>
+											</div>
 										</div>
 									</div>
 								))}

@@ -9,6 +9,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { Memory } from "@/lib/entities/memory";
@@ -28,19 +29,22 @@ export function MemoryEditDialog({
 	onSaved,
 }: MemoryEditDialogProps) {
 	const isEdit = !!memory;
+	const [path, setPath] = useState("");
 	const [content, setContent] = useState("");
 	const [saving, setSaving] = useState(false);
 
 	useEffect(() => {
 		if (open) {
 			setContent(memory?.content ?? "");
+			setPath(memory?.id ?? "");
 		}
 	}, [open, memory]);
 
 	const hasChanges = isEdit
 		? content !== memory?.content
-		: content.trim().length > 0;
-	const isValid = content.trim().length > 0;
+		: content.trim().length > 0 && path.trim().length > 0;
+	const isValid =
+		content.trim().length > 0 && (isEdit || path.trim().length > 0);
 
 	const handleSave = async () => {
 		if (!isValid) return;
@@ -50,7 +54,10 @@ export function MemoryEditDialog({
 				await MemoryService.update(memory.id, { content: content.trim() });
 				toast.success("Memory updated");
 			} else {
-				await MemoryService.create({ content: content.trim() });
+				await MemoryService.create({
+					content: content.trim(),
+					path: path.trim(),
+				});
 				toast.success("Memory created");
 			}
 			onOpenChange(false);
@@ -71,11 +78,26 @@ export function MemoryEditDialog({
 					<DialogTitle>{isEdit ? "Edit Memory" : "Add Memory"}</DialogTitle>
 					<DialogDescription>
 						{isEdit
-							? "Update the content of this memory."
-							: "Create a new memory that the AI will remember."}
+							? "Update the content of this memory file."
+							: "Create a new memory file that the AI will remember."}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
+					<div className="grid gap-2">
+						<Label htmlFor="memory-path">File Name</Label>
+						{isEdit ? (
+							<p className="text-sm text-muted-foreground font-mono px-3 py-2 bg-muted rounded-md">
+								{memory?.id}
+							</p>
+						) : (
+							<Input
+								id="memory-path"
+								value={path}
+								onChange={(e) => setPath(e.target.value)}
+								placeholder="e.g. AGENTS.md, USER.md"
+							/>
+						)}
+					</div>
 					<div className="grid gap-2">
 						<Label htmlFor="memory-content">Content</Label>
 						<Textarea
@@ -83,7 +105,7 @@ export function MemoryEditDialog({
 							value={content}
 							onChange={(e) => setContent(e.target.value)}
 							placeholder="Enter memory content..."
-							rows={4}
+							rows={6}
 						/>
 					</div>
 				</div>

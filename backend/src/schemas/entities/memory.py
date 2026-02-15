@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class Memory(BaseModel):
     id: str
     content: str
+    enabled: bool = True
     metadata: Optional[dict] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -14,12 +15,14 @@ class Memory(BaseModel):
 
 class MemoryCreate(BaseModel):
     content: str = Field(..., min_length=1)
+    path: str = Field(..., min_length=1)
     metadata: Optional[dict] = None
 
 
 class MemoryUpdate(BaseModel):
     content: str = Field(..., min_length=1)
     metadata: Optional[dict] = None
+    enabled: Optional[bool] = None
 
 
 class MemoryListResponse(BaseModel):

@@ -1,4 +1,5 @@
 import apiClient from "@/lib/utils/apiClient";
+import type { FileData } from "@/hooks/useFileSystem";
 import type {
 	Memory,
 	MemoryListResponse,
@@ -47,5 +48,17 @@ export default class MemoryService {
 
 	static async delete(memoryId: string): Promise<void> {
 		await apiClient.delete(`${this.BASE_URL}/${memoryId}`);
+	}
+
+	static async getFiles(): Promise<Record<string, FileData>> {
+		const response = await apiClient.get(`${this.BASE_URL}/files`);
+		return response.data;
+	}
+
+	static async toggle(memoryId: string): Promise<Memory> {
+		const response = await apiClient.patch(
+			`${this.BASE_URL}/${memoryId}/toggle`,
+		);
+		return response.data;
 	}
 }
