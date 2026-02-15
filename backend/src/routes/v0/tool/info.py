@@ -35,20 +35,13 @@ async def list_mcp_info(
         return JSONResponse(
             content={
                 "mcp": [
-                    {
-                        k: v
-                        for k, v in tool.model_dump().items()
-                        if k not in ["func", "coroutine"]
-                    }
-                    for tool in tools
+                    {k: v for k, v in tool.model_dump().items() if k not in ["func", "coroutine"]} for tool in tools
                 ]
             },
             status_code=status.HTTP_200_OK,
         )
     except Exception as e:
-        return JSONResponse(
-            content={"error": str(e)}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 ################################################################################
@@ -70,10 +63,6 @@ async def get_a2a_agent_card(
     try:
         agent_cards = tool_service.agent_cards(config)
 
-        return JSONResponse(
-            content={"agent_cards": agent_cards}, status_code=status.HTTP_200_OK
-        )
+        return JSONResponse(content={"agent_cards": agent_cards}, status_code=status.HTTP_200_OK)
     except Exception as e:
-        return JSONResponse(
-            content={"error": str(e)}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return JSONResponse(content={"error": str(e)}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

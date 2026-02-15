@@ -16,9 +16,7 @@ from src.services.db import get_async_db
 from src.services.assistant import AssistantService
 from src.utils.logger import logger
 
-security = HTTPBearer(
-    auto_error=False
-)  # Make auto_error=False to not require the Authorization header
+security = HTTPBearer(auto_error=False)  # Make auto_error=False to not require the Authorization header
 
 
 def generate_api_key_str() -> str:
@@ -33,9 +31,7 @@ def create_access_token(user: User, expires_delta: timedelta | None = None):
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
-            minutes=JWT_TOKEN_EXPIRE_MINUTES
-        )
+        expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_TOKEN_EXPIRE_MINUTES)
 
     # Create JWT payload with user data
     to_encode = {
@@ -102,22 +98,15 @@ async def get_optional_user(
             store = getattr(request.app.state, "store", None)
             if store:
                 assistant_service = AssistantService(user_id=None, store=store)
-                public_assistant = await assistant_service.get_public(
-                    params.metadata.assistant_id
-                )
+                public_assistant = await assistant_service.get_public(params.metadata.assistant_id)
                 if public_assistant:
-                    logger.info(
-                        f"Allowing unauthenticated access for public assistant: {params.metadata.assistant_id}"
-                    )
+                    logger.info(f"Allowing unauthenticated access for public assistant: {params.metadata.assistant_id}")
                     return None
 
         if not is_authorized_model(params.model):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=(
-                    f"Unauthorized [{params.model}]\n"
-                    "Please sign in for higher limits and better models!"
-                ),
+                detail=(f"Unauthorized [{params.model}]\nPlease sign in for higher limits and better models!"),
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return None
@@ -149,9 +138,7 @@ async def verify_credentials(
                     user = await user_repo.get_by_id()
 
                     if not user:
-                        logger.warning(
-                            f"User {token.user_id} not found for valid token {token.id}"
-                        )
+                        logger.warning(f"User {token.user_id} not found for valid token {token.id}")
                         raise HTTPException(
                             status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="User not found",
@@ -161,9 +148,7 @@ async def verify_credentials(
                     user_token_repo = ApiTokenRepo(token.user_id, store)
                     await user_token_repo.update_last_used(token.id)
 
-                    logger.info(
-                        f"Authenticated user via API Token: {user.id} {user.email}"
-                    )
+                    logger.info(f"Authenticated user via API Token: {user.id} {user.email}")
                     user_repo.user_id = user.id
                     request.state.user = user.protected()
                     request.state.token = api_key
@@ -196,9 +181,7 @@ async def verify_credentials(
             )
 
         # Verify JWT token
-        payload = jwt.decode(
-            credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
-        )
+        payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
 
         # Check if token has expired
         exp = payload.get("exp")
@@ -221,9 +204,7 @@ async def verify_credentials(
         # Extract user data from token
         user_data = payload.get("user")
         if user_data is None:
-            logger.warning(
-                f"Token payload is missing user data: {credentials.credentials}"
-            )
+            logger.warning(f"Token payload is missing user data: {credentials.credentials}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token payload",

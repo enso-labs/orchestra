@@ -89,9 +89,7 @@ class TestThreadStreamEndpoint:
         thread_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch(
-                "src.routes.v0.thread.get_optional_user_from_token"
-            ) as mock_auth:
+            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
                 mock_auth.return_value = None  # No authentication required
 
                 async def mock_gen():
@@ -99,9 +97,7 @@ class TestThreadStreamEndpoint:
 
                 mock_stream.return_value = mock_gen()
 
-                async with async_client.stream(
-                    "GET", f"/api/threads/{thread_id}/stream"
-                ) as response:
+                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
                     # The endpoint should work even without authentication
                     # since it uses get_optional_user
                     assert response.status_code in [200, 422]
@@ -112,9 +108,7 @@ class TestThreadStreamEndpoint:
         thread_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch(
-                "src.routes.v0.thread.get_optional_user_from_token"
-            ) as mock_auth:
+            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
                 mock_auth.return_value = None
 
                 async def mock_gen():
@@ -122,13 +116,9 @@ class TestThreadStreamEndpoint:
 
                 mock_stream.return_value = mock_gen()
 
-                async with async_client.stream(
-                    "GET", f"/api/threads/{thread_id}/stream"
-                ) as response:
+                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
                     if response.status_code == 200:
-                        assert response.headers["content-type"].startswith(
-                            "text/event-stream"
-                        )
+                        assert response.headers["content-type"].startswith("text/event-stream")
 
     @pytest.mark.asyncio
     async def test_streams_data_events(self, async_client):
@@ -136,9 +126,7 @@ class TestThreadStreamEndpoint:
         thread_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch(
-                "src.routes.v0.thread.get_optional_user_from_token"
-            ) as mock_auth:
+            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
                 mock_auth.return_value = None
 
                 async def mock_gen():
@@ -149,9 +137,7 @@ class TestThreadStreamEndpoint:
                 mock_stream.return_value = mock_gen()
 
                 chunks = []
-                async with async_client.stream(
-                    "GET", f"/api/threads/{thread_id}/stream"
-                ) as response:
+                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
                     if response.status_code == 200:
                         async for chunk in response.aiter_bytes():
                             chunks.append(chunk.decode())
@@ -195,9 +181,7 @@ class TestBackwardCompatibility:
                         json=payload,
                     ) as response:
                         assert response.status_code == 200
-                        assert response.headers["content-type"].startswith(
-                            "text/event-stream"
-                        )
+                        assert response.headers["content-type"].startswith("text/event-stream")
 
     @pytest.mark.asyncio
     async def test_default_is_sync_mode(self, async_client):
@@ -224,9 +208,7 @@ class TestBackwardCompatibility:
                     json=payload,
                 ) as response:
                     # Should be streaming, not JSON
-                    assert response.headers["content-type"].startswith(
-                        "text/event-stream"
-                    )
+                    assert response.headers["content-type"].startswith("text/event-stream")
 
 
 class TestDistributedWorkersEnvVar:

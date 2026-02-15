@@ -25,24 +25,19 @@ export function ScheduleCalendar({
 	events,
 	onEventClick,
 }: ScheduleCalendarProps) {
-	const eventStyleGetter = useCallback(
-		(event: ScheduleEvent) => {
-			const backgroundColor = getExecutionStatusColor(
-				event.resource.status,
-			);
-			return {
-				style: {
-					backgroundColor,
-					borderRadius: "4px",
-					opacity: 0.9,
-					color: "white",
-					border: "none",
-					display: "block",
-				},
-			};
-		},
-		[],
-	);
+	const eventStyleGetter = useCallback((event: ScheduleEvent) => {
+		const backgroundColor = getExecutionStatusColor(event.resource.status);
+		return {
+			style: {
+				backgroundColor,
+				borderRadius: "4px",
+				opacity: 0.9,
+				color: "white",
+				border: "none",
+				display: "block",
+			},
+		};
+	}, []);
 
 	const handleSelectEvent = useCallback(
 		(event: ScheduleEvent) => {

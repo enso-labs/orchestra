@@ -13,12 +13,8 @@ type Period = Literal["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"
 
 
 class GetCorrelationMatrixSchema(BaseModel):
-    tickers: list[str] = Field(
-        ..., description="List of ticker symbols to compute correlation for (minimum 2)"
-    )
-    period: Period = Field(
-        default="1y", description="The time period for historical data"
-    )
+    tickers: list[str] = Field(..., description="List of ticker symbols to compute correlation for (minimum 2)")
+    period: Period = Field(default="1y", description="The time period for historical data")
 
 
 @tool(args_schema=GetCorrelationMatrixSchema, response_format="content_and_artifact")

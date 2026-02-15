@@ -47,9 +47,7 @@ _LLM_STREAM_TIMESTAMP = time.strftime("%Y%m%d_%H%M%S")
 def log_to_file(message: str, model: str, folder: str = "llm_stream"):
     logs_dir = os.path.join("logs", folder)
     os.makedirs(logs_dir, exist_ok=True)
-    log_filename = os.path.join(
-        logs_dir, f"{_LLM_STREAM_TIMESTAMP}_{model.split(':')[0]}.log"
-    )
+    log_filename = os.path.join(logs_dir, f"{_LLM_STREAM_TIMESTAMP}_{model.split(':')[0]}.log")
     with open(log_filename, "a", encoding="utf-8") as log_file:
         log_file.write(str(message) + "\n")
 

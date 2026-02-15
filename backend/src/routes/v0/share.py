@@ -228,16 +228,12 @@ async def list_shares(
                     {
                         "prefix": s.token_prefix,
                         "thread_id": s.thread_id,
-                        "share_url": f"/share/[token]",  # Don't expose full token
+                        "share_url": "/share/[token]",  # Don't expose full token
                         "allow_follow_up": s.allow_follow_up,
                         "show_files": s.show_files,
-                        "expires_at": s.expires_at.isoformat()
-                        if s.expires_at
-                        else None,
+                        "expires_at": s.expires_at.isoformat() if s.expires_at else None,
                         "view_count": s.view_count,
-                        "created_at": s.created_at.isoformat()
-                        if s.created_at
-                        else None,
+                        "created_at": s.created_at.isoformat() if s.created_at else None,
                         "is_valid": s.is_valid,
                     }
                     for s in shares

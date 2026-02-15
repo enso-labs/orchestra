@@ -237,18 +237,14 @@ class TestAbortServiceSetSignal:
 class TestAbortServiceCheckSignal:
     """Tests for AbortService.check_abort_signal static method."""
 
-    async def test_check_abort_signal_returns_true_when_exists_no_user_check(
-        self, fake_redis
-    ):
+    async def test_check_abort_signal_returns_true_when_exists_no_user_check(self, fake_redis):
         """Test that check_abort_signal returns True when signal exists (legacy behavior)."""
         thread_id = str(uuid4())
         user_id = str(uuid4())
         key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
         # Set signal with valid JSON
-        signal_data = json.dumps(
-            {"requested_by": user_id, "requested_at": "2024-01-01"}
-        )
+        signal_data = json.dumps({"requested_by": user_id, "requested_at": "2024-01-01"})
         await fake_redis.set(key, signal_data)
 
         with patch("src.services.abort.redis.from_url", return_value=fake_redis):
@@ -263,21 +259,15 @@ class TestAbortServiceCheckSignal:
         key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
         # Set signal with user_id
-        signal_data = json.dumps(
-            {"requested_by": user_id, "requested_at": "2024-01-01"}
-        )
+        signal_data = json.dumps({"requested_by": user_id, "requested_at": "2024-01-01"})
         await fake_redis.set(key, signal_data)
 
         with patch("src.services.abort.redis.from_url", return_value=fake_redis):
-            result = await AbortService.check_abort_signal(
-                thread_id, expected_user_id=user_id
-            )
+            result = await AbortService.check_abort_signal(thread_id, expected_user_id=user_id)
 
         assert result is True
 
-    async def test_check_abort_signal_returns_false_when_user_mismatch(
-        self, fake_redis
-    ):
+    async def test_check_abort_signal_returns_false_when_user_mismatch(self, fake_redis):
         """Test that check_abort_signal returns False when expected_user_id doesn't match."""
         thread_id = str(uuid4())
         user_id = str(uuid4())
@@ -285,15 +275,11 @@ class TestAbortServiceCheckSignal:
         key = f"{ABORT_SIGNAL_PREFIX}{thread_id}"
 
         # Set signal with different user_id
-        signal_data = json.dumps(
-            {"requested_by": other_user_id, "requested_at": "2024-01-01"}
-        )
+        signal_data = json.dumps({"requested_by": other_user_id, "requested_at": "2024-01-01"})
         await fake_redis.set(key, signal_data)
 
         with patch("src.services.abort.redis.from_url", return_value=fake_redis):
-            result = await AbortService.check_abort_signal(
-                thread_id, expected_user_id=user_id
-            )
+            result = await AbortService.check_abort_signal(thread_id, expected_user_id=user_id)
 
         assert result is False
 
@@ -316,9 +302,7 @@ class TestAbortServiceCheckSignal:
         await fake_redis.set(key, "not_valid_json{")
 
         with patch("src.services.abort.redis.from_url", return_value=fake_redis):
-            result = await AbortService.check_abort_signal(
-                thread_id, expected_user_id=user_id
-            )
+            result = await AbortService.check_abort_signal(thread_id, expected_user_id=user_id)
 
         assert result is False
 

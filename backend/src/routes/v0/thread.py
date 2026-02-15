@@ -39,27 +39,18 @@ router = APIRouter(tags=["Thread"])
 )
 @cache(expire=15)
 async def search_threads(
-    search_filter: SearchFilter = Body(
-        openapi_examples=Examples.THREAD_SEARCH_EXAMPLES
-    ),
+    search_filter: SearchFilter = Body(openapi_examples=Examples.THREAD_SEARCH_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
-            if (
-                "thread_id" in search_filter.filter
-                and "checkpoint_id" not in search_filter.filter
-            ):
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            if "thread_id" in search_filter.filter and "checkpoint_id" not in search_filter.filter:
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
                     thread_id=search_filter.filter["thread_id"]
                 )
-                thread: Thread = await service_context.thread_service.get(
-                    search_filter.filter["thread_id"]
-                )
+                thread: Thread = await service_context.thread_service.get(search_filter.filter["thread_id"])
                 if thread and len(checkpoints) > 0:
                     checkpoints[0]["metadata"]["files"] = thread.files
                     checkpoints[0]["metadata"]["todos"] = thread.todos
@@ -69,9 +60,7 @@ async def search_threads(
             return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(
@@ -81,9 +70,7 @@ async def search_threads(
     tags=["mcp"],
 )
 async def semantic_search_threads(
-    request: ThreadSemanticSearchRequest = Body(
-        openapi_examples=Examples.THREAD_SEMANTIC_SEARCH_EXAMPLES
-    ),
+    request: ThreadSemanticSearchRequest = Body(openapi_examples=Examples.THREAD_SEMANTIC_SEARCH_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
@@ -96,17 +83,13 @@ async def semantic_search_threads(
             )
 
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # Perform semantic search
-            search_results = (
-                await service_context.thread_service.thread_snapshot_repo.search(
-                    query=request.query,
-                    limit=request.limit,
-                    assistant_id=request.assistant_id,
-                )
+            search_results = await service_context.thread_service.thread_snapshot_repo.search(
+                query=request.query,
+                limit=request.limit,
+                assistant_id=request.assistant_id,
             )
 
             # Enrich results with thread titles
@@ -137,9 +120,7 @@ async def semantic_search_threads(
         raise
     except Exception as e:
         logger.exception(f"Error performing semantic search: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(
@@ -155,9 +136,7 @@ async def create_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             assistant_id = thread.metadata.get("assistant_id", None)
             if assistant_id:
                 assistant = await service_context.assistant_service.get(assistant_id)
@@ -169,9 +148,7 @@ async def create_thread(
 
             thread.id = str(uuid.uuid4())
             checkpoint = empty_checkpoint()
-            await service_context.thread_service.update(
-                thread.id, thread.model_dump(exclude_none=True)
-            )
+            await service_context.thread_service.update(thread.id, thread.model_dump(exclude_none=True))
             saved = await checkpointer.aput(
                 config=RunnableConfig(
                     configurable={
@@ -196,9 +173,7 @@ async def create_thread(
         raise
     except Exception as e:
         logger.exception(f"Error updating thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get(
@@ -214,20 +189,14 @@ async def get_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             thread = await service_context.thread_service.get(thread_id)
             return {"thread": thread.model_dump(exclude_none=True)}
     except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
     except Exception as e:
         logger.exception(f"Error getting thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.get(
@@ -335,19 +304,16 @@ async def update_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             # Get existing thread data
             existing = await service_context.thread_service.get(thread_id)
             if not existing:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found"
-                )
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
 
             # Merge updates with existing data
             updated_data = {**existing.value, **thread.model_dump(exclude_none=True)}
-            update_message = f"Thread {thread_id} updated with fields: {', '.join(thread.model_dump(exclude_none=True).keys())}"
+            changed_fields = ", ".join(thread.model_dump(exclude_none=True).keys())
+            update_message = f"Thread {thread_id} updated with fields: {changed_fields}"
             logger.info(update_message)
             await service_context.thread_service.update(thread_id, updated_data)
             return UJSONResponse(
@@ -358,9 +324,7 @@ async def update_thread(
         raise
     except Exception as e:
         logger.exception(f"Error updating thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.delete(
@@ -376,18 +340,14 @@ async def delete_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.delete(
@@ -396,7 +356,7 @@ async def delete_thread(
     operation_id="ruska_delete_assistant_thread",
     tags=["mcp"],
 )
-async def delete_thread(
+async def delete_assistant_thread(
     assistant_id: str,
     thread_id: str,
     user: ProtectedUser = Depends(verify_credentials),
@@ -404,9 +364,7 @@ async def delete_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
@@ -439,9 +397,7 @@ async def get_thread_interrupts(
     """
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # First, verify the thread exists
             thread = await service_context.thread_service.get(thread_id)
@@ -479,9 +435,7 @@ async def get_thread_interrupts(
         raise
     except Exception as e:
         logger.exception(f"Error getting interrupts for thread {thread_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(
@@ -505,9 +459,7 @@ async def resume_thread(
     """
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # First, verify the thread exists
             thread = await service_context.thread_service.get(thread_id)
@@ -548,7 +500,10 @@ async def resume_thread(
                         allowed = [a.value for a in interrupt.config.allowed_actions]
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Decision type '{decision.decision_type.value}' not allowed. Allowed actions: {allowed}",
+                            detail=(
+                                f"Decision type '{decision.decision_type.value}' "
+                                f"not allowed. Allowed actions: {allowed}"
+                            ),
                         )
 
             # Resume the thread with the provided decisions
@@ -575,6 +530,4 @@ async def resume_thread(
         )
     except Exception as e:
         logger.exception(f"Error resuming thread {thread_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

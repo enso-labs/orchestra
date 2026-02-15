@@ -43,9 +43,7 @@ def run_migrations():
     except CommandError as e:
         # Handle case where database has a stale revision that no longer exists
         if "Can't locate revision" in str(e):
-            logger.warning(
-                f"Database has stale revision, clearing and stamping: {str(e)}"
-            )
+            logger.warning(f"Database has stale revision, clearing and stamping: {str(e)}")
             _stamp_head_with_clear()
         else:
             logger.error(f"Error running database migrations: {str(e)}")

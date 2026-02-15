@@ -35,9 +35,7 @@ async def test_dispatches_to_taskiq_when_distributed(task_dict_with_thread):
     mock_task.kiq = mock_kiq
 
     with patch("src.workers.tasks.run_agent_stream", mock_task):
-        await scheduled_llm_invoke(
-            task_dict=task_dict_with_thread, user_id="u1", title="test job"
-        )
+        await scheduled_llm_invoke(task_dict=task_dict_with_thread, user_id="u1", title="test job")
 
     mock_kiq.assert_called_once_with(
         task_dict=task_dict_with_thread,
@@ -97,9 +95,7 @@ async def test_in_process_when_not_distributed(task_dict_with_thread):
         mock_svc_ctx.store.fields = []
         mock_ctx.return_value = mock_svc_ctx
 
-        await scheduled_llm_invoke(
-            task_dict=task_dict_with_thread, user_id="u1", title="test"
-        )
+        await scheduled_llm_invoke(task_dict=task_dict_with_thread, user_id="u1", title="test")
 
     mock_kiq.assert_not_called()
 
@@ -113,9 +109,7 @@ async def test_extracts_thread_id_from_metadata(task_dict_with_thread):
     mock_task.kiq = mock_kiq
 
     with patch("src.workers.tasks.run_agent_stream", mock_task):
-        await scheduled_llm_invoke(
-            task_dict=task_dict_with_thread, user_id="u1", title="test"
-        )
+        await scheduled_llm_invoke(task_dict=task_dict_with_thread, user_id="u1", title="test")
 
     call_kwargs = mock_kiq.call_args.kwargs
     assert call_kwargs["thread_id"] == "existing-thread-id"
@@ -130,9 +124,7 @@ async def test_generates_uuid_when_no_thread_id(task_dict_without_thread):
     mock_task.kiq = mock_kiq
 
     with patch("src.workers.tasks.run_agent_stream", mock_task):
-        await scheduled_llm_invoke(
-            task_dict=task_dict_without_thread, user_id="u1", title="test"
-        )
+        await scheduled_llm_invoke(task_dict=task_dict_without_thread, user_id="u1", title="test")
 
     call_kwargs = mock_kiq.call_args.kwargs
     UUID(call_kwargs["thread_id"])  # Raises ValueError if not valid UUID

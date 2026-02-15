@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import MarkdownCard from "@/components/cards/MarkdownCard";
 import ChatLayout from "@/layouts/chat-layout-v2";
@@ -106,10 +101,7 @@ export default function MemoryCreatePage() {
 						</TabsList>
 					</div>
 
-					<TabsContent
-						value="editor"
-						className="flex-1 min-h-0 m-0 px-4 pb-4"
-					>
+					<TabsContent value="editor" className="flex-1 min-h-0 m-0 px-4 pb-4">
 						<div className="h-full rounded-md border overflow-hidden">
 							<MonacoEditor
 								value={content}
@@ -126,17 +118,14 @@ export default function MemoryCreatePage() {
 						</div>
 					</TabsContent>
 
-					<TabsContent
-						value="preview"
-						className="flex-1 min-h-0 m-0 px-4 pb-4"
-					>
+					<TabsContent value="preview" className="flex-1 min-h-0 m-0 px-4 pb-4">
 						<ScrollArea className="h-full rounded-md border p-4">
 							{content.trim() ? (
 								<MarkdownCard content={content} />
 							) : (
 								<p className="text-muted-foreground text-sm">
-									Nothing to preview yet. Switch to the Editor tab to
-									start writing.
+									Nothing to preview yet. Switch to the Editor tab to start
+									writing.
 								</p>
 							)}
 						</ScrollArea>

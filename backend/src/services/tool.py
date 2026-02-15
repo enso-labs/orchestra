@@ -38,9 +38,7 @@ class ToolService:
                 tool: StructuredTool = attach_tool_details(tool)
                 tool_dict = tool.model_dump()
                 try:
-                    tool_dict["args_schema"] = tool_dict[
-                        "args_schema"
-                    ].model_json_schema()
+                    tool_dict["args_schema"] = tool_dict["args_schema"].model_json_schema()
                 except Exception as e:
                     logger.error(f"Error formatting args schema for {tool.name}: {e}")
                     tool_dict["args_schema"] = tool_dict.get("args_schema", None)
@@ -74,9 +72,7 @@ class ToolService:
         agent_cards = []
         for _, server in a2a.items():
             try:
-                a2a_card_resolver = A2ACardResolver(
-                    server.base_url, server.agent_card_path
-                )
+                a2a_card_resolver = A2ACardResolver(server.base_url, server.agent_card_path)
                 agent_card = a2a_card_resolver.get_agent_card()
                 agent_cards.append(agent_card.model_dump())
             except Exception as e:
@@ -105,9 +101,7 @@ class ToolService:
             configurable: dict[str, Any] = {"user_id": self.user_id}
             if config is not None:
                 # Merge caller config but exclude user_id to prevent override
-                config_without_user_id = {
-                    k: v for k, v in config.items() if k != "user_id"
-                }
+                config_without_user_id = {k: v for k, v in config.items() if k != "user_id"}
                 configurable.update(config_without_user_id)
             runnable_config = {"configurable": configurable}
         return await tool.ainvoke(
@@ -119,9 +113,7 @@ class ToolService:
         try:
             api_config = config.get("api_tool")
             if not api_config:
-                raise ValueError(
-                    "Only 'api_tool' config is supported for ephemeral invocation"
-                )
+                raise ValueError("Only 'api_tool' config is supported for ephemeral invocation")
 
             tool = create_api_tool(
                 name=name,
@@ -137,13 +129,9 @@ class ToolService:
             log_error(f"Error invoking ephemeral tool {name}: {e}")
             return {"error": str(e)}
 
-    async def invoke_structured_tool(
-        self, structured_tool: StructuredTool, input: dict
-    ):
+    async def invoke_structured_tool(self, structured_tool: StructuredTool, input: dict):
         try:
-            return await structured_tool.ainvoke(
-                input=input, config={"metadata": structured_tool.metadata}
-            )
+            return await structured_tool.ainvoke(input=input, config={"metadata": structured_tool.metadata})
         except Exception as e:
             log_error(f"Error invoking structured tool {structured_tool.name}: {e}")
             return {"error": str(e)}

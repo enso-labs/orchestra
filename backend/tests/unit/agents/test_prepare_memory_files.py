@@ -6,9 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from src.agents import prepare_memory_files
 
 
-def _make_search_item(
-    memory_text: str, mem_id: str = "AGENTS.md", enabled: bool = True
-) -> MagicMock:
+def _make_search_item(memory_text: str, mem_id: str = "AGENTS.md", enabled: bool = True) -> MagicMock:
     """Create a mock SearchItem whose .dict() returns the expected shape."""
     item = MagicMock()
     item.dict.return_value = {
@@ -100,9 +98,7 @@ class TestPrepareMemoryFilesWithMemories:
 
     async def test_handles_single_memory(self) -> None:
         memory_svc = MagicMock()
-        memory_svc.search = AsyncMock(
-            return_value=[_make_search_item("Only one memory", mem_id="NOTES.md")]
-        )
+        memory_svc.search = AsyncMock(return_value=[_make_search_item("Only one memory", mem_id="NOTES.md")])
 
         files_map, sources = await prepare_memory_files("user-789", memory_svc)
 
@@ -156,9 +152,7 @@ class TestPrepareMemoryFilesWithMemories:
         files_map, sources = await prepare_memory_files("user-123", memory_svc)
 
         assert sources == ["/AGENTS.md"]
-        assert files_map["/AGENTS.md"]["content"] == [
-            "User likes Python over JavaScript"
-        ]
+        assert files_map["/AGENTS.md"]["content"] == ["User likes Python over JavaScript"]
 
     async def test_handles_non_dict_value(self) -> None:
         """When value is not a dict, it should be stringified."""

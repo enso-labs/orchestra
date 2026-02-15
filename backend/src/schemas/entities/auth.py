@@ -33,9 +33,7 @@ class ApiToken(BaseEntity):
     name: str = Field(..., description="The name of the token")
     token_hash: str = Field(..., description="The hash of the token")
     prefix: str = Field(..., description="The prefix of the token for display")
-    last_used_at: Optional[datetime] = Field(
-        None, description="When the token was last used"
-    )
+    last_used_at: Optional[datetime] = Field(None, description="When the token was last used")
     user_id: str = Field(..., description="ID of the user who owns this token")
 
     @field_serializer("last_used_at")

@@ -89,11 +89,7 @@ async def llm_stream(
     """
     try:
         user_id = user.id if user else None
-        thread_id = (
-            params.metadata.thread_id
-            if params.metadata and params.metadata.thread_id
-            else str(uuid4())
-        )
+        thread_id = params.metadata.thread_id if params.metadata and params.metadata.thread_id else str(uuid4())
         config = init_config(params, user_id=user_id)
 
         # Distributed mode: enqueue task and return thread_id for polling
@@ -128,9 +124,7 @@ async def llm_stream(
         )
     except Exception as e:
         logger.exception(f"Error in llm_stream: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -167,9 +161,7 @@ async def transcribe(
         )
     except Exception as e:
         logger.exception(str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -239,6 +231,4 @@ async def list_models(
 )
 async def reset_models():
     llm_service._reset_cache()
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"message": "Models reset successfully"}
-    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Models reset successfully"})

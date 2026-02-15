@@ -44,9 +44,7 @@ async def list_files(
     try:
         files = storage_service.retrieve_all_files(
             BUCKET,
-            prefix=f"users/{user.id or TEST_USER_ID}/{path}"
-            if path
-            else f"users/{user.id or TEST_USER_ID}",
+            prefix=f"users/{user.id or TEST_USER_ID}/{path}" if path else f"users/{user.id or TEST_USER_ID}",
         )
         ## Format Response
         data = json.dumps({"files": files})
@@ -57,9 +55,7 @@ async def list_files(
     except Exception as err:
         tb = traceback.format_exc()
         logging.error("[routes.files.list_files] Exception: %s\n%s", err, tb)
-        raise HTTPException(
-            status_code=500, detail=f"An unexpected error occurred. {str(err)}"
-        ) from err
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred. {str(err)}") from err
 
 
 @router.get(
@@ -89,9 +85,7 @@ async def list_presigned_urls(
                 file_path = prefix
             else:
                 extension = os.path.splitext(file)[1].lower().strip(".")
-                file_path = (
-                    f"{prefix}/{extension}/{file}" if not path else f"{prefix}/{file}"
-                )
+                file_path = f"{prefix}/{extension}/{file}" if not path else f"{prefix}/{file}"
             # Determine MIME type for the file
             content_type = mimetypes.guess_type(file)[0] or "application/octet-stream"
             # Generate URLs with specified content disposition, note the inversion of the `download` flag for `inline`
@@ -112,9 +106,7 @@ async def list_presigned_urls(
     except Exception as err:
         tb = traceback.format_exc()
         logging.error("[routes.files.list_files] Exception: %s\n%s", err, tb)
-        raise HTTPException(
-            status_code=500, detail=f"An unexpected error occurred. {str(err)}"
-        ) from err
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred. {str(err)}") from err
 
 
 #################################################
@@ -144,9 +136,7 @@ async def save_files(
         raise
     except Exception as err:
         logging.error(err)
-        raise HTTPException(
-            status_code=500, detail=f"An unexpected error occurred. {str(err)}"
-        ) from err
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred. {str(err)}") from err
 
 
 ######################################

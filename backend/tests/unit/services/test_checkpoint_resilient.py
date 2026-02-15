@@ -78,9 +78,7 @@ class TestMessageSanitization:
 
     def test_connection_string_redacted(self):
         """Connection strings should be redacted from error messages."""
-        error = CheckpointConnectionError(
-            "Failed to connect to postgresql://user:password@host:5432/db"
-        )
+        error = CheckpointConnectionError("Failed to connect to postgresql://user:password@host:5432/db")
         assert "postgresql://" not in error.message
         assert "[REDACTED]" in error.message
 

@@ -8,7 +8,6 @@ from langchain.tools import ToolRuntime
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langchain.agents import create_agent
 from langgraph.store.base import BaseStore
 from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
@@ -56,11 +55,7 @@ async def add_memories_to_system():
             items.append(f"<{key}>{value}</{key}>")
         return f"<memory>{''.join(items)}</memory>"
 
-    formatted_memories = (
-        "\n".join(memory_to_xml(memory) for memory in memories)
-        if memories
-        else "No memories found."
-    )
+    formatted_memories = "\n".join(memory_to_xml(memory) for memory in memories) if memories else "No memories found."
 
     return (
         "You have the following general memories "
@@ -173,9 +168,7 @@ async def init_tools(
         tools_list = tools_list + await mcp_client.get_tools()
     if user_id:
         for tool in tools:
-            items = await service_context.tool_service.tool_repo.search(
-                filter={"name": tool}
-            )
+            items = await service_context.tool_service.tool_repo.search(filter={"name": tool})
             if items:
                 structured_tool = items[0]
                 tool_metadata = {structured_tool.name: structured_tool.metadata}
@@ -187,21 +180,15 @@ async def init_tools(
     return tools_list
 
 
-async def init_subagents(
-    subagents: list[Assistant], service_context: ServiceContext
-) -> list[SubAgent]:
+async def init_subagents(subagents: list[Assistant], service_context: ServiceContext) -> list[SubAgent]:
     result = []
     for subagent in subagents:
-        system_prompt = subagent.system_prompt or init_system_prompt(
-            DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions
-        )
+        system_prompt = subagent.system_prompt or init_system_prompt(DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions)
         subagent_dict = {
             "name": subagent.slug,
             "description": subagent.description,
             "system_prompt": system_prompt,
-            "tools": await init_tools(
-                subagent.tools, subagent.a2a, subagent.mcp, service_context
-            ),
+            "tools": await init_tools(subagent.tools, subagent.a2a, subagent.mcp, service_context),
         }
 
         if getattr(subagent, "model", None) is not None:
@@ -375,9 +362,7 @@ async def construct_agent(
             model=model,
             tools=tools,
             subagents=subagents,
-            system_prompt=init_system_prompt(
-                system_prompt, service_context.config or {}, instructions
-            ),
+            system_prompt=init_system_prompt(system_prompt, service_context.config or {}, instructions),
             checkpointer=checkpointer,
             store=service_context.store,
             middleware=middleware,
@@ -449,6 +434,4 @@ class Orchestra:
         config: RunnableConfig = None,
         context: dict[str, Any] = None,
     ) -> AsyncGenerator[BaseMessage, None]:
-        return self.graph.astream(
-            messages, config=config, stream_mode=stream_mode, context=context
-        )
+        return self.graph.astream(messages, config=config, stream_mode=stream_mode, context=context)

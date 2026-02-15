@@ -12,7 +12,8 @@ from src.utils.logger import logger
 
 @tool
 async def retrieval_query(query: str):
-    """Craft a concise summary of current conversation if previous messages are provided, and a question as a query answered by relevant documents."""
+    """Craft a concise summary of current conversation if previous messages are provided,
+    and a question as a query answered by relevant documents."""
     try:
         collection = retrieval_query.metadata["collection"]
         user_repo = retrieval_query.metadata["user_repo"]

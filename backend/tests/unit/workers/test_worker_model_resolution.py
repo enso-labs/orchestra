@@ -65,7 +65,7 @@ def _mock_agent(model_name):
 
     async def empty_astream(*_args, **_kwargs):
         return
-        yield  # noqa: unreachable — makes this an async generator
+        yield  # noqa: F811 — makes this an async generator
 
     agent.astream = empty_astream
     agent.graph.aget_state = AsyncMock(
@@ -113,18 +113,14 @@ class TestWorkerModelResolution:
                 new_callable=AsyncMock,
                 return_value=({}, []),
             ),
-            patch(
-                _PATCHES["construct_agent"], new_callable=AsyncMock
-            ) as mock_construct,
+            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
                 return_value=(MagicMock(), None),
             ),
         ):
             instance = MockRepo.return_value
-            instance._get_or_create = AsyncMock(
-                return_value=FakeSettings(default_model=user_default)
-            )
+            instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model=user_default))
             instance._decrypt_keys = MagicMock(return_value={})
 
             mock_construct.return_value = _mock_agent(user_default)
@@ -161,18 +157,14 @@ class TestWorkerModelResolution:
                 new_callable=AsyncMock,
                 return_value=({}, []),
             ),
-            patch(
-                _PATCHES["construct_agent"], new_callable=AsyncMock
-            ) as mock_construct,
+            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
                 return_value=(MagicMock(), None),
             ),
         ):
             instance = MockRepo.return_value
-            instance._get_or_create = AsyncMock(
-                return_value=FakeSettings(default_model=None)
-            )
+            instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model=None))
             instance._decrypt_keys = MagicMock(return_value={})
 
             mock_construct.return_value = _mock_agent(DEFAULT_CHAT_MODEL)
@@ -210,18 +202,14 @@ class TestWorkerModelResolution:
                 new_callable=AsyncMock,
                 return_value=({}, []),
             ),
-            patch(
-                _PATCHES["construct_agent"], new_callable=AsyncMock
-            ) as mock_construct,
+            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
                 return_value=(MagicMock(), None),
             ),
         ):
             instance = MockRepo.return_value
-            instance._get_or_create = AsyncMock(
-                return_value=FakeSettings(default_model="anthropic:claude-sonnet-4")
-            )
+            instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model="anthropic:claude-sonnet-4"))
             instance._decrypt_keys = MagicMock(return_value={"openai": "sk-test"})
 
             mock_construct.return_value = _mock_agent(explicit_model)
@@ -259,18 +247,14 @@ class TestWorkerModelResolution:
                 new_callable=AsyncMock,
                 return_value=({}, []),
             ),
-            patch(
-                _PATCHES["construct_agent"], new_callable=AsyncMock
-            ) as mock_construct,
+            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
                 return_value=(MagicMock(), None),
             ),
         ):
             instance = MockRepo.return_value
-            instance._get_or_create = AsyncMock(
-                return_value=FakeSettings(default_model=None)
-            )
+            instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model=None))
             instance._decrypt_keys = MagicMock(return_value={"openai": expected_key})
 
             mock_construct.return_value = _mock_agent("openai:gpt-4o")
@@ -305,9 +289,7 @@ class TestWorkerModelResolution:
                 new_callable=AsyncMock,
                 return_value=({}, []),
             ),
-            patch(
-                _PATCHES["construct_agent"], new_callable=AsyncMock
-            ) as mock_construct,
+            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
                 return_value=(MagicMock(), None),

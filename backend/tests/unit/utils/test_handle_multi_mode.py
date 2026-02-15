@@ -116,9 +116,7 @@ class TestHandleMultiModeMessagesFormat:
                 AIMessageChunk(
                     content="",
                     id="test-id",
-                    tool_call_chunks=[
-                        {"name": "search", "args": "{}", "id": "call-1", "index": 0}
-                    ],
+                    tool_call_chunks=[{"name": "search", "args": "{}", "id": "call-1", "index": 0}],
                 ),
                 {"user_id": "123"},
             ],

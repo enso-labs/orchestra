@@ -1,5 +1,4 @@
 from langgraph.store.base import BaseStore, SearchItem
-from langgraph.checkpoint.base import create_checkpoint
 
 from src.services.db import get_store_in_memory
 from src.schemas.entities import SearchFilter
@@ -7,7 +6,6 @@ from src.constants import THREAD_SNAPSHOT_MESSAGE_COUNT
 from src.repos.base_repo import BaseRepo
 from src.schemas.entities.store import Thread
 from src.utils.logger import logger
-from src.utils.format import format_xml_thread
 from src.utils.messages import from_message_to_dict
 from src.utils.retry import retry_db_operation
 
@@ -16,9 +14,7 @@ FIELDS = ["messages"]
 
 
 class ThreadRepo(BaseRepo):
-    def __init__(
-        self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)
-    ):
+    def __init__(self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)):
         ## Add fields to the store (if supported)
         self.user_id = user_id
         self.store: BaseStore = store
@@ -74,16 +70,12 @@ class ThreadRepo(BaseRepo):
         messages = data.get("messages", [])
         messages = from_message_to_dict(messages, include_tool_calls=False)
         recent_messages = (
-            messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:]
-            if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
-            else messages
+            messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:] if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT else messages
         )
 
         data["messages"] = recent_messages
 
-        await self.store.aput(
-            namespace=self._get_namespace(), key=thread_id, value=data
-        )
+        await self.store.aput(namespace=self._get_namespace(), key=thread_id, value=data)
 
         return True
 

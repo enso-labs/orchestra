@@ -36,9 +36,7 @@ async def list_tools(
 ):
     tool_service = ToolService(user_id=user.id, store=store)
     tools_response = await tool_service.tool_details()
-    return JSONResponse(
-        content={"tools": tools_response}, status_code=status.HTTP_200_OK
-    )
+    return JSONResponse(content={"tools": tools_response}, status_code=status.HTTP_200_OK)
 
 
 ################################################################################
@@ -59,9 +57,7 @@ async def create_tool(
         tool_service = ToolService(user_id=user.id, store=store)
         created_tool = await tool_service.tool_repo.create(tool)
         if not created_tool:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create tool"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to create tool")
         # If you truly want no body, this is fine:
         return Response(status_code=status.HTTP_201_CREATED)
         # Or, if you want to return the created resource:

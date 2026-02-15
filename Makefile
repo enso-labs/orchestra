@@ -1,4 +1,4 @@
-.PHONY: update-submodules ralph archive
+.PHONY: update-submodules ralph archive setup
 
 ENV ?= dev
 MAX_ITERATIONS ?= 200
@@ -17,6 +17,10 @@ update-submodules:
 	git commit -m "Update all submodules to latest remote commits" || echo "No changes to commit."
 
 	@echo "🏁 Done."
+
+# Install pre-commit hooks
+setup:
+	pre-commit install
 
 # Run the Ralph autonomous agent loop using Claude Code
 ralph:

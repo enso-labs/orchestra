@@ -21,17 +21,11 @@ router = APIRouter(tags=[TAG])
     responses={
         status.HTTP_200_OK: {
             "description": "Upload files to output documents.",
-            "content": {
-                "application/json": {
-                    "example": AddDocuments.model_json_schema()["example"]
-                }
-            },
+            "content": {"application/json": {"example": AddDocuments.model_json_schema()["example"]}},
         }
     },
 )
-async def upload_sources_to_documents(
-    files: list[UploadFile] = File(...), username: str = Depends(verify_credentials)
-):
+async def upload_sources_to_documents(files: list[UploadFile] = File(...), username: str = Depends(verify_credentials)):
     logger.info(f"Processing {len(files)} uploaded files")
 
     documents = []
@@ -55,17 +49,10 @@ async def upload_sources_to_documents(
                 logger.error(f"Error processing file {file.filename}: {str(e)}")
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content={
-                        "error": f"Failed to process file {file.filename}: {str(e)}"
-                    },
+                    content={"error": f"Failed to process file {file.filename}: {str(e)}"},
                 )
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={
-            "documents": [
-                {k: v for k, v in doc.model_dump().items() if k != "id"}
-                for doc in documents
-            ]
-        },
+        content={"documents": [{k: v for k, v in doc.model_dump().items() if k != "id"} for doc in documents]},
     )

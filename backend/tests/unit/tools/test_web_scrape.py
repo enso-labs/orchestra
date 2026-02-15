@@ -122,9 +122,7 @@ class TestFetchContent:
     @pytest.mark.asyncio
     async def test_html_response_accepted(self):
         client = AsyncMock()
-        client.get.return_value = self._make_response(
-            b"<html><body>Hello</body></html>", "text/html; charset=utf-8"
-        )
+        client.get.return_value = self._make_response(b"<html><body>Hello</body></html>", "text/html; charset=utf-8")
         result = await fetch_content(client, "http://example.com")
         assert result.content_type == "html"
         assert "Hello" in result.text
@@ -140,18 +138,14 @@ class TestFetchContent:
     @pytest.mark.asyncio
     async def test_json_accepted(self):
         client = AsyncMock()
-        client.get.return_value = self._make_response(
-            b'{"key": "value"}', "application/json"
-        )
+        client.get.return_value = self._make_response(b'{"key": "value"}', "application/json")
         result = await fetch_content(client, "http://example.com")
         assert result.content_type == "json"
 
     @pytest.mark.asyncio
     async def test_charset_stripped(self):
         client = AsyncMock()
-        client.get.return_value = self._make_response(
-            b"plain content", "text/plain; charset=utf-8"
-        )
+        client.get.return_value = self._make_response(b"plain content", "text/plain; charset=utf-8")
         result = await fetch_content(client, "http://example.com")
         assert result.content_type == "plain"
 
@@ -166,9 +160,7 @@ class TestFetchContent:
     async def test_binary_payload_rejected(self):
         client = AsyncMock()
         # text/html header but binary content
-        client.get.return_value = self._make_response(
-            b"\x00\x01\x02\x03" * 500, "text/html"
-        )
+        client.get.return_value = self._make_response(b"\x00\x01\x02\x03" * 500, "text/html")
         with pytest.raises(ValueError, match="binary"):
             await fetch_content(client, "http://example.com")
 

@@ -76,6 +76,21 @@ dev = [
     "respx>=0.22.0"
 ]
 
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"main.py" = ["E402"]
+"migrations/env.py" = ["E402"]
+"src/constants/llm.py" = ["E402"]
+"src/tools/code.py" = ["E402"]
+"src/utils/logger.py" = ["E402"]
+"src/services/checkpoint.py" = ["E402"]
+"src/constants/mock.py" = ["E501"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "session"

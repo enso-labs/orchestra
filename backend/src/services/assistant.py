@@ -6,11 +6,10 @@ from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
 from langgraph.store.base import SearchItem
 
-from src.schemas.entities.llm import *
 from src.utils.logger import logger
 from src.constants.examples import Examples
 from src.services.db import get_store_in_memory
-from src.schemas.entities.llm import Assistant
+from src.schemas.entities.llm import Assistant, AssistantSearch as AssistantSearch
 
 STORE_KEY = "assistants"
 
@@ -41,9 +40,7 @@ class AssistantService:
     async def update(self, assistant_id: str, data: dict):
         """Update assistant and sync to public namespace if public."""
         try:
-            await self.store.aput(
-                namespace=self._get_namespace(), key=assistant_id, value=data
-            )
+            await self.store.aput(namespace=self._get_namespace(), key=assistant_id, value=data)
 
             # Sync to public namespace if assistant is public
             if data.get("public", False):
@@ -54,9 +51,7 @@ class AssistantService:
                 )
             return True
         except Exception as e:
-            logger.exception(
-                f"Error updating {self._get_store_key()} {assistant_id}: {e}"
-            )
+            logger.exception(f"Error updating {self._get_store_key()} {assistant_id}: {e}")
             return False
 
     async def get(self, key: str) -> Any:
@@ -71,9 +66,7 @@ class AssistantService:
             return None
 
         try:
-            assistant_raw = await self.store.aget(
-                self._get_namespace(public=True), assistant_id
-            )
+            assistant_raw = await self.store.aget(self._get_namespace(public=True), assistant_id)
             if assistant_raw:
                 return self._format_assistant([assistant_raw])[0]
             return None
@@ -87,9 +80,7 @@ class AssistantService:
             # Get from user's namespace
             assistant = await self.get(assistant_id)
             if not assistant:
-                logger.warning(
-                    f"Publish failed: assistant {assistant_id} not found for user {self.user_id}"
-                )
+                logger.warning(f"Publish failed: assistant {assistant_id} not found for user {self.user_id}")
                 return False
 
             # Already public check (idempotent)
@@ -128,9 +119,7 @@ class AssistantService:
             # Get from user's namespace
             assistant = await self.get(assistant_id)
             if not assistant:
-                logger.warning(
-                    f"Unpublish failed: assistant {assistant_id} not found for user {self.user_id}"
-                )
+                logger.warning(f"Unpublish failed: assistant {assistant_id} not found for user {self.user_id}")
                 return False
 
             # Already private (idempotent)
@@ -162,9 +151,7 @@ class AssistantService:
         """Search all public assistants."""
         try:
             if isinstance(self.store, InMemoryStore):
-                items = await self.store.asearch(
-                    self._get_namespace(public=True), limit=limit + offset
-                )
+                items = await self.store.asearch(self._get_namespace(public=True), limit=limit + offset)
                 sorted_items = sorted(
                     [item for item in items],
                     key=lambda x: x.updated_at,
@@ -173,9 +160,7 @@ class AssistantService:
                 return self._format_assistant(sorted_items[offset : offset + limit])
             else:
                 async with self.store as store:
-                    items = await store.asearch(
-                        self._get_namespace(public=True), limit=limit + offset
-                    )
+                    items = await store.asearch(self._get_namespace(public=True), limit=limit + offset)
                     sorted_items = sorted(
                         [item for item in items],
                         key=lambda x: x.updated_at,
@@ -241,13 +226,9 @@ class AssistantService:
             except Exception as e:
                 error_msg = str(e).lower()
                 if "connection" in error_msg and "closed" in error_msg:
-                    logger.warning(
-                        f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}"
-                    )
+                    logger.warning(f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}")
                     if attempt < max_retries - 1:
-                        await asyncio.sleep(
-                            retry_delay * (2**attempt)
-                        )  # Exponential backoff
+                        await asyncio.sleep(retry_delay * (2**attempt))  # Exponential backoff
                         continue
                 raise e
 

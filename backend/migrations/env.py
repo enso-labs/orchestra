@@ -39,9 +39,7 @@ async def ensure_database_exists(db_uri: str) -> None:
 
     # Connect to the default 'postgres' database to create the target db
     # Convert to asyncpg format for async engine
-    postgres_uri = f"{base_uri}/postgres".replace(
-        "postgresql://", "postgresql+asyncpg://"
-    )
+    postgres_uri = f"{base_uri}/postgres".replace("postgresql://", "postgresql+asyncpg://")
 
     try:
         engine = create_async_engine(

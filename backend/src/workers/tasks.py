@@ -158,9 +158,7 @@ async def run_agent_stream(
                 "error": str(e),
             },
         )
-        await redis_client.xadd(
-            stream_key, {"error": f"Checkpoint error: {e}", "done": "true"}
-        )
+        await redis_client.xadd(stream_key, {"error": f"Checkpoint error: {e}", "done": "true"})
         await redis_client.expire(stream_key, 300)
         raise
 
@@ -170,9 +168,7 @@ async def run_agent_stream(
             await redis_client.xadd(stream_key, {"error": str(e), "done": "true"})
             await redis_client.expire(stream_key, 300)
         except Exception as redis_err:
-            logger.error(
-                f"Failed to send error to Redis for thread {thread_id}: {redis_err}"
-            )
+            logger.error(f"Failed to send error to Redis for thread {thread_id}: {redis_err}")
         raise
     finally:
         await redis_client.aclose()
@@ -239,9 +235,7 @@ async def _execute_agent_stream(
             params.model = DEFAULT_CHAT_MODEL
 
     # Load user memories and merge into files_map
-    memory_files, memory_sources = await prepare_memory_files(
-        user_id, service_context.memory_service
-    )
+    memory_files, memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
     files_map = {**memory_files, **files_map}
 
     # Initialize ToolRuntime and Backend
@@ -335,9 +329,7 @@ async def _execute_agent_stream(
             final_state = await agent.graph.aget_state(config)
 
             if not final_state or not final_state.values.get("messages"):
-                logger.warning(
-                    f"Checkpoint update resulted in empty state for thread {thread_id}"
-                )
+                logger.warning(f"Checkpoint update resulted in empty state for thread {thread_id}")
 
             configurable = {
                 **final_state.config.get("configurable", {}),

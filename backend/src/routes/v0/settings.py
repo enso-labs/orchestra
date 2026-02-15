@@ -87,9 +87,7 @@ async def upsert_provider_key(
     )
 
 
-@router.delete(
-    "/settings/provider-keys/{provider}", response_model=UserSettingsResponse
-)
+@router.delete("/settings/provider-keys/{provider}", response_model=UserSettingsResponse)
 async def delete_provider_key(
     provider: str,
     user: User = Depends(verify_credentials),

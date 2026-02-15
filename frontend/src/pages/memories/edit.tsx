@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -139,9 +134,7 @@ export default function MemoryEditPage() {
 						>
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
-						<h1 className="text-lg font-semibold font-mono">
-							{memory.id}
-						</h1>
+						<h1 className="text-lg font-semibold font-mono">{memory.id}</h1>
 					</div>
 					<div className="flex items-center gap-3">
 						<div className="flex items-center gap-2">
@@ -188,19 +181,13 @@ export default function MemoryEditPage() {
 						</TabsList>
 					</div>
 
-					<TabsContent
-						value="preview"
-						className="flex-1 min-h-0 m-0 px-4 pb-4"
-					>
+					<TabsContent value="preview" className="flex-1 min-h-0 m-0 px-4 pb-4">
 						<ScrollArea className="h-full rounded-md border p-4">
 							<MarkdownCard content={content} />
 						</ScrollArea>
 					</TabsContent>
 
-					<TabsContent
-						value="editor"
-						className="flex-1 min-h-0 m-0 px-4 pb-4"
-					>
+					<TabsContent value="editor" className="flex-1 min-h-0 m-0 px-4 pb-4">
 						<div className="h-full rounded-md border overflow-hidden">
 							<MonacoEditor
 								value={content}
@@ -225,15 +212,13 @@ export default function MemoryEditPage() {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Delete Memory</AlertDialogTitle>
 						<AlertDialogDescription>
-							Are you sure you want to delete this memory? This action
-							cannot be undone.
+							Are you sure you want to delete this memory? This action cannot be
+							undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={handleDelete}>
-							Delete
-						</AlertDialogAction>
+						<AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

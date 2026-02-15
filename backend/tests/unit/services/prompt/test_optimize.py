@@ -14,9 +14,7 @@ prompts = [
             "You are a senior research analyst. Find credible sources, extract key facts, "
             "and capture citations (title, publisher, date). Return bullet points only."
         ),
-        update_instructions=(
-            "Prefer primary sources; flag weak evidence; avoid speculation; include URLs."
-        ),
+        update_instructions=("Prefer primary sources; flag weak evidence; avoid speculation; include URLs."),
     ),
     Prompt(
         name="synthesize",

@@ -21,9 +21,7 @@ from langchain_core.tools import tool
 class BashToolInput(BaseModel):
     """Input schema for the bash_tool."""
 
-    command: str = Field(
-        description="The bash command to execute on the user's local machine"
-    )
+    command: str = Field(description="The bash command to execute on the user's local machine")
     working_directory: str | None = Field(
         default=None,
         description="Working directory for command execution (defaults to current directory)",

@@ -24,9 +24,7 @@ def strip_control_chars(s: str) -> str:
     Remove most control characters that often show up as garbage output,
     but keep newlines and tabs for formatting.
     """
-    return "".join(
-        ch for ch in s if ch in ("\n", "\t") or unicodedata.category(ch)[0] != "C"
-    )
+    return "".join(ch for ch in s if ch in ("\n", "\t") or unicodedata.category(ch)[0] != "C")
 
 
 def looks_binary(data: bytes, *, threshold: float = 0.20) -> bool:
@@ -268,9 +266,7 @@ Engines = Literal[
 # -----------------------------
 # Search Provider Helpers
 # -----------------------------
-async def _search_with_exa(
-    query: str, num_results: int, api_key: str
-) -> tuple[list, Exception | None]:
+async def _search_with_exa(query: str, num_results: int, api_key: str) -> tuple[list, Exception | None]:
     """
     Execute search using Exa API.
     Returns (results, error) tuple for clean error handling.
@@ -370,9 +366,7 @@ def _normalize_tavily_results(tavily_response: dict) -> list:
     return normalized
 
 
-async def _search_with_tavily(
-    query: str, num_results: int, api_key: str
-) -> tuple[list, Exception | None]:
+async def _search_with_tavily(query: str, num_results: int, api_key: str) -> tuple[list, Exception | None]:
     """
     Execute search using Tavily API.
     Returns (results, error) tuple for clean error handling.
@@ -518,8 +512,7 @@ async def web_search(
     # Phase 4: All providers exhausted
     if not EXA_API_KEY and not SEARX_SEARCH_HOST_URL and not TAVILY_API_KEY:
         raise ToolException(
-            "No search providers configured. "
-            "Set EXA_API_KEY, SEARX_SEARCH_HOST_URL, or TAVILY_API_KEY."
+            "No search providers configured. Set EXA_API_KEY, SEARX_SEARCH_HOST_URL, or TAVILY_API_KEY."
         )
 
     # Return empty rather than throwing to prevent agent loops

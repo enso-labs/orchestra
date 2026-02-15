@@ -62,10 +62,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
 
         metadata = task_dict.get("metadata") or {}
         thread_id = metadata.get("thread_id") or str(uuid4())
-        logger.info(
-            f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker"
-            f" (thread_id={thread_id})"
-        )
+        logger.info(f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker (thread_id={thread_id})")
         await run_agent_stream.kiq(
             task_dict=task_dict,
             user_id=user_id,
@@ -97,9 +94,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
         get_checkpoint_db() as checkpointer,
     ):
         try:
-            service_context = ServiceContext(
-                user_id=user_id, store=store, config=config, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user_id, store=store, config=config, checkpointer=checkpointer)
             params = await service_context.llm_service.assistant(params)
             agent: Orchestra = await construct_agent(
                 instructions=params.instructions,
@@ -121,9 +116,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
                 params.input = params.input.to_langchain_messages()
 
             ctx_schema = ContextSchema(model=params.model, user_id=user_id)
-            response = await agent.invoke(
-                params.input, config=config, context=ctx_schema
-            )
+            response = await agent.invoke(params.input, config=config, context=ctx_schema)
             logger.info("✓ LLM invocation completed successfully")
 
             files_map = {**files_map, **response.get("files", {})}
@@ -193,9 +186,7 @@ class ScheduleService:
     def get_job(self, job_id: str) -> Schedule:
         job = self.scheduler.get_job(job_id)
         if job.kwargs.get("user_id") != self.user_id:
-            raise HTTPException(
-                status_code=403, detail="Not authorized to access this job"
-            )
+            raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
         schedule = Schedule(
             id=job.id,
@@ -241,9 +232,7 @@ class ScheduleService:
             raise HTTPException(status_code=404, detail="Schedule not found")
 
         if existing_job.kwargs.get("user_id") != self.user_id:
-            raise HTTPException(
-                status_code=403, detail="Not authorized to access this job"
-            )
+            raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
         # Prepare update parameters
         update_params = {}
@@ -283,9 +272,7 @@ class ScheduleService:
         try:
             job = self.scheduler.get_job(job_id)
             if job.kwargs.get("user_id") != self.user_id:
-                raise HTTPException(
-                    status_code=403, detail="Not authorized to access this job"
-                )
+                raise HTTPException(status_code=403, detail="Not authorized to access this job")
             self.scheduler.remove_job(job_id)
 
             print(f"✅ Scheduled job deleted: {job_id}")

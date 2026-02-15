@@ -1,9 +1,8 @@
 import os
 import httpx
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 from pydantic import BaseModel
-from src.constants import APP_ENV
 from src.schemas.entities.auth import UserResponse
 
 
@@ -80,11 +79,7 @@ class AirtableService:
             async with httpx.AsyncClient() as client:
                 response = await client.patch(
                     f"{self.url}/{record_id}",
-                    json={
-                        "fields": {
-                            "Last Login": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        }
-                    },
+                    json={"fields": {"Last Login": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}},
                     headers=self.headers,
                 )
                 response.raise_for_status()  # Raise an error for bad responses

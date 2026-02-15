@@ -177,9 +177,7 @@ function AgentMenuMobile({
 						onClick={handleClearSelection}
 						onKeyDown={(e) => {
 							if (e.key === "Enter" || e.key === " ")
-								handleClearSelection(
-									e as unknown as React.MouseEvent,
-								);
+								handleClearSelection(e as unknown as React.MouseEvent);
 						}}
 						className="flex-shrink-0 rounded-full p-0.5 hover:bg-background/50 transition-colors"
 						aria-label="Clear selection"
@@ -273,9 +271,7 @@ function AgentMenu() {
 							onClick={handleClearSelection}
 							onKeyDown={(e) => {
 								if (e.key === "Enter" || e.key === " ")
-									handleClearSelection(
-										e as unknown as React.MouseEvent,
-									);
+									handleClearSelection(e as unknown as React.MouseEvent);
 							}}
 							className="flex-shrink-0 rounded-full p-0.5 hover:bg-background/50 transition-colors"
 							aria-label="Clear selection"

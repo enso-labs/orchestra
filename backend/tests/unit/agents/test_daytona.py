@@ -242,9 +242,7 @@ class TestResolveSandboxBackendDispatch:
         ) as mock_create_daytona:
             from src.agents import resolve_sandbox_backend
 
-            backend, sandbox = resolve_sandbox_backend(
-                mock_runtime, sandbox_type="state"
-            )
+            backend, sandbox = resolve_sandbox_backend(mock_runtime, sandbox_type="state")
 
             assert sandbox is None
             assert backend is not None
@@ -261,9 +259,7 @@ class TestResolveSandboxBackendDispatch:
         ):
             from src.agents import resolve_sandbox_backend
 
-            backend, sandbox = resolve_sandbox_backend(
-                mock_runtime, sandbox_type="daytona"
-            )
+            backend, sandbox = resolve_sandbox_backend(mock_runtime, sandbox_type="daytona")
 
             assert sandbox is None
             assert backend is not None

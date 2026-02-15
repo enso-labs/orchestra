@@ -37,12 +37,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     name: Mapped[str] = mapped_column(String)
     hashed_password: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), onupdate=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
     @staticmethod
     def get_password_hash(password: str) -> str:
@@ -50,9 +46,7 @@ class User(Base):
         return pwd_context.hash(password)
 
     @staticmethod
-    def verify_and_upgrade_password(
-        plain_password: str, stored_hash: str
-    ) -> tuple[bool, str | None]:
+    def verify_and_upgrade_password(plain_password: str, stored_hash: str) -> tuple[bool, str | None]:
         """
         Returns (ok, new_hash_or_None).
         If ok and the stored hash is deprecated/old, returns an upgraded hash using Argon2.

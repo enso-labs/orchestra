@@ -28,9 +28,7 @@ class LLMController:
     def __init__(self, user_id: str | None, store: BaseStore, config: RunnableConfig):
         self.user_id = user_id
         self.store = store
-        self.service_context = ServiceContext(
-            user_id=self.user_id, store=self.store, config=config
-        )
+        self.service_context = ServiceContext(user_id=self.user_id, store=self.store, config=config)
 
     def _init_context(self, request: LLMRequest) -> ContextSchema:
         return ContextSchema(model=request.model, user_id=self.user_id)
@@ -66,9 +64,7 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
-    async def _resolve_user_settings(
-        self, model: str
-    ) -> tuple[str, str | None, str | None]:
+    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None, str | None]:
         """Resolve user default model, API key, and sandbox preference.
 
         Returns (model, api_key, default_sandbox) where model may be overridden
@@ -119,23 +115,17 @@ class LLMController:
             params = await self.service_context.llm_service.assistant(params)
 
             # Resolve user-configured API key, default model, and sandbox
-            params.model, api_key, default_sandbox = await self._resolve_user_settings(
-                params.model
-            )
+            params.model, api_key, default_sandbox = await self._resolve_user_settings(params.model)
 
             # Load user memories into files_map for MemoryMiddleware
-            memory_files, memory_sources = await prepare_memory_files(
-                self.user_id, self.service_context.memory_service
-            )
+            memory_files, memory_sources = await prepare_memory_files(self.user_id, self.service_context.memory_service)
             if memory_files:
                 existing_files = params.input.files or {}
                 params.input.files = {**memory_files, **existing_files}
 
             async with get_checkpoint_db() as checkpointer:
                 runtime = self._init_runtime(params)
-                backend, _sandbox = resolve_sandbox_backend(
-                    runtime, sandbox_type=default_sandbox
-                )
+                backend, _sandbox = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,
@@ -168,9 +158,7 @@ class LLMController:
         assistant = await self.service_context.llm_service.assistant(params)
 
         # Resolve user-configured API key, default model, and sandbox
-        assistant.model, api_key, default_sandbox = await self._resolve_user_settings(
-            assistant.model
-        )
+        assistant.model, api_key, default_sandbox = await self._resolve_user_settings(assistant.model)
 
         return stream_generator(
             input=assistant.input,

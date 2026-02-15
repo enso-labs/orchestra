@@ -24,13 +24,9 @@ class APIClient:
         # Use httpx's base_url + endpoint (handles joining perfectly)
         try:
             if method in ["post", "put", "patch", "delete"]:
-                response = await self.client.request(
-                    method, endpoint, json=data, params=params, headers=headers
-                )
+                response = await self.client.request(method, endpoint, json=data, params=params, headers=headers)
             else:
-                response = await self.client.request(
-                    method, endpoint, params=params, headers=headers
-                )
+                response = await self.client.request(method, endpoint, params=params, headers=headers)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -86,9 +82,7 @@ class APIClient:
 
 
 class ToolArgs(BaseModel):
-    name: str = Field(
-        description="The name of the tool. Must be snake_case (lowercase, numbers, underscores)."
-    )
+    name: str = Field(description="The name of the tool. Must be snake_case (lowercase, numbers, underscores).")
     description: str = Field(
         description="The description of the tool. Provide concise formatting instructions for the tool."
     )
@@ -196,9 +190,7 @@ async def create_tool(
 
 
 class ToolArgs(BaseModel):
-    name: str = Field(
-        description="The name of the tool. Must be snake_case (lowercase, numbers, underscores)."
-    )
+    name: str = Field(description="The name of the tool. Must be snake_case (lowercase, numbers, underscores).")
     description: str = Field(
         description="The description of the tool. Provide concise formatting instructions for the tool."
     )
@@ -307,9 +299,7 @@ async def edit_tool(
 
 
 class GetToolInfoArgs(BaseModel):
-    name: str = Field(
-        description="The name of the tool. Must be snake_case (lowercase, numbers, underscores)."
-    )
+    name: str = Field(description="The name of the tool. Must be snake_case (lowercase, numbers, underscores).")
     runtime: Any = None
 
 

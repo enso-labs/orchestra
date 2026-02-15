@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 import respx
+from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 from main import app
 from sqlalchemy import text
@@ -24,9 +25,7 @@ async def ensure_database_exists(db_uri: str) -> None:
         db_name = db_name.split("?")[0]
 
     # Convert to asyncpg format for async engine
-    postgres_uri = f"{base_uri}/postgres".replace(
-        "postgresql://", "postgresql+asyncpg://"
-    )
+    postgres_uri = f"{base_uri}/postgres".replace("postgresql://", "postgresql+asyncpg://")
 
     try:
         engine = create_async_engine(
@@ -107,9 +106,7 @@ async def test_engine():
 @pytest.fixture
 async def test_db(test_engine):
     """Provide a test database session."""
-    async_session_maker = async_sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session_maker = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session_maker() as session:
         yield session
 
@@ -154,8 +151,10 @@ async def async_client(test_store, test_db):
     app.state.store = test_store
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+    # Patch is_authorized_model to allow all models in tests (no API keys = empty free list)
+    with patch("src.utils.auth.is_authorized_model", return_value=True):
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            yield client
 
     # Clean up
     app.dependency_overrides.clear()
@@ -191,9 +190,7 @@ async def mock_external_services():
     with respx.mock:
         # Mock Airtable API endpoints
         respx.post("https://api.airtable.com/v0/app6sU4AprV9uZze6/Contacts").mock(
-            return_value=respx.MockResponse(
-                status_code=200, json={"id": "mock_record_id", "fields": {}}
-            )
+            return_value=respx.MockResponse(status_code=200, json={"id": "mock_record_id", "fields": {}})
         )
         respx.get("https://api.airtable.com/v0/app6sU4AprV9uZze6/Contacts").mock(
             return_value=respx.MockResponse(
@@ -204,11 +201,7 @@ async def mock_external_services():
         respx.route(
             method="PATCH",
             url__regex=r"^https://api\.airtable\.com/v0/app6sU4AprV9uZze6/Contacts/.+$",
-        ).mock(
-            return_value=respx.MockResponse(
-                status_code=200, json={"id": "mock_record_id", "fields": {}}
-            )
-        )
+        ).mock(return_value=respx.MockResponse(status_code=200, json={"id": "mock_record_id", "fields": {}}))
 
         # Mock OpenAI Chat API endpoints
         respx.post(url__regex=r"^https://api\.openai\.com/v1/chat/completions.*").mock(

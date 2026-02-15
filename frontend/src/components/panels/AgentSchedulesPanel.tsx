@@ -256,7 +256,8 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 										editingSchedule.task.metadata?.schedule_description || "",
 									enabled: editingSchedule.task.metadata?.enabled ?? true,
 									cronExpression: editingSchedule.trigger.expression,
-									message: editingSchedule.task.input?.messages?.[0]?.content || "",
+									message:
+										editingSchedule.task.input?.messages?.[0]?.content || "",
 									inheritFromAgent:
 										editingSchedule.task.metadata?.inherited_from_agent || true,
 									customModel: editingSchedule.task.model,

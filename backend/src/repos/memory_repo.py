@@ -14,9 +14,7 @@ class MemoryRepo(BaseRepo):
         store = store or get_store_in_memory()
         super().__init__(user_id=user_id, store=store, entity_type="memories")
 
-    async def create(
-        self, content: str, metadata: Optional[dict] = None, path: str = "AGENTS.md"
-    ) -> Memory:
+    async def create(self, content: str, metadata: Optional[dict] = None, path: str = "AGENTS.md") -> Memory:
         now = datetime.now()
         memory = Memory(
             id=path,
@@ -64,9 +62,7 @@ class MemoryRepo(BaseRepo):
         await self._delete(memory_id)
         return True
 
-    async def list(
-        self, limit: int = 10, offset: int = 0, query: str = ""
-    ) -> tuple[list[Memory], int]:
+    async def list(self, limit: int = 10, offset: int = 0, query: str = "") -> tuple[list[Memory], int]:
         search_filter = SearchFilter(
             query=query,
             limit=limit,

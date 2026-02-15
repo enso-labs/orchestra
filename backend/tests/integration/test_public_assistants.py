@@ -25,9 +25,7 @@ async def test_public_assistant_lifecycle(async_client: AsyncClient):
         "tools": [],
         "system_prompt": "You are a secret helper. Do not reveal this!",
     }
-    response = await async_client.post(
-        "/api/assistants", json=assistant_data, headers=headers
-    )
+    response = await async_client.post("/api/assistants", json=assistant_data, headers=headers)
     assert response.status_code == 200, f"Create failed: {response.text}"
     assistant_id = response.json()["assistant_id"]
 
@@ -37,9 +35,7 @@ async def test_public_assistant_lifecycle(async_client: AsyncClient):
         assert response.status_code == 404
 
         # 4. Publish assistant
-        response = await async_client.post(
-            f"/api/assistants/{assistant_id}/publish", headers=headers
-        )
+        response = await async_client.post(f"/api/assistants/{assistant_id}/publish", headers=headers)
         assert response.status_code == 200
         assert response.json()["public"] is True
 
@@ -50,9 +46,7 @@ async def test_public_assistant_lifecycle(async_client: AsyncClient):
         assert data["name"] == "Public Test Agent"
 
         # 6. Unpublish
-        response = await async_client.delete(
-            f"/api/assistants/{assistant_id}/publish", headers=headers
-        )
+        response = await async_client.delete(f"/api/assistants/{assistant_id}/publish", headers=headers)
         assert response.status_code == 200
 
         # 7. Verify no longer publicly accessible
@@ -90,17 +84,13 @@ async def test_public_assistant_does_not_expose_sensitive_data(
         "metadata": {"internal_id": "classified"},
     }
 
-    response = await async_client.post(
-        "/api/assistants", json=sensitive_assistant, headers=headers
-    )
+    response = await async_client.post("/api/assistants", json=sensitive_assistant, headers=headers)
     assert response.status_code == 200
     assistant_id = response.json()["assistant_id"]
 
     try:
         # Publish
-        await async_client.post(
-            f"/api/assistants/{assistant_id}/publish", headers=headers
-        )
+        await async_client.post(f"/api/assistants/{assistant_id}/publish", headers=headers)
 
         # Get public assistant
         response = await async_client.get(f"/api/assistants/public/{assistant_id}")
@@ -122,9 +112,7 @@ async def test_public_assistant_does_not_expose_sensitive_data(
 
     finally:
         # Cleanup
-        await async_client.delete(
-            f"/api/assistants/{assistant_id}/publish", headers=headers
-        )
+        await async_client.delete(f"/api/assistants/{assistant_id}/publish", headers=headers)
         await async_client.delete(f"/api/assistants/{assistant_id}", headers=headers)
 
 
@@ -149,16 +137,12 @@ async def test_list_public_assistants(async_client: AsyncClient):
             "description": f"Test agent {i}",
             "tools": [],
         }
-        response = await async_client.post(
-            "/api/assistants", json=assistant_data, headers=headers
-        )
+        response = await async_client.post("/api/assistants", json=assistant_data, headers=headers)
         assert response.status_code == 200
         assistant_id = response.json()["assistant_id"]
         assistant_ids.append(assistant_id)
 
-        await async_client.post(
-            f"/api/assistants/{assistant_id}/publish", headers=headers
-        )
+        await async_client.post(f"/api/assistants/{assistant_id}/publish", headers=headers)
 
     try:
         # Test list endpoint (no auth required)
@@ -178,12 +162,8 @@ async def test_list_public_assistants(async_client: AsyncClient):
     finally:
         # Cleanup
         for assistant_id in assistant_ids:
-            await async_client.delete(
-                f"/api/assistants/{assistant_id}/publish", headers=headers
-            )
-            await async_client.delete(
-                f"/api/assistants/{assistant_id}", headers=headers
-            )
+            await async_client.delete(f"/api/assistants/{assistant_id}/publish", headers=headers)
+            await async_client.delete(f"/api/assistants/{assistant_id}", headers=headers)
 
 
 @pytest.mark.asyncio
@@ -218,9 +198,7 @@ async def test_cannot_access_unpublished_assistant_publicly(async_client: AsyncC
         "description": "Should not be public",
         "tools": [],
     }
-    response = await async_client.post(
-        "/api/assistants", json=assistant_data, headers=headers
-    )
+    response = await async_client.post("/api/assistants", json=assistant_data, headers=headers)
     assert response.status_code == 200
     assistant_id = response.json()["assistant_id"]
 
@@ -260,9 +238,7 @@ async def test_publish_requires_ownership(async_client: AsyncClient):
 
     # Try to publish a non-existent assistant
     random_id = str(uuid.uuid4())
-    response = await async_client.post(
-        f"/api/assistants/{random_id}/publish", headers=headers
-    )
+    response = await async_client.post(f"/api/assistants/{random_id}/publish", headers=headers)
     assert response.status_code == 404
     assert "Assistant not found" in response.json()["detail"]
 
@@ -290,9 +266,7 @@ async def test_create_assistant_with_files(async_client: AsyncClient):
         },
     }
 
-    response = await async_client.post(
-        "/api/assistants", json=assistant_data, headers=headers
-    )
+    response = await async_client.post("/api/assistants", json=assistant_data, headers=headers)
     assert response.status_code == 200
     assistant_id = response.json()["assistant_id"]
 
@@ -331,9 +305,7 @@ async def test_update_assistant_files(async_client: AsyncClient):
         "tools": [],
     }
 
-    response = await async_client.post(
-        "/api/assistants", json=assistant_data, headers=headers
-    )
+    response = await async_client.post("/api/assistants", json=assistant_data, headers=headers)
     assert response.status_code == 200
     assistant_id = response.json()["assistant_id"]
 
@@ -361,9 +333,7 @@ async def test_update_assistant_files(async_client: AsyncClient):
             json={"filter": {"id": assistant_id}},
             headers=headers,
         )
-        assert (
-            response.json()["assistants"][0]["files"]["/new_file.txt"] == "new content"
-        )
+        assert response.json()["assistants"][0]["files"]["/new_file.txt"] == "new content"
     finally:
         await async_client.delete(f"/api/assistants/{assistant_id}", headers=headers)
 
@@ -391,17 +361,13 @@ async def test_public_assistant_excludes_files(async_client: AsyncClient):
         },
     }
 
-    response = await async_client.post(
-        "/api/assistants", json=assistant_data, headers=headers
-    )
+    response = await async_client.post("/api/assistants", json=assistant_data, headers=headers)
     assert response.status_code == 200
     assistant_id = response.json()["assistant_id"]
 
     try:
         # Publish
-        response = await async_client.post(
-            f"/api/assistants/{assistant_id}/publish", headers=headers
-        )
+        response = await async_client.post(f"/api/assistants/{assistant_id}/publish", headers=headers)
         assert response.status_code == 200
 
         # Get public assistant - files must NOT be exposed (owner-only data)
@@ -422,7 +388,5 @@ async def test_public_assistant_excludes_files(async_client: AsyncClient):
         assert "files" in owner_data
         assert owner_data["files"]["/readme.md"] == "# Secret Documentation"
     finally:
-        await async_client.delete(
-            f"/api/assistants/{assistant_id}/publish", headers=headers
-        )
+        await async_client.delete(f"/api/assistants/{assistant_id}/publish", headers=headers)
         await async_client.delete(f"/api/assistants/{assistant_id}", headers=headers)

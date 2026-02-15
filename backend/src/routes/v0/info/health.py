@@ -2,7 +2,6 @@ from fastapi import Depends, APIRouter, HTTPException
 from src.constants import APP_VERSION
 from src.services.db import get_store, get_checkpoint_db
 from langgraph.store.postgres import AsyncPostgresStore
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from src.utils.logger import logger
 import asyncio
 
@@ -29,7 +28,7 @@ async def check_store_health(
         async with asyncio.timeout(5.0):  # 5 second timeout
             async with store as s:
                 # Try a simple search operation
-                test_items = await s.asearch(("health_check",), limit=1)
+                await s.asearch(("health_check",), limit=1)
                 return {
                     "status": "healthy",
                     "store_type": type(store).__name__,
@@ -38,9 +37,7 @@ async def check_store_health(
                 }
     except asyncio.TimeoutError:
         logger.error("Store health check timed out")
-        raise HTTPException(
-            status_code=503, detail="Store connection timeout - service unavailable"
-        )
+        raise HTTPException(status_code=503, detail="Store connection timeout - service unavailable")
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Store health check failed: {error_msg}")
@@ -51,9 +48,7 @@ async def check_store_health(
                 detail="Store connection is closed - service unavailable",
             )
 
-        raise HTTPException(
-            status_code=500, detail=f"Store health check failed: {error_msg}"
-        )
+        raise HTTPException(status_code=500, detail=f"Store health check failed: {error_msg}")
 
 
 @router.get("/checkpointer", name="Checkpointer Health Check")
@@ -97,6 +92,4 @@ async def check_checkpointer_health():
                 detail="Checkpointer connection is closed - service unavailable",
             )
 
-        raise HTTPException(
-            status_code=500, detail=f"Checkpointer health check failed: {error_msg}"
-        )
+        raise HTTPException(status_code=500, detail=f"Checkpointer health check failed: {error_msg}")

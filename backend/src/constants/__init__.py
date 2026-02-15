@@ -30,9 +30,7 @@ DOCS_BASE_URL = os.getenv("DOCS_BASE_URL", "https://docs.ruska.ai")
 def get_db_uri():
     uri = os.getenv("POSTGRES_CONNECTION_STRING")
     if not uri:
-        raise ValueError(
-            "POSTGRES_CONNECTION_STRING is not set in the environment variables"
-        )
+        raise ValueError("POSTGRES_CONNECTION_STRING is not set in the environment variables")
     return uri
 
 
@@ -61,34 +59,20 @@ def get_db_uri_session():
 DB_URI_SESSION = get_db_uri_session()
 
 # TCP Keepalive Settings for long-running checkpoint connections
-DB_KEEPALIVE_IDLE = int(
-    os.getenv("DB_KEEPALIVE_IDLE", "60")
-)  # seconds before first probe
-DB_KEEPALIVE_INTERVAL = int(
-    os.getenv("DB_KEEPALIVE_INTERVAL", "15")
-)  # seconds between probes
-DB_KEEPALIVE_COUNT = int(
-    os.getenv("DB_KEEPALIVE_COUNT", "4")
-)  # failed probes before dead
+DB_KEEPALIVE_IDLE = int(os.getenv("DB_KEEPALIVE_IDLE", "60"))  # seconds before first probe
+DB_KEEPALIVE_INTERVAL = int(os.getenv("DB_KEEPALIVE_INTERVAL", "15"))  # seconds between probes
+DB_KEEPALIVE_COUNT = int(os.getenv("DB_KEEPALIVE_COUNT", "4"))  # failed probes before dead
 
 # Checkpoint Resilience Settings
 CHECKPOINT_MAX_RETRIES = int(os.getenv("CHECKPOINT_MAX_RETRIES", "3"))
 CHECKPOINT_RETRY_DELAY = float(os.getenv("CHECKPOINT_RETRY_DELAY", "1.0"))  # seconds
-CHECKPOINT_MAX_DELAY = float(
-    os.getenv("CHECKPOINT_MAX_DELAY", "30.0")
-)  # max backoff cap
+CHECKPOINT_MAX_DELAY = float(os.getenv("CHECKPOINT_MAX_DELAY", "30.0"))  # max backoff cap
 CHECKPOINT_JITTER = float(os.getenv("CHECKPOINT_JITTER", "0.1"))  # randomization factor
-CHECKPOINT_HEALTH_CHECK_INTERVAL = int(
-    os.getenv("CHECKPOINT_HEALTH_CHECK_INTERVAL", "30")
-)  # seconds
+CHECKPOINT_HEALTH_CHECK_INTERVAL = int(os.getenv("CHECKPOINT_HEALTH_CHECK_INTERVAL", "30"))  # seconds
 
 # Feature Flags for checkpoint resilience
-CHECKPOINT_USE_RESILIENT = (
-    os.getenv("CHECKPOINT_USE_RESILIENT", "false").lower() == "true"
-)
-CHECKPOINT_ENABLE_FALLBACK = (
-    os.getenv("CHECKPOINT_ENABLE_FALLBACK", "false").lower() == "true"
-)
+CHECKPOINT_USE_RESILIENT = os.getenv("CHECKPOINT_USE_RESILIENT", "false").lower() == "true"
+CHECKPOINT_ENABLE_FALLBACK = os.getenv("CHECKPOINT_ENABLE_FALLBACK", "false").lower() == "true"
 
 
 class UserTokenKey(Enum):
@@ -125,12 +109,8 @@ XAI_API_KEY = os.getenv(UserTokenKey.XAI_API_KEY.value)
 AWS_BEARER_TOKEN_BEDROCK = os.getenv(UserTokenKey.AWS_BEARER_TOKEN_BEDROCK.value)
 ARCADE_API_KEY = os.getenv(UserTokenKey.ARCADE_API_KEY.value)
 # Tools
-SHELL_EXEC_SERVER_URL = os.getenv(
-    UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://localhost:3005/exec"
-)
-SEARX_SEARCH_HOST_URL = os.getenv(
-    UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://localhost:8080"
-)
+SHELL_EXEC_SERVER_URL = os.getenv(UserTokenKey.SHELL_EXEC_SERVER_URL.value, "http://localhost:3005/exec")
+SEARX_SEARCH_HOST_URL = os.getenv(UserTokenKey.SEARX_SEARCH_HOST_URL.value, "http://localhost:8080")
 TAVILY_API_KEY = os.getenv(UserTokenKey.TAVILY_API_KEY.value)
 EXA_API_KEY = os.getenv(UserTokenKey.EXA_API_KEY.value)
 LANGCONNECT_SERVER_URL = os.getenv(UserTokenKey.LANGCONNECT_SERVER_URL.value)

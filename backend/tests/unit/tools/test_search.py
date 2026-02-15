@@ -31,9 +31,7 @@ class TestSearchWithSearx:
     async def test_searx_success_returns_results(self, mock_searx_class):
         """SearXNG returns results successfully."""
         mock_searx = MagicMock()
-        mock_searx.aresults = AsyncMock(
-            return_value=[{"title": "Test", "link": "http://example.com"}]
-        )
+        mock_searx.aresults = AsyncMock(return_value=[{"title": "Test", "link": "http://example.com"}])
         mock_searx_class.return_value = mock_searx
 
         results, error = await _search_with_searx(
@@ -166,9 +164,7 @@ class TestSearchWithTavily:
             )
             mock_tavily.return_value = mock_instance
 
-            results, error = await _search_with_tavily(
-                query="test query", num_results=5, api_key="test-api-key"
-            )
+            results, error = await _search_with_tavily(query="test query", num_results=5, api_key="test-api-key")
 
             assert len(results) == 1
             assert results[0]["title"] == "Tavily Result"
@@ -182,9 +178,7 @@ class TestSearchWithTavily:
         with patch("langchain_tavily.TavilySearch") as mock_tavily:
             mock_tavily.side_effect = Exception("Tavily API error")
 
-            results, error = await _search_with_tavily(
-                query="test query", num_results=5, api_key="test-api-key"
-            )
+            results, error = await _search_with_tavily(query="test query", num_results=5, api_key="test-api-key")
 
             assert results == []
             assert error is not None

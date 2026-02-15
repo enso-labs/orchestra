@@ -38,9 +38,7 @@ export function SandboxSettings() {
 	const handleChange = async (value: string) => {
 		setLoading(true);
 		try {
-			const res = await updateDefaultSandbox(
-				value === "auto" ? null : value,
-			);
+			const res = await updateDefaultSandbox(value === "auto" ? null : value);
 			setSandbox(res.default_sandbox ?? "auto");
 			toast.success("Default sandbox updated");
 		} catch {
@@ -55,16 +53,12 @@ export function SandboxSettings() {
 			<CardHeader>
 				<CardTitle>Default Sandbox</CardTitle>
 				<CardDescription>
-					Choose the sandbox backend for agent code execution. Auto
-					will try Daytona first, then fall back to local.
+					Choose the sandbox backend for agent code execution. Auto will try
+					Daytona first, then fall back to local.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<Select
-					value={sandbox}
-					onValueChange={handleChange}
-					disabled={loading}
-				>
+				<Select value={sandbox} onValueChange={handleChange} disabled={loading}>
 					<SelectTrigger className="w-full max-w-sm">
 						<SelectValue />
 					</SelectTrigger>

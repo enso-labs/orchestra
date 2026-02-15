@@ -55,21 +55,14 @@ class TestProjectService(unittest.IsolatedAsyncioTestCase):
         ]
         await self.project_service.add_docs(project_id=self.project_id, docs=VALID_DOCS)
         results: list[SearchItem] = await self.project_service.search(
-            SearchFilter(
-                filter={"project_id": self.project_id}, query="python programming"
-            )
+            SearchFilter(filter={"project_id": self.project_id}, query="python programming")
         )
-        assert (
-            results[0].value["page_content"]
-            == VALID_DOCS[0].model_dump()["page_content"]
-        )
+        assert results[0].value["page_content"] == VALID_DOCS[0].model_dump()["page_content"]
         assert results[0].value["metadata"] == VALID_DOCS[0].model_dump()["metadata"]
 
     async def test_source_lifecycle(self):
         # Create and get sources
-        await self.project_service.add_sources(
-            project_id=self.project_id, sources=self.VALID_SOURCES
-        )
+        await self.project_service.add_sources(project_id=self.project_id, sources=self.VALID_SOURCES)
         sources: list[Source] = await self.project_service.get_sources(self.project_id)
         assert len(sources) == 1
         assert sources[0].type == "web_scrape"

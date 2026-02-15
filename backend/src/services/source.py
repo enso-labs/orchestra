@@ -23,9 +23,7 @@ class SourceService:
         return (self.user_id, "sources")
 
     async def _set(self, source_id: str, source: Source) -> bool:
-        await self.store.aput(
-            namespace=self._get_namespace(), key=source_id, value=source.model_dump()
-        )
+        await self.store.aput(namespace=self._get_namespace(), key=source_id, value=source.model_dump())
         return True
 
     async def create(self, project_id: str, source: Source) -> bool:
@@ -36,7 +34,7 @@ class SourceService:
                 source.metadata = {}
             source.metadata["project_id"] = project_id
             # Load documents (but don't set on source as it doesn't have a docs field)
-            docs = await self._load_source_to_docs(source, lazy=True)
+            await self._load_source_to_docs(source, lazy=True)
             source.created_at = datetime.now()
             source.updated_at = datetime.now()
             created = await self._set(source_id=source.id, source=source)
@@ -77,9 +75,7 @@ class SourceService:
     def _format_source(self, item: SearchItem) -> Source:
         return Source.model_validate(item.value)
 
-    async def _load_source_to_docs(
-        self, source: Source, lazy: bool = False
-    ) -> list[Document]:
+    async def _load_source_to_docs(self, source: Source, lazy: bool = False) -> list[Document]:
         loader = Loader.create(source.type, source.content)
         docs = []
         if lazy:

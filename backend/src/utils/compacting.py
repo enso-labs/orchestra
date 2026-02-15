@@ -110,9 +110,7 @@ class SummarizationMiddleware(CompactingMiddleware):
         recent_messages: int = DEFAULT_COMPACTION_RECENT_MESSAGES,
         model: str | None = DEFAULT_COMPACTION_MODEL,
     ) -> None:
-        super().__init__(
-            token_threshold=token_threshold, recent_messages=recent_messages
-        )
+        super().__init__(token_threshold=token_threshold, recent_messages=recent_messages)
         self.model = model
 
     async def compact(self, messages: list[BaseMessage]) -> list[BaseMessage]:
@@ -134,8 +132,7 @@ class SummarizationMiddleware(CompactingMiddleware):
 
         # Build the conversation text for summarization
         conversation_text = "\n".join(
-            f"{msg.type}: {msg.content if isinstance(msg.content, str) else str(msg.content)}"
-            for msg in middle_msgs
+            f"{msg.type}: {msg.content if isinstance(msg.content, str) else str(msg.content)}" for msg in middle_msgs
         )
 
         try:
@@ -143,7 +140,10 @@ class SummarizationMiddleware(CompactingMiddleware):
             summary_response = await llm.ainvoke(
                 [
                     SystemMessage(
-                        content="You are a conversation summarizer. Provide a concise summary of the following conversation, preserving key facts, decisions, and context."
+                        content=(
+                            "You are a conversation summarizer. Provide a concise summary of the "
+                            "following conversation, preserving key facts, decisions, and context."
+                        )
                     ),
                     HumanMessage(content=conversation_text),
                 ]
@@ -160,14 +160,12 @@ class SummarizationMiddleware(CompactingMiddleware):
             return messages
 
         summary_content = (
-            summary_response.content
-            if isinstance(summary_response.content, str)
-            else str(summary_response.content)
+            summary_response.content if isinstance(summary_response.content, str) else str(summary_response.content)
         )
 
         summary_message = SystemMessage(
             content=f"[CONVERSATION SUMMARY] {summary_content}",
-            metadata={"compacted": True, "original_count": len(middle_msgs)},
+            additional_kwargs={"compacted": True, "original_count": len(middle_msgs)},
         )
 
         return system_msgs + [summary_message] + recent_msgs

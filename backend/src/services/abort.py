@@ -168,9 +168,7 @@ class AbortService:
             await redis_client.aclose()
 
     @staticmethod
-    async def check_abort_signal(
-        thread_id: str, expected_user_id: Optional[str] = None
-    ) -> bool:
+    async def check_abort_signal(thread_id: str, expected_user_id: Optional[str] = None) -> bool:
         """Check if an abort signal exists for a thread from the expected user.
 
         Used by workers to poll for abort requests. This is a static method

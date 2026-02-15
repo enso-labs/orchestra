@@ -89,9 +89,7 @@ def audio_to_text(
         if timeout is not None:
             kwargs["timeout"] = timeout
         client = Groq(api_key=GROQ_API_KEY)
-        translation = client.audio.translations.create(
-            file=(filename, file_bytes), model=model, **kwargs
-        )
+        translation = client.audio.translations.create(file=(filename, file_bytes), model=model, **kwargs)
         return translation
     except Exception as e:
         raise e
@@ -117,6 +115,4 @@ def filter_models(models: dict, **props):
 
 def filter_tool_call_models(provider_models: dict[str, dict]) -> list[str]:
     """Return all model IDs for this provider that support tool calling."""
-    return [
-        model_id for model_id, meta in provider_models.items() if meta.get("tool_call")
-    ]
+    return [model_id for model_id, meta in provider_models.items() if meta.get("tool_call")]

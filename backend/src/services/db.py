@@ -41,9 +41,7 @@ async_engine = create_async_engine(
     ASYNC_DB_URI,
     connect_args={"statement_cache_size": 0, "ssl": False},
 )
-AsyncSessionLocal = async_sessionmaker(
-    autocommit=False, autoflush=False, bind=async_engine
-)
+AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=async_engine)
 
 # Create a single shared base instance
 _Base = declarative_base()
@@ -58,9 +56,6 @@ def get_db_base():
 
 def load_models():
     """Import all models to ensure they are registered with SQLAlchemy"""
-    from src.schemas.models import (
-        User,
-    )
 
     return _Base
 

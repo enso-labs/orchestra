@@ -57,9 +57,7 @@ describe("ChatNav model display integration", () => {
 describe("Settings page default model selector integration", () => {
 	it("DefaultModelSettings component exists and can be imported", async () => {
 		// Verify the settings component still exports correctly
-		const mod = await import(
-			"@/components/settings/DefaultModelSettings"
-		);
+		const mod = await import("@/components/settings/DefaultModelSettings");
 		expect(mod.DefaultModelSettings).toBeDefined();
 		expect(typeof mod.DefaultModelSettings).toBe("function");
 	});
@@ -78,10 +76,13 @@ describe("Agent create form model selector integration", () => {
 		const fs = await import("node:fs");
 		const path = await import("node:path");
 		const source = fs.readFileSync(
-			path.resolve(process.cwd(), "src/components/forms/agents/agent-create-form.tsx"),
+			path.resolve(
+				process.cwd(),
+				"src/components/forms/agents/agent-create-form.tsx",
+			),
 			"utf-8",
 		);
-		expect(source).toContain('import SelectModel from');
+		expect(source).toContain("import SelectModel from");
 		expect(source).toContain("<SelectModel");
 	});
 });

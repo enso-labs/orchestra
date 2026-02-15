@@ -78,9 +78,7 @@ class Interpreter:
             logging.info("Packages installed successfully:", response.json())
             return response.json()
         else:
-            logging.error(
-                "Error installing packages:", response.status_code, response.text
-            )
+            logging.error("Error installing packages:", response.status_code, response.text)
             raise ToolException(f"Error: {response.status_code} {response.text}")
 
     def execute(self, session_id: str, code: str):
@@ -132,9 +130,7 @@ class Interpreter:
             logging.info("Session terminated successfully:", response.json())
             return response.json()
         else:
-            logging.error(
-                "Error terminating session:", response.status_code, response.text
-            )
+            logging.error("Error terminating session:", response.status_code, response.text)
             raise ToolException(f"Error: {response.status_code} {response.text}")
 
     def upload(self, session_id: str, file_path: str):
@@ -202,9 +198,7 @@ class Interpreter:
             logging.info("File downloaded successfully:", output_path)
             return {"status": "success", "output_path": output_path}
         else:
-            logging.error(
-                "Error downloading file:", response.status_code, response.text
-            )
+            logging.error("Error downloading file:", response.status_code, response.text)
             raise ToolException(f"Error: {response.status_code} {response.text}")
 
     def toolkit(self) -> List[StructuredTool]:

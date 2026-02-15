@@ -31,9 +31,7 @@ class ShareService:
         self.checkpointer = checkpointer
         self.repo = ShareRepo(user_id, store) if user_id else None
 
-    async def create_share(
-        self, thread_id: str, request: CreateShareRequest
-    ) -> Tuple[str, ShareToken]:
+    async def create_share(self, thread_id: str, request: CreateShareRequest) -> Tuple[str, ShareToken]:
         """Create a share link for a thread owned by the current user.
 
         Args:
@@ -68,9 +66,7 @@ class ShareService:
         # Calculate expiration
         expires_at = None
         if request.expires_in_hours:
-            expires_at = datetime.now(timezone.utc) + timedelta(
-                hours=request.expires_in_hours
-            )
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=request.expires_in_hours)
 
         # Determine follow-up model
         follow_up_model = request.follow_up_model
@@ -95,9 +91,7 @@ class ShareService:
         await self.repo.create(share)
         return token, share
 
-    async def get_shared_thread(
-        self, token: str
-    ) -> Optional[Tuple[SharedThreadResponse, ShareToken]]:
+    async def get_shared_thread(self, token: str) -> Optional[Tuple[SharedThreadResponse, ShareToken]]:
         """Retrieve a shared thread by token (no auth required).
 
         Args:
@@ -125,9 +119,7 @@ class ShareService:
         thread = await thread_service.get(share.thread_id)
 
         if not thread:
-            logger.warning(
-                f"Thread {share.thread_id} not found for share {share.token_prefix}"
-            )
+            logger.warning(f"Thread {share.thread_id} not found for share {share.token_prefix}")
             return None
 
         # Get messages from checkpoint

@@ -78,9 +78,7 @@ class CheckpointService:
         return checkpoints
 
     @retry_db_operation(tries=3, delay=1, backoff=2, exceptions=(Exception,))
-    async def list_checkpoints(
-        self, thread_id: str, limit: int = 3
-    ) -> list[StateSnapshot]:
+    async def list_checkpoints(self, thread_id: str, limit: int = 3) -> list[StateSnapshot]:
         try:
             config = RunnableConfig(configurable={"thread_id": thread_id})
             checkpoints = []
@@ -145,16 +143,12 @@ class CheckpointService:
         thread_id: str,
         checkpoint_id: str | None = None,
     ) -> Checkpoint | None:
-        config = RunnableConfig(
-            configurable={"thread_id": thread_id, "checkpoint_id": checkpoint_id}
-        )
+        config = RunnableConfig(configurable={"thread_id": thread_id, "checkpoint_id": checkpoint_id})
         checkpoint = await self.checkpointer.aget(config)
         return checkpoint
 
     async def get_checkpoint_state(self, thread_id: str, checkpoint_id: str):
-        config = RunnableConfig(
-            configurable={"thread_id": thread_id, "checkpoint_id": checkpoint_id}
-        )
+        config = RunnableConfig(configurable={"thread_id": thread_id, "checkpoint_id": checkpoint_id})
         checkpoint = await self.graph.aget_state(config)
         return checkpoint._asdict()
         # return {**checkpoint.values, **checkpoint.config, **checkpoint.parent_config}
@@ -189,9 +183,7 @@ class CheckpointService:
             Returns empty list when no graph/checkpoint exists or no interrupts pending.
         """
         if self.graph is None:
-            logger.debug(
-                f"No graph configured for interrupt detection on thread {thread_id}"
-            )
+            logger.debug(f"No graph configured for interrupt detection on thread {thread_id}")
             return []
 
         try:
@@ -250,9 +242,7 @@ class CheckpointService:
             logger.exception(f"Error getting interrupts for thread {thread_id}: {e}")
             return []
 
-    async def resume_with_decision(
-        self, thread_id: str, decisions: list[HumanDecision]
-    ) -> ResumeResponse:
+    async def resume_with_decision(self, thread_id: str, decisions: list[HumanDecision]) -> ResumeResponse:
         """
         Resume execution of an interrupted thread with human decision(s).
 
@@ -270,9 +260,7 @@ class CheckpointService:
             ValueError: When no graph is configured or no interrupt is pending
         """
         if self.graph is None:
-            raise ValueError(
-                f"No graph configured for resume operation on thread {thread_id}"
-            )
+            raise ValueError(f"No graph configured for resume operation on thread {thread_id}")
 
         config = RunnableConfig(configurable={"thread_id": thread_id})
 
@@ -289,27 +277,19 @@ class CheckpointService:
             if decision.decision_type == DecisionType.ACCEPT:
                 resume_values.append({"type": "accept"})
             elif decision.decision_type == DecisionType.EDIT:
-                resume_values.append(
-                    {"type": "edit", "args": {"args": decision.edited_args}}
-                )
+                resume_values.append({"type": "edit", "args": {"args": decision.edited_args}})
             elif decision.decision_type == DecisionType.RESPONSE:
-                resume_values.append(
-                    {"type": "response", "args": decision.response_content}
-                )
+                resume_values.append({"type": "response", "args": decision.response_content})
             elif decision.decision_type == DecisionType.REJECT:
                 # For reject, we respond with a rejection message
-                resume_values.append(
-                    {"type": "response", "args": "User rejected this action."}
-                )
+                resume_values.append({"type": "response", "args": "User rejected this action."})
             else:
                 raise ValueError(f"Unsupported decision type: {decision.decision_type}")
 
         try:
             # Resume execution using Command with resume value
             # For single interrupt, pass single value; for multiple, pass list
-            resume_value = (
-                resume_values[0] if len(resume_values) == 1 else resume_values
-            )
+            resume_value = resume_values[0] if len(resume_values) == 1 else resume_values
 
             # Execute the resumed graph
             _result = await self.graph.ainvoke(
@@ -319,13 +299,9 @@ class CheckpointService:
 
             # Get the new state to extract checkpoint_id
             new_state: StateSnapshot = await self.graph.aget_state(config)
-            new_checkpoint_id = new_state.config.get("configurable", {}).get(
-                "checkpoint_id"
-            )
+            new_checkpoint_id = new_state.config.get("configurable", {}).get("checkpoint_id")
 
-            logger.info(
-                f"Thread {thread_id} resumed successfully with checkpoint {new_checkpoint_id}"
-            )
+            logger.info(f"Thread {thread_id} resumed successfully with checkpoint {new_checkpoint_id}")
 
             return ResumeResponse(
                 success=True,

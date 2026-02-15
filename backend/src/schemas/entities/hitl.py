@@ -29,9 +29,7 @@ class HumanDecision(BaseModel):
     - ACCEPT and REJECT decisions don't require additional fields
     """
 
-    decision_type: DecisionType = Field(
-        ..., description="The type of decision made by the human"
-    )
+    decision_type: DecisionType = Field(..., description="The type of decision made by the human")
     edited_args: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Modified tool arguments when decision_type is EDIT",
@@ -46,13 +44,8 @@ class HumanDecision(BaseModel):
         """Validate that required fields are present based on decision_type."""
         if self.decision_type == DecisionType.EDIT and self.edited_args is None:
             raise ValueError("edited_args is required when decision_type is EDIT")
-        if (
-            self.decision_type == DecisionType.RESPONSE
-            and self.response_content is None
-        ):
-            raise ValueError(
-                "response_content is required when decision_type is RESPONSE"
-            )
+        if self.decision_type == DecisionType.RESPONSE and self.response_content is None:
+            raise ValueError("response_content is required when decision_type is RESPONSE")
         return self
 
     model_config = {
@@ -91,9 +84,7 @@ class InterruptInfo(BaseModel):
     """Information about a pending interrupt."""
 
     tool_name: str = Field(..., description="The name of the tool that was interrupted")
-    tool_args: Dict[str, Any] = Field(
-        default_factory=dict, description="The arguments passed to the tool"
-    )
+    tool_args: Dict[str, Any] = Field(default_factory=dict, description="The arguments passed to the tool")
     description: Optional[str] = Field(
         default=None,
         description="Human-readable description of what the tool is trying to do",
@@ -123,12 +114,8 @@ class InterruptListResponse(BaseModel):
     """Response for listing pending interrupts on a thread."""
 
     thread_id: str = Field(..., description="The ID of the thread")
-    has_interrupts: bool = Field(
-        ..., description="Whether the thread has pending interrupts"
-    )
-    interrupts: List[InterruptInfo] = Field(
-        default_factory=list, description="List of pending interrupts"
-    )
+    has_interrupts: bool = Field(..., description="Whether the thread has pending interrupts")
+    interrupts: List[InterruptInfo] = Field(default_factory=list, description="List of pending interrupts")
 
     model_config = {
         "json_schema_extra": {
@@ -160,9 +147,7 @@ class ResumeRequest(BaseModel):
         description="List of decisions for pending interrupts (typically one)",
     )
 
-    model_config = {
-        "json_schema_extra": {"example": {"decisions": [{"decision_type": "accept"}]}}
-    }
+    model_config = {"json_schema_extra": {"example": {"decisions": [{"decision_type": "accept"}]}}}
 
 
 class ResumeResponse(BaseModel):
@@ -171,9 +156,7 @@ class ResumeResponse(BaseModel):
     success: bool = Field(..., description="Whether the resume operation succeeded")
     thread_id: str = Field(..., description="The ID of the thread")
     message: str = Field(..., description="Human-readable status message")
-    checkpoint_id: Optional[str] = Field(
-        default=None, description="The new checkpoint ID after resuming"
-    )
+    checkpoint_id: Optional[str] = Field(default=None, description="The new checkpoint ID after resuming")
 
     model_config = {
         "json_schema_extra": {

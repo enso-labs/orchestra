@@ -1,6 +1,5 @@
 """Unit tests for Daytona sandbox backend factory."""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 

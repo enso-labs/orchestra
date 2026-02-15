@@ -43,9 +43,7 @@ class A2AServer:
         self.agent_card = agent_card
         self.app = Starlette()
         self.app.add_route(self.endpoint, self._process_request, methods=["POST"])
-        self.app.add_route(
-            "/.well-known/agent.json", self._get_agent_card, methods=["GET"]
-        )
+        self.app.add_route("/.well-known/agent.json", self._get_agent_card, methods=["GET"])
 
     def start(self):
         if self.agent_card is None:
@@ -71,23 +69,15 @@ class A2AServer:
             elif isinstance(json_rpc_request, SendTaskRequest):
                 result = await self.task_manager.on_send_task(json_rpc_request)
             elif isinstance(json_rpc_request, SendTaskStreamingRequest):
-                result = await self.task_manager.on_send_task_subscribe(
-                    json_rpc_request
-                )
+                result = await self.task_manager.on_send_task_subscribe(json_rpc_request)
             elif isinstance(json_rpc_request, CancelTaskRequest):
                 result = await self.task_manager.on_cancel_task(json_rpc_request)
             elif isinstance(json_rpc_request, SetTaskPushNotificationRequest):
-                result = await self.task_manager.on_set_task_push_notification(
-                    json_rpc_request
-                )
+                result = await self.task_manager.on_set_task_push_notification(json_rpc_request)
             elif isinstance(json_rpc_request, GetTaskPushNotificationRequest):
-                result = await self.task_manager.on_get_task_push_notification(
-                    json_rpc_request
-                )
+                result = await self.task_manager.on_get_task_push_notification(json_rpc_request)
             elif isinstance(json_rpc_request, TaskResubscriptionRequest):
-                result = await self.task_manager.on_resubscribe_to_task(
-                    json_rpc_request
-                )
+                result = await self.task_manager.on_resubscribe_to_task(json_rpc_request)
             else:
                 logger.warning(f"Unexpected request type: {type(json_rpc_request)}")
                 raise ValueError(f"Unexpected request type: {type(request)}")

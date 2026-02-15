@@ -58,10 +58,7 @@ class UserSettingsRepo(BaseRepo):
         """Return settings and provider key statuses (no raw keys)."""
         settings = await self._get_or_create()
         keys = self._decrypt_keys(settings)
-        statuses = [
-            ProviderKeyStatus(provider=p.value, is_set=(p.value in keys))
-            for p in UserTokenKey
-        ]
+        statuses = [ProviderKeyStatus(provider=p.value, is_set=(p.value in keys)) for p in UserTokenKey]
         return settings, statuses
 
     async def set_default_model(self, model: Optional[str]) -> UserSettings:
@@ -75,9 +72,7 @@ class UserSettingsRepo(BaseRepo):
         if sandbox is not None:
             valid = [e.value for e in SandboxType]
             if sandbox not in valid:
-                raise ValueError(
-                    f"Invalid sandbox '{sandbox}'. Must be one of: {valid}"
-                )
+                raise ValueError(f"Invalid sandbox '{sandbox}'. Must be one of: {valid}")
         settings = await self._get_or_create()
         settings.default_sandbox = sandbox
         settings.updated_at = datetime.now(timezone.utc)

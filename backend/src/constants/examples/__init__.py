@@ -24,9 +24,7 @@ A2A_SERVER_EXAMPLE = {
 }
 A2A_DICT_EXAMPLE = {"currency_agent": A2A_SERVER_EXAMPLE}
 
-ARCADE_REQ_BODY_EXAMPLE = {
-    "arcade": {"tools": ["Web.ScrapeUrl"], "toolkits": ["Google"]}
-}
+ARCADE_REQ_BODY_EXAMPLE = {"arcade": {"tools": ["Web.ScrapeUrl"], "toolkits": ["Google"]}}
 
 ARCADE_RESPONSE_EXAMPLE = get_arcade_response_example()
 
@@ -54,9 +52,7 @@ def get_example_metadata(
 
 
 def get_airtable_spec():
-    return httpx.get(
-        "https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/airtable-spec.json"
-    ).json()
+    return httpx.get("https://raw.githubusercontent.com/ryaneggz/static/refs/heads/main/enso/airtable-spec.json").json()
 
 
 NEW_THREAD_API_TOOLS = {
@@ -396,9 +392,7 @@ SCHEDULE_UPDATE_EXAMPLE = Example(
         "task": {
             "model": "openai:gpt-5-nano",
             "system": "You are a helpful assistant.",
-            "messages": [
-                {"role": "user", "content": "Updated weather check for Dallas?"}
-            ],
+            "messages": [{"role": "user", "content": "Updated weather check for Dallas?"}],
             "tools": ["get_weather"],
             "metadata": {
                 "thread_id": "thread-uuid-here",  # Required

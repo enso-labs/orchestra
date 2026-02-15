@@ -41,9 +41,7 @@ DEFAULT_TRAJECTORIES = [
             {"role": "user", "content": "Compare Mars and Earth"},
             {"role": "assistant", "content": "Mars and Earth have many differences..."},
         ],
-        feedback={
-            "revised": "Earth and Mars have many similarities and differences..."
-        },
+        feedback={"revised": "Earth and Mars have many similarities and differences..."},
     )._asdict(),
 ]
 
@@ -53,8 +51,7 @@ DEFAULT_PROMPTS = [
         name="planetary_science_expert",
         prompt="You are a planetary science expert.",
         update_instructions=(
-            "Detail any moons of the planet the user asks about, "
-            "provide a list of the moons and their properties."
+            "Detail any moons of the planet the user asks about, provide a list of the moons and their properties."
         ),
     ),
 ]
@@ -65,9 +62,7 @@ class PromptOptimizerRequest(BaseModel):
     prompt: str | Prompt = Field(default=DEFAULT_PROMPTS[1])
     model: str = Field(default=DEFAULT_CHAT_MODEL)
     kind: Optional[str] = Field(default="gradient")
-    config: Optional[dict] = Field(
-        default={"min_reflection_steps": 1, "max_reflection_steps": 3}
-    )
+    config: Optional[dict] = Field(default={"min_reflection_steps": 1, "max_reflection_steps": 3})
 
 
 class PromptOptimizer:
@@ -80,9 +75,7 @@ class PromptOptimizer:
         kind: str = "gradient",
         config: dict = {"min_reflection_steps": 2, "max_reflection_steps": 3},
     ) -> Any:
-        optimizer: Runnable = create_prompt_optimizer(
-            self.model, kind=kind, config=config
-        )
+        optimizer: Runnable = create_prompt_optimizer(self.model, kind=kind, config=config)
         optimized = await optimizer.ainvoke(optimizer_input)
         return optimized
 
@@ -92,8 +85,6 @@ class PromptOptimizer:
         kind: str = "gradient",
         config: dict = {"min_reflection_steps": 2, "max_reflection_steps": 3},
     ) -> Any:
-        optimizer: Runnable = create_multi_prompt_optimizer(
-            self.model, kind=kind, config=config
-        )
+        optimizer: Runnable = create_multi_prompt_optimizer(self.model, kind=kind, config=config)
         optimized = await optimizer.ainvoke(optimizer_input)
         return optimized

@@ -1,9 +1,10 @@
-from langgraph.store.base import BaseStore
+from langgraph.store.base import BaseStore, SearchItem
 from src.services.db import get_store_in_memory
-from src.repos.project_repo import Project, ProjectRepo
+from src.repos.project_repo import ProjectRepo
 from src.schemas.entities import SearchFilter
 from src.repos.source_repo import Source
-from src.repos.project_repo import *
+from src.schemas.entities.store import Project
+from src.utils.logger import logger
 
 
 class ProjectService:
@@ -16,10 +17,7 @@ class ProjectService:
     # Project Service Methods
     ##########################################################################
     async def search(self, search_filter: SearchFilter) -> list[Project]:
-        return [
-            Project.model_validate(project.value)
-            for project in await self.project_repo._search(search_filter)
-        ]
+        return [Project.model_validate(project.value) for project in await self.project_repo._search(search_filter)]
 
     async def create(self, project: Project) -> Project:
         return await self.project_repo.create(project)

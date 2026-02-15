@@ -1,4 +1,4 @@
-.PHONY: dev claude build run tag seeds test format
+.PHONY: dev claude build run tag seeds test format lint
 
 ENV_FILE ?= $(HOME)/.env/orchestra/.env.backend
 
@@ -22,6 +22,9 @@ seeds.user:
 
 format:
 	uvx ruff format
+
+lint:
+	uvx ruff check
 
 test:
 	@set -a && . $(ENV_FILE) && set +a && uv run pytest

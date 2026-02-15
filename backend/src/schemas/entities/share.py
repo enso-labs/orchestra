@@ -8,26 +8,14 @@ class ShareToken(BaseEntity):
     """Represents a share link for a thread."""
 
     token_hash: str = Field(..., description="SHA-256 hash of the share token")
-    token_prefix: str = Field(
-        ..., description="First 12 chars of token for display (shr_xxxx...)"
-    )
+    token_prefix: str = Field(..., description="First 12 chars of token for display (shr_xxxx...)")
     thread_id: str = Field(..., description="ID of the thread being shared")
     owner_id: str = Field(..., description="ID of the user who owns the thread")
-    allow_follow_up: bool = Field(
-        default=True, description="Allow anonymous users to continue conversation"
-    )
-    follow_up_model: Optional[str] = Field(
-        None, description="Model to use for anonymous follow-up (cheap model)"
-    )
-    show_files: bool = Field(
-        default=True, description="Whether to show files attached to the thread"
-    )
-    expires_at: Optional[datetime] = Field(
-        None, description="When the share link expires"
-    )
-    revoked_at: Optional[datetime] = Field(
-        None, description="When the share was revoked (soft delete)"
-    )
+    allow_follow_up: bool = Field(default=True, description="Allow anonymous users to continue conversation")
+    follow_up_model: Optional[str] = Field(None, description="Model to use for anonymous follow-up (cheap model)")
+    show_files: bool = Field(default=True, description="Whether to show files attached to the thread")
+    expires_at: Optional[datetime] = Field(None, description="When the share link expires")
+    revoked_at: Optional[datetime] = Field(None, description="When the share was revoked (soft delete)")
     view_count: int = Field(default=0, description="Number of times share was accessed")
 
     @property
@@ -57,15 +45,9 @@ class CreateShareRequest(BaseModel):
         le=8760,
         description="Hours until expiration (default 7 days)",
     )
-    allow_follow_up: bool = Field(
-        default=True, description="Allow anonymous continuation"
-    )
-    follow_up_model: Optional[str] = Field(
-        None, description="Model for anonymous follow-up (defaults to low-cost)"
-    )
-    show_files: bool = Field(
-        default=True, description="Whether to show files in the shared view"
-    )
+    allow_follow_up: bool = Field(default=True, description="Allow anonymous continuation")
+    follow_up_model: Optional[str] = Field(None, description="Model for anonymous follow-up (defaults to low-cost)")
+    show_files: bool = Field(default=True, description="Whether to show files in the shared view")
 
 
 class ShareResponse(BaseModel):

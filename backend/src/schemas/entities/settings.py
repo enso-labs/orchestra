@@ -18,24 +18,16 @@ class ProviderKeyStatus(BaseModel):
     """Status of a provider API key (never exposes the raw key)."""
 
     provider: str = Field(..., description="Provider name matching UserTokenKey enum")
-    is_set: bool = Field(
-        default=False, description="Whether a key is configured for this provider"
-    )
+    is_set: bool = Field(default=False, description="Whether a key is configured for this provider")
 
 
 class UserSettings(BaseEntity):
     """Persisted user settings entity."""
 
     user_id: str = Field(..., description="ID of the user who owns these settings")
-    default_model: Optional[str] = Field(
-        default=None, description="User's default AI model identifier"
-    )
-    encrypted_keys: Optional[str] = Field(
-        default=None, description="Fernet-encrypted JSON blob of provider API keys"
-    )
-    default_sandbox: Optional[str] = Field(
-        default=None, description="User's default sandbox backend type"
-    )
+    default_model: Optional[str] = Field(default=None, description="User's default AI model identifier")
+    encrypted_keys: Optional[str] = Field(default=None, description="Fernet-encrypted JSON blob of provider API keys")
+    default_sandbox: Optional[str] = Field(default=None, description="User's default sandbox backend type")
 
 
 class UserSettingsResponse(BaseModel):

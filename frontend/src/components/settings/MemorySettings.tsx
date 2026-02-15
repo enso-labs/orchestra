@@ -203,9 +203,7 @@ export function MemorySettings() {
 													{memory.id}
 												</span>
 											</div>
-											<p className="text-sm line-clamp-2">
-												{memory.content}
-											</p>
+											<p className="text-sm line-clamp-2">{memory.content}</p>
 										</div>
 										<div className="flex items-center gap-1 shrink-0">
 											<Switch

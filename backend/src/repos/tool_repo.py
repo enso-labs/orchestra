@@ -1,4 +1,4 @@
-from typing import Literal, Optional, TypedDict
+from typing import Literal, Optional
 from dataclasses import dataclass
 from fastapi.openapi.models import Example
 from langchain_core.runnables import RunnableConfig
@@ -82,9 +82,7 @@ class APIConfig(BaseModel):
                 # If this is a schema field with a "type"
                 if "type" in coerced and isinstance(coerced["type"], str):
                     js_type = coerced["type"].lower()
-                    coerced["type"] = type_mapping.get(
-                        js_type, coerced["type"]
-                    )  # fallback to original
+                    coerced["type"] = type_mapping.get(js_type, coerced["type"])  # fallback to original
                 # Recurse into nested schemas
                 for key, value in coerced.items():
                     if isinstance(value, dict):
@@ -114,9 +112,7 @@ class A2AConfig(BaseModel):
 class ToolConfig(BaseModel):
     base_tool: Optional[str] = None
     api_tool: Optional[APIConfig] = None
-    mcp_tool: Optional[dict[str, dict]] = (
-        None  # mcp_tool is always a dict (after MCPConfig.model_dump)
-    )
+    mcp_tool: Optional[dict[str, dict]] = None  # mcp_tool is always a dict (after MCPConfig.model_dump)
     a2a_tool: Optional[dict[str, A2AConfig]] = None
 
     @staticmethod
@@ -126,10 +122,7 @@ class ToolConfig(BaseModel):
         if mcp_tool is None:
             return None
         # Return a dict where values are model_dump() representations of MCPConfig
-        return {
-            k: v.model_dump() if isinstance(v, MCPConfig) else v
-            for k, v in mcp_tool.items()
-        }
+        return {k: v.model_dump() if isinstance(v, MCPConfig) else v for k, v in mcp_tool.items()}
 
     def dict(self, *args, **kwargs):
         data = super().dict(*args, **kwargs)
@@ -194,9 +187,7 @@ class SavedTool(BaseModel):
         return tool
 
     def to_base_tool(self) -> StructuredTool:
-        found_tool = next(
-            (tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None
-        )
+        found_tool = next((tool for tool in TOOL_LIBRARY if tool.name == self.config.base_tool), None)
         if not found_tool:
             raise ValueError(f"Tool {self.config.base_tool} not found")
         tool_data = {**found_tool.model_dump(), **self.model_dump()}
@@ -208,9 +199,7 @@ class SavedTool(BaseModel):
         }
         return structured_tool
 
-    async def to_mcp_tools(
-        self, server_name: Optional[str] = None
-    ) -> list[StructuredTool]:
+    async def to_mcp_tools(self, server_name: Optional[str] = None) -> list[StructuredTool]:
         mcp_client = MultiServerMCPClient(self.config.mcp_tool)
         tools = await mcp_client.get_tools(server_name=server_name)
         for tool in tools:
@@ -260,9 +249,7 @@ class ToolRepo:
             tool_data["created_at"] = tool_data["created_at"].isoformat()
         if "updated_at" in tool_data:
             tool_data["updated_at"] = tool_data["updated_at"].isoformat()
-        await self.store.aput(
-            namespace=self._get_namespace(), key=tool.name, value=tool_data, ttl=ttl
-        )
+        await self.store.aput(namespace=self._get_namespace(), key=tool.name, value=tool_data, ttl=ttl)
         return True
 
     async def edit(self, tool_name: str, tool: SavedTool):
@@ -277,9 +264,7 @@ class ToolRepo:
                 tool_data["created_at"] = tool_data["created_at"].isoformat()
             if "updated_at" in tool_data:
                 tool_data["updated_at"] = tool_data["updated_at"].isoformat()
-            await self.store.aput(
-                namespace=self._get_namespace(), key=tool_name, value=tool_data
-            )
+            await self.store.aput(namespace=self._get_namespace(), key=tool_name, value=tool_data)
             return True
         except Exception as e:
             logger.exception(f"Error updating {self._get_store_key()} {tool_name}: {e}")

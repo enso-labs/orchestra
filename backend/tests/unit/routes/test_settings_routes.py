@@ -131,9 +131,7 @@ async def test_get_settings_requires_auth(no_auth_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_put_default_model_requires_auth(no_auth_client: AsyncClient) -> None:
-    resp = await no_auth_client.put(
-        "/api/settings/default-model", json={"model": "openai/gpt-4"}
-    )
+    resp = await no_auth_client.put("/api/settings/default-model", json={"model": "openai/gpt-4"})
     assert resp.status_code in (401, 403)
 
 
@@ -162,21 +160,15 @@ async def test_get_settings_empty(settings_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_set_default_model(settings_client: AsyncClient) -> None:
-    resp = await settings_client.put(
-        "/api/settings/default-model", json={"model": "anthropic/claude-3"}
-    )
+    resp = await settings_client.put("/api/settings/default-model", json={"model": "anthropic/claude-3"})
     assert resp.status_code == 200
     assert resp.json()["default_model"] == "anthropic/claude-3"
 
 
 @pytest.mark.asyncio
 async def test_clear_default_model(settings_client: AsyncClient) -> None:
-    await settings_client.put(
-        "/api/settings/default-model", json={"model": "openai/gpt-4"}
-    )
-    resp = await settings_client.put(
-        "/api/settings/default-model", json={"model": None}
-    )
+    await settings_client.put("/api/settings/default-model", json={"model": "openai/gpt-4"})
+    resp = await settings_client.put("/api/settings/default-model", json={"model": None})
     assert resp.status_code == 200
     assert resp.json()["default_model"] is None
 
@@ -228,9 +220,7 @@ async def test_delete_provider_key(settings_client: AsyncClient) -> None:
     )
     resp = await settings_client.delete("/api/settings/provider-keys/OPENAI_API_KEY")
     assert resp.status_code == 200
-    openai = next(
-        p for p in resp.json()["provider_keys"] if p["provider"] == "OPENAI_API_KEY"
-    )
+    openai = next(p for p in resp.json()["provider_keys"] if p["provider"] == "OPENAI_API_KEY")
     assert openai["is_set"] is False
 
 
@@ -268,9 +258,7 @@ async def test_get_settings_includes_default_sandbox(
 @pytest.mark.asyncio
 async def test_set_default_sandbox(settings_client: AsyncClient) -> None:
     """PUT /settings/default-sandbox stores and returns the value."""
-    resp = await settings_client.put(
-        "/api/settings/default-sandbox", json={"sandbox": "daytona"}
-    )
+    resp = await settings_client.put("/api/settings/default-sandbox", json={"sandbox": "daytona"})
     assert resp.status_code == 200
     assert resp.json()["default_sandbox"] == "daytona"
 
@@ -282,8 +270,6 @@ async def test_set_default_sandbox(settings_client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_set_invalid_sandbox_returns_400(settings_client: AsyncClient) -> None:
     """PUT /settings/default-sandbox with invalid value returns HTTP 400."""
-    resp = await settings_client.put(
-        "/api/settings/default-sandbox", json={"sandbox": "invalid_backend"}
-    )
+    resp = await settings_client.put("/api/settings/default-sandbox", json={"sandbox": "invalid_backend"})
     assert resp.status_code == 400
     assert "Invalid sandbox" in resp.json()["detail"]

@@ -71,14 +71,10 @@ class TestMemoryRepo(unittest.IsolatedAsyncioTestCase):
         """Update a memory's enabled flag."""
         created = await self.repo.create(content="test", path="AGENTS.md")
         self.assertTrue(created.enabled)
-        updated = await self.repo.update(
-            memory_id=created.id, content="test", enabled=False
-        )
+        updated = await self.repo.update(memory_id=created.id, content="test", enabled=False)
         self.assertFalse(updated.enabled)
         # Toggle back
-        updated2 = await self.repo.update(
-            memory_id=created.id, content="test", enabled=True
-        )
+        updated2 = await self.repo.update(memory_id=created.id, content="test", enabled=True)
         self.assertTrue(updated2.enabled)
 
     async def test_update_memory_preserves_enabled(self) -> None:

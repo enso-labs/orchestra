@@ -82,9 +82,7 @@ class TestGetThreadInterruptsEndpoint(unittest.IsolatedAsyncioTestCase):
             # Setup thread service mock to return a thread
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             # Setup graph builder mock
@@ -103,9 +101,7 @@ class TestGetThreadInterruptsEndpoint(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(result.has_interrupts)
             self.assertEqual(len(result.interrupts), 1)
             self.assertEqual(result.interrupts[0].tool_name, "http_request")
-            self.assertEqual(
-                result.interrupts[0].tool_args["url"], "https://example.com"
-            )
+            self.assertEqual(result.interrupts[0].tool_args["url"], "https://example.com")
 
     async def test_returns_has_interrupts_false_when_none_pending(self):
         """Test that endpoint returns has_interrupts=false when no interrupts exist."""
@@ -129,9 +125,7 @@ class TestGetThreadInterruptsEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             mock_graph = MagicMock()
@@ -208,9 +202,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
             checkpoint_id="new-checkpoint-789",
         )
 
-        request = ResumeRequest(
-            decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)]
-        )
+        request = ResumeRequest(decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)])
 
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
@@ -226,9 +218,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             mock_graph = MagicMock()
@@ -236,9 +226,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_cp_service = MagicMock()
             mock_cp_service.get_interrupts = AsyncMock(return_value=[mock_interrupt])
-            mock_cp_service.resume_with_decision = AsyncMock(
-                return_value=mock_resume_response
-            )
+            mock_cp_service.resume_with_decision = AsyncMock(return_value=mock_resume_response)
             mock_cp_service_cls.return_value = mock_cp_service
 
             result = await resume_thread(thread_id, request, mock_user, mock_store)
@@ -262,18 +250,12 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
             tool_name="restricted_tool",
             tool_args={},
             description="Restricted operation",
-            config=InterruptConfig(
-                allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT]
-            ),
+            config=InterruptConfig(allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT]),
         )
 
         # Try to use EDIT which is NOT allowed
         request = ResumeRequest(
-            decisions=[
-                HumanDecision(
-                    decision_type=DecisionType.EDIT, edited_args={"key": "value"}
-                )
-            ]
+            decisions=[HumanDecision(decision_type=DecisionType.EDIT, edited_args={"key": "value"})]
         )
 
         with (
@@ -290,9 +272,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             mock_graph = MagicMock()
@@ -316,9 +296,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         mock_user = make_mock_user()
         mock_store = MagicMock()
 
-        request = ResumeRequest(
-            decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)]
-        )
+        request = ResumeRequest(decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)])
 
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
@@ -334,9 +312,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             mock_graph = MagicMock()
@@ -361,9 +337,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         mock_user = make_mock_user()
         mock_store = MagicMock()
 
-        request = ResumeRequest(
-            decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)]
-        )
+        request = ResumeRequest(decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)])
 
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
@@ -414,11 +388,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
         )
 
         edited_args = {"url": "https://safe-api.example.com", "method": "POST"}
-        request = ResumeRequest(
-            decisions=[
-                HumanDecision(decision_type=DecisionType.EDIT, edited_args=edited_args)
-            ]
-        )
+        request = ResumeRequest(decisions=[HumanDecision(decision_type=DecisionType.EDIT, edited_args=edited_args)])
 
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
@@ -434,9 +404,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             mock_graph = MagicMock()
@@ -444,9 +412,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_cp_service = MagicMock()
             mock_cp_service.get_interrupts = AsyncMock(return_value=[mock_interrupt])
-            mock_cp_service.resume_with_decision = AsyncMock(
-                return_value=mock_resume_response
-            )
+            mock_cp_service.resume_with_decision = AsyncMock(return_value=mock_resume_response)
             mock_cp_service_cls.return_value = mock_cp_service
 
             result = await resume_thread(thread_id, request, mock_user, mock_store)
@@ -506,9 +472,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             mock_graph = MagicMock()
@@ -516,9 +480,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_cp_service = MagicMock()
             mock_cp_service.get_interrupts = AsyncMock(return_value=[mock_interrupt])
-            mock_cp_service.resume_with_decision = AsyncMock(
-                return_value=mock_resume_response
-            )
+            mock_cp_service.resume_with_decision = AsyncMock(return_value=mock_resume_response)
             mock_cp_service_cls.return_value = mock_cp_service
 
             result = await resume_thread(thread_id, request, mock_user, mock_store)
@@ -539,9 +501,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
             tool_name="dangerous_tool",
             tool_args={"action": "delete_all"},
             description="Dangerous operation",
-            config=InterruptConfig(
-                allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT]
-            ),
+            config=InterruptConfig(allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT]),
         )
 
         mock_resume_response = ResumeResponse(
@@ -551,9 +511,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
             checkpoint_id="reject-checkpoint-789",
         )
 
-        request = ResumeRequest(
-            decisions=[HumanDecision(decision_type=DecisionType.REJECT)]
-        )
+        request = ResumeRequest(decisions=[HumanDecision(decision_type=DecisionType.REJECT)])
 
         with (
             patch("src.routes.v0.thread.get_checkpoint_db") as mock_get_cp_db,
@@ -569,9 +527,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_thread = MockStoreItem()
             mock_service_context = MagicMock()
-            mock_service_context.thread_service.get = AsyncMock(
-                return_value=mock_thread
-            )
+            mock_service_context.thread_service.get = AsyncMock(return_value=mock_thread)
             mock_service_context_cls.return_value = mock_service_context
 
             mock_graph = MagicMock()
@@ -579,9 +535,7 @@ class TestResumeThreadEndpoint(unittest.IsolatedAsyncioTestCase):
 
             mock_cp_service = MagicMock()
             mock_cp_service.get_interrupts = AsyncMock(return_value=[mock_interrupt])
-            mock_cp_service.resume_with_decision = AsyncMock(
-                return_value=mock_resume_response
-            )
+            mock_cp_service.resume_with_decision = AsyncMock(return_value=mock_resume_response)
             mock_cp_service_cls.return_value = mock_cp_service
 
             result = await resume_thread(thread_id, request, mock_user, mock_store)

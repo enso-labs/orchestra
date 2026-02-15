@@ -153,11 +153,11 @@ def handle_multi_mode(chunk: dict):
         if "messages" in chunk:
             i0, i1 = chunk[0], chunk[1]
             msg = i1[0]
+            current_agent = None
 
             if agent_name := dict(msg).get("lc_agent_name"):
                 if agent_name != current_agent:
                     logger.warning(f"🤖 {agent_name}: ")
-                    current_agent = agent_name
 
             if isinstance(msg, ToolMessage):
                 return (i0, (_to_dict(msg), i1[1] or None))
@@ -201,9 +201,7 @@ async def stream_generator(
     """
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
-    memory_files, memory_sources = await prepare_memory_files(
-        service_context.user_id, service_context.memory_service
-    )
+    memory_files, memory_sources = await prepare_memory_files(service_context.user_id, service_context.memory_service)
     files_map = {**memory_files, **files_map}
     async with get_checkpoint_db() as checkpointer:
         agent = None
@@ -220,9 +218,7 @@ async def stream_generator(
                 stream_writer=lambda _: None,
                 config=config,
             )
-            backend, _sandbox = resolve_sandbox_backend(
-                runtime, sandbox_type=sandbox_type
-            )
+            backend, _sandbox = resolve_sandbox_backend(runtime, sandbox_type=sandbox_type)
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,

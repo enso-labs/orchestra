@@ -34,9 +34,7 @@ AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=e
 async def seed_admin():
     async with AsyncSessionLocal() as db:
         try:
-            result = await db.execute(
-                select(User).filter(User.email == "admin@example.com")
-            )
+            result = await db.execute(select(User).filter(User.email == "admin@example.com"))
             admin = result.scalar_one_or_none()
             if admin:
                 print("Admin exists, skipping seeding")
@@ -58,9 +56,7 @@ async def seed_admin():
 async def seed_user():
     async with AsyncSessionLocal() as db:
         try:
-            result = await db.execute(
-                select(User).filter(User.email == "user@example.com")
-            )
+            result = await db.execute(select(User).filter(User.email == "user@example.com"))
             user = result.scalar_one_or_none()
             if user:
                 print("User exists, skipping seeding")

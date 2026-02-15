@@ -44,7 +44,11 @@ import HouseIcon from "@/components/icons/HouseIcon";
 import { useSchedules } from "@/hooks/useSchedules";
 import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
 import { useAgentContext } from "@/context/AgentContext";
-import { Schedule, ScheduleCreate, ScheduleEvent } from "@/lib/entities/schedule";
+import {
+	Schedule,
+	ScheduleCreate,
+	ScheduleEvent,
+} from "@/lib/entities/schedule";
 import { toast } from "sonner";
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
@@ -86,7 +90,11 @@ function SchedulesIndexPage() {
 
 	const handleEventClick = (event: ScheduleEvent) => {
 		if (event.resource.thread_id) {
-			window.open(`/?t=${event.resource.thread_id}`, "_blank", "noopener,noreferrer");
+			window.open(
+				`/?t=${event.resource.thread_id}`,
+				"_blank",
+				"noopener,noreferrer",
+			);
 		}
 	};
 
@@ -451,19 +459,19 @@ function SchedulesIndexPage() {
 				{/* Scrollable content area */}
 				<div className="flex-1 min-h-0 px-4">
 					<div className="mx-auto h-full">
-					{viewMode === "calendar" ? (
-						<ScheduleCalendar
-							events={filteredCalendarEvents}
-							onEventClick={handleEventClick}
-						/>
-					) : viewMode === "table" ? (
-						<ScheduleTable
-							events={filteredCalendarEvents}
-							onEdit={handleEditSchedule}
-							onDelete={handleDeleteSchedule}
-							onDuplicate={handleDuplicateSchedule}
-						/>
-					) : (
+						{viewMode === "calendar" ? (
+							<ScheduleCalendar
+								events={filteredCalendarEvents}
+								onEventClick={handleEventClick}
+							/>
+						) : viewMode === "table" ? (
+							<ScheduleTable
+								events={filteredCalendarEvents}
+								onEdit={handleEditSchedule}
+								onDelete={handleDeleteSchedule}
+								onDuplicate={handleDuplicateSchedule}
+							/>
+						) : (
 							<ScrollArea className="h-full">
 								<div className="pb-4">
 									{/* Schedules Grid */}
@@ -592,7 +600,8 @@ function SchedulesIndexPage() {
 									editingSchedule.task.metadata?.schedule_description || "",
 								enabled: editingSchedule.task.metadata?.enabled ?? true,
 								cronExpression: editingSchedule.trigger.expression,
-								message: editingSchedule.task.input?.messages?.[0]?.content || "",
+								message:
+									editingSchedule.task.input?.messages?.[0]?.content || "",
 								inheritFromAgent:
 									editingSchedule.task.metadata?.inherited_from_agent || true,
 								customModel: editingSchedule.task.model,
