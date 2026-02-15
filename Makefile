@@ -1,4 +1,7 @@
-.PHONY: update-submodules
+.PHONY: update-submodules ralph archive
+
+ENV ?= dev
+MAX_ITERATIONS ?= 200
 
 update-submodules:
 	@echo "🔍 Initializing submodules..."
@@ -14,3 +17,11 @@ update-submodules:
 	git commit -m "Update all submodules to latest remote commits" || echo "No changes to commit."
 
 	@echo "🏁 Done."
+
+# Run the Ralph autonomous agent loop using Claude Code
+ralph:
+	bash .ralph/ralph.sh $(MAX_ITERATIONS)
+
+# Archive current prd.json and progress.txt into dated directory
+archive:
+	claude --dangerously-skip-permissions -p "Archive the latest prd.json & progress.json into \`./.ralph/archives/YYYY-MM-DD/prd.json\` and \`./.ralph/archives/YYYY-MM-DD/progress.json\` respectively. Create the directory if it doesn't exist."
