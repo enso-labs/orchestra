@@ -239,6 +239,7 @@ def init_graph(
     backend: CompositeBackend = None,
     api_key: str | None = None,
     memory: list[str] | None = None,
+    skills: list[str] | None = None,
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
 
@@ -263,6 +264,7 @@ def init_graph(
         backend=backend,
         debug=APP_ENV == "development" or APP_ENV == "test",
         memory=memory,
+        skills=skills,
     )
     return deep_agent
 
@@ -469,6 +471,7 @@ async def construct_agent(
     service_context: ServiceContext = None,
     api_key: str | None = None,
     memory: list[str] | None = None,
+    skills: list[str] | None = None,
 ):
     """Build and return an Orchestra agent instance.
 
@@ -477,6 +480,9 @@ async def construct_agent(
             reference files in the StateBackend. When provided, MemoryMiddleware
             is added to the agent's middleware stack so the agent can access
             user memories during execution.
+        skills: Optional list of file paths (e.g. ``["/skills/"]``) that
+            reference skill files in the StateBackend. When provided,
+            SkillsMiddleware is used for progressive disclosure.
     """
     try:
         if subagents:
@@ -498,6 +504,7 @@ async def construct_agent(
             backend=backend,
             api_key=api_key,
             memory=memory,
+            skills=skills,
         )
         return agent
     except Exception as e:
@@ -520,6 +527,7 @@ class Orchestra:
         backend: CompositeBackend = None,
         api_key: str | None = None,
         memory: list[str] | None = None,
+        skills: list[str] | None = None,
     ):
         self.tools = tools
         self.model = model
@@ -540,6 +548,7 @@ class Orchestra:
             backend=backend,
             api_key=api_key,
             memory=memory,
+            skills=skills,
         )
 
     async def invoke(

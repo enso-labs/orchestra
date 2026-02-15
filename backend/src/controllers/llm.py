@@ -154,7 +154,8 @@ class LLMController:
                     backend=backend,
                     service_context=self.service_context,
                     api_key=api_key,
-                    memory=(skill_sources or []) + (memory_sources or []) or None,
+                    memory=memory_sources,
+                    skills=skill_sources,
                 )
                 response = await agent.invoke(
                     params.input,

@@ -243,7 +243,8 @@ async def stream_generator(
                 backend=backend,
                 service_context=service_context,
                 api_key=api_key,
-                memory=(skill_sources or []) + (memory_sources or []) or None,
+                memory=memory_sources,
+                skills=skill_sources,
             )
             input.messages[-1].model = agent.model
             # Send metadata event with thread_id at the start of the stream
