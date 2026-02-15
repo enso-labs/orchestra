@@ -483,7 +483,7 @@
         "Typecheck/lint passes (`make format`)"
       ],
       "priority": 29,
-      "passes": false,
+      "passes": true,
       "notes": "Follow pattern from backend/src/services/prompt/optimize.py. Use init_chat_model() with DEFAULT_CHAT_MODEL_BASIC. System prompt should embed skill-builder-agent best practices from https://raw.githubusercontent.com/ryaneggz/ralph/refs/heads/master/.claude/agents/skill-builder.md."
     },
     {

@@ -379,3 +379,18 @@ Thread: N/A
   - agent-browser profile session may expire — need to re-authenticate each time
   - When backend isn't running from worktree, E2E tests can only validate unchanged frontend pages
 ---
+
+## 2026-02-14 - US-029
+Thread: N/A
+- Created `backend/src/services/skill_generator.py` with `SkillGeneratorService`
+- Uses `init_chat_model()` with `DEFAULT_CHAT_MODEL_BASIC` for cost-effective generation
+- System prompt embeds skill-builder-agent best practices: conciseness (<5000 words), imperative form, progressive disclosure, realistic examples, proper SKILL.md structure
+- Method: `async generate(name, description, tags) -> dict` returning `{content, description, tags}`
+- LLM generates only the markdown body content; YAML frontmatter is handled separately by the caller
+- Files changed: `backend/src/services/skill_generator.py` (new)
+- **Learnings for future iterations:**
+  - `init_chat_model()` is imported from `langchain.chat_models` (not `langchain_core`)
+  - System prompt instructs LLM to NOT output YAML frontmatter since that's handled by `SavedSkill.to_skill_md()`
+  - `DEFAULT_CHAT_MODEL_BASIC` resolves to the cheapest available model (e.g., gemini-3-flash-preview or gpt-5-nano)
+  - The generate() method returns a dict (not a Pydantic model) for flexibility in the route handler
+---
