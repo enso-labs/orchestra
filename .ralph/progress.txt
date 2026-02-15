@@ -341,3 +341,27 @@ Thread: N/A
   - Monaco editor content: always set via `agent-browser eval "window.monaco.editor.getEditors()[0].setValue('...')"` — typing hangs
   - Sidebar button clicks can accidentally expand sidebar groups instead of clicking the intended list item — use direct URL navigation as fallback
 ---
+
+## 2026-02-14 - US-026
+Thread: N/A
+- Fixed `stream_generator()` auto-sync to prefer `final_state.values.get("files", {})` over streaming-accumulated `files_map`
+- `final_state` is now initialized to `None` before the try block and set inside it, making it accessible in the sync block
+- Falls back to `files_map` when `final_state` is unavailable (e.g., when agent/checkpointer is None)
+- Added debug log when accumulated and final state file counts differ
+- `llm_invoke()` path already correct — no changes needed
+- Files changed: `backend/src/utils/stream.py` (modified — 12 lines added, 1 removed)
+- **Learnings for future iterations:**
+  - `final_state` in stream_generator() is scoped inside the first try block — must initialize to `None` before to make it accessible in subsequent blocks
+  - Always prefer `final_state.values.get("files", {})` over accumulated `files_map` — streaming accumulation may miss files from the agent's last tool call
+---
+
+## 2026-02-14 - US-027
+Thread: N/A
+- Added 3 unit tests to `backend/tests/unit/agents/test_sync_skill_files.py` in new `TestSyncSkillFilesFinalStatePreference` class
+- Tests verify: final_state files sync when accumulated empty, final_state overrides stale accumulated, fallback to accumulated when final_state unavailable
+- All 15 sync tests pass (12 existing + 3 new), all 410 unit tests pass
+- Files changed: `backend/tests/unit/agents/test_sync_skill_files.py` (modified — 93 lines added)
+- **Learnings for future iterations:**
+  - When testing stream_generator() logic that selects between data sources, test the sync function with each source independently to verify the contract
+  - `source /home/ryaneggz/.env/orchestra/.env.backend` needs absolute path — `$HOME` expansion doesn't work reliably in all shell contexts
+---

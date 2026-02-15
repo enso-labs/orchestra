@@ -438,7 +438,7 @@
         "Typecheck/lint passes (`make format`)"
       ],
       "priority": 26,
-      "passes": false,
+      "passes": true,
       "notes": "Root cause: stream_generator() passes streaming-accumulated files_map to sync_skill_files_to_store(). This files_map is built incrementally from chunks and may be incomplete. Fix: use final_state.values.get('files', {}) which is already fetched at line 307. llm_invoke() already uses final_state correctly."
     },
     {
@@ -453,7 +453,7 @@
         "All tests pass (`make test`)"
       ],
       "priority": 27,
-      "passes": false,
+      "passes": true,
       "notes": "Add to existing test_sync_skill_files.py. Test the final_state preference logic added in US-026. Use InMemoryStore with real SkillService."
     },
     {
