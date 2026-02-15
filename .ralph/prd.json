@@ -386,7 +386,7 @@
         "Typecheck passes (`npx tsc --noEmit`)"
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": "Delete the SidebarGroup containing the Skills link (lines ~878-892). Check if Sparkles icon is used elsewhere before removing import."
     },
     {

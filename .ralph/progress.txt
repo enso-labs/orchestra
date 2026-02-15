@@ -296,3 +296,15 @@ Thread: N/A
   - Always check if an icon import is used in other files before removing — `Wrench` is used in 5 other components
   - DropdownMenuLabel is still needed for the Skills section, so only remove the Tools-specific elements
 ---
+
+## 2026-02-15 - US-023
+Thread: N/A
+- Removed the Skills SidebarGroup block from `app-sidebar.tsx` (comment, SidebarGroup, SidebarGroupLabel, Link with Sparkles icon)
+- Removed unused `Sparkles` import from lucide-react (confirmed it's used in 3 other files: BaseToolMenu.tsx, FileEditorPanel.tsx, skills/index.tsx)
+- Skills pages remain accessible via BaseToolMenu's "Manage Skills" link
+- Frontend typecheck passes cleanly
+- Files changed: `frontend/src/components/drawers/app-sidebar.tsx` (modified — 17 lines deleted)
+- **Learnings for future iterations:**
+  - Sidebar file uses tab indentation — Edit tool may struggle with tab characters, use `sed` for line-range deletions
+  - Always verify icon imports are used in other files before removing — `Sparkles` is used in 3 other components
+---
