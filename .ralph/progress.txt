@@ -268,3 +268,20 @@ Thread: N/A
   - `stream_generator()` already tracks `files_map` variable throughout streaming, so can use it directly in finally block
   - Worktree PRD (`prd.json`) was missing US-020-025 — needed to add them from root PRD
 ---
+
+## 2026-02-15 - US-021
+Thread: N/A
+- Separated `skills` parameter from `memory` in the agent construction chain
+- Added `skills: list[str] | None = None` to `init_graph()`, `construct_agent()`, and `Orchestra.__init__()`
+- Threaded `skills=skills` through the chain: `Orchestra.__init__` -> `init_graph()` -> `create_deep_agent()`
+- Changed `llm_invoke()` from `memory=(skill_sources or []) + (memory_sources or []) or None` to `memory=memory_sources, skills=skill_sources`
+- Changed `stream_generator()` with same separation
+- Files changed:
+  - `backend/src/agents/__init__.py` — added `skills` parameter to 3 functions, pass through to `create_deep_agent()`
+  - `backend/src/controllers/llm.py` — separated memory and skills parameters
+  - `backend/src/utils/stream.py` — separated memory and skills parameters
+- **Learnings for future iterations:**
+  - `create_deep_agent()` accepts both `skills` and `memory` as separate keyword args
+  - Skills use SkillsMiddleware for progressive disclosure, memory uses MemoryMiddleware — they should not be combined
+  - Pre-existing lint issues in `agents/__init__.py` (F401 unused import) and `stream.py` (F821 undefined name) — don't fix these in unrelated stories
+---

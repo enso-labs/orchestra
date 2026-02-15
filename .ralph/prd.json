@@ -359,7 +359,7 @@
         "Typecheck/lint passes (`make format`)"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": "Currently skills and memory are combined as `memory=(skill_sources or []) + (memory_sources or []) or None`. Separate them so create_deep_agent() receives skills via its dedicated `skills` parameter for proper progressive disclosure via SkillsMiddleware."
     },
     {
