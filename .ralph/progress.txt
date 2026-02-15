@@ -427,3 +427,16 @@ Thread: N/A
   - Tab files use literal tab characters — Edit tool may fail on tab-indented JSX; use Python script for replacements
   - `sonner` toast (`toast.success()`, `toast.error()`) is the project standard for user feedback
 ---
+
+## 2026-02-14 - US-032
+Thread: N/A
+- Created `backend/tests/unit/services/test_skill_generator.py` — 8 tests all passing
+- Tests cover: content includes expected sections, skill name in LLM prompt, tags passthrough, tags in prompt, word count limit, description passthrough, empty tags default, LLM error propagation
+- Mock LLM via `unittest.mock.patch` on `init_chat_model` — returns AsyncMock with predefined content
+- All 418 unit tests pass (8 new + 410 existing)
+- Files changed: `backend/tests/unit/services/test_skill_generator.py` (new)
+- **Learnings for future iterations:**
+  - Mock `init_chat_model` at the module level (`src.services.skill_generator.init_chat_model`) to intercept LLM creation
+  - Use `MagicMock` for response object with `.content` attribute, `AsyncMock` for the LLM with `.ainvoke`
+  - Access LLM call args via `mock_llm.ainvoke.call_args[0][0]` — messages list where [0] is system, [1] is user
+---

@@ -534,7 +534,7 @@
         "All tests pass (`make test`)"
       ],
       "priority": 32,
-      "passes": false,
+      "passes": true,
       "notes": "Mock LLM via unittest.mock.patch on init_chat_model. Verify output structure: YAML frontmatter, sections, name inclusion, tag passthrough, word count."
     },
     {
