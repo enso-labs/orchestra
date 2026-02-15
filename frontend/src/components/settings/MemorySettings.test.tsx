@@ -221,6 +221,21 @@ describe("MemorySettings", () => {
 	});
 
 	it("performs optimistic delete and calls service", async () => {
+		// After delete succeeds, refetch returns only the remaining memory
+		mockList
+			.mockResolvedValueOnce({
+				memories: sampleMemories,
+				total: 2,
+				limit: 10,
+				offset: 0,
+			})
+			.mockResolvedValueOnce({
+				memories: [sampleMemories[1]],
+				total: 1,
+				limit: 10,
+				offset: 0,
+			});
+
 		renderWithRouter();
 		await waitFor(() => {
 			expect(screen.getByText("User prefers dark mode")).toBeInTheDocument();
@@ -239,10 +254,12 @@ describe("MemorySettings", () => {
 			expect(mockDelete).toHaveBeenCalledWith("AGENTS.md");
 		});
 
-		// Memory should be removed optimistically
-		expect(
-			screen.queryByText("User prefers dark mode"),
-		).not.toBeInTheDocument();
+		// Memory should be removed after refetch
+		await waitFor(() => {
+			expect(
+				screen.queryByText("User prefers dark mode"),
+			).not.toBeInTheDocument();
+		});
 	});
 
 	it("rolls back on delete failure", async () => {

@@ -1,4 +1,4 @@
-import { useContext, createContext, useEffect, useRef } from "react";
+import { useContext, createContext, useCallback, useEffect, useRef } from "react";
 import useConfigHook from "@/hooks/useConfigHook";
 import useImageHook from "@/hooks/useImageHook";
 import useChat from "@/hooks/useChat";
@@ -159,6 +159,19 @@ export default function ChatProvider({
 	// Destructure clearQueue for the clear effect
 	const { clearQueue } = queueHooks;
 
+	// Shared helper: fetch memory files from the API and import them
+	const loadMemoryFiles = useCallback(async () => {
+		try {
+			const memoryFiles = await MemoryService.getFiles();
+			if (memoryFiles && Object.keys(memoryFiles).length > 0) {
+				const files = new Map(Object.entries(memoryFiles));
+				importFiles(files);
+			}
+		} catch (error) {
+			console.error("Failed to load memory files:", error);
+		}
+	}, [importFiles]);
+
 	// Clear fileSystem and queue when messages are cleared
 	useEffect(() => {
 		if (messagesLength === 0) {
@@ -170,19 +183,8 @@ export default function ChatProvider({
 	// Load memory files into filesystem — called from pages that require auth
 	const useMemoryFilesEffect = () => {
 		useEffect(() => {
-			const loadMemoryFiles = async () => {
-				try {
-					const memoryFiles = await MemoryService.getFiles();
-					if (memoryFiles && Object.keys(memoryFiles).length > 0) {
-						const filesMap = new Map(Object.entries(memoryFiles));
-						importFiles(filesMap);
-					}
-				} catch (error) {
-					console.error("Failed to load memory files:", error);
-				}
-			};
 			loadMemoryFiles();
-		}, []);
+		}, []); // eslint-disable-line react-hooks/exhaustive-deps
 	};
 
 	return (
@@ -196,6 +198,7 @@ export default function ChatProvider({
 				...fileSystemHooks,
 				...queueHooks,
 				useMemoryFilesEffect,
+				loadMemoryFiles,
 			}}
 		>
 			{children}

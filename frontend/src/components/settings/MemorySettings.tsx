@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Brain, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import {
+	Brain,
+	ChevronLeft,
+	ChevronRight,
+	Pencil,
+	Plus,
+	Search,
+	Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -27,30 +35,37 @@ import {
 import type { Memory } from "@/lib/entities/memory";
 import MemoryService from "@/lib/services/memoryService";
 
+const PAGE_SIZE = 10;
+
 export function MemorySettings() {
 	const navigate = useNavigate();
 	const [memories, setMemories] = useState<Memory[]>([]);
 	const [total, setTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [query, setQuery] = useState("");
+	const [page, setPage] = useState(0);
 	const [deleteTarget, setDeleteTarget] = useState<Memory | null>(null);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const fetchMemories = useCallback(async (search?: string) => {
-		setLoading(true);
-		try {
-			const res = await MemoryService.list({
-				limit: 100,
-				query: search || undefined,
-			});
-			setMemories(res.memories ?? []);
-			setTotal(res.total ?? 0);
-		} catch {
-			toast.error("Failed to load memories");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const fetchMemories = useCallback(
+		async (search?: string, pageNum: number = 0) => {
+			setLoading(true);
+			try {
+				const res = await MemoryService.list({
+					limit: PAGE_SIZE,
+					offset: pageNum * PAGE_SIZE,
+					query: search || undefined,
+				});
+				setMemories(res.memories ?? []);
+				setTotal(res.total ?? 0);
+			} catch {
+				toast.error("Failed to load memories");
+			} finally {
+				setLoading(false);
+			}
+		},
+		[],
+	);
 
 	useEffect(() => {
 		fetchMemories();
@@ -64,11 +79,19 @@ export function MemorySettings() {
 
 	const handleSearchChange = (value: string) => {
 		setQuery(value);
+		setPage(0);
 		if (debounceRef.current) clearTimeout(debounceRef.current);
 		debounceRef.current = setTimeout(() => {
-			fetchMemories(value);
+			fetchMemories(value, 0);
 		}, 300);
 	};
+
+	const handlePageChange = (newPage: number) => {
+		setPage(newPage);
+		fetchMemories(query, newPage);
+	};
+
+	const totalPages = Math.ceil(total / PAGE_SIZE);
 
 	const handleDelete = async () => {
 		if (!deleteTarget) return;
@@ -84,6 +107,12 @@ export function MemorySettings() {
 		try {
 			await MemoryService.delete(removed.id);
 			toast.success("Memory deleted");
+			// Refetch to keep pagination in sync
+			const newTotal = prevTotal - 1;
+			const maxPage = Math.max(0, Math.ceil(newTotal / PAGE_SIZE) - 1);
+			const safePage = Math.min(page, maxPage);
+			setPage(safePage);
+			fetchMemories(query, safePage);
 		} catch {
 			// Rollback
 			setMemories(prevMemories);
@@ -174,7 +203,7 @@ export function MemorySettings() {
 													{memory.id}
 												</span>
 											</div>
-											<p className="text-sm whitespace-pre-wrap truncate">
+											<p className="text-sm line-clamp-2">
 												{memory.content}
 											</p>
 										</div>
@@ -212,9 +241,38 @@ export function MemorySettings() {
 					)}
 
 					{!loading && total > 0 && (
-						<p className="text-xs text-muted-foreground text-right">
-							{total} {total === 1 ? "memory" : "memories"}
-						</p>
+						<div className="flex items-center justify-between">
+							<p className="text-xs text-muted-foreground">
+								{total} {total === 1 ? "memory" : "memories"}
+							</p>
+							{totalPages > 1 && (
+								<div className="flex items-center gap-1">
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-7 w-7"
+										disabled={page === 0}
+										onClick={() => handlePageChange(page - 1)}
+										aria-label="Previous page"
+									>
+										<ChevronLeft className="h-3.5 w-3.5" />
+									</Button>
+									<span className="text-xs text-muted-foreground px-1">
+										{page + 1} / {totalPages}
+									</span>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-7 w-7"
+										disabled={page >= totalPages - 1}
+										onClick={() => handlePageChange(page + 1)}
+										aria-label="Next page"
+									>
+										<ChevronRight className="h-3.5 w-3.5" />
+									</Button>
+								</div>
+							)}
+						</div>
 					)}
 				</CardContent>
 			</Card>
