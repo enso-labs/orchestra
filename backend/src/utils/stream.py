@@ -19,6 +19,7 @@ from src.agents import (
     resolve_sandbox_backend,
     prepare_memory_files,
     prepare_skill_files,
+    sync_skill_files_to_store,
 )
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
@@ -328,6 +329,16 @@ async def stream_generator(
                     logger.info(f"checkpoint: {ujson.dumps(configurable)}")
             except Exception as e:
                 logger.exception("Failed to persist final checkpoint state: %s", e)
+
+            # Auto-sync any agent-created skill files to LangGraph Store
+            try:
+                synced = await sync_skill_files_to_store(
+                    files_map, service_context.user_id, service_context.skill_service
+                )
+                if synced > 0:
+                    logger.info(f"Auto-synced {synced} skill(s) to store")
+            except Exception as e:
+                logger.exception("Failed to sync skill files to store: %s", e)
 
         # Ensure frontend gets an explicit terminal signal to clear loading state.
         yield "data: [DONE]\n\n"

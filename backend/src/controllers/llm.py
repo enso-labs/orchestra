@@ -14,6 +14,7 @@ from src.agents import (
     prepare_memory_files,
     prepare_skill_files,
     resolve_sandbox_backend,
+    sync_skill_files_to_store,
 )
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
@@ -170,6 +171,21 @@ class LLMController:
             if self.service_context.user_id and self.service_context.checkpointer:
                 if agent and config:
                     await self._update_store(agent, config)
+
+            # Auto-sync any agent-created skill files to LangGraph Store
+            try:
+                if agent and config and self.service_context.user_id:
+                    final_state = await agent.graph.aget_state(config)
+                    final_files = final_state.values.get("files", {})
+                    synced = await sync_skill_files_to_store(
+                        final_files,
+                        self.service_context.user_id,
+                        self.service_context.skill_service,
+                    )
+                    if synced > 0:
+                        logger.info(f"Auto-synced {synced} skill(s) to store")
+            except Exception as e:
+                logger.exception("Failed to sync skill files to store: %s", e)
 
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)

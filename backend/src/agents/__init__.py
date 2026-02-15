@@ -140,6 +140,93 @@ async def prepare_skill_files(
     return files_map, sources
 
 
+async def sync_skill_files_to_store(
+    files_map: dict,
+    user_id: str | None,
+    skill_svc: "SkillService",
+) -> int:
+    """Scan files_map for agent-created skill files and persist them to the store.
+
+    Detects paths matching ``/skills/<name>/SKILL.md``, parses YAML frontmatter
+    via ``split_front_matter()``, and creates or updates skills via
+    ``SkillService``.
+
+    Returns the count of skills synced.
+    """
+    import re
+
+    from src.schemas.entities.skill import SkillCreate, SkillUpdate
+    from src.utils.format import split_front_matter
+
+    if not user_id or not files_map:
+        return 0
+
+    pattern = re.compile(r"^/skills/([a-z0-9]+(?:-[a-z0-9]+)*)/SKILL\.md$")
+    synced = 0
+
+    for path, file_data in files_map.items():
+        match = pattern.match(path)
+        if not match:
+            continue
+
+        skill_name = match.group(1)
+
+        # Extract content from file_data
+        raw_content = file_data.get("content", "")
+        if isinstance(raw_content, list):
+            raw_content = "\n".join(raw_content)
+
+        if not raw_content.strip():
+            logger.warning(f"Skipping empty skill file: {path}")
+            continue
+
+        # Parse YAML frontmatter
+        try:
+            frontmatter, body = split_front_matter(raw_content)
+        except (ValueError, Exception) as exc:
+            logger.warning(f"Skipping skill {path}: invalid frontmatter: {exc}")
+            continue
+
+        # Build skill fields from frontmatter (or defaults)
+        fm = frontmatter or {}
+        description = fm.get("description", f"Skill: {skill_name}")
+        tags = fm.get("tags", [])
+        allowed_tools = fm.get("allowed_tools", [])
+        license_val = fm.get("license")
+        compatibility = fm.get("compatibility")
+
+        try:
+            existing = await skill_svc.get(skill_name)
+            if existing:
+                # Update existing skill
+                update = SkillUpdate(
+                    description=description,
+                    content=body,
+                    tags=tags,
+                    allowed_tools=allowed_tools,
+                    license=license_val,
+                    compatibility=compatibility,
+                )
+                await skill_svc.update(skill_name, update)
+            else:
+                # Create new skill
+                create = SkillCreate(
+                    name=skill_name,
+                    description=description,
+                    content=body,
+                    tags=tags,
+                    allowed_tools=allowed_tools,
+                    license=license_val,
+                    compatibility=compatibility,
+                )
+                await skill_svc.create(create)
+            synced += 1
+        except Exception as exc:
+            logger.warning(f"Failed to sync skill {skill_name}: {exc}")
+
+    return synced
+
+
 def init_graph(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
