@@ -1,15 +1,17 @@
 from typing import Annotated, Literal
-from fastapi import Body, HTTPException, status, Depends, APIRouter
+from fastapi import Body, HTTPException, Request, status, Depends, APIRouter
 from fastapi.responses import UJSONResponse
+from langgraph.store.base import BaseStore
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.constants.mock import MockResponse
 from src.repos.user_repo import UserRepo
 from src.services.airtable import AirtableService
 from src.services.oauth import OAuthService
-from src.services.db import get_async_db
+from src.services.db import get_async_db, get_store
 from src.utils.auth import verify_credentials, create_access_token
 from src.utils.logger import logger
+from src.utils.memory_seed import seed_default_memories
 from src.schemas.models import User
 from src.schemas.entities.auth import UserCreate, UserLogin, UserResponse, TokenResponse
 
@@ -27,7 +29,12 @@ router = APIRouter(tags=["Auth"])
         status.HTTP_400_BAD_REQUEST: {"description": "Username or email already exists"},
     },
 )
-async def register(user_data: Annotated[UserCreate, Body()], db: AsyncSession = Depends(get_async_db)):
+async def register(
+    request: Request,
+    user_data: Annotated[UserCreate, Body()],
+    db: AsyncSession = Depends(get_async_db),
+    store: BaseStore = Depends(get_store),
+):
     user_repo = UserRepo(db)
     # Check if username exists
     if await user_repo.get_by_username(user_data.username):
@@ -45,6 +52,12 @@ async def register(user_data: Annotated[UserCreate, Body()], db: AsyncSession = 
     # Create user response
     user_response = UserResponse(id=str(user.id), username=user.username, email=user.email, name=user.name)
     await airtable_service.create_contact(user_response)
+
+    # Seed default memories for the new user
+    try:
+        await seed_default_memories(str(user.id), store)
+    except Exception as e:
+        logger.error(f"Failed to seed default memories for user {user.id}: {e}")
 
     # Create access token with full user object
     access_token = create_access_token(user)
@@ -120,7 +133,13 @@ async def auth(provider: Literal["github", "google", "azure"]):
 
 
 @router.get("/auth/{provider}/callback", tags=["Auth"], include_in_schema=False)
-async def auth_callback(provider: str, code: str, db: AsyncSession = Depends(get_async_db)):
+async def auth_callback(
+    request: Request,
+    provider: str,
+    code: str,
+    db: AsyncSession = Depends(get_async_db),
+    store: BaseStore = Depends(get_store),
+):
     try:
         # Get the user info from the OAuth provider
         oauth_service = OAuthService(provider)
@@ -176,6 +195,12 @@ async def auth_callback(provider: str, code: str, db: AsyncSession = Depends(get
             name=user_info.get("name"),
         )
         await airtable_service.create_contact(user_response)
+
+        # Seed default memories for the new OAuth user
+        try:
+            await seed_default_memories(str(new_user.id), store)
+        except Exception as e:
+            logger.error(f"Failed to seed default memories for OAuth user {new_user.id}: {e}")
 
         access_token = create_access_token(
             {
