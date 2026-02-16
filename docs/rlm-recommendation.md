@@ -533,4 +533,528 @@ uv run --with "rlms>=0.1.0" backend/scripts/rlm_prototype.py --max-chars 200000
 
 ---
 
-*Evaluation performed on 2026-02-16 as part of feature #793.*
+## 12. Full Integration Architecture (Option D: Tool-Based)
+
+Based on the analysis (Sections 1-11), **Option D (Tool-Based / Agent-Driven RLM)** is the recommended approach. This section details the production architecture design.
+
+### 12.1 Where RLM Fits in the Agent Construction Pipeline
+
+RLM capabilities integrate into the existing agent pipeline as **three new tools** registered alongside existing tools during `construct_agent()`. No changes to the core `Orchestra` class, `stream_generator()`, or `create_deep_agent()` are required.
+
+```
+construct_agent()
+    │
+    ├── init_tools(assistant, ...)       ← existing tool initialization
+    │       ├── search_engine, browser, ...
+    │       ├── python_code_interpreter   ← existing Daytona tool
+    │       └── NEW: rlm_tools            ← 3 RLM-specific tools
+    │             ├── batch_llm_query
+    │             ├── load_context_to_sandbox
+    │             └── get_sandbox_variable
+    │
+    ├── init_subagents(...)              ← unchanged
+    ├── init_default_middleware(...)      ← unchanged (AutoEvict, compaction, PII still apply)
+    └── create_deep_agent(...)           ← unchanged (LangGraph graph compilation)
+```
+
+**Integration point**: `backend/src/tools/__init__.py` — Add RLM tools to the tool registry. Tools are conditionally included based on agent configuration (e.g., an `rlm_enabled` flag on the Assistant model, or always-on since the agent decides when to use them).
+
+**System prompt augmentation**: `backend/src/agents/__init__.py` — `init_system_prompt()` appends RLM-specific instructions when RLM tools are available, similar to how tool descriptions are currently injected. The prompt teaches the agent when and how to use decomposition:
+
+```
+## Large Input Processing
+
+When the input context exceeds approximately 100,000 characters, use the RLM tools
+to decompose and analyze it:
+
+1. Use `load_context_to_sandbox` to offload the large context to the sandbox
+2. Use `execute_in_sandbox` (existing code interpreter) to examine, chunk, and
+   prepare sub-queries
+3. Use `batch_llm_query` to send chunks to sub-models in parallel
+4. Synthesize results in your response
+
+For inputs that fit in your context window, process them directly — do NOT use
+RLM tools for small inputs.
+```
+
+### 12.2 Tool Specifications
+
+#### Tool 1: `batch_llm_query`
+
+```python
+# backend/src/tools/rlm_tools.py
+
+@tool
+async def batch_llm_query(
+    prompts: list[str],
+    system_prompt: str = "",
+    model: str = "fast",
+) -> list[str]:
+    """Send multiple prompts to a sub-LM in parallel. Returns list of responses.
+
+    Use this to process multiple chunks concurrently. The 'fast' model is
+    cost-optimized for focused extraction tasks. Use 'default' for complex reasoning.
+
+    Args:
+        prompts: List of prompts to send (max 20).
+        system_prompt: Optional shared system prompt for all sub-calls.
+        model: "fast" (gpt-4.1-nano/haiku) or "default" (configured model).
+    """
+```
+
+**Implementation details**:
+- Uses `asyncio.gather()` with `Semaphore(10)` for rate limiting
+- Model routing: `"fast"` → cheapest available model (e.g., gpt-4.1-nano, claude-haiku), `"default"` → the agent's own model
+- Each sub-call uses `init_chat_model()` from LangChain (same client infrastructure as the rest of Orchestra)
+- Results returned as a JSON list, each entry mapped to the corresponding prompt
+- Token usage per sub-call accumulated and attached to the ToolMessage metadata
+- Max 20 prompts per call (guardrail against runaway decomposition)
+- Individual sub-call timeout: 60 seconds
+
+#### Tool 2: `load_context_to_sandbox`
+
+```python
+@tool
+async def load_context_to_sandbox(
+    content: str,
+    variable_name: str = "context",
+) -> str:
+    """Load large text content into the sandbox as a named variable.
+
+    The content is stored in the sandbox environment and can be accessed
+    by the code interpreter tool via the variable name. This removes the
+    content from the LLM context window.
+
+    Args:
+        content: The text content to store (can be very large).
+        variable_name: Name to assign in sandbox (default: 'context').
+    """
+```
+
+**Implementation details**:
+- Writes content to the `CompositeBackend` (Daytona or StateBackend) at path `/rlm_context/{variable_name}`
+- Returns a confirmation string: `"Loaded {len(content)} characters as '{variable_name}'. Use the code interpreter to access: content = open('/rlm_context/{variable_name}').read()"`
+- Extends the pattern already used by `AutoEvictMiddleware` (evict large content to filesystem)
+- Multiple variables supported (context_0, context_1, etc.) for multi-document processing
+
+#### Tool 3: `get_sandbox_variable`
+
+```python
+@tool
+async def get_sandbox_variable(
+    variable_name: str,
+    start: int = 0,
+    length: int = 10000,
+) -> str:
+    """Read a portion of a sandbox variable without loading it into context.
+
+    Use this to peek at stored content (e.g., check structure, read headers)
+    without pulling the entire variable into your context window.
+
+    Args:
+        variable_name: Name of the stored variable.
+        start: Character offset to start reading from.
+        length: Number of characters to read (max 50000).
+    """
+```
+
+**Implementation details**:
+- Reads a slice from `/rlm_context/{variable_name}` in the backend
+- Prevents the agent from accidentally pulling the entire large context back into its window
+- Useful for the agent to inspect structure before deciding on decomposition strategy
+
+### 12.3 How Recursive Steps Stream to the Frontend
+
+**No new streaming infrastructure needed.** Each RLM tool call streams through the existing SSE pipeline exactly like any other tool:
+
+```
+Agent reasoning → SSE: ["messages", [AIMessageChunk, metadata]]
+  ↓
+Tool call: load_context_to_sandbox → SSE: ["messages", [tool_call_chunk, metadata]]
+  ↓
+Tool result → SSE: ["messages", [ToolMessage, metadata]]
+  ↓
+Agent reasoning → SSE: ["messages", [AIMessageChunk, metadata]]
+  ↓
+Tool call: batch_llm_query → SSE: ["messages", [tool_call_chunk, metadata]]
+  ↓
+(internally: 8 parallel sub-LM calls via asyncio.gather)
+  ↓
+Tool result → SSE: ["messages", [ToolMessage, metadata]]
+  ↓
+Agent synthesizes → SSE: ["messages", [AIMessageChunk, metadata]]
+```
+
+**Key advantage over Options A-C**: The streaming is standard LangGraph tool-call streaming. Every token of the agent's reasoning is visible in real-time. Each tool call appears as a distinct step. No custom SSE event types needed.
+
+**Streaming timeline for a typical RLM operation**:
+
+```
+t=0s    [AI streaming] "This is a large document. I'll decompose it for analysis."
+t=3s    [Tool: load_context_to_sandbox] "Loaded 450,000 chars as 'context'"
+t=5s    [Tool: execute_in_sandbox] code="""
+           context = open('/rlm_context/context').read()
+           # Examine structure
+           print(f"Total: {len(context)} chars")
+           print(context[:2000])  # Preview first section
+        """
+        result: "Total: 450000 chars\n# Chapter 1: Definitions..."
+t=8s    [AI streaming] "I see 8 chapters. I'll analyze each in parallel."
+t=10s   [Tool: execute_in_sandbox] code="""
+           # Split into chapters
+           import re
+           chapters = re.split(r'\n# Chapter \d+', context)
+           prompts = [f"Analyze this chapter for legal risks:\n{ch[:50000]}" for ch in chapters]
+        """
+t=12s   [Tool: batch_llm_query] prompts=[8 items], model="fast"
+           → internally: 8 parallel sub-LM calls
+t=35s   Tool result: ["Chapter 1 findings...", "Chapter 2 findings...", ...]
+t=37s   [AI streaming] "Here are the key risks I found across all chapters: ..."
+t=45s   [Complete]
+```
+
+**Total time**: ~45s with full visibility at every step (vs. 76s+ as a black box with Option A).
+
+### 12.4 How the UI Shows Decomposition Progress
+
+The frontend renders RLM operations using **existing UI components** with no required changes. Optional enhancements can be added incrementally.
+
+#### Baseline: Existing ToolTimeline (No Frontend Changes)
+
+Each RLM tool call renders as a `ToolTimelineItem` in the existing `ToolTimeline` component:
+
+```
+┌─ AI Message ─────────────────────────────────────────────────┐
+│ "This is a large document. I'll decompose it for analysis."  │
+└──────────────────────────────────────────────────────────────┘
+
+● load_context_to_sandbox                              ✓ Success
+  ├─ Input: { content: "[450,000 chars]", variable_name: "context" }
+  └─ Output: "Loaded 450,000 characters as 'context'"
+
+● execute_in_sandbox                                   ✓ Success
+  ├─ Input: { code: "context = open(...)..." }
+  └─ Output: "Total: 450000 chars\n# Chapter 1..."
+
+● execute_in_sandbox                                   ✓ Success
+  ├─ Input: { code: "chapters = re.split(...)..." }
+  └─ Output: "8 chapters identified"
+
+● batch_llm_query                                      ✓ Success
+  ├─ Input: { prompts: [8 items], model: "fast" }
+  └─ Output: ["Chapter 1: ...", "Chapter 2: ...", ...]
+
+┌─ AI Message ─────────────────────────────────────────────────┐
+│ "Here are the key risks I found across all chapters: ..."    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+This provides meaningful visibility with zero frontend work. Users see each step, its inputs and outputs, and the agent's reasoning between steps.
+
+#### Enhanced: RLM-Aware Rendering (Optional Frontend Work)
+
+For richer UX, the `ToolTimelineItem` component could detect RLM tool names and render enhanced views:
+
+**`batch_llm_query` enhancement** — Show sub-call progress:
+```
+● batch_llm_query                                    ✓ 8/8 complete
+  ├─ Model: gpt-4.1-nano
+  ├─ Sub-calls: ████████░░ 8/10
+  ├─ Chunk 1: "Chapter 1: Definitions" → 3 risks found
+  ├─ Chunk 2: "Chapter 2: Obligations" → 5 risks found
+  ├─ ...
+  └─ Total tokens: 45,230 (est. $0.004)
+```
+
+**`load_context_to_sandbox` enhancement** — Show context summary:
+```
+● load_context_to_sandbox                            ✓ Success
+  ├─ Size: 450,000 chars (≈112,500 tokens)
+  ├─ Variable: context
+  └─ Note: Content offloaded to sandbox, not in LLM context
+```
+
+**Implementation**: These enhancements would be in `frontend/src/components/timeline/ToolTimelineItem.tsx`, adding conditional rendering based on tool name — similar to how `search_engine` tool calls already have custom rendering via the `SearchEngineTool` component.
+
+#### Dependency: #694 SubAgent UI
+
+Feature #694 (merged 2026-01-24) added SubAgent tool call rendering to the ToolTimeline. This is the foundation for RLM visibility:
+
+- `lc_agent_name` metadata distinguishes root agent from SubAgent messages
+- Tool calls from SubAgents render in the same ToolTimeline with agent context
+- The `subgraphs=True` flag in `stream_generator()` enables this streaming
+
+**For RLM**: Since Option D uses standard tool calls (not SubAgents) for `batch_llm_query`, the SubAgent UI from #694 is not strictly required. However, if the architecture evolves to use SubAgents for sub-LM calls (e.g., each sub-call as a worker SubAgent), the #694 UI would provide nested rendering automatically.
+
+**Current dependency status**: #694 is merged. RLM tool calls will render correctly in the existing ToolTimeline without additional SubAgent UI work.
+
+### 12.5 Sandbox Environment Configuration
+
+RLM tools use the **same sandbox backend** as the existing code interpreter — resolved by `resolve_sandbox_backend()` in `backend/src/agents/__init__.py`.
+
+#### Resolution Flow
+
+```
+resolve_sandbox_backend(sandbox_type, tool_runtime)
+    │
+    ├── sandbox_type = "daytona" (or "auto")
+    │   ├── create_daytona_backend()
+    │   │   ├── Daytona(DaytonaConfig(api_key=DAYTONA_API_KEY))
+    │   │   └── client.create() → DaytonaSandbox
+    │   ├── validate_daytona_execute_capability(backend)
+    │   └── CompositeBackend(default=daytona_backend)
+    │
+    ├── sandbox_type = "state" (fallback)
+    │   └── StateBackend(runtime) → in-memory filesystem
+    │
+    └── Result: CompositeBackend passed to construct_agent()
+            │
+            ├── Used by: python_code_interpreter (existing)
+            ├── Used by: AutoEvictMiddleware (existing)
+            └── Used by: load_context_to_sandbox (NEW)
+                         get_sandbox_variable (NEW)
+```
+
+#### Storage Layout
+
+```
+CompositeBackend filesystem:
+/
+├── large_tool_results/          ← AutoEvictMiddleware (existing)
+│   └── {sanitized_tool_id}
+├── rlm_context/                 ← NEW: RLM context storage
+│   ├── context                  ← default variable
+│   ├── context_0                ← multi-context support
+│   ├── context_1
+│   └── ...
+├── memory/                      ← MemoryMiddleware (existing)
+│   └── ...
+└── user_files/                  ← User uploads (existing)
+    └── ...
+```
+
+#### Environment-Specific Behavior
+
+| Environment | Code Interpreter | RLM Context Storage | RLM Sub-Calls |
+|-------------|-----------------|--------------------|----|
+| **Daytona** | Full sandbox isolation, exec() in container | Files in Daytona filesystem, accessible via `open()` | Standard LangChain API calls from host process |
+| **StateBackend** | Limited (virtual filesystem, no exec) | In-memory dict, accessible via tool | Standard LangChain API calls from host process |
+| **Local dev** | `StateBackend` fallback | In-memory | Same |
+
+**Key design decision**: RLM sub-calls (`batch_llm_query`) execute on the **host process**, not inside the sandbox. This means:
+- Sub-calls use Orchestra's existing LangChain client infrastructure (no dual-client configuration)
+- Sub-calls benefit from Orchestra's model middleware, retry logic, and API key management
+- The sandbox is only used for context storage and code execution (examination, chunking)
+- No need to inject `llm_query()` into the sandbox namespace (unlike the rlms library)
+
+### 12.6 Cost Tracking Across Recursive Calls
+
+#### Current State
+
+Orchestra estimates tokens heuristically (`len(content) // 4`) for compaction decisions only. There is no per-request cost reporting.
+
+#### RLM Cost Tracking Design
+
+Cost tracking is implemented in two layers:
+
+**Layer 1: `batch_llm_query` tool-level tracking** (immediate)
+
+```python
+async def batch_llm_query(prompts, system_prompt="", model="fast"):
+    results = []
+    total_usage = {"input_tokens": 0, "output_tokens": 0, "calls": 0}
+
+    async def call_one(prompt):
+        llm = init_chat_model(resolve_model(model))
+        response = await llm.ainvoke([
+            SystemMessage(content=system_prompt) if system_prompt else None,
+            HumanMessage(content=prompt),
+        ])
+        # Accumulate usage from response metadata
+        usage = response.usage_metadata or {}
+        total_usage["input_tokens"] += usage.get("input_tokens", 0)
+        total_usage["output_tokens"] += usage.get("output_tokens", 0)
+        total_usage["calls"] += 1
+        return response.content
+
+    sem = asyncio.Semaphore(10)
+    async def bounded_call(prompt):
+        async with sem:
+            return await call_one(prompt)
+
+    results = await asyncio.gather(*[bounded_call(p) for p in prompts])
+
+    # Return results + usage metadata
+    return {
+        "results": results,
+        "usage": {
+            "model": resolve_model(model),
+            "total_input_tokens": total_usage["input_tokens"],
+            "total_output_tokens": total_usage["output_tokens"],
+            "total_calls": total_usage["calls"],
+            "estimated_cost_usd": estimate_cost(
+                total_usage["input_tokens"],
+                total_usage["output_tokens"],
+                resolve_model(model),
+            ),
+        },
+    }
+```
+
+The usage metadata is included in the `ToolMessage` response, visible to both the agent and the user (rendered in the ToolTimelineItem).
+
+**Layer 2: Thread-level cost aggregation** (future enhancement)
+
+A `CostTrackingMiddleware` could be added to the middleware stack to aggregate costs across all LLM calls in a thread:
+
+```python
+class CostTrackingMiddleware:
+    """Track cumulative token usage across all LLM calls in a request."""
+
+    def __call__(self, handler):
+        async def wrapper(request):
+            response = await handler(request)
+            # Extract usage_metadata from response
+            # Accumulate in RunnableConfig["configurable"]["cost_tracker"]
+            return response
+        return wrapper
+```
+
+This is not required for the initial RLM integration but provides a path to per-thread cost dashboards.
+
+#### Cost Comparison: Standard vs. RLM
+
+Based on PoC results (Section 11), expected costs for Option D:
+
+| Operation | Tokens | Cost | Notes |
+|-----------|--------|------|-------|
+| Agent reasoning (root model) | ~5,000 in + ~1,000 out | ~$0.005 | Planning, synthesis |
+| `load_context_to_sandbox` | ~100 in + ~50 out | ~$0.0001 | Tool overhead only |
+| `execute_in_sandbox` (2-3 calls) | ~500 in + ~200 out | ~$0.001 | Code execution |
+| `batch_llm_query` (8 chunks) | ~80,000 in + ~8,000 out | ~$0.008 | Fast model, parallel |
+| **Total RLM operation** | ~86,000 in + ~9,300 out | **~$0.014** | |
+| **Standard (if input fits)** | ~60,000 in + ~2,000 out | **~$0.007** | Single pass |
+
+Option D's cost overhead (~2x) is significantly less than the rlms library's (7.4x) because:
+- No growing iteration context (agent makes direct tool calls, not 12+ REPL iterations)
+- Sub-calls are focused prompts, not the full accumulated message history
+- The `fast` model for sub-calls is cheaper than the root model
+
+### 12.7 Data Flow Diagram
+
+Complete data flow for an RLM operation through the Orchestra stack:
+
+```
+┌─ User ──────────────────────────────────────────────────────────────────────┐
+│ "Analyze this 200-page contract for risks"                                  │
+│ + attached file: contract.pdf (450,000 chars)                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─ Backend: POST /llm/stream ─────────────────────────────────────────────────┐
+│                                                                              │
+│  stream_generator()                                                          │
+│    ├── prepare_memory_files()                                                │
+│    ├── resolve_sandbox_backend() → CompositeBackend (Daytona or State)       │
+│    ├── construct_agent()                                                     │
+│    │     ├── init_tools() → [...existing tools, batch_llm_query,             │
+│    │     │                    load_context_to_sandbox, get_sandbox_variable]  │
+│    │     ├── init_system_prompt() → base prompt + RLM instructions           │
+│    │     └── create_deep_agent() → LangGraph compiled graph                  │
+│    │                                                                         │
+│    └── agent.astream(input, subgraphs=True)                                  │
+│          │                                                                   │
+│          ├── [LangGraph Node: agent]                                         │
+│          │     LLM decides: input is large → use RLM tools                   │
+│          │     → SSE: ["messages", [AIMessageChunk, "I'll decompose..."]]    │
+│          │                                                                   │
+│          ├── [LangGraph Node: tools]                                         │
+│          │     Tool: load_context_to_sandbox(content, "contract")            │
+│          │     → Backend.write("/rlm_context/contract", content)             │
+│          │     → SSE: ["messages", [ToolMessage, "Loaded 450K chars"]]       │
+│          │                                                                   │
+│          ├── [LangGraph Node: agent]                                         │
+│          │     LLM: Use code interpreter to examine structure                │
+│          │                                                                   │
+│          ├── [LangGraph Node: tools]                                         │
+│          │     Tool: python_code_interpreter(code)                           │
+│          │     → Daytona.execute(code) → "8 chapters found"                  │
+│          │     → SSE: ["messages", [ToolMessage, "8 chapters"]]              │
+│          │                                                                   │
+│          ├── [LangGraph Node: agent]                                         │
+│          │     LLM: Prepare 8 prompts, call batch_llm_query                  │
+│          │                                                                   │
+│          ├── [LangGraph Node: tools]                                         │
+│          │     Tool: batch_llm_query(prompts=8, model="fast")                │
+│          │     → asyncio.gather(8 × init_chat_model().ainvoke())             │
+│          │     → SSE: ["messages", [ToolMessage, {results: [...], usage}]]   │
+│          │                                                                   │
+│          ├── [LangGraph Node: agent]                                         │
+│          │     LLM: Synthesize findings                                      │
+│          │     → SSE: ["messages", [AIMessageChunk, "Key risks: ..."]]       │
+│          │                                                                   │
+│          └── [LangGraph: END]                                                │
+│                → SSE: ["messages", [stop signal]]                            │
+│                → SSE: [DONE]                                                 │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─ Frontend: SSE Event Handling ──────────────────────────────────────────────┐
+│                                                                              │
+│  StreamSource.onEvent()                                                      │
+│    → useChat.handleMessages()                                                │
+│      → StreamMessageHandler.messageUpdate() / toolCall()                     │
+│        → ChatMessages component re-renders                                   │
+│          → ToolTimeline renders each tool call as a ToolTimelineItem         │
+│                                                                              │
+│  No new SSE event types. No new frontend components (baseline).              │
+│  Optional: enhanced ToolTimelineItem rendering for RLM tool names.           │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.8 Migration Path from `.claude/skills/rlm/`
+
+The existing CLI-level skill at `.claude/skills/rlm/SKILL.md` maps cleanly to the platform architecture:
+
+| Skill Step | CLI Implementation | Platform Implementation |
+|------------|-------------------|------------------------|
+| **Step 1: Assess** | Sonnet reads files, counts lines | Agent reads input, decides to use RLM tools |
+| **Step 2: Decompose** | Sonnet writes work plan to scratchpad | Agent uses code interpreter to examine + chunk context |
+| **Step 3: Spawn Workers** | `Task(model="haiku")` × N in parallel | `batch_llm_query(prompts=N, model="fast")` |
+| **Step 4: Evaluate** | Sonnet checks completeness, may re-decompose | Agent evaluates results, may call batch_llm_query again |
+| **Step 5: Synthesize** | Sonnet aggregates worker results | Agent synthesizes in its response |
+
+**Key differences**:
+- **Workers**: Skill uses full Task agents (can use tools); platform uses simple prompt→response sub-calls via `batch_llm_query`. If workers need tool access, they should be SubAgents instead.
+- **Context handling**: Skill reads files via Glob/Read; platform offloads to sandbox via `load_context_to_sandbox`.
+- **Visibility**: Skill output appears in Claude Code terminal; platform streams via SSE to web UI.
+
+The skill remains useful for Claude Code CLI users. The platform implementation serves the web application.
+
+### 12.9 Dependencies and Prerequisites
+
+| Dependency | Status | Required For |
+|------------|--------|-------------|
+| `deepagents >= 0.3.8` | Installed | Agent construction, SubAgent support |
+| `langgraph >= 1.0.7` | Installed | Graph compilation, streaming, checkpointing |
+| `langchain-daytona` | Installed | Sandbox backend for context storage |
+| Feature #694 (SubAgent UI) | Merged (2026-01-24) | SubAgent message rendering in ToolTimeline |
+| `rlms` package | **NOT needed** | Option D avoids this dependency entirely |
+| Frontend changes | **NOT needed** (baseline) | Existing ToolTimeline renders all RLM steps |
+
+### 12.10 Implementation Phases
+
+| Phase | Scope | Effort | Deliverable |
+|-------|-------|--------|-------------|
+| **Phase 1** | `batch_llm_query` tool | 2-3 days | Parallel sub-LM calls with cost tracking |
+| **Phase 2** | `load_context_to_sandbox` + `get_sandbox_variable` | 1-2 days | Context offloading to sandbox |
+| **Phase 3** | System prompt engineering | 2-3 days | Agent knows when/how to decompose |
+| **Phase 4** | Integration testing | 3-4 days | End-to-end tests with large inputs |
+| **Phase 5** (optional) | Enhanced frontend rendering | 2-3 days | RLM-aware ToolTimelineItem |
+| **Total** | | **1.5-2.5 weeks** | Full RLM capability in Orchestra |
+
+---
+
+*Architecture designed on 2026-02-16 as part of feature #793.*
