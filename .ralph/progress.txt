@@ -14,6 +14,18 @@
 - RLM state persistence: dill serialization in isolated envs, in-memory dicts in LocalREPL
 - RLM prompt parsing: ```repl``` code blocks, FINAL()/FINAL_VAR() for answers
 - RLM batched queries: `llm_query_batched()` → asyncio.gather on server side
+- Orchestra model middleware routes by complexity (simple/complex), not depth — different from RLM's depth routing
+- `AutoEvictMiddleware` evicts tool results >40k chars to filesystem — partial analog to RLM's REPL-resident context
+- deepagents SubAgents execute sequentially under supervisor — no parallel sub-LM support
+- No per-request token metering in Orchestra — only heuristic `len(content)//4` for compaction
+- Critical gap: RLM has no streaming, Orchestra requires SSE streaming for UX
+- Frontend SSE: `streamSource.ts` (SyncStreamSource/DistributedStreamSource) → `useChat.ts` → `ChatMessages.tsx`
+- Tool calls render in `ToolTimeline` → `ToolTimelineItem` (collapsible cards)
+- No SubAgent hierarchical rendering in frontend yet — flat message display
+- `deepagents==0.3.8`, `langgraph==1.0.7` — no `Send()` API usage in codebase
+- `max_concurrency=4` in RunnableConfig but SubAgents still execute sequentially
+- Only `asyncio.gather()` usage: search tool URL fetching with `Semaphore(5)`
+- `rlms` not installed in backend — feature #793 is research/planning phase
 ---
 
 ## 2026-02-16 - US-001
@@ -34,4 +46,52 @@ Thread: N/A (first iteration)
   - The LM drives decomposition (not the orchestrator) — quality depends on the system prompt
   - Orchestra's Daytona integration could serve as the RLM REPL environment
   - Dual-backend support (root + sub-call model) maps well to Orchestra's model selection
+---
+
+## 2026-02-16 - US-002
+Thread: N/A
+- Created comprehensive RLM → Orchestra concept mapping in `docs/rlm-analysis.md` (Section 9)
+- Mapping table covers 13 RLM concepts with Orchestra equivalents and gaps
+- Identified key mappings:
+  - SubAgent ↔ sub-LM calls (deepagents workers ≈ RLM llm_query)
+  - Daytona ↔ REPL (both sandbox code execution)
+  - stream_generator ↔ rlm.completion (both are orchestration loops)
+  - Model middleware ↔ LMHandler (both route to different models)
+- Detailed gap analysis for 5 areas:
+  1. No streaming in RLM (Critical) — blocks real-time UX
+  2. No parallel sub-LM calls in Orchestra (Significant) — limits speed
+  3. No REPL-resident context in Orchestra (Significant) — context window limits
+  4. No per-request cost tracking (Moderate) — can't report RLM costs
+  5. LLM client mismatch (Low) — different abstractions
+- Component-level architecture diagram comparing both systems
+- Files changed: `docs/rlm-analysis.md` (147 lines added, new Section 9)
+- **Learnings for future iterations:**
+  - Orchestra's `AutoEvictMiddleware` (>40k chars → filesystem) is the closest analog to RLM's REPL-resident context
+  - deepagents SubAgents already support per-agent model config — maps well to RLM's depth-based routing
+  - The existing `.claude/skills/rlm/SKILL.md` uses Task tool + Haiku workers — this is a CLI-level implementation of the RLM pattern, not platform-level
+  - LangGraph's `Send()` API could enable parallel node execution for batch sub-calls
+  - For streaming, wrapping rlm.completion() as a tool gives minimal visibility; native LangGraph iteration gives maximum visibility
+---
+
+## 2026-02-16 - US-003
+Thread: N/A
+- Created comprehensive integration options evaluation in `docs/rlm-recommendation.md`
+- Evaluated 4 integration approaches:
+  - **Option A: Direct rlms** — Install rlms, wrap as tool. Fastest (2-3 days) but no streaming (critical blocker).
+  - **Option B: Native LangGraph** — Reimplement RLM as LangGraph subgraph. Full streaming, highest effort (3-4 weeks), prompt risk.
+  - **Option C: Hybrid rlms + Streaming** — Fork rlms with callbacks. Iteration-level streaming, moderate effort (2-3 weeks), fork maintenance burden.
+  - **Option D: Tool-Based** — Expose RLM primitives as tools (batch_llm_query, load_context_to_sandbox). Full streaming, moderate effort (1.5-2 weeks), mirrors existing skill.
+- Included comparison matrix across 12 criteria
+- Deep dive on streaming/UI visibility showing what users see for each option
+- Risk assessment with likelihood/impact/mitigation for each option
+- Dependency analysis against existing pyproject.toml
+- Migration path from `.claude/skills/rlm/` skill for each option
+- Files changed: `docs/rlm-recommendation.md` (new, ~370 lines)
+- **Learnings for future iterations:**
+  - Option D (Tool-Based) most closely mirrors the existing `.claude/skills/rlm/SKILL.md` pattern — supervisor + parallel workers
+  - Option A is a non-starter due to no streaming; Option C requires forking an unstable library
+  - The real choice is between Option B (full control, high effort) and Option D (pragmatic, moderate effort)
+  - `batch_llm_query` tool is the key enabler for any non-rlms approach — parallel sub-LM calls
+  - Frontend has no SubAgent hierarchy rendering — any option needs UI work for decomposition visibility
+  - `AutoEvictMiddleware` pattern (evict large content to filesystem + reference) is the closest existing mechanism to RLM's REPL-resident context
 ---

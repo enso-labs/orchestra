@@ -31,8 +31,8 @@
         "Add mapping to docs/rlm-analysis.md"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Mapping table with 13 concepts, detailed gap analysis for 5 critical/significant gaps, and component-level diagram added to docs/rlm-analysis.md section 9"
     },
     {
       "id": "US-003",
@@ -47,8 +47,8 @@
         "Save comparison to docs/rlm-recommendation.md"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Comprehensive evaluation of 4 options (Direct rlms, Native LangGraph, Hybrid, Tool-Based) with pros/cons/effort, comparison matrix, streaming/UI visibility deep dive, risk assessment, and migration path analysis saved to docs/rlm-recommendation.md"
     },
     {
       "id": "US-004",
