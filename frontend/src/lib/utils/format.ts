@@ -95,7 +95,7 @@ export function formatMessages(messages: any[]) {
 	if (!messages || !Array.isArray(messages)) {
 		return [];
 	}
-	return messages.flatMap((message: any) => {
+	const formatted = messages.flatMap((message: any) => {
 		const messageCopy = { ...message };
 		// User Message
 		if (["user", "human"].includes(message.type)) {
@@ -207,6 +207,36 @@ export function formatMessages(messages: any[]) {
 		}
 		return messageCopy;
 	});
+
+	// Propagate agent_name from AI messages to their tool result messages.
+	// After checkpoint reload, tool messages may lose agent_name even though
+	// the originating AI message still has it. Match via tool_call_id.
+	const toolCallAgentMap = new Map<string, string>();
+	for (const msg of formatted) {
+		if (
+			["assistant", "ai", "tool_input"].includes(msg.role ?? msg.type) &&
+			msg.agent_name
+		) {
+			// AI messages with tool_calls: map each tool_call_id → agent_name
+			if (msg.tool_calls) {
+				for (const tc of msg.tool_calls) {
+					if (tc.id) toolCallAgentMap.set(tc.id, msg.agent_name);
+				}
+			}
+			// tool_input messages: map their tool_call_id → agent_name
+			if (msg.tool_call_id) {
+				toolCallAgentMap.set(msg.tool_call_id, msg.agent_name);
+			}
+		}
+	}
+	for (const msg of formatted) {
+		if (msg.role === "tool" && !msg.agent_name && msg.tool_call_id) {
+			const agentName = toolCallAgentMap.get(msg.tool_call_id);
+			if (agentName) msg.agent_name = agentName;
+		}
+	}
+
+	return formatted;
 }
 
 export async function formatMultimodalPayload(
