@@ -113,3 +113,12 @@
   - agent-browser eval can't use import.meta — use other JS for checking runtime state
   - Tool card selection state is border-primary border-2 bg-primary/5 (selected) vs border-border bg-card (unselected)
 ---
+
+## 2026-02-16 - US-008
+- Verified workspace is clean (git status shows nothing to commit)
+- Pushed 2 new commits to origin/feat/790-chat-tool-config
+- All 8 commits visible on remote branch
+- Files changed: .ralph/prd.json, .ralph/progress.txt
+- **Learnings for future iterations:**
+  - Always commit PRD/progress updates as a separate commit after the feature commit
+---
