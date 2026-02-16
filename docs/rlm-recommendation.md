@@ -1,7 +1,108 @@
-# RLM Integration: Options Evaluation
+# RLM Integration: Recommendation & Architecture
 
-> Evaluation of integration approaches for bringing Recursive Language Model (RLM) capabilities into the Orchestra platform.
-> Depends on: [RLM Architecture Analysis](./rlm-analysis.md)
+> Final recommendation for bringing Recursive Language Model (RLM) capabilities into the Orchestra platform.
+> Depends on: [RLM Architecture Analysis](./rlm-analysis.md) | [Benchmark Results](./rlm-benchmark-results.md)
+> Feature: #793 | Branch: `feat/793-rlm-integration` | Date: 2026-02-16
+
+---
+
+## Executive Summary
+
+### Recommendation
+
+**Option D: Tool-Based / Agent-Driven RLM** is the recommended integration approach.
+
+Instead of embedding the `rlms` library or reimplementing its iteration protocol, we expose three new LangGraph tools — `batch_llm_query`, `load_context_to_sandbox`, and `get_sandbox_variable` — that give the agent the building blocks to perform RLM-style decomposition within its natural tool-calling flow.
+
+### Why Option D
+
+| Factor | Decision Rationale |
+|--------|-------------------|
+| **Streaming** | Full token-level streaming out of the box — uses the existing LangGraph + SSE pipeline with zero new infrastructure. Options A and C have no or partial streaming, which is a production blocker. |
+| **No external dependency** | Does not require the `rlms` package (v0.x, single-maintainer, FINAL_VAR bugs confirmed in PoC). Options A and C depend on it. |
+| **Leverages existing infra** | Reuses Daytona sandbox, `AutoEvictMiddleware` pattern, LangChain client infrastructure, `asyncio.gather()` parallelism, and ToolTimeline UI. Option B also reuses infra but requires 3-4 weeks vs 1.5-2 weeks. |
+| **Cost efficiency** | ~2x overhead vs standard completion (PoC: $0.014 vs $0.007) — significantly less than the rlms library's 7.4x overhead ($0.054) because tool calls avoid the growing iteration context. |
+| **Natural migration** | Directly mirrors the existing `.claude/skills/rlm/SKILL.md` pattern (supervisor + parallel workers), moving it from CLI to platform level. |
+| **Incremental adoption** | Can ship `batch_llm_query` alone in Phase 1, add context offloading in Phase 2, refine prompts in Phase 3. No all-or-nothing deployment. |
+
+### Why Not the Others
+
+- **Option A (Direct rlms)**: No streaming (76s blocking in PoC), FINAL_VAR extraction bugs, 7.4x cost overhead. Not viable for production.
+- **Option B (Native LangGraph)**: Best theoretical UX but 3-4 weeks effort, prompt engineering risk, and no built-in parallelism. Too costly for the initial integration.
+- **Option C (Hybrid rlms + Streaming)**: Requires forking an unstable library and maintaining the fork. FINAL_VAR bugs mean we'd be fixing core library issues on top of the integration work.
+
+### Architecture Overview
+
+```
+construct_agent()
+    ├── init_tools()
+    │     ├── existing tools (search, browser, code interpreter, ...)
+    │     └── NEW: batch_llm_query, load_context_to_sandbox, get_sandbox_variable
+    ├── init_system_prompt() → includes RLM decomposition instructions
+    └── create_deep_agent() → standard LangGraph graph (unchanged)
+
+Agent workflow for large inputs:
+    1. load_context_to_sandbox → offload to Daytona/StateBackend
+    2. execute_in_sandbox → examine, chunk, prepare sub-queries
+    3. batch_llm_query → parallel sub-LM calls (asyncio.gather + Semaphore)
+    4. Synthesize results in agent response
+
+Streaming: standard LangGraph tool-call SSE → ToolTimeline UI (no changes needed)
+```
+
+See [Section 12](#12-full-integration-architecture-option-d-tool-based) for the full architecture design.
+
+### Migration from `.claude/skills/rlm/`
+
+The existing CLI skill remains useful for Claude Code users. The platform implementation serves the web application.
+
+| Skill Step | CLI (Current) | Platform (New) |
+|------------|---------------|----------------|
+| Assess input | Sonnet reads files | Agent detects large input |
+| Decompose | Sonnet writes plan to scratchpad | Code interpreter examines + chunks context |
+| Parallel workers | `Task(model="haiku")` × N | `batch_llm_query(model="fast")` |
+| Evaluate | Sonnet checks completeness | Agent evaluates, may re-query |
+| Synthesize | Sonnet aggregates | Agent synthesizes in response |
+
+See [Section 12.8](#128-migration-path-from-claudeskillsrlm) for the detailed migration mapping.
+
+### Timeline & Effort
+
+| Phase | Scope | Effort |
+|-------|-------|--------|
+| Phase 1 | `batch_llm_query` tool | 2-3 days |
+| Phase 2 | `load_context_to_sandbox` + `get_sandbox_variable` | 1-2 days |
+| Phase 3 | System prompt engineering | 2-3 days |
+| Phase 4 | Integration testing | 3-4 days |
+| Phase 5 (optional) | Enhanced frontend rendering | 2-3 days |
+| **Total** | | **1.5-2.5 weeks** |
+
+### Dependencies
+
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| `deepagents >= 0.3.8` | Installed | Agent construction |
+| `langgraph >= 1.0.7` | Installed | Graph, streaming, checkpointing |
+| `langchain-daytona` | Installed | Sandbox backend |
+| Feature #694 (SubAgent UI) | Merged | ToolTimeline renders all tool calls |
+| `rlms` package | **NOT needed** | Option D avoids this dependency |
+| Frontend changes | **NOT needed** (baseline) | Existing ToolTimeline suffices |
+
+### Key Risks & Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| Agent doesn't decompose effectively | Strong system prompt with examples + iteration guardrails |
+| Context window fills from tool results | `AutoEvictMiddleware` already handles this |
+| `batch_llm_query` security | Restrict to approved models, rate-limit to 20 prompts/call |
+| Cost higher than expected | `fast` model for sub-calls, agent skips RLM for small inputs |
+
+### Next Steps
+
+1. **Create implementation tickets** for Phases 1-4 on the project board
+2. **Phase 1** (`batch_llm_query`) can start immediately — no prerequisites
+3. **Phase 3** (system prompt) should reference the existing `.claude/skills/rlm/SKILL.md` for decomposition patterns
+4. **Phase 5** (frontend enhancements) is optional and can be prioritized after initial user feedback
 
 ---
 
@@ -1058,3 +1159,21 @@ The skill remains useful for Claude Code CLI users. The platform implementation 
 ---
 
 *Architecture designed on 2026-02-16 as part of feature #793.*
+
+---
+
+## 13. Conclusion
+
+This document provides the complete analysis for integrating RLM capabilities into Orchestra, covering:
+
+- **Library analysis** ([docs/rlm-analysis.md](./rlm-analysis.md)) — Deep dive into the `rlms` library architecture, REPL environments, and prompt templates
+- **Concept mapping** (Section 9 of rlm-analysis.md) — 13 RLM concepts mapped to Orchestra equivalents with gap analysis
+- **Four integration options evaluated** (Sections 2-5) — Direct rlms, Native LangGraph, Hybrid, and Tool-Based, with streaming/UI analysis
+- **Proof of concept** ([docs/rlm-benchmark-results.md](./rlm-benchmark-results.md)) — Real benchmark showing 2.5x latency / 7.4x cost overhead for rlms, confirming streaming gap
+- **Production architecture** (Section 12) — Complete design for Option D including tool specs, streaming, UI, sandbox, cost tracking, and data flow
+
+**The recommendation is Option D (Tool-Based / Agent-Driven RLM)** for the reasons summarized in the Executive Summary. This approach delivers RLM capabilities with full streaming, no external dependencies, ~2x cost overhead (vs rlms's 7.4x), and an implementation timeline of 1.5-2.5 weeks.
+
+The existing `.claude/skills/rlm/SKILL.md` continues to serve Claude Code CLI users. The platform implementation extends the same supervisor-plus-parallel-workers pattern to the web application, where streaming and UI visibility are critical.
+
+*Research and recommendation completed on 2026-02-16 as part of feature #793.*
