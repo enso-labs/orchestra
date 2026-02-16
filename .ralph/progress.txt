@@ -155,3 +155,26 @@
   - The `schedule_description` metadata field in editingCron.task.metadata remains unchanged — it's a backend API field name
   - UI-facing text in the page (titles, toasts, placeholders, dialog headers) was updated to use "cron" naming in this story
 ---
+
+## 2026-02-16 - US-010
+- What was implemented: Updated all tests and performed final validation — renamed backend test files, updated all remaining "schedule" references in frontend components (variable names, prop names, UI text, comments), and confirmed grep returns clean results
+- Files changed:
+  - `backend/tests/unit/services/test_schedule_service.py` → `test_cron_service.py` (import updated: `src.services.schedule.scheduled_llm_invoke` → `src.services.cron.cron_llm_invoke`, docstrings updated)
+  - `backend/tests/unit/services/test_schedule_dispatch.py` → `test_cron_dispatch.py` (same import + docstring updates)
+  - `frontend/src/lib/utils/calendar.test.ts` (local vars: schedule→cron, schedules→crons, test descriptions updated)
+  - `frontend/src/components/panels/AgentCronsPanel.tsx` (all local vars, handler names, UI text renamed: editingSchedule→editingCron, handleCreateSchedule→handleCreateCron, filteredAndSortedSchedules→filteredAndSortedCrons, "Schedule"→"Cron" in UI text)
+  - `frontend/src/components/cards/AgentCronCard.tsx` (prop: schedule→cron, all internal references updated)
+  - `frontend/src/components/lists/AgentCronList.tsx` (prop: schedules→crons, default messages updated)
+  - `frontend/src/components/forms/AgentCronForm.tsx` (UI text: "Schedule Details"→"Cron Details", "Create Schedule"→"Create Cron", etc.)
+  - `frontend/src/components/forms/CronBuilder.tsx` (UI text: "preset schedule"→"preset", "Schedule Preview"→"Cron Preview")
+  - `frontend/src/components/tables/CronTable.tsx` (UI text: "Schedule Name"→"Cron Name", "No schedules found"→"No crons found")
+  - `frontend/src/components/calendar/CronCalendar.tsx` (CSS class: schedule-calendar→cron-calendar)
+  - `frontend/src/hooks/useModelsList.ts` (comment: "schedule forms"→"cron forms")
+  - `frontend/src/pages/crons/index.tsx` (prop: schedule={cron}→cron={cron})
+- **Learnings for future iterations:**
+  - Remaining "schedule" references that are NOT renamed: `"scheduled"` (status enum), `scheduled_time` (API field), `schedule_description` (API metadata field), `.rbc-event-scheduled` (CSS for status), `checkpoint_retry_scheduled` (unrelated feature), APScheduler library names
+  - When renaming props (e.g., schedule→cron), all consuming files must update both the prop name in JSX and any interface declarations
+  - Backend test files imported from the old module path `src.services.schedule` which no longer exists — always check test imports when renaming modules
+  - `replace_all` is effective for renaming identifiers but must be used carefully with common words that may appear in unrelated contexts
+  - All 243 frontend tests pass, typecheck passes with `tsc --project tsconfig.app.json`
+---
