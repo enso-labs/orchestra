@@ -42,8 +42,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added a small rounded badge positioned at top-right of the + button showing agent.tools.length. Only visible when count > 0. Reactively updates since it reads from agent.tools which is updated by both the modal onApply and the web search toggle."
     },
     {
       "id": "US-004",
@@ -57,8 +57,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Reorganized dropdown into 3 sections: Attachments (ImageUpload at top), Quick Toggles (Web Search, PII options with DropdownMenuLabel header), Advanced (Configure Tools with DropdownMenuLabel header). Sections separated by DropdownMenuSeparator dividers. Removed commented-out Add File code. Added DropdownMenuLabel import."
     },
     {
       "id": "US-005",
@@ -71,8 +71,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Verified: Both handleSSEUnified (lines 221-224) and handleSSE (lines 329-332) already send tools, mcp, a2a, and subagents from AgentContext in the payload for non-public agents. The agent object is read from useAgentContext() which is updated by ToolSelectionModal. No code changes needed. Typecheck passes."
     },
     {
       "id": "US-006",
