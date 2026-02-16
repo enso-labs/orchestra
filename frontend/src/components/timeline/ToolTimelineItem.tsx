@@ -145,13 +145,8 @@ export default function ToolTimelineItem({
 								: "bg-red-500/20 text-red-500",
 						)}
 					>
-						{message.name}
+						{message.agent_name || message.name}
 					</span>
-					{message.agent_name && (
-						<span className="text-xs text-muted-foreground flex-shrink-0">
-							via {message.agent_name}
-						</span>
-					)}
 					{!isExpanded && (
 						<span className="text-xs text-muted-foreground truncate">
 							{getPreviewText()}
