@@ -163,15 +163,22 @@ export const Message = memo(
 			);
 		}
 
-		// Only render input for tool-related messages
-		if (
-			"input" in message &&
-			["tool", "AIMessageChunk"].includes(message.type ?? message.role)
-		) {
+		// Render individual tool_input messages (one per tool call)
+		if (["tool_input"].includes(message.type ?? message.role)) {
 			return (
 				<div className="group px-3 md:px-5">
 					<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
+						{message.name && (
+							<span className="text-xs text-muted-foreground font-medium">
+								{message.name}
+							</span>
+						)}
 						<DefaultTool selectedToolMessage={message} collapsed={false} />
+						{message.tool_call_id && (
+							<span className="text-[10px] text-muted-foreground/60 font-mono block mt-0.5">
+								{message.tool_call_id}
+							</span>
+						)}
 					</div>
 				</div>
 			);
