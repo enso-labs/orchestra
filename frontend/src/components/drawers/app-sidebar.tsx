@@ -65,7 +65,7 @@ import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
 import { useCronExecutions } from "@/hooks/useCronExecutions";
 import { useCrons } from "@/hooks/useCrons";
-import { ScheduleSidebarItem } from "@/components/sidebar/ScheduleSidebarItem";
+import { CronSidebarItem } from "@/components/sidebar/CronSidebarItem";
 
 interface AssistantItemProps {
 	agent: Agent;
@@ -776,10 +776,10 @@ function SchedulesCollapsibleGroup() {
 								</div>
 							) : executions.length > 0 ? (
 								executions.map((execution) => (
-									<ScheduleSidebarItem
+									<CronSidebarItem
 										key={execution.id}
 										execution={execution}
-										scheduleName={
+										cronName={
 											cronsMap.get(execution.cron_id) ?? "Unknown Schedule"
 										}
 									/>

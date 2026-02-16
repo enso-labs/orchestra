@@ -21,8 +21,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
-import { AgentScheduleForm } from "@/components/forms/AgentScheduleForm";
+import { AgentCronCard } from "@/components/cards/AgentCronCard";
+import { AgentCronForm } from "@/components/forms/AgentCronForm";
 import { useAgentCrons } from "@/hooks/useAgentCrons";
 import { Agent } from "@/lib/services/agentService";
 import { Cron, CronCreate } from "@/lib/entities/cron";
@@ -40,14 +40,14 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { DialogDescription } from "@/components/ui/dialog";
 
-interface AgentSchedulesPanelProps {
+interface AgentCronsPanelProps {
 	agent: Agent;
 }
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
 type SortBy = "next_run" | "created" | "name";
 
-export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
+export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 	agent,
 }) => {
 	const {
@@ -216,7 +216,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 								Configure when and what tasks should run automatically
 							</DialogDescription>
 						</DialogHeader>
-						<AgentScheduleForm
+						<AgentCronForm
 							agent={agent}
 							onSubmit={handleCreateSchedule}
 							onCancel={() => setShowCreateDialog(false)}
@@ -242,7 +242,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 							</DialogDescription>
 						</DialogHeader>
 						{editingSchedule && (
-							<AgentScheduleForm
+							<AgentCronForm
 								agent={agent}
 								onSubmit={handleUpdateSchedule}
 								onCancel={() => {
@@ -373,7 +373,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			{filteredAndSortedSchedules.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 					{filteredAndSortedSchedules.map((schedule) => (
-						<AgentScheduleCard
+						<AgentCronCard
 							key={schedule.id}
 							schedule={schedule}
 							agent={agent}

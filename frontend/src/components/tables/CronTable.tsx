@@ -13,13 +13,13 @@ import type { CronEvent } from "@/lib/entities/cron";
 
 type TableView = "past" | "future";
 
-interface ScheduleTableProps {
+interface CronTableProps {
 	events: CronEvent[];
 	view?: TableView;
 	onViewChange?: (view: TableView) => void;
-	onEdit?: (scheduleId: string) => void;
-	onDelete?: (scheduleId: string) => void;
-	onDuplicate?: (scheduleId: string) => void;
+	onEdit?: (cronId: string) => void;
+	onDelete?: (cronId: string) => void;
+	onDuplicate?: (cronId: string) => void;
 }
 
 function getStatusVariant(
@@ -37,14 +37,14 @@ function getStatusVariant(
 	}
 }
 
-export function ScheduleTable({
+export function CronTable({
 	events,
 	view: controlledView,
 	onViewChange,
 	onEdit,
 	onDelete,
 	onDuplicate,
-}: ScheduleTableProps) {
+}: CronTableProps) {
 	const [internalView, setInternalView] = useState<TableView>("future");
 	const view = controlledView ?? internalView;
 

@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import SelectModel from "@/components/lists/SelectModel";
 import { useModelsList } from "@/hooks/useModelsList";
 
-const scheduleFormSchema = z.object({
+const cronFormSchema = z.object({
 	name: z.string().min(1, "Name is required"),
 	description: z.string().optional(),
 	enabled: z.boolean().default(true),
@@ -37,7 +37,7 @@ const scheduleFormSchema = z.object({
 	customTools: z.array(z.string()).optional(),
 });
 
-interface AgentScheduleFormProps {
+interface AgentCronFormProps {
 	agent: Agent;
 	onSubmit: (cron: CronCreate) => Promise<void>;
 	onCancel: () => void;
@@ -45,7 +45,7 @@ interface AgentScheduleFormProps {
 	isLoading?: boolean;
 }
 
-export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
+export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 	agent,
 	onSubmit,
 	onCancel,
@@ -56,7 +56,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 	const { models } = useModelsList();
 
 	const form = useForm({
-		resolver: zodResolver(scheduleFormSchema),
+		resolver: zodResolver(cronFormSchema),
 		defaultValues: {
 			name: initialData?.name || "",
 			description: initialData?.description || "",

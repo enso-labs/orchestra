@@ -20,10 +20,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
-import { AgentScheduleForm } from "@/components/forms/AgentScheduleForm";
-import { ScheduleCalendar } from "@/components/calendar/ScheduleCalendar";
-import { ScheduleTable } from "@/components/tables/ScheduleTable";
+import { AgentCronCard } from "@/components/cards/AgentCronCard";
+import { AgentCronForm } from "@/components/forms/AgentCronForm";
+import { CronCalendar } from "@/components/calendar/CronCalendar";
+import { CronTable } from "@/components/tables/CronTable";
 import { ViewToggle } from "@/components/toggles/ViewToggle";
 import { getCronStatus } from "@/lib/utils/cron";
 import {
@@ -472,12 +472,12 @@ function SchedulesIndexPage() {
 				<div className="flex-1 min-h-0 px-4 overflow-auto">
 					<div className="mx-auto h-full">
 						{viewMode === "calendar" ? (
-							<ScheduleCalendar
+							<CronCalendar
 								events={filteredCalendarEvents}
 								onEventClick={handleEventClick}
 							/>
 						) : viewMode === "table" ? (
-							<ScheduleTable
+							<CronTable
 								events={filteredCalendarEvents}
 								onEdit={handleEditSchedule}
 								onDelete={handleDeleteSchedule}
@@ -492,7 +492,7 @@ function SchedulesIndexPage() {
 											{filteredAndSortedSchedules.map((schedule) => {
 												const agent = getAgentForSchedule(schedule);
 												return (
-													<AgentScheduleCard
+													<AgentCronCard
 														key={schedule.id}
 														schedule={schedule}
 														agent={agent || { id: "", name: "Unknown Agent" }}
@@ -574,7 +574,7 @@ function SchedulesIndexPage() {
 							</div>
 						</div>
 					) : (
-						<AgentScheduleForm
+						<AgentCronForm
 							agent={agents.find((a: any) => a.id === selectedAgentId)}
 							onSubmit={handleCreateSchedule}
 							onCancel={() => {
@@ -594,7 +594,7 @@ function SchedulesIndexPage() {
 						<DialogTitle>Edit Schedule</DialogTitle>
 					</DialogHeader>
 					{editingSchedule && (
-						<AgentScheduleForm
+						<AgentCronForm
 							agent={
 								getAgentForSchedule(editingSchedule) || {
 									id: "",

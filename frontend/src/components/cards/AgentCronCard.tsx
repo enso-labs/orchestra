@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-interface AgentScheduleCardProps {
+interface AgentCronCardProps {
 	schedule: Cron;
 	agent: Agent;
 	onEdit?: (id: string) => void;
@@ -37,7 +37,7 @@ interface AgentScheduleCardProps {
 	onToggle?: (id: string, enabled: boolean) => void;
 }
 
-export const AgentScheduleCard: React.FC<AgentScheduleCardProps> = ({
+export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 	schedule,
 	agent,
 	onEdit,

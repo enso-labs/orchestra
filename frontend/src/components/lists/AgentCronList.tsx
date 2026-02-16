@@ -1,5 +1,5 @@
 import React from "react";
-import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
+import { AgentCronCard } from "@/components/cards/AgentCronCard";
 import { Cron } from "@/lib/entities/cron";
 import { Agent } from "@/lib/services/agentService";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 
-interface AgentScheduleListProps {
+interface AgentCronListProps {
 	schedules: Cron[];
 	agent: Agent;
 	onEdit?: (id: string) => void;
@@ -22,7 +22,7 @@ interface AgentScheduleListProps {
 	emptyDescription?: string;
 }
 
-export const AgentScheduleList: React.FC<AgentScheduleListProps> = ({
+export const AgentCronList: React.FC<AgentCronListProps> = ({
 	schedules,
 	agent,
 	onEdit,
@@ -68,7 +68,7 @@ export const AgentScheduleList: React.FC<AgentScheduleListProps> = ({
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 			{schedules.map((schedule) => (
-				<AgentScheduleCard
+				<AgentCronCard
 					key={schedule.id}
 					schedule={schedule}
 					agent={agent}

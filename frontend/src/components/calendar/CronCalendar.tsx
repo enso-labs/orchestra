@@ -16,15 +16,15 @@ const localizer = dateFnsLocalizer({
 	locales,
 });
 
-interface ScheduleCalendarProps {
+interface CronCalendarProps {
 	events: CronEvent[];
 	onEventClick?: (event: CronEvent) => void;
 }
 
-export function ScheduleCalendar({
+export function CronCalendar({
 	events,
 	onEventClick,
-}: ScheduleCalendarProps) {
+}: CronCalendarProps) {
 	const eventStyleGetter = useCallback((event: CronEvent) => {
 		const backgroundColor = getExecutionStatusColor(event.resource.status);
 		return {

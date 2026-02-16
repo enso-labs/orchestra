@@ -3,15 +3,15 @@ import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { CronExecution } from "@/lib/entities/cron";
 import { getExecutionStatusColor } from "@/lib/utils/calendar";
 
-interface ScheduleSidebarItemProps {
+interface CronSidebarItemProps {
 	execution: CronExecution;
-	scheduleName: string;
+	cronName: string;
 }
 
-export function ScheduleSidebarItem({
+export function CronSidebarItem({
 	execution,
-	scheduleName,
-}: ScheduleSidebarItemProps) {
+	cronName,
+}: CronSidebarItemProps) {
 	const statusEmoji =
 		execution.status === "success"
 			? "🟢"
@@ -52,7 +52,7 @@ export function ScheduleSidebarItem({
 						</span>
 						<div className="flex flex-col min-w-0 flex-1">
 							<span className="text-sm font-medium text-sidebar-foreground truncate">
-								{scheduleName}
+								{cronName}
 							</span>
 							<span className="text-[10px] text-sidebar-foreground/50">
 								{relativeTime}
