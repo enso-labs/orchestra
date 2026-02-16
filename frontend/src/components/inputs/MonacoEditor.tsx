@@ -57,7 +57,7 @@ function MonacoEditor({
 				if (JSON.stringify(externalParsed) !== JSON.stringify(editorParsed)) {
 					setEditorValue(value);
 				}
-			} catch (e) {
+			} catch (_e) {
 				// If either can't be parsed, just compare strings
 				if (value !== editorValue) {
 					setEditorValue(value);

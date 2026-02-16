@@ -58,7 +58,7 @@ export default function ChatInput({
 	const handleResetProject = () => {
 		selectProject(null);
 		setMetadata((prev: any) => {
-			const { project_id, ...rest } = prev;
+			const { project_id: _project_id, ...rest } = prev;
 			return rest;
 		});
 		localStorage.removeItem("current_project_id");

@@ -71,7 +71,7 @@ function useServerHook() {
 			try {
 				JSON.parse(code);
 				setIsJsonValid(true);
-			} catch (e) {
+			} catch (_e) {
 				setIsJsonValid(false);
 			}
 		}, [code]);

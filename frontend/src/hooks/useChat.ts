@@ -349,7 +349,7 @@ export default function useChat(): ChatContextType {
 			try {
 				const payload = JSON.parse(e.data);
 				sseHandler(payload, in_mem_messages);
-			} catch (parseError) {
+			} catch (_parseError) {
 				console.warn("Failed to parse SSE message:", e.data);
 			}
 		});
@@ -682,7 +682,7 @@ export default function useChat(): ChatContextType {
 			const newMap = new Map(prev);
 			for (const [key, files] of newMap.entries()) {
 				if (files && files[path]) {
-					const { [path]: _, ...rest } = files;
+					const { [path]: _removed, ...rest } = files;
 					if (Object.keys(rest).length === 0) {
 						newMap.delete(key);
 					} else {

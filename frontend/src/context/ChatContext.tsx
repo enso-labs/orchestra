@@ -208,7 +208,7 @@ export default function ChatProvider({
 	const useMemoryFilesEffect = () => {
 		useEffect(() => {
 			loadMemoryFiles();
-		}, []); // eslint-disable-line react-hooks/exhaustive-deps
+		}, []);
 	};
 
 	return (

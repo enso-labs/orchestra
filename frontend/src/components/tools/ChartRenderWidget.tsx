@@ -19,7 +19,7 @@ const ChartRenderWidget = ({ content }: { content: any }) => {
 			const parsedContent = JSON.parse(content);
 			setPlotData(parsedContent?.data || []);
 			setLayout(parsedContent?.layout || {});
-		} catch (e) {
+		} catch (_e) {
 			setPlotData([]);
 			setLayout({});
 		}

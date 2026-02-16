@@ -43,7 +43,7 @@ export default function SearchEngineTool({
 									</div>
 								</div>
 							));
-						} catch (e) {
+						} catch (_e) {
 							return (
 								<MarkdownCard
 									content={

@@ -35,7 +35,7 @@ export default function PublicAgentPage() {
 					// tools: [],
 					public: true,
 				});
-			} catch (err) {
+			} catch (_err) {
 				setError("Agent not found or not public");
 			} finally {
 				setLoading(false);

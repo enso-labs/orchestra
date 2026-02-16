@@ -26,7 +26,11 @@ import { ScheduleCalendar } from "@/components/calendar/ScheduleCalendar";
 import { ScheduleTable } from "@/components/tables/ScheduleTable";
 import { ViewToggle } from "@/components/toggles/ViewToggle";
 import { getScheduleStatus } from "@/lib/utils/schedule";
-import { mapExecutionsToEvents } from "@/lib/utils/calendar";
+import {
+	mapExecutionsToEvents,
+	mapSchedulesToProjectedEvents,
+	mergeAndDeduplicateEvents,
+} from "@/lib/utils/calendar";
 import {
 	Search,
 	Calendar,
@@ -95,6 +99,10 @@ function SchedulesIndexPage() {
 				"_blank",
 				"noopener,noreferrer",
 			);
+		} else if (event.id.startsWith("projected-")) {
+			// Projected events have no thread — open the edit dialog instead
+			const scheduleId = event.resource.schedule_id;
+			handleEditSchedule(scheduleId);
 		}
 	};
 
@@ -230,10 +238,18 @@ function SchedulesIndexPage() {
 	}, [executions, filteredScheduleIds]);
 
 	// Create filtered calendar events for calendar/table views
-	const filteredCalendarEvents = useMemo(
-		() => mapExecutionsToEvents(filteredExecutions, schedulesMap),
-		[filteredExecutions, schedulesMap],
-	);
+	// Merge execution-based events with projected events from schedule definitions
+	// so schedules always appear even when they have no executions yet
+	const filteredCalendarEvents = useMemo(() => {
+		const executionEvents = mapExecutionsToEvents(
+			filteredExecutions,
+			schedulesMap,
+		);
+		const projectedEvents = mapSchedulesToProjectedEvents(
+			filteredAndSortedSchedules,
+		);
+		return mergeAndDeduplicateEvents(executionEvents, projectedEvents);
+	}, [filteredExecutions, schedulesMap, filteredAndSortedSchedules]);
 
 	const getStatusCounts = () => {
 		const counts = {
@@ -303,7 +319,7 @@ function SchedulesIndexPage() {
 			</div>
 
 			{/* Main content */}
-			<div className="flex-1 flex flex-col min-h-0 pt-16">
+			<div className="flex-1 flex flex-col min-h-0 pt-14">
 				{/* Fixed header section */}
 				<div className="flex-shrink-0 px-4">
 					<div className="mx-auto">
@@ -457,7 +473,7 @@ function SchedulesIndexPage() {
 				</div>
 
 				{/* Scrollable content area */}
-				<div className="flex-1 min-h-0 px-4">
+				<div className="flex-1 min-h-0 px-4 overflow-auto">
 					<div className="mx-auto h-full">
 						{viewMode === "calendar" ? (
 							<ScheduleCalendar

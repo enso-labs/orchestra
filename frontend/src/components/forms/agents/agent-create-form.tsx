@@ -731,7 +731,7 @@ export function AgentCreateForm() {
 														alert("Agent unpublished successfully!");
 													}
 													setAgent({ ...agent, public: checked });
-												} catch (error) {
+												} catch (_error) {
 													// Revert on failure
 													field.onChange(!checked);
 													alert(

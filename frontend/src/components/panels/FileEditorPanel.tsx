@@ -365,7 +365,6 @@ export default function FileEditorPanel() {
 			});
 		// Note: fileSystem is intentionally excluded from deps to prevent re-triggering
 		// The processedBlobRef prevents duplicate processing of the same blob
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [recordedBlob, selectedFile, inferenceMode]);
 
 	const handleFileSelect = useCallback(

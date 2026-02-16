@@ -63,7 +63,7 @@ function ListProjectThreads({ projectId }: ListProjectThreadsProps) {
 				if (deleted) {
 					setThreads(threads.filter((thread: any) => thread.key !== threadId));
 				}
-			} catch (error) {
+			} catch (_error) {
 				alert("Failed to delete thread");
 			}
 		}
