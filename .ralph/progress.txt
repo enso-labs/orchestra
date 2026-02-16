@@ -8,4 +8,65 @@
 - Pages in `frontend/src/pages/` map to routes in `AppRoutes.tsx`
 - Sidebar navigation in `frontend/src/components/drawers/app-sidebar.tsx`
 - CronBuilder.tsx already uses "cron" naming internally (for cron expressions) — don't rename cron expression references
+- Backend venv for worktrees needs `cd backend && uv venv && uv sync` before typechecking
+- The main workspace venv is at `/home/molty/.openclaw/workspace/orchestra/backend/.venv/`
+- `service_context.cron_service` field name is defined in `backend/src/contexts/service.py` (renamed in US-002)
+- Use `uvx ruff check` for linting when the worktree venv doesn't have ruff installed
+- `backend/main.py` also imports the service singleton — don't forget to update it when renaming services
+---
+
+## 2026-02-16 - US-001
+- What was implemented: Renamed backend schema entities from Schedule to Cron naming
+- Files changed:
+  - `backend/src/schemas/entities/schedule.py` → `backend/src/schemas/entities/cron.py` (renamed classes: ScheduleCreate→CronCreate, ScheduleUpdate→CronUpdate, Schedule→Cron)
+  - `backend/src/controllers/llm.py` (import + type annotation updated)
+  - `backend/src/routes/v0/schedule.py` (imports + type annotations updated)
+  - `backend/src/services/schedule.py` (import + all Schedule→Cron type references updated)
+- **Learnings for future iterations:**
+  - The `__init__.py` in `backend/src/schemas/entities/` doesn't re-export Schedule classes, so only direct importers need updating
+  - The `llm.py` controller accesses the service via `service_context.schedule_service` - don't rename that field until US-002
+  - String literals like "Untitled Schedule" and "Schedule not found" in the service should also be updated for consistency
+---
+
+## 2026-02-16 - US-002
+- What was implemented: Renamed backend service layer from Schedule to Cron naming
+- Files changed:
+  - `backend/src/services/schedule.py` → `backend/src/services/cron.py` (renamed class: ScheduleService→CronService, singleton: schedule_service→cron_service)
+  - `backend/src/contexts/service.py` (import updated, field renamed: schedule_service→cron_service)
+  - `backend/src/controllers/llm.py` (service_context.schedule_service→cron_service)
+  - `backend/src/routes/v0/schedule.py` (import updated: schedule_service→cron_service, all usages renamed)
+  - `backend/main.py` (import updated: schedule_service→cron_service)
+- **Learnings for future iterations:**
+  - `backend/main.py` also imports service singletons directly for scheduler startup — must be included in any service rename
+  - Test files (`tests/unit/services/test_schedule_service.py`, `test_schedule_dispatch.py`) still reference old import path — update in US-010
+  - Local variables inside service methods (user_schedules, schedule) were renamed for consistency (user_crons, cron)
+  - Print statements in service methods were updated from "Scheduled job" to "Cron job" for consistency
+---
+
+## 2026-02-16 - US-003
+- What was implemented: Renamed backend routes and API endpoints from /schedules to /crons
+- Files changed:
+  - `backend/src/routes/v0/schedule.py` → `backend/src/routes/v0/cron.py` (file renamed)
+  - `backend/src/routes/v0/cron.py` (all endpoint paths /schedules→/crons, operation_ids renamed, tags "Schedule"→"Cron", local variables schedule→cron, response keys schedules→crons)
+  - `backend/src/routes/v0/__init__.py` (import + router registration updated: schedule→cron)
+- **Learnings for future iterations:**
+  - The `Examples.SCHEDULE_*` constants are still referenced — they'll need renaming in US-004 when updating `backend/src/constants/examples/`
+  - Response JSON keys changed: `{"schedules": [...]}` → `{"crons": [...]}`, `{"schedule": ...}` → `{"cron": ...}` — frontend services must match these new keys
+  - openapi_examples key `"update_schedule"` was changed to `"update_cron"` for consistency
+---
+
+## 2026-02-16 - US-004
+- What was implemented: Updated all remaining backend references from schedule to cron naming
+- Files changed:
+  - `backend/src/workers/tasks.py` (docstring: `services/schedule.py` → `services/cron.py`)
+  - `backend/src/constants/examples/__init__.py` (renamed all `SCHEDULE_*` constants → `CRON_*`, JSON keys `"schedule"`→`"cron"`, `"schedules"`→`"crons"`, summaries/descriptions updated)
+  - `backend/src/routes/v0/cron.py` (updated all `Examples.SCHEDULE_*` → `Examples.CRON_*` references)
+  - `backend/src/services/cron.py` (renamed `scheduled_llm_invoke`→`cron_llm_invoke`, `scheduled_job`→`cron_job`, updated log messages)
+- **Learnings for future iterations:**
+  - `checkpoint_resilient.py` contains `checkpoint_retry_scheduled` which is about checkpoint retry scheduling, NOT the schedules feature — don't rename
+  - `controllers/llm.py` was already fully updated in US-001/US-002, no changes needed in US-004
+  - APScheduler library references (`SCHEDULER`, `AsyncIOScheduler`, `self.scheduler`, `apscheduler.*`) should NOT be renamed — they're third-party library names
+  - `tablename="schedules"` in cron.py is the DB table name — addressed in US-005 migration
+  - Cron entity validation strings using "schedule" as a verb (e.g., "must not schedule more frequently") are correct English and should NOT be renamed
+  - `uvx ruff check` passes cleanly; pyright errors are all pre-existing (missing imports, None types) unrelated to our changes
 ---

@@ -20,7 +20,7 @@ router = APIRouter(tags=["Cron"])
 ################################################################################
 @router.get(
     "/crons",
-    responses={200: {"content": {"application/json": {"example": Examples.SCHEDULE_LIST_EXAMPLE}}}},
+    responses={200: {"content": {"application/json": {"example": Examples.CRON_LIST_EXAMPLE}}}},
     operation_id="ruska_list_crons",
     tags=["mcp"],
 )
@@ -38,7 +38,7 @@ async def get_jobs(
 ################################################################################
 @router.get(
     "/crons/{job_id}",
-    responses={200: {"content": {"application/json": {"example": Examples.SCHEDULE_FIND_EXAMPLE}}}},
+    responses={200: {"content": {"application/json": {"example": Examples.CRON_FIND_EXAMPLE}}}},
     operation_id="ruska_get_cron",
     tags=["mcp"],
 )
@@ -57,12 +57,12 @@ async def get_job(
 @router.post(
     "/crons",
     status_code=201,
-    responses={201: {"content": {"application/json": {"example": Examples.SCHEDULE_CREATED_RESPONSE_EXAMPLE}}}},
+    responses={201: {"content": {"application/json": {"example": Examples.CRON_CREATED_RESPONSE_EXAMPLE}}}},
     operation_id="ruska_create_cron",
     tags=["mcp"],
 )
 async def create_job(
-    job: CronCreate = Body(openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLES),
+    job: CronCreate = Body(openapi_examples=Examples.CRON_CREATE_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     cron_service.user_id = user.id
@@ -89,7 +89,7 @@ async def create_job(
 )
 async def update_job(
     job_id: str,
-    job_update: CronUpdate = Body(openapi_examples={"update_cron": Examples.SCHEDULE_UPDATE_EXAMPLE}),
+    job_update: CronUpdate = Body(openapi_examples={"update_cron": Examples.CRON_UPDATE_EXAMPLE}),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     cron_service.user_id = user.id

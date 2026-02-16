@@ -318,9 +318,9 @@ LOGIN_RESPONSE_EXAMPLE = Example(
     },
 )
 
-SCHEDULE_CREATED_RESPONSE_EXAMPLE = Example(
+CRON_CREATED_RESPONSE_EXAMPLE = Example(
     {
-        "schedule": {
+        "cron": {
             "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
             "task": {
                 "metadata": {
@@ -333,9 +333,9 @@ SCHEDULE_CREATED_RESPONSE_EXAMPLE = Example(
     }
 )
 
-SCHEDULE_FIND_EXAMPLE = Example(
+CRON_FIND_EXAMPLE = Example(
     {
-        "schedule": {
+        "cron": {
             "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
             "trigger": {"type": "cron", "expression": "0 1 * * *"},
             "task": {
@@ -348,9 +348,9 @@ SCHEDULE_FIND_EXAMPLE = Example(
     }
 )
 
-SCHEDULE_LIST_EXAMPLE = Example(
+CRON_LIST_EXAMPLE = Example(
     {
-        "schedules": [
+        "crons": [
             {
                 "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
                 "trigger": {"type": "cron", "expression": "0 1 * * *"},
@@ -369,7 +369,7 @@ SCHEDULE_LIST_EXAMPLE = Example(
         ]
     }
 )
-SCHEDULE_CREATE_EXAMPLE = Example(
+CRON_CREATE_EXAMPLE = Example(
     {
         "title": "Daily Weather Check",
         "trigger": {"type": "cron", "expression": "0 1 * * *"},
@@ -385,7 +385,7 @@ SCHEDULE_CREATE_EXAMPLE = Example(
     }
 )
 
-SCHEDULE_UPDATE_EXAMPLE = Example(
+CRON_UPDATE_EXAMPLE = Example(
     {
         "title": "Updated Daily Weather Check",
         "trigger": {"type": "cron", "expression": "0 2 * * *"},
@@ -457,9 +457,9 @@ THREAD_CREATE_EXAMPLE_WITH_ASSISTANT = Example(
     },
 )
 
-SCHEDULE_CREATE_ASSISTANT_EXAMPLE = Example(
-    summary="schedule_create_assistant",
-    description="Create Schedule with Assistant ID",
+CRON_CREATE_ASSISTANT_EXAMPLE = Example(
+    summary="cron_create_assistant",
+    description="Create Cron with Assistant ID",
     value={
         "title": "Daily Weather Check",
         "trigger": {"type": "cron", "expression": "*/1 * * * *"},
@@ -502,14 +502,14 @@ class Examples:
     ADD_DOCUMENTS_EXAMPLE = ADD_DOCUMENTS_EXAMPLE
     LIST_DOCUMENTS_EXAMPLE = LIST_DOCUMENTS_EXAMPLE
     A2A_GET_AGENT_CARD_EXAMPLE = A2A_GET_AGENT_CARD_EXAMPLE
-    SCHEDULE_LIST_EXAMPLE = SCHEDULE_LIST_EXAMPLE
-    SCHEDULE_CREATED_RESPONSE_EXAMPLE = SCHEDULE_CREATED_RESPONSE_EXAMPLE
-    SCHEDULE_CREATE_EXAMPLES = {
-        # "schedule_create": SCHEDULE_CREATE_EXAMPLE,
-        "schedule_create_assistant": SCHEDULE_CREATE_ASSISTANT_EXAMPLE,
+    CRON_LIST_EXAMPLE = CRON_LIST_EXAMPLE
+    CRON_CREATED_RESPONSE_EXAMPLE = CRON_CREATED_RESPONSE_EXAMPLE
+    CRON_CREATE_EXAMPLES = {
+        # "cron_create": CRON_CREATE_EXAMPLE,
+        "cron_create_assistant": CRON_CREATE_ASSISTANT_EXAMPLE,
     }
-    SCHEDULE_UPDATE_EXAMPLE = SCHEDULE_UPDATE_EXAMPLE
-    SCHEDULE_FIND_EXAMPLE = SCHEDULE_FIND_EXAMPLE
+    CRON_UPDATE_EXAMPLE = CRON_UPDATE_EXAMPLE
+    CRON_FIND_EXAMPLE = CRON_FIND_EXAMPLE
     THREAD_CREATE_EXAMPLES = {
         "thread_create": THREAD_CREATE_EXAMPLE,
         "thread_create_with_assistant": THREAD_CREATE_EXAMPLE_WITH_ASSISTANT,

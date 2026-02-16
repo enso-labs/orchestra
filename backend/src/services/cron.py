@@ -30,7 +30,7 @@ def job_error(event):
 
 
 def job_missed(event):
-    logger.warning(f"Job {event.job_id} missed its scheduled time")
+    logger.warning(f"Job {event.job_id} missed its cron run time")
 
 
 # Add event listeners
@@ -48,9 +48,9 @@ def create_trigger(trigger: JobTrigger):
         raise ValueError("Invalid trigger type")
 
 
-async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None):
+async def cron_llm_invoke(task_dict: dict, user_id: str, title: str = None):
     """
-    Standalone function for scheduled LLM invocations.
+    Standalone function for cron LLM invocations.
     This must be a module-level function (not a method) so APScheduler can pickle it.
     """
     from uuid import uuid4
@@ -62,7 +62,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
 
         metadata = task_dict.get("metadata") or {}
         thread_id = metadata.get("thread_id") or str(uuid4())
-        logger.info(f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker (thread_id={thread_id})")
+        logger.info(f"🚀 Dispatching cron job '{title}' to TaskIQ worker (thread_id={thread_id})")
         await run_agent_stream.kiq(
             task_dict=task_dict,
             user_id=user_id,
@@ -76,7 +76,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     from src.services.db import get_checkpoint_db, get_store_db
     from src.contexts.service import ServiceContext
 
-    logger.info(f"🚀 Starting scheduled LLM job: {title}")
+    logger.info(f"🚀 Starting cron LLM job: {title}")
 
     # Reconstruct LLMRequest from dict
     params = LLMRequest(**task_dict)
@@ -123,7 +123,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             todos_list = [*todos_list, *response.get("todos", [])]
             return response
         except Exception as e:
-            logger.error(f"❌ Error in scheduled job: {e}", exc_info=True)
+            logger.error(f"❌ Error in cron job: {e}", exc_info=True)
             raise
         finally:
             if service_context.user_id and service_context.checkpointer:
@@ -202,9 +202,9 @@ class CronService:
         trigger = create_trigger(job.trigger)
 
         # Use standalone function for proper pickling by APScheduler
-        scheduled_job = self.scheduler.add_job(
+        cron_job = self.scheduler.add_job(
             id=job_id,
-            func=scheduled_llm_invoke,
+            func=cron_llm_invoke,
             trigger=trigger,
             args=[job.task.model_dump()],
             kwargs={"user_id": self.user_id, "title": job.title},
@@ -212,16 +212,16 @@ class CronService:
             misfire_grace_time=300,
         )
 
-        print(f"✅ Cron job created: {scheduled_job}")
+        print(f"✅ Cron job created: {cron_job}")
         print(f"   Job ID: {job_id}")
-        print(f"   Next run time: {scheduled_job.next_run_time.isoformat()}")
+        print(f"   Next run time: {cron_job.next_run_time.isoformat()}")
 
         cron = Cron(
             id=job_id,
             title=job.title,
             trigger=JobTrigger.from_trigger(job.trigger),
             task=job.task,
-            next_run_time=scheduled_job.next_run_time.isoformat(),
+            next_run_time=cron_job.next_run_time.isoformat(),
         )
         return cron
 

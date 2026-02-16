@@ -4,7 +4,7 @@ This module defines background tasks that can be executed by TaskIQ workers.
 The main task is `run_agent_stream` which handles agent execution and streams
 results to Redis for SSE consumption.
 
-Pattern mirrors existing `scheduled_llm_invoke` in services/schedule.py:
+Pattern mirrors existing `cron_llm_invoke` in services/cron.py:
 - Reconstructs all objects from serializable dicts
 - Creates fresh DB connections inside the task (or uses worker-level checkpointer)
 - Uses handle_multi_mode for LangGraph format consistency
