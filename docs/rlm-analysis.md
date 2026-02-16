@@ -550,3 +550,150 @@ rlm/
 ---
 
 *Analysis performed on 2026-02-16 from [github.com/alexzhang13/rlm](https://github.com/alexzhang13/rlm) (cloned at latest commit).*
+
+---
+
+## 9. RLM → Orchestra Concept Mapping
+
+This section maps each RLM architectural concept to its Orchestra equivalent, identifying gaps that need bridging for integration.
+
+### 9.1 Mapping Table
+
+| RLM Concept | RLM Implementation | Orchestra Equivalent | Gap / Bridge Needed |
+|---|---|---|---|
+| **Root LM orchestration** | `RLM.completion()` — iterative LM + REPL loop with decomposition | `stream_generator()` in `backend/src/utils/stream.py` — LangGraph agent streaming loop | Orchestra's loop is tool-call driven (LM picks tools), not REPL-driven (LM writes code). Need to either adapt RLM's REPL loop to emit LangGraph events or implement RLM-style iteration as a LangGraph node. |
+| **Sub-LM calls** | `llm_query()` / `llm_query_batched()` via LMHandler TCP server | SubAgents via `deepagents` — supervisor invokes worker agents with own tools/model | Direct mapping: RLM sub-calls ≈ SubAgent invocations. **Gap**: RLM sub-calls are simple prompt→response; Orchestra SubAgents are full agents with tools. Sub-calls would need to be exposed as either simplified SubAgents or a new lightweight call mechanism. |
+| **REPL Environment** | `BaseEnv.execute_code()` — Python exec in local/Docker/Modal/Daytona sandbox | Daytona sandbox via `backend/src/agents/daytona.py` + Python code interpreter tool | Good fit. Orchestra already has Daytona integration and a code interpreter tool. **Gap**: RLM injects `llm_query`, `FINAL`, `SHOW_VARS` into the REPL namespace; Orchestra's sandbox doesn't have these. Need to inject RLM-specific functions into the sandbox or proxy them. |
+| **Depth-based model routing** | `LMHandler.get_client(depth)` — depth=0 uses root model, depth=1 uses cheaper model | Dynamic model selection middleware in `backend/src/utils/middleware.py` — complexity-based routing | Partial mapping. Orchestra routes by query complexity (simple/complex), RLM routes by call depth. **Gap**: No depth-awareness in Orchestra's model routing. Would need to pass depth context through the call chain or use SubAgent model config (each SubAgent already accepts its own `model`). |
+| **Batched parallel queries** | `llm_query_batched()` → `asyncio.gather()` on LMHandler | No direct equivalent — SubAgents execute sequentially under supervisor | **Significant gap**. Orchestra doesn't support parallel sub-LM calls within a single turn. The deepagents supervisor invokes one SubAgent at a time. Would need either: (a) parallel tool execution in LangGraph, (b) a batch-query tool, or (c) use the rlms library's own batching. |
+| **Context payload** | `env.load_context(payload)` — loads large text into REPL variable, not LM prompt | LangGraph state + `CompositeBackend` file storage via `AutoEvictMiddleware` | Partial mapping. Orchestra's `AutoEvictMiddleware` evicts large tool results (>40k chars) to filesystem. **Gap**: No concept of "REPL-resident context" that the LM can programmatically access without it counting against the context window. |
+| **Iteration protocol** | LM generates `\`\`\`repl\`\`\`` blocks → execute → results appended to history → repeat | LangGraph message loop: LM generates tool calls → execute → results in state → repeat | Structurally similar. Both are iterative LM + execution loops. **Gap**: RLM uses code block parsing; Orchestra uses structured tool calls. RLM's iteration formatting (code + REPL output in user messages) differs from LangGraph's ToolMessage pattern. |
+| **Final answer detection** | `FINAL()` / `FINAL_VAR()` parsed from LM response | LM's natural end-of-turn (no tool calls) signals completion | **Gap**: RLM requires explicit signaling via FINAL; Orchestra relies on the LM simply not invoking tools. If using RLM-style iteration, need to implement FINAL detection or map it to a special "done" tool. |
+| **Usage/cost tracking** | `UsageSummary` — per-model token counts aggregated across all sub-calls | Token-based compaction threshold (`DEFAULT_COMPACTION_TOKEN_THRESHOLD = 170k`) + heuristic estimation (`len(content) // 4`) | **Significant gap**. Orchestra doesn't have per-request usage metering — it uses heuristic estimates for compaction only. RLM provides precise token counts per model across all recursive calls. Would need to add token logging per request/sub-request, or leverage rlms library's built-in tracking. |
+| **Sandbox environments** | 6 environments: local, Docker, Modal, Prime, Daytona, E2B | Daytona (primary) + StateBackend (fallback) via `resolve_sandbox_backend()` | Good fit for Daytona. **Gap**: RLM supports 5 additional environment types. Orchestra only uses Daytona. For integration, constrain to Daytona + local (for development). |
+| **State persistence** | `dill` serialization (isolated) / in-memory dicts (local) | PostgreSQL checkpointing via `langgraph-checkpoint-postgres` | Different approaches. Orchestra persists conversation state in Postgres; RLM persists REPL variable state in-memory or via dill. **Gap**: If using RLM's REPL, its state is ephemeral and separate from Orchestra's checkpoint. Would need to serialize REPL state into the LangGraph checkpoint if persistence across sessions is required. |
+| **LLM client abstraction** | `BaseLM` — 9 providers (OpenAI, Anthropic, Gemini, LiteLLM, etc.) | `init_chat_model()` via LangChain — OpenAI, Anthropic, Google, Groq, XAI, Bedrock, Ollama | Overlapping but not identical. Both support major providers. **Gap**: RLM uses its own client classes; Orchestra uses LangChain's `BaseChatModel`. For direct integration, either: (a) configure rlms to use a provider Orchestra already has keys for, or (b) write a LangChain→BaseLM adapter. |
+| **Prompt templates** | `RLM_SYSTEM_PROMPT` in `rlm/utils/prompts.py` — REPL instructions, strategy examples | Agent system prompts built by `init_system_prompt()` in `backend/src/agents/__init__.py` | **Gap**: RLM's system prompt is specialized for REPL-based decomposition. It would need to coexist with Orchestra's agent system prompt. For direct integration, the RLM prompt runs in the rlms library independently. For native implementation, the decomposition prompt would need to be added to Orchestra's prompt pipeline. |
+| **Streaming output** | None — `completion()` is synchronous, returns only final result | SSE streaming via `stream_generator()` with `["messages", chunk_data]` format + `subgraphs=True` for SubAgent streaming | **Critical gap**. RLM has no streaming. Orchestra's UX depends on streaming. For integration, either: (a) run RLM in background and stream status updates, (b) implement RLM-style iteration natively in LangGraph with per-step streaming, or (c) contribute streaming to the rlms library. |
+| **Existing RLM skill** | N/A | `.claude/skills/rlm/SKILL.md` — Claude Code skill implementing RLM pattern with Task tool (Sonnet supervisor + Haiku workers) | This is a CLI-level implementation only. Works for Claude Code users but not for the web platform. **Gap**: Need to port the skill's decompose→parallel-process→synthesize pattern to the backend agent pipeline for platform-level support. |
+
+### 9.2 Detailed Gap Analysis
+
+#### Gap 1: No Streaming in RLM (Critical)
+
+Orchestra's frontend relies on SSE streaming to show real-time agent activity. The `stream_generator()` yields events for every LM token, tool call, and SubAgent message. RLM's `completion()` blocks until fully complete — potentially minutes for large inputs.
+
+**Impact**: Users would see a loading spinner for the entire RLM execution duration with no visibility into progress.
+
+**Bridge options**:
+- **Option A**: Wrap `rlm.completion()` as a LangGraph tool. Stream a "processing" status, then return the final result. Minimal visibility but simple.
+- **Option B**: Implement RLM-style iteration natively as LangGraph nodes. Each iteration (code generation → execution → result) becomes a streamed step. Maximum visibility but highest effort.
+- **Option C**: Modify rlms library to accept callbacks per iteration. Emit SSE events from callbacks. Medium effort, requires library changes.
+
+#### Gap 2: Parallel Sub-LM Calls (Significant)
+
+RLM's `llm_query_batched()` runs multiple sub-LM calls concurrently via `asyncio.gather()`. Orchestra's SubAgent model is sequential — the supervisor picks one SubAgent at a time.
+
+**Impact**: Lose the parallelism benefit that makes RLM fast for large inputs.
+
+**Bridge options**:
+- **Option A**: Use rlms library's built-in batching (direct integration). Preserves parallelism.
+- **Option B**: Implement a `parallel_llm_query` tool in Orchestra that internally uses `asyncio.gather()`.
+- **Option C**: Leverage LangGraph's `Send()` API for parallel node execution (requires deepagents support).
+
+#### Gap 3: REPL-Resident Context (Significant)
+
+RLM's key insight is that large context lives in the REPL environment, not the LM's context window. The LM accesses it programmatically via `print(context[:1000])` or `len(context)`. Orchestra currently passes all context in the message history.
+
+**Impact**: Without this, large input processing still hits context window limits.
+
+**Bridge options**:
+- **Option A**: Use rlms library directly (context stays in rlms REPL). Works out of the box.
+- **Option B**: Use Orchestra's `AutoEvictMiddleware` pattern — store large context in filesystem, give the LM a reference and code tool to access it.
+- **Option C**: Implement a `context_store` tool that lets the agent save/retrieve large blobs from a key-value store.
+
+#### Gap 4: Cost Tracking Across Recursive Calls (Moderate)
+
+RLM tracks exact token usage per model via `UsageSummary`. Orchestra only estimates tokens for compaction decisions.
+
+**Impact**: Can't report accurate cost for RLM operations to users.
+
+**Bridge options**:
+- **Option A**: Use rlms library's `UsageSummary` and surface it in the thread metadata.
+- **Option B**: Add LangChain callback-based token counting to the agent pipeline.
+- **Option C**: Defer — use heuristic estimates initially, add precise tracking later.
+
+#### Gap 5: LLM Client Mismatch (Low)
+
+RLM uses its own `BaseLM` client classes. Orchestra uses LangChain's `BaseChatModel`.
+
+**Impact**: Need to configure API keys for both systems if using direct integration.
+
+**Bridge options**:
+- **Option A**: Pass Orchestra's API keys to rlms library configuration. Simple.
+- **Option B**: Write a `LangChainLM` adapter that wraps `BaseChatModel` as RLM's `BaseLM`. Reuses Orchestra's existing client infrastructure.
+- **Option C**: For native implementation, this gap disappears — use LangChain clients directly.
+
+### 9.3 Component-Level Mapping Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          RLM Architecture                                │
+│                                                                          │
+│  ┌──────────────┐    ┌───────────────┐    ┌─────────────────────────┐   │
+│  │ RLM.completion│───▶│ LMHandler TCP │───▶│ BaseLM (OpenAI/Anthro) │   │
+│  │ (orchestrator)│    │ (model router)│    │ (LLM client)           │   │
+│  └──────┬───────┘    └───────────────┘    └─────────────────────────┘   │
+│         │                                                                │
+│         ▼                                                                │
+│  ┌──────────────┐    ┌───────────────┐    ┌─────────────────────────┐   │
+│  │ BaseEnv      │───▶│ llm_query()   │───▶│ UsageSummary           │   │
+│  │ (REPL sandbox)│   │ (sub-LM calls)│    │ (cost tracking)        │   │
+│  └──────────────┘    └───────────────┘    └─────────────────────────┘   │
+│                                                                          │
+├═══════════════════════════════════ ↕ ════════════════════════════════════┤
+│                                                                          │
+│                      Orchestra Architecture                              │
+│                                                                          │
+│  ┌──────────────┐    ┌───────────────┐    ┌─────────────────────────┐   │
+│  │ stream_      │───▶│ Model         │───▶│ BaseChatModel           │   │
+│  │ generator()  │    │ Middleware     │    │ (LangChain client)      │   │
+│  │ (orchestrator)│   │ (model router)│    └─────────────────────────┘   │
+│  └──────┬───────┘    └───────────────┘                                   │
+│         │                                                                │
+│         ▼                                                                │
+│  ┌──────────────┐    ┌───────────────┐    ┌─────────────────────────┐   │
+│  │ Daytona /    │───▶│ SubAgents     │───▶│ Compaction Heuristics   │   │
+│  │ StateBackend │    │ (deepagents)  │    │ (token estimation)      │   │
+│  │ (sandbox)    │    │ (sub-LM calls)│    └─────────────────────────┘   │
+│  └──────────────┘    └───────────────┘                                   │
+│                                                                          │
+│  ┌──────────────┐    ┌───────────────┐                                   │
+│  │ SSE Streaming│    │ PostgreSQL    │    ← No RLM equivalent           │
+│  │ (real-time)  │    │ Checkpointing │                                   │
+│  └──────────────┘    └───────────────┘                                   │
+│                                                                          │
+│  ┌──────────────┐                                                        │
+│  │ .claude/     │    ← CLI-level RLM skill (not platform-level)         │
+│  │ skills/rlm/  │                                                        │
+│  └──────────────┘                                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 9.4 Summary
+
+**Strong overlaps** (minimal bridging needed):
+- Sandbox environments: Daytona already exists in both systems
+- LLM client providers: Both support OpenAI, Anthropic, Google, etc.
+- Iterative agent loops: Both use LM→execute→feedback patterns
+- Depth-based model selection: SubAgent configs already accept per-agent models
+
+**Moderate gaps** (addressable with design choices):
+- REPL-resident context → use rlms directly or implement via tools
+- Cost tracking → leverage rlms UsageSummary or add LangChain callbacks
+- Final answer protocol → map FINAL to a "done" tool or natural end-of-turn
+
+**Critical gaps** (require significant work):
+- No streaming in RLM → blocks Orchestra's real-time UX
+- No parallel sub-calls in Orchestra → limits RLM's speed advantage
+- LLM client abstraction mismatch → needs adapter or shared configuration
