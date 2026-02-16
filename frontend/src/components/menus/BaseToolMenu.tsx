@@ -7,6 +7,7 @@ import {
 	DropdownMenuTrigger,
 	DropdownMenuGroup,
 	DropdownMenuItem,
+	DropdownMenuLabel,
 	DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -120,36 +121,24 @@ export function BaseToolMenu() {
 					onInteractOutside={() => setOpen(false)}
 					onEscapeKeyDown={() => setOpen(false)}
 				>
+					{/* Attachments */}
 					<DropdownMenuGroup>
 						<ImageUpload />
-						{/* TODO: This has a bug when clicked where FREEZES interface 
-						https://github.com/ruska-ai/orchestra/pull/620#pullrequestreview-3614465679 
-						
-						<DropdownMenuItem
-							onClick={() => setShowFileDialog(true)}
-							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
-						>
-							<FileCode className="h-4 w-4" />
-							<span>Add File</span>
-						</DropdownMenuItem> */}
-						<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+					</DropdownMenuGroup>
+
+					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+
+					{/* Quick Toggles */}
+					<DropdownMenuGroup>
+						<DropdownMenuLabel className="text-xs text-muted-foreground">
+							Quick Toggles
+						</DropdownMenuLabel>
 						<DropdownMenuItem
 							onClick={() => setWebSearchCheck(!webSearchCheck)}
 							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
 						>
 							<Globe className="h-12 w-12" />
 							<span>Web Search {webSearchCheck ? "✅" : "🚫"}</span>
-						</DropdownMenuItem>
-						<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
-						<DropdownMenuItem
-							onClick={() => {
-								setShowToolModal(true);
-								setOpen(false);
-							}}
-							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
-						>
-							<Wrench className="h-4 w-4" />
-							<span>Configure Tools</span>
 						</DropdownMenuItem>
 						{localStorage.getItem("enso:checkbox:pii_analyze") && (
 							<DropdownMenuItem
@@ -181,6 +170,25 @@ export function BaseToolMenu() {
 								</span>
 							</DropdownMenuItem>
 						)}
+					</DropdownMenuGroup>
+
+					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+
+					{/* Advanced */}
+					<DropdownMenuGroup>
+						<DropdownMenuLabel className="text-xs text-muted-foreground">
+							Advanced
+						</DropdownMenuLabel>
+						<DropdownMenuItem
+							onClick={() => {
+								setShowToolModal(true);
+								setOpen(false);
+							}}
+							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
+						>
+							<Wrench className="h-4 w-4" />
+							<span>Configure Tools</span>
+						</DropdownMenuItem>
 					</DropdownMenuGroup>
 				</DropdownMenuContent>
 			</DropdownMenu>
