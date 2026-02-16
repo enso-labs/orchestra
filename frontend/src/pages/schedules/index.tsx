@@ -45,8 +45,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import HouseIcon from "@/components/icons/HouseIcon";
-import { useSchedules } from "@/hooks/useSchedules";
-import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
+import { useCrons } from "@/hooks/useCrons";
+import { useCronExecutions } from "@/hooks/useCronExecutions";
 import { useAgentContext } from "@/context/AgentContext";
 import { Cron, CronCreate, CronEvent } from "@/lib/entities/cron";
 import { toast } from "sonner";
@@ -58,14 +58,14 @@ function SchedulesIndexPage() {
 	const navigate = useNavigate();
 	const [, setSearchParams] = useSearchParams();
 	const {
-		schedules,
+		crons,
 		loading,
-		fetchSchedules,
-		deleteSchedule,
-		createSchedule,
-		updateSchedule,
-		getSchedule,
-	} = useSchedules();
+		fetchCrons,
+		deleteCron,
+		createCron,
+		updateCron,
+		getCron,
+	} = useCrons();
 	const { agents, useEffectGetAgents } = useAgentContext();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
@@ -77,16 +77,16 @@ function SchedulesIndexPage() {
 	const [selectedAgentId, setSelectedAgentId] = useState<string>("");
 	const [editingSchedule, setEditingSchedule] = useState<Cron | null>(null);
 
-	const { executions } = useScheduleExecutions();
+	const { executions } = useCronExecutions();
 
 	// Map executions to calendar events
-	const schedulesMap = useMemo(() => {
+	const cronsMap = useMemo(() => {
 		const map = new Map<string, Cron>();
-		for (const s of schedules) {
+		for (const s of crons) {
 			map.set(s.id, s);
 		}
 		return map;
-	}, [schedules]);
+	}, [crons]);
 
 	const handleEventClick = (event: CronEvent) => {
 		if (event.resource.thread_id) {
@@ -109,8 +109,8 @@ function SchedulesIndexPage() {
 	}, []);
 
 	useEffect(() => {
-		fetchSchedules();
-	}, [fetchSchedules]);
+		fetchCrons();
+	}, [fetchCrons]);
 
 	const handleCreateSchedule = async (scheduleData: CronCreate) => {
 		try {
@@ -132,7 +132,7 @@ function SchedulesIndexPage() {
 				},
 			};
 
-			await createSchedule(enhancedSchedule);
+			await createCron(enhancedSchedule);
 			setShowCreateDialog(false);
 			setSelectedAgentId("");
 			toast.success("Schedule created successfully!");
@@ -144,13 +144,13 @@ function SchedulesIndexPage() {
 
 	const handleDeleteSchedule = async (scheduleId: string) => {
 		if (window.confirm("Are you sure you want to delete this schedule?")) {
-			await deleteSchedule(scheduleId);
+			await deleteCron(scheduleId);
 		}
 	};
 
 	const handleEditSchedule = async (scheduleId: string) => {
 		try {
-			const schedule = await getSchedule(scheduleId);
+			const schedule = await getCron(scheduleId);
 			setEditingSchedule(schedule);
 			setShowEditDialog(true);
 		} catch (error) {
@@ -163,7 +163,7 @@ function SchedulesIndexPage() {
 		if (!editingSchedule) return;
 
 		try {
-			await updateSchedule(editingSchedule.id, scheduleData);
+			await updateCron(editingSchedule.id, scheduleData);
 			setShowEditDialog(false);
 			setEditingSchedule(null);
 			toast.success("Schedule updated successfully!");
@@ -179,7 +179,7 @@ function SchedulesIndexPage() {
 	};
 
 	const filteredAndSortedSchedules = useMemo(() => {
-		return schedules
+		return crons
 			.filter((schedule) => {
 				// Search filter
 				const matchesSearch =
@@ -220,7 +220,7 @@ function SchedulesIndexPage() {
 						return 0;
 				}
 			});
-	}, [schedules, searchQuery, filterStatus, filterAgentId, sortBy]);
+	}, [crons, searchQuery, filterStatus, filterAgentId, sortBy]);
 
 	// Create a set of filtered schedule IDs to filter executions
 	const filteredScheduleIds = useMemo(() => {
@@ -239,22 +239,22 @@ function SchedulesIndexPage() {
 	const filteredCalendarEvents = useMemo(() => {
 		const executionEvents = mapExecutionsToEvents(
 			filteredExecutions,
-			schedulesMap,
+			cronsMap,
 		);
 		const projectedEvents = mapCronsToProjectedEvents(
 			filteredAndSortedSchedules,
 		);
 		return mergeAndDeduplicateEvents(executionEvents, projectedEvents);
-	}, [filteredExecutions, schedulesMap, filteredAndSortedSchedules]);
+	}, [filteredExecutions, cronsMap, filteredAndSortedSchedules]);
 
 	const getStatusCounts = () => {
 		const counts = {
-			all: schedules.length,
+			all: crons.length,
 			active: 0,
 			upcoming: 0,
 			overdue: 0,
 		};
-		schedules.forEach((schedule) => {
+		crons.forEach((schedule) => {
 			const status = getCronStatus(schedule.next_run_time);
 			counts[status]++;
 		});
@@ -269,7 +269,7 @@ function SchedulesIndexPage() {
 		return agents.find((a: any) => a.id === agentId);
 	};
 
-	if (loading && schedules.length === 0) {
+	if (loading && crons.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-screen">
 				<div className="text-center">

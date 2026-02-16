@@ -63,8 +63,8 @@ import { deleteThread, updateThreadProject } from "@/lib/services";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
-import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
-import { useSchedules } from "@/hooks/useSchedules";
+import { useCronExecutions } from "@/hooks/useCronExecutions";
+import { useCrons } from "@/hooks/useCrons";
 import { ScheduleSidebarItem } from "@/components/sidebar/ScheduleSidebarItem";
 
 interface AssistantItemProps {
@@ -717,22 +717,22 @@ function CollapsibleGroup({
 }
 
 function SchedulesCollapsibleGroup() {
-	const { executions, loading } = useScheduleExecutions({ limit: 10 });
-	const { schedules, fetchSchedules } = useSchedules();
+	const { executions, loading } = useCronExecutions({ limit: 10 });
+	const { crons, fetchCrons } = useCrons();
 	const navigate = useNavigate();
 
-	// Fetch schedules on mount to build name map
+	// Fetch crons on mount to build name map
 	React.useEffect(() => {
-		fetchSchedules();
-	}, [fetchSchedules]);
+		fetchCrons();
+	}, [fetchCrons]);
 
-	const schedulesMap = React.useMemo(() => {
+	const cronsMap = React.useMemo(() => {
 		const map = new Map<string, string>();
-		for (const s of schedules) {
+		for (const s of crons) {
 			map.set(s.id, s.title);
 		}
 		return map;
-	}, [schedules]);
+	}, [crons]);
 
 	return (
 		<Collapsible
@@ -780,7 +780,7 @@ function SchedulesCollapsibleGroup() {
 										key={execution.id}
 										execution={execution}
 										scheduleName={
-											schedulesMap.get(execution.cron_id) ?? "Unknown Schedule"
+											cronsMap.get(execution.cron_id) ?? "Unknown Schedule"
 										}
 									/>
 								))

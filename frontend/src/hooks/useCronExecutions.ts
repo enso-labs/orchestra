@@ -2,18 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import CronService from "@/lib/services/cronService";
 import { CronExecution } from "@/lib/entities/cron";
 
-interface UseScheduleExecutionsOptions {
-	scheduleId?: string;
+interface UseCronExecutionsOptions {
+	cronId?: string;
 	limit?: number;
 	autoRefresh?: boolean;
 	refreshInterval?: number;
 }
 
-export function useScheduleExecutions(
-	options: UseScheduleExecutionsOptions = {},
-) {
+export function useCronExecutions(options: UseCronExecutionsOptions = {}) {
 	const {
-		scheduleId,
+		cronId,
 		limit = 20,
 		autoRefresh = false,
 		refreshInterval = 30000,
@@ -45,7 +43,7 @@ export function useScheduleExecutions(
 		[limit],
 	);
 
-	const fetchScheduleExecutions = useCallback(
+	const fetchCronExecutions = useCallback(
 		async (id: string, fetchLimit?: number) => {
 			setLoading(true);
 			setError(null);
@@ -57,7 +55,7 @@ export function useScheduleExecutions(
 				// Ensure data is an array before setting
 				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
-				const message = "Failed to fetch schedule executions";
+				const message = "Failed to fetch cron executions";
 				setError(message);
 				console.error(message, err);
 				setExecutions([]);
@@ -93,20 +91,20 @@ export function useScheduleExecutions(
 
 	// Initial fetch on mount
 	useEffect(() => {
-		if (scheduleId) {
-			fetchScheduleExecutions(scheduleId);
+		if (cronId) {
+			fetchCronExecutions(cronId);
 		} else {
 			fetchRecentExecutions();
 		}
-	}, [scheduleId, fetchScheduleExecutions, fetchRecentExecutions]);
+	}, [cronId, fetchCronExecutions, fetchRecentExecutions]);
 
 	// Auto-refresh interval
 	useEffect(() => {
 		if (!autoRefresh) return;
 
 		const fetch = () => {
-			if (scheduleId) {
-				fetchScheduleExecutions(scheduleId);
+			if (cronId) {
+				fetchCronExecutions(cronId);
 			} else {
 				fetchRecentExecutions();
 			}
@@ -123,8 +121,8 @@ export function useScheduleExecutions(
 	}, [
 		autoRefresh,
 		refreshInterval,
-		scheduleId,
-		fetchScheduleExecutions,
+		cronId,
+		fetchCronExecutions,
 		fetchRecentExecutions,
 	]);
 
@@ -133,9 +131,9 @@ export function useScheduleExecutions(
 		loading,
 		error,
 		fetchRecentExecutions,
-		fetchScheduleExecutions,
+		fetchCronExecutions,
 		fetchExecutionsByDateRange,
 	};
 }
 
-export default useScheduleExecutions;
+export default useCronExecutions;

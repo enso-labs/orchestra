@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
 import { AgentScheduleForm } from "@/components/forms/AgentScheduleForm";
-import { useAgentSchedules } from "@/hooks/useAgentSchedules";
+import { useAgentCrons } from "@/hooks/useAgentCrons";
 import { Agent } from "@/lib/services/agentService";
 import { Cron, CronCreate } from "@/lib/entities/cron";
 import { getCronStatus } from "@/lib/utils/cron";
@@ -51,14 +51,14 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 	agent,
 }) => {
 	const {
-		schedules,
+		crons,
 		loading,
-		fetchSchedules,
-		createSchedule,
-		updateSchedule,
-		deleteSchedule,
-		getSchedule,
-	} = useAgentSchedules(agent.id);
+		fetchCrons,
+		createCron,
+		updateCron,
+		deleteCron,
+		getCron,
+	} = useAgentCrons(agent.id);
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
 	const [editingSchedule, setEditingSchedule] = useState<Cron | null>(null);
@@ -68,13 +68,13 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 
 	useEffect(() => {
 		if (agent.id) {
-			fetchSchedules();
+			fetchCrons();
 		}
-	}, [agent.id, fetchSchedules]);
+	}, [agent.id, fetchCrons]);
 
 	const handleCreateSchedule = async (scheduleData: CronCreate) => {
 		try {
-			await createSchedule(scheduleData);
+			await createCron(scheduleData);
 			setShowCreateDialog(false);
 			toast.success("Schedule created successfully!");
 		} catch (error) {
@@ -85,7 +85,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 
 	const handleEditSchedule = async (scheduleId: string) => {
 		try {
-			const schedule = await getSchedule(scheduleId);
+			const schedule = await getCron(scheduleId);
 			setEditingSchedule(schedule);
 			setShowEditDialog(true);
 		} catch (error) {
@@ -98,7 +98,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 		if (!editingSchedule) return;
 
 		try {
-			await updateSchedule(editingSchedule.id, scheduleData);
+			await updateCron(editingSchedule.id, scheduleData);
 			setShowEditDialog(false);
 			setEditingSchedule(null);
 			toast.success("Schedule updated successfully!");
@@ -111,7 +111,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 	const handleDeleteSchedule = async (scheduleId: string) => {
 		if (window.confirm("Are you sure you want to delete this schedule?")) {
 			try {
-				await deleteSchedule(scheduleId);
+				await deleteCron(scheduleId);
 				toast.success("Schedule deleted successfully!");
 			} catch (error) {
 				console.error("Failed to delete schedule:", error);
@@ -125,7 +125,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 		toast.info("Duplicate functionality coming soon!");
 	};
 
-	const filteredAndSortedSchedules = schedules
+	const filteredAndSortedSchedules = crons
 		.filter((schedule) => {
 			// Search filter
 			const matchesSearch =
@@ -163,12 +163,12 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 
 	const getStatusCounts = () => {
 		const counts = {
-			all: schedules.length,
+			all: crons.length,
 			active: 0,
 			upcoming: 0,
 			overdue: 0,
 		};
-		schedules.forEach((schedule) => {
+		crons.forEach((schedule) => {
 			const status = getCronStatus(schedule.next_run_time);
 			counts[status]++;
 		});
@@ -177,7 +177,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 
 	const statusCounts = getStatusCounts();
 
-	if (loading && schedules.length === 0) {
+	if (loading && crons.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-64">
 				<div className="text-center">
