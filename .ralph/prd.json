@@ -207,8 +207,8 @@
         "cd frontend && npm run test passes (all tests including the 2 previously failing ones now fixed)"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "All checks pass: backend lint, backend format, frontend lint, frontend build, frontend tests (252 passed, 3 skipped)"
     },
     {
       "id": "US-016",
