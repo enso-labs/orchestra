@@ -137,7 +137,7 @@
         "Tests pass"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -151,7 +151,7 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -164,8 +164,8 @@
         "npm run test passes in frontend directory"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Fixed alongside US-010 since the pre-commit hook requires all tests to pass before committing."
     },
     {
       "id": "US-013",
@@ -179,7 +179,7 @@
         "Backend lint passes: make lint && make format"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -192,7 +192,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
