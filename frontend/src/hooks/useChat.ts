@@ -477,7 +477,6 @@ export default function useChat(): ChatContextType {
 		 * Key insight: Backend already sends individual tool_call_chunks with unique ids.
 		 * The frontend currently only reads tool_call_chunks[0], losing multi-tool-call data.
 		 */
-		console.log("[handleMessages]", payload);
 		const streamMode = payload[0];
 
 		if (streamMode === "error") {
