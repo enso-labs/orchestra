@@ -454,7 +454,32 @@ export default function useChat(): ChatContextType {
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
-		// console.log(payload);
+		/**
+		 * Tool Call Chunk Structure (US-001 findings):
+		 *
+		 * Each SSE payload for tool calls arrives as:
+		 *   ["messages", [AIMessageChunk_dict, metadata]]
+		 *
+		 * The AIMessageChunk_dict contains:
+		 *   - id: string (same id for all chunks of the same AI turn)
+		 *   - tool_call_chunks: Array<{ id: string, name: string, args: string, index: number, type: string }>
+		 *     - id: unique tool_call_id (e.g. "call_abc123") — same across all arg chunks for that call
+		 *     - name: tool name (only present on first chunk, empty string on subsequent)
+		 *     - args: partial JSON string (incrementally accumulated)
+		 *     - index: 0-based index of the tool call within the AI turn
+		 *   - tool_calls: Array<{ id, name, args }> — finalized tool calls (populated on completion)
+		 *
+		 * Arrival ordering:
+		 *   1. First chunk: tool_call_chunks[0] has { id, name, args: "" or partial }
+		 *   2. Subsequent chunks: same id, name="" (empty), args += next fragment
+		 *   3. When multiple tools are called, each gets its own tool_call_chunks entry
+		 *      with a distinct id and index
+		 *   4. Chunks for different tool calls may interleave
+		 *
+		 * Key insight: Backend already sends individual tool_call_chunks with unique ids.
+		 * The frontend currently only reads tool_call_chunks[0], losing multi-tool-call data.
+		 */
+		console.log("[handleMessages]", payload);
 		const streamMode = payload[0];
 
 		if (streamMode === "error") {
