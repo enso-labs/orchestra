@@ -29,7 +29,7 @@ const cronFormSchema = z.object({
 	name: z.string().min(1, "Name is required"),
 	description: z.string().optional(),
 	enabled: z.boolean().default(true),
-	cronExpression: z.string().min(1, "Schedule is required"),
+	cronExpression: z.string().min(1, "Cron expression is required"),
 	message: z.string().min(1, "Message is required"),
 	inheritFromAgent: z.boolean().default(true),
 	customModel: z.string().optional(),
@@ -179,7 +179,7 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 					</div>
 					<div className="mt-3 pt-3 border-t">
 						<p className="text-xs text-muted-foreground">
-							This schedule will run automatically using the configuration
+							This cron will run automatically using the configuration
 							above.
 						</p>
 					</div>
@@ -229,9 +229,9 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 								<MessageSquare className="h-4 w-4 text-primary" />
 							</div>
 							<div>
-								<CardTitle className="text-lg">Schedule Details</CardTitle>
+								<CardTitle className="text-lg">Cron Details</CardTitle>
 								<CardDescription className="text-xs mt-0.5">
-									Name and describe this scheduled task
+									Name and describe this cron task
 								</CardDescription>
 							</div>
 						</div>
@@ -270,14 +270,14 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 						<Textarea
 							id="description"
 							{...register("description")}
-							placeholder="Optional description of what this schedule does"
+							placeholder="Optional description of what this cron does"
 							rows={2}
 						/>
 					</div>
 				</CardContent>
 			</Card>
 
-			{/* Schedule Timing */}
+			{/* Cron Timing */}
 			<Card>
 				<CardHeader className="pb-3">
 					<div className="flex items-center justify-between">
@@ -288,7 +288,7 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 							<div>
 								<CardTitle className="text-lg">When to Run</CardTitle>
 								<CardDescription className="text-xs mt-0.5">
-									Set the schedule timing (minimum: 1 hour intervals)
+									Set the cron timing (minimum: 1 hour intervals)
 								</CardDescription>
 							</div>
 						</div>
@@ -335,7 +335,7 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 									Configuration Mode
 								</Label>
 								<p className="text-sm text-muted-foreground mt-1">
-									Choose how this schedule should use agent settings
+									Choose how this cron should use agent settings
 								</p>
 							</div>
 						</div>
@@ -490,7 +490,7 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 									<Info className="h-3 w-3 mt-0.5 shrink-0" />
 									Any changes to{" "}
 									<span className="font-medium">{agent.name}</span> will
-									automatically apply to this schedule
+									automatically apply to this cron
 								</p>
 							</div>
 						</div>
@@ -554,7 +554,7 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 							</p>
 						)}
 						<p className="text-sm text-muted-foreground mt-1">
-							This message will be sent to the agent when the schedule runs
+							This message will be sent to the agent when the cron runs
 						</p>
 					</div>
 				</CardContent>
@@ -566,7 +566,7 @@ export const AgentCronForm: React.FC<AgentCronFormProps> = ({
 					Cancel
 				</Button>
 				<Button type="submit" disabled={isLoading || !!cronError}>
-					{isLoading ? "Creating..." : "Create Schedule"}
+					{isLoading ? "Creating..." : "Create Cron"}
 				</Button>
 			</div>
 		</form>

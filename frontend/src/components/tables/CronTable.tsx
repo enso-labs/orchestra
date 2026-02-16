@@ -90,7 +90,7 @@ export function CronTable({
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b bg-muted/50">
-								<th className="text-left p-3 font-medium">Schedule Name</th>
+								<th className="text-left p-3 font-medium">Cron Name</th>
 								<th className="text-left p-3 font-medium">Status</th>
 								<th className="text-left p-3 font-medium">Agent/Skill</th>
 								<th className="text-left p-3 font-medium">
@@ -156,9 +156,9 @@ export function CronTable({
 				</div>
 			) : (
 				<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-					<p className="text-lg font-medium">No schedules found</p>
+					<p className="text-lg font-medium">No crons found</p>
 					<p className="text-sm">
-						No {view === "past" ? "past" : "upcoming"} schedules to display.
+						No {view === "past" ? "past" : "upcoming"} crons to display.
 					</p>
 				</div>
 			)}

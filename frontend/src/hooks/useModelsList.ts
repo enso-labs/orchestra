@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 /**
  * Standalone hook to fetch the available models list from /llm/models.
- * Can be used independently of ChatContext (e.g., in schedule forms).
+ * Can be used independently of ChatContext (e.g., in cron forms).
  */
 export function useModelsList() {
 	const [models, setModels] = useState<ModelsResponse>({

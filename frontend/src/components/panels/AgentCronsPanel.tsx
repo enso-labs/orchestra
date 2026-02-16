@@ -61,7 +61,7 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 	} = useAgentCrons(agent.id);
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
-	const [editingSchedule, setEditingSchedule] = useState<Cron | null>(null);
+	const [editingCron, setEditingCron] = useState<Cron | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 	const [sortBy, setSortBy] = useState<SortBy>("next_run");
@@ -72,73 +72,73 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 		}
 	}, [agent.id, fetchCrons]);
 
-	const handleCreateSchedule = async (scheduleData: CronCreate) => {
+	const handleCreateCron = async (cronData: CronCreate) => {
 		try {
-			await createCron(scheduleData);
+			await createCron(cronData);
 			setShowCreateDialog(false);
-			toast.success("Schedule created successfully!");
+			toast.success("Cron created successfully!");
 		} catch (error) {
-			console.error("Failed to create schedule:", error);
-			toast.error("Failed to create schedule");
+			console.error("Failed to create cron:", error);
+			toast.error("Failed to create cron");
 		}
 	};
 
-	const handleEditSchedule = async (scheduleId: string) => {
+	const handleEditCron = async (cronId: string) => {
 		try {
-			const schedule = await getCron(scheduleId);
-			setEditingSchedule(schedule);
+			const cron = await getCron(cronId);
+			setEditingCron(cron);
 			setShowEditDialog(true);
 		} catch (error) {
-			console.error("Failed to fetch schedule for editing:", error);
-			toast.error("Failed to load schedule for editing");
+			console.error("Failed to fetch cron for editing:", error);
+			toast.error("Failed to load cron for editing");
 		}
 	};
 
-	const handleUpdateSchedule = async (scheduleData: CronCreate) => {
-		if (!editingSchedule) return;
+	const handleUpdateCron = async (cronData: CronCreate) => {
+		if (!editingCron) return;
 
 		try {
-			await updateCron(editingSchedule.id, scheduleData);
+			await updateCron(editingCron.id, cronData);
 			setShowEditDialog(false);
-			setEditingSchedule(null);
-			toast.success("Schedule updated successfully!");
+			setEditingCron(null);
+			toast.success("Cron updated successfully!");
 		} catch (error) {
-			console.error("Failed to update schedule:", error);
-			toast.error("Failed to update schedule");
+			console.error("Failed to update cron:", error);
+			toast.error("Failed to update cron");
 		}
 	};
 
-	const handleDeleteSchedule = async (scheduleId: string) => {
-		if (window.confirm("Are you sure you want to delete this schedule?")) {
+	const handleDeleteCron = async (cronId: string) => {
+		if (window.confirm("Are you sure you want to delete this cron?")) {
 			try {
-				await deleteCron(scheduleId);
-				toast.success("Schedule deleted successfully!");
+				await deleteCron(cronId);
+				toast.success("Cron deleted successfully!");
 			} catch (error) {
-				console.error("Failed to delete schedule:", error);
-				toast.error("Failed to delete schedule");
+				console.error("Failed to delete cron:", error);
+				toast.error("Failed to delete cron");
 			}
 		}
 	};
 
-	const handleDuplicateSchedule = () => {
+	const handleDuplicateCron = () => {
 		// TODO: Implement duplicate functionality
 		toast.info("Duplicate functionality coming soon!");
 	};
 
-	const filteredAndSortedSchedules = crons
-		.filter((schedule) => {
+	const filteredAndSortedCrons = crons
+		.filter((cron) => {
 			// Search filter
 			const matchesSearch =
 				searchQuery === "" ||
-				schedule.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				schedule.task.input?.messages?.[0]?.content
+				cron.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				cron.task.input?.messages?.[0]?.content
 					?.toLowerCase()
 					.includes(searchQuery.toLowerCase());
 
 			// Status filter
 			if (filterStatus === "all") return matchesSearch;
 			return (
-				matchesSearch && getCronStatus(schedule.next_run_time) === filterStatus
+				matchesSearch && getCronStatus(cron.next_run_time) === filterStatus
 			);
 		})
 		.sort((a, b) => {
@@ -168,8 +168,8 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 			upcoming: 0,
 			overdue: 0,
 		};
-		crons.forEach((schedule) => {
-			const status = getCronStatus(schedule.next_run_time);
+		crons.forEach((cron) => {
+			const status = getCronStatus(cron.next_run_time);
 			counts[status]++;
 		});
 		return counts;
@@ -182,7 +182,7 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 			<div className="flex items-center justify-center h-64">
 				<div className="text-center">
 					<Clock className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
-					<p className="text-muted-foreground">Loading schedules...</p>
+					<p className="text-muted-foreground">Loading crons...</p>
 				</div>
 			</div>
 		);
@@ -193,7 +193,7 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h2 className="text-2xl font-bold">Schedules</h2>
+					<h2 className="text-2xl font-bold">Crons</h2>
 					<div className="flex items-center gap-2 mt-1">
 						<p className="text-sm text-muted-foreground">Automated tasks for</p>
 						<Badge variant="secondary" className="gap-1.5">
@@ -206,19 +206,19 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 					<DialogTrigger asChild>
 						<Button>
 							<Plus className="h-4 w-4 mr-2" />
-							Create Schedule
+							Create Cron
 						</Button>
 					</DialogTrigger>
 					<DialogContent className="max-h-[99vh] max-w-[99vw] overflow-y-auto">
 						<DialogHeader>
-							<DialogTitle>Create Automated Schedule</DialogTitle>
+							<DialogTitle>Create Automated Cron</DialogTitle>
 							<DialogDescription>
 								Configure when and what tasks should run automatically
 							</DialogDescription>
 						</DialogHeader>
 						<AgentCronForm
 							agent={agent}
-							onSubmit={handleCreateSchedule}
+							onSubmit={handleCreateCron}
 							onCancel={() => setShowCreateDialog(false)}
 							isLoading={loading}
 						/>
@@ -229,39 +229,39 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 				<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
 					<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
 						<DialogHeader>
-							<DialogTitle>Edit Schedule: {editingSchedule?.title}</DialogTitle>
+							<DialogTitle>Edit Cron: {editingCron?.title}</DialogTitle>
 							<DialogDescription className="flex items-center gap-2 mt-2">
 								<Badge variant="secondary" className="gap-1">
 									<Bot className="h-3 w-3" />
 									{agent.name}
 								</Badge>
-								<span className="text-muted-foreground">•</span>
+								<span className="text-muted-foreground">&bull;</span>
 								<span className="text-sm">
-									{editingSchedule?.trigger.expression}
+									{editingCron?.trigger.expression}
 								</span>
 							</DialogDescription>
 						</DialogHeader>
-						{editingSchedule && (
+						{editingCron && (
 							<AgentCronForm
 								agent={agent}
-								onSubmit={handleUpdateSchedule}
+								onSubmit={handleUpdateCron}
 								onCancel={() => {
 									setShowEditDialog(false);
-									setEditingSchedule(null);
+									setEditingCron(null);
 								}}
 								initialData={{
-									name: editingSchedule.title || "",
+									name: editingCron.title || "",
 									description:
-										editingSchedule.task.metadata?.schedule_description || "",
-									enabled: editingSchedule.task.metadata?.enabled ?? true,
-									cronExpression: editingSchedule.trigger.expression,
+										editingCron.task.metadata?.schedule_description || "",
+									enabled: editingCron.task.metadata?.enabled ?? true,
+									cronExpression: editingCron.trigger.expression,
 									message:
-										editingSchedule.task.input?.messages?.[0]?.content || "",
+										editingCron.task.input?.messages?.[0]?.content || "",
 									inheritFromAgent:
-										editingSchedule.task.metadata?.inherited_from_agent ?? true,
-									customModel: editingSchedule.task.model,
-									customSystem: editingSchedule.task.system_prompt,
-									customTools: editingSchedule.task.tools || [],
+										editingCron.task.metadata?.inherited_from_agent ?? true,
+									customModel: editingCron.task.model,
+									customSystem: editingCron.task.system_prompt,
+									customTools: editingCron.task.tools || [],
 								}}
 								isLoading={loading}
 							/>
@@ -324,7 +324,7 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
-							placeholder="Search schedules..."
+							placeholder="Search crons..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							className="pl-10"
@@ -369,17 +369,17 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 				</div>
 			</div>
 
-			{/* Schedules Grid */}
-			{filteredAndSortedSchedules.length > 0 ? (
+			{/* Crons Grid */}
+			{filteredAndSortedCrons.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{filteredAndSortedSchedules.map((schedule) => (
+					{filteredAndSortedCrons.map((cron) => (
 						<AgentCronCard
-							key={schedule.id}
-							schedule={schedule}
+							key={cron.id}
+							cron={cron}
 							agent={agent}
-							onEdit={handleEditSchedule}
-							onDelete={handleDeleteSchedule}
-							onDuplicate={handleDuplicateSchedule}
+							onEdit={handleEditCron}
+							onDelete={handleDeleteCron}
+							onDuplicate={handleDuplicateCron}
 						/>
 					))}
 				</div>
@@ -390,18 +390,18 @@ export const AgentCronsPanel: React.FC<AgentCronsPanelProps> = ({
 						<Calendar className="h-12 w-12 text-muted-foreground mb-4" />
 						<CardTitle className="text-lg mb-2">
 							{searchQuery || filterStatus !== "all"
-								? "No schedules found"
-								: "No schedules yet"}
+								? "No crons found"
+								: "No crons yet"}
 						</CardTitle>
 						<CardDescription className="text-center mb-4">
 							{searchQuery || filterStatus !== "all"
 								? "Try adjusting your search or filter criteria"
-								: `Create your first automated schedule for ${agent.name} to get started`}
+								: `Create your first automated cron for ${agent.name} to get started`}
 						</CardDescription>
 						{!searchQuery && filterStatus === "all" && (
 							<Button onClick={() => setShowCreateDialog(true)}>
 								<Plus className="h-4 w-4 mr-2" />
-								Create First Schedule
+								Create First Cron
 							</Button>
 						)}
 					</CardContent>

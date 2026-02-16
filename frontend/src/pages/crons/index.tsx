@@ -494,7 +494,7 @@ function CronsIndexPage() {
 												return (
 													<AgentCronCard
 														key={cron.id}
-														schedule={cron}
+														cron={cron}
 														agent={agent || { id: "", name: "Unknown Agent" }}
 														onEdit={handleEditCron}
 														onDelete={handleDeleteCron}

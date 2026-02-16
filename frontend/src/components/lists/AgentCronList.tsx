@@ -11,11 +11,11 @@ import {
 import { Calendar } from "lucide-react";
 
 interface AgentCronListProps {
-	schedules: Cron[];
+	crons: Cron[];
 	agent: Agent;
 	onEdit?: (id: string) => void;
 	onDelete?: (id: string) => void;
-	onDuplicate?: (schedule: Cron) => void;
+	onDuplicate?: (cron: Cron) => void;
 	onToggle?: (id: string, enabled: boolean) => void;
 	loading?: boolean;
 	emptyMessage?: string;
@@ -23,15 +23,15 @@ interface AgentCronListProps {
 }
 
 export const AgentCronList: React.FC<AgentCronListProps> = ({
-	schedules,
+	crons,
 	agent,
 	onEdit,
 	onDelete,
 	onDuplicate,
 	onToggle,
 	loading = false,
-	emptyMessage = "No schedules found",
-	emptyDescription = "Create your first schedule to get started",
+	emptyMessage = "No crons found",
+	emptyDescription = "Create your first cron to get started",
 }) => {
 	if (loading) {
 		return (
@@ -51,7 +51,7 @@ export const AgentCronList: React.FC<AgentCronListProps> = ({
 		);
 	}
 
-	if (schedules.length === 0) {
+	if (crons.length === 0) {
 		return (
 			<Card>
 				<CardContent className="flex flex-col items-center justify-center py-12">
@@ -67,10 +67,10 @@ export const AgentCronList: React.FC<AgentCronListProps> = ({
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-			{schedules.map((schedule) => (
+			{crons.map((cron) => (
 				<AgentCronCard
-					key={schedule.id}
-					schedule={schedule}
+					key={cron.id}
+					cron={cron}
 					agent={agent}
 					onEdit={onEdit}
 					onDelete={onDelete}

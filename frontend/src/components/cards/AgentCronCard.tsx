@@ -29,16 +29,16 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 interface AgentCronCardProps {
-	schedule: Cron;
+	cron: Cron;
 	agent: Agent;
 	onEdit?: (id: string) => void;
 	onDelete?: (id: string) => void;
-	onDuplicate?: (schedule: Cron) => void;
+	onDuplicate?: (cron: Cron) => void;
 	onToggle?: (id: string, enabled: boolean) => void;
 }
 
 export const AgentCronCard: React.FC<AgentCronCardProps> = ({
-	schedule,
+	cron,
 	agent,
 	onEdit,
 	onDelete,
@@ -54,14 +54,14 @@ export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 	};
 
 	const getTaskSummary = () => {
-		const message = schedule.task.input?.messages?.[0]?.content;
+		const message = cron.task.input?.messages?.[0]?.content;
 		if (typeof message === "string") {
 			return message.length > 60 ? `${message.substring(0, 60)}...` : message;
 		}
 		return "Complex message";
 	};
 
-	const isInherited = schedule.task.metadata?.inherited_from_agent;
+	const isInherited = cron.task.metadata?.inherited_from_agent;
 
 	return (
 		<Card className="hover:shadow-md transition-shadow duration-200">
@@ -70,10 +70,10 @@ export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 					<div className="flex items-center gap-2">
 						<Calendar className="h-4 w-4 text-primary" />
 						<Badge
-							variant={getStatusColor(schedule.next_run_time)}
+							variant={getStatusColor(cron.next_run_time)}
 							className="text-xs"
 						>
-							{getStatusText(schedule.next_run_time)}
+							{getStatusText(cron.next_run_time)}
 						</Badge>
 					</div>
 					<DropdownMenu>
@@ -84,26 +84,26 @@ export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							{onEdit && (
-								<DropdownMenuItem onClick={() => onEdit(schedule.id)}>
+								<DropdownMenuItem onClick={() => onEdit(cron.id)}>
 									<Settings className="mr-2 h-4 w-4" />
 									Edit
 								</DropdownMenuItem>
 							)}
 							{onDuplicate && (
-								<DropdownMenuItem onClick={() => onDuplicate(schedule)}>
+								<DropdownMenuItem onClick={() => onDuplicate(cron)}>
 									<Copy className="mr-2 h-4 w-4" />
 									Duplicate
 								</DropdownMenuItem>
 							)}
 							{onToggle && (
-								<DropdownMenuItem onClick={() => onToggle(schedule.id, false)}>
+								<DropdownMenuItem onClick={() => onToggle(cron.id, false)}>
 									<Pause className="mr-2 h-4 w-4" />
 									Pause
 								</DropdownMenuItem>
 							)}
 							{onDelete && (
 								<DropdownMenuItem
-									onClick={() => onDelete(schedule.id)}
+									onClick={() => onDelete(cron.id)}
 									className="text-destructive focus:text-destructive"
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
@@ -114,12 +114,12 @@ export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 					</DropdownMenu>
 				</div>
 				<CardTitle className="text-base line-clamp-2">
-					{schedule.title}
+					{cron.title}
 				</CardTitle>
 				<CardDescription className="text-sm">
 					<div className="flex items-center gap-1">
 						<Clock className="h-3 w-3" />
-						{getHumanReadableCron(schedule.trigger.expression)}
+						{getHumanReadableCron(cron.trigger.expression)}
 					</div>
 					<div className="mt-1 text-xs text-muted-foreground line-clamp-1">
 						{getTaskSummary()}
@@ -128,10 +128,10 @@ export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 			</CardHeader>
 			<CardContent className="pt-0">
 				<div className="space-y-3">
-					{/* Schedule Details */}
+					{/* Cron Details */}
 					<div className="flex flex-wrap gap-2">
 						<Badge variant="outline" className="text-xs">
-							{schedule.task.model}
+							{cron.task.model}
 						</Badge>
 						{isInherited && (
 							<Badge variant="secondary" className="text-xs">
@@ -144,21 +144,21 @@ export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 					<div className="text-xs text-muted-foreground">
 						<div className="flex items-center justify-between">
 							<span>Agent: {agent.name}</span>
-							<span className="font-mono">{schedule.trigger.expression}</span>
+							<span className="font-mono">{cron.trigger.expression}</span>
 						</div>
 					</div>
 
 					{/* Tools */}
-					{schedule.task.tools && schedule.task.tools.length > 0 && (
+					{cron.task.tools && cron.task.tools.length > 0 && (
 						<div className="flex flex-wrap gap-1">
-							{schedule.task.tools.slice(0, 3).map((tool, index) => (
+							{cron.task.tools.slice(0, 3).map((tool, index) => (
 								<Badge key={index} variant="outline" className="text-xs">
 									{tool}
 								</Badge>
 							))}
-							{schedule.task.tools.length > 3 && (
+							{cron.task.tools.length > 3 && (
 								<Badge variant="outline" className="text-xs">
-									+{schedule.task.tools.length - 3} more
+									+{cron.task.tools.length - 3} more
 								</Badge>
 							)}
 						</div>
@@ -168,7 +168,7 @@ export const AgentCronCard: React.FC<AgentCronCardProps> = ({
 					<div className="text-xs text-muted-foreground border-t pt-2">
 						<div className="flex items-center justify-between">
 							<span>Next run:</span>
-							<span>{new Date(schedule.next_run_time).toLocaleString()}</span>
+							<span>{new Date(cron.next_run_time).toLocaleString()}</span>
 						</div>
 					</div>
 				</div>

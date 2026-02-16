@@ -50,7 +50,7 @@ export function CronCalendar({
 	const views: View[] = useMemo(() => ["month", "week", "day"], []);
 
 	return (
-		<div className="schedule-calendar h-full min-h-[600px] pb-6">
+		<div className="cron-calendar h-full min-h-[600px] pb-6">
 			<Calendar<CronEvent>
 				localizer={localizer}
 				events={events}

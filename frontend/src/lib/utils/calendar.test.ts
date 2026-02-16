@@ -43,8 +43,8 @@ describe("mapCronsToProjectedEvents", () => {
 	});
 
 	it("creates a projected event with correct field mapping", () => {
-		const schedule = makeCron();
-		const events = mapCronsToProjectedEvents([schedule]);
+		const cron = makeCron();
+		const events = mapCronsToProjectedEvents([cron]);
 
 		expect(events).toHaveLength(1);
 		const event = events[0];
@@ -61,24 +61,24 @@ describe("mapCronsToProjectedEvents", () => {
 		expect(event.resource.agent_id).toBe("agent-1");
 	});
 
-	it("uses schedule.agent_id when available", () => {
-		const schedule = makeCron({ agent_id: "top-level-agent" });
-		const events = mapCronsToProjectedEvents([schedule]);
+	it("uses cron.agent_id when available", () => {
+		const cron = makeCron({ agent_id: "top-level-agent" });
+		const events = mapCronsToProjectedEvents([cron]);
 		expect(events[0].resource.agent_id).toBe("top-level-agent");
 	});
 
 	it("falls back to task.metadata.agent_id when agent_id is missing", () => {
-		const schedule = makeCron({ agent_id: undefined });
-		const events = mapCronsToProjectedEvents([schedule]);
+		const cron = makeCron({ agent_id: undefined });
+		const events = mapCronsToProjectedEvents([cron]);
 		expect(events[0].resource.agent_id).toBe("agent-1");
 	});
 
-	it("filters out schedules with missing next_run_time", () => {
-		const schedules = [
+	it("filters out crons with missing next_run_time", () => {
+		const crons = [
 			makeCron({ id: "sched-1", next_run_time: "2026-03-01T12:00:00Z" }),
 			makeCron({ id: "sched-2", next_run_time: "" }),
 		];
-		const events = mapCronsToProjectedEvents(schedules);
+		const events = mapCronsToProjectedEvents(crons);
 		expect(events).toHaveLength(1);
 		expect(events[0].id).toBe("projected-sched-1");
 	});
@@ -202,7 +202,7 @@ describe("mergeAndDeduplicateEvents", () => {
 		);
 	});
 
-	it("handles different schedule IDs independently", () => {
+	it("handles different cron IDs independently", () => {
 		const execEvents = [
 			makeCronEvent({
 				id: "exec-1",

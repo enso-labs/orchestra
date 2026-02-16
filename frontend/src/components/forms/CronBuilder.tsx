@@ -136,10 +136,10 @@ export const CronBuilder: React.FC<CronBuilderProps> = ({
 
 			{mode === "preset" && (
 				<div className="space-y-3">
-					<Label>Choose a preset schedule</Label>
+					<Label>Choose a preset</Label>
 					<Select value={selectedPreset} onValueChange={handlePresetChange}>
 						<SelectTrigger>
-							<SelectValue placeholder="Select a preset schedule" />
+							<SelectValue placeholder="Select a preset" />
 						</SelectTrigger>
 						<SelectContent>
 							{CRON_PRESETS.map((preset) => (
@@ -286,7 +286,7 @@ export const CronBuilder: React.FC<CronBuilderProps> = ({
 			{value && (
 				<Card>
 					<CardHeader className="pb-3">
-						<CardTitle className="text-sm">Schedule Preview</CardTitle>
+						<CardTitle className="text-sm">Cron Preview</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
 						<div>

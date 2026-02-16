@@ -1,11 +1,11 @@
-"""Tests for scheduled_llm_invoke TaskIQ dispatch path."""
+"""Tests for cron_llm_invoke TaskIQ dispatch path."""
 
 from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import UUID
 
 import pytest
 
-from src.services.schedule import scheduled_llm_invoke
+from src.services.cron import cron_llm_invoke
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def task_dict_no_metadata():
 
 
 def _patch_distributed(enabled: bool):
-    """Patch DISTRIBUTED_WORKERS at the import target inside scheduled_llm_invoke."""
+    """Patch DISTRIBUTED_WORKERS at the import target inside cron_llm_invoke."""
     # The function does `from src.constants import DISTRIBUTED_WORKERS`
     # We patch the module so the import gets our value
     return patch("src.constants.DISTRIBUTED_WORKERS", enabled)
@@ -53,7 +53,7 @@ async def test_dispatch_to_taskiq_when_distributed(task_dict_with_thread_id):
     """When DISTRIBUTED_WORKERS=true, should dispatch to run_agent_stream.kiq()."""
     patcher, mock_task = _patch_taskiq()
     with _patch_distributed(True), patcher:
-        await scheduled_llm_invoke(
+        await cron_llm_invoke(
             task_dict=task_dict_with_thread_id,
             user_id="user-1",
             title="Test Job",
@@ -74,7 +74,7 @@ async def test_in_process_when_not_distributed(task_dict_with_thread_id):
         # The in-process path will raise due to missing full env setup,
         # but we verify kiq was NOT called
         try:
-            await scheduled_llm_invoke(
+            await cron_llm_invoke(
                 task_dict=task_dict_with_thread_id,
                 user_id="user-1",
                 title="Test Job",
@@ -90,7 +90,7 @@ async def test_thread_id_from_metadata(task_dict_with_thread_id):
     """thread_id should be extracted from metadata when present."""
     patcher, mock_task = _patch_taskiq()
     with _patch_distributed(True), patcher:
-        await scheduled_llm_invoke(
+        await cron_llm_invoke(
             task_dict=task_dict_with_thread_id,
             user_id="user-1",
             title="Test Job",
@@ -105,7 +105,7 @@ async def test_thread_id_generated_when_missing(task_dict_without_thread_id):
     """thread_id should be a generated UUID when not in metadata."""
     patcher, mock_task = _patch_taskiq()
     with _patch_distributed(True), patcher:
-        await scheduled_llm_invoke(
+        await cron_llm_invoke(
             task_dict=task_dict_without_thread_id,
             user_id="user-1",
             title="Test Job",
@@ -121,7 +121,7 @@ async def test_thread_id_generated_when_no_metadata(task_dict_no_metadata):
     """thread_id should be a generated UUID when metadata is missing entirely."""
     patcher, mock_task = _patch_taskiq()
     with _patch_distributed(True), patcher:
-        await scheduled_llm_invoke(
+        await cron_llm_invoke(
             task_dict=task_dict_no_metadata,
             user_id="user-1",
             title="Test Job",
