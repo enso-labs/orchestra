@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import os
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -25,10 +26,16 @@ from src.schemas.models import User
 from src.services.db import get_store_db
 from src.utils.memory_seed import seed_default_memories
 
-ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
+if DB_URI.startswith("postgresql+asyncpg://"):
+    ASYNC_DB_URI = DB_URI
+elif DB_URI.startswith("postgres://"):
+    ASYNC_DB_URI = "postgresql+asyncpg://" + DB_URI[len("postgres://") :]
+else:
+    ASYNC_DB_URI = "postgresql+asyncpg://" + DB_URI[len("postgresql://") :]
+DB_SSL_DISABLED = os.getenv("DB_SSL_DISABLED", "false").lower() in ("true", "1", "yes")
 engine = create_async_engine(
     ASYNC_DB_URI,
-    connect_args={"ssl": False},
+    **({"connect_args": {"ssl": False}} if DB_SSL_DISABLED else {}),
 )
 AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
