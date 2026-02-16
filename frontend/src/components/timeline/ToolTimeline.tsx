@@ -10,6 +10,7 @@ interface ToolMessage {
 	artifact?: any;
 	args?: any;
 	input?: any;
+	agent_name?: string | null;
 }
 
 interface ToolTimelineProps {
