@@ -165,7 +165,7 @@
         "All commits visible in GitHub PR"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
