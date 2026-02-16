@@ -15,7 +15,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "SelectModel uses useChatContext() internally. The fix needs to bridge context state to the form field. Add an onChange callback prop that fires with the selected value, then use form.setValue('model', value) in agent-create-form.tsx. The existing onModelSelected prop takes no args — extend it or add a new prop."
     },
     {
@@ -30,7 +30,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "form.setValue('model', agent.model) must run on load. Check the existing useEffect at line ~257 that already does this — verify it fires correctly and that SelectModel reflects the value."
     }
   ]

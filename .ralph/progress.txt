@@ -1,3 +1,38 @@
 # Ralph Progress: Fix Model Select Validation (#771)
 # Branch: feat/771-model-select-validation
 # Started: 2026-02-16
+
+## Codebase Patterns
+- SelectModel component uses useChatContext() internally for model state; to sync with external forms, use the onModelSelected callback which receives the selected value string
+- Agent create/edit form is at `/assistant/create` and `/assistant/:agentId` routes (NOT `/assistants/new`)
+- react-hook-form fields must be explicitly synced with form.setValue() when using custom components that don't integrate directly with RHF's register/Controller
+- Test credentials: admin@example.com / test1234 (from seeds/user_seeder.py)
+- Frontend tests: `npx vitest run` from frontend/; typecheck: `npx tsc --noEmit`
+- updateQueryStateModel in useModel.tsx takes (model: string) and updates the ChatContext model state
+- ChatContext and AgentContext each have their own useModel() instance — they do NOT share model state. To sync SelectModel (which reads from ChatContext), you must call ChatContext's setModel() explicitly.
+- When editing an existing agent, the useEffect that syncs agent data to the form must also call setModel from ChatContext to update SelectModel's display
+
+---
+
+## 2026-02-16 - US-001
+- **What was implemented**: Wired SelectModel's onModelSelected callback to pass the selected model value to react-hook-form via form.setValue('model', value). Changed SelectModel's onModelSelected prop type from `() => void` to `(value: string) => void` and updated handleModelChange to pass the value through.
+- **Files changed**:
+  - `frontend/src/components/lists/SelectModel.tsx` - Changed onModelSelected prop type and call site
+  - `frontend/src/components/forms/agents/agent-create-form.tsx` - Updated onModelSelected handler to call form.setValue
+- **Learnings for future iterations:**
+  - SelectModel uses useChatContext() for its own state management but doesn't natively integrate with react-hook-form. Any form using SelectModel must manually sync the value.
+  - updateQueryStateModel already accepted a string parameter, so the signature change was backwards-compatible
+  - Browser testing requires auth; model dropdown will be empty if no LLM API keys are configured in the backend environment
+  - The assistant create page route is `/assistant/create`, not `/assistants/new`
+---
+
+## 2026-02-16 - US-002
+- **What was implemented**: Fixed model pre-population on the assistant edit page. The root cause was that ChatContext and AgentContext each instantiate their own `useModel()` hook with separate state. When `useAgent` fetched the agent and called its own `updateQueryStateModel`, it only updated the AgentContext's model state — not the ChatContext's model state that `SelectModel` reads from. The fix destructures `setModel` from `useChatContext()` in the form component and calls it in the existing useEffect that syncs agent data to the form, so SelectModel displays the agent's saved model on load.
+- **Files changed**:
+  - `frontend/src/components/forms/agents/agent-create-form.tsx` - Added `setModel` from `useChatContext()` and call `setModel(agent.model)` in the agent data sync useEffect
+- **Learnings for future iterations:**
+  - ChatContext and AgentContext each create their own `useModel()` instance — they have SEPARATE state. `updateQueryStateModel` in AgentContext does NOT update ChatContext's model.
+  - SelectModel reads `model` from `useChatContext()`, so any component wanting to control what SelectModel displays must update ChatContext's model state via `setModel`.
+  - When debugging state sync issues in React, always verify that the state being read and the state being written are from the SAME context/hook instance.
+  - The Radix scroll area component (`data-radix-scroll-area-viewport`) needs its own `scrollTop` manipulation for browser testing — standard page scroll doesn't work.
+---

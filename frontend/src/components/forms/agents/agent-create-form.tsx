@@ -78,7 +78,7 @@ export function AgentCreateForm() {
 		isAgentSelected,
 		updateQueryStateModel,
 	} = useAgentContext();
-	const { toBackendFormat } = useChatContext();
+	const { toBackendFormat, setModel } = useChatContext();
 	const [isEditing, setIsEditing] = useState(!agentId);
 	const [originalAgent, setOriginalAgent] = useState<Agent | null>(null);
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
@@ -256,6 +256,11 @@ export function AgentCreateForm() {
 		form.setValue("description", agent.description);
 		form.setValue("model", agent.model);
 		form.setValue("public", agent.public || false);
+
+		// Sync ChatContext model so SelectModel displays the agent's saved model
+		if (agent.model) {
+			setModel(agent.model);
+		}
 
 		// Determine mode and set values
 		if (
