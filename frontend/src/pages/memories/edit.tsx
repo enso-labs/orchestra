@@ -46,7 +46,7 @@ export default function MemoryEditPage() {
 				setEnabled(mem.enabled);
 			} catch {
 				toast.error("Failed to load memory");
-				navigate("/settings");
+				navigate("/memories");
 			} finally {
 				setLoading(false);
 			}
@@ -60,7 +60,7 @@ export default function MemoryEditPage() {
 		try {
 			await MemoryService.update(memoryId, { content });
 			toast.success("Memory updated");
-			navigate("/settings");
+			navigate("/memories");
 		} catch {
 			toast.error("Failed to update memory");
 		} finally {
@@ -85,7 +85,7 @@ export default function MemoryEditPage() {
 		try {
 			await MemoryService.delete(memoryId);
 			toast.success("Memory deleted");
-			navigate("/settings");
+			navigate("/memories");
 		} catch {
 			toast.error("Failed to delete memory");
 		}
@@ -130,7 +130,7 @@ export default function MemoryEditPage() {
 						<Button
 							variant="ghost"
 							size="icon"
-							onClick={() => navigate("/settings")}
+							onClick={() => navigate("/memories")}
 						>
 							<ArrowLeft className="h-4 w-4" />
 						</Button>

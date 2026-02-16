@@ -32,7 +32,7 @@ export default function MemoryCreatePage() {
 				content: content.trim(),
 			});
 			toast.success("Memory created");
-			navigate("/settings");
+			navigate("/memories");
 		} catch {
 			toast.error("Failed to create memory");
 		} finally {
@@ -57,7 +57,7 @@ export default function MemoryCreatePage() {
 						<Button
 							variant="ghost"
 							size="icon"
-							onClick={() => navigate("/settings")}
+							onClick={() => navigate("/memories")}
 						>
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
