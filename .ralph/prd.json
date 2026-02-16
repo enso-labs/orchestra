@@ -100,8 +100,8 @@
         "Verified using agent-browser CLI with screenshots"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Fixed useToolSelection hook to sync initialSelectedTools via useEffect when they change after mount. Browser-verified full flow: login, open + menu (3 sections: Attachments/Quick Toggles/Advanced), Configure Tools opens modal with 4 pre-selected defaults, toggle tools (deselect think_tool, select python_sandbox), Apply updates badge count, send 'What is 2+2?' — math_calculator tool invoked successfully. Screenshots saved to /tmp/e2e-*.png."
     },
     {
       "id": "US-008",

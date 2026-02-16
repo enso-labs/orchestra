@@ -12,6 +12,9 @@
 - npm install needed before typecheck in worktree (node_modules not shared)
 - Use functional updater `setAgent((prev) => ...)` when modifying agent state from inside modals/callbacks to avoid stale closures
 - shadcn DropdownMenuLabel + DropdownMenuGroup available for section headers in dropdown menus
+- useToolSelection hook needs useEffect to sync initialTools when they change after mount (ToolSelectionModal mounts before default tools are set)
+- Frontend dev server needs VITE_API_URL=/api to use local backend via Vite proxy (otherwise it picks up env var pointing to production)
+- Login credentials for local dev: admin@example.com / test1234
 ---
 
 ## 2026-02-16 - US-001
@@ -87,4 +90,26 @@
   - All three useEffect patterns in BaseToolMenu now consistently use functional updaters — maintain this pattern
   - BaseToolMenu is always mounted inside ChatInput, so `[]` dep mount effects only fire once per chat session
   - WebSearch toggle intentionally re-adds/removes DEFAULT_AGENT_TOOLS — this is correct UX behavior, not a conflict
+---
+
+## 2026-02-16 - US-007
+- End-to-end browser validation of the full tool config flow using agent-browser CLI
+- Fixed bug: useToolSelection hook didn't sync initialSelectedTools after mount — ToolSelectionModal mounts before BaseToolMenu's useEffect adds DEFAULT_AGENT_TOOLS, so the modal always showed 0 pre-selected tools
+- Added useEffect to useToolSelection that syncs selectedTools when initialTools changes (using initialTools.join(",") as dep)
+- Browser test flow verified:
+  1. Login with admin@example.com / test1234 → redirects to /chat
+  2. + button shows badge "4" (4 default tools)
+  3. Click + → dropdown with 3 sections: Attachments, Quick Toggles (Web Search), Advanced (Configure Tools)
+  4. Click Configure Tools → modal opens with 4 tools pre-selected (web_search, web_scrape, math_calculator, think_tool)
+  5. Toggled: deselected think_tool, selected python_sandbox → count shows "Selected: 4 tools"
+  6. Click Apply Changes → modal closes, badge updates to "4"
+  7. Sent "What is 2 + 2?" → agent invoked math_calculator tool, responded "2 + 2 equals 4."
+- Files changed: frontend/src/components/modals/ToolSelectionModal/hooks/useToolSelection.ts
+- Screenshots saved: /tmp/e2e-01-landing.png through /tmp/e2e-11-final.png
+- **Learnings for future iterations:**
+  - ToolSelectionModal is always mounted (not conditional on isOpen) — so useState(initialTools) only captures the initial empty state
+  - useEffect with initialTools.join(",") as dep is a reliable way to detect tool list changes without deep comparison
+  - Frontend dev server needs VITE_API_URL=/api env override to use local backend (worktree inherits env vars pointing to production)
+  - agent-browser eval can't use import.meta — use other JS for checking runtime state
+  - Tool card selection state is border-primary border-2 bg-primary/5 (selected) vs border-border bg-card (unselected)
 ---
