@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ShieldCheck, ShieldOff, Globe } from "lucide-react";
+import { Plus, ShieldCheck, ShieldOff, Globe, Wrench } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
 import ImageUpload from "../inputs/ImageUpload";
+import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 
 const DEFAULT_AGENT_TOOLS = [
 	"web_search",
@@ -42,6 +43,7 @@ export function BaseToolMenu() {
 	} = useAgentContext();
 	const { addFile, setViewMode } = useChatContext();
 	const [open, setOpen] = useState<boolean>(false);
+	const [showToolModal, setShowToolModal] = useState(false);
 	const [showFileDialog, setShowFileDialog] = useState(false);
 	const [newFilePath, setNewFilePath] = useState("");
 	const [pathError, setPathError] = useState("");
@@ -133,6 +135,17 @@ export function BaseToolMenu() {
 							<Globe className="h-12 w-12" />
 							<span>Web Search {webSearchCheck ? "✅" : "🚫"}</span>
 						</DropdownMenuItem>
+						<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />
+						<DropdownMenuItem
+							onClick={() => {
+								setShowToolModal(true);
+								setOpen(false);
+							}}
+							className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
+						>
+							<Wrench className="h-4 w-4" />
+							<span>Configure Tools</span>
+						</DropdownMenuItem>
 						{localStorage.getItem("enso:checkbox:pii_analyze") && (
 							<DropdownMenuItem
 								onClick={() => setPiiAnalyzeCheck(!piiAnalyzeCheck)}
@@ -166,6 +179,19 @@ export function BaseToolMenu() {
 					</DropdownMenuGroup>
 				</DropdownMenuContent>
 			</DropdownMenu>
+
+			{/* Tool Selection Modal */}
+			<ToolSelectionModal
+				isOpen={showToolModal}
+				onClose={() => setShowToolModal(false)}
+				initialSelectedTools={agent.tools || []}
+				initialMcpConfig={agent.mcp as Record<string, any>}
+				initialA2aConfig={agent.a2a as Record<string, any>}
+				onApply={(selectedTools) => {
+					setAgent({ ...agent, tools: selectedTools });
+					setShowToolModal(false);
+				}}
+			/>
 
 			{/* New File Dialog */}
 			<Dialog open={showFileDialog} onOpenChange={setShowFileDialog}>
