@@ -1,0 +1,10 @@
+## Codebase Patterns
+- BaseToolMenu is rendered inside ChatInput.tsx
+- AgentContext holds agent state including tools[], mcp{}, a2a{}
+- ToolSelectionModal already reads/writes AgentContext via useAgentContext()
+- Chat submission in useChat.ts reads agent from useAgentContext() for tools payload
+- DEFAULT_AGENT_TOOLS are force-added in BaseToolMenu useEffect on mount — watch for conflicts
+- ToolSelectionModal is 1400px wide with responsive sm:w-[95vw] — works on mobile
+- Tool service at frontend/src/lib/services/toolService.ts handles listTools, getMcpTools, getA2aAgents
+- Image upload is a separate component rendered inside the dropdown
+---

@@ -1,0 +1,120 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/790-chat-tool-config",
+  "description": "Better tool configuration UI for Super Agent chat session - integrate ToolSelectionModal into chat page",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Configure Tools option to BaseToolMenu",
+      "description": "As a user, I want a Configure Tools option in the chat menu that opens the full tool selection modal.",
+      "acceptanceCriteria": [
+        "BaseToolMenu imports and renders ToolSelectionModal",
+        "New Configure Tools menu item with Wrench icon added to dropdown",
+        "Clicking it opens ToolSelectionModal with current agent tools pre-selected",
+        "Modal receives initialSelectedTools, initialMcpConfig, initialA2aConfig from AgentContext",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Wire modal apply to update AgentContext",
+      "description": "As a user, I want my tool selections from the modal to apply to the current chat session immediately.",
+      "acceptanceCriteria": [
+        "onApply callback updates agent.tools in AgentContext",
+        "MCP and A2A config changes persist in AgentContext",
+        "Subsequent chat messages include the updated tool list",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add active tools indicator",
+      "description": "As a user, I want to see how many tools are currently active so I know my configuration state.",
+      "acceptanceCriteria": [
+        "Badge or count shown on the + button or dropdown header indicating active tool count",
+        "Count updates when tools are added/removed via the modal",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Improve BaseToolMenu layout",
+      "description": "As a user, I want the tool menu organized into logical sections for quick toggles vs advanced configuration.",
+      "acceptanceCriteria": [
+        "Menu has section headers for Quick Toggles and Advanced sections",
+        "Image upload remains at top",
+        "Visual separation between sections with dividers or headers",
+        "Existing functionality preserved (web search, PII, image upload)",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Verify chat submission includes all tool config",
+      "description": "As a developer, I need to verify that the chat payload includes tools, MCP, and A2A config from AgentContext.",
+      "acceptanceCriteria": [
+        "Review useChat.ts handleSSEUnified to confirm agent context tools are sent",
+        "If not already sent, add MCP and A2A config to the submission payload",
+        "Stream works correctly with tools configured via the modal",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Handle default tools conflict",
+      "description": "As a developer, I need to ensure the DEFAULT_AGENT_TOOLS useEffect in BaseToolMenu doesn't conflict with modal selections.",
+      "acceptanceCriteria": [
+        "Default tools are only added on initial mount, not after modal changes",
+        "If user removes a default tool via modal, it stays removed",
+        "Re-opening the menu doesn't reset tools to defaults",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "End-to-end browser validation",
+      "description": "As a user, I want the full flow to work: open chat, configure tools, send a message that uses a configured tool.",
+      "acceptanceCriteria": [
+        "Open chat page, click + menu, click Configure Tools",
+        "Modal opens with correct pre-selected tools",
+        "Toggle some tools, click Apply, tool count indicator updates",
+        "Send a chat message — tools are available to the agent",
+        "Verified using agent-browser CLI with screenshots"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Verify workspace is clean and push final changes",
+      "description": "As a developer, I want to ensure all changes are committed and pushed.",
+      "acceptanceCriteria": [
+        "Run git status to check for uncommitted changes",
+        "If remaining changes exist, commit and push to branch",
+        "All commits visible in GitHub PR"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
