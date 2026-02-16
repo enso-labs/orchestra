@@ -26,6 +26,10 @@
 - `max_concurrency=4` in RunnableConfig but SubAgents still execute sequentially
 - Only `asyncio.gather()` usage: search tool URL fetching with `Semaphore(5)`
 - `rlms` not installed in backend — feature #793 is research/planning phase
+- New tools register in `backend/src/tools/__init__.py` — add to tool registry, conditionally included per agent config
+- `resolve_sandbox_backend()` returns CompositeBackend shared by code interpreter, AutoEvict, and RLM context storage
+- System prompt additions go through `init_system_prompt()` in `backend/src/agents/__init__.py`
+- `asyncio.gather()` with `Semaphore(N)` is the pattern for bounded parallel execution (used by search tool, planned for batch_llm_query)
 - rlms v0.1.0 — `get_client(backend, backend_kwargs={...})` signature; `ModelUsageSummary` uses `total_input_tokens`/`total_output_tokens`/`total_calls`
 - rlms FINAL_VAR extraction is unreliable — sometimes returns variable name instead of value
 - rlms has no streaming callbacks — verbose mode logs to console only, not programmatic
@@ -136,4 +140,28 @@ Thread: N/A
   - RLM's iteration context grows with each cycle (the message history accumulates all REPL outputs), which is the dominant cost amplification factor
   - `uv run --with` is ideal for isolated prototype scripts — no need to modify pyproject.toml
   - PoC results strengthen Option D (Tool-Based) as recommended approach and weaken Options A and C
+---
+
+## 2026-02-16 - US-005
+Thread: N/A
+- Designed full integration architecture for Option D (Tool-Based RLM) in `docs/rlm-recommendation.md` Section 12
+- Architecture covers 10 subsections:
+  - 12.1: Where RLM fits in agent construction pipeline — 3 new tools registered via `init_tools()`
+  - 12.2: Tool specifications — `batch_llm_query`, `load_context_to_sandbox`, `get_sandbox_variable`
+  - 12.3: Streaming design — standard LangGraph tool-call streaming, no new SSE event types
+  - 12.4: UI rendering — existing ToolTimeline components, optional RLM-aware enhancements, #694 dependency
+  - 12.5: Sandbox configuration — reuses `resolve_sandbox_backend()`, adds `/rlm_context/` storage path
+  - 12.6: Cost tracking — per-tool usage metadata + optional thread-level aggregation middleware
+  - 12.7: End-to-end data flow diagram through entire stack
+  - 12.8: Migration path from `.claude/skills/rlm/` (5-step skill → tool-based equivalent)
+  - 12.9: Dependencies — #694 merged, no new packages needed, rlms NOT required
+  - 12.10: Phased implementation plan (1.5-2.5 weeks across 5 phases)
+- Files changed: `docs/rlm-recommendation.md` (525 lines added, Section 12)
+- **Learnings for future iterations:**
+  - Option D's cost overhead is ~2x (vs rlms library's 7.4x) because agent makes direct tool calls instead of 12+ REPL iterations
+  - Sub-LM calls should run on the host process (not inside sandbox) to reuse Orchestra's LangChain client infra
+  - `AutoEvictMiddleware` pattern (>40k chars → filesystem) is directly reusable for `load_context_to_sandbox`
+  - No frontend changes required for baseline RLM visibility — existing ToolTimeline renders all tool calls
+  - `batch_llm_query` is the critical new tool — it enables the parallel sub-call pattern that makes RLM useful
+  - System prompt engineering (Phase 3) is the quality risk — agent must know when to decompose vs. process directly
 ---
