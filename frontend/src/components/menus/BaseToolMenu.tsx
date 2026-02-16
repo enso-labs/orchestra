@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, ShieldCheck, ShieldOff, Globe, Wrench } from "lucide-react";
 import {
@@ -48,8 +48,6 @@ export function BaseToolMenu() {
 	const [showFileDialog, setShowFileDialog] = useState(false);
 	const [newFilePath, setNewFilePath] = useState("");
 	const [pathError, setPathError] = useState("");
-	const hasCustomizedTools = useRef(false);
-
 	// Validate file path
 	const validatePath = (path: string): string => {
 		if (!path.trim()) return "Path is required";
@@ -205,7 +203,6 @@ export function BaseToolMenu() {
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
 				onApply={(selectedTools) => {
-					hasCustomizedTools.current = true;
 					setAgent((prev: any) => ({ ...prev, tools: selectedTools }));
 					setShowToolModal(false);
 				}}

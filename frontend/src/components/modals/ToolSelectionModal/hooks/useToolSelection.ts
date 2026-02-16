@@ -30,8 +30,9 @@ export function useToolSelection(initialTools: string[] = []) {
 	const clearSelection = () => setSelectedTools(new Set());
 
 	const selectMultiple = (tools: string[]) => {
-		setSelectedTools(new Set([...selectedTools, ...tools]));
-		setAgentTools([...selectedTools, ...tools]);
+		const merged = new Set([...selectedTools, ...tools]);
+		setSelectedTools(merged);
+		setAgentTools(Array.from(merged));
 	};
 
 	const isSelected = (toolName: string) => selectedTools.has(toolName);
