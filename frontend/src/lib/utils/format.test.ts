@@ -490,6 +490,27 @@ describe("formatMessages", () => {
 			expect(result[1].tool_call_id).toBe("call_mixed");
 		});
 
+		it("should generate composite id for tool_input messages", () => {
+			const messages = [
+				{
+					id: "msg-parent-id",
+					type: "ai",
+					content: "",
+					tool_calls: [
+						{
+							id: "call_abc123",
+							name: "search",
+							args: { query: "test" },
+						},
+					],
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result[0].id).toBe("msg-parent-id-tc-call_abc123");
+		});
+
 		it("should pass through existing tool_input messages unchanged", () => {
 			const messages = [
 				{
