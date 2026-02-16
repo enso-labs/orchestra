@@ -125,10 +125,10 @@ function SelectModel({
 					<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-[300px] p-0">
+			<PopoverContent className="w-[--radix-popover-trigger-width] p-0">
 				<Command>
 					<CommandInput placeholder="Search models..." />
-					<CommandList>
+					<CommandList className="max-h-[300px] overflow-y-auto">
 						<CommandEmpty>No model found.</CommandEmpty>
 						<CommandGroup>
 							{models.models
