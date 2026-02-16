@@ -319,7 +319,7 @@ function SchedulesIndexPage() {
 			</div>
 
 			{/* Main content */}
-			<div className="flex-1 flex flex-col min-h-0 pt-16">
+			<div className="flex-1 flex flex-col min-h-0 pt-14">
 				{/* Fixed header section */}
 				<div className="flex-shrink-0 px-4">
 					<div className="mx-auto">
@@ -473,7 +473,7 @@ function SchedulesIndexPage() {
 				</div>
 
 				{/* Scrollable content area */}
-				<div className="flex-1 min-h-0 px-4">
+				<div className="flex-1 min-h-0 px-4 overflow-auto">
 					<div className="mx-auto h-full">
 						{viewMode === "calendar" ? (
 							<ScheduleCalendar

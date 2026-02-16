@@ -50,7 +50,7 @@ export function ScheduleCalendar({
 	const views: View[] = useMemo(() => ["month", "week", "day"], []);
 
 	return (
-		<div className="schedule-calendar h-full min-h-[600px]">
+		<div className="schedule-calendar h-full min-h-[600px] pb-6">
 			<Calendar<ScheduleEvent>
 				localizer={localizer}
 				events={events}
@@ -59,7 +59,7 @@ export function ScheduleCalendar({
 				eventPropGetter={eventStyleGetter}
 				onSelectEvent={handleSelectEvent}
 				popup
-				style={{ height: "100%" }}
+				style={{ height: "calc(100% - 24px)" }}
 			/>
 		</div>
 	);
