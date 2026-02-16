@@ -20,7 +20,7 @@ let in_mem_messages: any[] = [];
 
 export type ChatContextType = {
 	responseRef: React.RefObject<string>;
-	toolCallChunkRef: React.RefObject<string>;
+	toolCallMapRef: React.RefObject<Map<string, { name: string; args: string }>>;
 	query: string;
 	setQuery: (query: string) => void;
 	appendToQuery: (text: string) => void;
@@ -79,7 +79,7 @@ export default function useChat(): ChatContextType {
 	const { agent } = useAgentContext();
 	const responseRef = useRef("");
 	const toolNameRef = useRef("");
-	const toolCallChunkRef = useRef("");
+	const toolCallMapRef = useRef(new Map<string, { name: string; args: string }>());
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
@@ -414,9 +414,7 @@ export default function useChat(): ChatContextType {
 		if (responseRef.current) {
 			responseRef.current = "";
 		}
-		if (toolCallChunkRef.current) {
-			toolCallChunkRef.current = "";
-		}
+		toolCallMapRef.current.clear();
 	};
 
 	const getMetadata = () => {
@@ -591,7 +589,7 @@ export default function useChat(): ChatContextType {
 
 			const streamHandler = new StreamMessageHandler(
 				toolNameRef,
-				toolCallChunkRef,
+				toolCallMapRef,
 				history,
 			);
 
@@ -751,7 +749,7 @@ export default function useChat(): ChatContextType {
 
 	return {
 		responseRef,
-		toolCallChunkRef,
+		toolCallMapRef,
 		handleSubmit,
 		sseHandler,
 		clearContent,
