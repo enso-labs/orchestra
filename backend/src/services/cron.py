@@ -14,7 +14,7 @@ from src.services.db import DB_URI, get_store_in_memory
 from src.schemas.entities.cron import JobTrigger, Job, Cron
 from src.utils.format import get_time
 
-jobstores = {"default": SQLAlchemyJobStore(url=DB_URI, tablename="schedules")}
+jobstores = {"default": SQLAlchemyJobStore(url=DB_URI, tablename="crons")}
 SCHEDULER = AsyncIOScheduler(jobstores=jobstores)
 
 IN_MEMORY_JOBS = {}
