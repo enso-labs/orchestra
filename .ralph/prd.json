@@ -1,164 +1,68 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/769-deep-agent-backend-sandbox-patterns",
-  "description": "Extensible Sandbox/Backend Selection - Re-introduce user-configurable sandbox selection using enum + registry dict + factory function pattern so adding new backends requires ~3 lines of code",
+  "branchName": "feat/772-schedule-model-dropdown",
+  "description": "Replace manual model text input with ModelSelect dropdown on schedule create/edit pages",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add SandboxType enum and schema fields",
-      "description": "As a developer, I need a SandboxType enum and schema fields so the system has a typed, validated representation of sandbox choices.",
+      "title": "Decouple SelectModel from ChatContext",
+      "description": "As a developer, I need SelectModel to accept model state via props so it can be reused outside of ChatContext (e.g., in schedule forms).",
       "acceptanceCriteria": [
-        "SandboxType(str, Enum) added to backend/src/schemas/entities/settings.py with values 'auto', 'daytona', 'state'",
-        "default_sandbox: Optional[str] = None field added to UserSettings entity",
-        "default_sandbox: Optional[str] = None field added to UserSettingsResponse model",
-        "UpdateDefaultSandboxRequest(BaseModel) added with sandbox: Optional[str] field",
-        "Typecheck passes (make format)"
+        "SelectModel accepts optional props: value (string), onChange (callback), modelsList (array)",
+        "When props are provided, SelectModel uses them instead of useChatContext()",
+        "When props are NOT provided, SelectModel falls back to useChatContext() (backward compatible)",
+        "Existing usages of SelectModel in chat pages continue to work unchanged",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "SelectModel currently imports useChatContext for model/setModel/models and useModelVisibility for filtering. Add optional controlled props with fallback to context."
     },
     {
       "id": "US-002",
-      "title": "Add set_default_sandbox repo method with unit tests",
-      "description": "As a developer, I need a repository method to persist the user's sandbox preference so it can be read back on every agent invocation.",
+      "title": "Add standalone models list fetcher",
+      "description": "As a developer, I need a way to fetch available models outside of ChatContext so the schedule form can populate the SelectModel dropdown.",
       "acceptanceCriteria": [
-        "set_default_sandbox(sandbox) method added to UserSettingsRepo in backend/src/repos/user_settings_repo.py, mirroring set_default_model()",
-        "Method validates input against SandboxType enum values; raises ValueError for invalid input",
-        "None input clears the setting (same as clearing default model)",
-        "Unit test added: test_set_default_sandbox stores and returns the value",
-        "Unit test added: test_clear_default_sandbox null clears the value",
-        "Unit test added: test_set_invalid_sandbox_raises rejects invalid values",
-        "make test passes"
+        "A hook or utility exists to fetch the models list from the /llm/models API endpoint",
+        "Returns the same shape as ChatContext's models array",
+        "Can be used independently of ChatContext",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": ""
+      "notes": "Check if ChatContext already fetches from an endpoint that can be extracted into a standalone hook. The /llm/models endpoint likely already exists."
     },
     {
       "id": "US-003",
-      "title": "Add PUT /settings/default-sandbox endpoint with route tests",
-      "description": "As a frontend client, I need an API endpoint to update the user's default sandbox setting.",
+      "title": "Replace text input with SelectModel in AgentScheduleForm",
+      "description": "As a user creating a schedule, I want to select a model from a dropdown instead of typing the model key name manually.",
       "acceptanceCriteria": [
-        "PUT /settings/default-sandbox endpoint added to backend/src/routes/v0/settings.py, mirroring update_default_model",
-        "Endpoint accepts UpdateDefaultSandboxRequest body",
-        "ValueError from repo is caught and returns HTTP 400",
-        "All existing settings endpoint responses updated to include default_sandbox field",
-        "Route test added: test_get_settings_includes_default_sandbox verifies field in GET response",
-        "Route test added: test_set_default_sandbox verifies PUT stores and returns value",
-        "Route test added: test_set_invalid_sandbox_returns_400 verifies invalid input returns 400",
-        "make test passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-004",
-      "title": "Implement registry pattern in resolve_sandbox_backend with dispatch tests",
-      "description": "As a developer, I need resolve_sandbox_backend() to accept a sandbox_type parameter and dispatch to the correct factory, so the function is extensible without modifying its core logic.",
-      "acceptanceCriteria": [
-        "_create_daytona_backend_checked(runtime) factory extracted in backend/src/agents/__init__.py wrapping existing Daytona creation logic",
-        "_create_state_backend(runtime) factory extracted creating StateBackend",
-        "_SANDBOX_FACTORIES dict maps SandboxType values to factory callables",
-        "resolve_sandbox_backend(runtime, sandbox_type=None) dispatches: None/'auto' tries Daytona then falls back to State; 'state' uses State directly; 'daytona' tries Daytona then falls back; unknown treats as auto",
-        "Unit test added: test_auto_uses_daytona_when_available (sandbox_type=None uses Daytona)",
-        "Unit test added: test_auto_falls_back_to_state (sandbox_type=None falls back when unavailable)",
-        "Unit test added: test_explicit_state_skips_daytona (sandbox_type='state' never calls create_daytona_backend)",
-        "Unit test added: test_explicit_daytona_falls_back_gracefully (sandbox_type='daytona' falls back if unavailable)",
-        "make test passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-005",
-      "title": "Wire sandbox_type through LLMController",
-      "description": "As a user, I want my sandbox preference applied when I invoke or stream an agent, so my setting is respected in all execution paths.",
-      "acceptanceCriteria": [
-        "_resolve_user_settings() in backend/src/controllers/llm.py returns 3-tuple (model, api_key, default_sandbox) instead of 2-tuple",
-        "default_sandbox read from the already-fetched settings object",
-        "sandbox_type passed to resolve_sandbox_backend() in llm_invoke()",
-        "sandbox_type passed through to stream_generator() in llm_stream()",
-        "make test passes"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-006",
-      "title": "Wire sandbox_type through stream_generator",
-      "description": "As a developer, I need stream_generator() to accept and forward the sandbox preference so streaming execution uses the correct backend.",
-      "acceptanceCriteria": [
-        "sandbox_type: str | None = None parameter added to stream_generator() in backend/src/utils/stream.py",
-        "Parameter passed to resolve_sandbox_backend(runtime, sandbox_type)",
-        "make test passes"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-007",
-      "title": "Wire sandbox_type through worker tasks",
-      "description": "As a developer, I need _execute_agent_stream() in the distributed worker to read and forward the sandbox preference from user settings.",
-      "acceptanceCriteria": [
-        "settings.default_sandbox read from the already-fetched settings object in _execute_agent_stream() in backend/src/workers/tasks.py",
-        "Value passed to resolve_sandbox_backend(runtime, sandbox_type)",
-        "make test passes"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-008",
-      "title": "Frontend service types and API call",
-      "description": "As a frontend developer, I need TypeScript types and an API function to interact with the new sandbox settings endpoint.",
-      "acceptanceCriteria": [
-        "SandboxType type exported in frontend/src/lib/services/userSettingsService.ts: 'auto' | 'daytona' | 'state'",
-        "default_sandbox: string | null field added to UserSettingsResponse interface",
-        "updateDefaultSandbox(sandbox: string | null) function added that PUTs to /settings/default-sandbox",
-        "npm run test passes",
-        "npm run build passes"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "SandboxSettings frontend component",
-      "description": "As a user, I want a dropdown in the Settings page to choose my default sandbox backend.",
-      "acceptanceCriteria": [
-        "New file frontend/src/components/settings/SandboxSettings.tsx created",
-        "Follows DefaultModelSettings.tsx pattern (Card + Select dropdown)",
-        "3 options displayed: Auto (Recommended), Daytona, Local",
-        "Current value fetched from getSettings() on mount",
-        "Selection calls updateDefaultSandbox() and shows toast on success/error",
+        "The Model field in AgentScheduleForm uses SelectModel component instead of text Input",
+        "The dropdown shows the same models available in the chat model selector",
+        "Selected model value is correctly written to the form state (customModel field)",
+        "The agent's current model is shown as placeholder/default when inheriting",
+        "Model selection persists correctly on form submit",
         "Typecheck passes",
         "Verify in browser using agent-browser skill"
       ],
-      "priority": 9,
+      "priority": 3,
       "passes": true,
-      "notes": ""
+      "notes": "File: frontend/src/components/forms/AgentScheduleForm.tsx. The Input at line ~506 with placeholder={agent.model} needs to become a controlled SelectModel. The form uses react-hook-form with register('customModel')."
     },
     {
-      "id": "US-010",
-      "title": "Wire SandboxSettings into Settings page",
-      "description": "As a user, I want the sandbox selector visible on the Settings page between existing settings sections.",
+      "id": "US-004",
+      "title": "Verify schedule edit loads saved model in dropdown",
+      "description": "As a user editing an existing schedule, I want the previously selected model to appear pre-selected in the dropdown.",
       "acceptanceCriteria": [
-        "SandboxSettings imported in frontend/src/pages/settings/index.tsx",
-        "Rendered between <DefaultModelSettings /> and <UserApiKeysSettings />",
-        "npm run test passes",
-        "npm run build passes",
+        "When editing a schedule, the SelectModel dropdown shows the saved model as selected",
+        "Changing the model and saving persists the new selection",
+        "Switching between Inherit from agent and custom correctly toggles the dropdown state",
+        "Typecheck passes",
         "Verify in browser using agent-browser skill"
       ],
-      "priority": 10,
+      "priority": 4,
       "passes": true,
-      "notes": ""
+      "notes": "initialData?.customModel is set at line 64 of AgentScheduleForm.tsx. This value needs to be passed as the controlled value to SelectModel."
     }
   ]
 }
