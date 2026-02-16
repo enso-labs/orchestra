@@ -96,6 +96,7 @@ export function formatMessages(messages: any[]) {
 		return [];
 	}
 	return messages.map((message: any) => {
+		// Spread preserves agent_name for subagent attribution (set by backend from lc_agent_name)
 		let messageCopy = { ...message };
 		// User Message
 		if (["user", "human"].includes(message.type)) {
