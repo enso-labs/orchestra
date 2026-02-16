@@ -85,8 +85,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Fixed all useEffects to use functional updater setAgent((prev) => ...) to prevent stale closures. Mount effect deduplicates with Set and only runs once ([] deps). Added hasCustomizedTools ref set to true on modal apply. WebSearch toggle uses functional updater. BaseToolMenu stays mounted in ChatInput so dropdown open/close doesn't re-trigger mount effect. Typecheck passes."
     },
     {
       "id": "US-007",

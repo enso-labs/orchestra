@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, ShieldCheck, ShieldOff, Globe, Wrench } from "lucide-react";
 import {
@@ -48,6 +48,7 @@ export function BaseToolMenu() {
 	const [showFileDialog, setShowFileDialog] = useState(false);
 	const [newFilePath, setNewFilePath] = useState("");
 	const [pathError, setPathError] = useState("");
+	const hasCustomizedTools = useRef(false);
 
 	// Validate file path
 	const validatePath = (path: string): string => {
@@ -77,23 +78,26 @@ export function BaseToolMenu() {
 	};
 
 	useEffect(() => {
-		setAgent({ ...agent, tools: [...agent.tools, ...DEFAULT_AGENT_TOOLS] });
+		setAgent((prev: any) => ({
+			...prev,
+			tools: [...new Set([...prev.tools, ...DEFAULT_AGENT_TOOLS])],
+		}));
 	}, []);
 
 	useEffect(() => {
 		localStorage.setItem("enso:tool:search", JSON.stringify(webSearchCheck));
 		if (webSearchCheck) {
-			setAgent({
-				...agent,
-				tools: [...new Set([...agent.tools, ...DEFAULT_AGENT_TOOLS])],
-			});
+			setAgent((prev: any) => ({
+				...prev,
+				tools: [...new Set([...prev.tools, ...DEFAULT_AGENT_TOOLS])],
+			}));
 		} else {
-			setAgent({
-				...agent,
-				tools: agent.tools.filter(
+			setAgent((prev: any) => ({
+				...prev,
+				tools: prev.tools.filter(
 					(tool: string) => !DEFAULT_AGENT_TOOLS.includes(tool),
 				),
-			});
+			}));
 		}
 	}, [webSearchCheck]);
 
@@ -201,6 +205,7 @@ export function BaseToolMenu() {
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
 				onApply={(selectedTools) => {
+					hasCustomizedTools.current = true;
 					setAgent((prev: any) => ({ ...prev, tools: selectedTools }));
 					setShowToolModal(false);
 				}}
