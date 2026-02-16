@@ -86,6 +86,9 @@ export class StreamMessageHandler {
 				name: state.name,
 				input: parsedInput,
 				parent_message_id: response.id,
+				...(response.agent_name !== undefined && {
+					agent_name: response.agent_name,
+				}),
 			};
 
 			if (existingIndex !== -1) {
