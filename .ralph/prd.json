@@ -1,0 +1,115 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/793-rlm-integration",
+  "description": "Research and prototype RLM (Recursive Language Model) integration from Alex Zhang paper",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Analyze rlms library architecture",
+      "description": "As a developer, I need to understand how the rlms library works internally so I can evaluate integration options.",
+      "acceptanceCriteria": [
+        "Clone https://github.com/alexzhang13/rlm and read source code",
+        "Document how rlm.completion() orchestrates decomposition",
+        "Document REPL environment interface (methods, state management)",
+        "Document how recursive calls are tracked and results aggregated",
+        "Document prompt templates used for decomposition and synthesis",
+        "Document sandbox backend abstraction (local, Docker, Modal)",
+        "Save analysis to docs/rlm-analysis.md in the repo"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Map RLM concepts to Orchestra infrastructure",
+      "description": "As a developer, I need to identify which Orchestra components correspond to RLM concepts and where gaps exist.",
+      "acceptanceCriteria": [
+        "Create mapping table: RLM concept → Orchestra equivalent → Gap",
+        "Identify SubAgent ↔ sub-LM calls, Daytona ↔ REPL, stream_generator ↔ rlm.completion",
+        "Document gaps that need bridging for each integration option",
+        "Add mapping to docs/rlm-analysis.md"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Evaluate integration options",
+      "description": "As a developer, I need a clear comparison of all integration approaches so the team can choose the best path.",
+      "acceptanceCriteria": [
+        "Evaluate Option A: Direct rlms library integration with pros/cons/effort",
+        "Evaluate Option B: LangGraph native implementation with pros/cons/effort",
+        "Evaluate Option C: Hybrid rlms + LangGraph streaming with pros/cons/effort",
+        "Evaluate Option D: Tool-based exposure with pros/cons/effort",
+        "Include streaming/UI visibility analysis for each option",
+        "Save comparison to docs/rlm-recommendation.md"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Build proof of concept",
+      "description": "As a developer, I need a working prototype to validate the recommended approach.",
+      "acceptanceCriteria": [
+        "Install rlms in backend venv or create isolated test script",
+        "Create backend/scripts/rlm_prototype.py that runs rlm.completion()",
+        "Test with a large input such as analyzing the Orchestra codebase",
+        "Measure and document latency, cost, quality vs standard completion",
+        "Document findings in docs/rlm-recommendation.md"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Design full integration architecture",
+      "description": "As a developer, I need an architecture design for the production integration.",
+      "acceptanceCriteria": [
+        "Document where RLM fits in agent construction pipeline",
+        "Document how recursive steps stream to frontend",
+        "Document how UI shows decomposition progress",
+        "Document how sandbox environments are configured",
+        "Document how cost tracking works across recursive calls",
+        "Include dependency on #694 subagent UI for rendering recursive steps",
+        "Add architecture to docs/rlm-recommendation.md"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Write final recommendation",
+      "description": "As a developer, I need a clear recommendation document for the team.",
+      "acceptanceCriteria": [
+        "Recommended approach clearly stated with justification",
+        "Architecture overview included",
+        "Migration path from existing .claude/skills/rlm/ skill documented",
+        "Timeline and effort estimate provided",
+        "Dependencies listed",
+        "docs/rlm-recommendation.md is complete and reviewable"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Verify workspace is clean and push final changes",
+      "description": "As a developer, I want to ensure all changes are committed and pushed.",
+      "acceptanceCriteria": [
+        "Run git status to check for uncommitted changes",
+        "If remaining changes exist, commit and push to branch",
+        "All commits visible in GitHub PR"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

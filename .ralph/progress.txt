@@ -1,0 +1,12 @@
+## Codebase Patterns
+- Agent construction in `backend/src/agents/__init__.py` — `construct_agent()` builds LangGraph agent with tools, subagents, model
+- SubAgent support via `deepagents` library — supervisor-worker hierarchy
+- Daytona sandbox in `backend/src/agents/daytona.py` — code execution environment
+- Streaming via `backend/src/utils/stream.py` — SSE with `["messages", [chunk, metadata]]` format
+- `subgraphs=True` enables subagent message streaming
+- Existing RLM skill at `.claude/skills/rlm/SKILL.md` — Claude Code-level pattern (not platform-level)
+- RLM paper: arXiv:2512.24601v2 by Alex Zhang
+- RLM library: `pip install rlms` — https://github.com/alexzhang13/rlm
+- RLM core: `rlm.completion(prompt, model)` replaces `llm.completion()` — REPL-based decomposition
+- REPL environments: local (exec), Docker, Modal, Prime sandboxes
+---
