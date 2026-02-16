@@ -15,9 +15,13 @@ def from_message_to_dict(messages, include_tool_calls: bool = True) -> list[dict
             continue
         # Handle both Pydantic models and plain dicts
         if isinstance(message, dict):
-            converted.append(message)
+            d = message
         else:
-            converted.append(message.model_dump())
+            d = message.model_dump()
+        # Promote lc_agent_name → agent_name for frontend consumption
+        if "lc_agent_name" in d and "agent_name" not in d:
+            d["agent_name"] = d["lc_agent_name"]
+        converted.append(d)
     return converted
 
 

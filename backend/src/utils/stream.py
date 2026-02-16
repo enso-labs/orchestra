@@ -34,8 +34,13 @@ STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
 def _to_dict(message) -> dict:
     """Convert a message to dict, handling both Pydantic models and plain dicts."""
     if isinstance(message, dict):
-        return message
-    return message.model_dump()
+        d = message
+    else:
+        d = message.model_dump()
+    # Promote lc_agent_name → agent_name for frontend consumption
+    if "lc_agent_name" in d and "agent_name" not in d:
+        d["agent_name"] = d["lc_agent_name"]
+    return d
 
 
 def handle_tasks_mode(payload: dict):
