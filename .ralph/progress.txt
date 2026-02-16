@@ -1,0 +1,11 @@
+## Codebase Patterns
+- Backend uses `deepagents` library for SubAgent support
+- `construct_agent()` in `backend/src/agents/__init__.py` sets up subagents
+- `astream()` called with `subgraphs=True` to get subagent messages
+- `lc_agent_name` is a LangGraph-injected field on messages from subgraphs
+- `handle_multi_mode()` in `backend/src/utils/stream.py` already detects `lc_agent_name` but only logs it
+- `_to_dict()` uses `.model_dump()` for Pydantic models — check if `lc_agent_name` survives
+- Frontend message pipeline: useChat.ts handleMessages → StreamMessageHandler → formatMessages → ChatMessages.tsx
+- Tool calls render via ToolTimeline → ToolTimelineItem
+- AI responses render via MarkdownCard in ChatMessages
+---

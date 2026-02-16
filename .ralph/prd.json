@@ -1,0 +1,129 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/694-show-subagent-tool-calls",
+  "description": "Render subagent tool calls in the UI with agent name attribution",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Preserve lc_agent_name in backend serialization",
+      "description": "As a developer, I need the backend to include agent_name in serialized stream output so the frontend can display it.",
+      "acceptanceCriteria": [
+        "handle_multi_mode() in backend/src/utils/stream.py extracts lc_agent_name and includes it as agent_name in serialized dict",
+        "from_message_to_dict() in backend/src/utils/messages.py preserves agent_name for checkpoint reload",
+        "Verify with a stream log that subagent messages include agent_name field",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Extract agent_name in frontend stream handler",
+      "description": "As a developer, I need the frontend to extract agent_name from streamed chunks.",
+      "acceptanceCriteria": [
+        "handleMessages() in frontend/src/hooks/useChat.ts extracts agent_name from response payload",
+        "agent_name attached to response object before passing to StreamMessageHandler",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Propagate agent_name through StreamMessageHandler",
+      "description": "As a developer, I need agent_name to survive message processing and appear in the history array.",
+      "acceptanceCriteria": [
+        "StreamMessageHandler preserves agent_name in messageCreate(), messageUpdate(), and toolCall()",
+        "History entries have agent_name field when present",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Preserve agent_name in formatMessages",
+      "description": "As a developer, I need agent_name to survive formatMessages normalization for checkpoint-loaded threads.",
+      "acceptanceCriteria": [
+        "formatMessages() in frontend/src/lib/utils/format.ts preserves agent_name through all message type branches",
+        "Checkpoint-loaded threads with subagent messages retain agent_name",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create SubagentBadge component",
+      "description": "As a user, I want a visual badge showing the subagent name on messages.",
+      "acceptanceCriteria": [
+        "New component SubagentBadge created at frontend/src/components/badges/SubagentBadge.tsx",
+        "Shows bot icon + agent name in muted style",
+        "Only renders when agent_name is present and non-null",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Render subagent attribution in ChatMessages",
+      "description": "As a user, I want to see which subagent produced each message in the chat.",
+      "acceptanceCriteria": [
+        "ChatMessages.tsx renders SubagentBadge above assistant/AI messages with agent_name",
+        "Subagent messages have subtle visual distinction (left border or slight indent)",
+        "Parent agent messages render normally unchanged",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Render subagent attribution in ToolTimeline",
+      "description": "As a user, I want to see which subagent made each tool call.",
+      "acceptanceCriteria": [
+        "ToolTimelineItem.tsx shows via {agent_name} in the tool call header",
+        "Only shows when agent_name is present",
+        "Consistent styling with SubagentBadge",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add tests for agent_name propagation",
+      "description": "As a developer, I need tests to verify agent_name flows through the pipeline.",
+      "acceptanceCriteria": [
+        "Test in format.test.ts that formatMessages preserves agent_name",
+        "All existing tests continue to pass",
+        "npm test passes in frontend directory"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Verify workspace is clean and push final changes",
+      "description": "As a developer, I want to ensure all changes are committed and pushed.",
+      "acceptanceCriteria": [
+        "Run git status to check for uncommitted changes",
+        "If remaining changes exist, commit and push to branch",
+        "All commits visible in GitHub PR"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
