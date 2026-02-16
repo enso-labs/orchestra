@@ -11,7 +11,7 @@ from .info import router as info
 from .auth import router as auth
 from .storage import router as storage
 from .assistant import router as assistant
-from .schedule import router as schedule
+from .cron import router as cron
 from .prompt import router as prompt
 from .project import router as project
 from .api_tokens import router as api_tokens
@@ -29,7 +29,7 @@ def create_api_router(app: FastAPI, prefix: str = "/api"):
     app.include_router(assistant, prefix=prefix)
     app.include_router(prompt, prefix=prefix)
     app.include_router(project, prefix=prefix)
-    app.include_router(schedule, prefix=prefix)
+    app.include_router(cron, prefix=prefix)
     if LANGCONNECT_SERVER_URL:
         from .rag import gateway as rag
 

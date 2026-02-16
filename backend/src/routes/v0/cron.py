@@ -12,16 +12,16 @@ from src.schemas.entities.cron import (
     JobUpdated,
 )
 
-router = APIRouter(tags=["Schedule"])
+router = APIRouter(tags=["Cron"])
 
 
 ################################################################################
-### List Schedules
+### List Crons
 ################################################################################
 @router.get(
-    "/schedules",
+    "/crons",
     responses={200: {"content": {"application/json": {"example": Examples.SCHEDULE_LIST_EXAMPLE}}}},
-    operation_id="ruska_list_schedules",
+    operation_id="ruska_list_crons",
     tags=["mcp"],
 )
 @cache(expire=30)
@@ -29,17 +29,17 @@ async def get_jobs(
     user: ProtectedUser = Depends(verify_credentials),
 ):
     cron_service.user_id = user.id
-    schedules = cron_service.get_jobs()
-    return {"schedules": [schedule.model_dump() for schedule in schedules]}
+    crons = cron_service.get_jobs()
+    return {"crons": [cron.model_dump() for cron in crons]}
 
 
 ################################################################################
-### Get Schedule
+### Get Cron
 ################################################################################
 @router.get(
-    "/schedules/{job_id}",
+    "/crons/{job_id}",
     responses={200: {"content": {"application/json": {"example": Examples.SCHEDULE_FIND_EXAMPLE}}}},
-    operation_id="ruska_get_schedule",
+    operation_id="ruska_get_cron",
     tags=["mcp"],
 )
 async def get_job(
@@ -47,18 +47,18 @@ async def get_job(
     user: ProtectedUser = Depends(verify_credentials),
 ):
     cron_service.user_id = user.id
-    schedule = cron_service.get_job(job_id)
-    return {"schedule": schedule.model_dump()}
+    cron = cron_service.get_job(job_id)
+    return {"cron": cron.model_dump()}
 
 
 ################################################################################
-### Create Schedule
+### Create Cron
 ################################################################################
 @router.post(
-    "/schedules",
+    "/crons",
     status_code=201,
     responses={201: {"content": {"application/json": {"example": Examples.SCHEDULE_CREATED_RESPONSE_EXAMPLE}}}},
-    operation_id="ruska_create_schedule",
+    operation_id="ruska_create_cron",
     tags=["mcp"],
 )
 async def create_job(
@@ -66,49 +66,49 @@ async def create_job(
     user: ProtectedUser = Depends(verify_credentials),
 ):
     cron_service.user_id = user.id
-    schedule = cron_service.create_job(job)
+    cron = cron_service.create_job(job)
     return JSONResponse(
         status_code=201,
         content={
             "job": {
-                "id": schedule.id,
-                "next_run_time": schedule.next_run_time.isoformat(),
+                "id": cron.id,
+                "next_run_time": cron.next_run_time.isoformat(),
             }
         },
     )
 
 
 ################################################################################
-### Update Schedule
+### Update Cron
 ################################################################################
 @router.put(
-    "/schedules/{job_id}",
+    "/crons/{job_id}",
     responses={200: {"model": JobUpdated}},
-    operation_id="ruska_update_schedule",
+    operation_id="ruska_update_cron",
     tags=["mcp"],
 )
 async def update_job(
     job_id: str,
-    job_update: CronUpdate = Body(openapi_examples={"update_schedule": Examples.SCHEDULE_UPDATE_EXAMPLE}),
+    job_update: CronUpdate = Body(openapi_examples={"update_cron": Examples.SCHEDULE_UPDATE_EXAMPLE}),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     cron_service.user_id = user.id
-    schedule = cron_service.update_job(job_id, job_update)
+    cron = cron_service.update_job(job_id, job_update)
     return JSONResponse(
         status_code=200,
         content={
             "job": {
-                "id": schedule.id,
-                "next_run_time": schedule.next_run_time.isoformat(),
+                "id": cron.id,
+                "next_run_time": cron.next_run_time.isoformat(),
             }
         },
     )
 
 
 ################################################################################
-### Delete Schedule
+### Delete Cron
 ################################################################################
-@router.delete("/schedules/{job_id}", operation_id="ruska_delete_schedule", tags=["mcp"])
+@router.delete("/crons/{job_id}", operation_id="ruska_delete_cron", tags=["mcp"])
 async def delete_job(
     job_id: str,
     user: ProtectedUser = Depends(verify_credentials),
