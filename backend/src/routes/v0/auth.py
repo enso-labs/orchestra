@@ -185,7 +185,7 @@ async def auth_callback(
             access=1,
         )
         # Add the new user to the database
-        await user_repo.create(new_user)
+        new_user = await user_repo.create(new_user)
 
         # Create user response
         user_response = UserResponse(

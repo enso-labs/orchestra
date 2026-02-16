@@ -33,7 +33,7 @@ engine = create_async_engine(
 AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-async def main():
+async def main() -> None:
     # Get all users
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(User))
