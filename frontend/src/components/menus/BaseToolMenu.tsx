@@ -188,7 +188,7 @@ export function BaseToolMenu() {
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
 				onApply={(selectedTools) => {
-					setAgent({ ...agent, tools: selectedTools });
+					setAgent((prev: any) => ({ ...prev, tools: selectedTools }));
 					setShowToolModal(false);
 				}}
 			/>

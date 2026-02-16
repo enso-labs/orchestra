@@ -7,4 +7,32 @@
 - ToolSelectionModal is 1400px wide with responsive sm:w-[95vw] — works on mobile
 - Tool service at frontend/src/lib/services/toolService.ts handles listTools, getMcpTools, getA2aAgents
 - Image upload is a separate component rendered inside the dropdown
+- ToolSelectionModal uses named export (not default) — import with { ToolSelectionModal }
+- tsc is not a package.json script; use node_modules/.bin/tsc --noEmit for typecheck
+- npm install needed before typecheck in worktree (node_modules not shared)
+- Use functional updater `setAgent((prev) => ...)` when modifying agent state from inside modals/callbacks to avoid stale closures
+---
+
+## 2026-02-16 - US-001
+- Added Configure Tools option to BaseToolMenu dropdown with Wrench icon
+- Imported ToolSelectionModal and wired it with AgentContext props (initialSelectedTools, initialMcpConfig, initialA2aConfig)
+- Modal opens on click, closes dropdown first to avoid overlay conflicts
+- onApply updates agent.tools via setAgent
+- Files changed: frontend/src/components/menus/BaseToolMenu.tsx
+- **Learnings for future iterations:**
+  - ToolSelectionModal is a named export, not default — use `{ ToolSelectionModal }`
+  - Need `npm install` first in worktree before typecheck
+  - `node_modules/.bin/tsc --noEmit` is the typecheck command (no npm script for it)
+---
+
+## 2026-02-16 - US-002
+- Fixed onApply callback to use functional updater `setAgent((prev) => ({ ...prev, tools: selectedTools }))` instead of stale closure `setAgent({ ...agent, tools: selectedTools })`
+- This prevents overwriting MCP/A2A config that ToolSelectionModal's useEffect already synced to AgentContext
+- Verified: MCP/A2A config persists via ToolSelectionModal's `useEffect` on `[mcpServers, a2aServers]` (line 53-55 of ToolSelectionModal)
+- Verified: useChat.ts `handleSSEUnified` and `handleSSE` both send `tools: agent.tools`, `mcp: agent.mcp`, `a2a: agent.a2a` in payload
+- Files changed: frontend/src/components/menus/BaseToolMenu.tsx
+- **Learnings for future iterations:**
+  - Always use functional updater `setAgent((prev) => ...)` when another component may have updated agent state concurrently
+  - ToolSelectionModal syncs MCP/A2A to AgentContext via its own useEffect — no need to pass these back through onApply
+  - useChat.ts reads `agent` from `useAgentContext()` at submission time, so tool changes are automatically included
 ---
