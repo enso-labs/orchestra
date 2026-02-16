@@ -27,7 +27,7 @@ from src.constants import (
 )
 from src.utils.migrations import run_migrations
 from src.utils.rate_limit import limiter
-from src.services.schedule import schedule_service
+from src.services.cron import cron_service
 from src.utils.cache import init_cache
 from contextlib import asynccontextmanager
 
@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
     if APP_ENV == "production" or APP_ENV == "staging":
         run_migrations()
 
-    schedule_service.scheduler.start()
+    cron_service.scheduler.start()
 
     # Initialize cache
     init_cache()

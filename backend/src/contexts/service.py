@@ -1,7 +1,7 @@
 from typing import Optional
 from langchain_core.runnables import RunnableConfig
 from langgraph.pregel.main import BaseCheckpointSaver
-from src.services.schedule import ScheduleService
+from src.services.cron import CronService
 from src.services.llm import LLMService
 from src.services.project import ProjectService
 from src.services.checkpoint import CheckpointService
@@ -35,7 +35,7 @@ class ServiceContext:
         self.thread_service = ThreadService(user_id=self.user_id, store=store)
         self.prompt_service = PromptService(user_id=self.user_id, store=store)
         self.project_service = ProjectService(user_id=self.user_id, store=store)
-        self.schedule_service = ScheduleService(user_id=self.user_id, store=store)
+        self.cron_service = CronService(user_id=self.user_id, store=store)
         self.assistant_service = AssistantService(user_id=self.user_id, store=store)
         self.llm_service = LLMService(
             user_id=self.user_id,

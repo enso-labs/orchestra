@@ -162,40 +162,40 @@ def create_job(job: Job):
     )
 
 
-class ScheduleService:
+class CronService:
     def __init__(self, user_id: str = None, store: BaseStore = None):
         self.user_id = user_id
         self.store = store or get_store_in_memory()
         self.scheduler = SCHEDULER
 
     def get_jobs(self) -> list[Cron]:
-        user_schedules = []
+        user_crons = []
         for job in self.scheduler.get_jobs():
             if job.kwargs.get("user_id") == self.user_id:
-                schedule = Cron(
+                cron = Cron(
                     id=job.id,
                     title=job.kwargs.get("title", "Untitled Cron"),
                     trigger=JobTrigger.from_trigger(job.trigger),
                     task=job.args[0],
                     next_run_time=job.next_run_time,
                 )
-                user_schedules.append(schedule)
-        user_schedules.sort(key=lambda x: x.next_run_time, reverse=True)
-        return user_schedules
+                user_crons.append(cron)
+        user_crons.sort(key=lambda x: x.next_run_time, reverse=True)
+        return user_crons
 
     def get_job(self, job_id: str) -> Cron:
         job = self.scheduler.get_job(job_id)
         if job.kwargs.get("user_id") != self.user_id:
             raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
-        schedule = Cron(
+        cron = Cron(
             id=job.id,
             title=job.kwargs.get("title", "Untitled Cron"),
             trigger=JobTrigger.from_trigger(job.trigger),
             task=job.args[0],
             next_run_time=job.next_run_time,
         )
-        return schedule
+        return cron
 
     def create_job(self, job: Job) -> Cron:
         job_id = str(uuid4())
@@ -212,18 +212,18 @@ class ScheduleService:
             misfire_grace_time=300,
         )
 
-        print(f"✅ Scheduled job created: {scheduled_job}")
+        print(f"✅ Cron job created: {scheduled_job}")
         print(f"   Job ID: {job_id}")
         print(f"   Next run time: {scheduled_job.next_run_time.isoformat()}")
 
-        schedule = Cron(
+        cron = Cron(
             id=job_id,
             title=job.title,
             trigger=JobTrigger.from_trigger(job.trigger),
             task=job.task,
             next_run_time=scheduled_job.next_run_time.isoformat(),
         )
-        return schedule
+        return cron
 
     def update_job(self, job_id: str, job_update: Job) -> Cron:
         # Get existing job and verify ownership
@@ -255,18 +255,18 @@ class ScheduleService:
         # Get the updated job to return current state
         updated_job = self.scheduler.get_job(job_id)
 
-        print(f"✅ Scheduled job updated: {updated_job}")
+        print(f"✅ Cron job updated: {updated_job}")
         print(f"   Job ID: {job_id}")
         print(f"   Next run time: {updated_job.next_run_time.isoformat()}")
 
-        schedule = Cron(
+        cron = Cron(
             id=job_id,
             title=job_update.title,
             trigger=JobTrigger.from_trigger(job_update.trigger),
             task=job_update.task,
             next_run_time=updated_job.next_run_time.isoformat(),
         )
-        return schedule
+        return cron
 
     def delete_job(self, job_id: str) -> None:
         try:
@@ -275,11 +275,11 @@ class ScheduleService:
                 raise HTTPException(status_code=403, detail="Not authorized to access this job")
             self.scheduler.remove_job(job_id)
 
-            print(f"✅ Scheduled job deleted: {job_id}")
+            print(f"✅ Cron job deleted: {job_id}")
             print(f"   Job ID: {job_id}")
             return True
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to delete job: {e}")
 
 
-schedule_service = ScheduleService()
+cron_service = CronService()

@@ -174,5 +174,5 @@ class LLMController:
         )
 
     async def llm_task(self, job: CronCreate):
-        cron = self.service_context.schedule_service.create_job(job)
+        cron = self.service_context.cron_service.create_job(job)
         return cron
