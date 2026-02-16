@@ -259,7 +259,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 									message:
 										editingSchedule.task.input?.messages?.[0]?.content || "",
 									inheritFromAgent:
-										editingSchedule.task.metadata?.inherited_from_agent || true,
+										editingSchedule.task.metadata?.inherited_from_agent ?? true,
 									customModel: editingSchedule.task.model,
 									customSystem: editingSchedule.task.system_prompt,
 									customTools: editingSchedule.task.tools || [],
