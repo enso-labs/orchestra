@@ -15,7 +15,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "SelectModel currently imports useChatContext for model/setModel/models and useModelVisibility for filtering. Add optional controlled props with fallback to context."
     },
     {
@@ -29,7 +29,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Check if ChatContext already fetches from an endpoint that can be extracted into a standalone hook. The /llm/models endpoint likely already exists."
     },
     {

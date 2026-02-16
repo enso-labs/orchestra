@@ -1,3 +1,34 @@
 # Ralph Progress: Schedule Model Dropdown (#772)
 # Branch: feat/772-schedule-model-dropdown
 # Started: 2026-02-16
+
+## Codebase Patterns
+- SelectModel is at `frontend/src/components/lists/SelectModel.tsx` — now supports controlled props (`value`, `onChange`, `modelsList`) with ChatContext fallback
+- `ModelsResponse` type is exported from `frontend/src/lib/services/modelService.ts` — shape: `{ default: string, free: string[], models: string[] }`
+- `useModel` hook (in `frontend/src/hooks/useModel.tsx`) fetches from `/llm/models` and returns `{ model, setModel, models, useModelsEffect, ... }`
+- `useModelVisibility` hook controls which models appear in the dropdown based on localStorage settings
+- Frontend tests: run with `npx vitest run` from `frontend/` directory (need `npm install` first if `node_modules` missing)
+- TypeScript check: `npx -p typescript tsc --noEmit` from `frontend/`
+- Existing SelectModel usages: `agent-create-form.tsx` (uses context mode with `onModelSelected` callback)
+- `useModelsList` hook at `frontend/src/hooks/useModelsList.ts` — standalone models fetcher, returns `{ models, isLoading }`, no ChatContext dependency
+
+---
+
+## 2026-02-16 - US-001
+- What was implemented: Decoupled SelectModel from ChatContext by adding optional controlled props (`value`, `onChange`, `modelsList`). When these props are provided, SelectModel uses them instead of `useChatContext()`. When not provided, it falls back to context (backward compatible).
+- Files changed: `frontend/src/components/lists/SelectModel.tsx`
+- **Learnings for future iterations:**
+  - `useChatContext()` returns `any` type — the context is untyped, so always destructure what you need
+  - React hooks must always be called (can't conditionally skip `useChatContext()`), so the pattern is: always call the hook, then use `prop ?? contextValue` to choose
+  - The `onModelSelected` callback is called with no arguments — it's a notification, not a value setter
+  - All 232 frontend tests pass; the `modelBadgeIntegration.test.tsx` suite specifically checks that SelectModel exists and is imported in agent-create-form
+---
+
+## 2026-02-16 - US-002
+- What was implemented: Created a standalone `useModelsList` hook at `frontend/src/hooks/useModelsList.ts` that fetches available models from `/llm/models` independently of ChatContext. Returns `{ models: ModelsResponse, isLoading: boolean }`.
+- Files changed: `frontend/src/hooks/useModelsList.ts` (new file)
+- **Learnings for future iterations:**
+  - The `listModels` service function returns `response.data` as `ModelsResponse` — always access `.data` on the axios response
+  - The existing `useModel` hook has a `useModelsEffect` inner hook pattern (hook-returning-hook) which is unusual — the new `useModelsList` hook uses a standard `useEffect` pattern instead
+  - `useModelsList` can be passed directly to `SelectModel`'s `modelsList` prop since both use `ModelsResponse` type
+---
