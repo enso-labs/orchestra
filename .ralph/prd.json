@@ -46,7 +46,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "File: frontend/src/components/forms/AgentScheduleForm.tsx. The Input at line ~506 with placeholder={agent.model} needs to become a controlled SelectModel. The form uses react-hook-form with register('customModel')."
     },
     {

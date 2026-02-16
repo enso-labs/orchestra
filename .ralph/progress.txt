@@ -11,6 +11,8 @@
 - TypeScript check: `npx -p typescript tsc --noEmit` from `frontend/`
 - Existing SelectModel usages: `agent-create-form.tsx` (uses context mode with `onModelSelected` callback)
 - `useModelsList` hook at `frontend/src/hooks/useModelsList.ts` — standalone models fetcher, returns `{ models, isLoading }`, no ChatContext dependency
+- AgentScheduleForm uses react-hook-form: for controlled components use `watch("field")` + `setValue("field", val)` instead of `register("field")`
+- Schedule form is accessed via SchedulesIndexPage (/schedules) create dialog — AgentSchedulesPanel is not yet integrated into agent edit page
 
 ---
 
@@ -31,4 +33,15 @@
   - The `listModels` service function returns `response.data` as `ModelsResponse` — always access `.data` on the axios response
   - The existing `useModel` hook has a `useModelsEffect` inner hook pattern (hook-returning-hook) which is unusual — the new `useModelsList` hook uses a standard `useEffect` pattern instead
   - `useModelsList` can be passed directly to `SelectModel`'s `modelsList` prop since both use `ModelsResponse` type
+---
+
+## 2026-02-16 - US-003
+- What was implemented: Replaced the text `Input` for the Model field in AgentScheduleForm's "Custom Configuration" section with a controlled `SelectModel` dropdown. The dropdown uses `useModelsList` to fetch models independently and passes them via props (`value`, `onChange`, `modelsList`) to SelectModel.
+- Files changed: `frontend/src/components/forms/AgentScheduleForm.tsx`
+- **Learnings for future iterations:**
+  - AgentScheduleForm uses react-hook-form — for controlled components like SelectModel, use `watch("field")` for the value and `setValue("field", newVal)` for the onChange, instead of `register("field")`
+  - The entire app is wrapped in `ChatProvider` at the root (in `main.tsx`), so `useChatContext()` inside SelectModel always has a provider — but using controlled props is still cleaner and avoids the implicit dependency
+  - AgentSchedulesPanel component exists but is NOT yet integrated into the agent edit page — it's only used standalone. The schedule form is accessible via the SchedulesIndexPage (/schedules) create dialog
+  - The schedule form default value for customModel is `initialData?.customModel || agent.model` (line 64), so when editing, the previously saved model is pre-filled
+  - Browser verification confirmed: dropdown shows all models (Anthropic, OpenAI, Google, Groq, xAI), icon rendering works, and switching between "Use Agent Settings" / "Custom Configuration" correctly toggles the SelectModel visibility
 ---
