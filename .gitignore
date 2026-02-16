@@ -31,3 +31,4 @@
 **/prd.json
 **/progress.txt
 **/.last-branch
+**/.cloudflared/
