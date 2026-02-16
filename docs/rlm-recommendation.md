@@ -466,4 +466,71 @@ Option D most closely mirrors the existing skill's architecture (supervisor + pa
 
 ---
 
+## 11. Proof of Concept Results
+
+> Full benchmark report: [docs/rlm-benchmark-results.md](./rlm-benchmark-results.md)
+> Prototype script: `backend/scripts/rlm_prototype.py`
+
+### 11.1 Test Setup
+
+The prototype ran `rlm.completion()` against 50k characters (13 Python files) from `backend/src/`, using:
+- **Root model**: gpt-4.1-mini (orchestration)
+- **Sub model**: gpt-4.1-nano (chunk processing)
+- **Environment**: local (in-process REPL)
+- **Query**: Codebase analysis covering architecture, security vulnerabilities, and refactoring opportunities
+
+A standard (non-RLM) completion using the same root model was run for comparison.
+
+### 11.2 Benchmark Results
+
+| Metric | Standard | RLM | Ratio |
+|--------|----------|-----|-------|
+| Latency | 30.4s | 76.5s | 2.52x slower |
+| Input tokens | 10,634 | 126,412 | 11.89x more |
+| Output tokens | 1,875 | 14,129 | 7.54x more |
+| Cost | $0.0073 | $0.0540 | 7.45x more |
+| Response quality | Detailed, code-specific | Aggregated, higher-level | Comparable |
+
+### 11.3 Key Findings
+
+1. **RLM is 2.5x slower and 7.4x more expensive for within-context inputs.** The iterative REPL loop (12 iterations) and growing message history amplify both latency and token consumption. For inputs that fit in the model's context window, standard completion is strictly better.
+
+2. **RLM's value proposition is for inputs exceeding the context window.** When standard completion fails entirely, RLM enables processing by offloading context to the REPL. The cost overhead is justified when there is no alternative.
+
+3. **Streaming gap is confirmed critical.** RLM blocked for 76.5s with zero intermediate output. Verbose mode shows rich iteration progress, but this is only accessible via console logging — not as programmatic callbacks. This confirms Gap 1 from Section 9 is a production blocker.
+
+4. **FINAL_VAR response extraction is unreliable.** One test run returned just the variable name `"final_report"` (12 chars) instead of the 6k-char analysis. The library's `find_final_answer()` depends on REPL state that can be inconsistent. This is a reliability blocker for Option A.
+
+5. **Sub-call parallelism works well.** The 20 sub-LM calls used `llm_query_batched()` with `asyncio.gather()`, processing chunks concurrently. This is the primary speed benefit of the RLM approach.
+
+6. **Dual-model cost optimization works but doesn't offset the iteration overhead.** While gpt-4.1-nano is 4x cheaper per token than gpt-4.1-mini, the root model's growing context (from accumulating iteration results) dominates the cost.
+
+### 11.4 Impact on Integration Options
+
+| Option | PoC Verdict |
+|--------|-------------|
+| **A: Direct rlms** | **Not viable.** Confirmed: no streaming, FINAL_VAR bugs, 7.4x cost overhead. |
+| **B: Native LangGraph** | Still viable but high effort. PoC confirms the iteration protocol works. |
+| **C: Hybrid rlms** | Weakened. FINAL_VAR bugs mean forking rlms requires fixing core library issues. |
+| **D: Tool-Based** | **Strengthened.** Avoids all rlms issues. `batch_llm_query` provides parallelism. Standard tool streaming. Existing skill pattern validates the approach. |
+
+### 11.5 Reproduction
+
+```bash
+# Dry run (validate setup, no API calls):
+uv run --with "rlms>=0.1.0" backend/scripts/rlm_prototype.py --dry-run
+
+# Full benchmark:
+set -a && source ~/.env/orchestra/.env.backend && set +a
+uv run --with "rlms>=0.1.0" backend/scripts/rlm_prototype.py --backend openai --verbose
+
+# With Anthropic:
+uv run --with "rlms>=0.1.0" backend/scripts/rlm_prototype.py --backend anthropic
+
+# Custom input size:
+uv run --with "rlms>=0.1.0" backend/scripts/rlm_prototype.py --max-chars 200000
+```
+
+---
+
 *Evaluation performed on 2026-02-16 as part of feature #793.*

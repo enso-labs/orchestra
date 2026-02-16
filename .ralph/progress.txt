@@ -26,6 +26,12 @@
 - `max_concurrency=4` in RunnableConfig but SubAgents still execute sequentially
 - Only `asyncio.gather()` usage: search tool URL fetching with `Semaphore(5)`
 - `rlms` not installed in backend — feature #793 is research/planning phase
+- rlms v0.1.0 — `get_client(backend, backend_kwargs={...})` signature; `ModelUsageSummary` uses `total_input_tokens`/`total_output_tokens`/`total_calls`
+- rlms FINAL_VAR extraction is unreliable — sometimes returns variable name instead of value
+- rlms has no streaming callbacks — verbose mode logs to console only, not programmatic
+- For within-context inputs, standard completion beats RLM on latency (2.5x) and cost (7.4x)
+- RLM iteration context grows with each REPL cycle — dominant cost amplification factor
+- Use `uv run --with "rlms>=0.1.0"` for isolated script execution without modifying backend deps
 ---
 
 ## 2026-02-16 - US-001
@@ -94,4 +100,40 @@ Thread: N/A
   - `batch_llm_query` tool is the key enabler for any non-rlms approach — parallel sub-LM calls
   - Frontend has no SubAgent hierarchy rendering — any option needs UI work for decomposition visibility
   - `AutoEvictMiddleware` pattern (evict large content to filesystem + reference) is the closest existing mechanism to RLM's REPL-resident context
+---
+
+## 2026-02-16 - US-004
+Thread: N/A
+- Created `backend/scripts/rlm_prototype.py` — proof of concept benchmark script
+  - Uses `uv run --with "rlms>=0.1.0"` for isolated execution (no backend dep changes)
+  - Runs rlm.completion() vs standard completion on same input
+  - Measures latency, token usage, cost with real API calls
+  - Supports `--dry-run` for validation without API keys
+  - Supports `--backend openai|anthropic`, `--verbose`, `--max-chars`
+- Ran benchmark against 50k chars (13 Python files from backend/src/):
+  - Standard: 30.4s, $0.007, 9.3k chars output
+  - RLM: 76.5s, $0.054, 6k chars output, 12 iterations, 20 sub-calls
+  - RLM 2.52x slower, 7.45x more expensive for within-context inputs
+- Discovered FINAL_VAR response extraction bug in rlms v0.1.0:
+  - One run returned variable name "final_report" (12 chars) instead of 6k-char analysis
+  - Caused by REPL state inconsistency between iterations
+- Confirmed streaming gap: 76.5s blocking with zero intermediate output
+- Added Section 11 "Proof of Concept Results" to docs/rlm-recommendation.md
+- Created docs/rlm-benchmark-results.md with full benchmark analysis
+- Created docs/rlm-benchmark-results.json with raw benchmark data
+- Files changed:
+  - `backend/scripts/rlm_prototype.py` (new, ~720 lines)
+  - `docs/rlm-benchmark-results.md` (new, ~130 lines)
+  - `docs/rlm-benchmark-results.json` (new, auto-generated)
+  - `docs/rlm-recommendation.md` (updated, +80 lines Section 11)
+  - `.ralph/progress.txt` (updated)
+- **Learnings for future iterations:**
+  - rlms v0.1.0 `ModelUsageSummary` uses `total_input_tokens`/`total_output_tokens`/`total_calls` (not `input_tokens`)
+  - `get_client(backend, backend_kwargs={...})` — backend_kwargs is a dict, not keyword args
+  - `get_environment("local", environment_kwargs={})` — requires environment_kwargs
+  - FINAL_VAR extraction is unreliable — the LM sometimes stores results in variables that lose scope
+  - For within-context inputs, RLM is strictly worse (slower, costlier) — value only for inputs exceeding context window
+  - RLM's iteration context grows with each cycle (the message history accumulates all REPL outputs), which is the dominant cost amplification factor
+  - `uv run --with` is ideal for isolated prototype scripts — no need to modify pyproject.toml
+  - PoC results strengthen Option D (Tool-Based) as recommended approach and weaken Options A and C
 ---

@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-02-16T10:40:15",
+  "backend": "openai",
+  "config": {
+    "root_model": "gpt-4.1-mini",
+    "sub_model": "gpt-4.1-nano",
+    "env_var": "OPENAI_API_KEY"
+  },
+  "standard": {
+    "latency_seconds": 30.360554218292236,
+    "input_tokens": 10634,
+    "output_tokens": 1875,
+    "cost_usd": 0.007253600000000001,
+    "output_chars": 9283,
+    "error": null
+  },
+  "rlm": {
+    "latency_seconds": 76.46024012565613,
+    "input_tokens": 126412,
+    "output_tokens": 14129,
+    "cost_usd": 0.054005700000000004,
+    "output_chars": 5998,
+    "sub_calls": 20,
+    "models_used": [
+      "gpt-4.1-mini",
+      "gpt-4.1-nano"
+    ],
+    "error": null
+  }
+}
