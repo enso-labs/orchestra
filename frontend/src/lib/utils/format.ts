@@ -91,11 +91,24 @@ export function base64Compare(a: string, b: string) {
 	return base64Encode(a) === base64Encode(b);
 }
 
+function extractSubagentType(args: any): string | null {
+	if (!args) return null;
+	// args may be an object or a JSON string
+	if (typeof args === "string") {
+		try {
+			args = JSON.parse(args);
+		} catch {
+			return null;
+		}
+	}
+	return typeof args?.subagent_type === "string" ? args.subagent_type : null;
+}
+
 export function formatMessages(messages: any[]) {
 	if (!messages || !Array.isArray(messages)) {
 		return [];
 	}
-	return messages.flatMap((message: any) => {
+	const formatted = messages.flatMap((message: any) => {
 		const messageCopy = { ...message };
 		// User Message
 		if (["user", "human"].includes(message.type)) {
@@ -152,6 +165,9 @@ export function formatMessages(messages: any[]) {
 							name: tool_call.name,
 							input: args,
 							parent_message_id: message.id,
+							...(message.agent_name !== undefined && {
+								agent_name: message.agent_name,
+							}),
 						};
 					});
 
@@ -204,6 +220,36 @@ export function formatMessages(messages: any[]) {
 		}
 		return messageCopy;
 	});
+
+	// Propagate agent_name to tool_input and tool result messages.
+	// Sources (in priority order):
+	// 1. msg.agent_name already set (from streaming or backfill)
+	// 2. tool_calls[].args.subagent_type (survives checkpoint serialization)
+	// 3. tool_input.input.subagent_type (parsed args on tool_input messages)
+	const toolCallAgentMap = new Map<string, string>();
+	for (const msg of formatted) {
+		const role = msg.role ?? msg.type;
+		if (["assistant", "ai"].includes(role) && msg.tool_calls) {
+			for (const tc of msg.tool_calls) {
+				if (!tc.id) continue;
+				// Prefer explicit agent_name, fall back to subagent_type in args
+				const agentName = msg.agent_name || extractSubagentType(tc.args);
+				if (agentName) toolCallAgentMap.set(tc.id, agentName);
+			}
+		}
+		if (role === "tool_input" && msg.tool_call_id) {
+			const agentName = msg.agent_name || extractSubagentType(msg.input);
+			if (agentName) toolCallAgentMap.set(msg.tool_call_id, agentName);
+		}
+	}
+	for (const msg of formatted) {
+		if (!msg.agent_name && msg.tool_call_id) {
+			const agentName = toolCallAgentMap.get(msg.tool_call_id);
+			if (agentName) msg.agent_name = agentName;
+		}
+	}
+
+	return formatted;
 }
 
 export async function formatMultimodalPayload(

@@ -54,6 +54,19 @@ async def search_threads(
                 if thread and len(checkpoints) > 0:
                     checkpoints[0]["metadata"]["files"] = thread.files
                     checkpoints[0]["metadata"]["todos"] = thread.todos
+                    # Backfill agent_name from thread snapshot into checkpoint messages
+                    if thread.messages:
+                        agent_name_map: dict[str, str | None] = {}
+                        for msg in thread.messages:
+                            msg_dict = msg if isinstance(msg, dict) else msg.model_dump()
+                            msg_id = msg_dict.get("id")
+                            if msg_id and "agent_name" in msg_dict:
+                                agent_name_map[msg_id] = msg_dict["agent_name"]
+                        if agent_name_map:
+                            for msg in checkpoints[0].get("values", {}).get("messages", []):
+                                msg_id = msg.get("id")
+                                if msg_id and msg_id in agent_name_map and "agent_name" not in msg:
+                                    msg["agent_name"] = agent_name_map[msg_id]
                 return {"checkpoints": checkpoints}
 
             threads = await service_context.thread_service.search(search_filter)

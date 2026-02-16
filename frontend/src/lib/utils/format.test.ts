@@ -372,6 +372,324 @@ describe("formatMessages", () => {
 		});
 	});
 
+	describe("agent_name Propagation", () => {
+		it("should preserve agent_name on assistant messages", () => {
+			const messages = [
+				{
+					id: "msg-1",
+					type: "ai",
+					content: "Hello from subagent",
+					agent_name: "researcher",
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].role).toBe("assistant");
+			expect(result[0].agent_name).toBe("researcher");
+		});
+
+		it("should preserve agent_name on tool call messages", () => {
+			const messages = [
+				{
+					id: "msg-2",
+					type: "assistant",
+					content: "",
+					agent_name: "coder",
+					tool_calls: [
+						{
+							name: "file_read",
+							args: { file_path: "/test.txt" },
+						},
+					],
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].role).toBe("tool_input");
+			expect(result[0].agent_name).toBe("coder");
+		});
+
+		it("should preserve agent_name on tool result messages", () => {
+			const messages = [
+				{
+					id: "msg-3",
+					type: "tool",
+					name: "file_read",
+					content: "file contents",
+					agent_name: "coder",
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].role).toBe("tool");
+			expect(result[0].agent_name).toBe("coder");
+		});
+
+		it("should preserve null agent_name", () => {
+			const messages = [
+				{
+					id: "msg-4",
+					type: "ai",
+					content: "From parent agent",
+					agent_name: null,
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].agent_name).toBeNull();
+		});
+
+		it("should not add agent_name when not present on source message", () => {
+			const messages = [
+				{
+					id: "msg-5",
+					type: "ai",
+					content: "No agent_name",
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).not.toHaveProperty("agent_name");
+		});
+
+		it("should preserve agent_name through full checkpoint thread", () => {
+			const messages = [
+				{ id: "1", type: "human", content: "Do research" },
+				{
+					id: "2",
+					type: "ai",
+					content: "",
+					agent_name: "researcher",
+					tool_calls: [{ name: "web_search", args: { query: "test" } }],
+				},
+				{
+					id: "3",
+					type: "tool",
+					name: "web_search",
+					content: "results",
+					agent_name: "researcher",
+				},
+				{
+					id: "4",
+					type: "ai",
+					content: "Here are the results",
+					agent_name: "researcher",
+				},
+				{
+					id: "5",
+					type: "ai",
+					content: "Summary from parent",
+					agent_name: null,
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(5);
+			expect(result[0]).not.toHaveProperty("agent_name");
+			expect(result[1].agent_name).toBe("researcher");
+			expect(result[2].agent_name).toBe("researcher");
+			expect(result[3].agent_name).toBe("researcher");
+			expect(result[4].agent_name).toBeNull();
+		});
+
+		it("should propagate agent_name from AI message tool_calls to tool result messages", () => {
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					agent_name: "python-programmer",
+					tool_calls: [
+						{
+							id: "call_123",
+							name: "execute",
+							args: { code: "print(1)" },
+						},
+					],
+				},
+				{
+					id: "tool-1",
+					type: "tool",
+					content: "1",
+					tool_call_id: "call_123",
+					name: "execute",
+					status: "success",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolMsg = result.find((m: any) => m.role === "tool");
+			expect(toolMsg.agent_name).toBe("python-programmer");
+		});
+
+		it("should not overwrite existing agent_name on tool result messages", () => {
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					agent_name: "researcher",
+					tool_calls: [
+						{
+							id: "call_456",
+							name: "search",
+							args: { query: "test" },
+						},
+					],
+				},
+				{
+					id: "tool-1",
+					type: "tool",
+					content: "results",
+					tool_call_id: "call_456",
+					name: "search",
+					agent_name: "already-set",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolMsg = result.find((m: any) => m.role === "tool");
+			expect(toolMsg.agent_name).toBe("already-set");
+		});
+
+		it("should not propagate agent_name to tool results from parent (no agent_name) messages", () => {
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					tool_calls: [
+						{
+							id: "call_789",
+							name: "search",
+							args: { query: "test" },
+						},
+					],
+				},
+				{
+					id: "tool-1",
+					type: "tool",
+					content: "results",
+					tool_call_id: "call_789",
+					name: "search",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolMsg = result.find((m: any) => m.role === "tool");
+			expect(toolMsg).not.toHaveProperty("agent_name");
+		});
+
+		it("should propagate agent_name to multiple tool results from the same AI message", () => {
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					agent_name: "coder",
+					tool_calls: [
+						{ id: "call_a", name: "read", args: { path: "a.ts" } },
+						{ id: "call_b", name: "read", args: { path: "b.ts" } },
+					],
+				},
+				{
+					id: "tool-a",
+					type: "tool",
+					content: "content a",
+					tool_call_id: "call_a",
+					name: "read",
+				},
+				{
+					id: "tool-b",
+					type: "tool",
+					content: "content b",
+					tool_call_id: "call_b",
+					name: "read",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolMsgs = result.filter((m: any) => m.role === "tool");
+			expect(toolMsgs).toHaveLength(2);
+			expect(toolMsgs[0].agent_name).toBe("coder");
+			expect(toolMsgs[1].agent_name).toBe("coder");
+		});
+
+		it("should extract agent_name from tool_calls args.subagent_type when agent_name is missing", () => {
+			// Simulates checkpoint reload where agent_name is lost but
+			// subagent_type persists in tool call arguments
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					tool_calls: [
+						{
+							id: "call_abc",
+							name: "task",
+							args: {
+								subagent_type: "python-programmer",
+								description: "Write fibonacci code",
+							},
+						},
+					],
+				},
+				{
+					id: "tool-1",
+					type: "tool",
+					content: "Done",
+					tool_call_id: "call_abc",
+					name: "task",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolInput = result.find((m: any) => m.role === "tool_input");
+			const toolResult = result.find((m: any) => m.role === "tool");
+			expect(toolInput.agent_name).toBe("python-programmer");
+			expect(toolResult.agent_name).toBe("python-programmer");
+		});
+
+		it("should extract agent_name from JSON string args.subagent_type", () => {
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					tool_calls: [
+						{
+							id: "call_xyz",
+							name: "task",
+							args: '{"subagent_type":"researcher","description":"Search the web"}',
+						},
+					],
+				},
+				{
+					id: "tool-1",
+					type: "tool",
+					content: "Found results",
+					tool_call_id: "call_xyz",
+					name: "task",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolResult = result.find((m: any) => m.role === "tool");
+			expect(toolResult.agent_name).toBe("researcher");
+		});
+	});
+
 	describe("Edge Cases", () => {
 		it("should handle empty messages array", () => {
 			const result = formatMessages([]);

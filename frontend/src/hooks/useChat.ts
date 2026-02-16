@@ -79,7 +79,9 @@ export default function useChat(): ChatContextType {
 	const { agent } = useAgentContext();
 	const responseRef = useRef("");
 	const toolNameRef = useRef("");
-	const toolCallMapRef = useRef(new Map<string, { name: string; args: string }>());
+	const toolCallMapRef = useRef(
+		new Map<string, { name: string; args: string }>(),
+	);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
@@ -541,6 +543,12 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
+
+			// Extract agent_name from subagent messages (promoted from lc_agent_name by backend)
+			// Ensure agent_name is explicitly on the response before passing to StreamMessageHandler
+			if (response.agent_name === undefined) {
+				response.agent_name = null;
+			}
 			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: responseMetadata.thread_id,

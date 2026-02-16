@@ -13,6 +13,7 @@ import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
 import TextSelectionPopover from "../popovers/TextSelectionPopover";
 import TodoList from "./TodoList";
+import { SubagentBadge } from "../badges/SubagentBadge";
 
 export const Message = memo(
 	function Message({
@@ -195,10 +196,18 @@ export const Message = memo(
 		}
 
 		const messageFiles = filesMap.get(message.id);
+		const isSubagent = !!message.agent_name;
 
 		return (
 			<div className="group px-3 md:px-5">
-				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
+				<div
+					className={`max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm ${isSubagent ? "border-l-2 border-muted-foreground/20 pl-2" : ""}`}
+				>
+					{isSubagent && (
+						<div className="mb-1">
+							<SubagentBadge name={message.agent_name} />
+						</div>
+					)}
 					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard
 							content={formatContent(message.content) || "Invalid message"}

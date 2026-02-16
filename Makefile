@@ -24,7 +24,7 @@ setup:
 
 # Run the Ralph autonomous agent loop using Claude Code
 ralph:
-	bash .ralph/ralph.sh $(MAX_ITERATIONS)
+	@unset CLAUDECODE; bash .ralph/ralph.sh $(MAX_ITERATIONS)
 
 # Archive current prd.json and progress.txt into dated directory
 archive:
