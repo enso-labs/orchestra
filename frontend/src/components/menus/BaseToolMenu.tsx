@@ -104,9 +104,14 @@ export function BaseToolMenu() {
 						onClick={() => setOpen(!open)}
 						size="icon"
 						variant="outline"
-						className="rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
+						className="relative rounded-full ml-1 bg-foreground/10 text-foreground-500 cursor-pointer"
 					>
 						<Plus className="h-5 w-5" />
+						{agent.tools.length > 0 && (
+							<span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+								{agent.tools.length}
+							</span>
+						)}
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent
