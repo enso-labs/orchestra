@@ -1,0 +1,172 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/788-rename-schedules-to-crons",
+  "description": "Rename schedules to crons - Change naming conventions across the full stack",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Rename backend schema and entities",
+      "description": "As a developer, I want the backend data models to use cron naming so the terminology is consistent.",
+      "acceptanceCriteria": [
+        "backend/src/schemas/entities/schedule.py renamed to cron.py",
+        "All classes renamed: Schedule* → Cron*",
+        "__init__.py imports updated in backend/src/schemas/entities/",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Rename backend service",
+      "description": "As a developer, I want the service layer to use cron naming.",
+      "acceptanceCriteria": [
+        "backend/src/services/schedule.py renamed to cron.py",
+        "schedule_service → cron_service everywhere",
+        "All method names updated: *_schedule* → *_cron*",
+        "backend/src/contexts/service.py updated: schedule_service field → cron_service",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Rename backend routes and API endpoints",
+      "description": "As a developer, I want the API endpoints to use /crons instead of /schedules.",
+      "acceptanceCriteria": [
+        "backend/src/routes/v0/schedule.py renamed to cron.py",
+        "All endpoint paths changed: /schedules → /crons",
+        "backend/src/routes/v0/__init__.py updated: import + router registration",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Update remaining backend references",
+      "description": "As a developer, I want all other backend files referencing schedule updated.",
+      "acceptanceCriteria": [
+        "backend/src/workers/tasks.py schedule references updated",
+        "backend/src/controllers/llm.py schedule references updated",
+        "backend/src/constants/examples/__init__.py schedule references updated",
+        "backend/src/services/checkpoint_resilient.py schedule references updated",
+        "No remaining schedule references in backend/src/ (grep confirms)",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create database migration",
+      "description": "As a developer, I need the database table renamed from schedules to crons.",
+      "acceptanceCriteria": [
+        "Migration created to rename table schedules → crons",
+        "Migration is reversible",
+        "Migration runs without error"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Rename frontend entities, services, and utils",
+      "description": "As a developer, I want the frontend data layer to use cron naming.",
+      "acceptanceCriteria": [
+        "frontend/src/lib/entities/schedule.ts renamed to cron.ts with types renamed",
+        "frontend/src/lib/services/scheduleService.ts renamed to cronService.ts with API paths updated",
+        "frontend/src/lib/utils/schedule.ts renamed to cron.ts",
+        "All imports updated across consuming files",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Rename frontend hooks",
+      "description": "As a developer, I want the React hooks to use cron naming.",
+      "acceptanceCriteria": [
+        "useSchedules.ts → useCrons.ts",
+        "useAgentSchedules.ts → useAgentCrons.ts",
+        "useScheduleExecutions.ts → useCronExecutions.ts",
+        "React Query keys updated from schedule to cron",
+        "All imports updated across consuming files",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Rename frontend components",
+      "description": "As a developer, I want the UI components to use cron naming.",
+      "acceptanceCriteria": [
+        "ScheduleCalendar.tsx → CronCalendar.tsx",
+        "ScheduleTable.tsx → CronTable.tsx",
+        "AgentScheduleCard.tsx → AgentCronCard.tsx",
+        "AgentScheduleList.tsx → AgentCronList.tsx",
+        "ScheduleSidebarItem.tsx → CronSidebarItem.tsx",
+        "AgentSchedulesPanel.tsx → AgentCronsPanel.tsx",
+        "AgentScheduleForm.tsx → AgentCronForm.tsx",
+        "All internal references and exports renamed",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Rename frontend pages and routes",
+      "description": "As a developer, I want the page routes to use /crons instead of /schedules.",
+      "acceptanceCriteria": [
+        "frontend/src/pages/schedules/ directory renamed to crons/",
+        "AppRoutes.tsx updated: /schedules → /crons",
+        "app-sidebar.tsx updated: sidebar label + import",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Update tests and final validation",
+      "description": "As a developer, I want all tests passing and no remaining schedule references.",
+      "acceptanceCriteria": [
+        "frontend/src/lib/utils/calendar.test.ts schedule references updated",
+        "Any other test files referencing schedule updated",
+        "grep -r schedule frontend/src/ backend/src/ returns no hits (excluding cron expression internals)",
+        "All tests pass: npm test in frontend",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Verify workspace is clean and push final changes",
+      "description": "As a developer, I want to ensure all changes are committed and pushed.",
+      "acceptanceCriteria": [
+        "Run git status to check for uncommitted changes",
+        "If remaining changes exist, commit and push to branch",
+        "All commits visible in GitHub PR"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

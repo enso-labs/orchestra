@@ -1,0 +1,11 @@
+## Codebase Patterns
+- Backend follows BaseRepo/ServiceContext pattern
+- Routes registered in `backend/src/routes/v0/__init__.py`
+- Frontend uses React Query for data fetching with string keys
+- Component files named PascalCase, hooks use camelCase with `use` prefix
+- Services in `frontend/src/lib/services/` handle API calls
+- Entities in `frontend/src/lib/entities/` define TypeScript types
+- Pages in `frontend/src/pages/` map to routes in `AppRoutes.tsx`
+- Sidebar navigation in `frontend/src/components/drawers/app-sidebar.tsx`
+- CronBuilder.tsx already uses "cron" naming internally (for cron expressions) — don't rename cron expression references
+---
