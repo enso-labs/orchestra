@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
 	mapSchedulesToProjectedEvents,
 	mergeAndDeduplicateEvents,
-} from "./calendar";
+} from "@/lib/utils/calendar";
 import type { Schedule, ScheduleEvent } from "@/lib/entities/schedule";
 
 function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
