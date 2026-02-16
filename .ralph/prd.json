@@ -194,6 +194,55 @@
       "priority": 14,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Run automated checks for all code changes",
+      "description": "As a developer, I need to run all lint/format/type/test checks to confirm no regressions from US-001 through US-014.",
+      "acceptanceCriteria": [
+        "cd backend && make lint passes (ruff check)",
+        "cd backend && make format passes (ruff format --check)",
+        "cd frontend && npm run lint passes (eslint)",
+        "cd frontend && npm run build passes (tsc -b + vite build)",
+        "cd frontend && npm run test passes (all tests including the 2 previously failing ones now fixed)"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Browser QA: verify subagent attribution UI",
+      "description": "As a QA engineer, I need to visually verify all subagent attribution UI elements work correctly in the browser.",
+      "acceptanceCriteria": [
+        "Open app at http://localhost:5173 using agent-browser skill",
+        "Navigate to a thread that has subagent messages",
+        "SubagentBadge (Bot icon + agent name) appears above subagent assistant messages (US-005, US-006)",
+        "Subagent messages have left border visual distinction (US-006)",
+        "Parent agent messages have NO SubagentBadge (US-005 AC3, US-006 AC3)",
+        "Expand a subagent tool call and verify 'via {agent_name}' shows in header (US-007)",
+        "SubagentBadge span has title tooltip on hover (US-014)",
+        "agent_name survives thread reload — badges visible after page refresh (US-013)",
+        "Take screenshots as evidence and save to /tmp/qa-*.png",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Write QA results report and final commit",
+      "description": "As a developer, I need to document QA results with pass/fail for each acceptance criterion, commit, and push.",
+      "acceptanceCriteria": [
+        "Write QA results to .claude/plans/feat-694/05-qa-results.md with pass/fail matrix for all UI acceptance criteria",
+        "Include screenshot paths as evidence",
+        "git status shows clean workspace after commit",
+        "All changes pushed to origin/feat/694-show-subagent-tool-calls"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
