@@ -4,8 +4,88 @@
 - `astream()` called with `subgraphs=True` to get subagent messages
 - `lc_agent_name` is a LangGraph-injected field on messages from subgraphs
 - `handle_multi_mode()` in `backend/src/utils/stream.py` already detects `lc_agent_name` but only logs it
-- `_to_dict()` uses `.model_dump()` for Pydantic models — check if `lc_agent_name` survives
+- `_to_dict()` uses `.model_dump()` for Pydantic models — `lc_agent_name` DOES survive as a dynamic attr
+- `model_dump()` includes `lc_agent_name` when set dynamically on LangChain messages (tested with langchain_core 1.2.7)
+- Both `_to_dict()` and `from_message_to_dict()` now promote `lc_agent_name` → `agent_name` for frontend consumption
+- 6 pre-existing test failures in `tests/unit/tools/test_search.py::TestWebSearchTool` — unrelated to this feature
 - Frontend message pipeline: useChat.ts handleMessages → StreamMessageHandler → formatMessages → ChatMessages.tsx
 - Tool calls render via ToolTimeline → ToolTimelineItem
 - AI responses render via MarkdownCard in ChatMessages
+- TypeScript build check: `./node_modules/.bin/tsc -b` (no standalone `typecheck` npm script)
+- Must run `npm install` in frontend worktree before builds (node_modules not shared across worktrees)
+---
+
+## 2026-02-16 - US-001
+- Implemented `agent_name` promotion in `_to_dict()` (stream.py) and `from_message_to_dict()` (messages.py)
+- Both functions now check for `lc_agent_name` in the dict and add `agent_name` if not already present
+- Files changed: `backend/src/utils/stream.py`, `backend/src/utils/messages.py`
+- **Learnings for future iterations:**
+  - `lc_agent_name` is a dynamic attribute set by LangGraph on message objects, not a declared Pydantic field, but `model_dump()` still includes it
+  - `dict(msg)` also works to access it (used in the existing detection code at line 158 of stream.py)
+  - The 6 failing tests in `test_search.py::TestWebSearchTool` are pre-existing and unrelated to subagent work
+---
+
+## 2026-02-16 - US-002
+- Added explicit `agent_name` extraction in `handleMessages()` in `useChat.ts`
+- Sets `response.agent_name = null` when undefined so downstream components can always check for the field
+- Files changed: `frontend/src/hooks/useChat.ts`
+- **Learnings for future iterations:**
+  - `response` from `payload[1][0]` already contains `agent_name` if the backend sends it — spread operators in `StreamMessageHandler` and `formatMessages` naturally preserve it
+  - TypeScript build check: use `npm run build` (includes `tsc -b`) or run `./node_modules/.bin/tsc -b` directly; there's no standalone `typecheck` script
+  - `npm install` must be run first in the frontend worktree to get `node_modules`
+---
+
+## 2026-02-16 - US-003
+- Added explicit `agent_name` preservation in `StreamMessageHandler.toolCall()` and `messageUpdate()` using null-coalescing (`??`)
+- `messageCreate()` already works via `{...response, content}` spread — no changes needed
+- Files changed: `frontend/src/lib/utils/message.ts`
+- **Learnings for future iterations:**
+  - `toolCall()` update path spreads `{...existingMsg, ...response}` (response wins) — must explicitly preserve agent_name from first chunk
+  - `messageUpdate()` spreads `{...response, ...existingMsg, content}` (existingMsg wins) — already safe but made explicit for clarity
+  - All chunks for the same streaming message should have consistent `agent_name` from the backend, but null-coalescing is safer
+---
+
+## 2026-02-16 - US-004
+- Verified `formatMessages()` in `format.ts` preserves `agent_name` through all branches via spread
+- Added documentation comment at the spread point
+- Files changed: `frontend/src/lib/utils/format.ts`
+- **Learnings for future iterations:**
+  - `formatMessages()` only overrides `role`, `type`, and `input` — any other field on the message object (like `agent_name`) survives naturally via `{...messageCopy, role: "..."}`
+  - Same applies to checkpoint-loaded threads: the backend serializes `agent_name` in `from_message_to_dict()`, and `formatMessages()` preserves it
+---
+
+## 2026-02-16 - US-005
+- Created `SubagentBadge` component at `frontend/src/components/badges/SubagentBadge.tsx`
+- Uses `Bot` icon from lucide-react + muted text style, consistent with `ModelBadge` pattern
+- Files changed: `frontend/src/components/badges/SubagentBadge.tsx` (new)
+- **Learnings for future iterations:**
+  - Badge components follow pattern: interface with name/className, `cn()` utility for class merging, `data-testid` for testing
+  - Icons from lucide-react (Bot, Wrench, etc.) already used across the codebase
+---
+
+## 2026-02-16 - US-006
+- Added SubagentBadge rendering above assistant messages when `message.agent_name` is truthy
+- Added left border (`border-l-2 border-muted-foreground/20`) for visual distinction
+- Parent agent messages (no `agent_name`) render unchanged
+- Files changed: `frontend/src/components/lists/ChatMessages.tsx`
+- **Learnings for future iterations:**
+  - The assistant message section (default return) is at the bottom of the `Message` component — after user, tool-input, and tool type checks
+  - `Message` is memoized with custom comparison — adding new props requires updating the comparison function
+---
+
+## 2026-02-16 - US-007
+- Added `agent_name?: string | null` to `ToolMessage` interface in both `ToolTimeline.tsx` and `ToolTimelineItem.tsx`
+- Shows "via {agent_name}" text in tool call header when `agent_name` is present
+- Uses `text-xs text-muted-foreground` for consistent styling
+- Files changed: `frontend/src/components/timeline/ToolTimelineItem.tsx`, `frontend/src/components/timeline/ToolTimeline.tsx`
+- **Learnings for future iterations:**
+  - `ToolMessage` interface is duplicated in both `ToolTimeline.tsx` and `ToolTimelineItem.tsx` — both must be updated in sync
+  - Tool messages from streaming have `agent_name` via the spread in `StreamMessageHandler.toolCall()`
+---
+
+## 2026-02-16 - US-008
+- Added 6 test cases for `agent_name` preservation in `format.test.ts`
+- Tests cover: assistant messages, tool call messages, tool result messages, null values, absent values, full checkpoint thread
+- All 249 tests pass (including 6 new)
+- Files changed: `frontend/src/lib/utils/format.test.ts`
 ---
