@@ -165,3 +165,24 @@ Thread: N/A
   - `batch_llm_query` is the critical new tool — it enables the parallel sub-call pattern that makes RLM useful
   - System prompt engineering (Phase 3) is the quality risk — agent must know when to decompose vs. process directly
 ---
+
+## 2026-02-16 - US-006
+Thread: N/A
+- Added Executive Summary to `docs/rlm-recommendation.md` with:
+  - Clear recommendation: Option D (Tool-Based / Agent-Driven RLM)
+  - Justification table comparing against all 4 options
+  - Architecture overview diagram showing tool integration into `construct_agent()` pipeline
+  - Migration path table from `.claude/skills/rlm/` (5 skill steps → platform equivalents)
+  - Timeline & effort estimate (1.5-2.5 weeks across 5 phases)
+  - Dependencies table (all installed, no new packages needed, rlms NOT required)
+  - Risk/mitigation table (4 key risks with mitigations)
+  - Next steps (4 actionable items)
+- Added Section 13 "Conclusion" summarizing the full research journey and recommendation
+- Updated document title from "Options Evaluation" to "Recommendation & Architecture"
+- Added cross-references to benchmark results and analysis docs in header
+- Files changed: `docs/rlm-recommendation.md` (122 lines added)
+- **Learnings for future iterations:**
+  - The document was already 95% complete from US-001 through US-005 — the final recommendation just needed an executive summary to tie it together
+  - An executive summary at the top of a long technical document is essential for reviewability — readers shouldn't have to read 1000+ lines to understand the recommendation
+  - Cross-referencing between docs (rlm-analysis.md, rlm-benchmark-results.md, rlm-recommendation.md) helps readers navigate the research
+---
