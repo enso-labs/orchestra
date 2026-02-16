@@ -54,7 +54,7 @@ import { toast } from "sonner";
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
 type SortBy = "next_run" | "created" | "name";
 
-function SchedulesIndexPage() {
+function CronsIndexPage() {
 	const navigate = useNavigate();
 	const [, setSearchParams] = useSearchParams();
 	const {
@@ -75,7 +75,7 @@ function SchedulesIndexPage() {
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
 	const [selectedAgentId, setSelectedAgentId] = useState<string>("");
-	const [editingSchedule, setEditingSchedule] = useState<Cron | null>(null);
+	const [editingCron, setEditingCron] = useState<Cron | null>(null);
 
 	const { executions } = useCronExecutions();
 
@@ -98,7 +98,7 @@ function SchedulesIndexPage() {
 		} else if (event.id.startsWith("projected-")) {
 			// Projected events have no thread — open the edit dialog instead
 			const cronId = event.resource.cron_id;
-			handleEditSchedule(cronId);
+			handleEditCron(cronId);
 		}
 	};
 
@@ -112,7 +112,7 @@ function SchedulesIndexPage() {
 		fetchCrons();
 	}, [fetchCrons]);
 
-	const handleCreateSchedule = async (scheduleData: CronCreate) => {
+	const handleCreateCron = async (cronData: CronCreate) => {
 		try {
 			const agent = agents.find((a: any) => a.id === selectedAgentId);
 			if (!agent) {
@@ -121,83 +121,83 @@ function SchedulesIndexPage() {
 			}
 
 			// Add agent_id to metadata
-			const enhancedSchedule: CronCreate = {
-				...scheduleData,
+			const enhancedCron: CronCreate = {
+				...cronData,
 				task: {
-					...scheduleData.task,
+					...cronData.task,
 					metadata: {
-						...scheduleData.task.metadata,
+						...cronData.task.metadata,
 						agent_id: selectedAgentId,
 					},
 				},
 			};
 
-			await createCron(enhancedSchedule);
+			await createCron(enhancedCron);
 			setShowCreateDialog(false);
 			setSelectedAgentId("");
-			toast.success("Schedule created successfully!");
+			toast.success("Cron created successfully!");
 		} catch (error) {
-			console.error("Failed to create schedule:", error);
-			toast.error("Failed to create schedule");
+			console.error("Failed to create cron:", error);
+			toast.error("Failed to create cron");
 		}
 	};
 
-	const handleDeleteSchedule = async (scheduleId: string) => {
-		if (window.confirm("Are you sure you want to delete this schedule?")) {
-			await deleteCron(scheduleId);
+	const handleDeleteCron = async (cronId: string) => {
+		if (window.confirm("Are you sure you want to delete this cron?")) {
+			await deleteCron(cronId);
 		}
 	};
 
-	const handleEditSchedule = async (scheduleId: string) => {
+	const handleEditCron = async (cronId: string) => {
 		try {
-			const schedule = await getCron(scheduleId);
-			setEditingSchedule(schedule);
+			const cron = await getCron(cronId);
+			setEditingCron(cron);
 			setShowEditDialog(true);
 		} catch (error) {
-			console.error("Failed to fetch schedule for editing:", error);
-			toast.error("Failed to load schedule for editing");
+			console.error("Failed to fetch cron for editing:", error);
+			toast.error("Failed to load cron for editing");
 		}
 	};
 
-	const handleUpdateSchedule = async (scheduleData: CronCreate) => {
-		if (!editingSchedule) return;
+	const handleUpdateCron = async (cronData: CronCreate) => {
+		if (!editingCron) return;
 
 		try {
-			await updateCron(editingSchedule.id, scheduleData);
+			await updateCron(editingCron.id, cronData);
 			setShowEditDialog(false);
-			setEditingSchedule(null);
-			toast.success("Schedule updated successfully!");
+			setEditingCron(null);
+			toast.success("Cron updated successfully!");
 		} catch (error) {
-			console.error("Failed to update schedule:", error);
-			toast.error("Failed to update schedule");
+			console.error("Failed to update cron:", error);
+			toast.error("Failed to update cron");
 		}
 	};
 
-	const handleDuplicateSchedule = () => {
+	const handleDuplicateCron = () => {
 		// TODO: Implement duplicate functionality
 		toast.info("Duplicate functionality coming soon!");
 	};
 
-	const filteredAndSortedSchedules = useMemo(() => {
+	const filteredAndSortedCrons = useMemo(() => {
 		return crons
-			.filter((schedule) => {
+			.filter((cron) => {
 				// Search filter
 				const matchesSearch =
 					searchQuery === "" ||
-					schedule.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					schedule.task.input?.messages?.[0]?.content
+					cron.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					cron.task.input?.messages?.[0]?.content
 						?.toLowerCase()
 						.includes(searchQuery.toLowerCase());
 
 				// Status filter
 				const matchesStatus =
 					filterStatus === "all" ||
-					getCronStatus(schedule.next_run_time) === filterStatus;
+					getCronStatus(cron.next_run_time) === filterStatus;
 
 				// Agent filter
 				const matchesAgent =
 					filterAgentId === "all" ||
-					schedule.task?.metadata?.agent_id === filterAgentId;
+					cron.task?.metadata?.agent_id === filterAgentId;
 
 				return matchesSearch && matchesStatus && matchesAgent;
 			})
@@ -222,30 +222,30 @@ function SchedulesIndexPage() {
 			});
 	}, [crons, searchQuery, filterStatus, filterAgentId, sortBy]);
 
-	// Create a set of filtered schedule IDs to filter executions
-	const filteredScheduleIds = useMemo(() => {
-		return new Set(filteredAndSortedSchedules.map((s) => s.id));
-	}, [filteredAndSortedSchedules]);
+	// Create a set of filtered cron IDs to filter executions
+	const filteredCronIds = useMemo(() => {
+		return new Set(filteredAndSortedCrons.map((s) => s.id));
+	}, [filteredAndSortedCrons]);
 
-	// Filter executions to only include those for filtered schedules
+	// Filter executions to only include those for filtered crons
 	const filteredExecutions = useMemo(() => {
 		if (!executions) return [];
-		return executions.filter((e) => filteredScheduleIds.has(e.cron_id));
-	}, [executions, filteredScheduleIds]);
+		return executions.filter((e) => filteredCronIds.has(e.cron_id));
+	}, [executions, filteredCronIds]);
 
 	// Create filtered calendar events for calendar/table views
-	// Merge execution-based events with projected events from schedule definitions
-	// so schedules always appear even when they have no executions yet
+	// Merge execution-based events with projected events from cron definitions
+	// so crons always appear even when they have no executions yet
 	const filteredCalendarEvents = useMemo(() => {
 		const executionEvents = mapExecutionsToEvents(
 			filteredExecutions,
 			cronsMap,
 		);
 		const projectedEvents = mapCronsToProjectedEvents(
-			filteredAndSortedSchedules,
+			filteredAndSortedCrons,
 		);
 		return mergeAndDeduplicateEvents(executionEvents, projectedEvents);
-	}, [filteredExecutions, cronsMap, filteredAndSortedSchedules]);
+	}, [filteredExecutions, cronsMap, filteredAndSortedCrons]);
 
 	const getStatusCounts = () => {
 		const counts = {
@@ -254,8 +254,8 @@ function SchedulesIndexPage() {
 			upcoming: 0,
 			overdue: 0,
 		};
-		crons.forEach((schedule) => {
-			const status = getCronStatus(schedule.next_run_time);
+		crons.forEach((cron) => {
+			const status = getCronStatus(cron.next_run_time);
 			counts[status]++;
 		});
 		return counts;
@@ -263,9 +263,9 @@ function SchedulesIndexPage() {
 
 	const statusCounts = getStatusCounts();
 
-	// Get agent for a schedule
-	const getAgentForSchedule = (schedule: Cron) => {
-		const agentId = schedule.task?.metadata?.agent_id;
+	// Get agent for a cron
+	const getAgentForCron = (cron: Cron) => {
+		const agentId = cron.task?.metadata?.agent_id;
 		return agents.find((a: any) => a.id === agentId);
 	};
 
@@ -274,7 +274,7 @@ function SchedulesIndexPage() {
 			<div className="flex items-center justify-center h-screen">
 				<div className="text-center">
 					<Clock className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
-					<p className="text-muted-foreground">Loading schedules...</p>
+					<p className="text-muted-foreground">Loading crons...</p>
 				</div>
 			</div>
 		);
@@ -285,7 +285,7 @@ function SchedulesIndexPage() {
 			{/* Header with navigation and actions */}
 			<div className="absolute top-4 right-4 z-10">
 				<div className="flex flex-row gap-2 items-center">
-					<MainToolTip content="Create Schedule" delayDuration={500}>
+					<MainToolTip content="Create Cron" delayDuration={500}>
 						<Button
 							variant="outline"
 							size="icon"
@@ -322,10 +322,10 @@ function SchedulesIndexPage() {
 						{/* Page title */}
 						<div className="mb-3 md:mb-5">
 							<h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">
-								Schedules
+								Crons
 							</h1>
 							<p className="text-sm md:text-base text-muted-foreground mb-3 md:mb-6">
-								Manage all your automated agent schedules
+								Manage all your automated agent crons
 							</p>
 						</div>
 
@@ -399,7 +399,7 @@ function SchedulesIndexPage() {
 								<div className="relative">
 									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 									<Input
-										placeholder="Search schedules..."
+										placeholder="Search crons..."
 										value={searchQuery}
 										onChange={(e) => setSearchQuery(e.target.value)}
 										className="pl-10 h-9 md:h-10"
@@ -479,26 +479,26 @@ function SchedulesIndexPage() {
 						) : viewMode === "table" ? (
 							<CronTable
 								events={filteredCalendarEvents}
-								onEdit={handleEditSchedule}
-								onDelete={handleDeleteSchedule}
-								onDuplicate={handleDuplicateSchedule}
+								onEdit={handleEditCron}
+								onDelete={handleDeleteCron}
+								onDuplicate={handleDuplicateCron}
 							/>
 						) : (
 							<ScrollArea className="h-full">
 								<div className="pb-4">
-									{/* Schedules Grid */}
-									{filteredAndSortedSchedules.length > 0 ? (
+									{/* Crons Grid */}
+									{filteredAndSortedCrons.length > 0 ? (
 										<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-											{filteredAndSortedSchedules.map((schedule) => {
-												const agent = getAgentForSchedule(schedule);
+											{filteredAndSortedCrons.map((cron) => {
+												const agent = getAgentForCron(cron);
 												return (
 													<AgentCronCard
-														key={schedule.id}
-														schedule={schedule}
+														key={cron.id}
+														schedule={cron}
 														agent={agent || { id: "", name: "Unknown Agent" }}
-														onEdit={handleEditSchedule}
-														onDelete={handleDeleteSchedule}
-														onDuplicate={handleDuplicateSchedule}
+														onEdit={handleEditCron}
+														onDelete={handleDeleteCron}
+														onDuplicate={handleDuplicateCron}
 													/>
 												);
 											})}
@@ -512,15 +512,15 @@ function SchedulesIndexPage() {
 													{searchQuery ||
 													filterStatus !== "all" ||
 													filterAgentId !== "all"
-														? "No schedules found"
-														: "No schedules yet"}
+														? "No crons found"
+														: "No crons yet"}
 												</CardTitle>
 												<CardDescription className="text-center mb-4">
 													{searchQuery ||
 													filterStatus !== "all" ||
 													filterAgentId !== "all"
 														? "Try adjusting your search or filter criteria"
-														: "Create schedules from agent pages to get started"}
+														: "Create crons from agent pages to get started"}
 												</CardDescription>
 												{!searchQuery &&
 													filterStatus === "all" &&
@@ -540,16 +540,16 @@ function SchedulesIndexPage() {
 				</div>
 			</div>
 
-			{/* Create Schedule Dialog with Agent Selection */}
+			{/* Create Cron Dialog with Agent Selection */}
 			<Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
 				<DialogContent className="max-h-[98vh] max-w-[98vw] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Create New Schedule</DialogTitle>
+						<DialogTitle>Create New Cron</DialogTitle>
 					</DialogHeader>
 					{!selectedAgentId ? (
 						<div className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Select an agent to create a schedule for:
+								Select an agent to create a cron for:
 							</p>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
 								{agents.map((agent: any) => (
@@ -576,7 +576,7 @@ function SchedulesIndexPage() {
 					) : (
 						<AgentCronForm
 							agent={agents.find((a: any) => a.id === selectedAgentId)}
-							onSubmit={handleCreateSchedule}
+							onSubmit={handleCreateCron}
 							onCancel={() => {
 								setShowCreateDialog(false);
 								setSelectedAgentId("");
@@ -587,38 +587,38 @@ function SchedulesIndexPage() {
 				</DialogContent>
 			</Dialog>
 
-			{/* Edit Schedule Dialog */}
+			{/* Edit Cron Dialog */}
 			<Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
 				<DialogContent className="max-h-[99vh] max-w-[99vw] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Edit Schedule</DialogTitle>
+						<DialogTitle>Edit Cron</DialogTitle>
 					</DialogHeader>
-					{editingSchedule && (
+					{editingCron && (
 						<AgentCronForm
 							agent={
-								getAgentForSchedule(editingSchedule) || {
+								getAgentForCron(editingCron) || {
 									id: "",
 									name: "Unknown Agent",
 								}
 							}
-							onSubmit={handleUpdateSchedule}
+							onSubmit={handleUpdateCron}
 							onCancel={() => {
 								setShowEditDialog(false);
-								setEditingSchedule(null);
+								setEditingCron(null);
 							}}
 							initialData={{
-								name: editingSchedule.title || "",
+								name: editingCron.title || "",
 								description:
-									editingSchedule.task.metadata?.schedule_description || "",
-								enabled: editingSchedule.task.metadata?.enabled ?? true,
-								cronExpression: editingSchedule.trigger.expression,
+									editingCron.task.metadata?.schedule_description || "",
+								enabled: editingCron.task.metadata?.enabled ?? true,
+								cronExpression: editingCron.trigger.expression,
 								message:
-									editingSchedule.task.input?.messages?.[0]?.content || "",
+									editingCron.task.input?.messages?.[0]?.content || "",
 								inheritFromAgent:
-									editingSchedule.task.metadata?.inherited_from_agent ?? true,
-								customModel: editingSchedule.task.model,
-								customSystem: editingSchedule.task.system_prompt,
-								customTools: editingSchedule.task.tools || [],
+									editingCron.task.metadata?.inherited_from_agent ?? true,
+								customModel: editingCron.task.model,
+								customSystem: editingCron.task.system_prompt,
+								customTools: editingCron.task.tools || [],
 							}}
 							isLoading={loading}
 						/>
@@ -629,4 +629,4 @@ function SchedulesIndexPage() {
 	);
 }
 
-export default SchedulesIndexPage;
+export default CronsIndexPage;

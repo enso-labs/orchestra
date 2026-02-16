@@ -716,7 +716,7 @@ function CollapsibleGroup({
 	);
 }
 
-function SchedulesCollapsibleGroup() {
+function CronsCollapsibleGroup() {
 	const { executions, loading } = useCronExecutions({ limit: 10 });
 	const { crons, fetchCrons } = useCrons();
 	const navigate = useNavigate();
@@ -736,8 +736,8 @@ function SchedulesCollapsibleGroup() {
 
 	return (
 		<Collapsible
-			key="schedules"
-			title={`Schedules (${executions.length} recent)`}
+			key="crons"
+			title={`Crons (${executions.length} recent)`}
 			defaultOpen={false}
 			className="group/collapsible"
 		>
@@ -751,7 +751,7 @@ function SchedulesCollapsibleGroup() {
 				>
 					<CollapsibleTrigger>
 						<Calendar className="w-4 h-4 mr-2" />
-						Schedules
+						Crons
 						<ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
 					</CollapsibleTrigger>
 				</SidebarGroupLabel>
@@ -762,10 +762,10 @@ function SchedulesCollapsibleGroup() {
 								variant="outline"
 								size="sm"
 								className="w-full justify-start gap-2"
-								onClick={() => navigate("/schedules")}
+								onClick={() => navigate("/crons")}
 							>
 								<Calendar className="h-4 w-4" />
-								View All Schedules
+								View All Crons
 							</Button>
 						</div>
 						<SidebarMenu className="gap-0">
@@ -780,7 +780,7 @@ function SchedulesCollapsibleGroup() {
 										key={execution.id}
 										execution={execution}
 										cronName={
-											cronsMap.get(execution.cron_id) ?? "Unknown Schedule"
+											cronsMap.get(execution.cron_id) ?? "Unknown Cron"
 										}
 									/>
 								))
@@ -878,7 +878,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						onCreateProject={() => setIsCreateProjectModalOpen(true)}
 						onAddSource={handleAddSource}
 					/>
-					<SchedulesCollapsibleGroup />
+					<CronsCollapsibleGroup />
 					<CollapsibleGroup
 						title="Threads"
 						items={unassociatedThreads}
