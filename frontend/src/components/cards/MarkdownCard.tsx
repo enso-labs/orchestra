@@ -310,14 +310,14 @@ const BaseCard = ({ content }: { content: string }) => {
 					<ol className="list-decimal mb-2 space-y-1" {...props} />
 				),
 				li: ({ node: _node, ...props }) => <li className="ml-2" {...props} />,
-				a: ({ node, ...props }) => (
+				a: ({ node: _node2, ...props }) => (
 					<a
 						target="_blank"
 						className="text-blue-300 underline hover:text-blue-300/80"
 						{...props}
 					/>
 				),
-				table: ({ node, ...props }) => (
+				table: ({ node: _node3, ...props }) => (
 					<div className="overflow-x-auto my-6 rounded-lg border-2 border-border shadow-md bg-background">
 						<table
 							className="min-w-full divide-y-2 divide-border bg-background border-collapse"
@@ -325,28 +325,28 @@ const BaseCard = ({ content }: { content: string }) => {
 						/>
 					</div>
 				),
-				thead: ({ node, ...props }) => (
+				thead: ({ node: _node4, ...props }) => (
 					<thead className="bg-muted/60 border-b-2 border-border" {...props} />
 				),
-				tbody: ({ node, ...props }) => (
+				tbody: ({ node: _node5, ...props }) => (
 					<tbody
 						className="divide-y-2 divide-border bg-background"
 						{...props}
 					/>
 				),
-				tr: ({ node, ...props }) => (
+				tr: ({ node: _node6, ...props }) => (
 					<tr
 						className="transition-colors hover:bg-muted/30 group even:bg-muted/10 border-b border-border"
 						{...props}
 					/>
 				),
-				th: ({ node, ...props }) => (
+				th: ({ node: _node7, ...props }) => (
 					<th
 						className="px-3 py-1 text-left text-sm font-bold text-foreground tracking-wider uppercase bg-gradient-to-b from-muted/40 to-muted/70 first:rounded-tl-lg last:rounded-tr-lg border-r-2 border-border last:border-r-0"
 						{...props}
 					/>
 				),
-				td: ({ node, ...props }) => (
+				td: ({ node: _node8, ...props }) => (
 					<td
 						className="px-3 py-1 text-sm text-foreground border-r-2 border-border last:border-r-0 group-hover:text-foreground/90 transition-colors align-top"
 						{...props}

@@ -212,7 +212,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 				if (isSelected) {
 					clearMessages();
 				}
-			} catch (error) {
+			} catch (_error) {
 				alert("Failed to delete thread");
 			}
 		}
@@ -228,7 +228,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 					: t,
 			);
 			setThreads(updatedThreads);
-		} catch (error) {
+		} catch (_error) {
 			alert("Failed to add thread to project");
 		}
 	};
@@ -393,7 +393,7 @@ function ProjectItem({ project, onAddSource }: ProjectItemProps) {
 			const deleted = await handleDeleteProject(project.id!);
 			if (deleted) {
 				setMetadata((prev: any) => {
-					const { project_id, ...rest } = prev;
+					const { project_id: _project_id, ...rest } = prev;
 					return rest;
 				});
 			}

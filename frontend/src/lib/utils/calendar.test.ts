@@ -2,13 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
 	mapSchedulesToProjectedEvents,
 	mergeAndDeduplicateEvents,
-	mapExecutionsToEvents,
 } from "./calendar";
-import type {
-	Schedule,
-	ScheduleEvent,
-	ScheduleExecution,
-} from "@/lib/entities/schedule";
+import type { Schedule, ScheduleEvent } from "@/lib/entities/schedule";
 
 function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
 	return {

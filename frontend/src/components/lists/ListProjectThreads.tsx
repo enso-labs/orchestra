@@ -26,7 +26,7 @@ function ListProjectThreads({ projectId }: ListProjectThreadsProps) {
 			try {
 				const result = await searchThreadsByProject(projectId);
 				setThreads(result);
-			} catch (error) {
+			} catch (_error) {
 				console.error("Failed to fetch project threads:", error);
 			} finally {
 				setLoading(false);
@@ -63,7 +63,7 @@ function ListProjectThreads({ projectId }: ListProjectThreadsProps) {
 				if (deleted) {
 					setThreads(threads.filter((thread: any) => thread.key !== threadId));
 				}
-			} catch (error) {
+			} catch (_error) {
 				alert("Failed to delete thread");
 			}
 		}
