@@ -682,10 +682,11 @@ export function AgentCreateForm() {
 									<FormControl>
 										<SelectModel
 											disabled={!isEditing}
-											onModelSelected={(value) => {
-											form.setValue("model", value);
-											updateQueryStateModel(value);
-										}}
+											onChange={(value) => {
+												setModel(value);
+												form.setValue("model", value);
+												updateQueryStateModel(value);
+											}}
 										/>
 									</FormControl>
 									<FormMessage />

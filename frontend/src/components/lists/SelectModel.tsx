@@ -24,20 +24,41 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 import { truncateFrom } from "@/lib/utils/format";
 import { useChatContext } from "@/context/ChatContext";
 import { useModelVisibility } from "@/hooks/useModelVisibility";
+import type { ModelsResponse } from "@/lib/services/modelService";
+
+interface SelectModelProps {
+	onModelSelected?: () => void;
+	disabled?: boolean;
+	/** Controlled value — when provided, SelectModel uses this instead of ChatContext's model. */
+	value?: string;
+	/** Called with the new model string when the user picks a model. */
+	onChange?: (model: string) => void;
+	/** Models list — when provided, SelectModel uses this instead of ChatContext's models. */
+	modelsList?: ModelsResponse;
+}
 
 function SelectModel({
 	onModelSelected,
 	disabled,
-}: {
-	onModelSelected?: (value: string) => void;
-	disabled?: boolean;
-}) {
-	const { model, setModel, models } = useChatContext();
+	value,
+	onChange,
+	modelsList,
+}: SelectModelProps) {
+	// Always call hooks (React rules), but only use their values as fallback
+	const ctx = useChatContext();
 	const { isModelVisible } = useModelVisibility();
 	const [open, setOpen] = useState(false);
 
-	const handleModelChange = (value: string) => {
-		setModel(value);
+	const isControlled = value !== undefined;
+	const currentModel: string | null = isControlled ? value : ctx.model;
+	const models: ModelsResponse = modelsList ?? ctx.models;
+
+	const handleModelChange = (newValue: string) => {
+		if (onChange) {
+			onChange(newValue);
+		} else {
+			ctx.setModel(newValue);
+		}
 		setOpen(false);
 		onModelSelected?.(value);
 	};
@@ -81,7 +102,7 @@ function SelectModel({
 	};
 
 	const authToken = getAuthToken?.();
-	const currentValue = model ?? models.default;
+	const currentValue = currentModel ?? models.default;
 	const currentLabel = currentValue ? getModelLabel(currentValue) : "";
 
 	return (
@@ -104,10 +125,10 @@ function SelectModel({
 					<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className="w-[300px] p-0">
+			<PopoverContent className="w-[--radix-popover-trigger-width] p-0">
 				<Command>
 					<CommandInput placeholder="Search models..." />
-					<CommandList>
+					<CommandList className="max-h-[300px] overflow-y-auto">
 						<CommandEmpty>No model found.</CommandEmpty>
 						<CommandGroup>
 							{models.models

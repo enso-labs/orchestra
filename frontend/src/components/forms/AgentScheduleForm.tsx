@@ -22,6 +22,8 @@ import { ScheduleCreate, ScheduleFormData } from "@/lib/entities/schedule";
 import { validateCronExpression } from "@/lib/utils/schedule";
 import { Bot, Clock, MessageSquare, Settings, Check, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SelectModel from "@/components/lists/SelectModel";
+import { useModelsList } from "@/hooks/useModelsList";
 
 const scheduleFormSchema = z.object({
 	name: z.string().min(1, "Name is required"),
@@ -51,6 +53,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 	isLoading = false,
 }) => {
 	const [cronError, setCronError] = useState<string>("");
+	const { models } = useModelsList();
 
 	const form = useForm({
 		resolver: zodResolver(scheduleFormSchema),
@@ -500,10 +503,10 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
 									<Label htmlFor="customModel">Model</Label>
-									<Input
-										id="customModel"
-										{...register("customModel")}
-										placeholder={agent.model}
+									<SelectModel
+										value={watch("customModel") || agent.model}
+										onChange={(model) => setValue("customModel", model)}
+										modelsList={models}
 									/>
 								</div>
 								<div>
