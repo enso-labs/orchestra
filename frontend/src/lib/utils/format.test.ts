@@ -355,6 +355,140 @@ describe("formatMessages", () => {
 		});
 	});
 
+	describe("agent_name Propagation", () => {
+		it("should preserve agent_name on assistant messages", () => {
+			const messages = [
+				{
+					id: "msg-1",
+					type: "ai",
+					content: "Hello from subagent",
+					agent_name: "researcher",
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].role).toBe("assistant");
+			expect(result[0].agent_name).toBe("researcher");
+		});
+
+		it("should preserve agent_name on tool call messages", () => {
+			const messages = [
+				{
+					id: "msg-2",
+					type: "assistant",
+					content: "",
+					agent_name: "coder",
+					tool_calls: [
+						{
+							name: "file_read",
+							args: { file_path: "/test.txt" },
+						},
+					],
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].role).toBe("AIMessageChunk");
+			expect(result[0].agent_name).toBe("coder");
+		});
+
+		it("should preserve agent_name on tool result messages", () => {
+			const messages = [
+				{
+					id: "msg-3",
+					type: "tool",
+					name: "file_read",
+					content: "file contents",
+					agent_name: "coder",
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].role).toBe("tool");
+			expect(result[0].agent_name).toBe("coder");
+		});
+
+		it("should preserve null agent_name", () => {
+			const messages = [
+				{
+					id: "msg-4",
+					type: "ai",
+					content: "From parent agent",
+					agent_name: null,
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].agent_name).toBeNull();
+		});
+
+		it("should not add agent_name when not present on source message", () => {
+			const messages = [
+				{
+					id: "msg-5",
+					type: "ai",
+					content: "No agent_name",
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).not.toHaveProperty("agent_name");
+		});
+
+		it("should preserve agent_name through full checkpoint thread", () => {
+			const messages = [
+				{ id: "1", type: "human", content: "Do research" },
+				{
+					id: "2",
+					type: "ai",
+					content: "",
+					agent_name: "researcher",
+					tool_calls: [
+						{ name: "web_search", args: { query: "test" } },
+					],
+				},
+				{
+					id: "3",
+					type: "tool",
+					name: "web_search",
+					content: "results",
+					agent_name: "researcher",
+				},
+				{
+					id: "4",
+					type: "ai",
+					content: "Here are the results",
+					agent_name: "researcher",
+				},
+				{
+					id: "5",
+					type: "ai",
+					content: "Summary from parent",
+					agent_name: null,
+				},
+			];
+
+			const result = formatMessages(messages);
+
+			expect(result).toHaveLength(5);
+			expect(result[0]).not.toHaveProperty("agent_name");
+			expect(result[1].agent_name).toBe("researcher");
+			expect(result[2].agent_name).toBe("researcher");
+			expect(result[3].agent_name).toBe("researcher");
+			expect(result[4].agent_name).toBeNull();
+		});
+	});
+
 	describe("Edge Cases", () => {
 		it("should handle empty messages array", () => {
 			const result = formatMessages([]);
