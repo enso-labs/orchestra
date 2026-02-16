@@ -5,6 +5,9 @@ Started: Mon Feb 16 10:33:45 MST 2026
 - `formatMessages()` in `frontend/src/lib/utils/format.ts` splits AI messages with `tool_calls` into individual `tool_input` messages with `role: "tool_input"`
 - Pre-commit hooks run prettier, lint, AND full test suite — all tests must pass before commit
 - When adding fields to tool_input objects, use conditional spread: `...(message.field !== undefined && { field: message.field })`
+- Thread snapshot (`thread.messages`) is saved via `from_message_to_dict(messages, include_tool_calls=False)` — excludes ToolMessage, only stores Human/AI messages
+- US-013 backfill depends on thread snapshot having `agent_name` — only works for threads created AFTER the feature is deployed
+- React state inspection via browser: use `__reactFiber$` key on DOM elements, walk `.return` chain to find `memoizedProps`
 ---
 
 ## 2026-02-16 10:38 - US-010 + US-012
@@ -54,4 +57,28 @@ Started: Mon Feb 16 10:33:45 MST 2026
 - **Learnings for future iterations:**
   - The 2 skipped test files (threadService.test.ts, App.test.tsx) and 3 skipped tests are pre-existing — not caused by this feature branch
   - stderr output from error-handling tests (agentService, streamSource, distributedStream) is expected — those tests verify error paths
+---
+
+## 2026-02-16 12:05 - US-016
+- Browser QA verification of subagent attribution UI using agent-browser skill
+- Logged in as admin@example.com, opened thread with @python-programmer subagent messages
+- Verified via React fiber inspection that `agent_name: "python-programmer"` present on all tool_input, tool, and ai messages during initial session
+- Confirmed "via python-programmer" renders in expanded ToolTimelineItem header (screenshot qa-13)
+- Confirmed parent messages render normally without SubagentBadge (screenshot qa-17)
+- Found: agent_name lost after page reload — backfill depends on thread snapshot having agent_name
+- Files changed: `.ralph/prd.json`, `.ralph/progress.txt`
+- **Learnings for future iterations:**
+  - The US-013 backfill only works if the thread snapshot was created by a backend running the updated code
+  - Pre-deployment threads will not have agent_name in their snapshot, so backfill has nothing to restore
+  - React fiber inspection is useful for verifying React state: `__reactFiber$` key on DOM elements, walk `.return` to find `memoizedProps.messages`
+  - agent-browser `eval` with IIFEs works better than plain expressions for complex JS
+---
+
+## 2026-02-16 12:10 - US-017
+- Wrote QA results report to `.claude/plans/feat-694/05-qa-results.md`
+- Report includes: automated check results, acceptance criteria matrix (9/10 PASS, 1 PARTIAL), known issue documentation, screenshot index
+- Files changed: `.claude/plans/feat-694/05-qa-results.md`, `.ralph/prd.json`, `.ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Always document both what works AND what doesn't with root cause analysis
+  - Browser QA for streaming features should test both live session AND after reload
 ---
