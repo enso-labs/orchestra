@@ -89,3 +89,9 @@
 - All 249 tests pass (including 6 new)
 - Files changed: `frontend/src/lib/utils/format.test.ts`
 ---
+
+## 2026-02-16 - US-009
+- Verified workspace clean, committed all PRD/progress updates
+- Pushed all 10 commits to origin/feat/694-show-subagent-tool-calls
+- All stories US-001 through US-009 pass
+---
