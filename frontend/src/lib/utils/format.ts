@@ -152,6 +152,9 @@ export function formatMessages(messages: any[]) {
 							name: tool_call.name,
 							input: args,
 							parent_message_id: message.id,
+							...(message.agent_name !== undefined && {
+								agent_name: message.agent_name,
+							}),
 						};
 					});
 

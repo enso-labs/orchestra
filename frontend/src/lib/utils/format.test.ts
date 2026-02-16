@@ -409,7 +409,7 @@ describe("formatMessages", () => {
 			const result = formatMessages(messages);
 
 			expect(result).toHaveLength(1);
-			expect(result[0].role).toBe("AIMessageChunk");
+			expect(result[0].role).toBe("tool_input");
 			expect(result[0].agent_name).toBe("coder");
 		});
 
