@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from "react";
 import {
 	ChevronRight,
 	Bot,
+	Brain,
 	// Layers,
 	// Wrench,
 	MessageSquare,
@@ -870,6 +871,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							<Link to="/assistants" className="flex items-center w-full">
 								<Bot className="w-4 h-4 mr-2" />
 								Assistants
+							</Link>
+						</SidebarGroupLabel>
+					</SidebarGroup>
+
+					{/* Memories Link */}
+					<SidebarGroup className="border-b border-sidebar-border">
+						<SidebarGroupLabel
+							asChild
+							className={`
+								group/label text-sidebar-foreground hover:bg-sidebar-accent
+								hover:text-sidebar-accent-foreground text-sm
+							`}
+						>
+							<Link to="/memories" className="flex items-center w-full">
+								<Brain className="w-4 h-4 mr-2" />
+								Memories
 							</Link>
 						</SidebarGroupLabel>
 					</SidebarGroup>

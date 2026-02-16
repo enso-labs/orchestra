@@ -124,6 +124,76 @@
       "priority": 9,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Propagate agent_name to tool_input in formatMessages()",
+      "description": "As a developer, I need formatMessages() to spread agent_name from parent AI messages into generated tool_input objects so subagent attribution shows on tool call UI.",
+      "acceptanceCriteria": [
+        "tool_input objects created in formatMessages() include agent_name when the parent message has it",
+        "Uses conditional spread: ...(message.agent_name !== undefined && { agent_name: message.agent_name })",
+        "Messages without agent_name are unaffected",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Propagate agent_name to tool_input in streaming handler",
+      "description": "As a developer, I need StreamMessageHandler.toolCall() to spread agent_name from the response into tool_input entries so live-streamed subagent tool calls show attribution.",
+      "acceptanceCriteria": [
+        "tool_input entries created in toolCall() include agent_name when response has it",
+        "Uses conditional spread: ...(response.agent_name !== undefined && { agent_name: response.agent_name })",
+        "Messages without agent_name are unaffected",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Fix test expectations for agent_name propagation",
+      "description": "As a developer, I need to fix wrong expected role in format.test.ts so agent_name tests pass correctly.",
+      "acceptanceCriteria": [
+        "Test at line ~412 expects role 'tool_input' instead of 'AIMessageChunk'",
+        "All format.test.ts tests pass after fix",
+        "npm run test passes in frontend directory"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Persist agent_name through thread reload",
+      "description": "As a user, I need agent_name to survive thread reload so subagent attribution is visible when reopening a conversation.",
+      "acceptanceCriteria": [
+        "backend/src/routes/v0/thread.py backfills agent_name from thread snapshot into checkpoint messages",
+        "Builds agent_name_map from thread.messages and applies to checkpoint values.messages by matching on id",
+        "Only sets agent_name when missing in checkpoint message (additive, no overwrites)",
+        "Threads without subagent messages are unaffected",
+        "Backend lint passes: make lint && make format"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Add title attribute to SubagentBadge",
+      "description": "As a user, I want to see the full subagent name on hover when the badge text is truncated.",
+      "acceptanceCriteria": [
+        "SubagentBadge span has title={name} attribute for hover tooltip",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

@@ -95,24 +95,35 @@ export function formatMessages(messages: any[]) {
 	if (!messages || !Array.isArray(messages)) {
 		return [];
 	}
-	return messages.map((message: any) => {
-		// Spread preserves agent_name for subagent attribution (set by backend from lc_agent_name)
-		let messageCopy = { ...message };
+	return messages.flatMap((message: any) => {
+		const messageCopy = { ...message };
 		// User Message
 		if (["user", "human"].includes(message.type)) {
-			messageCopy = {
+			return {
 				...messageCopy,
 				role: "user",
 			};
 		}
 
-		// Input Message - handle both string and object args
+		// Tool input messages — split each tool_call into its own tool_input message
 		if (
 			["assistant", "ai"].includes(message.type) &&
 			message.tool_calls?.length
 		) {
+			const results: any[] = [];
+
+			// If the AI message also has text content, emit it as an assistant message first
+			const textContent = formatContent(message.content);
+			if (textContent) {
+				results.push({
+					...messageCopy,
+					role: "assistant",
+					type: "assistant",
+				});
+			}
+
 			try {
-				const input = message.tool_calls
+				const toolInputMessages = message.tool_calls
 					.filter((tool_call: any) => {
 						// Accept both objects and valid JSON strings
 						if (tool_call.args && typeof tool_call.args === "object") {
@@ -130,26 +141,28 @@ export function formatMessages(messages: any[]) {
 							try {
 								args = JSON.parse(args);
 							} catch {
-								// If parsing fails, wrap in object
-								return { raw: args };
+								args = { raw: args };
 							}
 						}
-						return { ...args };
+						return {
+							id: `${message.id}-tc-${tool_call.id}`,
+							type: "tool_input",
+							role: "tool_input",
+							tool_call_id: tool_call.id,
+							name: tool_call.name,
+							input: args,
+							parent_message_id: message.id,
+						};
 					});
-				// Only add input if we have valid tool calls
-				if (input.length > 0) {
-					messageCopy = {
-						...messageCopy,
-						type: "AIMessageChunk",
-						role: "AIMessageChunk",
-						input,
-					};
-				} else {
-					// No valid tool calls, treat as regular assistant message
-					messageCopy = {
+
+				if (toolInputMessages.length > 0) {
+					results.push(...toolInputMessages);
+				} else if (results.length === 0) {
+					// No valid tool calls and no text content — fallback to assistant
+					results.push({
 						...messageCopy,
 						role: "assistant",
-					};
+					});
 				}
 			} catch (error) {
 				console.warn(
@@ -157,27 +170,34 @@ export function formatMessages(messages: any[]) {
 					message.id,
 					error,
 				);
-				// Fallback to assistant message if formatting fails
-				messageCopy = {
-					...messageCopy,
-					role: "assistant",
-				};
+				if (results.length === 0) {
+					results.push({
+						...messageCopy,
+						role: "assistant",
+					});
+				}
 			}
+			return results;
+		}
+
+		// Already a tool_input message (from streaming) — pass through
+		if (message.type === "tool_input") {
+			return messageCopy;
 		}
 
 		if (["tool"].includes(message.type)) {
-			messageCopy = {
+			return {
 				...messageCopy,
 				role: "tool",
 			};
 		}
 
-		// Assistant Message
+		// Assistant Message (no tool calls)
 		if (
 			["assistant", "ai"].includes(message.type) &&
 			!message.tool_calls?.length
 		) {
-			messageCopy = {
+			return {
 				...messageCopy,
 				role: "assistant",
 			};
@@ -272,6 +292,7 @@ export function formatContent(content: any) {
 	if (typeof content === "string") {
 		return content;
 	}
+	if (!content) return "";
 	return content[0]?.text;
 }
 

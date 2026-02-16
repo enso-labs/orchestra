@@ -1,14 +1,10 @@
-import { ApiTokensSettings } from "@/components/settings/ApiTokensSettings";
-import { DefaultModelSettings } from "@/components/settings/DefaultModelSettings";
-import { SandboxSettings } from "@/components/settings/SandboxSettings";
-import { ModelVisibilitySettings } from "@/components/settings/ModelVisibilitySettings";
-import { UserApiKeysSettings } from "@/components/settings/UserApiKeysSettings";
+import { MemorySettings } from "@/components/settings/MemorySettings";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export default function SettingsPage() {
+export default function MemoriesIndexPage() {
 	return (
 		<ChatLayout>
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -18,17 +14,13 @@ export default function SettingsPage() {
 						<ScrollArea className="h-full">
 							<div className="container max-w-4xl mx-auto py-8 space-y-8 px-4">
 								<div>
-									<h1 className="text-3xl font-bold">Settings</h1>
+									<h1 className="text-3xl font-bold">Memories</h1>
 									<p className="text-muted-foreground">
-										Manage your account settings and preferences.
+										Manage what the AI remembers about you.
 									</p>
 								</div>
 
-								<DefaultModelSettings />
-								<SandboxSettings />
-								<UserApiKeysSettings />
-								<ApiTokensSettings />
-								<ModelVisibilitySettings />
+								<MemorySettings />
 							</div>
 						</ScrollArea>
 					</div>

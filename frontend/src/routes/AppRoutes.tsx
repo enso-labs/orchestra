@@ -31,6 +31,7 @@ import AgentThreadPage from "@/pages/agents/thread";
 import SettingsPage from "@/pages/settings";
 import MemoryEditPage from "@/pages/memories/edit";
 import MemoryCreatePage from "@/pages/memories/create";
+import MemoriesIndexPage from "@/pages/memories";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -175,6 +176,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<SettingsPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/memories"
+						element={
+							<PrivateRoute>
+								<MemoriesIndexPage />
 							</PrivateRoute>
 						}
 					/>

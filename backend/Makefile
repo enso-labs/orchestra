@@ -1,4 +1,4 @@
-.PHONY: dev claude build run tag seeds test format lint
+.PHONY: dev claude build run tag seeds seeds.memory test format lint
 
 ENV_FILE ?= $(HOME)/.env/orchestra/.env.backend
 
@@ -19,6 +19,9 @@ tag:
 
 seeds.user:
 	uv run python -m seeds.user_seeder --env-file $(ENV_FILE)
+
+seeds.memory:
+	uv run python -m seeds.memory_seeder --env-file $(ENV_FILE)
 
 format:
 	uvx ruff format
