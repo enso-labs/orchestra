@@ -9,4 +9,29 @@
 - RLM library: `pip install rlms` — https://github.com/alexzhang13/rlm
 - RLM core: `rlm.completion(prompt, model)` replaces `llm.completion()` — REPL-based decomposition
 - REPL environments: local (exec), Docker, Modal, Prime sandboxes
+- RLM LMHandler: TCP socket server on localhost routes LLM calls by depth (depth=0 → root model, depth=1 → sub-model)
+- RLM isolated envs use HTTP broker pattern: Flask app inside sandbox + poller thread on host
+- RLM state persistence: dill serialization in isolated envs, in-memory dicts in LocalREPL
+- RLM prompt parsing: ```repl``` code blocks, FINAL()/FINAL_VAR() for answers
+- RLM batched queries: `llm_query_batched()` → asyncio.gather on server side
+---
+
+## 2026-02-16 - US-001
+Thread: N/A (first iteration)
+- Cloned https://github.com/alexzhang13/rlm and performed comprehensive source code analysis
+- Created `docs/rlm-analysis.md` with full architecture documentation covering:
+  - How `rlm.completion()` orchestrates decomposition (iterative LM + REPL loop)
+  - REPL environment interface (BaseEnv, IsolatedEnv, NonIsolatedEnv, SupportsPersistence)
+  - Recursive call tracking via LMHandler TCP server + broker pattern for isolated envs
+  - Prompt templates: RLM_SYSTEM_PROMPT, user prompt variants, context metadata
+  - Sandbox backend abstraction: 6 environments (local, docker, modal, prime, daytona, e2b)
+  - Client backend abstraction: 9 providers (openai, anthropic, gemini, litellm, etc.)
+- Files changed: `docs/rlm-analysis.md` (new, 552 lines)
+- **Learnings for future iterations:**
+  - The rlm library max_depth is currently limited to 1 (no true recursion yet)
+  - No streaming support — completion() is synchronous and blocking
+  - Only LocalREPL supports persistence/multi-turn conversations
+  - The LM drives decomposition (not the orchestrator) — quality depends on the system prompt
+  - Orchestra's Daytona integration could serve as the RLM REPL environment
+  - Dual-backend support (root + sub-call model) maps well to Orchestra's model selection
 ---
