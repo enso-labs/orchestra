@@ -13,6 +13,7 @@
 - `useModelsList` hook at `frontend/src/hooks/useModelsList.ts` — standalone models fetcher, returns `{ models, isLoading }`, no ChatContext dependency
 - AgentScheduleForm uses react-hook-form: for controlled components use `watch("field")` + `setValue("field", val)` instead of `register("field")`
 - Schedule form is accessed via SchedulesIndexPage (/schedules) create dialog — AgentSchedulesPanel is not yet integrated into agent edit page
+- IMPORTANT: Use `??` not `||` for boolean defaults — `false || true === true` (bug), `false ?? true === false` (correct)
 
 ---
 
@@ -44,4 +45,15 @@
   - AgentSchedulesPanel component exists but is NOT yet integrated into the agent edit page — it's only used standalone. The schedule form is accessible via the SchedulesIndexPage (/schedules) create dialog
   - The schedule form default value for customModel is `initialData?.customModel || agent.model` (line 64), so when editing, the previously saved model is pre-filled
   - Browser verification confirmed: dropdown shows all models (Anthropic, OpenAI, Google, Groq, xAI), icon rendering works, and switching between "Use Agent Settings" / "Custom Configuration" correctly toggles the SelectModel visibility
+---
+
+## 2026-02-16 - US-004
+- What was implemented: Fixed a bug where editing a schedule with custom configuration (`inherited_from_agent: false`) would always show "Use Agent Settings" mode instead of "Custom Configuration" with the saved model. Changed `|| true` to `?? true` for `inheritFromAgent` in both `SchedulesIndexPage` and `AgentSchedulesPanel`.
+- Files changed: `frontend/src/pages/schedules/index.tsx`, `frontend/src/components/panels/AgentSchedulesPanel.tsx`
+- **Learnings for future iterations:**
+  - CRITICAL: `false || true === true` in JavaScript! Always use `??` (nullish coalescing) instead of `||` for boolean values that can be legitimately `false`. The `||` operator treats `false`, `0`, `""` as falsy and falls through to the default.
+  - The ScheduleTable and ScheduleCalendar views show **execution events**, NOT schedules. A newly created schedule without past runs won't appear in these views. The schedules are tracked by the `useSchedules` hook but only displayed via `mapExecutionsToEvents`.
+  - The edit dialog is triggered by `handleEditSchedule(scheduleId)` which fetches the full schedule from `/api/schedules/:id` and sets `editingSchedule` state + `showEditDialog: true`.
+  - Schedule data saved in the API: `task.model` holds the selected model, `task.metadata.inherited_from_agent` holds the boolean for inherit mode. These map directly to `initialData.customModel` and `initialData.inheritFromAgent`.
+  - Verified via API that schedule save persists correctly: `model=anthropic:claude-sonnet-4-5, inherited=false` confirmed in API response.
 ---

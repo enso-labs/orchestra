@@ -61,7 +61,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "initialData?.customModel is set at line 64 of AgentScheduleForm.tsx. This value needs to be passed as the controlled value to SelectModel."
     }
   ]
