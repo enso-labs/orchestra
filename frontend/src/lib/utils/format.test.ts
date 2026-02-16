@@ -625,6 +625,69 @@ describe("formatMessages", () => {
 			expect(toolMsgs[0].agent_name).toBe("coder");
 			expect(toolMsgs[1].agent_name).toBe("coder");
 		});
+
+		it("should extract agent_name from tool_calls args.subagent_type when agent_name is missing", () => {
+			// Simulates checkpoint reload where agent_name is lost but
+			// subagent_type persists in tool call arguments
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					tool_calls: [
+						{
+							id: "call_abc",
+							name: "task",
+							args: {
+								subagent_type: "python-programmer",
+								description: "Write fibonacci code",
+							},
+						},
+					],
+				},
+				{
+					id: "tool-1",
+					type: "tool",
+					content: "Done",
+					tool_call_id: "call_abc",
+					name: "task",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolInput = result.find((m: any) => m.role === "tool_input");
+			const toolResult = result.find((m: any) => m.role === "tool");
+			expect(toolInput.agent_name).toBe("python-programmer");
+			expect(toolResult.agent_name).toBe("python-programmer");
+		});
+
+		it("should extract agent_name from JSON string args.subagent_type", () => {
+			const messages = [
+				{
+					id: "ai-1",
+					type: "ai",
+					content: "",
+					tool_calls: [
+						{
+							id: "call_xyz",
+							name: "task",
+							args: '{"subagent_type":"researcher","description":"Search the web"}',
+						},
+					],
+				},
+				{
+					id: "tool-1",
+					type: "tool",
+					content: "Found results",
+					tool_call_id: "call_xyz",
+					name: "task",
+				},
+			];
+
+			const result = formatMessages(messages);
+			const toolResult = result.find((m: any) => m.role === "tool");
+			expect(toolResult.agent_name).toBe("researcher");
+		});
 	});
 
 	describe("Edge Cases", () => {
