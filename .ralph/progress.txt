@@ -13,6 +13,10 @@
 - `service_context.cron_service` field name is defined in `backend/src/contexts/service.py` (renamed in US-002)
 - Use `uvx ruff check` for linting when the worktree venv doesn't have ruff installed
 - `backend/main.py` also imports the service singleton — don't forget to update it when renaming services
+- APScheduler's `SQLAlchemyJobStore` manages its own table (now `crons`, was `schedules`) — not tracked by Alembic metadata
+- Migration revision chain: 0000_init → 0001 → 0002
+- Use `tsc --project tsconfig.app.json` for typechecking — the root `tsconfig.json` has `"files": []` which checks nothing
+- Frontend `CronExecution` uses `cron_id` field (was `schedule_id`), `CronEvent` uses `cron_id` (was `schedule_id`)
 ---
 
 ## 2026-02-16 - US-001
@@ -69,4 +73,85 @@
   - `tablename="schedules"` in cron.py is the DB table name — addressed in US-005 migration
   - Cron entity validation strings using "schedule" as a verb (e.g., "must not schedule more frequently") are correct English and should NOT be renamed
   - `uvx ruff check` passes cleanly; pyright errors are all pre-existing (missing imports, None types) unrelated to our changes
+---
+
+## 2026-02-16 - US-005
+- What was implemented: Created Alembic migration to rename `schedules` table to `crons`, and updated `SQLAlchemyJobStore` tablename parameter
+- Files changed:
+  - `backend/migrations/versions/0002_rename_schedules_to_crons.py` (new migration: renames table + index)
+  - `backend/src/services/cron.py` (tablename="schedules" → tablename="crons")
+- **Learnings for future iterations:**
+  - The `schedules` table is NOT managed by Alembic — it's created by APScheduler's `SQLAlchemyJobStore` on startup via `self.jobs_t.create(self.engine, True)` (creates if not exists)
+  - APScheduler creates an auto-named index `ix_<tablename>_next_run_time` on the `next_run_time` column — migration must rename this index too
+  - The table has 3 columns: `id` (Unicode(191), PK), `next_run_time` (Float(25), indexed), `job_state` (LargeBinary, NOT NULL)
+  - Used `ALTER INDEX IF EXISTS` to handle cases where the index might not exist (e.g., fresh database)
+  - Migration revision chain: 0000_init → 0001 → 0002
+---
+
+## 2026-02-16 - US-006
+- What was implemented: Renamed frontend entities, services, and utils from Schedule to Cron naming
+- Files changed:
+  - `frontend/src/lib/entities/schedule.ts` → `frontend/src/lib/entities/cron.ts` (renamed all types: Schedule→Cron, ScheduleCreate→CronCreate, ScheduleExecution→CronExecution, ScheduleEvent→CronEvent, etc. Also renamed field `schedule_id`→`cron_id` in CronExecution/CronEvent)
+  - `frontend/src/lib/services/scheduleService.ts` → `frontend/src/lib/services/cronService.ts` (renamed class: ScheduleService→CronService, all methods renamed, API paths `/schedules`→`/crons`, response keys `schedules`→`crons`)
+  - `frontend/src/lib/utils/schedule.ts` → `frontend/src/lib/utils/cron.ts` (renamed: createScheduleFromAgent→createCronFromAgent, getScheduleStatus→getCronStatus, validation message updated)
+  - `frontend/src/lib/utils/calendar.ts` (types updated, mapSchedulesToProjectedEvents→mapCronsToProjectedEvents, field references schedule_id→cron_id)
+  - `frontend/src/lib/services/agentService.ts` (import updated, field `schedules`→`crons`, methods renamed: getAgentSchedules→getAgentCrons, etc., API paths `/schedules`→`/crons`)
+  - All hooks (useSchedules, useAgentSchedules, useScheduleExecutions) — imports, types, service method calls updated
+  - All component files — imports updated to cron entity/service/util paths, type annotations updated
+  - `frontend/src/components/drawers/app-sidebar.tsx` (execution.schedule_id→execution.cron_id)
+  - `frontend/src/pages/schedules/index.tsx` (imports+types updated)
+  - `frontend/src/lib/utils/calendar.test.ts` (imports+types+field references updated)
+- **Learnings for future iterations:**
+  - Use `tsc --project tsconfig.app.json` NOT just `tsc --noEmit` — the root `tsconfig.json` has `"files": []` which checks nothing
+  - When renaming a service class AND its methods, `replace_all` only replaces the exact string — method names inside calling code must be updated separately
+  - `CronExecution.schedule_id` field was renamed to `cron_id` — all consuming code must update field access
+  - Backend API response keys changed in US-003 (`schedules`→`crons`, `schedule`→`cron`) — frontend service responses must match
+---
+
+## 2026-02-16 - US-007
+- What was implemented: Renamed frontend hooks from Schedule to Cron naming
+- Files changed:
+  - `frontend/src/hooks/useSchedules.ts` → `frontend/src/hooks/useCrons.ts` (renamed export: useSchedules→useCrons, state: schedules→crons, all methods: fetchSchedules→fetchCrons, createSchedule→createCron, etc.)
+  - `frontend/src/hooks/useAgentSchedules.ts` → `frontend/src/hooks/useAgentCrons.ts` (renamed export: useAgentSchedules→useAgentCrons, all internal names updated)
+  - `frontend/src/hooks/useScheduleExecutions.ts` → `frontend/src/hooks/useCronExecutions.ts` (renamed export: useScheduleExecutions→useCronExecutions, options interface: UseScheduleExecutionsOptions→UseCronExecutionsOptions, scheduleId→cronId, fetchScheduleExecutions→fetchCronExecutions)
+  - `frontend/src/components/panels/AgentSchedulesPanel.tsx` (import+destructured vars updated from useAgentSchedules to useAgentCrons)
+  - `frontend/src/components/drawers/app-sidebar.tsx` (imports updated, schedulesMap→cronsMap, fetchSchedules→fetchCrons)
+  - `frontend/src/pages/schedules/index.tsx` (imports updated, schedulesMap→cronsMap, all hook return variable usages updated)
+- **Learnings for future iterations:**
+  - When renaming hooks, must update both the import AND the destructured return values at every call site
+  - Three consuming files used the hooks: AgentSchedulesPanel.tsx, app-sidebar.tsx, pages/schedules/index.tsx
+  - UI-facing string literals (toast messages, placeholder text, labels) still say "schedules" — these are user-facing text that may be addressed in later stories
+---
+
+## 2026-02-16 - US-008
+- What was implemented: Renamed all 7 frontend component files from Schedule to Cron naming, plus updated all internal references, exports, interfaces, and imports in consuming files
+- Files changed:
+  - `frontend/src/components/calendar/ScheduleCalendar.tsx` → `CronCalendar.tsx` (renamed export: ScheduleCalendar→CronCalendar, interface: ScheduleCalendarProps→CronCalendarProps)
+  - `frontend/src/components/tables/ScheduleTable.tsx` → `CronTable.tsx` (renamed export: ScheduleTable→CronTable, interface: ScheduleTableProps→CronTableProps)
+  - `frontend/src/components/cards/AgentScheduleCard.tsx` → `AgentCronCard.tsx` (renamed export: AgentScheduleCard→AgentCronCard, interface: AgentScheduleCardProps→AgentCronCardProps)
+  - `frontend/src/components/lists/AgentScheduleList.tsx` → `AgentCronList.tsx` (renamed export: AgentScheduleList→AgentCronList, interface: AgentScheduleListProps→AgentCronListProps, JSX: AgentScheduleCard→AgentCronCard)
+  - `frontend/src/components/sidebar/ScheduleSidebarItem.tsx` → `CronSidebarItem.tsx` (renamed export: ScheduleSidebarItem→CronSidebarItem, interface: ScheduleSidebarItemProps→CronSidebarItemProps, prop: scheduleName→cronName)
+  - `frontend/src/components/panels/AgentSchedulesPanel.tsx` → `AgentCronsPanel.tsx` (renamed export: AgentSchedulesPanel→AgentCronsPanel, interface: AgentSchedulesPanelProps→AgentCronsPanelProps, JSX: AgentScheduleCard→AgentCronCard, AgentScheduleForm→AgentCronForm)
+  - `frontend/src/components/forms/AgentScheduleForm.tsx` → `AgentCronForm.tsx` (renamed export: AgentScheduleForm→AgentCronForm, interface: AgentScheduleFormProps→AgentCronFormProps, schema: scheduleFormSchema→cronFormSchema)
+  - `frontend/src/pages/schedules/index.tsx` (imports updated for all 4 renamed components)
+  - `frontend/src/components/drawers/app-sidebar.tsx` (import+JSX updated: ScheduleSidebarItem→CronSidebarItem, scheduleName→cronName)
+- **Learnings for future iterations:**
+  - When using `replace_all`, it's efficient for renaming identifiers across a file — avoids indentation matching issues
+  - AgentCronsPanel and AgentCronList are not imported by any other files — they may be used via lazy loading or agent pages
+  - The `schedule_description` metadata field in AgentCronForm is still named `schedule_description` — this is a backend API field, not a frontend-only rename
+  - UI-facing text like "Create Schedule", "Loading schedules...", "No schedules found" still uses "schedule" wording — to be addressed in US-010 or later
+---
+
+## 2026-02-16 - US-009
+- What was implemented: Renamed frontend pages directory and updated routes from /schedules to /crons, plus sidebar labels and function names
+- Files changed:
+  - `frontend/src/pages/schedules/` → `frontend/src/pages/crons/` (directory renamed)
+  - `frontend/src/pages/crons/index.tsx` (function renamed: SchedulesIndexPage→CronsIndexPage, all handler names: handleCreateSchedule→handleCreateCron, handleDeleteSchedule→handleDeleteCron, handleEditSchedule→handleEditCron, handleUpdateSchedule→handleUpdateCron, handleDuplicateSchedule→handleDuplicateCron, state: editingSchedule→editingCron, local vars: filteredAndSortedSchedules→filteredAndSortedCrons, filteredScheduleIds→filteredCronIds, getAgentForSchedule→getAgentForCron, all UI text updated: Schedules→Crons, schedules→crons)
+  - `frontend/src/routes/AppRoutes.tsx` (import: SchedulesIndexPage→CronsIndexPage from @/pages/crons, route path: /schedules→/crons)
+  - `frontend/src/components/drawers/app-sidebar.tsx` (function: SchedulesCollapsibleGroup→CronsCollapsibleGroup, collapsible key+title: schedules→crons, sidebar label: Schedules→Crons, navigate path: /schedules→/crons, button text: View All Schedules→View All Crons, fallback text: Unknown Schedule→Unknown Cron, JSX usage: SchedulesCollapsibleGroup→CronsCollapsibleGroup)
+- **Learnings for future iterations:**
+  - Browser verification with agent-browser requires a running backend for auth — CORS blocks login against remote API from localhost
+  - The `/crons` route correctly shows login page (PrivateRoute) and old `/schedules` route shows 404 — confirms routing works
+  - The `schedule_description` metadata field in editingCron.task.metadata remains unchanged — it's a backend API field name
+  - UI-facing text in the page (titles, toasts, placeholders, dialog headers) was updated to use "cron" naming in this story
 ---
