@@ -9,12 +9,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2, Copy } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { ScheduleEvent } from "@/lib/entities/schedule";
+import type { CronEvent } from "@/lib/entities/cron";
 
 type TableView = "past" | "future";
 
 interface ScheduleTableProps {
-	events: ScheduleEvent[];
+	events: CronEvent[];
 	view?: TableView;
 	onViewChange?: (view: TableView) => void;
 	onEdit?: (scheduleId: string) => void;
@@ -128,22 +128,20 @@ export function ScheduleTable({
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
 												<DropdownMenuItem
-													onClick={() => onEdit?.(event.resource.schedule_id)}
+													onClick={() => onEdit?.(event.resource.cron_id)}
 												>
 													<Pencil className="h-4 w-4 mr-2" />
 													Edit
 												</DropdownMenuItem>
 												<DropdownMenuItem
-													onClick={() =>
-														onDuplicate?.(event.resource.schedule_id)
-													}
+													onClick={() => onDuplicate?.(event.resource.cron_id)}
 												>
 													<Copy className="h-4 w-4 mr-2" />
 													Duplicate
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													className="text-destructive"
-													onClick={() => onDelete?.(event.resource.schedule_id)}
+													onClick={() => onDelete?.(event.resource.cron_id)}
 												>
 													<Trash2 className="h-4 w-4 mr-2" />
 													Delete

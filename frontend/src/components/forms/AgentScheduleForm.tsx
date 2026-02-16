@@ -18,8 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CronBuilder } from "./CronBuilder";
 import { Agent } from "@/lib/services/agentService";
-import { ScheduleCreate, ScheduleFormData } from "@/lib/entities/schedule";
-import { validateCronExpression } from "@/lib/utils/schedule";
+import { CronCreate, CronFormData } from "@/lib/entities/cron";
+import { validateCronExpression } from "@/lib/utils/cron";
 import { Bot, Clock, MessageSquare, Settings, Check, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import SelectModel from "@/components/lists/SelectModel";
@@ -39,9 +39,9 @@ const scheduleFormSchema = z.object({
 
 interface AgentScheduleFormProps {
 	agent: Agent;
-	onSubmit: (schedule: ScheduleCreate) => Promise<void>;
+	onSubmit: (cron: CronCreate) => Promise<void>;
 	onCancel: () => void;
-	initialData?: Partial<ScheduleFormData>;
+	initialData?: Partial<CronFormData>;
 	isLoading?: boolean;
 }
 
@@ -94,7 +94,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 		}
 
 		const agentMetadata = (agent.metadata || {}) as Record<string, any>;
-		const scheduleData: ScheduleCreate = {
+		const cronData: CronCreate = {
 			title: data.name,
 			trigger: {
 				type: "cron",
@@ -130,7 +130,7 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 			},
 		};
 
-		await onSubmit(scheduleData);
+		await onSubmit(cronData);
 	};
 
 	return (

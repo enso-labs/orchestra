@@ -1,4 +1,4 @@
-export interface ScheduleCreate {
+export interface CronCreate {
 	title: string;
 	trigger: {
 		type: "cron";
@@ -19,11 +19,11 @@ export interface ScheduleCreate {
 		a2a?: Record<string, any>;
 		mcp?: Record<string, any>;
 		subagents?: Array<any>;
-		metadata?: ScheduleTaskMetadata;
+		metadata?: CronTaskMetadata;
 	};
 }
 
-export interface ScheduleTaskMetadata {
+export interface CronTaskMetadata {
 	user_id?: string;
 	thread_id?: string;
 	checkpoint_id?: string;
@@ -33,7 +33,7 @@ export interface ScheduleTaskMetadata {
 	[key: string]: any;
 }
 
-export interface Schedule {
+export interface Cron {
 	id: string;
 	title: string;
 	trigger: {
@@ -55,15 +55,15 @@ export interface Schedule {
 		a2a?: Record<string, any>;
 		mcp?: Record<string, any>;
 		subagents?: Array<any>;
-		metadata?: ScheduleTaskMetadata;
+		metadata?: CronTaskMetadata;
 	};
 	next_run_time: string; // ISO datetime
 	agent_id?: string; // Link to specific agent
 }
 
-export interface ScheduleExecution {
+export interface CronExecution {
 	id: string;
-	schedule_id: string;
+	cron_id: string;
 	thread_id: string | null;
 	status: "scheduled" | "running" | "success" | "failure";
 	scheduled_time: string;
@@ -73,13 +73,13 @@ export interface ScheduleExecution {
 	metadata: Record<string, any>;
 }
 
-export interface ScheduleEvent {
+export interface CronEvent {
 	id: string;
 	title: string;
 	start: Date;
 	end: Date;
 	resource: {
-		schedule_id: string;
+		cron_id: string;
 		execution_id: string;
 		thread_id: string | null;
 		status: string;
@@ -87,11 +87,11 @@ export interface ScheduleEvent {
 	};
 }
 
-export interface ScheduleWithExecutions extends Schedule {
-	executions: ScheduleExecution[];
+export interface CronWithExecutions extends Cron {
+	executions: CronExecution[];
 }
 
-export interface ScheduleFormData {
+export interface CronFormData {
 	name: string;
 	description?: string;
 	enabled: boolean;

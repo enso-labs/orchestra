@@ -14,9 +14,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Schedule } from "@/lib/entities/schedule";
+import { Cron } from "@/lib/entities/cron";
 import { Agent } from "@/lib/services/agentService";
-import { getHumanReadableCron, getStatusColor } from "@/lib/utils/schedule";
+import { getHumanReadableCron, getStatusColor } from "@/lib/utils/cron";
 import {
 	Clock,
 	Calendar,
@@ -29,11 +29,11 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 interface AgentScheduleCardProps {
-	schedule: Schedule;
+	schedule: Cron;
 	agent: Agent;
 	onEdit?: (id: string) => void;
 	onDelete?: (id: string) => void;
-	onDuplicate?: (schedule: Schedule) => void;
+	onDuplicate?: (schedule: Cron) => void;
 	onToggle?: (id: string, enabled: boolean) => void;
 }
 

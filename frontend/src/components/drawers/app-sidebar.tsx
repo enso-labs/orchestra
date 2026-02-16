@@ -780,8 +780,7 @@ function SchedulesCollapsibleGroup() {
 										key={execution.id}
 										execution={execution}
 										scheduleName={
-											schedulesMap.get(execution.schedule_id) ??
-											"Unknown Schedule"
+											schedulesMap.get(execution.cron_id) ?? "Unknown Schedule"
 										}
 									/>
 								))

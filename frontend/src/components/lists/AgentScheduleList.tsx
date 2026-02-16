@@ -1,6 +1,6 @@
 import React from "react";
 import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
-import { Schedule } from "@/lib/entities/schedule";
+import { Cron } from "@/lib/entities/cron";
 import { Agent } from "@/lib/services/agentService";
 import {
 	Card,
@@ -11,11 +11,11 @@ import {
 import { Calendar } from "lucide-react";
 
 interface AgentScheduleListProps {
-	schedules: Schedule[];
+	schedules: Cron[];
 	agent: Agent;
 	onEdit?: (id: string) => void;
 	onDelete?: (id: string) => void;
-	onDuplicate?: (schedule: Schedule) => void;
+	onDuplicate?: (schedule: Cron) => void;
 	onToggle?: (id: string, enabled: boolean) => void;
 	loading?: boolean;
 	emptyMessage?: string;

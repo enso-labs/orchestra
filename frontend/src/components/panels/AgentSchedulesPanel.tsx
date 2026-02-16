@@ -25,8 +25,8 @@ import { AgentScheduleCard } from "@/components/cards/AgentScheduleCard";
 import { AgentScheduleForm } from "@/components/forms/AgentScheduleForm";
 import { useAgentSchedules } from "@/hooks/useAgentSchedules";
 import { Agent } from "@/lib/services/agentService";
-import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
-import { getScheduleStatus } from "@/lib/utils/schedule";
+import { Cron, CronCreate } from "@/lib/entities/cron";
+import { getCronStatus } from "@/lib/utils/cron";
 import {
 	Plus,
 	Search,
@@ -61,7 +61,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 	} = useAgentSchedules(agent.id);
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
-	const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+	const [editingSchedule, setEditingSchedule] = useState<Cron | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 	const [sortBy, setSortBy] = useState<SortBy>("next_run");
@@ -72,7 +72,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 		}
 	}, [agent.id, fetchSchedules]);
 
-	const handleCreateSchedule = async (scheduleData: ScheduleCreate) => {
+	const handleCreateSchedule = async (scheduleData: CronCreate) => {
 		try {
 			await createSchedule(scheduleData);
 			setShowCreateDialog(false);
@@ -94,7 +94,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 		}
 	};
 
-	const handleUpdateSchedule = async (scheduleData: ScheduleCreate) => {
+	const handleUpdateSchedule = async (scheduleData: CronCreate) => {
 		if (!editingSchedule) return;
 
 		try {
@@ -138,8 +138,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			// Status filter
 			if (filterStatus === "all") return matchesSearch;
 			return (
-				matchesSearch &&
-				getScheduleStatus(schedule.next_run_time) === filterStatus
+				matchesSearch && getCronStatus(schedule.next_run_time) === filterStatus
 			);
 		})
 		.sort((a, b) => {
@@ -170,7 +169,7 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			overdue: 0,
 		};
 		schedules.forEach((schedule) => {
-			const status = getScheduleStatus(schedule.next_run_time);
+			const status = getCronStatus(schedule.next_run_time);
 			counts[status]++;
 		});
 		return counts;

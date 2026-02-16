@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS } from "date-fns/locale/en-US";
-import type { ScheduleEvent } from "@/lib/entities/schedule";
+import type { CronEvent } from "@/lib/entities/cron";
 import { getExecutionStatusColor } from "@/lib/utils/calendar";
 import "@/styles/calendar.css";
 
@@ -17,15 +17,15 @@ const localizer = dateFnsLocalizer({
 });
 
 interface ScheduleCalendarProps {
-	events: ScheduleEvent[];
-	onEventClick?: (event: ScheduleEvent) => void;
+	events: CronEvent[];
+	onEventClick?: (event: CronEvent) => void;
 }
 
 export function ScheduleCalendar({
 	events,
 	onEventClick,
 }: ScheduleCalendarProps) {
-	const eventStyleGetter = useCallback((event: ScheduleEvent) => {
+	const eventStyleGetter = useCallback((event: CronEvent) => {
 		const backgroundColor = getExecutionStatusColor(event.resource.status);
 		return {
 			style: {
@@ -40,7 +40,7 @@ export function ScheduleCalendar({
 	}, []);
 
 	const handleSelectEvent = useCallback(
-		(event: ScheduleEvent) => {
+		(event: CronEvent) => {
 			onEventClick?.(event);
 		},
 		[onEventClick],
@@ -51,7 +51,7 @@ export function ScheduleCalendar({
 
 	return (
 		<div className="schedule-calendar h-full min-h-[600px] pb-6">
-			<Calendar<ScheduleEvent>
+			<Calendar<CronEvent>
 				localizer={localizer}
 				events={events}
 				defaultView={defaultView}

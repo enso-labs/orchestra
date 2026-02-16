@@ -1,10 +1,10 @@
 import { formatDistanceToNow } from "date-fns";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { ScheduleExecution } from "@/lib/entities/schedule";
+import { CronExecution } from "@/lib/entities/cron";
 import { getExecutionStatusColor } from "@/lib/utils/calendar";
 
 interface ScheduleSidebarItemProps {
-	execution: ScheduleExecution;
+	execution: CronExecution;
 	scheduleName: string;
 }
 

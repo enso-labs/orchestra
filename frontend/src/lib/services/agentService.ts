@@ -1,5 +1,5 @@
 import apiClient from "@/lib/utils/apiClient";
-import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
+import { Cron, CronCreate } from "@/lib/entities/cron";
 
 export type Agent = {
 	id?: string;
@@ -26,7 +26,7 @@ export type Agent = {
 	};
 	files?: Record<string, string>; // Persisted files (path -> content)
 	metadata?: object;
-	schedules?: Schedule[]; // Agent's associated schedules
+	crons?: Cron[]; // Agent's associated crons
 	created_at?: string;
 	updated_at?: string;
 	// Public agent fields
@@ -93,44 +93,44 @@ export default class AgentService {
 		}
 	}
 
-	// Schedule-related methods
-	static async getAgentSchedules(agentId: string) {
+	// Cron-related methods
+	static async getAgentCrons(agentId: string) {
 		try {
-			const response = await apiClient.get(`/schedules?agent_id=${agentId}`);
+			const response = await apiClient.get(`/crons?agent_id=${agentId}`);
 			return response;
 		} catch (error) {
-			console.error("Failed to fetch agent schedules:", error);
+			console.error("Failed to fetch agent crons:", error);
 			throw error;
 		}
 	}
 
-	static async createAgentSchedule(agentId: string, schedule: ScheduleCreate) {
+	static async createAgentCron(agentId: string, cron: CronCreate) {
 		try {
-			// Enhance schedule with agent context
-			const enhancedSchedule = {
-				...schedule,
+			// Enhance cron with agent context
+			const enhancedCron = {
+				...cron,
 				task: {
-					...schedule.task,
+					...cron.task,
 					metadata: {
-						...schedule.task.metadata,
+						...cron.task.metadata,
 						agent_id: agentId,
 					},
 				},
 			};
-			const response = await apiClient.post("/schedules", enhancedSchedule);
+			const response = await apiClient.post("/crons", enhancedCron);
 			return response;
 		} catch (error) {
-			console.error("Failed to create agent schedule:", error);
+			console.error("Failed to create agent cron:", error);
 			throw error;
 		}
 	}
 
-	static async deleteAgentSchedule(scheduleId: string) {
+	static async deleteAgentCron(cronId: string) {
 		try {
-			const response = await apiClient.delete(`/schedules/${scheduleId}`);
+			const response = await apiClient.delete(`/crons/${cronId}`);
 			return response;
 		} catch (error) {
-			console.error("Failed to delete agent schedule:", error);
+			console.error("Failed to delete agent cron:", error);
 			throw error;
 		}
 	}

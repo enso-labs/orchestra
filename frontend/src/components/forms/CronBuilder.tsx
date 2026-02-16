@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar, AlertCircle } from "lucide-react";
-import { CRON_PRESETS, getHumanReadableCron } from "@/lib/utils/schedule";
+import { CRON_PRESETS, getHumanReadableCron } from "@/lib/utils/cron";
 
 interface CronBuilderProps {
 	value: string;

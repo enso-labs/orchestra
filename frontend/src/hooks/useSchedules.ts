@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
-import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
-import ScheduleService from "@/lib/services/scheduleService";
+import { Cron, CronCreate } from "@/lib/entities/cron";
+import CronService from "@/lib/services/cronService";
 import { toast } from "sonner";
 
 export const useSchedules = () => {
-	const [schedules, setSchedules] = useState<Schedule[]>([]);
+	const [schedules, setSchedules] = useState<Cron[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -12,8 +12,8 @@ export const useSchedules = () => {
 		setLoading(true);
 		setError(null);
 		try {
-			const response = await ScheduleService.getAllSchedules();
-			setSchedules(response.schedules);
+			const response = await CronService.getAllCrons();
+			setSchedules(response.crons);
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "Failed to fetch schedules";
@@ -25,10 +25,10 @@ export const useSchedules = () => {
 	}, []);
 
 	const createSchedule = useCallback(
-		async (schedule: ScheduleCreate) => {
+		async (schedule: CronCreate) => {
 			setLoading(true);
 			try {
-				await ScheduleService.createSchedule(schedule);
+				await CronService.createCron(schedule);
 				toast.success("Schedule created successfully");
 				await fetchSchedules(); // Refresh the list
 			} catch (err) {
@@ -45,10 +45,10 @@ export const useSchedules = () => {
 	);
 
 	const updateSchedule = useCallback(
-		async (scheduleId: string, schedule: ScheduleCreate) => {
+		async (scheduleId: string, schedule: CronCreate) => {
 			setLoading(true);
 			try {
-				await ScheduleService.updateSchedule(scheduleId, schedule);
+				await CronService.updateCron(scheduleId, schedule);
 				toast.success("Schedule updated successfully");
 				await fetchSchedules(); // Refresh the list
 			} catch (err) {
@@ -68,7 +68,7 @@ export const useSchedules = () => {
 		async (scheduleId: string) => {
 			setLoading(true);
 			try {
-				await ScheduleService.deleteSchedule(scheduleId);
+				await CronService.deleteCron(scheduleId);
 				toast.success("Schedule deleted successfully");
 				await fetchSchedules(); // Refresh the list
 			} catch (err) {
@@ -87,8 +87,8 @@ export const useSchedules = () => {
 	const getSchedule = useCallback(async (scheduleId: string) => {
 		setLoading(true);
 		try {
-			const response = await ScheduleService.getSchedule(scheduleId);
-			return response.schedule;
+			const response = await CronService.getCron(scheduleId);
+			return response.cron;
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "Failed to fetch schedule";

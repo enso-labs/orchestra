@@ -25,10 +25,10 @@ import { AgentScheduleForm } from "@/components/forms/AgentScheduleForm";
 import { ScheduleCalendar } from "@/components/calendar/ScheduleCalendar";
 import { ScheduleTable } from "@/components/tables/ScheduleTable";
 import { ViewToggle } from "@/components/toggles/ViewToggle";
-import { getScheduleStatus } from "@/lib/utils/schedule";
+import { getCronStatus } from "@/lib/utils/cron";
 import {
 	mapExecutionsToEvents,
-	mapSchedulesToProjectedEvents,
+	mapCronsToProjectedEvents,
 	mergeAndDeduplicateEvents,
 } from "@/lib/utils/calendar";
 import {
@@ -48,11 +48,7 @@ import HouseIcon from "@/components/icons/HouseIcon";
 import { useSchedules } from "@/hooks/useSchedules";
 import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
 import { useAgentContext } from "@/context/AgentContext";
-import {
-	Schedule,
-	ScheduleCreate,
-	ScheduleEvent,
-} from "@/lib/entities/schedule";
+import { Cron, CronCreate, CronEvent } from "@/lib/entities/cron";
 import { toast } from "sonner";
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
@@ -79,20 +75,20 @@ function SchedulesIndexPage() {
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
 	const [showEditDialog, setShowEditDialog] = useState(false);
 	const [selectedAgentId, setSelectedAgentId] = useState<string>("");
-	const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
+	const [editingSchedule, setEditingSchedule] = useState<Cron | null>(null);
 
 	const { executions } = useScheduleExecutions();
 
 	// Map executions to calendar events
 	const schedulesMap = useMemo(() => {
-		const map = new Map<string, Schedule>();
+		const map = new Map<string, Cron>();
 		for (const s of schedules) {
 			map.set(s.id, s);
 		}
 		return map;
 	}, [schedules]);
 
-	const handleEventClick = (event: ScheduleEvent) => {
+	const handleEventClick = (event: CronEvent) => {
 		if (event.resource.thread_id) {
 			window.open(
 				`/?t=${event.resource.thread_id}`,
@@ -101,8 +97,8 @@ function SchedulesIndexPage() {
 			);
 		} else if (event.id.startsWith("projected-")) {
 			// Projected events have no thread — open the edit dialog instead
-			const scheduleId = event.resource.schedule_id;
-			handleEditSchedule(scheduleId);
+			const cronId = event.resource.cron_id;
+			handleEditSchedule(cronId);
 		}
 	};
 
@@ -116,7 +112,7 @@ function SchedulesIndexPage() {
 		fetchSchedules();
 	}, [fetchSchedules]);
 
-	const handleCreateSchedule = async (scheduleData: ScheduleCreate) => {
+	const handleCreateSchedule = async (scheduleData: CronCreate) => {
 		try {
 			const agent = agents.find((a: any) => a.id === selectedAgentId);
 			if (!agent) {
@@ -125,7 +121,7 @@ function SchedulesIndexPage() {
 			}
 
 			// Add agent_id to metadata
-			const enhancedSchedule: ScheduleCreate = {
+			const enhancedSchedule: CronCreate = {
 				...scheduleData,
 				task: {
 					...scheduleData.task,
@@ -163,7 +159,7 @@ function SchedulesIndexPage() {
 		}
 	};
 
-	const handleUpdateSchedule = async (scheduleData: ScheduleCreate) => {
+	const handleUpdateSchedule = async (scheduleData: CronCreate) => {
 		if (!editingSchedule) return;
 
 		try {
@@ -196,7 +192,7 @@ function SchedulesIndexPage() {
 				// Status filter
 				const matchesStatus =
 					filterStatus === "all" ||
-					getScheduleStatus(schedule.next_run_time) === filterStatus;
+					getCronStatus(schedule.next_run_time) === filterStatus;
 
 				// Agent filter
 				const matchesAgent =
@@ -234,7 +230,7 @@ function SchedulesIndexPage() {
 	// Filter executions to only include those for filtered schedules
 	const filteredExecutions = useMemo(() => {
 		if (!executions) return [];
-		return executions.filter((e) => filteredScheduleIds.has(e.schedule_id));
+		return executions.filter((e) => filteredScheduleIds.has(e.cron_id));
 	}, [executions, filteredScheduleIds]);
 
 	// Create filtered calendar events for calendar/table views
@@ -245,7 +241,7 @@ function SchedulesIndexPage() {
 			filteredExecutions,
 			schedulesMap,
 		);
-		const projectedEvents = mapSchedulesToProjectedEvents(
+		const projectedEvents = mapCronsToProjectedEvents(
 			filteredAndSortedSchedules,
 		);
 		return mergeAndDeduplicateEvents(executionEvents, projectedEvents);
@@ -259,7 +255,7 @@ function SchedulesIndexPage() {
 			overdue: 0,
 		};
 		schedules.forEach((schedule) => {
-			const status = getScheduleStatus(schedule.next_run_time);
+			const status = getCronStatus(schedule.next_run_time);
 			counts[status]++;
 		});
 		return counts;
@@ -268,7 +264,7 @@ function SchedulesIndexPage() {
 	const statusCounts = getStatusCounts();
 
 	// Get agent for a schedule
-	const getAgentForSchedule = (schedule: Schedule) => {
+	const getAgentForSchedule = (schedule: Cron) => {
 		const agentId = schedule.task?.metadata?.agent_id;
 		return agents.find((a: any) => a.id === agentId);
 	};

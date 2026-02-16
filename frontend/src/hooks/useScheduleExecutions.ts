@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import ScheduleService from "@/lib/services/scheduleService";
-import { ScheduleExecution } from "@/lib/entities/schedule";
+import CronService from "@/lib/services/cronService";
+import { CronExecution } from "@/lib/entities/cron";
 
 interface UseScheduleExecutionsOptions {
 	scheduleId?: string;
@@ -19,7 +19,7 @@ export function useScheduleExecutions(
 		refreshInterval = 30000,
 	} = options;
 
-	const [executions, setExecutions] = useState<ScheduleExecution[]>([]);
+	const [executions, setExecutions] = useState<CronExecution[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -29,9 +29,7 @@ export function useScheduleExecutions(
 			setLoading(true);
 			setError(null);
 			try {
-				const data = await ScheduleService.getRecentExecutions(
-					fetchLimit ?? limit,
-				);
+				const data = await CronService.getRecentExecutions(fetchLimit ?? limit);
 				// Ensure data is an array before setting
 				setExecutions(Array.isArray(data) ? data : []);
 			} catch (err) {
@@ -52,7 +50,7 @@ export function useScheduleExecutions(
 			setLoading(true);
 			setError(null);
 			try {
-				const data = await ScheduleService.getScheduleExecutions(
+				const data = await CronService.getCronExecutions(
 					id,
 					fetchLimit ?? limit,
 				);
@@ -75,7 +73,7 @@ export function useScheduleExecutions(
 			setLoading(true);
 			setError(null);
 			try {
-				const data = await ScheduleService.getExecutionsByDateRange(
+				const data = await CronService.getExecutionsByDateRange(
 					startDate,
 					endDate,
 				);

@@ -1,15 +1,15 @@
 import { Agent } from "@/lib/services/agentService";
-import { ScheduleCreate } from "@/lib/entities/schedule";
+import { CronCreate } from "@/lib/entities/cron";
 
 /**
- * Helper function to create a schedule from agent configuration
+ * Helper function to create a cron from agent configuration
  */
-export const createScheduleFromAgent = (
+export const createCronFromAgent = (
 	agent: Agent,
 	title: string,
 	cronExpression: string,
 	message: string,
-): ScheduleCreate => {
+): CronCreate => {
 	return {
 		title,
 		trigger: {
@@ -48,11 +48,11 @@ export const validateCronExpression = (expression: string): string => {
 
 	// Check for minimum 1-hour intervals
 	if (minute === "*" || minute === "*/1") {
-		return "Schedules must run at most once per hour (minute cannot be '*' or '*/1')";
+		return "Crons must run at most once per hour (minute cannot be '*' or '*/1')";
 	}
 
 	if (hour === "*") {
-		return "Schedules must run at most once per hour (hour cannot be '*')";
+		return "Crons must run at most once per hour (hour cannot be '*')";
 	}
 
 	return "";
@@ -115,9 +115,9 @@ export const getOrdinalSuffix = (num: number): string => {
 };
 
 /**
- * Get schedule status based on next run time
+ * Get cron status based on next run time
  */
-export const getScheduleStatus = (
+export const getCronStatus = (
 	nextRunTime: string,
 ): "active" | "upcoming" | "overdue" => {
 	const nextRun = new Date(nextRunTime);
@@ -135,7 +135,7 @@ export const getScheduleStatus = (
 export const getStatusColor = (
 	nextRunTime: string,
 ): "default" | "secondary" | "destructive" => {
-	const status = getScheduleStatus(nextRunTime);
+	const status = getCronStatus(nextRunTime);
 	switch (status) {
 		case "overdue":
 			return "destructive";
