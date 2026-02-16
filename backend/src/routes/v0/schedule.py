@@ -6,9 +6,9 @@ from src.services.schedule import schedule_service
 from src.schemas.models import ProtectedUser
 from src.utils.auth import verify_credentials
 from src.constants.examples import Examples
-from src.schemas.entities.schedule import (
-    ScheduleCreate,
-    ScheduleUpdate,
+from src.schemas.entities.cron import (
+    CronCreate,
+    CronUpdate,
     JobUpdated,
 )
 
@@ -62,7 +62,7 @@ async def get_job(
     tags=["mcp"],
 )
 async def create_job(
-    job: ScheduleCreate = Body(openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLES),
+    job: CronCreate = Body(openapi_examples=Examples.SCHEDULE_CREATE_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     schedule_service.user_id = user.id
@@ -89,7 +89,7 @@ async def create_job(
 )
 async def update_job(
     job_id: str,
-    job_update: ScheduleUpdate = Body(openapi_examples={"update_schedule": Examples.SCHEDULE_UPDATE_EXAMPLE}),
+    job_update: CronUpdate = Body(openapi_examples={"update_schedule": Examples.SCHEDULE_UPDATE_EXAMPLE}),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     schedule_service.user_id = user.id

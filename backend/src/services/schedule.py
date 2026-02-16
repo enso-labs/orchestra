@@ -11,7 +11,7 @@ import ujson
 from langgraph.store.base import BaseStore
 
 from src.services.db import DB_URI, get_store_in_memory
-from src.schemas.entities.schedule import JobTrigger, Job, Schedule
+from src.schemas.entities.cron import JobTrigger, Job, Cron
 from src.utils.format import get_time
 
 jobstores = {"default": SQLAlchemyJobStore(url=DB_URI, tablename="schedules")}
@@ -168,13 +168,13 @@ class ScheduleService:
         self.store = store or get_store_in_memory()
         self.scheduler = SCHEDULER
 
-    def get_jobs(self) -> list[Schedule]:
+    def get_jobs(self) -> list[Cron]:
         user_schedules = []
         for job in self.scheduler.get_jobs():
             if job.kwargs.get("user_id") == self.user_id:
-                schedule = Schedule(
+                schedule = Cron(
                     id=job.id,
-                    title=job.kwargs.get("title", "Untitled Schedule"),
+                    title=job.kwargs.get("title", "Untitled Cron"),
                     trigger=JobTrigger.from_trigger(job.trigger),
                     task=job.args[0],
                     next_run_time=job.next_run_time,
@@ -183,21 +183,21 @@ class ScheduleService:
         user_schedules.sort(key=lambda x: x.next_run_time, reverse=True)
         return user_schedules
 
-    def get_job(self, job_id: str) -> Schedule:
+    def get_job(self, job_id: str) -> Cron:
         job = self.scheduler.get_job(job_id)
         if job.kwargs.get("user_id") != self.user_id:
             raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
-        schedule = Schedule(
+        schedule = Cron(
             id=job.id,
-            title=job.kwargs.get("title", "Untitled Schedule"),
+            title=job.kwargs.get("title", "Untitled Cron"),
             trigger=JobTrigger.from_trigger(job.trigger),
             task=job.args[0],
             next_run_time=job.next_run_time,
         )
         return schedule
 
-    def create_job(self, job: Job) -> Schedule:
+    def create_job(self, job: Job) -> Cron:
         job_id = str(uuid4())
         trigger = create_trigger(job.trigger)
 
@@ -216,7 +216,7 @@ class ScheduleService:
         print(f"   Job ID: {job_id}")
         print(f"   Next run time: {scheduled_job.next_run_time.isoformat()}")
 
-        schedule = Schedule(
+        schedule = Cron(
             id=job_id,
             title=job.title,
             trigger=JobTrigger.from_trigger(job.trigger),
@@ -225,11 +225,11 @@ class ScheduleService:
         )
         return schedule
 
-    def update_job(self, job_id: str, job_update: Job) -> Schedule:
+    def update_job(self, job_id: str, job_update: Job) -> Cron:
         # Get existing job and verify ownership
         existing_job = self.scheduler.get_job(job_id)
         if not existing_job:
-            raise HTTPException(status_code=404, detail="Schedule not found")
+            raise HTTPException(status_code=404, detail="Cron not found")
 
         if existing_job.kwargs.get("user_id") != self.user_id:
             raise HTTPException(status_code=403, detail="Not authorized to access this job")
@@ -259,7 +259,7 @@ class ScheduleService:
         print(f"   Job ID: {job_id}")
         print(f"   Next run time: {updated_job.next_run_time.isoformat()}")
 
-        schedule = Schedule(
+        schedule = Cron(
             id=job_id,
             title=job_update.title,
             trigger=JobTrigger.from_trigger(job_update.trigger),

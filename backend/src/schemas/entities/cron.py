@@ -121,7 +121,7 @@ class JobDeleted(BaseModel):
 ######################################################
 
 
-class ScheduleCreate(BaseModel):
+class CronCreate(BaseModel):
     title: str = Field(
         ...,
         min_length=1,
@@ -132,7 +132,7 @@ class ScheduleCreate(BaseModel):
     task: LLMRequest
 
 
-class ScheduleUpdate(BaseModel):
+class CronUpdate(BaseModel):
     title: Optional[str] = Field(
         None,
         min_length=1,
@@ -162,7 +162,7 @@ class ScheduleUpdate(BaseModel):
     }
 
 
-class Schedule(BaseModel):
+class Cron(BaseModel):
     id: str = Field(..., json_schema_extra={"example": str(uuid4())})
     title: str = Field(..., json_schema_extra={"example": "Daily Weather Check"})
     trigger: JobTrigger

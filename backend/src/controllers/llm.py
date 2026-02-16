@@ -5,7 +5,7 @@ from langgraph.store.base import BaseStore
 from langchain_core.runnables import RunnableConfig
 
 from src.schemas.contexts import ContextSchema
-from src.schemas.entities.schedule import ScheduleCreate
+from src.schemas.entities.cron import CronCreate
 from src.schemas.entities import LLMRequest
 from src.contexts.service import ServiceContext
 from src.agents import (
@@ -173,6 +173,6 @@ class LLMController:
             sandbox_type=default_sandbox,
         )
 
-    async def llm_task(self, job: ScheduleCreate):
-        schedule = self.service_context.schedule_service.create_job(job)
-        return schedule
+    async def llm_task(self, job: CronCreate):
+        cron = self.service_context.schedule_service.create_job(job)
+        return cron
