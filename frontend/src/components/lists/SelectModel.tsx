@@ -29,7 +29,7 @@ function SelectModel({
 	onModelSelected,
 	disabled,
 }: {
-	onModelSelected?: () => void;
+	onModelSelected?: (value: string) => void;
 	disabled?: boolean;
 }) {
 	const { model, setModel, models } = useChatContext();
@@ -39,7 +39,7 @@ function SelectModel({
 	const handleModelChange = (value: string) => {
 		setModel(value);
 		setOpen(false);
-		onModelSelected?.();
+		onModelSelected?.(value);
 	};
 
 	const getModelIcon = (modelValue: string) => {
