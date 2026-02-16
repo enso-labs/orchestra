@@ -60,7 +60,7 @@ function SelectModel({
 			ctx.setModel(newValue);
 		}
 		setOpen(false);
-		onModelSelected?.(value);
+		onModelSelected?.();
 	};
 
 	const getModelIcon = (modelValue: string) => {
