@@ -16,7 +16,9 @@ export function SubagentBadge({ name, className }: SubagentBadgeProps) {
 			)}
 		>
 			<Bot className="h-3 w-3" />
-			<span className="truncate max-w-[120px]">{name}</span>
+			<span className="truncate max-w-[120px]" title={name}>
+				{name}
+			</span>
 		</span>
 	);
 }
