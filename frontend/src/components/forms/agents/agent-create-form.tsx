@@ -724,10 +724,10 @@ export function AgentCreateForm() {
 												field.onChange(checked);
 												try {
 													if (checked) {
-														await agentService.publish(agent.id);
+														await agentService.publish(agent.id!);
 														alert("Agent published successfully!");
 													} else {
-														await agentService.unpublish(agent.id);
+														await agentService.unpublish(agent.id!);
 														alert("Agent unpublished successfully!");
 													}
 													setAgent({ ...agent, public: checked });
@@ -1037,10 +1037,6 @@ export function AgentCreateForm() {
 				initialSelectedTools={agent.tools || []}
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
-				onApply={(selectedTools) => {
-					setAgent({ ...agent, tools: selectedTools });
-					setIsToolModalOpen(false);
-				}}
 			/>
 
 			{/* Prompt Selection Modal */}

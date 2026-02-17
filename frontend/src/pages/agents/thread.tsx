@@ -35,7 +35,7 @@ function AgentThreadPage() {
 		clearFileSystem,
 	} = useChatContext();
 
-	useEffectGetAgent(agentId);
+	useEffectGetAgent(agentId!);
 	useEffectGetAgents();
 
 	// Load thread data using modularized hook

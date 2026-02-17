@@ -7,9 +7,16 @@ export interface ProviderKeyStatus {
 	is_set: boolean;
 }
 
+export interface DefaultsResponse {
+	model: string | null;
+	sandbox: string | null;
+	tools: string[] | null;
+	mcp: Record<string, any> | null;
+	a2a: Record<string, any> | null;
+}
+
 export interface UserSettingsResponse {
-	default_model: string | null;
-	default_sandbox: string | null;
+	defaults: DefaultsResponse;
 	provider_keys: ProviderKeyStatus[];
 }
 
@@ -18,19 +25,16 @@ export const getSettings = async (): Promise<UserSettingsResponse> => {
 	return response.data;
 };
 
-export const updateDefaultModel = async (
-	model: string | null,
+export const patchDefaults = async (
+	data: Partial<{
+		model: string | null;
+		sandbox: string | null;
+		tools: string[] | null;
+		mcp: Record<string, any> | null;
+		a2a: Record<string, any> | null;
+	}>,
 ): Promise<UserSettingsResponse> => {
-	const response = await apiClient.put("/settings/default-model", { model });
-	return response.data;
-};
-
-export const updateDefaultSandbox = async (
-	sandbox: string | null,
-): Promise<UserSettingsResponse> => {
-	const response = await apiClient.put("/settings/default-sandbox", {
-		sandbox,
-	});
+	const response = await apiClient.patch("/settings/default", data);
 	return response.data;
 };
 

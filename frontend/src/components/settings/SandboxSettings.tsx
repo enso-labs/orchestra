@@ -14,10 +14,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import {
-	getSettings,
-	updateDefaultSandbox,
-} from "@/lib/services/userSettingsService";
+import { getSettings, patchDefaults } from "@/lib/services/userSettingsService";
 
 const SANDBOX_OPTIONS = [
 	{ value: "auto", label: "Auto (Recommended)" },
@@ -31,15 +28,17 @@ export function SandboxSettings() {
 
 	useEffect(() => {
 		getSettings()
-			.then((res) => setSandbox(res.default_sandbox ?? "auto"))
+			.then((res) => setSandbox(res.defaults.sandbox ?? "auto"))
 			.catch(() => {});
 	}, []);
 
 	const handleChange = async (value: string) => {
 		setLoading(true);
 		try {
-			const res = await updateDefaultSandbox(value === "auto" ? null : value);
-			setSandbox(res.default_sandbox ?? "auto");
+			const res = await patchDefaults({
+				sandbox: value === "auto" ? null : value,
+			});
+			setSandbox(res.defaults.sandbox ?? "auto");
 			toast.success("Default sandbox updated");
 		} catch {
 			toast.error("Failed to update default sandbox");

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
 import { PlatformToolsPanel } from "./PlatformToolsPanel";
 import { CustomToolsPanel } from "./CustomToolsPanel";
@@ -15,6 +14,9 @@ import {
 } from "@/lib/services/toolService";
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
+import { patchDefaults } from "@/lib/services/userSettingsService";
+import { toast } from "sonner";
+import { X } from "lucide-react";
 
 interface ToolSelectionModalProps {
 	isOpen: boolean;
@@ -22,7 +24,6 @@ interface ToolSelectionModalProps {
 	initialSelectedTools?: string[];
 	initialMcpConfig?: Record<string, McpServerConfig>;
 	initialA2aConfig?: Record<string, A2aServerConfig>;
-	onApply: (selectedTools: string[]) => void;
 }
 
 export function ToolSelectionModal({
@@ -31,7 +32,6 @@ export function ToolSelectionModal({
 	initialSelectedTools = [],
 	initialMcpConfig = {},
 	initialA2aConfig = {},
-	onApply,
 }: ToolSelectionModalProps) {
 	const { setAgent } = useAgentContext();
 	const [activeCategory, setActiveCategory] =
@@ -47,12 +47,8 @@ export function ToolSelectionModal({
 	const [isA2aLoading, setIsA2aLoading] = useState(false);
 	const [isToolFormActive, setIsToolFormActive] = useState(false);
 
-	const { selectedTools, toggleTool, selectedArray, selectedCount } =
+	const { selectedTools, toggleTool, selectedCount, flushPersist } =
 		useToolSelection(initialSelectedTools);
-
-	useEffect(() => {
-		setAgent((prev: Agent) => ({ ...prev, mcp: mcpServers, a2a: a2aServers }));
-	}, [mcpServers, a2aServers]);
 
 	// Fetch platform tools
 	useEffect(() => {
@@ -85,24 +81,30 @@ export function ToolSelectionModal({
 		}
 	}, [isOpen, a2aServers]);
 
-	const handleApply = () => {
-		onApply(selectedArray);
-		onClose();
-	};
-
 	const handleClose = () => {
-		// Optionally: confirm if changes were made
+		flushPersist();
 		onClose();
 	};
 
 	const handleAddMcpServer = (name: string, config: McpServerConfig) => {
-		setMcpServers((prev) => ({ ...prev, [name]: config }));
+		setMcpServers((prev) => {
+			const updated = { ...prev, [name]: config };
+			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
+			patchDefaults({ mcp: updated }).catch(() =>
+				toast.error("Failed to save MCP defaults"),
+			);
+			return updated;
+		});
 	};
 
 	const handleRemoveMcpServer = (name: string) => {
 		setMcpServers((prev) => {
 			const updated = { ...prev };
 			delete updated[name];
+			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
+			patchDefaults({ mcp: updated }).catch(() =>
+				toast.error("Failed to save MCP defaults"),
+			);
 			return updated;
 		});
 	};
@@ -132,13 +134,24 @@ export function ToolSelectionModal({
 	};
 
 	const handleAddA2aServer = (name: string, config: A2aServerConfig) => {
-		setA2aServers((prev) => ({ ...prev, [name]: config }));
+		setA2aServers((prev) => {
+			const updated = { ...prev, [name]: config };
+			setAgent((prev: Agent) => ({ ...prev, a2a: updated }));
+			patchDefaults({ a2a: updated }).catch(() =>
+				toast.error("Failed to save A2A defaults"),
+			);
+			return updated;
+		});
 	};
 
 	const handleRemoveA2aServer = (name: string) => {
 		setA2aServers((prev) => {
 			const updated = { ...prev };
 			delete updated[name];
+			setAgent((prev: Agent) => ({ ...prev, a2a: updated }));
+			patchDefaults({ a2a: updated }).catch(() =>
+				toast.error("Failed to save A2A defaults"),
+			);
 			return updated;
 		});
 	};
@@ -161,6 +174,13 @@ export function ToolSelectionModal({
 		<Dialog open={isOpen} onOpenChange={handleClose}>
 			<DialogContent className="max-w-[1400px] w-full sm:w-[95vw] h-[100vh] sm:h-[90vh] max-h-none sm:max-h-[900px] p-0 gap-0">
 				<DialogTitle className="sr-only">Tool Selection</DialogTitle>
+				<button
+					onClick={handleClose}
+					className="absolute right-3 top-3 z-10 rounded-sm p-1 opacity-70 hover:opacity-100 sm:hidden"
+					aria-label="Close"
+				>
+					<X className="h-5 w-5" />
+				</button>
 
 				<div className="flex flex-col sm:flex-row h-full overflow-hidden">
 					<Sidebar
@@ -211,35 +231,18 @@ export function ToolSelectionModal({
 							/>
 						)}
 
-						{/* Action Bar - Hidden when editing a tool form */}
+						{/* Status Bar */}
 						{!isToolFormActive && (
 							<div className="flex-shrink-0 border-t border-border px-4 sm:px-6 py-3 sm:py-4 bg-background">
-								<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-									<div className="text-sm text-muted-foreground">
-										{selectedCount > 0 ? (
-											<span>
-												Selected: <strong>{selectedCount}</strong> tool
-												{selectedCount !== 1 ? "s" : ""}
-											</span>
-										) : (
-											<span>No tools selected</span>
-										)}
-									</div>
-									<div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-										<Button
-											variant="outline"
-											onClick={handleClose}
-											className="flex-1 sm:flex-none"
-										>
-											Cancel
-										</Button>
-										<Button
-											onClick={handleApply}
-											className="flex-1 sm:flex-none"
-										>
-											Apply Changes
-										</Button>
-									</div>
+								<div className="text-sm text-muted-foreground">
+									{selectedCount > 0 ? (
+										<span>
+											Selected: <strong>{selectedCount}</strong> tool
+											{selectedCount !== 1 ? "s" : ""}
+										</span>
+									) : (
+										<span>No tools selected</span>
+									)}
 								</div>
 							</div>
 						)}

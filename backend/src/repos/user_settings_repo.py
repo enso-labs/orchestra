@@ -79,6 +79,30 @@ class UserSettingsRepo(BaseRepo):
         await self._set(_SETTINGS_KEY, settings)
         return settings
 
+    # Mapping: PATCH request key -> entity field name
+    _DEFAULTS_FIELD_MAP = {
+        "model": "default_model",
+        "sandbox": "default_sandbox",
+        "tools": "default_tools",
+        "mcp": "default_mcp",
+        "a2a": "default_a2a",
+    }
+
+    async def patch_defaults(self, data: dict) -> UserSettings:
+        """Partially update default settings using short key names."""
+        if "sandbox" in data and data["sandbox"] is not None:
+            valid = [e.value for e in SandboxType]
+            if data["sandbox"] not in valid:
+                raise ValueError(f"Invalid sandbox '{data['sandbox']}'. Must be one of: {valid}")
+        settings = await self._get_or_create()
+        for key, value in data.items():
+            field = self._DEFAULTS_FIELD_MAP.get(key)
+            if field:
+                setattr(settings, field, value)
+        settings.updated_at = datetime.now(timezone.utc)
+        await self._set(_SETTINGS_KEY, settings)
+        return settings
+
     async def upsert_provider_key(self, provider: str, api_key: str) -> UserSettings:
         self._validate_provider(provider)
         settings = await self._get_or_create()

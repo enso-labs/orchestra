@@ -118,7 +118,7 @@ function SchedulesIndexPage() {
 
 	const handleCreateSchedule = async (scheduleData: ScheduleCreate) => {
 		try {
-			const agent = agents.find((a: any) => a.id === selectedAgentId);
+			const agent = agents.find((a) => a.id === selectedAgentId);
 			if (!agent) {
 				toast.error("Agent not found");
 				return;
@@ -499,7 +499,15 @@ function SchedulesIndexPage() {
 													<AgentScheduleCard
 														key={schedule.id}
 														schedule={schedule}
-														agent={agent || { id: "", name: "Unknown Agent" }}
+														agent={
+															agent || {
+																id: "",
+																name: "Unknown Agent",
+																description: "",
+																model: "",
+																tools: [],
+															}
+														}
 														onEdit={handleEditSchedule}
 														onDelete={handleDeleteSchedule}
 														onDuplicate={handleDuplicateSchedule}
@@ -579,7 +587,7 @@ function SchedulesIndexPage() {
 						</div>
 					) : (
 						<AgentScheduleForm
-							agent={agents.find((a: any) => a.id === selectedAgentId)}
+							agent={agents.find((a) => a.id === selectedAgentId)!}
 							onSubmit={handleCreateSchedule}
 							onCancel={() => {
 								setShowCreateDialog(false);
@@ -603,6 +611,9 @@ function SchedulesIndexPage() {
 								getAgentForSchedule(editingSchedule) || {
 									id: "",
 									name: "Unknown Agent",
+									description: "",
+									model: "",
+									tools: [],
 								}
 							}
 							onSubmit={handleUpdateSchedule}

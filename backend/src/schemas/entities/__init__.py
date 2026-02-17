@@ -16,10 +16,10 @@ from src.schemas.entities.auth import ApiToken as ApiToken
 from src.schemas.entities.settings import (
     SandboxType as SandboxType,
     UserSettings as UserSettings,
+    DefaultsResponse as DefaultsResponse,
     UserSettingsResponse as UserSettingsResponse,
     ProviderKeyStatus as ProviderKeyStatus,
-    UpdateDefaultModelRequest as UpdateDefaultModelRequest,
-    UpdateDefaultSandboxRequest as UpdateDefaultSandboxRequest,
+    PatchDefaultsRequest as PatchDefaultsRequest,
     UpsertProviderKeyRequest as UpsertProviderKeyRequest,
 )
 from src.schemas.entities.hitl import (
