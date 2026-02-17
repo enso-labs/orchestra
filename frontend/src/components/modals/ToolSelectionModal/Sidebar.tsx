@@ -3,9 +3,9 @@ import { ToolCategory, CategoryConfig } from "./types";
 
 const categories: CategoryConfig[] = [
 	{ id: "platform", label: "Platform", icon: Wrench },
-	{ id: "api", label: "API Tools", icon: PencilRuler },
-	{ id: "mcp", label: "MCP Servers", icon: Server },
-	{ id: "a2a", label: "A2A Agents", icon: Users },
+	{ id: "api", label: "API", icon: PencilRuler },
+	{ id: "mcp", label: "MCP", icon: Server },
+	{ id: "a2a", label: "A2A", icon: Users },
 ];
 
 interface SidebarProps {

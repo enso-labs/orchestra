@@ -3,10 +3,12 @@ from langgraph.store.base import BaseStore
 
 from src.schemas.models import User
 from src.schemas.entities.settings import (
+    UserSettings,
+    DefaultsResponse,
     UserSettingsResponse,
-    UpdateDefaultModelRequest,
-    UpdateDefaultSandboxRequest,
+    PatchDefaultsRequest,
     UpsertProviderKeyRequest,
+    ProviderKeyStatus,
 )
 from src.repos.user_settings_repo import UserSettingsRepo
 from src.utils.auth import verify_credentials
@@ -19,6 +21,19 @@ def _get_repo(user: User, store: BaseStore) -> UserSettingsRepo:
     return UserSettingsRepo(str(user.id), store)
 
 
+def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -> UserSettingsResponse:
+    return UserSettingsResponse(
+        defaults=DefaultsResponse(
+            model=settings.default_model,
+            sandbox=settings.default_sandbox,
+            tools=settings.default_tools,
+            mcp=settings.default_mcp,
+            a2a=settings.default_a2a,
+        ),
+        provider_keys=statuses,
+    )
+
+
 @router.get("/settings", response_model=UserSettingsResponse)
 async def get_settings(
     user: User = Depends(verify_credentials),
@@ -26,46 +41,23 @@ async def get_settings(
 ) -> UserSettingsResponse:
     repo = _get_repo(user, store)
     settings, statuses = await repo.get_settings()
-    return UserSettingsResponse(
-        default_model=settings.default_model,
-        default_sandbox=settings.default_sandbox,
-        provider_keys=statuses,
-    )
+    return _build_response(settings, statuses)
 
 
-@router.put("/settings/default-model", response_model=UserSettingsResponse)
-async def update_default_model(
-    req: UpdateDefaultModelRequest,
+@router.patch("/settings/default", response_model=UserSettingsResponse)
+async def patch_defaults(
+    req: PatchDefaultsRequest,
     user: User = Depends(verify_credentials),
     store: BaseStore = Depends(get_store),
 ) -> UserSettingsResponse:
     repo = _get_repo(user, store)
-    await repo.set_default_model(req.model)
-    settings, statuses = await repo.get_settings()
-    return UserSettingsResponse(
-        default_model=settings.default_model,
-        default_sandbox=settings.default_sandbox,
-        provider_keys=statuses,
-    )
-
-
-@router.put("/settings/default-sandbox", response_model=UserSettingsResponse)
-async def update_default_sandbox(
-    req: UpdateDefaultSandboxRequest,
-    user: User = Depends(verify_credentials),
-    store: BaseStore = Depends(get_store),
-) -> UserSettingsResponse:
-    repo = _get_repo(user, store)
+    data = req.model_dump(exclude_unset=True)
     try:
-        await repo.set_default_sandbox(req.sandbox)
+        await repo.patch_defaults(data)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     settings, statuses = await repo.get_settings()
-    return UserSettingsResponse(
-        default_model=settings.default_model,
-        default_sandbox=settings.default_sandbox,
-        provider_keys=statuses,
-    )
+    return _build_response(settings, statuses)
 
 
 @router.put("/settings/provider-keys", response_model=UserSettingsResponse)
@@ -80,11 +72,7 @@ async def upsert_provider_key(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     settings, statuses = await repo.get_settings()
-    return UserSettingsResponse(
-        default_model=settings.default_model,
-        default_sandbox=settings.default_sandbox,
-        provider_keys=statuses,
-    )
+    return _build_response(settings, statuses)
 
 
 @router.delete("/settings/provider-keys/{provider}", response_model=UserSettingsResponse)
@@ -99,8 +87,4 @@ async def delete_provider_key(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     settings, statuses = await repo.get_settings()
-    return UserSettingsResponse(
-        default_model=settings.default_model,
-        default_sandbox=settings.default_sandbox,
-        provider_keys=statuses,
-    )
+    return _build_response(settings, statuses)

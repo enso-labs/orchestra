@@ -1037,10 +1037,6 @@ export function AgentCreateForm() {
 				initialSelectedTools={agent.tools || []}
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
-				onApply={(selectedTools) => {
-					setAgent({ ...agent, tools: selectedTools });
-					setIsToolModalOpen(false);
-				}}
 			/>
 
 			{/* Prompt Selection Modal */}

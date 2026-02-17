@@ -22,13 +22,13 @@ import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
 import ImageUpload from "../inputs/ImageUpload";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
+import { getSettings } from "@/lib/services/userSettingsService";
 
-const DEFAULT_AGENT_TOOLS = [
+const FALLBACK_TOOLS = [
 	"web_search",
 	"web_scrape",
 	"math_calculator",
 	"think_tool",
-	// "python_sandbox",
 ];
 
 const WEB_SEARCH_TOOLS = ["web_search", "web_scrape"];
@@ -70,10 +70,24 @@ export function BaseToolMenu() {
 	};
 
 	useEffect(() => {
-		setAgent((prev) => ({
-			...prev,
-			tools: [...new Set([...prev.tools, ...DEFAULT_AGENT_TOOLS])],
-		}));
+		getSettings()
+			.then((res) => {
+				const tools = res.defaults.tools ?? FALLBACK_TOOLS;
+				const mcp = res.defaults.mcp ?? {};
+				const a2a = res.defaults.a2a ?? {};
+				setAgent((prev) => ({
+					...prev,
+					tools: [...new Set([...prev.tools, ...tools])],
+					mcp,
+					a2a,
+				}));
+			})
+			.catch(() => {
+				setAgent((prev) => ({
+					...prev,
+					tools: [...new Set([...prev.tools, ...FALLBACK_TOOLS])],
+				}));
+			});
 	}, []);
 
 	useEffect(() => {
@@ -164,10 +178,6 @@ export function BaseToolMenu() {
 				initialSelectedTools={agent.tools || []}
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
-				onApply={(selectedTools) => {
-					setAgent((prev) => ({ ...prev, tools: selectedTools }));
-					setShowToolModal(false);
-				}}
 			/>
 
 			{/* New File Dialog */}

@@ -32,8 +32,8 @@ export function PlatformToolsPanel({
 	return (
 		<div className="flex flex-col h-full">
 			{/* Header */}
-			<div className="flex-shrink-0 border-b border-border px-4 sm:px-8 lg:px-12 py-4 sm:py-6 space-y-2">
-				<h2 className="text-xl sm:text-2xl font-semibold text-foreground">
+			<div className="flex-shrink-0 border-b border-border px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-2">
+				<h2 className="text-lg sm:text-xl font-semibold text-foreground">
 					Tools & Integrations
 				</h2>
 				<p className="text-sm text-muted-foreground">

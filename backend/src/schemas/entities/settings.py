@@ -28,32 +28,36 @@ class UserSettings(BaseEntity):
     default_model: Optional[str] = Field(default=None, description="User's default AI model identifier")
     encrypted_keys: Optional[str] = Field(default=None, description="Fernet-encrypted JSON blob of provider API keys")
     default_sandbox: Optional[str] = Field(default=None, description="User's default sandbox backend type")
+    default_tools: Optional[list[str]] = Field(default=None, description="User's default tool selection")
+    default_mcp: Optional[dict] = Field(default=None, description="User's default MCP server configuration")
+    default_a2a: Optional[dict] = Field(default=None, description="User's default A2A agent configuration")
+
+
+class DefaultsResponse(BaseModel):
+    """Nested defaults sub-object in the API response."""
+
+    model: Optional[str] = None
+    sandbox: Optional[str] = None
+    tools: Optional[list[str]] = None
+    mcp: Optional[dict] = None
+    a2a: Optional[dict] = None
 
 
 class UserSettingsResponse(BaseModel):
     """API response model – never includes raw keys."""
 
-    default_model: Optional[str] = None
-    default_sandbox: Optional[str] = None
+    defaults: DefaultsResponse = Field(default_factory=DefaultsResponse)
     provider_keys: list[ProviderKeyStatus] = Field(default_factory=list)
 
 
-class UpdateDefaultModelRequest(BaseModel):
-    """Request to set a user's default model."""
+class PatchDefaultsRequest(BaseModel):
+    """Request to partially update user default settings."""
 
-    model: Optional[str] = Field(
-        default=None,
-        description="Model identifier to set as default, or null to clear",
-    )
-
-
-class UpdateDefaultSandboxRequest(BaseModel):
-    """Request to set a user's default sandbox backend."""
-
-    sandbox: Optional[str] = Field(
-        default=None,
-        description="Sandbox type to set as default, or null to clear",
-    )
+    model: Optional[str] = Field(default=None, description="Model identifier to set as default, or null to clear")
+    sandbox: Optional[str] = Field(default=None, description="Sandbox type to set as default, or null to clear")
+    tools: Optional[list[str]] = Field(default=None, description="Default tool selection, or null to clear")
+    mcp: Optional[dict] = Field(default=None, description="Default MCP server config, or null to clear")
+    a2a: Optional[dict] = Field(default=None, description="Default A2A agent config, or null to clear")
 
 
 class UpsertProviderKeyRequest(BaseModel):
