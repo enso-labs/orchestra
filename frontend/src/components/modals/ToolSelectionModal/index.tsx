@@ -46,13 +46,21 @@ export function ToolSelectionModal({
 	const [a2aAgents, setA2aAgents] = useState<any[]>([]);
 	const [isA2aLoading, setIsA2aLoading] = useState(false);
 	const [isToolFormActive, setIsToolFormActive] = useState(false);
+	const [snapshotMcp, setSnapshotMcp] =
+		useState<Record<string, McpServerConfig>>(initialMcpConfig);
+	const [snapshotA2a, setSnapshotA2a] =
+		useState<Record<string, A2aServerConfig>>(initialA2aConfig);
 
 	const { selectedTools, toggleTool, selectedArray, selectedCount } =
 		useToolSelection(initialSelectedTools);
 
+	// Snapshot MCP/A2A state when modal opens so Cancel can restore it
 	useEffect(() => {
-		setAgent((prev: Agent) => ({ ...prev, mcp: mcpServers, a2a: a2aServers }));
-	}, [mcpServers, a2aServers]);
+		if (isOpen) {
+			setSnapshotMcp(mcpServers);
+			setSnapshotA2a(a2aServers);
+		}
+	}, [isOpen]);
 
 	// Fetch platform tools
 	useEffect(() => {
@@ -86,12 +94,20 @@ export function ToolSelectionModal({
 	}, [isOpen, a2aServers]);
 
 	const handleApply = () => {
+		setAgent((prev: Agent) => ({ ...prev, mcp: mcpServers, a2a: a2aServers }));
 		onApply(selectedArray);
 		onClose();
 	};
 
 	const handleClose = () => {
-		// Optionally: confirm if changes were made
+		// Restore MCP/A2A to the state when the modal was opened
+		setMcpServers(snapshotMcp);
+		setA2aServers(snapshotA2a);
+		setAgent((prev: Agent) => ({
+			...prev,
+			mcp: snapshotMcp,
+			a2a: snapshotA2a,
+		}));
 		onClose();
 	};
 
