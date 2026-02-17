@@ -76,7 +76,7 @@ export function BaseToolMenu() {
 	};
 
 	useEffect(() => {
-		setAgent((prev: any) => ({
+		setAgent((prev) => ({
 			...prev,
 			tools: [...new Set([...prev.tools, ...DEFAULT_AGENT_TOOLS])],
 		}));
@@ -85,16 +85,14 @@ export function BaseToolMenu() {
 	useEffect(() => {
 		localStorage.setItem("enso:tool:search", JSON.stringify(webSearchCheck));
 		if (webSearchCheck) {
-			setAgent((prev: any) => ({
+			setAgent((prev) => ({
 				...prev,
 				tools: [...new Set([...prev.tools, ...DEFAULT_AGENT_TOOLS])],
 			}));
 		} else {
-			setAgent((prev: any) => ({
+			setAgent((prev) => ({
 				...prev,
-				tools: prev.tools.filter(
-					(tool: string) => !DEFAULT_AGENT_TOOLS.includes(tool),
-				),
+				tools: prev.tools.filter((tool) => !DEFAULT_AGENT_TOOLS.includes(tool)),
 			}));
 		}
 	}, [webSearchCheck]);
@@ -203,7 +201,7 @@ export function BaseToolMenu() {
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
 				onApply={(selectedTools) => {
-					setAgent((prev: any) => ({ ...prev, tools: selectedTools }));
+					setAgent((prev) => ({ ...prev, tools: selectedTools }));
 					setShowToolModal(false);
 				}}
 			/>
