@@ -15,8 +15,20 @@ import {
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
 import { patchDefaults } from "@/lib/services/userSettingsService";
+import { getAuthToken } from "@/lib/utils/auth";
 import { toast } from "sonner";
 import { X } from "lucide-react";
+
+const FALLBACK_TOOLS: Tool[] = [
+	{ name: "web_search", description: "Search the web", tags: ["search"] },
+	{ name: "web_scrape", description: "Scrape web pages", tags: ["search"] },
+	{
+		name: "math_calculator",
+		description: "Calculate math expressions",
+		tags: ["utility"],
+	},
+	{ name: "think_tool", description: "Think step by step", tags: ["utility"] },
+];
 
 interface ToolSelectionModalProps {
 	isOpen: boolean;
@@ -50,9 +62,20 @@ export function ToolSelectionModal({
 	const { selectedTools, toggleTool, selectedCount, flushPersist } =
 		useToolSelection(initialSelectedTools);
 
+	const isAuthenticated = !!getAuthToken();
+
+	// Derive visible categories based on auth state
+	const visibleCategories: ToolCategory[] = isAuthenticated
+		? ["platform", "api", "mcp", "a2a"]
+		: ["platform", "mcp", "a2a"];
+
 	// Fetch platform tools
 	useEffect(() => {
 		if (isOpen && activeCategory === "platform") {
+			if (!isAuthenticated) {
+				setPlatformTools(FALLBACK_TOOLS);
+				return;
+			}
 			listTools()
 				.then((data) => {
 					setPlatformTools(data.tools || []);
@@ -90,9 +113,11 @@ export function ToolSelectionModal({
 		setMcpServers((prev) => {
 			const updated = { ...prev, [name]: config };
 			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
-			patchDefaults({ mcp: updated }).catch(() =>
-				toast.error("Failed to save MCP defaults"),
-			);
+			if (getAuthToken()) {
+				patchDefaults({ mcp: updated }).catch(() =>
+					toast.error("Failed to save MCP defaults"),
+				);
+			}
 			return updated;
 		});
 	};
@@ -102,9 +127,11 @@ export function ToolSelectionModal({
 			const updated = { ...prev };
 			delete updated[name];
 			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
-			patchDefaults({ mcp: updated }).catch(() =>
-				toast.error("Failed to save MCP defaults"),
-			);
+			if (getAuthToken()) {
+				patchDefaults({ mcp: updated }).catch(() =>
+					toast.error("Failed to save MCP defaults"),
+				);
+			}
 			return updated;
 		});
 	};
@@ -137,9 +164,11 @@ export function ToolSelectionModal({
 		setA2aServers((prev) => {
 			const updated = { ...prev, [name]: config };
 			setAgent((prev: Agent) => ({ ...prev, a2a: updated }));
-			patchDefaults({ a2a: updated }).catch(() =>
-				toast.error("Failed to save A2A defaults"),
-			);
+			if (getAuthToken()) {
+				patchDefaults({ a2a: updated }).catch(() =>
+					toast.error("Failed to save A2A defaults"),
+				);
+			}
 			return updated;
 		});
 	};
@@ -149,9 +178,11 @@ export function ToolSelectionModal({
 			const updated = { ...prev };
 			delete updated[name];
 			setAgent((prev: Agent) => ({ ...prev, a2a: updated }));
-			patchDefaults({ a2a: updated }).catch(() =>
-				toast.error("Failed to save A2A defaults"),
-			);
+			if (getAuthToken()) {
+				patchDefaults({ a2a: updated }).catch(() =>
+					toast.error("Failed to save A2A defaults"),
+				);
+			}
 			return updated;
 		});
 	};
@@ -186,6 +217,7 @@ export function ToolSelectionModal({
 					<Sidebar
 						activeCategory={activeCategory}
 						onCategoryChange={setActiveCategory}
+						visibleCategories={visibleCategories}
 					/>
 
 					<div className="flex-1 flex flex-col overflow-hidden">

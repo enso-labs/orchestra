@@ -1,4 +1,5 @@
 import { listModels, ModelsResponse } from "@/lib/services/modelService";
+import { getAuthToken } from "@/lib/utils/auth";
 import { useCallback, useEffect, useState } from "react";
 
 export function useModel() {
@@ -11,6 +12,7 @@ export function useModel() {
 
 	const useModelsEffect = () => {
 		useEffect(() => {
+			if (!getAuthToken()) return;
 			const fetchModels = async () => {
 				const response = await listModels();
 				setModels(response.data);

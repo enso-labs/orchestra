@@ -11,15 +11,24 @@ const categories: CategoryConfig[] = [
 interface SidebarProps {
 	activeCategory: ToolCategory;
 	onCategoryChange: (category: ToolCategory) => void;
+	visibleCategories?: ToolCategory[];
 }
 
-export function Sidebar({ activeCategory, onCategoryChange }: SidebarProps) {
+export function Sidebar({
+	activeCategory,
+	onCategoryChange,
+	visibleCategories,
+}: SidebarProps) {
+	const filteredCategories = visibleCategories
+		? categories.filter((c) => visibleCategories.includes(c.id))
+		: categories;
+
 	return (
 		<>
 			{/* Mobile: Horizontal scrolling tabs */}
 			<div className="sm:hidden border-b border-border flex-shrink-0 overflow-x-auto">
 				<nav className="flex p-2 gap-1 min-w-max">
-					{categories.map((category) => {
+					{filteredCategories.map((category) => {
 						const Icon = category.icon;
 						const isActive = activeCategory === category.id;
 
@@ -49,7 +58,7 @@ export function Sidebar({ activeCategory, onCategoryChange }: SidebarProps) {
 			{/* Desktop: Vertical sidebar */}
 			<div className="hidden sm:block w-60 border-r border-border flex-shrink-0">
 				<nav className="p-4 space-y-1">
-					{categories.map((category) => {
+					{filteredCategories.map((category) => {
 						const Icon = category.icon;
 						const isActive = activeCategory === category.id;
 
