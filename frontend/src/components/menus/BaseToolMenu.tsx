@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ShieldCheck, ShieldOff, Globe, Wrench } from "lucide-react";
+import { Plus, Globe, Wrench } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -31,17 +31,11 @@ const DEFAULT_AGENT_TOOLS = [
 	// "python_sandbox",
 ];
 
+const WEB_SEARCH_TOOLS = ["web_search", "web_scrape"];
+
 export function BaseToolMenu() {
-	const {
-		agent,
-		setAgent,
-		webSearchCheck,
-		setWebSearchCheck,
-		piiAnalyzeCheck,
-		setPiiAnalyzeCheck,
-		piiAnonymizeCheck,
-		setPiiAnonymizeCheck,
-	} = useAgentContext();
+	const { agent, setAgent, webSearchCheck, setWebSearchCheck } =
+		useAgentContext();
 	const { addFile, setViewMode } = useChatContext();
 	const [open, setOpen] = useState<boolean>(false);
 	const [showToolModal, setShowToolModal] = useState(false);
@@ -87,12 +81,12 @@ export function BaseToolMenu() {
 		if (webSearchCheck) {
 			setAgent((prev) => ({
 				...prev,
-				tools: [...new Set([...prev.tools, ...DEFAULT_AGENT_TOOLS])],
+				tools: [...new Set([...prev.tools, ...WEB_SEARCH_TOOLS])],
 			}));
 		} else {
 			setAgent((prev) => ({
 				...prev,
-				tools: prev.tools.filter((tool) => !DEFAULT_AGENT_TOOLS.includes(tool)),
+				tools: prev.tools.filter((tool) => !WEB_SEARCH_TOOLS.includes(tool)),
 			}));
 		}
 	}, [webSearchCheck]);
@@ -140,36 +134,6 @@ export function BaseToolMenu() {
 							<Globe className="h-12 w-12" />
 							<span>Web Search {webSearchCheck ? "✅" : "🚫"}</span>
 						</DropdownMenuItem>
-						{localStorage.getItem("enso:checkbox:pii_analyze") && (
-							<DropdownMenuItem
-								onClick={() => setPiiAnalyzeCheck(!piiAnalyzeCheck)}
-								className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
-							>
-								{piiAnalyzeCheck ? (
-									<ShieldCheck className="h-15 w-15 text-green-500" />
-								) : (
-									<ShieldOff className="h-15 w-15 text-red-500" />
-								)}
-								<span>
-									PII Analayze {piiAnalyzeCheck ? "(Enabled)" : "(Disabled)"}
-								</span>
-							</DropdownMenuItem>
-						)}
-						{localStorage.getItem("enso:checkbox:pii_anonymize") && (
-							<DropdownMenuItem
-								onClick={() => setPiiAnonymizeCheck(!piiAnonymizeCheck)}
-								className="flex items-center gap-3 cursor-pointer text-base rounded-lg"
-							>
-								{piiAnonymizeCheck ? (
-									<ShieldCheck className="h-15 w-15 text-green-500" />
-								) : (
-									<ShieldOff className="h-15 w-15 text-red-500" />
-								)}
-								<span>
-									PII Anonymize {piiAnonymizeCheck ? "(Enabled)" : "(Disabled)"}
-								</span>
-							</DropdownMenuItem>
-						)}
 					</DropdownMenuGroup>
 
 					<DropdownMenuSeparator className="h-px bg-muted-foreground/30" />

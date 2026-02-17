@@ -724,10 +724,10 @@ export function AgentCreateForm() {
 												field.onChange(checked);
 												try {
 													if (checked) {
-														await agentService.publish(agent.id);
+														await agentService.publish(agent.id!);
 														alert("Agent published successfully!");
 													} else {
-														await agentService.unpublish(agent.id);
+														await agentService.unpublish(agent.id!);
 														alert("Agent unpublished successfully!");
 													}
 													setAgent({ ...agent, public: checked });

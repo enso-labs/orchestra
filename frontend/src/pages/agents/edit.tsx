@@ -17,7 +17,7 @@ function AgentEditPage() {
 	const { agentId } = useParams();
 	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
 		useAgentContext();
-	useEffectGetAgent(agentId);
+	useEffectGetAgent(agentId!);
 	useEffectGetAgents();
 
 	const {

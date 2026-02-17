@@ -220,6 +220,7 @@ export function useAgent() {
 		webSearchCheck,
 		setWebSearchCheck,
 		setAgentTools,
+		updateQueryStateModel,
 	};
 }
 
