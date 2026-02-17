@@ -13,6 +13,10 @@ vi.mock("@/lib/services/modelService", () => ({
 	}),
 }));
 
+vi.mock("@/lib/utils/auth", () => ({
+	getAuthToken: vi.fn().mockReturnValue("mock-token"),
+}));
+
 describe("useModel", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

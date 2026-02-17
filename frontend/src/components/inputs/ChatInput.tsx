@@ -13,6 +13,7 @@ import { Button } from "../ui/button";
 import QueuePanel from "../panels/QueuePanel";
 import { ModelBadge } from "@/components/badges/ModelBadge";
 import { useNavigate } from "react-router";
+import { getAuthToken } from "@/lib/utils/auth";
 
 export default function ChatInput({
 	showAgentMenu = false,
@@ -177,8 +178,12 @@ export default function ChatInput({
 				<div className="flex items-center gap-2">
 					{displayModel && (
 						<button
-							onClick={() => navigate("/settings")}
-							title="Change default model"
+							onClick={() => navigate(getAuthToken() ? "/settings" : "/login")}
+							title={
+								getAuthToken()
+									? "Change default model"
+									: "Log in to change model"
+							}
 							className="cursor-pointer hover:opacity-80 transition-opacity"
 						>
 							<ModelBadge model={displayModel} />

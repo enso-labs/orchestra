@@ -23,6 +23,7 @@ import { useChatContext } from "@/context/ChatContext";
 import ImageUpload from "../inputs/ImageUpload";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { getSettings } from "@/lib/services/userSettingsService";
+import { getAuthToken } from "@/lib/utils/auth";
 
 const FALLBACK_TOOLS = [
 	"web_search",
@@ -70,6 +71,13 @@ export function BaseToolMenu() {
 	};
 
 	useEffect(() => {
+		if (!getAuthToken()) {
+			setAgent((prev) => ({
+				...prev,
+				tools: [...new Set([...prev.tools, ...FALLBACK_TOOLS])],
+			}));
+			return;
+		}
 		getSettings()
 			.then((res) => {
 				const tools = res.defaults.tools ?? FALLBACK_TOOLS;

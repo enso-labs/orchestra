@@ -103,7 +103,8 @@ async def get_optional_user(
                     logger.info(f"Allowing unauthenticated access for public assistant: {params.metadata.assistant_id}")
                     return None
 
-        if not is_authorized_model(params.model):
+        # Empty model is allowed — the controller resolves it to DEFAULT_CHAT_MODEL
+        if params.model and not is_authorized_model(params.model):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=(f"Unauthorized [{params.model}]\nPlease sign in for higher limits and better models!"),
