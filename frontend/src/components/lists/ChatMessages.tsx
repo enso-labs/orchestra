@@ -13,6 +13,7 @@ import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
 import TextSelectionPopover from "../popovers/TextSelectionPopover";
 import TodoList from "./TodoList";
+import { SubagentBadge } from "../badges/SubagentBadge";
 
 export const Message = memo(
 	function Message({
@@ -163,15 +164,22 @@ export const Message = memo(
 			);
 		}
 
-		// Only render input for tool-related messages
-		if (
-			"input" in message &&
-			["tool", "AIMessageChunk"].includes(message.type ?? message.role)
-		) {
+		// Render individual tool_input messages (one per tool call)
+		if (["tool_input"].includes(message.type ?? message.role)) {
 			return (
 				<div className="group px-3 md:px-5">
 					<div className="max-w-[90vw] md:max-w-[80%] px-2 rounded-lg rounded-bl-sm">
+						{message.name && (
+							<span className="text-xs text-muted-foreground font-medium">
+								{message.name}
+							</span>
+						)}
 						<DefaultTool selectedToolMessage={message} collapsed={false} />
+						{message.tool_call_id && (
+							<span className="text-[10px] text-muted-foreground/60 font-mono block mt-0.5">
+								{message.tool_call_id}
+							</span>
+						)}
 					</div>
 				</div>
 			);
@@ -188,10 +196,18 @@ export const Message = memo(
 		}
 
 		const messageFiles = filesMap.get(message.id);
+		const isSubagent = !!message.agent_name;
 
 		return (
 			<div className="group px-3 md:px-5">
-				<div className="max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm">
+				<div
+					className={`max-w-[90vw] md:max-w-[80%] rounded-lg rounded-bl-sm ${isSubagent ? "border-l-2 border-muted-foreground/20 pl-2" : ""}`}
+				>
+					{isSubagent && (
+						<div className="mb-1">
+							<SubagentBadge name={message.agent_name} />
+						</div>
+					)}
 					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
 						<MarkdownCard
 							content={formatContent(message.content) || "Invalid message"}

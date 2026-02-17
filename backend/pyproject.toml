@@ -90,6 +90,7 @@ select = ["E", "F"]
 "src/utils/logger.py" = ["E402"]
 "src/services/checkpoint.py" = ["E402"]
 "src/constants/mock.py" = ["E501"]
+"src/constants/default_memories.py" = ["E501"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

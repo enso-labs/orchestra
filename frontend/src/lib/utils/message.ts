@@ -12,66 +12,90 @@ export function latestHumanMessage(messages: any[] | undefined | null) {
 	}
 	return null;
 }
+
+interface ToolCallState {
+	name: string;
+	args: string;
+}
+
 export class StreamMessageHandler {
 	public toolNameRef: React.MutableRefObject<string>;
-	public toolCallChunkRef: React.MutableRefObject<string>;
+	public toolCallMapRef: React.MutableRefObject<Map<string, ToolCallState>>;
 	public history: any;
 
 	constructor(
 		toolNameRef: React.MutableRefObject<string>,
-		toolCallChunkRef: React.MutableRefObject<string>,
+		toolCallMapRef: React.MutableRefObject<Map<string, ToolCallState>>,
 		history: any,
 	) {
 		this.toolNameRef = toolNameRef;
-		this.toolCallChunkRef = toolCallChunkRef;
+		this.toolCallMapRef = toolCallMapRef;
 		this.history = history;
 	}
 
 	public toolCall(response: any) {
-		const existingIndex = this.history.findIndex(
-			(msg: any) => msg.id === response.id,
-		);
+		// Process each tool_call_chunk independently
+		for (const chunk of response.tool_call_chunks) {
+			const tcId = chunk.id;
+			if (!tcId) continue;
 
-		// NEW: Reset chunk if this is a new tool call (new ID)
-		if (existingIndex === -1) {
-			this.toolCallChunkRef.current = "";
-			this.toolNameRef.current = "";
-		}
+			// Get or create state for this tool_call_id
+			let state = this.toolCallMapRef.current.get(tcId);
+			if (!state) {
+				state = { name: "", args: "" };
+				this.toolCallMapRef.current.set(tcId, state);
+			}
 
-		// Only set tool name if we don't have one yet or if the new name is truthy
-		if (!this.toolNameRef.current || response.tool_call_chunks[0].name) {
-			this.toolNameRef.current = response.tool_call_chunks[0].name;
-		}
-		this.toolCallChunkRef.current += response.tool_call_chunks[0].args;
-		// If the message already exists, update it
-		if (existingIndex !== -1) {
-			// Consolidate tool_call_chunks for the message with matching id
-			const existingMsg = this.history[existingIndex];
-			if (this.toolCallChunkRef.current) {
+			// Update name if present (only sent on first chunk)
+			if (chunk.name) {
+				state.name = chunk.name;
+			}
+
+			// Accumulate args
+			if (chunk.args) {
+				state.args += chunk.args;
+			}
+
+			// Update the toolNameRef for the loading message
+			if (state.name) {
+				this.toolNameRef.current = state.name;
+			}
+
+			// Build a unique history entry id for this tool_call
+			const entryId = `${response.id}-tc-${tcId}`;
+			const existingIndex = this.history.findIndex(
+				(msg: any) => msg.id === entryId,
+			);
+
+			// Parse accumulated args
+			let parsedInput: any = state.args;
+			if (state.args) {
 				try {
-					existingMsg.input = JSON.parse(this.toolCallChunkRef.current);
+					parsedInput = JSON.parse(state.args);
 				} catch {
-					try {
-						const autoAddCommas =
-							"[" +
-							this.toolCallChunkRef.current.replace(/}\s*{/g, "},{") +
-							"]";
-						existingMsg.input = JSON.parse(autoAddCommas);
-					} catch {
-						existingMsg.input = this.toolCallChunkRef.current;
-					}
+					// Args not yet complete JSON — keep as string
+					parsedInput = state.args;
 				}
 			}
-			this.history[existingIndex] = {
-				...existingMsg,
-				...response,
+
+			const entry = {
+				id: entryId,
+				type: "tool_input",
+				role: "tool_input",
+				tool_call_id: tcId,
+				name: state.name,
+				input: parsedInput,
+				parent_message_id: response.id,
+				...(response.agent_name !== undefined && {
+					agent_name: response.agent_name,
+				}),
 			};
-		} else {
-			this.history.push({
-				...response,
-				input: this.toolCallChunkRef.current,
-				name: this.toolNameRef.current,
-			});
+
+			if (existingIndex !== -1) {
+				this.history[existingIndex] = entry;
+			} else {
+				this.history.push(entry);
+			}
 		}
 	}
 
@@ -96,6 +120,8 @@ export class StreamMessageHandler {
 			...response,
 			...existingMsg,
 			content: updatedContent,
+			// Preserve agent_name from first chunk (subagent attribution)
+			agent_name: existingMsg.agent_name ?? response.agent_name ?? null,
 		};
 	}
 
