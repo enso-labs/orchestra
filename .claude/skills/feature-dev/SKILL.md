@@ -11,13 +11,17 @@ Converts one or more user stories into a fully implemented feature by orchestrat
 
 ## Variables
 
-STORY: $ARGUMENTS.story
+STORY: $ARGUMENTS.story (optional if `url` is provided)
+URL: $ARGUMENTS.url (optional if `story` is provided)
+ORCHESTRA_PROJECT_ROOT: The **orchestra project root** &mdash; the git repository root where `.claude/`, `.worktrees/`, and `Makefile` live. Resolve via `git rev-parse --show-toplevel`. All paths in this skill are anchored to this variable. Always `cd $ORCHESTRA_PROJECT_ROOT` before running commands to ensure worktrees are created in the correct location.
+
+**Exactly one of `story` or `url` must be provided.**
 
 ---
 
 ## Input Formats
 
-The `story` argument accepts a single user story or multiple stories:
+### Option A: Pass user stories directly via `story`
 
 **Single story:**
 ```
@@ -33,9 +37,65 @@ story="1. As a developer, I want tool inputs collapsed by default so that chat i
 
 All input stories are grouped into a **single feature** &mdash; one GitHub issue, one PRD, one Ralph run.
 
+### Option B: Pass a GitHub issue URL via `url`
+
+```
+url="https://github.com/ruska-ai/orchestra/issues/810"
+```
+
+When `url` is provided the skill extracts all context from the existing issue:
+- RUN `gh issue view <URL> --json number,title,body,labels`
+- _PARSE_ user stories from the issue body (look for "User Stories" section or "As a..." patterns)
+- _EXTRACT_ issue number and title for branch naming
+- **Skips Phase 1 (duplication check)** &mdash; the issue already exists
+- **Skips Phase 2 (issue creation)** &mdash; the issue already exists
+- Proceeds directly to Phase 3 with the extracted data
+
+---
+
+## Commit Strategy: Early & Often
+
+**Commit after every phase that produces artifacts.** Each phase&apos;s output should be committed and pushed immediately so that:
+
+- Work is never lost if a later phase fails
+- The PR on GitHub shows incremental progress
+- Reviewers can follow the pipeline&apos;s history via commit log
+
+The pattern at the end of each artifact-producing phase:
+```bash
+cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>
+git add <phase artifacts>
+git commit -s -m "<phase commit message>"
+git push
+```
+
 ---
 
 ## Phase 0: Validate Input & Confirm Feature Scope
+
+### If `url` was provided:
+
+1. _VALIDATE_ URL format (expected: `https://github.com/<owner>/<repo>/issues/<number>`)
+2. _FETCH_ issue details:
+   - RUN `gh issue view <URL> --json number,title,body,labels`
+3. _PARSE_ user stories from the issue body
+4. _SET_ issue number and feature name from the issue metadata (slugify title to kebab-case)
+5. _PRESENT_ extracted data to the user for confirmation:
+   ```
+   ## Feature Scope (from Issue #<number>)
+
+   **Issue**: #<number> - <title>
+   **Feature name**: <feature-name>
+   **Stories** (<N> total):
+   - US-001: <story 1>
+   - US-002: <story 2>
+   ...
+
+   Does this look correct? (y/n)
+   ```
+6. _WAIT_ for user confirmation, then **skip to Phase 3**
+
+### If `story` was provided:
 
 1. _PARSE_ the STORY variable into individual user stories
 2. _EXTRACT_ a short feature name from the stories (kebab-case, e.g., `export-chat-pdf`)
@@ -51,11 +111,13 @@ All input stories are grouped into a **single feature** &mdash; one GitHub issue
 
    Does this look correct? (y/n)
    ```
-4. _WAIT_ for user confirmation before proceeding
+4. _WAIT_ for user confirmation, then proceed to Phase 1
 
 ---
 
 ## Phase 1: Duplication Check
+
+> **Skipped when `url` is provided** &mdash; the issue already exists on GitHub.
 
 Check for existing work that overlaps with this feature:
 
@@ -75,6 +137,8 @@ Check for existing work that overlaps with this feature:
 ---
 
 ## Phase 2: Create GitHub Issue
+
+> **Skipped when `url` is provided** &mdash; the issue already exists on GitHub.
 
 1. _COMPOSE_ issue body using the stories:
    ```markdown
@@ -104,15 +168,16 @@ Check for existing work that overlaps with this feature:
 
 1. _DETERMINE_ naming:
    - Branch: `feat/<issue#>-<feature-name>`
-   - Worktree path: `./.worktrees/feat-<issue#>`
+   - Worktree path: `$ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>`
 2. _FETCH_ latest development:
    - RUN `git fetch origin development`
 3. _CREATE_ worktree:
-   - RUN `git worktree add ./.worktrees/feat-<issue#> -b feat/<issue#>-<feature-name> origin/development`
+   - RUN `git worktree add $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> -b feat/<issue#>-<feature-name> origin/development`
 4. _INITIALIZE_ worktree:
-   - RUN `cd ./.worktrees/feat-<issue#> && bash ../../backend/scripts/changelog.sh`
-   - RUN `cd ./.worktrees/feat-<issue#> && git add Changelog.md && git commit -s -m "init feat/<issue#>-<feature-name>"`
-5. _REPORT_ "Worktree created at ./.worktrees/feat-<issue#> on branch feat/<issue#>-<feature-name>"
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && bash $ORCHESTRA_PROJECT_ROOT/backend/scripts/changelog.sh`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add Changelog.md && git commit -s -m "init feat/<issue#>-<feature-name>"`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push -u origin feat/<issue#>-<feature-name>`
+5. _REPORT_ "Worktree created at $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> on branch feat/<issue#>-<feature-name>"
 
 ---
 
@@ -121,7 +186,7 @@ Check for existing work that overlaps with this feature:
 Delegate to the `/prd` skill to create the PRD from the user stories.
 
 1. _CHANGE_ to worktree directory:
-   - RUN `cd ./.worktrees/feat-<issue#>`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>`
 2. _INVOKE_ the prd skill with the composed stories:
    ```
    Load the prd skill and create a PRD for:
@@ -142,7 +207,11 @@ Delegate to the `/prd` skill to create the PRD from the user stories.
    - Add "Verify in browser using agent-browser skill" to UI stories
    ```
 3. _VERIFY_ PRD was created at `tasks/prd-<feature-name>.md`
-4. _REPORT_ "Generated PRD at tasks/prd-<feature-name>.md"
+4. _COMMIT_ PRD artifact:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add tasks/prd-<feature-name>.md`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git commit -s -m "docs: add PRD for #<issue#>"`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
+5. _REPORT_ "Generated and committed PRD at tasks/prd-<feature-name>.md"
 
 ---
 
@@ -165,25 +234,31 @@ Delegate to the `/ralph` skill to convert the PRD to `prd.json`.
    - _READ_ the last user story in prd.json
    - _ENSURE_ its acceptance criteria include: "Verify if there are any remaining changes by running git status. If remaining changes exist, commit and push to branch."
    - _IF_ missing: add this criterion to the last story
-6. _REPORT_ "Ralph configuration ready with <N> user stories"
+6. _COMMIT_ Ralph artifacts:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add .ralph/prd.json .ralph/progress.txt`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git commit -s -m "chore: add Ralph config for #<issue#>"`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
+7. _REPORT_ "Ralph configuration committed with <N> user stories"
 
 ---
 
-## Phase 6: Commit Artifacts & Push & Create PR
+## Phase 6: Verify Remote & Create PR
 
-1. _STAGE_ and commit all artifacts from the worktree:
-   - RUN `cd ./.worktrees/feat-<issue#> && git add tasks/ .ralph/prd.json .ralph/progress.txt`
-   - RUN `cd ./.worktrees/feat-<issue#> && git commit -s -m "feat: add PRD and Ralph config for #<issue#>"`
-2. _PUSH_ to remote:
-   - RUN `cd ./.worktrees/feat-<issue#> && git push -u origin feat/<issue#>-<feature-name>`
-3. _REPORT_ "Artifacts committed and pushed to feat/<issue#>-<feature-name>"
+All artifacts have been committed and pushed incrementally in previous phases. This phase ensures everything is synced.
+
+1. _VERIFY_ remote is up to date:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git status`
+   - _IF_ uncommitted changes remain: stage, commit, and push them
+2. _ENSURE_ branch is tracking remote:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push -u origin feat/<issue#>-<feature-name>`
+3. _REPORT_ "All artifacts pushed to feat/<issue#>-<feature-name>"
 
 ---
 
 ## Phase 7: Launch Ralph in Tmux
 
 1. _START_ Ralph in a tmux session:
-   - RUN `tmux new-session -d -s feat-<issue#> -c ./.worktrees/feat-<issue#> "make -C ../../ ralph"`
+   - RUN `tmux new-session -d -s feat-<issue#> -c $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> "make -C $ORCHESTRA_PROJECT_ROOT ralph"`
 2. _REPORT_ "Ralph launched in tmux session feat-<issue#>"
 3. _PROVIDE_ monitoring commands:
    ```
@@ -191,7 +266,7 @@ Delegate to the `/ralph` skill to convert the PRD to `prd.json`.
    tmux attach -t feat-<issue#>
 
    # Check progress
-   cat ./.worktrees/feat-<issue#>/.ralph/progress.txt
+   cat $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/progress.txt
    ```
 
 ---
@@ -203,7 +278,7 @@ Delegate to the `/ralph` skill to convert the PRD to `prd.json`.
 
 **Issue**: #<issue#> - feat: <feature-name>
 **Branch**: feat/<issue#>-<feature-name>
-**Worktree**: ./.worktrees/feat-<issue#>
+**Worktree**: $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>
 **PRD**: tasks/prd-<feature-name>.md
 **Ralph config**: .ralph/prd.json (<N> user stories)
 **Tmux session**: feat-<issue#>
@@ -215,8 +290,8 @@ Delegate to the `/ralph` skill to convert the PRD to `prd.json`.
 
 ### Next Steps
 - Monitor: `tmux attach -t feat-<issue#>`
-- Progress: `cat ./.worktrees/feat-<issue#>/.ralph/progress.txt`
-- When complete: `cd ./.worktrees/feat-<issue#> && gh pr create --base development --title "FROM feat/<issue#>-<feature-name> TO development"`
+- Progress: `cat $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/progress.txt`
+- When complete: `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && gh pr create --base development --title "FROM feat/<issue#>-<feature-name> TO development"`
 ```
 
 ---
@@ -234,18 +309,33 @@ Delegate to the `/ralph` skill to convert the PRD to `prd.json`.
 
 ## Error Handling
 
+- **Neither `story` nor `url` provided**: _REPORT_ "You must provide either `story` or `url`. See examples below."
+- **Invalid URL format**: _REPORT_ "Invalid GitHub issue URL. Expected format: https://github.com/owner/repo/issues/NUMBER"
+- **Issue not found**: _REPORT_ "Could not fetch issue. Check URL and GitHub authentication with `gh auth status`"
+- **No stories found in issue body**: _REPORT_ "Could not parse user stories from issue body. Add stories manually via `story` argument."
 - **Invalid story format**: _REPORT_ "Could not parse user stories. Expected format: As a [role], I want [capability] so that [benefit]."
 - **Duplicate issue found**: _REPORT_ duplicates and ask user how to proceed
-- **Worktree already exists**: _REPORT_ "Worktree already exists at ./.worktrees/feat-<issue#>. Remove with `git worktree remove ./.worktrees/feat-<issue#>` first."
+- **Worktree already exists**: _REPORT_ "Worktree already exists at $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>. Remove with `git worktree remove $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>` first."
 - **PRD generation failure**: _REPORT_ "Failed to generate PRD. Retry with `/prd` manually."
 - **prd.json conversion failure**: _REPORT_ "Failed to convert PRD. Retry with `/ralph` manually."
 - **branchName mismatch**: Auto-fix the branchName in prd.json to match `feat/<issue#>-<feature-name>`
-- **Push failure**: _REPORT_ "Failed to push. Try: `cd ./.worktrees/feat-<issue#> && git push -u origin feat/<issue#>-<feature-name>`"
-- **Tmux failure**: _REPORT_ "Failed to launch tmux. Run manually: `cd ./.worktrees/feat-<issue#> && make -C ../../ ralph`"
+- **Push failure**: _REPORT_ "Failed to push. Try: `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push -u origin feat/<issue#>-<feature-name>`"
+- **Tmux failure**: _REPORT_ "Failed to launch tmux. Run manually: `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && make -C $ORCHESTRA_PROJECT_ROOT ralph`"
 
 ---
 
 ## Examples
+
+### From GitHub Issue URL
+
+```bash
+/feature-dev url="https://github.com/ruska-ai/orchestra/issues/810"
+```
+
+Extracts stories from issue #810, skips duplication check and issue creation, then:
+- Branch: `feat/810-<slugified-title>`
+- Worktree: `$ORCHESTRA_PROJECT_ROOT/.worktrees/feat-810`
+- PRD, Ralph config, and tmux launch as normal
 
 ### Single Story
 
