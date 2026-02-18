@@ -83,8 +83,8 @@
         "docker compose up starts Orchestra accessible at localhost:8000"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Dockerfile.local (ubuntu:24.04), docker-compose.local.yml, supervisor manages PostgreSQL/Redis/Orchestra"
     },
     {
       "id": "US-006",
@@ -96,8 +96,8 @@
         "All commits visible in GitHub PR"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "All changes committed and pushed to feat/798-local-vm-backend"
     }
   ]
 }

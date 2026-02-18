@@ -21,6 +21,9 @@
 - Install script: `scripts/install.sh` — idempotent, Ubuntu/WSL, installs Python 3.12+, Node 22+, PostgreSQL 16, Redis, uv
 - Frontend builds to `../backend/src/public` via `npm run build` (vite.config.ts outDir)
 - WSL detection: `grep -qiE '(microsoft|wsl)' /proc/version` — use `service` instead of `systemctl`
+- Docker local: `docker/Dockerfile.local` (ubuntu:24.04), `docker-compose.local.yml`, supervisor manages all services
+- Docker local entrypoint: `docker/local/entrypoint.sh` — initializes PostgreSQL, runs migrations, seeds users, then starts supervisor
+- Supervisor config: `docker/local/supervisord.conf` — manages postgresql, redis, and orchestra (uvicorn) processes
 ---
 
 ## 2026-02-18 - US-001
@@ -78,4 +81,32 @@
   - Alembic migrations in `backend/migrations/env.py` include `ensure_database_exists()` — auto-creates DB if missing
   - `uv sync` (without extras) skips optional `distributed` deps — correct for local mode
   - Default credentials: admin@example.com / test1234, user@example.com / test1234
+---
+
+## 2026-02-18 - US-005
+- Created Docker test container simulating an Ubuntu VM with all services bundled
+- Files changed:
+  - `docker/Dockerfile.local` — ubuntu:24.04-based image with Python 3.12, Node 22, PostgreSQL 16 (pgvector), Redis, uv; builds frontend into backend/src/public, sets up env from .env.local.example
+  - `docker/local/entrypoint.sh` — initializes PostgreSQL data dir, creates orchestra DB with pgvector, configures pg_hba for md5 auth, runs Alembic migrations, seeds users, then launches supervisor
+  - `docker/local/supervisord.conf` — manages 3 processes: postgresql (priority 10), redis (priority 20), orchestra/uvicorn (priority 30)
+  - `docker-compose.local.yml` — single-service compose file with volume persistence for workspace and PostgreSQL data, healthcheck via /api/health
+- **Learnings for future iterations:**
+  - All-in-one container uses supervisor to manage multiple processes (PostgreSQL, Redis, Orchestra) — not best practice for production but ideal for simulating a VM
+  - PostgreSQL inside Docker needs `initdb` on first run if `/var/lib/postgresql/16/main/PG_VERSION` doesn't exist
+  - pg_hba.conf must be updated from peer/scram-sha-256 to md5 for asyncpg connections to work
+  - Frontend is pre-built during Docker image build (not served by Vite dev server) — backend serves static files from src/public at port 8000
+  - Dockerfile uses layered caching: dep files first (pyproject.toml, package.json), then app code, for faster rebuilds
+  - `uv sync --frozen` requires a uv.lock file — fallback to `uv sync` if frozen fails
+  - ruff quality checks only apply to Python code — Docker/shell files don't need ruff validation
+---
+
+## 2026-02-18 - US-006
+- Verified workspace is clean and pushed all changes to origin
+- Files changed:
+  - `.ralph/prd.json` — marked US-005 and US-006 as passes: true
+  - `.ralph/progress.txt` — appended US-005 and US-006 progress reports
+- **Learnings for future iterations:**
+  - Ralph progress tracking files (prd.json, progress.txt) accumulate uncommitted changes across iterations — the final "cleanup" story should commit them all
+  - Branch was 5 commits ahead of origin after US-001 through US-005 — all pushed together in US-006
+  - All 6 stories implemented: FilesystemBackend, optional TaskIQ, local env config, install script, Docker container, final push
 ---
