@@ -65,3 +65,9 @@
   - Only `FALLBACK_TOOLS` in `ToolSelectionModal/index.tsx` is hardcoded (for unauthenticated users)
   - `CustomToolsPanel` filters for `"api_tool"` tag — platform tools use different tags
 ---
+
+## 2026-02-18 - US-005
+- Workspace verified clean (`git status` shows nothing to commit)
+- All 4 commits pushed to `origin/feat/801-search-threads-tool`
+- Commits: US-001 (4177c8d2), US-002 (7d20555f), US-003 (f8a26506), chore (c95cc5ca)
+---
