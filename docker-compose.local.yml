@@ -1,0 +1,45 @@
+##############################################
+## Orchestra Local VM Test Environment
+##
+## Simulates an Ubuntu VM with all services
+## bundled in a single container.
+##
+## Usage:
+##   docker compose -f docker-compose.local.yml up
+##   docker compose -f docker-compose.local.yml up --build
+##
+## Access:
+##   Backend API:  http://localhost:8000
+##   Swagger Docs: http://localhost:8000/api
+##   Health Check: http://localhost:8000/api/health
+##
+## Default Credentials:
+##   Admin: admin@example.com / test1234
+##   User:  user@example.com  / test1234
+##############################################
+
+services:
+    orchestra:
+        build:
+            context: .
+            dockerfile: docker/Dockerfile.local
+        container_name: orchestra-local
+        ports:
+            - "8000:8000"
+        volumes:
+            - orchestra_workspace:/root/.ruska/workspace
+            - orchestra_pgdata:/var/lib/postgresql/16/main
+        environment:
+            - BACKEND_TYPE=filesystem
+            - DISTRIBUTED_WORKERS=false
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+            interval: 30s
+            timeout: 5s
+            start_period: 60s
+            retries: 3
+
+volumes:
+    orchestra_workspace:
+    orchestra_pgdata:
