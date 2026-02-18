@@ -7,11 +7,8 @@ Environment Variables:
     REDIS_URL: Redis connection URL (default: redis://localhost:6379/0)
 """
 
-import os
 from taskiq_redis import RedisStreamBroker, RedisAsyncResultBackend
-
-# Redis connection URL from environment
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+from src.constants import REDIS_URL
 
 # Result backend with 5-minute TTL for task results
 result_backend = RedisAsyncResultBackend(

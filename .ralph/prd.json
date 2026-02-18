@@ -18,7 +18,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "FilesystemBackend (lowercase 's') is the correct class name from deepagents.backends"
     },
     {
@@ -34,7 +34,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "DISTRIBUTED_WORKERS already defaults to false in constants/__init__.py line 131"
     },
     {

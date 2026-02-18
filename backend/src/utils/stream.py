@@ -342,7 +342,7 @@ async def stream_from_redis(thread_id: str):
         SSE-formatted strings in the form "data: {...}\\n\\n"
     """
     import redis.asyncio as redis
-    from src.workers.broker import REDIS_URL
+    from src.constants import REDIS_URL
 
     stream_key = f"agent:stream:{thread_id}"
     redis_client = redis.from_url(REDIS_URL)

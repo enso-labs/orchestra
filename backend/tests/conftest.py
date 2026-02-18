@@ -12,7 +12,11 @@ from sqlalchemy.pool import NullPool
 from src.constants import DB_URI
 from src.services.db import get_async_db, get_store, get_store_db, get_checkpoint_db
 from langgraph.store.memory import InMemoryStore
-from taskiq import InMemoryBroker
+
+try:
+    from taskiq import InMemoryBroker
+except ImportError:
+    InMemoryBroker = None
 
 
 async def ensure_database_exists(db_uri: str) -> None:
@@ -307,6 +311,8 @@ async def mock_external_services():
 @pytest.fixture
 def in_memory_broker():
     """Provide an InMemoryBroker for testing tasks without Redis."""
+    if InMemoryBroker is None:
+        pytest.skip("taskiq not installed")
     return InMemoryBroker()
 
 

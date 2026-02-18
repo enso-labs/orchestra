@@ -129,6 +129,7 @@ MICROSOFT_TEAMS_WEBHOOK_URL = os.getenv("MICROSOFT_TEAMS_WEBHOOK_URL")
 
 # Distributed Workers
 DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Sandbox Backend
 BACKEND_TYPE = os.getenv("BACKEND_TYPE", "auto")  # options: filesystem, daytona, state, auto

@@ -5,8 +5,44 @@
 - `FilesystemBackend` (lowercase 's') available from `deepagents.backends` — NOT `FileSystemBackend`
 - `CompositeBackend` wraps the actual backend — all factories return `(CompositeBackend, sandbox_or_None)`
 - `DISTRIBUTED_WORKERS` env var at `backend/src/constants/__init__.py:131` — already defaults to `false`
-- TaskIQ imports in `backend/src/routes/v0/llm.py:22` and `backend/src/workers/`
+- TaskIQ imports are lazy: `backend/src/routes/v0/llm.py:97` and `backend/src/services/schedule.py:61` guard with `if DISTRIBUTED_WORKERS`
+- `workers/__init__.py` conditionally imports broker/tasks only when `DISTRIBUTED_WORKERS=true`
+- `REDIS_URL` lives in `backend/src/constants/__init__.py` — NOT in `workers/broker.py` (abort.py, stream.py import from constants)
+- taskiq-redis and taskiq are optional deps: `pip install orchestra-api[distributed]`
 - Backend Makefile: `dev` (port 8000), `dev.claude` (port 8031), `dev.worker` (TaskIQ)
 - Build script: `backend/scripts/build.sh` — Docker build with ghcr.io registry
 - Reference install patterns: `ruska-ai/sandboxes` openclaw branch
+- `BACKEND_TYPE` and `WORKSPACE_ROOT` env vars now in `backend/src/constants/__init__.py` (lines 133-135)
+- `resolve_sandbox_backend()` checks `sandbox_type` param first, then `BACKEND_TYPE` env var as fallback
+- All sandbox factory functions take `(runtime: ToolRuntime)` and return `(CompositeBackend, Any)`
+---
+
+## 2026-02-18 - US-001
+- Implemented FilesystemBackend support in sandbox factory
+- Files changed:
+  - `backend/src/agents/__init__.py` — added FilesystemBackend import, `_create_filesystem_backend()` factory, `filesystem` key in `_SANDBOX_FACTORIES`, updated `resolve_sandbox_backend()` to use BACKEND_TYPE env var
+  - `backend/src/constants/__init__.py` — added `BACKEND_TYPE` (default: "auto") and `WORKSPACE_ROOT` (default: "~/.ruska/workspace/") env vars
+- **Learnings for future iterations:**
+  - Factory functions auto-create WORKSPACE_ROOT dir with `mkdir(parents=True, exist_ok=True)`
+  - `resolve_sandbox_backend()` precedence: sandbox_type param > BACKEND_TYPE env var > auto (Daytona → State fallback)
+  - No venv in this worktree — use `/home/molty/.openclaw/workspace/orchestra/backend/.venv/bin/python` for import verification
+  - ruff format/lint are the primary quality gates (no typecheck target in Makefile)
+---
+
+## 2026-02-18 - US-002
+- Made TaskIQ workers optional so local mode doesn't require taskiq/taskiq-redis
+- Files changed:
+  - `backend/src/constants/__init__.py` — added `REDIS_URL` env var (centralized, was duplicated in `workers/broker.py`)
+  - `backend/src/workers/__init__.py` — conditional imports: only loads broker/tasks when `DISTRIBUTED_WORKERS=true`
+  - `backend/src/workers/broker.py` — imports `REDIS_URL` from constants instead of defining its own
+  - `backend/src/workers/tasks.py` — imports `REDIS_URL` from constants instead of broker
+  - `backend/src/services/abort.py` — imports `REDIS_URL` from constants instead of `workers.broker`
+  - `backend/src/utils/stream.py` — imports `REDIS_URL` from constants instead of `workers.broker`
+  - `backend/pyproject.toml` — moved taskiq-redis and taskiq[reload] to `[project.optional-dependencies] distributed`
+  - `backend/tests/conftest.py` — wrapped `from taskiq import InMemoryBroker` in try/except, skip fixture if missing
+- **Learnings for future iterations:**
+  - `REDIS_URL` was defined in `workers/broker.py` but needed by non-worker modules (abort, stream) — centralizing in constants breaks the circular dependency
+  - `llm.py` and `schedule.py` already had TaskIQ imports inside `if DISTRIBUTED_WORKERS:` blocks — no changes needed there
+  - Worker test files (`tests/unit/workers/`) still import TaskIQ directly — they'll naturally fail if taskiq isn't installed, which is correct behavior
+  - `redis` package (non-taskiq) stays as a core dependency since abort/stream use it regardless of worker mode
 ---

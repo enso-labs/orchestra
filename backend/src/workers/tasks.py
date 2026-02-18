@@ -19,7 +19,8 @@ import ujson
 import redis.asyncio as redis
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
-from src.workers.broker import broker, REDIS_URL
+from src.constants import REDIS_URL
+from src.workers.broker import broker
 
 
 @broker.task(task_name="run_agent_stream")

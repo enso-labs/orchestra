@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from langgraph.store.base import BaseStore
 
-from src.workers.broker import REDIS_URL
+from src.constants import REDIS_URL
 from src.services.thread import ThreadService
 from src.utils.logger import logger
 

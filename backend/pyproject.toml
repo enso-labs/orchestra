@@ -60,8 +60,12 @@ dependencies = [
     "yfinance>=0.2.66",
     "fastapi-cache2>=0.2.2",
     "fastmcp>=2.14.1",
-    "taskiq-redis>=1.0.0",
     "redis>=5.0.0",
+]
+
+[project.optional-dependencies]
+distributed = [
+    "taskiq-redis>=1.0.0",
     "taskiq[reload]>=0.12.1",
 ]
 
