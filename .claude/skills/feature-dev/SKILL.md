@@ -78,7 +78,8 @@ git push
 1. _VALIDATE_ URL format (expected: `https://github.com/<owner>/<repo>/issues/<number>`)
 2. _FETCH_ issue details:
    - RUN `gh issue view <URL> --json number,title,body,labels`
-3. _PARSE_ user stories from the issue body
+3. _PARSE_ user stories from the issue body (look for "User Stories" section or "As a..." patterns)
+   - The issue **must** contain at least one user story. If none are found, _HALT_ and report the error.
 4. _SET_ issue number and feature name from the issue metadata (slugify title to kebab-case)
 5. _PRESENT_ extracted data to the user for confirmation:
    ```
@@ -177,24 +178,76 @@ Check for existing work that overlaps with this feature:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && bash $ORCHESTRA_PROJECT_ROOT/backend/scripts/changelog.sh`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add Changelog.md && git commit -s -m "init feat/<issue#>-<feature-name>"`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push -u origin feat/<issue#>-<feature-name>`
-5. _REPORT_ "Worktree created at $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> on branch feat/<issue#>-<feature-name>"
+5. _UPDATE_ the GitHub issue with implementation metadata:
+   - RUN:
+     ```bash
+     gh issue comment <issue#> --body "$(cat <<'EOF'
+     ## Implementation Started
+
+     **Branch**: `feat/<issue#>-<feature-name>`
+     **Worktree**: `$ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>`
+     **PR title**: `FROM feat/<issue#>-<feature-name> TO development`
+     EOF
+     )"
+     ```
+6. _REPORT_ "Worktree created at $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> on branch feat/<issue#>-<feature-name>"
 
 ---
 
-## Phase 4: Generate PRD
+## Phase 4: Research & Plan (Plan Mode)
 
-Delegate to the `/prd` skill to create the PRD from the user stories.
+**MANDATORY before PRD generation.** Enter plan mode to research the codebase and triage the best implementation approach. This prevents the PRD from being generated blindly.
 
 1. _CHANGE_ to worktree directory:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>`
-2. _INVOKE_ the prd skill with the composed stories:
+2. _ENTER_ plan mode and research:
+   - Explore the codebase to understand existing patterns, files, and architecture relevant to the user stories
+   - Identify which files will need changes
+   - Determine dependency order (schema, backend, frontend, integration)
+   - Flag any risks, blockers, or open questions
+   - Decide whether stories need to be split, merged, or reordered
+3. _PRESENT_ the plan to the user for approval:
+   ```
+   ## Implementation Plan for #<issue#>: <feature-name>
+
+   ### Affected Areas
+   - <file/module 1>: <what changes>
+   - <file/module 2>: <what changes>
+   ...
+
+   ### Proposed Story Breakdown
+   1. <story 1> (schema/backend/frontend)
+   2. <story 2>
+   ...
+
+   ### Risks & Open Questions
+   - <any blockers or decisions needed>
+
+   ### Approach
+   <brief summary of implementation strategy>
+   ```
+4. _WAIT_ for user approval before proceeding to Phase 5
+5. _EXIT_ plan mode
+
+---
+
+## Phase 5: Generate PRD &rarr; Convert to Ralph JSON
+
+This phase produces two artifacts in sequence: the PRD markdown file (via `/prd`), then the Ralph JSON config (via `/ralph`). The output of `/prd` is the direct input to `/ralph`.
+
+### Step 1: Generate PRD
+
+1. _INVOKE_ the `/prd` skill with the approved plan and stories:
    ```
    Load the prd skill and create a PRD for:
 
    Feature: <feature-name> (Issue #<issue#>)
 
+   ## Approved Implementation Plan
+   <plan from Phase 4>
+
    ## User Stories
-   <all stories from STORY variable>
+   <all stories from STORY variable or extracted from issue>
 
    IMPORTANT sizing rules for Ralph compatibility:
    - Each user story must be completable in ONE iteration (one context window)
@@ -206,21 +259,18 @@ Delegate to the `/prd` skill to create the PRD from the user stories.
    - Add "Typecheck passes" to every story
    - Add "Verify in browser using agent-browser skill" to UI stories
    ```
-3. _VERIFY_ PRD was created at `tasks/prd-<feature-name>.md`
-4. _COMMIT_ PRD artifact:
+2. _VERIFY_ PRD was created at `tasks/prd-<feature-name>.md`
+3. _COMMIT_ PRD artifact:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add tasks/prd-<feature-name>.md`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git commit -s -m "docs: add PRD for #<issue#>"`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
-5. _REPORT_ "Generated and committed PRD at tasks/prd-<feature-name>.md"
 
----
+### Step 2: Convert PRD to Ralph JSON
 
-## Phase 5: Convert to Ralph JSON
-
-Delegate to the `/ralph` skill to convert the PRD to `prd.json`.
+Feed `tasks/prd-<feature-name>.md` from Step 1 directly into the `/ralph` skill.
 
 1. _INVOKE_ `/ralph-archive` first to archive any existing prd.json from a different feature
-2. _INVOKE_ the ralph skill:
+2. _INVOKE_ the `/ralph` skill with the PRD file as input:
    ```
    Load the ralph skill and convert tasks/prd-<feature-name>.md to .ralph/prd.json
 
@@ -238,7 +288,7 @@ Delegate to the `/ralph` skill to convert the PRD to `prd.json`.
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add .ralph/prd.json .ralph/progress.txt`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git commit -s -m "chore: add Ralph config for #<issue#>"`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
-7. _REPORT_ "Ralph configuration committed with <N> user stories"
+7. _REPORT_ "PRD generated and Ralph config committed with <N> user stories"
 
 ---
 
