@@ -1,7 +1,6 @@
 **/.env*
 **/logs
 **/tests
-**/seeds
 **/sandbox
 **/scripts
 **/langgraph.json

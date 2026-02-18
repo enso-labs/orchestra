@@ -32,8 +32,8 @@ COPY . /app
 RUN python -m compileall -b -f -q /app
 
 # Remove all .py source files, keep only .pyc
-# Exclude migrations/ directory - Alembic requires .py files
-RUN find /app -type f -name "*.py" ! -path "/app/migrations/*" -delete
+# Exclude migrations/ (Alembic requires .py) and seeds/ (seeders need .py source)
+RUN find /app -type f -name "*.py" ! -path "/app/migrations/*" ! -path "/app/seeds/*" -delete
 
 # =============================================================================
 # Stage 2: Runtime - Ship only .pyc bytecode (distroless)
