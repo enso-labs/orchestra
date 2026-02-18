@@ -1,0 +1,11 @@
+## Codebase Patterns
+- Tools defined as `@tool` decorated functions in `backend/src/tools/`
+- Each tool module exports a `*_TOOLS` list (e.g., `SEARCH_TOOLS`, `FINANCE_TOOLS`)
+- Tools registered in `backend/src/utils/tools.py` via `resolve_tool()` function
+- Tool pattern: accept `RunnableConfig` for user context, use `config["configurable"]` for user_id
+- Memory tool at `backend/src/tools/memory.py` — good reference for store-based tools
+- Thread search endpoint at `backend/src/routes/v0/thread.py` — `semantic_search_threads()` uses `thread_snapshot_repo.search()`
+- `ServiceContext` provides `thread_service` which has `thread_snapshot_repo`
+- Platform tools fetched via GET `/tools` endpoint → `ToolService.tool_details()`
+- Frontend `ToolSelectionModal` fetches from `listTools()` in `toolService.ts`
+---
