@@ -48,7 +48,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -67,8 +67,8 @@
         "Reference ruska-ai/sandboxes openclaw branch for patterns"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Script at scripts/install.sh - idempotent, detects OS, installs all deps"
     },
     {
       "id": "US-005",

@@ -9,12 +9,18 @@
 - `workers/__init__.py` conditionally imports broker/tasks only when `DISTRIBUTED_WORKERS=true`
 - `REDIS_URL` lives in `backend/src/constants/__init__.py` — NOT in `workers/broker.py` (abort.py, stream.py import from constants)
 - taskiq-redis and taskiq are optional deps: `pip install orchestra-api[distributed]`
-- Backend Makefile: `dev` (port 8000), `dev.claude` (port 8031), `dev.worker` (TaskIQ)
+- Backend Makefile: `dev` (port 8000), `dev.claude` (port 8031), `dev.worker` (TaskIQ), Root Makefile: `local` (local mode)
+- Health endpoint: `GET /api/health` — returns status, version, mode (BACKEND_TYPE), workspace (WORKSPACE_ROOT), environment
+- `.gitignore` blocks `**/.env*` but allows `!**/.env*.example` — add this negation for example env files
+- `backend/src/routes/v0/info.py` — the info router imported by `__init__.py` (was missing, now contains health endpoint)
 - Build script: `backend/scripts/build.sh` — Docker build with ghcr.io registry
 - Reference install patterns: `ruska-ai/sandboxes` openclaw branch
 - `BACKEND_TYPE` and `WORKSPACE_ROOT` env vars now in `backend/src/constants/__init__.py` (lines 133-135)
 - `resolve_sandbox_backend()` checks `sandbox_type` param first, then `BACKEND_TYPE` env var as fallback
 - All sandbox factory functions take `(runtime: ToolRuntime)` and return `(CompositeBackend, Any)`
+- Install script: `scripts/install.sh` — idempotent, Ubuntu/WSL, installs Python 3.12+, Node 22+, PostgreSQL 16, Redis, uv
+- Frontend builds to `../backend/src/public` via `npm run build` (vite.config.ts outDir)
+- WSL detection: `grep -qiE '(microsoft|wsl)' /proc/version` — use `service` instead of `systemctl`
 ---
 
 ## 2026-02-18 - US-001
@@ -45,4 +51,31 @@
   - `llm.py` and `schedule.py` already had TaskIQ imports inside `if DISTRIBUTED_WORKERS:` blocks — no changes needed there
   - Worker test files (`tests/unit/workers/`) still import TaskIQ directly — they'll naturally fail if taskiq isn't installed, which is correct behavior
   - `redis` package (non-taskiq) stays as a core dependency since abort/stream use it regardless of worker mode
+---
+
+## 2026-02-18 - US-003
+- Created local environment configuration: `.env.local.example`, `make local` target, `/api/health` endpoint
+- Files changed:
+  - `backend/.env.local.example` — new file with all local deployment env vars documented (BACKEND_TYPE=filesystem, DISTRIBUTED_WORKERS=false, PostgreSQL, LLM keys, etc.)
+  - `Makefile` — added `local` target that runs backend with `~/.env/orchestra/.env.backend.local`
+  - `backend/src/routes/v0/info.py` — new file with `GET /api/health` returning status, version, mode, workspace, environment
+  - `.gitignore` — added `!**/.env*.example` negation so example env files can be committed
+- **Learnings for future iterations:**
+  - `.gitignore` has `**/.env*` which blocks ALL dotenv files including examples — must add negation pattern `!**/.env*.example`
+  - `backend/src/routes/v0/__init__.py` imports `from .info import router as info` — this file was missing and needed to be created
+  - Root Makefile `local` target uses `cd backend &&` to run from the backend dir (uvicorn needs to find `main:app`)
+  - The `info` router is included with `/api` prefix, so health endpoint is at `/api/health`
+---
+
+## 2026-02-18 - US-004
+- Created install script for Ubuntu/WSL at `scripts/install.sh`
+- Files changed:
+  - `scripts/install.sh` — new idempotent install script with OS detection, dependency installation, repo clone, backend/frontend setup, env generation, database setup, and verification
+- **Learnings for future iterations:**
+  - Frontend builds to `../backend/src/public` (vite.config.ts outDir) — install script must run `npm run build` from frontend dir
+  - PostgreSQL on WSL needs `pg_ctlcluster` or `service` instead of `systemctl` — detect WSL via /proc/version
+  - User seeder accepts `--env-file` parameter: `uv run python -m seeds.user_seeder --env-file <path>`
+  - Alembic migrations in `backend/migrations/env.py` include `ensure_database_exists()` — auto-creates DB if missing
+  - `uv sync` (without extras) skips optional `distributed` deps — correct for local mode
+  - Default credentials: admin@example.com / test1234, user@example.com / test1234
 ---
