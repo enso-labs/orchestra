@@ -84,6 +84,7 @@ def attach_tool_details(tool: StructuredTool):
     from src.tools.test import TEST_TOOLS
     from src.tools.finance import FINANCE_TOOLS
     from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
+    from src.tools.thread_search import THREAD_SEARCH_TOOLS
 
     if tool.name in [n.name for n in SEARCH_TOOLS]:
         tool.tags = ["search"]
@@ -95,6 +96,8 @@ def attach_tool_details(tool: StructuredTool):
         tool.tags = ["test"]
     if tool.name in [n.name for n in FINANCE_TOOLS]:
         tool.tags = ["finance"]
+    if tool.name in [n.name for n in THREAD_SEARCH_TOOLS]:
+        tool.tags = ["threads"]
     return tool
 
 
