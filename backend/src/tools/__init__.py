@@ -9,6 +9,7 @@ from src.tools.ms_teams import MICROSOFT_TEAMS_TOOLS
 from src.tools.api import API_TOOLS
 from src.tools.bash_tool import BASH_TOOLS
 from src.tools.memory import MEMORY_TOOLS
+from src.tools.thread_search import THREAD_SEARCH_TOOLS
 
 
 def default_tools() -> list[BaseTool]:
@@ -17,6 +18,7 @@ def default_tools() -> list[BaseTool]:
         *PYTHON_CODE_INTERPRETER_TOOLS,
         *FINANCE_TOOLS,
         *MEMORY_TOOLS,
+        *THREAD_SEARCH_TOOLS,
     ]
     if APP_ENV == "test":
         default_tools.extend(TEST_TOOLS)
