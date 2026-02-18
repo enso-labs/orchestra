@@ -1,14 +1,12 @@
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
 
-from src.schemas.entities import SearchFilter
+from src.schemas.entities import SearchFilter, Thread
 from src.services.thread import ThreadService
 from src.utils.logger import logger
 
-thread_service = ThreadService()
 
-
-def _extract_excerpt(thread) -> str:
+def _extract_excerpt(thread: Thread) -> str:
     """Extract a short excerpt from the last message in a thread."""
     if not thread.messages:
         return ""
@@ -38,11 +36,12 @@ async def search_threads(query: str, config: RunnableConfig, limit: int = 5) -> 
         raise ValueError("User ID is required to search threads.")
 
     try:
-        thread_service.user_id = user_id
-        thread_service.thread_repo.user_id = user_id
+        service = ThreadService()
+        service.user_id = user_id
+        service.thread_repo.user_id = user_id
 
         search_filter = SearchFilter(query=query, limit=limit)
-        results = await thread_service.search(search_filter)
+        results = await service.search(search_filter)
 
         formatted = []
         for thread in results:
