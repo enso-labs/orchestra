@@ -1,8 +1,16 @@
 ## Codebase Patterns
 - Docker build: `backend/Dockerfile` — 2-stage (builder compiles .py→.pyc then deletes .py, runtime copies result)
-- `.dockerignore` at `backend/.dockerignore` — excludes seeds/, scripts/, tests/ from build context
-- The find-delete command excludes migrations/ but NOT seeds/: `find /app -type f -name "*.py" ! -path "/app/migrations/*" -delete`
+- `.dockerignore` at `backend/.dockerignore` — excludes scripts/, tests/ from build context (seeds now included)
+- The find-delete command excludes migrations/ AND seeds/: `find /app -type f -name "*.py" ! -path "/app/migrations/*" ! -path "/app/seeds/*" -delete`
 - Seeds at `backend/seeds/` — memory_seeder.py, user_seeder.py
 - Build script: `backend/scripts/build.sh`
 - Registry: `ghcr.io/ruska-ai/orchestra`
+---
+
+## 2026-02-18 - US-001
+- What was implemented: Removed `**/seeds` from `backend/.dockerignore` and added `! -path "/app/seeds/*"` to the Dockerfile find-delete command, so seeds directory is included in Docker builds and .py source files are preserved.
+- Files changed: `backend/.dockerignore`, `backend/Dockerfile`
+- **Learnings for future iterations:**
+  - The Dockerfile uses a 2-stage build where .py files are compiled to .pyc then deleted — any directory needing .py source must be excluded in the find-delete command
+  - `.dockerignore` and `Dockerfile` find-delete are two separate gates — both must be updated to include new directories
 ---

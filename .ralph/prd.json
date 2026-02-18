@@ -15,7 +15,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Two changes: 1) .dockerignore line removal, 2) Dockerfile find command update"
     },
     {
