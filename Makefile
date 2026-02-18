@@ -1,4 +1,4 @@
-.PHONY: update-submodules ralph archive setup
+.PHONY: update-submodules ralph archive setup local
 
 ENV ?= dev
 MAX_ITERATIONS ?= 200
@@ -25,6 +25,10 @@ setup:
 # Run the Ralph autonomous agent loop using Claude Code
 ralph:
 	@unset CLAUDECODE; bash .ralph/ralph.sh $(MAX_ITERATIONS)
+
+# Start Orchestra in local mode with filesystem backend
+local:
+	cd backend && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug --env-file $(HOME)/.env/orchestra/.env.backend.local
 
 # Archive current prd.json and progress.txt into dated directory
 archive:

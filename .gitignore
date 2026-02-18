@@ -1,4 +1,5 @@
 **/.env*
+!**/.env*.example
 **/.venv
 **/data/
 **/sandbox/graphs/*
