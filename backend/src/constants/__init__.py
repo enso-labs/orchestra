@@ -130,6 +130,10 @@ MICROSOFT_TEAMS_WEBHOOK_URL = os.getenv("MICROSOFT_TEAMS_WEBHOOK_URL")
 # Distributed Workers
 DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
 
+# Sandbox Backend
+BACKEND_TYPE = os.getenv("BACKEND_TYPE", "auto")  # options: filesystem, daytona, state, auto
+WORKSPACE_ROOT = os.getenv("WORKSPACE_ROOT", os.path.expanduser("~/.ruska/workspace/"))
+
 # Thread Search
 # Number of recent messages to store per thread snapshot for semantic search
 THREAD_SNAPSHOT_MESSAGE_COUNT = 20

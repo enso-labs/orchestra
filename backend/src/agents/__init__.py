@@ -15,7 +15,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.cache.memory import InMemoryCache
 from deepagents import SubAgent, create_deep_agent
-from deepagents.backends import CompositeBackend, StateBackend
+from deepagents.backends import CompositeBackend, FilesystemBackend, StateBackend
 from deepagents.backends.utils import create_file_data
 
 
@@ -28,7 +28,7 @@ except ImportError:
     DaytonaConfig = None  # type: ignore[assignment,misc]
     DaytonaSandbox = None  # type: ignore[assignment,misc]
 
-from src.constants import APP_ENV, DAYTONA_API_KEY
+from src.constants import APP_ENV, BACKEND_TYPE, DAYTONA_API_KEY, WORKSPACE_ROOT
 from src.contexts.service import ServiceContext
 from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
 from src.schemas.entities.llm import Assistant, LLMInput
@@ -294,9 +294,23 @@ def _create_state_backend(
     return backend, None
 
 
+def _create_filesystem_backend(
+    runtime: ToolRuntime,
+) -> tuple[CompositeBackend, None]:
+    """Create a FilesystemBackend-backed CompositeBackend using WORKSPACE_ROOT."""
+    from pathlib import Path
+
+    workspace = Path(WORKSPACE_ROOT)
+    workspace.mkdir(parents=True, exist_ok=True)
+    fs_backend = FilesystemBackend(root_dir=workspace)
+    backend = CompositeBackend(default=fs_backend, routes={})
+    return backend, None
+
+
 _SANDBOX_FACTORIES: dict[str, Callable] = {
     "daytona": _create_daytona_backend_checked,
     "state": _create_state_backend,
+    "filesystem": _create_filesystem_backend,
 }
 
 
@@ -304,20 +318,29 @@ def resolve_sandbox_backend(
     runtime: ToolRuntime,
     sandbox_type: str | None = None,
 ) -> tuple[CompositeBackend, Any]:
-    """Resolve a sandbox backend based on *sandbox_type*.
+    """Resolve a sandbox backend based on *sandbox_type* and BACKEND_TYPE env var.
 
     Dispatch rules:
-    * ``None`` / ``"auto"`` — try Daytona first, fall back to State.
+    * ``"filesystem"`` — use FilesystemBackend with WORKSPACE_ROOT.
     * ``"state"`` — use StateBackend directly (never attempts Daytona).
     * ``"daytona"`` — try Daytona, fall back to State if unavailable.
+    * ``None`` / ``"auto"`` — try Daytona first, fall back to State.
     * Any unknown value — treated as ``"auto"``.
+
+    The *sandbox_type* parameter takes precedence. When not provided (or
+    ``None``), the ``BACKEND_TYPE`` env var is consulted.
 
     Returns ``(backend, daytona_sandbox_or_None)``.
     """
-    effective = sandbox_type if sandbox_type in _SANDBOX_FACTORIES else None
+    effective = sandbox_type or BACKEND_TYPE
+    if effective not in _SANDBOX_FACTORIES:
+        effective = None
 
     if effective == "state":
         return _create_state_backend(runtime)
+
+    if effective == "filesystem":
+        return _create_filesystem_backend(runtime)
 
     # "daytona" or auto (None) — try Daytona first
     result = _create_daytona_backend_checked(runtime)
