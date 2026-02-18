@@ -1,11 +1,67 @@
 ## Codebase Patterns
 - Tools defined as `@tool` decorated functions in `backend/src/tools/`
 - Each tool module exports a `*_TOOLS` list (e.g., `SEARCH_TOOLS`, `FINANCE_TOOLS`)
-- Tools registered in `backend/src/utils/tools.py` via `resolve_tool()` function
+- Tools registered in `backend/src/tools/__init__.py` via `default_tools()` (no `resolve_tool()` function exists)
+- Tags assigned in `backend/src/utils/tools.py` `attach_tool_details()` function
 - Tool pattern: accept `RunnableConfig` for user context, use `config["configurable"]` for user_id
 - Memory tool at `backend/src/tools/memory.py` — good reference for store-based tools
 - Thread search endpoint at `backend/src/routes/v0/thread.py` — `semantic_search_threads()` uses `thread_snapshot_repo.search()`
-- `ServiceContext` provides `thread_service` which has `thread_snapshot_repo`
+- `ServiceContext` provides `thread_service` which has `thread_repo` (not `thread_snapshot_repo` — that attribute doesn't exist on ThreadService)
+- `ThreadService` singleton pattern: create module-level instance, set `user_id` at call time (same as memory_service)
+- `ThreadRepo.search(SearchFilter)` returns `Thread` pydantic models when query is provided, dict otherwise
 - Platform tools fetched via GET `/tools` endpoint → `ToolService.tool_details()`
 - Frontend `ToolSelectionModal` fetches from `listTools()` in `toolService.ts`
+- Frontend platform tools are 100% dynamic from API — no frontend changes needed for new backend tools
+---
+
+## 2026-02-18 - US-001
+- Implemented `search_threads` tool in `backend/src/tools/thread_search.py`
+- Uses `ThreadService` singleton pattern (like memory.py), sets user_id from RunnableConfig
+- Calls `thread_service.search(SearchFilter(query=..., limit=...))` for semantic search
+- Returns formatted results: thread_id, title, excerpt (last message content[:200]), score
+- Exports `THREAD_SEARCH_TOOLS` list
+- Files changed: `backend/src/tools/thread_search.py` (new)
+- **Learnings for future iterations:**
+  - The route `semantic_search_threads` references `thread_service.thread_snapshot_repo.search()` but `ThreadService` doesn't have a `thread_snapshot_repo` attribute — it has `thread_repo`
+  - `ThreadRepo.search()` takes a `SearchFilter` (not keyword args like query/limit/assistant_id)
+  - When query is provided, `ThreadRepo.search()` returns `Thread` pydantic models (with `.id`, `.title`, `.messages`, `.score`, etc.)
+  - When no query, it returns raw dicts sorted by `updated_at`
+  - Module-level singleton services (like `memory_service`) use `get_store_in_memory()` as default store; the actual DB store gets set at runtime via the agent pipeline
+---
+
+## 2026-02-18 - US-002
+- Registered `THREAD_SEARCH_TOOLS` in `backend/src/tools/__init__.py` — added import and included in `default_tools()`
+- Added `threads` tag in `attach_tool_details()` in `backend/src/utils/tools.py`
+- Files changed: `backend/src/tools/__init__.py`, `backend/src/utils/tools.py`
+- **Learnings for future iterations:**
+  - There is no `resolve_tool()` function — the PRD AC was inaccurate
+  - Tool registration happens in `backend/src/tools/__init__.py` `default_tools()` function
+  - `attach_tool_details()` in `utils/tools.py` assigns tags (used for frontend grouping)
+  - `ToolService.tool_details()` iterates over `init_tool_library()` results
+---
+
+## 2026-02-18 - US-003
+- Enhanced `search_threads` tool with graceful error handling (try/except returns `[]` on error)
+- Extracted `_extract_excerpt()` helper for cleaner code
+- Tool follows same ServiceContext pattern as memory.py — module-level singleton, set user_id from RunnableConfig
+- Works within `construct_agent()` pipeline as tools are passed via `default_tools()` → `init_tool_library()`
+- Files changed: `backend/src/tools/thread_search.py`
+- **Learnings for future iterations:**
+  - The ServiceContext pattern for tools in this codebase = module-level singleton service + set user_id at call time
+  - Error handling in tools should return empty results rather than raise (prevents agent loops)
+  - `ThreadRepo.search()` already has its own retry/error handling via `@retry_db_operation` decorator
+---
+
+## 2026-02-18 - US-004
+- No frontend code changes needed — tool appears automatically via `/tools` API endpoint
+- Backend `ToolService.tool_details()` iterates `init_tool_library()` which includes `THREAD_SEARCH_TOOLS`
+- Frontend `PlatformToolsPanel` dynamically renders all tools from API with no filtering
+- Tool has name (`search_threads`), description, and tags (`["threads"]`) from backend registration
+- `FALLBACK_TOOLS` (unauthenticated) doesn't include `search_threads` — appropriate since it requires user_id
+- Frontend TypeScript typecheck passes (no TS changes)
+- Files changed: none (frontend is fully dynamic)
+- **Learnings for future iterations:**
+  - Platform tools in frontend are 100% dynamic — no frontend changes needed to add new backend tools
+  - Only `FALLBACK_TOOLS` in `ToolSelectionModal/index.tsx` is hardcoded (for unauthenticated users)
+  - `CustomToolsPanel` filters for `"api_tool"` tag — platform tools use different tags
 ---
