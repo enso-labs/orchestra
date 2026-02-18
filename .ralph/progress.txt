@@ -14,3 +14,10 @@
   - The Dockerfile uses a 2-stage build where .py files are compiled to .pyc then deleted — any directory needing .py source must be excluded in the find-delete command
   - `.dockerignore` and `Dockerfile` find-delete are two separate gates — both must be updated to include new directories
 ---
+
+## 2026-02-18 - US-002
+- What was implemented: Verified workspace clean, committed all changes, and pushed to remote branch `feat/787-migrate-memories-seeder`.
+- Files changed: `.ralph/prd.json`, `.ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Always commit Ralph tracking files (prd.json, progress.txt) before pushing
+---
