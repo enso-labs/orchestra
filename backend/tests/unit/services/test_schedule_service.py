@@ -5,6 +5,8 @@ from uuid import UUID
 
 import pytest
 
+pytest.importorskip("taskiq_redis", reason="taskiq-redis not installed (distributed extra)")
+
 from src.services.schedule import scheduled_llm_invoke
 
 

@@ -9,6 +9,8 @@ import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from uuid import uuid4
 
+pytest.importorskip("taskiq_redis", reason="taskiq-redis not installed (distributed extra)")
+
 
 class TestLLMStreamWithDistributedWorkers:
     """Tests for POST /llm/stream when DISTRIBUTED_WORKERS=true."""

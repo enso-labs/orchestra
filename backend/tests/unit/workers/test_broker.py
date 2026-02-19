@@ -3,6 +3,10 @@
 Phase 3-4 TDD: Tests for broker configuration ensuring proper setup.
 """
 
+import pytest
+
+pytest.importorskip("taskiq_redis", reason="taskiq-redis not installed (distributed extra)")
+
 
 class TestBrokerConfiguration:
     """Tests for broker configuration."""

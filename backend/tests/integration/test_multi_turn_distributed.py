@@ -13,6 +13,8 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from uuid import uuid4
 
+pytest.importorskip("taskiq_redis", reason="taskiq-redis not installed (distributed extra)")
+
 
 class TestMultiTurnContextPreservation:
     """Tests for context preservation across multiple turns."""

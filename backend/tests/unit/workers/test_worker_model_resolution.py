@@ -14,6 +14,8 @@ Covers:
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+pytest.importorskip("taskiq_redis", reason="taskiq-redis not installed (distributed extra)")
+
 from src.constants.llm import DEFAULT_CHAT_MODEL
 from src.schemas.entities import LLMRequest
 

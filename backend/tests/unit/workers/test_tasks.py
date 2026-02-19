@@ -6,6 +6,8 @@ Phase 3-4 TDD: Tests for task definitions ensuring proper registration and behav
 import pytest
 from uuid import uuid4
 
+pytest.importorskip("taskiq_redis", reason="taskiq-redis not installed (distributed extra)")
+
 
 class TestRunAgentStreamTask:
     """Tests for the run_agent_stream task."""
