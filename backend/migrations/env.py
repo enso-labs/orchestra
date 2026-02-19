@@ -74,7 +74,10 @@ except RuntimeError:
     asyncio.run(ensure_database_exists(DB_URI))
 
 config = context.config
-config.set_main_option("sqlalchemy.url", DB_URI)
+
+# Alembic runs migrations synchronously — use psycopg2 driver instead of asyncpg
+SYNC_DB_URI = DB_URI.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+config.set_main_option("sqlalchemy.url", SYNC_DB_URI)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

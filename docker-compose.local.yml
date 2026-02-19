@@ -1,45 +1,93 @@
 ##############################################
-## Orchestra Local VM Test Environment
+## Orchestra Local — Lightweight deployment
 ##
-## Simulates an Ubuntu VM with all services
-## bundled in a single container.
+## Two-service stack: Postgres + Orchestra
+## No Redis required (DISTRIBUTED_WORKERS=false)
 ##
 ## Usage:
-##   docker compose -f docker-compose.local.yml up
 ##   docker compose -f docker-compose.local.yml up --build
+##
+## First boot (run migrations + seed users):
+##   RUN_MIGRATIONS=true SEED_USERS=true docker compose -f docker-compose.local.yml up --build
+##
+## Configure credentials (creates .env.docker from template):
+##   make docker.configure
 ##
 ## Access:
 ##   Backend API:  http://localhost:8000
-##   Swagger Docs: http://localhost:8000/api
+##   Swagger Docs: http://localhost:8000/docs
 ##   Health Check: http://localhost:8000/api/health
 ##
-## Default Credentials:
+## Default Credentials (after seeding):
 ##   Admin: admin@example.com / test1234
 ##   User:  user@example.com  / test1234
 ##############################################
 
 services:
+    postgres:
+        image: pgvector/pgvector:pg16
+        container_name: orchestra-postgres
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: orchestra
+        volumes:
+            - orchestra_pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 3s
+            retries: 5
+        restart: unless-stopped
+
     orchestra:
         build:
             context: .
-            dockerfile: docker/Dockerfile.local
+            dockerfile: docker/Dockerfile
         container_name: orchestra-local
         ports:
             - "8000:8000"
-        volumes:
-            - orchestra_workspace:/root/.ruska/workspace
-            - orchestra_pgdata:/var/lib/postgresql/16/main
+        depends_on:
+            postgres:
+                condition: service_healthy
+        env_file:
+            - path: .env.docker
+              required: false
         environment:
-            - BACKEND_TYPE=filesystem
-            - DISTRIBUTED_WORKERS=false
+            # Database
+            POSTGRES_CONNECTION_STRING: postgresql://postgres:postgres@postgres:5432/orchestra
+            POSTGRES_HOST: postgres
+            POSTGRES_PORT: 5432
+            # App
+            HOST: 0.0.0.0
+            PORT: 8000
+            LOG_LEVEL: info
+            APP_ENV: production
+            BACKEND_TYPE: filesystem
+            DISTRIBUTED_WORKERS: "false"
+            # Auth
+            JWT_SECRET_KEY: ${JWT_SECRET_KEY:-docker-local-secret}
+            APP_SECRET_KEY: ${APP_SECRET_KEY:-docker-local-secret}
+            # Migrations / seeding (set from host env)
+            RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+            SEED_USERS: ${SEED_USERS:-false}
+            # LLM keys (forwarded from host or .env.docker)
+            ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+            OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+            GROQ_API_KEY: ${GROQ_API_KEY:-}
+            GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+            GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+            XAI_API_KEY: ${XAI_API_KEY:-}
+            OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
         restart: unless-stopped
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
             interval: 30s
             timeout: 5s
-            start_period: 60s
+            start_period: 30s
             retries: 3
 
 volumes:
-    orchestra_workspace:
     orchestra_pgdata:

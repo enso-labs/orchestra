@@ -1,0 +1,34 @@
+# Virtual environments
+**/.venv/
+**/node_modules/
+
+# Git
+**/.git
+**/.gitignore
+
+# IDE
+**/.vscode/
+**/.cursor/
+**/.claude/
+**/.plans/
+**/.backups/
+
+# Tests & dev
+**/tests/
+**/__pycache__/
+**/.pytest_cache/
+**/*.ipynb
+**/.DS_Store
+
+# Worktrees
+.worktrees/
+
+# Wiki / website / sandboxes (not needed for Orchestra image)
+wiki/
+website/
+sandboxes/
+
+# Docker files (don't copy Dockerfiles into the image context recursively)
+**/Dockerfile*
+**/.dockerignore
+docker/local/
