@@ -1,150 +1,202 @@
-# Plan: Ruska AI 1-Page Handout
+# Plan: Revise Slide Deck to Mirror Services Page
 
 ## Context
 
-The slide deck at `docs/slides/index.html` was just rewritten with a business-services story (12 slides). For Build Night, we also need a **take-home 1-pager** that people can scan after the pitch. The top section distills the presentation into a compact layout. The bottom section shows a screenshot from `chat.ruska.ai/chat` demonstrating Orchestra in action.
+The current slide deck (`docs/slides/index.html`) is developer/open-source focused (Architecture, Quick Start, `make` commands, "Star on GitHub"). The business is selling **AI automation services** — the deck should mirror `ruska.ai/services` and tell a business-services story: Problem, Solution, Services, Credibility, CTA.
 
-**Output**: `docs/slides/onepager.html` — a static HTML page designed for Letter-size print.
+**Use case**: 1-minute pitch at a local Build Night. No pricing on slides — direct people to `ruska.ai/services` or the discovery call for details.
 
----
-
-## Page Layout
-
-```
-+----------------------------------------------------------+
-| [HEADER] Logo + "Ruska AI" + Tagline + Badge + 3 Pills  |
-|----------------------------------------------------------|
-| [WHAT I DO]  Identify  |  Build  |  Maintain   (3 cols) |
-|----------------------------------------------------------|
-| [INCLUDED]  6 services in 3x2 compact grid               |
-|----------------------------------------------------------|
-| [HOW IT WORKS]  Step 1 → Step 2 → Step 3  (horizontal)  |
-|----------------------------------------------------------|
-| [TECH] 12 tech pills in 2 rows (green AI / purple infra) |
-|----------------------------------------------------------|
-| [TRUST] "You Own Everything" | "Full Transparency"       |
-|         Ryan Eggleston, Founder                          |
-|----------------------------------------------------------|
-| [CTA BAR]  cal.com/ruska-ai/ai-audit  |  ruska.ai/services  |  reggleston@ruska.ai |
-|----------------------------------------------------------|
-| [SCREENSHOT]  Orchestra chat conversation                |
-|   caption: "Orchestra — AI Agent Platform | chat.ruska.ai"|
-+----------------------------------------------------------+
-```
-
-### What's kept vs. dropped from the 12 slides
-
-| Slide | Keep? | Reason |
-|-------|-------|--------|
-| 1-2 Title | **Header block** | Brand identity + trust pills |
-| 3 Problem | **Drop** | Attendee already heard the pitch — space is precious |
-| 4 What I Do | **3-col row** | Core value prop in 3 words |
-| 5 Automation in Action | **Drop** | Mermaid diagrams don't work in print |
-| 6 What's Included | **3x2 grid** | Concrete deliverables |
-| 7 What Can Be Automated | **Drop** | Overlaps with services; screenshot demos capability |
-| 8 Tech Ecosystem | **Pill rows** | Visual credibility signal |
-| 9 How It Works | **3-step row** | Clear engagement path |
-| 10 Trust | **2-col block** | Differentiators |
-| 11 CTA | **Footer bar** | Actionable URLs (plain text for print) |
-| 12 Thank You | **Drop** | Not needed on paper |
+Additionally, the logo on the title slides is offset to the left due to a CSS conflict.
 
 ---
 
-## Implementation Steps
+## Bug Fix: Logo Centering
 
-### Step 1: Capture the chat screenshot
+**Root cause**: `display: block` (Tailwind `block` class) on the `<img>` prevents reveal.js's `text-align: center` from centering the image. `mx-auto` alone isn't sufficient within reveal.js sections.
 
-Use `agent-browser` to log into `chat.ruska.ai/chat` as `admin@example.com` / `test1234`:
+**Fix**: Remove `block` from the class list on both title slide `<img>` elements (lines 116 and 130).
 
-1. `agent-browser set viewport 1200 800`
-2. Navigate to `chat.ruska.ai/chat`, log in
-3. Send a short message: **"What is Orchestra?"**
-4. Wait for complete response
-5. Screenshot to `docs/slides/screenshots/orchestra-chat.png`
-6. Verify: dark theme, readable, concise 1-message exchange
+---
 
-### Step 2: Create `docs/slides/onepager.html`
+## New Slide Structure (12 slides, same count)
 
-**Tech stack** (reuse from `index.html`):
-- Tailwind CDN + same `tailwind.config` (colors, fonts)
-- Google Fonts: Montserrat + Space Grotesk
-- No JavaScript — pure HTML+CSS
+| # | Current | New | Action |
+|---|---------|-----|--------|
+| 1 | Title (Open-Source, Apache 2.0) | Title (Accepting New Clients) | MODIFY |
+| 2 | Title Expanded (tech pills) | Title Expanded (trust pills) | MODIFY |
+| 3 | The Challenge (dev pain) | The Problem (business pain) | MODIFY |
+| 4 | Orchestra Solves This (LangGraph/MCP/A2A) | What I Do (Identify / Build / Maintain) | MODIFY |
+| 5 | Architecture (nested: backend/frontend/mermaid) | Automation in Action (nested: mermaid workflow, engagement model, pipeline diagram) | MODIFY |
+| 6 | Key Features (check-list) | What's Included (6 services) | MODIFY |
+| 7 | Quick Start (nested: clone/docker/backend/frontend) | What Can Be Automated (nested: intro + 6-category grid) | MODIFY |
+| 8 | Dev Commands | Tech Ecosystem (pill badges) | MODIFY |
+| 9 | Documentation (3 link cards) | How It Works (3-step cards, no pricing) | MODIFY |
+| 10 | CTA (Star GitHub) | Trust & Credibility (You Own Everything / Full Transparency) | MODIFY |
+| 11 | Thank You | Thank You | KEEP |
+| 12 | Thank You Expanded | Thank You (updated links) | MODIFY |
 
-**Print CSS**:
-```css
-@page { size: letter; margin: 0.4in; }
-@media print {
-  body {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-}
-```
+---
 
-**Font sizes** (compact for 1-page fit):
-- Company name: `text-2xl` (24px)
-- Section headings: `text-xs` uppercase tracking-widest
-- Body text: `text-[10px]` to `text-[11px]`
-- Pills/badges: `text-[9px]`
+## Slide Content Details
 
-**Design tokens** — copy from `docs/slides/index.html`:
-- Tailwind config block (lines 11-32)
-- Color scheme: `#09090b` bg, `#22c55e` green, `#4ade80` green-muted, `#a855f7` purple
-- Card pattern: `bg-card border border-[#27272a] rounded-xl`
-- Trust block pattern: `border-green-accent/30 bg-green-accent/5`
-- Badge: static green dot (no animation for print) + "Accepting New Clients"
-- SVG icons for Identify/Build/Maintain: copy from `index.html` lines 172-196
+### Slide 1 — Title (auto-animate, hero-bg)
+- Logo (centered, `block` class removed)
+- Badge: pulsing green dot + **"Accepting New Clients"** (replaces GitHub icon + "Open-Source - Apache 2.0")
+- H1: **"Ruska AI"** (replaces "Orchestra")
+- P: **"AI Automation Built & Maintained For Your Business"**
 
-**Sections** (top to bottom, each separated by `border-b border-[#27272a]`):
+### Slide 2 — Title Expanded (auto-animate, hero-bg)
+- Same logo (smaller), badge, H1, P
+- Pills: **"Enterprise-Grade" | "Not Vibe Coded" | "You Own Everything"** (replaces Self-hosted/LangGraph/MCP/A2A)
+- Links: `ruska.ai` | `ruska.ai/services` | `cal.com/ruska-ai/ai-audit`
 
-1. **Header** (~0.8in) — logo inline with h1 + badge, tagline, 3 trust pills
-2. **What I Do** (~0.7in) — `grid grid-cols-3`, icon + label + 1-liner per card
-3. **What's Included** (~0.5in) — `grid grid-cols-3`, green checkmark + service name (no timelines)
-4. **How It Works** (~0.6in) — 3 numbered steps with arrow separators, step 1 green-highlighted
-5. **Tech Ecosystem** (~0.4in) — 2 rows of pills (green AI row, purple infra row)
-6. **Trust** (~0.4in) — 2-col trust cards + "Ryan Eggleston, Founder"
-7. **CTA Bar** (~0.3in) — green-gradient strip with 3 plaintext URLs
-8. **Screenshot** (remaining ~3-4in) — `orchestra-chat.png` full-width with caption
+### Slide 3 — The Problem (zoom transition)
+- H2: "The Problem"
+- P: "AI is moving too fast for most businesses to keep up."
+- Check-list (fragments):
+  - New AI tools every week — you don't know which to trust
+  - No in-house AI or security expertise
+  - Most "AI solutions" are vibe-coded prototypes that break in production
+  - You need automation that works reliably, not impressive demos
+- Closing: "You need a trusted partner. **That's where I come in.**" (green accent)
 
-### Step 3: Verify
+### Slide 4 — What I Do (3 cards)
+- H2: "What I Do"
+- Three cards with icons (reuse existing card pattern):
+  1. **Identify** — Map workflows, find automation opportunities
+  2. **Build** — Production-ready systems with proven AI tools
+  3. **Maintain** — Monitor, improve, add automations as you grow
+- Closing: "Real automation systems, not chatbots. Built with battle-tested tools."
+
+### Slide 5 — Automation in Action (nested vertical)
+- **5a Parent**: H2 "Automation in Action" + "Press down arrow for details"
+- **5b Mermaid workflow** (replaces Backend Stack):
+  ```
+  graph TD
+    T["Trigger Detected"] --> AI["AI Agent Processing"]
+    AI --> CRM["CRM Updated"]
+    CRM --> R["Resolved in 30s"]
+  ```
+- **5c Engagement Model YAML** (replaces Frontend Stack):
+  ```yaml
+  engagement:
+    step_1: Discovery Call (free, 30 min)
+    step_2: Custom Setup (2-4 weeks)
+    step_3: Ongoing Retainer (monthly)
+    ownership: You own everything
+  ```
+- **5d Pipeline Mermaid** (replaces Full Stack Overview):
+  ```
+  graph LR
+    D["Discovery Call"] --> S["Custom Setup"]
+    S --> R["Retainer"]
+    R -->|Continuous| I["Improvement"]
+    I --> R
+  ```
+
+### Slide 6 — What's Included (check-list)
+- H2: "What's Included"
+- 6 services as check-list items (fragment fade-up):
+  - **Custom Automation Setup** — 2-4 weeks
+  - **Workflow Integration** — 1-2 weeks
+  - **Monitoring & Analytics** — 1 week
+  - **Security & Data Privacy** — 1-2 weeks
+  - **Infrastructure Management** — Ongoing
+  - **Continuous Improvement** — Ongoing
+
+### Slide 7 — What Can Be Automated (nested vertical)
+- **7a Parent**: H2 + "If you spend 10+ hours/week on repetitive work, it can probably be automated."
+- **7b Grid**: 6 cards (3x2 flex layout, existing card pattern):
+  - Customer Support, Data Processing, Lead Management
+  - Property Management, Content Operations, Internal Ops
+
+### Slide 8 — Tech Ecosystem (pill badges)
+- H2: "Our Technology Ecosystem"
+- P: "We integrate with tools you already know and trust"
+- Two rows of pills (green-accent border/bg pattern):
+  - Claude Code | OpenClaw | Orchestra | Anthropic Claude | LangGraph | MCP
+  - Python | Docker | Supabase | Next.js | PostgreSQL | Tailwind CSS
+
+### Slide 9 — How It Works (3-step cards, no pricing)
+- H2: "How It Works"
+- Three cards (fragment fade-up):
+  1. **Discovery Call** (green border highlight) — "Map your workflows and identify what's worth automating. Free. 30 min."
+  2. **Custom Setup** — "I build your automation system with proven AI tools. Typically 2-4 weeks."
+  3. **Ongoing Retainer** — "I maintain, improve, and add new automations as your needs evolve."
+- P: "Details at ruska.ai/services"
+
+### Slide 10 — Trust & Credibility
+- H2: "Why Ruska AI"
+- Two green-border trust cards (fragment fade-up):
+  1. **"You Own Everything"** — No lock-in, no hostage data
+  2. **"Full Transparency"** — Regular updates, full visibility, no surprise invoices
+- Founder line: "Ryan Eggleston. Shipping production software long before AI wrote its first line of code."
+
+### Slide 11 — CTA (gradient background, zoom transition)
+- H2: "Ready to **automate**?" (green accent on "automate")
+- Primary btn: **"Book a Discovery Call"** -> `https://cal.com/ruska-ai/ai-audit`
+- Secondary btn: **"Visit ruska.ai/services"** -> `https://ruska.ai/services`
+- P: "Free 30-minute call. No pressure. No commitment."
+- P: "Or email: reggleston@ruska.ai"
+
+### Slide 12 — Thank You (auto-animate pair)
+- Keep slide 12a as-is
+- Update 12b links: `ruska.ai` | `ruska.ai/services` | `cal.com/ruska-ai/ai-audit`
+
+---
+
+## 1-Minute Pitch Path (Build Night)
+
+For a rapid pitch, advance through only the top-level horizontal slides (skip nested verticals with down-arrow). The key path:
+
+**Slide 1** (Title) -> **2** (Trust pills) -> **3** (Problem) -> **4** (What I Do) -> skip 5-8 -> **9** (How It Works) -> **10** (Trust) -> **11** (CTA)
+
+Slides 5-8 serve as backup/deep-dive content for Q&A or longer presentations.
+
+---
+
+## Also Update
+- `<title>` tag: "Orchestra - AI Agent Orchestration Platform" -> **"Ruska AI - AI Automation Services"**
+
+## What's Preserved (No Changes)
+- All `<head>` imports (fonts, Tailwind, reveal.js, highlight theme)
+- All CSS custom properties and style block
+- Mermaid initialization with dark theme + Montserrat
+- Reveal.js config (hash, progress, transitions, plugins)
+- Logo image path: `images/ruska_logo_200.png`
+
+## Content Source
+- `website/src/app/services/page.tsx` — all copy, pricing, service definitions, trust blocks
+
+---
+
+## Verification (agent-browser)
 
 ```bash
-python -m http.server 8081 --directory docs/slides
-agent-browser open http://localhost:8081/onepager.html
-agent-browser set viewport 850 1100   # ~Letter proportions
-agent-browser screenshot /tmp/onepager-preview.png
-agent-browser pdf docs/slides/screenshots/onepager.pdf
+python -m http.server 8080 --directory docs &
+agent-browser open http://localhost:8080/slides/
+agent-browser set viewport 1920 1080
 ```
 
 | Check | Method |
-|-------|--------|
-| Fits on 1 page | `agent-browser pdf` — verify single page |
-| Dark backgrounds print | PDF has dark bg (print-color-adjust) |
-| Screenshot readable | Visually confirm chat text is legible |
-| All URLs correct | Scan CTA bar for cal.com, ruska.ai, email |
-| Logo loads | Check header renders correctly |
+|---|---|
+| Logo centered | Screenshot title slide, visually confirm centered |
+| No console errors | `agent-browser errors` on title + mermaid slides |
+| Badge says "Accepting New Clients" | `agent-browser snapshot` on slide 1 |
+| Trust pills on slide 2 | snapshot after ArrowRight |
+| Mermaid renders (no raw text) | Navigate to slide 5b, snapshot |
+| CTA links to cal.com | snapshot slide 11 |
+| 12 slides total | Navigate through all |
 
 ---
 
-## Files
+## Implementation Order
 
-| File | Action |
-|------|--------|
-| `docs/slides/onepager.html` | **CREATE** — the 1-pager |
-| `docs/slides/screenshots/orchestra-chat.png` | **CREATE** — captured via agent-browser |
-| `docs/slides/index.html` | READ-ONLY — source for design tokens + SVG icons |
-| `docs/slides/images/ruska_logo_200.png` | READ-ONLY — referenced in header |
-
-## Content Copy
-
-**Header**: "Ruska AI" / "AI Automation Built & Maintained For Your Business" / Accepting New Clients / Enterprise-Grade | Not Vibe Coded | You Own Everything
-
-**What I Do**: Identify (Map workflows, find automation opportunities) / Build (Production-ready systems with proven AI tools) / Maintain (Monitor, improve, add automations as you grow)
-
-**What's Included**: Custom Automation Setup / Workflow Integration / Monitoring & Analytics / Security & Data Privacy / Infrastructure Management / Continuous Improvement
-
-**How It Works**: 1. Discovery Call (Free, 30 min) → 2. Custom Setup (2-4 weeks) → 3. Ongoing Retainer (Monthly)
-
-**Trust**: "You Own Everything" — No lock-in. Your code, your infrastructure, your IP. / "Full Transparency" — Regular updates. No surprise invoices. / Ryan Eggleston, Founder
-
-**CTA**: cal.com/ruska-ai/ai-audit | ruska.ai/services | reggleston@ruska.ai
+1. Fix logo bug (remove `block` from both `<img>` tags)
+2. Update `<title>` tag
+3. Rewrite slides 1-4 (title, problem, solution)
+4. Rewrite slides 5 nested vertical (mermaid workflow + engagement model)
+5. Rewrite slides 6-8 (services, categories, tech)
+6. Rewrite slides 9-10 (how it works, trust)
+7. Rewrite slide 11 CTA + slide 12 links
+8. Verify with agent-browser
