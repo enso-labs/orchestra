@@ -12,14 +12,17 @@ class ThreadService:
         self,
         user_id: str = None,
         assistant_id: str = None,
-        store: BaseStore = get_store_in_memory(),
+        store: BaseStore = None,
         thread_repo: ThreadRepo = None,
     ):
         self.user_id = user_id or TEST_USER_ID
         self.assistant_id = assistant_id
         self.store: BaseStore = store
         self.thread_id = None
-        self.thread_repo = thread_repo or ThreadRepo(self.user_id, store)
+
+        if not store:
+            self.store = get_store_in_memory()
+        self.thread_repo = thread_repo or ThreadRepo(self.user_id, self.store)
 
     async def create(self, thread: Thread):
         return await self.thread_repo.create(thread)
