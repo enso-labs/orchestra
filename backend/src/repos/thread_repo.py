@@ -5,6 +5,7 @@ from src.schemas.entities import SearchFilter
 from src.constants import THREAD_SNAPSHOT_MESSAGE_COUNT
 from src.repos.base_repo import BaseRepo
 from src.schemas.entities.store import Thread
+from src.utils.format import format_content
 from src.utils.logger import logger
 from src.utils.messages import from_message_to_dict
 from src.utils.retry import retry_db_operation
@@ -26,9 +27,16 @@ class ThreadRepo(BaseRepo):
         super().__init__(user_id=user_id, store=store, entity_type="threads")
 
     def _format(self, item: SearchItem) -> Thread:
+        title = item.value.get("title")
+        if not title:
+            messages = item.value.get("messages", [])
+            for msg in reversed(messages):
+                if isinstance(msg, dict) and msg.get("type") in ("human", "user"):
+                    title = format_content(msg.get("content", ""))[:100]
+                    break
         return Thread(
             id=item.key,
-            title=item.value.get("title", None),
+            title=title,
             messages=item.value.get("messages", []),
             files=item.value.get("files", []),
             todos=item.value.get("todos", []),
@@ -42,25 +50,24 @@ class ThreadRepo(BaseRepo):
         search_filter: SearchFilter,
     ) -> list[dict]:
         try:
-            async with self.store as store:
-                if search_filter.query:
-                    queried_threads: list[SearchItem] = await store.asearch(
-                        self._get_namespace(),
-                        limit=search_filter.limit,
-                        filter=search_filter.filter,
-                        query=search_filter.query,
-                    )
-                    return [self._format(thread) for thread in queried_threads]
-                threads = await store.asearch(
+            if search_filter.query:
+                queried_threads: list[SearchItem] = await self.store.asearch(
                     self._get_namespace(),
                     limit=search_filter.limit,
                     filter=search_filter.filter,
+                    query=search_filter.query,
                 )
-                return sorted(
-                    [thread.dict() for thread in threads],
-                    key=lambda x: x.get("updated_at"),
-                    reverse=True,
-                )
+                return [self._format(thread) for thread in queried_threads]
+            threads = await self.store.asearch(
+                self._get_namespace(),
+                limit=search_filter.limit,
+                filter=search_filter.filter,
+            )
+            return sorted(
+                [thread.dict() for thread in threads],
+                key=lambda x: x.get("updated_at"),
+                reverse=True,
+            )
         except Exception as e:
             logger.error(f"Error searching threads: {e}")
             return []

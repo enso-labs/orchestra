@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - feat/787-migrate-memories-seeder (2026-02-18)
+  - feat/801-search-threads-tool (2026-02-18)
   - feat/736-rlm-skill (2026-02-05)
   - feat/722-frontend-schedule-refactor (2026-02-01)
   - feat/724-add-watcher-to-worker-reload (2026-02-01)
