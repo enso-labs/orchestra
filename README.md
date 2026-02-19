@@ -207,7 +207,43 @@ This project uses Alembic for database migrations. Here's how to work with migra
 
 ## 🗺️ Roadmap
 
--   [ ] [Human-In-The-Loop](https://langchain-ai.github.io/langgraph/how-tos/create-react-agent-hitl/#usage)
+Stay up to date on [Discord](https://discord.com/invite/QRfjg4YNzU). Full release history in [Changelog.md](./Changelog.md).
+
+### March 2026
+
+| Feature | Category | Status |
+|---------|----------|--------|
+| Human-In-The-Loop | Agent Control | 🔵 Planned |
+
+### February 2026
+
+| Feature | Category | Status |
+|---------|----------|--------|
+| [Search Threads](https://github.com/ruska-ai/orchestra/issues/801) | UX | ✅ Shipped |
+| [Migrate Memories Seeder](https://github.com/ruska-ai/orchestra/issues/787) | Data | ✅ Shipped |
+| [Docs Agent Guidance](https://github.com/ruska-ai/orchestra/issues/804) | Docs | 🟡 In Progress |
+| [RLM Skill](https://github.com/ruska-ai/orchestra/issues/736) | Skills | ✅ Shipped |
+| [Frontend Schedule Refactor](https://github.com/ruska-ai/orchestra/issues/722) | Scheduling | ✅ Shipped |
+
+### January 2026
+
+| Feature | Category | Status |
+|---------|----------|--------|
+| [Distributed Workers (TaskIQ)](https://github.com/ruska-ai/orchestra/issues/656) | Infra | ✅ Shipped |
+| [Public Agents](https://github.com/ruska-ai/orchestra/issues/471) | Agents | ✅ Shipped |
+| [File Tree Sidebar](https://github.com/ruska-ai/orchestra/issues/650) | UX | ✅ Shipped |
+| [AWS Model Support](https://github.com/ruska-ai/orchestra/issues/666) | Integrations | ✅ Shipped |
+| [Shareable Thread Links](https://github.com/ruska-ai/orchestra/issues/663) | UX | ✅ Shipped |
+| [Subagent Tool Calls](https://github.com/ruska-ai/orchestra/issues/694) | UX | ✅ Shipped |
+| [User Default Settings](https://github.com/ruska-ai/orchestra/issues/665) | Settings | ✅ Shipped |
+| [Speech Dictation](https://github.com/ruska-ai/orchestra/issues/654) | UX | ✅ Shipped |
+
+<details>
+<summary>📦 Archive (Dec 2025 and earlier)</summary>
+
+See [Changelog.md](./Changelog.md) for the full release history.
+
+</details>
 
 ---
 
