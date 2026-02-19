@@ -69,7 +69,7 @@ docker.configure:
 
 # Start the local Docker stack (with migrations + seeding on first boot)
 docker.up:
-	RUN_MIGRATIONS=true SEED_USERS=true docker compose -f docker-compose.local.yml up --build -d
+	RUN_MIGRATIONS=true SEED_USERS=true docker compose -f docker-compose.local.yml up --build -d --force-recreate
 
 # Stop the local Docker stack
 docker.down:
