@@ -15,7 +15,7 @@ from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.cache.memory import InMemoryCache
 from deepagents import SubAgent, create_deep_agent
-from deepagents.backends import CompositeBackend, FilesystemBackend, StateBackend
+from deepagents.backends import CompositeBackend, StateBackend
 from deepagents.backends.utils import create_file_data
 
 
@@ -294,23 +294,24 @@ def _create_state_backend(
     return backend, None
 
 
-def _create_filesystem_backend(
+def _create_local_backend(
     runtime: ToolRuntime,
 ) -> tuple[CompositeBackend, None]:
-    """Create a FilesystemBackend-backed CompositeBackend using WORKSPACE_ROOT."""
+    """Create a LocalSandbox-backed CompositeBackend using WORKSPACE_ROOT."""
     from pathlib import Path
 
-    workspace = Path(WORKSPACE_ROOT)
-    workspace.mkdir(parents=True, exist_ok=True)
-    fs_backend = FilesystemBackend(root_dir=workspace)
-    backend = CompositeBackend(default=fs_backend, routes={})
+    from src.agents.local_sandbox import LocalSandbox
+
+    workspace = Path(WORKSPACE_ROOT).expanduser()
+    local_backend = LocalSandbox(root_dir=workspace)
+    backend = CompositeBackend(default=local_backend, routes={})
     return backend, None
 
 
 _SANDBOX_FACTORIES: dict[str, Callable] = {
     "daytona": _create_daytona_backend_checked,
     "state": _create_state_backend,
-    "filesystem": _create_filesystem_backend,
+    "local": _create_local_backend,
 }
 
 
@@ -321,7 +322,7 @@ def resolve_sandbox_backend(
     """Resolve a sandbox backend based on *sandbox_type* and BACKEND_TYPE env var.
 
     Dispatch rules:
-    * ``"filesystem"`` — use FilesystemBackend with WORKSPACE_ROOT.
+    * ``"local"`` — use LocalSandbox with WORKSPACE_ROOT.
     * ``"state"`` — use StateBackend directly (never attempts Daytona).
     * ``"daytona"`` — try Daytona, fall back to State if unavailable.
     * ``None`` / ``"auto"`` — try Daytona first, fall back to State.
@@ -339,8 +340,8 @@ def resolve_sandbox_backend(
     if effective == "state":
         return _create_state_backend(runtime)
 
-    if effective == "filesystem":
-        return _create_filesystem_backend(runtime)
+    if effective == "local":
+        return _create_local_backend(runtime)
 
     # "daytona" or auto (None) — try Daytona first
     result = _create_daytona_backend_checked(runtime)

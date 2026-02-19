@@ -11,6 +11,15 @@
             "envFile": "/home/ryaneggz/.env/orchestra/.env.backend"
         },
         {
+            "name": "Python: Local VM",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "/home/ryaneggz/.env/orchestra/.env.backend.local"
+        },
+        {
             "name": "Python: Single Test",
             "type": "debugpy",
             "request": "launch",

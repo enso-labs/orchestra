@@ -1,4 +1,4 @@
-"""Unit tests for create_daytona_backend() and resolve_sandbox_backend()."""
+"""Unit tests for create_daytona_backend(), resolve_sandbox_backend(), and LocalSandbox."""
 
 from unittest.mock import MagicMock, patch
 
@@ -264,3 +264,116 @@ class TestResolveSandboxBackendDispatch:
             assert sandbox is None
             assert backend is not None
             assert backend.routes == {}
+
+    def test_explicit_local_returns_local_sandbox_backend(self):
+        """sandbox_type='local' returns a LocalSandbox-backed CompositeBackend."""
+        mock_runtime = MagicMock()
+
+        with patch(
+            "src.agents.create_daytona_backend",
+        ) as mock_create_daytona:
+            from src.agents import resolve_sandbox_backend
+
+            backend, sandbox = resolve_sandbox_backend(mock_runtime, sandbox_type="local")
+
+            assert sandbox is None
+            assert backend is not None
+            assert backend.routes == {}
+            mock_create_daytona.assert_not_called()
+
+            # Verify the default backend is a LocalSandbox instance
+            from src.agents.local_sandbox import LocalSandbox
+
+            assert isinstance(backend.default, LocalSandbox)
+
+
+class TestLocalSandbox:
+    """Tests for LocalSandbox."""
+
+    def test_execute_runs_command(self, tmp_path):
+        """execute() runs a shell command and returns output."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+        result = sandbox.execute("echo hello")
+
+        assert result.exit_code == 0
+        assert "hello" in result.output
+        assert result.truncated is False
+
+    def test_execute_returns_nonzero_on_failure(self, tmp_path):
+        """execute() returns non-zero exit code on command failure."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+        result = sandbox.execute("exit 42")
+
+        assert result.exit_code == 42
+
+    def test_execute_runs_in_workspace_dir(self, tmp_path):
+        """execute() uses the workspace as cwd."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+        result = sandbox.execute("pwd")
+
+        assert result.exit_code == 0
+        assert str(tmp_path) in result.output
+
+    def test_id_returns_hex_string(self, tmp_path):
+        """id property returns a non-empty hex string."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+
+        assert isinstance(sandbox.id, str)
+        assert len(sandbox.id) == 32  # uuid4().hex is 32 chars
+
+    def test_upload_and_download_files(self, tmp_path):
+        """upload_files writes bytes; download_files reads them back."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+
+        upload_resp = sandbox.upload_files([("/test.txt", b"hello world")])
+        assert len(upload_resp) == 1
+        assert upload_resp[0].error is None
+        assert upload_resp[0].path == "/test.txt"
+
+        download_resp = sandbox.download_files(["/test.txt"])
+        assert len(download_resp) == 1
+        assert download_resp[0].error is None
+        assert download_resp[0].content == b"hello world"
+
+    def test_upload_creates_parent_dirs(self, tmp_path):
+        """upload_files creates intermediate directories."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+
+        resp = sandbox.upload_files([("/a/b/c/file.txt", b"nested")])
+        assert resp[0].error is None
+        assert (tmp_path / "a" / "b" / "c" / "file.txt").read_bytes() == b"nested"
+
+    def test_download_missing_file_returns_error(self, tmp_path):
+        """download_files returns file_not_found for missing files."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+        resp = sandbox.download_files(["/nonexistent.txt"])
+
+        assert len(resp) == 1
+        assert resp[0].error == "file_not_found"
+        assert resp[0].content is None
+
+    def test_invalid_path_without_leading_slash(self, tmp_path):
+        """Paths not starting with '/' return invalid_path error."""
+        from src.agents.local_sandbox import LocalSandbox
+
+        sandbox = LocalSandbox(root_dir=tmp_path)
+
+        upload_resp = sandbox.upload_files([("no_slash.txt", b"data")])
+        assert upload_resp[0].error == "invalid_path"
+
+        download_resp = sandbox.download_files(["no_slash.txt"])
+        assert download_resp[0].error == "invalid_path"

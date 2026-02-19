@@ -1,9 +1,12 @@
-.PHONY: dev claude build run tag seeds seeds.memory test format lint
+.PHONY: dev local claude build run tag seeds seeds.memory test format lint
 
 ENV_FILE ?= $(HOME)/.env/orchestra/.env.backend
 
 dev:
 	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug --env-file $(ENV_FILE)
+
+local:
+	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug --env-file $(HOME)/.env/orchestra/.env.backend.local
 
 dev.worker:
 	@set -a && . $(ENV_FILE) && set +a && uv run taskiq worker src.workers.tasks:broker --reload --reload-dir ./
@@ -33,19 +36,19 @@ test:
 	@set -a && . $(ENV_FILE) && set +a && uv run pytest
 
 migrate.up:
-	ENV_FILE=$(ENV_FILE) uv run alembic upgrade head
+	@set -a && . $(ENV_FILE) && uv run alembic upgrade head
 
 migrate.down:
-	ENV_FILE=$(ENV_FILE) uv run alembic downgrade -1
+	@set -a && . $(ENV_FILE) uv run alembic downgrade -1
 
 migrate.history:
-	ENV_FILE=$(ENV_FILE) uv run alembic history
+	@set -a && . $(ENV_FILE) uv run alembic history
 
 migrate.revision:
-	ENV_FILE=$(ENV_FILE) uv run alembic revision -m "description_of_changes"
+	@set -a && . $(ENV_FILE) uv run alembic revision -m "description_of_changes"
 
 migrate.upgrade:
-	ENV_FILE=$(ENV_FILE) uv run alembic upgrade +1
+	@set -a && . $(ENV_FILE) uv run alembic upgrade +1
 
 migrate.downgrade:
-	ENV_FILE=$(ENV_FILE) uv run alembic downgrade -1
+	@set -a && . $(ENV_FILE) uv run alembic downgrade -1

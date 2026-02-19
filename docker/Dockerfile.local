@@ -1,126 +1,76 @@
-# =============================================================================
-# Orchestra Local VM Test Container
-# Simulates an Ubuntu VM with all services for local development/testing.
-# =============================================================================
-FROM ubuntu:24.04
+FROM python:3.12-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-# =============================================================================
-# System Dependencies
-# =============================================================================
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    wget \
-    git \
-    ca-certificates \
-    gnupg \
-    lsb-release \
-    libpq-dev \
-    software-properties-common \
-    sudo \
-    supervisor \
-    && rm -rf /var/lib/apt/lists/*
+# System dependencies + Node.js 22 + PostgreSQL 16 + Redis
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential \
+      curl \
+      wget \
+      git \
+      ca-certificates \
+      gnupg \
+      lsb-release \
+      libpq-dev \
+      sudo \
+      supervisor \
+ # Node.js 22
+ && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ # PostgreSQL 16 with pgvector
+ && sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
+ && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+      | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+      postgresql-16 \
+      postgresql-16-pgvector \
+ # Redis
+ && apt-get install -y --no-install-recommends redis-server \
+ && rm -rf /var/lib/apt/lists/*
 
-# =============================================================================
-# Python 3.12
-# =============================================================================
-RUN add-apt-repository -y ppa:deadsnakes/ppa \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-    python3.12 \
-    python3.12-venv \
-    python3.12-dev \
-    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# =============================================================================
 # uv (Python package manager)
-# =============================================================================
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# =============================================================================
-# Node.js 22
-# =============================================================================
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
-# =============================================================================
-# PostgreSQL 16 with pgvector
-# =============================================================================
-RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
-    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-    postgresql-16 \
-    postgresql-16-pgvector \
-    && rm -rf /var/lib/apt/lists/*
-
-# =============================================================================
-# Redis
-# =============================================================================
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends redis-server \
-    && rm -rf /var/lib/apt/lists/*
-
-# =============================================================================
-# Directory Structure
-# =============================================================================
+# Directory structure
 RUN mkdir -p /root/.ruska/workspace \
-    && mkdir -p /root/.ruska/config \
-    && mkdir -p /root/.ruska/data \
-    && mkdir -p /root/.env/orchestra
+      /root/.ruska/config \
+      /root/.ruska/data \
+      /root/.env/orchestra
 
 WORKDIR /app
 
-# =============================================================================
-# Backend Dependencies (cached layer)
-# =============================================================================
+# Backend dependencies (cached layer)
 COPY backend/pyproject.toml backend/uv.lock* /app/backend/
 RUN cd /app/backend \
-    && uv venv --python python3.12 \
-    && uv sync --frozen --no-cache --no-dev 2>/dev/null || uv sync --no-cache --no-dev
+ && uv venv --python python3.12 \
+ && uv sync --frozen --no-cache --no-dev 2>/dev/null || uv sync --no-cache --no-dev
 
-# =============================================================================
-# Frontend Dependencies (cached layer)
-# =============================================================================
+# Frontend dependencies (cached layer)
 COPY frontend/package.json frontend/package-lock.json* /app/frontend/
 RUN cd /app/frontend && npm install --silent
 
-# =============================================================================
-# Copy Application Code
-# =============================================================================
+# Application code
 COPY backend/ /app/backend/
 COPY frontend/ /app/frontend/
 COPY Makefile /app/Makefile
 
-# =============================================================================
-# Build Frontend (output to backend/src/public/)
-# =============================================================================
+# Build frontend (output to backend/src/public/)
 RUN cd /app/frontend && npm run build
 
-# =============================================================================
-# Environment Configuration
-# =============================================================================
+# Environment configuration
 RUN cp /app/backend/.env.local.example /root/.env/orchestra/.env.backend.local \
-    && sed -i 's|POSTGRES_CONNECTION_STRING=.*|POSTGRES_CONNECTION_STRING=postgresql+asyncpg://postgres:postgres@localhost:5432/orchestra|' /root/.env/orchestra/.env.backend.local \
-    && sed -i 's|JWT_SECRET_KEY=change-me-in-production|JWT_SECRET_KEY=docker-local-dev-secret|' /root/.env/orchestra/.env.backend.local \
-    && sed -i 's|APP_SECRET_KEY=change-me-in-production|APP_SECRET_KEY=docker-local-dev-secret|' /root/.env/orchestra/.env.backend.local
+ && sed -i 's|POSTGRES_CONNECTION_STRING=.*|POSTGRES_CONNECTION_STRING=postgresql+asyncpg://postgres:postgres@localhost:5432/orchestra|' /root/.env/orchestra/.env.backend.local \
+ && sed -i 's|JWT_SECRET_KEY=change-me-in-production|JWT_SECRET_KEY=docker-local-dev-secret|' /root/.env/orchestra/.env.backend.local \
+ && sed -i 's|APP_SECRET_KEY=change-me-in-production|APP_SECRET_KEY=docker-local-dev-secret|' /root/.env/orchestra/.env.backend.local
 
-# =============================================================================
-# Database Initialization Script
-# =============================================================================
+# Copy & enable entrypoint + supervisor config
 COPY docker/local/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# =============================================================================
-# Supervisor Configuration (manages PostgreSQL, Redis, and Orchestra)
-# =============================================================================
 COPY docker/local/supervisord.conf /etc/supervisor/conf.d/orchestra.conf
 
 EXPOSE 8000
