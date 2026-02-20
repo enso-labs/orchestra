@@ -25,6 +25,8 @@
 - Tools use `@tool` decorator with `ToolRuntime` for user context, registered in `backend/src/tools/__init__.py`
 - `_format()` in `base_repo.py` needs extending for new entity types
 - `ruff` not installed by default — run `uv pip install ruff` first
+- ToolRuntime pattern: `runtime.config["metadata"].get("user_id")` for user context, `runtime.store` for BaseStore
+- Helper function pattern: extract `_get_*_service(runtime)` to avoid repeating user_id/store boilerplate across tools
 ---
 
 ## 2026-02-20 - US-001
@@ -177,4 +179,20 @@
   - ServiceContext registers services with `(user_id, store)` params — add new services after existing ones but before LLMService (which depends on other services)
   - EpicService composes both EpicRepo and TaskRepo to handle cross-entity operations like cascade delete
   - ProjectService.delete is the pattern to follow for cascade deletes — iterate child entities and delete them first
+---
+
+## 2026-02-20 - US-005 (feat/812-task-epic-toolkit)
+- Created `backend/src/tools/epic.py` with 9 LangChain @tool decorated async functions
+- Epic tools: create_epic, list_epics, update_epic, delete_epic
+- Task tools: create_task, list_tasks, update_task, delete_task, assign_task
+- All tools use ToolRuntime for user context following search_threads pattern
+- Helper function `_get_epic_service(runtime)` extracts user_id from runtime.config and creates EpicService
+- Exported EPIC_TOOLS list with all 9 tools
+- Registered EPIC_TOOLS in `backend/src/tools/__init__.py` default_tools()
+- Files changed: `backend/src/tools/epic.py` (new), `backend/src/tools/__init__.py`
+- **Learnings for future iterations:**
+  - ToolRuntime pattern: `runtime.config["metadata"].get("user_id")` for user context, `runtime.store` for BaseStore access
+  - Extract a helper like `_get_epic_service(runtime)` to avoid repeating user_id/store extraction boilerplate across tools
+  - `runtime` parameter must be after required positional params but before optional keyword params in tool signatures
+  - Full app import chain requires POSTGRES_CONNECTION_STRING — use `ast.parse()` or `ruff check` for isolated validation
 ---
