@@ -164,3 +164,17 @@
   - SearchFilter `filter` parameter matches against metadata fields stored in the BaseStore
   - allowed_fields for Task update: `{"title", "description", "status", "assignee", "blockers"}`
 ---
+
+## 2026-02-20 - US-004 (feat/812-task-epic-toolkit)
+- Created `backend/src/services/epic.py` with EpicService class
+- Epic methods: create_epic, get_epic, search_epics, update_epic, delete_epic (with cascade task deletion)
+- Task methods: create_task, get_task, list_tasks, update_task, delete_task
+- Registered EpicService in `backend/src/contexts/service.py` ServiceContext
+- delete_epic cascades: fetches all tasks via list_by_epic, deletes each, then deletes the epic (follows ProjectService.delete pattern)
+- Files changed: `backend/src/services/epic.py` (new), `backend/src/contexts/service.py`
+- **Learnings for future iterations:**
+  - Services are thin wrappers around repos — delegate CRUD directly, add business logic only where needed (e.g., cascade delete)
+  - ServiceContext registers services with `(user_id, store)` params — add new services after existing ones but before LLMService (which depends on other services)
+  - EpicService composes both EpicRepo and TaskRepo to handle cross-entity operations like cascade delete
+  - ProjectService.delete is the pattern to follow for cascade deletes — iterate child entities and delete them first
+---
