@@ -25,3 +25,18 @@
   - The WIP commit from the prior Ralph session was fully complete for US-001 despite the "incomplete" commit message
   - Always verify existing work before re-implementing
 ---
+
+## 2026-02-20 - US-002
+- Added "Save as Assistant" button to ChatNav (Save icon)
+- On click opens SaveAsAssistantDialog, on save collects agent state (model, prompt, tools, subagents, mcp, a2a, files)
+- POSTs to /assistants via AgentService.create()
+- Shows toast.success/toast.error via sonner
+- Refreshes agent list via handleGetAgents() after successful save
+- Files changed: frontend/src/components/nav/ChatNav.tsx
+- TypeScript typecheck passes, dev server starts cleanly, browser verification done (page at / loads without errors)
+- **Learnings for future iterations:**
+  - ChatNav is the right place for global chat actions (share, new thread, save)
+  - Toast notifications use `toast` from `"sonner"` (toast.success, toast.error)
+  - AgentService.create() takes an Agent object directly
+  - The unauthenticated view shows AgentSection; ChatNav only appears in authenticated chat view with messages
+---

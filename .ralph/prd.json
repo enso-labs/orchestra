@@ -32,8 +32,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Save button added to ChatNav with Save icon. Opens SaveAsAssistantDialog, collects agent state, POSTs via AgentService.create(), shows toast, refreshes agents."
     },
     {
       "id": "US-003",
