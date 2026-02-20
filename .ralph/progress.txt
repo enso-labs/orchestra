@@ -17,6 +17,7 @@
 - MCP Add Server form has Template dropdown (Custom, Ruska MCP, GitHub MCP), Server Name, Transport (SSE/Streamable HTTP/STDIO), URL, Header Key/Value
 - MCP config is saved to user defaults on the backend (not localStorage) via `patchDefaults()`
 - Docusaurus image paths for wiki/static/img/ use `/img/...` in markdown (absolute from static root)
+- Bot user (im-an-ai-agent) has WRITE on ruska-ai/orchestra but only READ on ruska-ai/wiki — must fork wiki and push there
 ---
 
 ## 2026-02-20 - US-001
@@ -100,4 +101,17 @@
   - Header Value field is masked (password-style input) for security
   - Pressing Escape while a dropdown is open inside the modal closes the entire modal — be careful when automating with agent-browser
   - Docusaurus image references to `wiki/static/img/` use absolute paths from static root: `/img/tools/01-tool-selection-modal.png`
+---
+
+## 2026-02-20 - US-005
+- Pushed wiki submodule commits to fork `im-an-ai-agent/wiki` on branch `feat/807-docs-update-memories-onboarding-mcp` (bot lacks write access to `ruska-ai/wiki`)
+- Updated wiki submodule reference in orchestra repo with `git add wiki`
+- Committed all changes (prd.json, progress.txt, wiki submodule ref) in orchestra
+- Pushed orchestra commits to `origin/feat/807-docs-update-memories-onboarding-mcp`
+- Final `git status` shows branch up to date with origin; only remaining unstaged change is `wiki (modified content)` from an unrelated `package-lock.json` change
+- Files changed: `.ralph/prd.json`, `.ralph/progress.txt`, `wiki` (submodule ref)
+- **Learnings for future iterations:**
+  - The `im-an-ai-agent` bot user has WRITE permission on `ruska-ai/orchestra` but only READ on `ruska-ai/wiki` — must fork wiki to push submodule commits
+  - When pushing wiki submodule changes, add fork remote: `git remote add fork https://...@github.com/im-an-ai-agent/wiki.git`
+  - A human with write access to `ruska-ai/wiki` will need to push the wiki branch upstream or merge the fork PR
 ---

@@ -73,8 +73,8 @@
         "If remaining changes exist, commit and push to branch so they will be visible in the GitHub PR"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Wiki submodule commits pushed to fork (im-an-ai-agent/wiki) since bot lacks write access to ruska-ai/wiki. Orchestra submodule reference updated and all changes committed and pushed to feat/807-docs-update-memories-onboarding-mcp. Only remaining unstaged change is wiki/package-lock.json (unrelated)."
     }
   ]
 }
