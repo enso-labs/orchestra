@@ -96,3 +96,14 @@
   - Commit inside wiki/ first, then reference the submodule change in the parent repo
   - Wiki docs follow Docusaurus format with frontmatter, admonition blocks (:::tip, :::info)
 ---
+
+## 2026-02-20 - US-007
+- git status clean (only untracked package-lock.json change)
+- TypeScript typecheck passes
+- Pushed 6 commits to origin/feat/803-persist-assistant-subagent-selection
+- Final report added as comment on PR #809
+- All 7 stories now pass
+- **Learnings for future iterations:**
+  - Always push before creating the final report comment so the PR reflects all changes
+  - Final report should include scored improvements for future iteration planning
+---
