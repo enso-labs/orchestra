@@ -1,0 +1,80 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/807-docs-update-memories-onboarding-mcp",
+  "description": "Update and consolidate documentation: memories tutorial, getting started, MCP tools",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Update memories tutorial with AGENTS.md content",
+      "description": "As a developer, I want the memories tutorial to include AGENTS.md workflow so users understand that AGENTS.md is stored as a memory.",
+      "acceptanceCriteria": [
+        "Update wiki/docs/memories/tutorial.md to include steps for creating and storing AGENTS.md as a memory",
+        "Update wiki/docs/memories/index.md to mention AGENTS.md integration in the overview",
+        "Commit changes inside the wiki submodule",
+        "Verify changes render correctly by reviewing markdown structure"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Added Step 6 to tutorial, updated overview bullets and How It Works section in index"
+    },
+    {
+      "id": "US-002",
+      "title": "Update AGENTS.md docs to reference memories",
+      "description": "As a developer, I want the AGENTS.md section to reference the memories system so users are directed to the consolidated docs.",
+      "acceptanceCriteria": [
+        "Update wiki/docs/agents-md/index.md to explain that AGENTS.md is now stored via the memories system",
+        "Update wiki/docs/agents-md/tutorial.md to cross-reference the memories tutorial",
+        "Update wiki/sidebars.ts to reorganize Core Features — ensure AGENTS.md and Memories sections are clearly connected",
+        "Commit changes inside the wiki submodule"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added Storing AGENTS.md via Memories section to index, Store as Memory (Recommended) section to tutorial, reorganized sidebars to nest AGENTS.md under Core Features category"
+    },
+    {
+      "id": "US-003",
+      "title": "Rewrite getting started page with onboarding flow",
+      "description": "As a user, I want the getting started page to walk me through the complete onboarding process including interface walkthrough, configuring settings, and adding AGENTS.md into memories.",
+      "acceptanceCriteria": [
+        "Rewrite wiki/docs/getting-started.md with detailed onboarding steps: login, UI overview, configuring settings (model selection), creating first memory, adding AGENTS.md as a memory",
+        "Include references to the memories tutorial and AGENTS.md docs",
+        "Take screenshots of the onboarding flow using agent-browser skill from https://chat.ruska.ai",
+        "Save screenshots to wiki/static/img/ with descriptive filenames",
+        "Commit changes inside the wiki submodule"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Rewrote getting-started.md with 6-step onboarding flow (account creation, UI overview, settings/model config, first memory, AGENTS.md as memory, first message). Added 5 screenshots from chat.ruska.ai. Cross-references memories tutorial and AGENTS.md docs."
+    },
+    {
+      "id": "US-004",
+      "title": "Update MCP tools page with Manage Tools modal",
+      "description": "As a user, I want the MCP tools page to document the current Manage Tools modal UI and workflow.",
+      "acceptanceCriteria": [
+        "Update wiki/docs/tools/mcp.md with current UI flow for the Manage Tools modal",
+        "Document tool selection, MCP configuration panel, and enabling/disabling tools",
+        "Take screenshots of the Manage Tools modal using agent-browser skill from https://chat.ruska.ai",
+        "Replace outdated GIF/images with current screenshots where applicable",
+        "Save screenshots to wiki/static/img/ with descriptive filenames",
+        "Commit changes inside the wiki submodule"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Rewrote Quick Start section with 5-step Manage Tools modal walkthrough. Replaced all outdated external GitHub-hosted GIF/images with 6 local screenshots. Documented tool selection categories (Platform/API/MCP/A2A), Add Server form fields (Template/Server Name/Transport/URL/Headers), template presets, Fetch Tools workflow, and tool card selection. Added Supported Transports table. Preserved API reference sections."
+    },
+    {
+      "id": "US-005",
+      "title": "Update orchestra submodule reference and push",
+      "description": "As a developer, I want all wiki changes committed and the submodule reference updated in orchestra.",
+      "acceptanceCriteria": [
+        "All wiki submodule commits pushed to wiki remote",
+        "Update wiki submodule reference in orchestra repo with git add wiki",
+        "Run git status to verify no remaining changes in the workspace",
+        "If remaining changes exist, commit and push to branch so they will be visible in the GitHub PR"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Wiki submodule commits pushed to fork (im-an-ai-agent/wiki) since bot lacks write access to ruska-ai/wiki. Orchestra submodule reference updated and all changes committed and pushed to feat/807-docs-update-memories-onboarding-mcp. Only remaining unstaged change is wiki/package-lock.json (unrelated)."
+    }
+  ]
+}
