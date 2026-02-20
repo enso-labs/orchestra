@@ -1,0 +1,111 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/803-persist-assistant-subagent-selection",
+  "description": "Persist assistant settings from chat page + per-session subagent selection",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Save as Assistant dialog component",
+      "description": "As a user, I want a dialog that prompts me for a name and description when saving current settings as an assistant.",
+      "acceptanceCriteria": [
+        "Create frontend/src/components/dialogs/SaveAsAssistantDialog.tsx with name (required) and description inputs",
+        "Dialog has Save and Cancel buttons",
+        "Name field validates non-empty",
+        "Dialog accepts an onSave callback with name and description",
+        "Typecheck passes with tsc --project tsconfig.app.json"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Wire Save as Assistant to chat page",
+      "description": "As a user, from the chat page I want to persist the current state of settings as an assistant.",
+      "acceptanceCriteria": [
+        "Add Save as Assistant action accessible from the chat page (e.g., in ChatNav or agent-section area)",
+        "On click, open SaveAsAssistantDialog",
+        "On save, collect current agent state (model, tools, prompt, mcp, a2a, subagents, files) and POST to /assistants via AgentService.createAssistant()",
+        "On success, show toast notification and refresh agent list",
+        "On error, show error toast",
+        "Typecheck passes with tsc --project tsconfig.app.json",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Subagent selection modal component",
+      "description": "As a user, I want a modal to select which subagents to use in my current session.",
+      "acceptanceCriteria": [
+        "Create subagent selection UI (new modal or new tab in ToolSelectionModal)",
+        "Display available agents from the agents list with name, description, and model info",
+        "Each agent has a toggle to add/remove as a subagent for the current session",
+        "Show currently selected subagents with visual indicator",
+        "Typecheck passes with tsc --project tsconfig.app.json"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Wire subagent selection to chat page",
+      "description": "As a user, I want to select subagents from the chat page and have them included in my LLM requests.",
+      "acceptanceCriteria": [
+        "Add subagent selection trigger in BaseToolMenu or adjacent to it in the chat input area",
+        "Wire selection to existing useAgent toggleSubagent/addAgentToSubagents/removeAgentFromSubagents methods",
+        "Verify selected subagents are included in the LLM request payload (useChat sends agent.subagents)",
+        "Typecheck passes with tsc --project tsconfig.app.json",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Update issue description with integration details",
+      "description": "As a developer, I want the GitHub issue #803 description updated with the key integration points discovered during implementation.",
+      "acceptanceCriteria": [
+        "Update issue #803 body with completed Key Integration Points table listing changed files and functions",
+        "Update issue #803 body with UI Integration Points table listing changed components",
+        "Update issue #803 body with Storage and Architectural Decisions sections",
+        "Use gh issue edit 803 --body to update the issue"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Check docs for drift and update wiki",
+      "description": "As a developer, I want to check the wiki docs for any drift or additions needed based on these new features.",
+      "acceptanceCriteria": [
+        "Review wiki/docs/assistants/index.md for coverage of Save as Assistant from chat feature",
+        "Review wiki/docs/ for any subagent documentation that needs updating",
+        "If docs changes needed, update the relevant markdown files in wiki/",
+        "Commit any wiki changes inside the wiki submodule"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Final verification, report, and push",
+      "description": "As a developer, I want all changes committed with a final assessment report.",
+      "acceptanceCriteria": [
+        "Run git status to verify no remaining changes in the workspace",
+        "If remaining changes exist, commit and push to branch so they will be visible in the GitHub PR",
+        "Create a final report assessing: (1) remaining steps that should have been outlined in scope, (2) improvements extracted from the implementation process, scored and ranked by probability of being outlined in future iterations",
+        "Add the final report as a comment on the PR"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

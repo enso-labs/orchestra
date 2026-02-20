@@ -1,0 +1,14 @@
+## Codebase Patterns
+- Frontend state: useAgent hook in frontend/src/hooks/useAgent.ts manages agent state (model, tools, subagents, mcp, a2a, prompt)
+- Agent context: AgentContext wraps useAgent, consumed via useAgentContext()
+- Chat sends agent state via useChat hook: agent.model, agent.tools, agent.subagents, agent.mcp, agent.a2a
+- Tool selection: BaseToolMenu + ToolSelectionModal in frontend/src/components/menus/ and modals/
+- Agent CRUD: POST/PUT/DELETE /assistants in backend/src/routes/v0/assistant.py
+- Frontend service: AgentService in frontend/src/lib/services/agentService.ts
+- Agent schema: Assistant class in backend/src/schemas/entities/llm.py (name, description, model, tools, subagents, mcp, a2a, files, metadata)
+- Existing subagent management in useAgent: addAgentToSubagents, removeAgentFromSubagents, toggleSubagent, isAgentSelected
+- Chat page: frontend/src/pages/chat/chat-v2.tsx → ChatPanel.tsx
+- ChatNav: frontend/src/components/nav/ChatNav.tsx
+- Use tsc --project tsconfig.app.json for typechecking (root tsconfig has "files": [])
+- Wiki submodule at wiki/ — docs changes must be committed inside wiki/ first
+---
