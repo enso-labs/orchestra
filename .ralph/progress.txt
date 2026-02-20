@@ -18,6 +18,13 @@
 - MCP config is saved to user defaults on the backend (not localStorage) via `patchDefaults()`
 - Docusaurus image paths for wiki/static/img/ use `/img/...` in markdown (absolute from static root)
 - Bot user (im-an-ai-agent) has WRITE on ruska-ai/orchestra but only READ on ruska-ai/wiki — must fork wiki and push there
+- Models live in `backend/src/schemas/entities/store.py`, extend `BaseEntity` for persistence
+- Update schemas (partial updates) extend `BaseModel` directly with all fields Optional
+- Repos extend `BaseRepo` in `backend/src/repos/`, use `(user_id, entity_type)` namespace
+- Services are thin wrappers in `backend/src/services/`, registered in `backend/src/contexts/service.py`
+- Tools use `@tool` decorator with `ToolRuntime` for user context, registered in `backend/src/tools/__init__.py`
+- `_format()` in `base_repo.py` needs extending for new entity types
+- `ruff` not installed by default — run `uv pip install ruff` first
 ---
 
 ## 2026-02-20 - US-001
@@ -114,4 +121,31 @@
   - The `im-an-ai-agent` bot user has WRITE permission on `ruska-ai/orchestra` but only READ on `ruska-ai/wiki` — must fork wiki to push submodule commits
   - When pushing wiki submodule changes, add fork remote: `git remote add fork https://...@github.com/im-an-ai-agent/wiki.git`
   - A human with write access to `ruska-ai/wiki` will need to push the wiki branch upstream or merge the fork PR
+---
+
+## 2026-02-20 - US-001 (feat/812-task-epic-toolkit)
+- Added Epic, EpicUpdate, Task, TaskUpdate models to `backend/src/schemas/entities/store.py`
+- Epic extends BaseEntity with: name (str), description (Optional[str]), status (Optional[str] default "active")
+- Task extends BaseEntity with: epic_id (str), title (str), description (Optional[str]), status (Optional[str] default "todo"), assignee (Optional[str]), blockers (list[str])
+- EpicUpdate and TaskUpdate are partial update schemas extending BaseModel with all fields Optional
+- Files changed: `backend/src/schemas/entities/store.py`
+- **Learnings for future iterations:**
+  - Models extend BaseEntity for id, metadata, created_at, updated_at fields with datetime serialization
+  - Update schemas extend BaseModel (not BaseEntity) since they only need the updatable fields
+  - Full app import chain requires POSTGRES_CONNECTION_STRING env var — use isolated validation for model testing
+  - `ruff` needs to be installed via `uv pip install ruff` before use
+---
+
+## 2026-02-20 - US-002 (feat/812-task-epic-toolkit)
+- Created `backend/src/repos/epic_repo.py` extending BaseRepo with `entity_type="epics"`
+- Implements full CRUD: create, get, update, search, delete methods following ProjectRepo/MemoryRepo patterns
+- Namespace: `(user_id, epics)` via BaseRepo
+- Updated `backend/src/repos/base_repo.py` `_format()` method to handle "epics" and "tasks" entity types
+- Added Epic and Task imports to base_repo.py
+- Files changed: `backend/src/repos/epic_repo.py` (new), `backend/src/repos/base_repo.py`
+- **Learnings for future iterations:**
+  - MemoryRepo is the cleanest CRUD pattern to follow — simpler than ProjectRepo which has composed child repos
+  - `_format()` in base_repo.py must be extended for every new entity type
+  - Constructor pattern: use `Optional[BaseStore] = None` with `store = store or get_store_in_memory()` (MemoryRepo style) rather than `BaseStore = get_store_in_memory()` (ProjectRepo style)
+  - `update()` uses allowed_fields set to whitelist updatable fields, matching ProjectRepo pattern
 ---
