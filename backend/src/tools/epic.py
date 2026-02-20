@@ -251,6 +251,50 @@ async def assign_task(task_id: str, assignee: str, runtime: ToolRuntime) -> dict
         return {"error": str(e)}
 
 
+##########################################################################
+# Task Search Tools
+##########################################################################
+
+
+@tool
+async def search_tasks(query: str, runtime: ToolRuntime, limit: int = 5) -> list[dict]:
+    """
+    Toolkit: Epic Management
+    Description: Search tasks across all epics by semantic similarity on title and description.
+    Use this to find relevant tasks based on a natural language query.
+    Args:
+        query: The search query to find relevant tasks.
+        limit: Maximum number of results to return (default 5).
+    Returns:
+        A list of matching tasks with task_id, title, status, epic_id, and score.
+    """
+    user_id = runtime.config["metadata"].get("user_id", None)
+    if not user_id:
+        raise ValueError("User ID is required to search tasks.")
+
+    try:
+        service = _get_epic_service(runtime)
+
+        from src.schemas.entities import SearchFilter
+
+        search_filter = SearchFilter(query=query, limit=limit)
+        results = await service.search_tasks(search_filter)
+
+        return [
+            {
+                "task_id": item.key,
+                "title": item.value.get("title", ""),
+                "status": item.value.get("status", ""),
+                "epic_id": item.value.get("epic_id", ""),
+                "score": item.score,
+            }
+            for item in results
+        ]
+    except Exception as e:
+        logger.error(f"Error searching tasks: {e}")
+        return []
+
+
 EPIC_TOOLS = [
     create_epic,
     list_epics,
@@ -261,4 +305,5 @@ EPIC_TOOLS = [
     update_task,
     delete_task,
     assign_task,
+    search_tasks,
 ]

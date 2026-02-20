@@ -1,6 +1,6 @@
 from typing import Optional
 
-from langgraph.store.base import BaseStore
+from langgraph.store.base import BaseStore, SearchItem
 
 from src.repos.epic_repo import EpicRepo
 from src.repos.task_repo import TaskRepo
@@ -58,6 +58,10 @@ class EpicService:
 
     async def update_task(self, task_id: str, data: dict) -> Task:
         return await self.task_repo.update(task_id, data)
+
+    async def search_tasks(self, search_filter: SearchFilter) -> list[SearchItem]:
+        """Search tasks by semantic similarity, returning raw SearchItems with scores."""
+        return await self.task_repo._search(search_filter)
 
     async def delete_task(self, task_id: str) -> bool:
         return await self.task_repo.delete(task_id)
