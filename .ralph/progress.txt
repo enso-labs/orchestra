@@ -248,4 +248,33 @@
   - Contexts follow AgentContext typed pattern: `ReturnType<typeof useHook>` for type, createContext with null default, custom useXContext hook with error guard
   - `npm install` is required before `tsc` can run — typescript is a devDependency not globally installed
   - Task endpoints are nested under epics: `/epics/{id}/tasks` for CRUD, `/tasks/search` for global search
+- Pages follow ChatLayout pattern: `<ChatLayout>` > `<ChatNav>` > header + content sections
+- New providers must be added in `main.tsx` wrapping `<AppRoutes />`
+- Sidebar links: simple `<SidebarGroup>` with `<SidebarGroupLabel asChild>` wrapping a `<Link>`
+- `agent-browser eval` can set localStorage tokens to bypass PrivateRoute for UI testing without a backend
+- The Edit tool has trouble with tab-indented files — use Write to rewrite the whole file when tab indentation causes match failures
+---
+
+## 2026-02-20 - US-009 (feat/812-task-epic-toolkit)
+- Created `frontend/src/pages/epics/index.tsx` with full epic list page following AgentIndexPage pattern
+- Shows: epic name, description, task count (fetched per-epic via `EpicService.listTasks`), status badge
+- Create epic button opens `CreateEpicModal` dialog
+- Delete epic with `window.confirm()` confirmation (cascades tasks on backend)
+- Search filter on epic name and description
+- Empty state with "Create your first epic" CTA
+- Loading state with spinner
+- Created `frontend/src/components/modals/CreateEpicModal.tsx` following CreateProjectModal pattern exactly
+- Added "Epics" entry to sidebar in `app-sidebar.tsx` with FolderKanban icon, linking to `/epics`
+- Added `/epics` route in `AppRoutes.tsx` as a `<PrivateRoute>`
+- Added `EpicProvider` to `main.tsx` wrapping `<AppRoutes />`
+- TypeScript typecheck passes, Prettier formatting applied
+- Verified in browser via agent-browser: empty state renders, sidebar link visible, create modal opens correctly
+- Files changed: `frontend/src/pages/epics/index.tsx` (new), `frontend/src/components/modals/CreateEpicModal.tsx` (new), `frontend/src/components/drawers/app-sidebar.tsx`, `frontend/src/main.tsx`, `frontend/src/routes/AppRoutes.tsx`
+- **Learnings for future iterations:**
+  - Pages use `ChatLayout` > `ChatNav` > header + scrollable content pattern
+  - Sidebar links use `SidebarGroup` > `SidebarGroupLabel asChild` > `Link` pattern (not collapsible)
+  - New providers go in `main.tsx` wrapping `<AppRoutes />`
+  - Tab-indented files (frontend uses tabs) can cause Edit tool match failures — Write tool is more reliable for these
+  - `agent-browser eval "localStorage.setItem(...)"` bypasses auth for UI testing when backend isn't available
+  - Task counts on epic list require per-epic API calls — consider adding a batch endpoint or including counts in search response for better performance
 ---
