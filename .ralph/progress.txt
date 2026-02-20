@@ -347,3 +347,9 @@
 - **Learnings for future iterations:**
   - When prd.json is reverted to `passes: false` but code is already committed, verify typecheck and re-mark as passing
 ---
+
+## 2026-02-20 - US-009 (re-verification)
+- Re-verified existing US-009 implementation — epic list page, sidebar, route, modal all present
+- Files verified: `frontend/src/pages/epics/index.tsx`, `frontend/src/components/modals/CreateEpicModal.tsx`, `frontend/src/components/drawers/app-sidebar.tsx`, `frontend/src/routes/AppRoutes.tsx`, `frontend/src/main.tsx`
+- Typecheck clean, marked `passes: true`
+---
