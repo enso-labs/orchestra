@@ -27,6 +27,7 @@
 - `ruff` not installed by default — run `uv pip install ruff` first
 - ToolRuntime pattern: `runtime.config["metadata"].get("user_id")` for user context, `runtime.store` for BaseStore
 - Helper function pattern: extract `_get_*_service(runtime)` to avoid repeating user_id/store boilerplate across tools
+- SearchItem has `.key`, `.value` (dict), `.score` — use raw SearchItems when you need similarity scores instead of model_validate()
 ---
 
 ## 2026-02-20 - US-001
@@ -195,4 +196,19 @@
   - Extract a helper like `_get_epic_service(runtime)` to avoid repeating user_id/store extraction boilerplate across tools
   - `runtime` parameter must be after required positional params but before optional keyword params in tool signatures
   - Full app import chain requires POSTGRES_CONNECTION_STRING — use `ast.parse()` or `ruff check` for isolated validation
+---
+
+## 2026-02-20 - US-006 (feat/812-task-epic-toolkit)
+- Created `search_tasks` tool in `backend/src/tools/epic.py` following the `search_threads` pattern exactly
+- Tool searches across all user tasks by title+description semantic similarity using BaseStore vector search
+- Returns structured results with: task_id, title, status, epic_id, score
+- Added `search_tasks` method to `EpicService` in `backend/src/services/epic.py` that returns raw `SearchItem` objects (preserving scores)
+- Added `search_tasks` to `EPIC_TOOLS` list — automatically registered in `default_tools()` via existing `*EPIC_TOOLS` spread
+- No changes needed to `backend/src/tools/__init__.py` since EPIC_TOOLS is already included
+- Files changed: `backend/src/tools/epic.py`, `backend/src/services/epic.py`
+- **Learnings for future iterations:**
+  - To return similarity scores, use raw `SearchItem` objects instead of `model_validate()` — SearchItem has `.key`, `.value` (dict), and `.score`
+  - `service.search_tasks()` returns `list[SearchItem]` while other methods return model instances — this is intentional for score access
+  - `search_tasks` tool constructs response dicts manually (`item.key`, `item.value.get(...)`, `item.score`) rather than using `model_dump()`
+  - The search_threads pattern: extract user_id from runtime, create service, build SearchFilter, call search, format results
 ---
