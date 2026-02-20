@@ -149,3 +149,18 @@
   - Constructor pattern: use `Optional[BaseStore] = None` with `store = store or get_store_in_memory()` (MemoryRepo style) rather than `BaseStore = get_store_in_memory()` (ProjectRepo style)
   - `update()` uses allowed_fields set to whitelist updatable fields, matching ProjectRepo pattern
 ---
+
+## 2026-02-20 - US-003 (feat/812-task-epic-toolkit)
+- Created `backend/src/repos/task_repo.py` extending BaseRepo with `entity_type="tasks"`
+- Implements full CRUD: create, get, update, search, delete methods following EpicRepo pattern
+- Added `list_by_epic(epic_id)` method that filters tasks by epic_id using SearchFilter with `{"epic_id": epic_id}` metadata filter
+- Tasks store `epic_id` in metadata dict during creation for filtering support
+- Namespace: `(user_id, tasks)` via BaseRepo
+- `_format()` in base_repo.py was already extended for "tasks" entity type in US-002
+- Files changed: `backend/src/repos/task_repo.py` (new)
+- **Learnings for future iterations:**
+  - TaskRepo closely mirrors EpicRepo pattern — `list_by_epic` is the only additional method
+  - Metadata dict `{"epic_id": task.epic_id}` is set during `create()` to enable SearchFilter-based filtering
+  - SearchFilter `filter` parameter matches against metadata fields stored in the BaseStore
+  - allowed_fields for Task update: `{"title", "description", "status", "assignee", "blockers"}`
+---
