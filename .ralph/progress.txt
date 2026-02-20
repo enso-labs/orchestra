@@ -29,6 +29,10 @@
 - Helper function pattern: extract `_get_*_service(runtime)` to avoid repeating user_id/store boilerplate across tools
 - SearchItem has `.key`, `.value` (dict), `.score` — use raw SearchItems when you need similarity scores instead of model_validate()
 - Routes use `ServiceContext(user_id=user.id, store=store)` per request; register in `v0/__init__.py` via `app.include_router(router, prefix=prefix)`
+- Frontend entities: TypeScript interfaces in `frontend/src/lib/entities/` matching backend Pydantic models
+- Frontend services: static class with static methods, `apiClient` for HTTP, try-catch pattern (see `projectService.ts`)
+- Frontend hooks: `useState` for state, handler functions, `useEffectGet*` wrapper for initialization (see `useProject.ts`)
+- Frontend contexts: typed with `ReturnType<typeof useHook>`, null default context, `useXContext()` guard hook (see `AgentContext.tsx`)
 ---
 
 ## 2026-02-20 - US-001
@@ -229,4 +233,19 @@
   - When an endpoint needs a separate URL prefix (e.g., /tasks/search vs /epics/...), create a second router in the same module and register both
   - `ruff check` catches unused imports — remove `logger` import if not used in route handlers
   - Create task endpoint validates epic exists first with a 404 guard before creating the task
+---
+
+## 2026-02-20 - US-008 (feat/812-task-epic-toolkit)
+- Created `frontend/src/lib/entities/epic.ts` with Epic, Task, and TaskSearchResult TypeScript interfaces matching backend models
+- Created `frontend/src/lib/services/epicService.ts` with API client covering all epic/task endpoints (search, create, get, update, delete for epics; createTask, listTasks, updateTask, deleteTask, searchTasks for tasks)
+- Created `frontend/src/hooks/useEpic.ts` with useEpic hook managing epics, selectedEpic, tasks, loading, error state and handler methods for all CRUD operations
+- Created `frontend/src/context/EpicContext.tsx` with EpicProvider and useEpicContext hook following AgentContext typed pattern
+- Files changed: `frontend/src/lib/entities/epic.ts` (new), `frontend/src/lib/services/epicService.ts` (new), `frontend/src/hooks/useEpic.ts` (new), `frontend/src/context/EpicContext.tsx` (new)
+- **Learnings for future iterations:**
+  - Frontend entities go in `frontend/src/lib/entities/` as TypeScript interfaces matching backend Pydantic models
+  - Services follow ProjectService pattern: static class with static methods, BASE_URL constant, apiClient for HTTP calls, try-catch error handling
+  - Hooks follow useProject pattern: useState for state, handler functions for CRUD, useEffect wrapper for initialization
+  - Contexts follow AgentContext typed pattern: `ReturnType<typeof useHook>` for type, createContext with null default, custom useXContext hook with error guard
+  - `npm install` is required before `tsc` can run — typescript is a devDependency not globally installed
+  - Task endpoints are nested under epics: `/epics/{id}/tasks` for CRUD, `/tasks/search` for global search
 ---
