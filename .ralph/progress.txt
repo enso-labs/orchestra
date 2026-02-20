@@ -71,3 +71,15 @@
   - US-003 and US-004 could have been a single story — adding to ToolSelectionModal automatically wires it to the chat page via BaseToolMenu
   - useChat already sends all agent state fields, so new agent state properties are automatically included in LLM requests
 ---
+
+## 2026-02-20 - US-005
+- Updated issue #803 body via `gh issue edit 803 --body`
+- Added Key Integration Points table (9 files with functions and roles)
+- Added UI Integration Points table (6 components with change types)
+- Filled Storage section (Supabase PostgreSQL, assistants table, Agent/Assistant schema)
+- Filled Architectural Decisions (backend source of truth, session-only subagent state, user-scoped auth, sonner toasts)
+- Updated acceptance criteria checkboxes
+- **Learnings for future iterations:**
+  - Use HEREDOC with `gh issue edit --body` for multi-line content
+  - Keep integration points tables focused on changed files + their roles
+---
