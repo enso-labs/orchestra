@@ -295,6 +295,132 @@ async def search_tasks(query: str, runtime: ToolRuntime, limit: int = 5) -> list
         return []
 
 
+##########################################################################
+# Epic Execution Tools
+##########################################################################
+
+
+@tool
+async def start_epic_execution(epic_id: str, runtime: ToolRuntime) -> dict:
+    """
+    Toolkit: Epic Management
+    Description: Start parallel execution of assigned tasks in an epic by dispatching them to subagents.
+    Each assigned task is routed to its designated subagent for autonomous completion.
+    Tasks must be assigned to subagents first using assign_task.
+    Args:
+        epic_id: The ID of the epic to execute.
+    Returns:
+        Execution summary with dispatched tasks and their updated statuses.
+    """
+    from collections import defaultdict
+    from uuid import uuid4
+
+    from deepagents import SubAgent, create_deep_agent
+    from langchain.chat_models import init_chat_model
+    from langchain_core.messages import HumanMessage
+    from langchain_core.runnables.config import RunnableConfig
+
+    from src.constants.llm import DEFAULT_CHAT_MODEL
+
+    try:
+        service = _get_epic_service(runtime)
+
+        # Fetch all tasks for the epic
+        tasks = await service.list_tasks(epic_id)
+        if not tasks:
+            return {"error": "No tasks found for this epic."}
+
+        # Filter to assigned tasks in todo status
+        assigned_tasks = [t for t in tasks if t.assignee and t.status == "todo"]
+        if not assigned_tasks:
+            return {"error": "No assigned todo tasks found. Use assign_task to assign tasks to subagents first."}
+
+        # Group tasks by assignee
+        tasks_by_assignee: dict[str, list] = defaultdict(list)
+        for task in assigned_tasks:
+            tasks_by_assignee[task.assignee].append(task)
+
+        # Validate max 3 tasks per subagent
+        for assignee, agent_tasks in tasks_by_assignee.items():
+            if len(agent_tasks) > 3:
+                return {
+                    "error": (
+                        f"Subagent '{assignee}' has {len(agent_tasks)} tasks assigned. Maximum is 3 per subagent."
+                    )
+                }
+
+        # Set all dispatched tasks to in_progress
+        for task in assigned_tasks:
+            await service.update_task(task.id, {"status": "in_progress"})
+
+        # Build SubAgent specs for each assignee
+        subagents: list[SubAgent] = []
+        for assignee, agent_tasks in tasks_by_assignee.items():
+            task_context = "\n".join(
+                f"- Task ID: {t.id}, Title: {t.title}, Description: {t.description or 'N/A'}" for t in agent_tasks
+            )
+            subagents.append(
+                {
+                    "name": assignee,
+                    "description": f"Subagent for handling {len(agent_tasks)} assigned tasks",
+                    "system_prompt": (
+                        f"You are subagent '{assignee}'. You have been assigned the following tasks:\n\n"
+                        f"{task_context}\n\n"
+                        "For each task, call the update_task tool with the task_id and status='done' "
+                        "to mark it as complete. Process all your assigned tasks."
+                    ),
+                    "tools": [update_task],
+                }
+            )
+
+        # Create coordinator agent using deepagents SubAgent infrastructure
+        coordinator = create_deep_agent(
+            model=init_chat_model(model=DEFAULT_CHAT_MODEL),
+            tools=[],
+            subagents=subagents,
+            system_prompt=(
+                "You are a task execution coordinator. You have subagents available to process tasks. "
+                "Use the task tool to dispatch work to each subagent by name. "
+                "Each subagent knows their assigned tasks and will mark them as done."
+            ),
+            store=runtime.store,
+        )
+
+        # Build dispatch instructions
+        dispatch_msg = "Dispatch tasks to the following subagents:\n"
+        for assignee, agent_tasks in tasks_by_assignee.items():
+            task_names = ", ".join(t.title for t in agent_tasks)
+            dispatch_msg += f"\n- Subagent '{assignee}': Process tasks: {task_names}"
+
+        # Execute coordinator with proper config for user context
+        config = RunnableConfig(
+            configurable={
+                "user_id": service.user_id,
+                "thread_id": str(uuid4()),
+            },
+            metadata={"user_id": service.user_id},
+        )
+        await coordinator.ainvoke(
+            {"messages": [HumanMessage(content=dispatch_msg)]},
+            config=config,
+        )
+
+        # Fetch updated task statuses
+        updated_tasks = await service.list_tasks(epic_id)
+        return {
+            "epic_id": epic_id,
+            "total_tasks": len(tasks),
+            "dispatched": len(assigned_tasks),
+            "subagents_used": list(tasks_by_assignee.keys()),
+            "results": [
+                {"task_id": t.id, "title": t.title, "status": t.status, "assignee": t.assignee} for t in updated_tasks
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Error executing epic {epic_id}: {e}")
+        return {"error": str(e)}
+
+
 EPIC_TOOLS = [
     create_epic,
     list_epics,
@@ -306,4 +432,5 @@ EPIC_TOOLS = [
     delete_task,
     assign_task,
     search_tasks,
+    start_epic_execution,
 ]
