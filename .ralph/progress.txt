@@ -322,3 +322,19 @@
   - Full import chain requires POSTGRES_CONNECTION_STRING — use `ast.parse()` + `ruff check` for isolated validation
   - Imports for heavy dependencies (`create_deep_agent`, `init_chat_model`) should be inside the function to avoid module-level side effects
 ---
+
+## 2026-02-20 - US-012 (feat/812-task-epic-toolkit)
+- Verified branch `feat/812-task-epic-toolkit` is correct and up to date
+- Committed `frontend/package-lock.json` peer dependency metadata changes
+- Ran `ruff check` on backend — all checks passed
+- Ran `tsc --noEmit` on frontend — no errors
+- Verified `git status` — working tree clean
+- Pushed 21 commits to `origin/feat/812-task-epic-toolkit` for PR #813
+- Updated prd.json: set US-012 `passes: true`
+- All 12 user stories now have `passes: true`
+- Files changed: `frontend/package-lock.json`, `.ralph/prd.json`, `.ralph/progress.txt`
+- **Learnings for future iterations:**
+  - package-lock.json peer dependency changes are safe to commit — they reflect `npm install` resolution differences
+  - Always verify typecheck on both backend (ruff) and frontend (tsc) before final push
+  - Use `git push origin <branch>` to push all local commits at once
+---
