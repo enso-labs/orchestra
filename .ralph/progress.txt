@@ -40,3 +40,23 @@
   - AgentService.create() takes an Agent object directly
   - The unauthenticated view shows AgentSection; ChatNav only appears in authenticated chat view with messages
 ---
+
+## 2026-02-20 - US-003
+- Created SubagentsPanel.tsx in ToolSelectionModal directory
+- Added "subagents" to ToolCategory type in types.ts
+- Added Subagents tab with Bot icon to Sidebar.tsx
+- Wired SubagentsPanel into ToolSelectionModal/index.tsx with agents list, toggle, and selection state from AgentContext
+- SubagentsPanel has: search, responsive grid (1/2/3 cols), agent cards with name/description/model, toggle with visual indicator
+- Subagents tab visible only for authenticated users
+- SubagentsPanel has its own status bar (hides the tool count status bar when active)
+- Files changed:
+  - frontend/src/components/modals/ToolSelectionModal/types.ts
+  - frontend/src/components/modals/ToolSelectionModal/Sidebar.tsx
+  - frontend/src/components/modals/ToolSelectionModal/SubagentsPanel.tsx (new)
+  - frontend/src/components/modals/ToolSelectionModal/index.tsx
+- TypeScript typecheck passes
+- **Learnings for future iterations:**
+  - ToolSelectionModal uses a category-based sidebar pattern: add type to ToolCategory, add config to Sidebar categories array, conditionally render panel
+  - visibleCategories controls what tabs authenticated vs unauthenticated users see
+  - useAgentContext exposes toggleSubagent, isAgentSelected, agents for subagent management
+---

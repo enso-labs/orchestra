@@ -5,6 +5,7 @@ import { PlatformToolsPanel } from "./PlatformToolsPanel";
 import { CustomToolsPanel } from "./CustomToolsPanel";
 import { McpServerPanel } from "./McpServerPanel";
 import { A2aAgentPanel } from "./A2aAgentPanel";
+import { SubagentsPanel } from "./SubagentsPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
 import { ToolCategory, Tool, McpServerConfig, A2aServerConfig } from "./types";
 import {
@@ -45,7 +46,8 @@ export function ToolSelectionModal({
 	initialMcpConfig = {},
 	initialA2aConfig = {},
 }: ToolSelectionModalProps) {
-	const { setAgent } = useAgentContext();
+	const { setAgent, agents, agent, toggleSubagent, isAgentSelected } =
+		useAgentContext();
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
@@ -66,7 +68,7 @@ export function ToolSelectionModal({
 
 	// Derive visible categories based on auth state
 	const visibleCategories: ToolCategory[] = isAuthenticated
-		? ["platform", "api", "mcp", "a2a"]
+		? ["platform", "api", "mcp", "a2a", "subagents"]
 		: ["platform", "mcp", "a2a"];
 
 	// Fetch platform tools
@@ -263,8 +265,17 @@ export function ToolSelectionModal({
 							/>
 						)}
 
+						{activeCategory === "subagents" && (
+							<SubagentsPanel
+								agents={agents}
+								selectedSubagents={agent.subagents || []}
+								onToggleSubagent={toggleSubagent}
+								isAgentSelected={isAgentSelected}
+							/>
+						)}
+
 						{/* Status Bar */}
-						{!isToolFormActive && (
+						{!isToolFormActive && activeCategory !== "subagents" && (
 							<div className="flex-shrink-0 border-t border-border px-4 sm:px-6 py-3 sm:py-4 bg-background">
 								<div className="text-sm text-muted-foreground">
 									{selectedCount > 0 ? (

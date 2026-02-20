@@ -13,7 +13,7 @@ export interface ToolDetail extends Tool {
 	metadata: Record<string, any>;
 }
 
-export type ToolCategory = "platform" | "mcp" | "a2a" | "api";
+export type ToolCategory = "platform" | "mcp" | "a2a" | "api" | "subagents";
 
 export interface ToolSelectionState {
 	selectedTools: Set<string>;

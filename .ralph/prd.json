@@ -47,8 +47,8 @@
         "Typecheck passes with tsc --project tsconfig.app.json"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added Subagents tab to ToolSelectionModal with SubagentsPanel component. Shows agent grid with name/description/model, toggle selection, visual indicator (primary bg + check icon)."
     },
     {
       "id": "US-004",
