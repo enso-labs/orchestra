@@ -1,10 +1,10 @@
-# Ralph working files (generated during runs)
-prd.json
-progress.txt
-.last-branch
+# Ralph working files (generated during runs, root only)
+/prd.json
+/progress.txt
+/.last-branch
 
-# Archive is optional to commit
-# archive/
+# Allow archived runs to be committed
+!archive/
 
 # OS files
 .DS_Store
