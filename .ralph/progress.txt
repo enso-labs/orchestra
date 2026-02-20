@@ -33,6 +33,8 @@
 - Frontend services: static class with static methods, `apiClient` for HTTP, try-catch pattern (see `projectService.ts`)
 - Frontend hooks: `useState` for state, handler functions, `useEffectGet*` wrapper for initialization (see `useProject.ts`)
 - Frontend contexts: typed with `ReturnType<typeof useHook>`, null default context, `useXContext()` guard hook (see `AgentContext.tsx`)
+- SubAgent infrastructure: `SubAgent` TypedDict from `deepagents` with name/description/system_prompt/tools; pass to `create_deep_agent(subagents=...)` for coordinator pattern
+- SubAgent dispatch: coordinator agent gets automatic `task(description, subagent_type)` tool via `SubAgentMiddleware`; each subagent is ephemeral (stateless invocation)
 ---
 
 ## 2026-02-20 - US-001
@@ -300,4 +302,23 @@
   - EpicDetailPage manages its own local state (epic, tasks) fetched directly via EpicService, rather than relying solely on context — this allows independent data loading per page
   - Select component from Radix UI works well for inline status updates on task cards
   - The detail page refetches tasks after CreateTaskModal closes (via onClose callback) to ensure fresh data
+---
+
+## 2026-02-20 - US-011 (feat/812-task-epic-toolkit)
+- Created `start_epic_execution` tool in `backend/src/tools/epic.py` that dispatches assigned tasks to subagents
+- Tool flow: fetch tasks by epic → filter assigned todo tasks → group by assignee → validate max 3 per subagent → set tasks to in_progress → build SubAgent specs → create coordinator via `create_deep_agent` → dispatch → return summary
+- Uses `deepagents.SubAgent` TypedDict infrastructure: each assignee becomes a SubAgent with `name`, `description`, `system_prompt` (containing task context), and `tools` ([update_task])
+- Coordinator agent built with `create_deep_agent(subagents=...)` dispatches to each subagent via the automatic `task()` tool
+- Each subagent receives task IDs, titles, and descriptions in its system prompt, and can call `update_task(task_id, status='done')` to mark tasks complete
+- Validates max 3 tasks per subagent (returns error if exceeded)
+- Added `start_epic_execution` to EPIC_TOOLS list (now 11 tools total) — automatically registered in default_tools()
+- The existing `assign_task` tool already handles setting the assignee field (implemented in US-005)
+- Files changed: `backend/src/tools/epic.py`
+- **Learnings for future iterations:**
+  - `SubAgent` is a TypedDict from `deepagents` with required fields: name, description, system_prompt, tools
+  - `create_deep_agent` with `subagents` param creates a `SubAgentMiddleware` that exposes a `task(description, subagent_type)` tool to the main agent
+  - Subagent tools get `ToolRuntime` injected automatically — need to pass `store` to `create_deep_agent` and `metadata.user_id` in the RunnableConfig
+  - Each subagent invocation is stateless/ephemeral — only the final message is returned to the coordinator
+  - Full import chain requires POSTGRES_CONNECTION_STRING — use `ast.parse()` + `ruff check` for isolated validation
+  - Imports for heavy dependencies (`create_deep_agent`, `init_chat_model`) should be inside the function to avoid module-level side effects
 ---
