@@ -59,8 +59,8 @@
         "Commit changes inside the wiki submodule"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Rewrote Quick Start section with 5-step Manage Tools modal walkthrough. Replaced all outdated external GitHub-hosted GIF/images with 6 local screenshots. Documented tool selection categories (Platform/API/MCP/A2A), Add Server form fields (Template/Server Name/Transport/URL/Headers), template presets, Fetch Tools workflow, and tool card selection. Added Supported Transports table. Preserved API reference sections."
     },
     {
       "id": "US-005",

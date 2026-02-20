@@ -12,6 +12,11 @@
 - App theme toggle has Day/Dusk/Night/System options — must click "Day" for light mode screenshots (not `agent-browser set media light`)
 - Clicking model name near chat input goes to Settings page, not a dropdown — model selection is in Settings
 - The combobox near the chat input is the assistant selector, not the model selector
+- Tool count button next to chat input opens a dropdown with "Upload Photo", "Web Search" toggle, and "Configure Tools" — the latter opens the full Tool Selection modal
+- Tool Selection modal has 4 category tabs: Platform, API, MCP, A2A — each with its own panel
+- MCP Add Server form has Template dropdown (Custom, Ruska MCP, GitHub MCP), Server Name, Transport (SSE/Streamable HTTP/STDIO), URL, Header Key/Value
+- MCP config is saved to user defaults on the backend (not localStorage) via `patchDefaults()`
+- Docusaurus image paths for wiki/static/img/ use `/img/...` in markdown (absolute from static root)
 ---
 
 ## 2026-02-20 - US-001
@@ -65,4 +70,34 @@
   - The combobox near the chat input is the assistant selector, not the model selector
   - The Settings page has: Default Model, Default Sandbox, AI Provider Keys sections, plus model visibility toggles by provider further down
   - Memories page is at `/memories` (direct sidebar link), not under Settings
+---
+
+## 2026-02-20 - US-004
+- Rewrote `wiki/docs/tools/mcp.md` Quick Start section with 5-step Manage Tools modal walkthrough:
+  - Step 1: Open Manage Tools modal via tool count button → Configure Tools
+  - Step 2: Navigate to MCP tab (sidebar navigation)
+  - Step 3: Add MCP server (Template, Server Name, Transport, URL, Headers)
+  - Step 4: Save and Fetch Tools (configured servers list, Fetch Tools button)
+  - Step 5: Use MCP tools in chat
+- Replaced all 5 outdated external GitHub-hosted GIF/images with 6 local screenshots:
+  - `wiki/static/img/tools/01-tool-selection-modal.png` — full Tool Selection modal (Platform tab)
+  - `wiki/static/img/tools/02-mcp-empty-state.png` — MCP tab with no servers configured
+  - `wiki/static/img/tools/03-mcp-add-server-form.png` — Add Server form (empty)
+  - `wiki/static/img/tools/04-mcp-template-dropdown.png` — Template dropdown (Custom/Ruska MCP/GitHub MCP)
+  - `wiki/static/img/tools/05-mcp-add-server-filled.png` — Add Server form filled with sample config
+  - `wiki/static/img/tools/06-mcp-server-added.png` — Configured server with Fetch Tools button
+- Added Supported Transports table (SSE, Streamable HTTP, STDIO)
+- Added configuration persistence info callout
+- Preserved API reference sections (MCP info endpoint, Create Thread, Granular Tool Selection)
+- Files changed: `wiki/docs/tools/mcp.md`, `wiki/static/img/tools/*.png`
+- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+- **Learnings for future iterations:**
+  - The tool count button (e.g., "4") next to the chat input opens a dropdown menu, not the modal directly — must click "Configure Tools" from the dropdown
+  - Tool Selection modal has 4 category tabs in a left sidebar: Platform, API, MCP, A2A
+  - MCP Add Server form includes Template dropdown with presets (Custom, Ruska MCP, GitHub MCP) that pre-fill fields
+  - Transport options are SSE, Streamable HTTP, and STDIO
+  - MCP configuration is persisted to user defaults on the backend via `patchDefaults()` — not localStorage as the old docs suggested
+  - Header Value field is masked (password-style input) for security
+  - Pressing Escape while a dropdown is open inside the modal closes the entire modal — be careful when automating with agent-browser
+  - Docusaurus image references to `wiki/static/img/` use absolute paths from static root: `/img/tools/01-tool-selection-modal.png`
 ---
