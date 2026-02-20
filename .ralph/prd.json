@@ -14,8 +14,8 @@
         "Verify changes render correctly by reviewing markdown structure"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added Step 6 to tutorial, updated overview bullets and How It Works section in index"
     },
     {
       "id": "US-002",
@@ -28,8 +28,8 @@
         "Commit changes inside the wiki submodule"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added Storing AGENTS.md via Memories section to index, Store as Memory (Recommended) section to tutorial, reorganized sidebars to nest AGENTS.md under Core Features category"
     },
     {
       "id": "US-003",
@@ -43,8 +43,8 @@
         "Commit changes inside the wiki submodule"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Rewrote getting-started.md with 6-step onboarding flow (account creation, UI overview, settings/model config, first memory, AGENTS.md as memory, first message). Added 5 screenshots from chat.ruska.ai. Cross-references memories tutorial and AGENTS.md docs."
     },
     {
       "id": "US-004",

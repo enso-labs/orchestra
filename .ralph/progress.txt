@@ -4,4 +4,65 @@
 - Images go in wiki/static/img/
 - Sidebar config in wiki/sidebars.ts
 - Changes must be committed inside the wiki submodule first, then submodule ref updated in orchestra
+- AGENTS.md is stored as a memory via the memories system; each memory has a `path` (default "AGENTS.md") and `prepare_memory_files()` in `backend/src/agents/__init__.py` injects enabled memories as files into agent context
+- Wiki submodule starts in detached HEAD — create a feature branch before committing
+- Docusaurus admonitions use `:::tip`, `:::info`, etc. for callout blocks
+- Docusaurus links must use relative markdown paths (`../memories/index.md`), not slug paths (`/memories`) — slug paths cause broken link warnings at build time
+- Sidebar categories can link to a doc via `link: { type: "doc", id: "agents-md/index" }` making the category label clickable
+- App theme toggle has Day/Dusk/Night/System options — must click "Day" for light mode screenshots (not `agent-browser set media light`)
+- Clicking model name near chat input goes to Settings page, not a dropdown — model selection is in Settings
+- The combobox near the chat input is the assistant selector, not the model selector
+---
+
+## 2026-02-20 - US-001
+- Updated `wiki/docs/memories/tutorial.md`: Added Step 6 explaining how to store AGENTS.md as a memory, including "Why", "How to Do It", and "Toggling" subsections with a `:::info` callout explaining the mechanism
+- Updated `wiki/docs/memories/index.md`: Added AGENTS.md Integration bullet to Overview, rewrote How It Works steps to reflect file-based injection (not `/memories.md`), added `:::tip` callout linking to the tutorial
+- Files changed: `wiki/docs/memories/tutorial.md`, `wiki/docs/memories/index.md`
+- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+- **Learnings for future iterations:**
+  - The memories system injects each memory as a separate file (not a single `/memories.md`), based on the memory's `path` field
+  - `prepare_memory_files()` in `backend/src/agents/__init__.py` is the core function that bridges memories → agent files
+  - Disabled memories are filtered out via `enabled` field check
+  - Wiki submodule is detached HEAD by default — must create branch before committing
+- Docusaurus links must use relative markdown paths (e.g., `../memories/index.md`) not shorthand slugs (e.g., `/memories`) to avoid broken link warnings
+---
+
+## 2026-02-20 - US-002
+- Updated `wiki/docs/agents-md/index.md`: Added "Storing AGENTS.md via Memories" section explaining how the memories system persists AGENTS.md instructions across all conversations, with a `:::tip` callout linking to the memories tutorial
+- Updated `wiki/docs/agents-md/tutorial.md`: Added "Store AGENTS.md as a Memory (Recommended)" section with quick steps and `:::info` callout comparing file attachment vs memories vs assistants approaches; updated Next Steps with memories link
+- Updated `wiki/sidebars.ts`: Reorganized Core Features to nest AGENTS.md as a subcategory with its tutorial, removed AGENTS.md tutorial from separate Tutorials category
+- Updated Related Documentation in both files to include cross-references to memories docs
+- Fixed all new links to use relative markdown paths for Docusaurus compatibility
+- Files changed: `wiki/docs/agents-md/index.md`, `wiki/docs/agents-md/tutorial.md`, `wiki/sidebars.ts`
+- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+- **Learnings for future iterations:**
+  - Docusaurus requires relative markdown paths (e.g., `../memories/index.md`) — shorthand slug paths like `/memories` cause broken link warnings at build time
+  - The sidebar supports nested categories with `link: { type: "doc", id: "..." }` to make the category label itself link to a doc
+  - Pre-existing broken links exist in the wiki (sandbox, tools pages) — don't try to fix them as part of unrelated stories
+---
+
+## 2026-02-20 - US-003
+- Rewrote `wiki/docs/getting-started.md` with a complete 6-step onboarding flow:
+  - Step 1: Create account or sign in (landing page + login page)
+  - Step 2: Explore the interface (sidebar, chat area, top bar, user menu)
+  - Step 3: Configure default model in Settings
+  - Step 4: Create first memory
+  - Step 5: Add AGENTS.md as a memory
+  - Step 6: Send first message
+- Took 5 screenshots from https://chat.ruska.ai using agent-browser:
+  - `wiki/static/img/getting-started/01-landing-page.png` — landing page in light mode
+  - `wiki/static/img/getting-started/02-login-page.png` — login page with email/password/OAuth
+  - `wiki/static/img/getting-started/03-chat-interface.png` — main chat interface after login
+  - `wiki/static/img/getting-started/04-settings-page.png` — Settings page (model, sandbox, keys)
+  - `wiki/static/img/getting-started/05-memories-page.png` — Memories page (empty state)
+- Added cross-references to Memories tutorial, AGENTS.md docs, and Memory Tutorial Step 6
+- All links use relative markdown paths for Docusaurus compatibility
+- Files changed: `wiki/docs/getting-started.md`, `wiki/static/img/getting-started/*.png`
+- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+- **Learnings for future iterations:**
+  - The app's theme toggle has Day/Dusk/Night/System options — must click "Day" for light mode screenshots (not just `agent-browser set media light`)
+  - Clicking the model name (e.g., "gpt-5.2") next to the chat input navigates to the Settings page, not a dropdown
+  - The combobox near the chat input is the assistant selector, not the model selector
+  - The Settings page has: Default Model, Default Sandbox, AI Provider Keys sections, plus model visibility toggles by provider further down
+  - Memories page is at `/memories` (direct sidebar link), not under Settings
 ---
