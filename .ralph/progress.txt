@@ -28,6 +28,7 @@
 - ToolRuntime pattern: `runtime.config["metadata"].get("user_id")` for user context, `runtime.store` for BaseStore
 - Helper function pattern: extract `_get_*_service(runtime)` to avoid repeating user_id/store boilerplate across tools
 - SearchItem has `.key`, `.value` (dict), `.score` — use raw SearchItems when you need similarity scores instead of model_validate()
+- Routes use `ServiceContext(user_id=user.id, store=store)` per request; register in `v0/__init__.py` via `app.include_router(router, prefix=prefix)`
 ---
 
 ## 2026-02-20 - US-001
@@ -211,4 +212,21 @@
   - `service.search_tasks()` returns `list[SearchItem]` while other methods return model instances — this is intentional for score access
   - `search_tasks` tool constructs response dicts manually (`item.key`, `item.value.get(...)`, `item.score`) rather than using `model_dump()`
   - The search_threads pattern: extract user_id from runtime, create service, build SearchFilter, call search, format results
+---
+
+## 2026-02-20 - US-007 (feat/812-task-epic-toolkit)
+- Created `backend/src/routes/v0/epic/__init__.py` with 10 REST API endpoints
+- Epic endpoints on `router` (prefix `/epics`): POST /epics, POST /epics/search, GET /epics/{id}, PUT /epics/{id}, DELETE /epics/{id}
+- Task endpoints on `router` (prefix `/epics`): POST /epics/{id}/tasks, GET /epics/{id}/tasks, PUT /epics/{id}/tasks/{task_id}, DELETE /epics/{id}/tasks/{task_id}
+- Task search on separate `task_router` (prefix `/tasks`): POST /tasks/search — returns task_id, title, status, epic_id, score
+- All endpoints require auth via `verify_credentials` dependency
+- Registered both `router` (as `epic`) and `task_router` (as `task`) in `backend/src/routes/v0/__init__.py`
+- Follows ProjectRoute pattern: ServiceContext created per request with user.id and store
+- Files changed: `backend/src/routes/v0/epic/__init__.py` (new), `backend/src/routes/v0/__init__.py`
+- **Learnings for future iterations:**
+  - Routes follow the pattern: create ServiceContext from user.id + store, call service method, return serialized result
+  - Use `model_dump(exclude_unset=True)` for partial update bodies to only send changed fields
+  - When an endpoint needs a separate URL prefix (e.g., /tasks/search vs /epics/...), create a second router in the same module and register both
+  - `ruff check` catches unused imports — remove `logger` import if not used in route handlers
+  - Create task endpoint validates epic exists first with a 404 guard before creating the task
 ---
