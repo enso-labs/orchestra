@@ -338,3 +338,12 @@
   - Always verify typecheck on both backend (ruff) and frontend (tsc) before final push
   - Use `git push origin <branch>` to push all local commits at once
 ---
+
+## 2026-02-20 - US-008 (re-verification)
+- Re-verified existing US-008 implementation — all files present and typecheck clean
+- Files verified: `frontend/src/lib/entities/epic.ts`, `frontend/src/lib/services/epicService.ts`, `frontend/src/hooks/useEpic.ts`, `frontend/src/context/EpicContext.tsx`
+- `npx tsc --noEmit` passes with zero errors
+- Marked `passes: true` in prd.json
+- **Learnings for future iterations:**
+  - When prd.json is reverted to `passes: false` but code is already committed, verify typecheck and re-mark as passing
+---
