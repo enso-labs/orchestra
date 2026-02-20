@@ -11,4 +11,17 @@
 - ChatNav: frontend/src/components/nav/ChatNav.tsx
 - Use tsc --project tsconfig.app.json for typechecking (root tsconfig has "files": [])
 - Wiki submodule at wiki/ — docs changes must be committed inside wiki/ first
+- Dialog pattern: isOpen/onClose/onSave props, local form state, handleSubmit with validation, handleClose resets state
+- shadcn dialog imports: Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter from @/components/ui/dialog
+---
+
+## 2026-02-20 - US-001
+- Verified existing SaveAsAssistantDialog.tsx from prior WIP commit meets all acceptance criteria
+- Component at frontend/src/components/dialogs/SaveAsAssistantDialog.tsx
+- Features: name (required) + description inputs, Save/Cancel buttons, non-empty validation, onSave callback
+- TypeScript typecheck passes (tsc --project tsconfig.app.json)
+- No additional changes needed — WIP was already complete for this story
+- **Learnings for future iterations:**
+  - The WIP commit from the prior Ralph session was fully complete for US-001 despite the "incomplete" commit message
+  - Always verify existing work before re-implementing
 ---
