@@ -1,80 +1,196 @@
 {
-  "project": "Orchestra",
-  "branchName": "feat/807-docs-update-memories-onboarding-mcp",
-  "description": "Update and consolidate documentation: memories tutorial, getting started, MCP tools",
+  "project": "orchestra",
+  "branchName": "feat/812-task-epic-toolkit",
+  "description": "Task/Epic CRUD toolkit with subagent assignment and parallel execution",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Update memories tutorial with AGENTS.md content",
-      "description": "As a developer, I want the memories tutorial to include AGENTS.md workflow so users understand that AGENTS.md is stored as a memory.",
+      "title": "Epic and Task Pydantic Models",
+      "description": "As a developer, I need data models for Epics and Tasks so they can be persisted in BaseStore.",
       "acceptanceCriteria": [
-        "Update wiki/docs/memories/tutorial.md to include steps for creating and storing AGENTS.md as a memory",
-        "Update wiki/docs/memories/index.md to mention AGENTS.md integration in the overview",
-        "Commit changes inside the wiki submodule",
-        "Verify changes render correctly by reviewing markdown structure"
+        "Add Epic model to store.py with fields: id, name, description, status, metadata, created_at, updated_at",
+        "Add Task model to store.py with fields: id, epic_id, title, description, status (todo/in_progress/done/blocked), assignee, blockers (list[str]), metadata, created_at, updated_at",
+        "Add EpicUpdate and TaskUpdate partial update schemas",
+        "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Added Step 6 to tutorial, updated overview bullets and How It Works section in index"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Update AGENTS.md docs to reference memories",
-      "description": "As a developer, I want the AGENTS.md section to reference the memories system so users are directed to the consolidated docs.",
+      "title": "Epic Repository",
+      "description": "As a developer, I need a repository for Epic CRUD operations using BaseStore.",
       "acceptanceCriteria": [
-        "Update wiki/docs/agents-md/index.md to explain that AGENTS.md is now stored via the memories system",
-        "Update wiki/docs/agents-md/tutorial.md to cross-reference the memories tutorial",
-        "Update wiki/sidebars.ts to reorganize Core Features — ensure AGENTS.md and Memories sections are clearly connected",
-        "Commit changes inside the wiki submodule"
+        "Create backend/src/repos/epic_repo.py extending BaseRepo with entity_type epics",
+        "Implement create, update, search, delete methods following ProjectRepo pattern",
+        "Namespace: (user_id, epics)",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Added Storing AGENTS.md via Memories section to index, Store as Memory (Recommended) section to tutorial, reorganized sidebars to nest AGENTS.md under Core Features category"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Rewrite getting started page with onboarding flow",
-      "description": "As a user, I want the getting started page to walk me through the complete onboarding process including interface walkthrough, configuring settings, and adding AGENTS.md into memories.",
+      "title": "Task Repository",
+      "description": "As a developer, I need a repository for Task CRUD with epic-scoped filtering.",
       "acceptanceCriteria": [
-        "Rewrite wiki/docs/getting-started.md with detailed onboarding steps: login, UI overview, configuring settings (model selection), creating first memory, adding AGENTS.md as a memory",
-        "Include references to the memories tutorial and AGENTS.md docs",
-        "Take screenshots of the onboarding flow using agent-browser skill from https://chat.ruska.ai",
-        "Save screenshots to wiki/static/img/ with descriptive filenames",
-        "Commit changes inside the wiki submodule"
+        "Create backend/src/repos/task_repo.py extending BaseRepo with entity_type tasks",
+        "Tasks stored with epic_id in metadata for filtering",
+        "list_by_epic(epic_id) method filters tasks by epic_id",
+        "Implement create, update, delete methods following existing patterns",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Rewrote getting-started.md with 6-step onboarding flow (account creation, UI overview, settings/model config, first memory, AGENTS.md as memory, first message). Added 5 screenshots from chat.ruska.ai. Cross-references memories tutorial and AGENTS.md docs."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Update MCP tools page with Manage Tools modal",
-      "description": "As a user, I want the MCP tools page to document the current Manage Tools modal UI and workflow.",
+      "title": "Epic Service",
+      "description": "As a developer, I need a service layer for epic/task business logic.",
       "acceptanceCriteria": [
-        "Update wiki/docs/tools/mcp.md with current UI flow for the Manage Tools modal",
-        "Document tool selection, MCP configuration panel, and enabling/disabling tools",
-        "Take screenshots of the Manage Tools modal using agent-browser skill from https://chat.ruska.ai",
-        "Replace outdated GIF/images with current screenshots where applicable",
-        "Save screenshots to wiki/static/img/ with descriptive filenames",
-        "Commit changes inside the wiki submodule"
+        "Create backend/src/services/epic.py with EpicService class",
+        "Epic methods: create_epic, get_epic, search_epics, update_epic, delete_epic (cascade deletes tasks)",
+        "Task methods: create_task, get_task, list_tasks, update_task, delete_task",
+        "Register EpicService in ServiceContext (backend/src/contexts/service.py)",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Rewrote Quick Start section with 5-step Manage Tools modal walkthrough. Replaced all outdated external GitHub-hosted GIF/images with 6 local screenshots. Documented tool selection categories (Platform/API/MCP/A2A), Add Server form fields (Template/Server Name/Transport/URL/Headers), template presets, Fetch Tools workflow, and tool card selection. Added Supported Transports table. Preserved API reference sections."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Update orchestra submodule reference and push",
-      "description": "As a developer, I want all wiki changes committed and the submodule reference updated in orchestra.",
+      "title": "Epic/Task Agent Tools",
+      "description": "As an agent user, I want tools to manage epics and tasks from chat.",
       "acceptanceCriteria": [
-        "All wiki submodule commits pushed to wiki remote",
-        "Update wiki submodule reference in orchestra repo with git add wiki",
-        "Run git status to verify no remaining changes in the workspace",
-        "If remaining changes exist, commit and push to branch so they will be visible in the GitHub PR"
+        "Create backend/src/tools/epic.py with LangChain @tool decorated functions",
+        "Tools: create_epic, list_epics, update_epic, delete_epic",
+        "Tools: create_task, list_tasks, update_task, delete_task, assign_task",
+        "All tools use ToolRuntime for user context (follows search_threads pattern)",
+        "Export EPIC_TOOLS list",
+        "Register in backend/src/tools/__init__.py default_tools()",
+        "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Wiki submodule commits pushed to fork (im-an-ai-agent/wiki) since bot lacks write access to ruska-ai/wiki. Orchestra submodule reference updated and all changes committed and pushed to feat/807-docs-update-memories-onboarding-mcp. Only remaining unstaged change is wiki/package-lock.json (unrelated)."
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Task Semantic Search Tool",
+      "description": "As an agent user, I want to search tasks by semantic similarity.",
+      "acceptanceCriteria": [
+        "Create search_tasks tool (in epic.py or separate file)",
+        "Searches across all user tasks by title+description semantic similarity",
+        "Returns task_id, title, status, epic_id, score",
+        "Follows search_threads pattern exactly",
+        "Register in default_tools()",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Epic REST API Endpoints",
+      "description": "As a frontend developer, I need REST endpoints for epic/task management.",
+      "acceptanceCriteria": [
+        "Create backend/src/routes/v0/epic/__init__.py with router prefix /epics",
+        "Epic endpoints: POST /epics, POST /epics/search, GET /epics/{id}, PUT /epics/{id}, DELETE /epics/{id}",
+        "Task endpoints: POST /epics/{id}/tasks, GET /epics/{id}/tasks, PUT /epics/{id}/tasks/{task_id}, DELETE /epics/{id}/tasks/{task_id}",
+        "Search endpoint: POST /tasks/search",
+        "Register router in backend/src/routes/v0/__init__.py",
+        "All endpoints require auth via verify_credentials",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Frontend Epic Service and Context",
+      "description": "As a frontend developer, I need API client and React context for epics/tasks.",
+      "acceptanceCriteria": [
+        "Create frontend/src/lib/services/epicService.ts with API client for all epic/task endpoints",
+        "Create frontend/src/context/EpicContext.tsx with provider, state management, and hooks",
+        "TypeScript interfaces: Epic, Task matching backend models",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Epic List Page",
+      "description": "As a user, I want to view and manage my epics from a dedicated page.",
+      "acceptanceCriteria": [
+        "Create frontend/src/pages/epics/index.tsx with epic list view",
+        "Shows epic name, description, task count, status summary",
+        "Create epic button/modal",
+        "Delete epic with confirmation",
+        "Add Epics entry to app sidebar with FolderKanban icon",
+        "Add route /epics in AppRoutes.tsx",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Epic Detail Page with Task Management",
+      "description": "As a user, I want to view and manage tasks within an epic.",
+      "acceptanceCriteria": [
+        "Create frontend/src/pages/epics/EpicDetailPage.tsx",
+        "Task cards with title, status badge (color-coded), assignee, blockers",
+        "Create task form/modal",
+        "Update task status via dropdown or click",
+        "Delete task with confirmation",
+        "Add route /epics/:id in AppRoutes.tsx",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Subagent Task Assignment and Execution",
+      "description": "As a user, I want to assign tasks to subagents and execute them in parallel.",
+      "acceptanceCriteria": [
+        "assign_task tool sets assignee field to a subagent ID",
+        "Create start_epic_execution tool that dispatches assigned tasks to subagents",
+        "Uses existing deepagents.SubAgent infrastructure from agents/__init__.py",
+        "Each subagent receives its assigned task context",
+        "Subagents can call update_task to set status to done",
+        "Validation: 3 tasks per subagent, status updated on completion",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Final Verification and Cleanup",
+      "description": "As a developer, I need to ensure all changes are committed and the PR is up to date.",
+      "acceptanceCriteria": [
+        "All files committed to branch",
+        "Run git status — working tree clean",
+        "Push to branch so changes appear in PR #813",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
