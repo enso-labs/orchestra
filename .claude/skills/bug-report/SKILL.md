@@ -442,17 +442,17 @@ Feed `tasks/prd-bug-<bug-name>.md` from Step 1 directly into the `/ralph` skill.
 
 All artifacts have been committed and pushed incrementally in previous phases. This phase archives Ralph artifacts, catches any stragglers, generates a reviewer report, and marks the draft PR as ready for review.
 
-1. _ARCHIVE_ Ralph artifacts:
-   - RUN `make -C $ORCHESTRA_PROJECT_ROOT archive`
-   - This moves `.ralph/prd.json` and `.ralph/progress.txt` into the archive so the PR lands clean
-2. _VERIFY_ remote is up to date:
-   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#> && git status`
-   - _IF_ uncommitted changes remain (including archive results): stage, commit, and push them
-   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#> && git add -A && git commit -s -m "chore: archive Ralph artifacts for bug #<issue#>"`
+1. _ARCHIVE_ Ralph artifacts into `archive/bug-<issue#>/`:
+   - RUN `mkdir -p $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#>/.ralph/archive/bug-<issue#>`
+   - RUN `cp $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#>/.ralph/prd.json $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#>/.ralph/archive/bug-<issue#>/prd.json`
+   - RUN `cp $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#>/.ralph/progress.txt $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#>/.ralph/archive/bug-<issue#>/progress.txt`
+   - RUN `rm $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#>/.ralph/prd.json $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#>/.ralph/progress.txt`
+2. _COMMIT_ archive:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#> && git add .ralph/archive/bug-<issue#>/ && git add -A && git commit -s -m "chore: archive Ralph artifacts for bug #<issue#>"`
 3. _PUSH_ final changes:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/bug-<issue#> && git push`
 4. _GENERATE_ reviewer report on PR description:
-   - _READ_ `.ralph/progress.txt` (from archive) and `tasks/prd-bug-<bug-name>.md` to summarize what was fixed
+   - _READ_ `.ralph/archive/bug-<issue#>/progress.txt` and `tasks/prd-bug-<bug-name>.md` to summarize what was fixed
    - _COMPOSE_ a reviewer-friendly PR body:
      ```markdown
      ## Summary

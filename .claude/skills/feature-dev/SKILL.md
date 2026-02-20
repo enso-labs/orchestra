@@ -365,17 +365,17 @@ For features that modify UI:
 
 All artifacts have been committed and pushed incrementally in previous phases. This phase archives Ralph artifacts, catches any stragglers, generates a reviewer report, and marks the draft PR as ready for review.
 
-1. _ARCHIVE_ Ralph artifacts:
-   - RUN `make -C $ORCHESTRA_PROJECT_ROOT archive`
-   - This moves `.ralph/prd.json` and `.ralph/progress.txt` into the archive so the PR lands clean
-2. _VERIFY_ remote is up to date:
-   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git status`
-   - _IF_ uncommitted changes remain (including archive results): stage, commit, and push them
-   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add -A && git commit -s -m "chore: archive Ralph artifacts for #<issue#>"`
+1. _ARCHIVE_ Ralph artifacts into `archive/feat-<issue#>/`:
+   - RUN `mkdir -p $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/archive/feat-<issue#>`
+   - RUN `cp $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/prd.json $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/archive/feat-<issue#>/prd.json`
+   - RUN `cp $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/progress.txt $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/archive/feat-<issue#>/progress.txt`
+   - RUN `rm $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/prd.json $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/progress.txt`
+2. _COMMIT_ archive:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add .ralph/archive/feat-<issue#>/ && git add -A && git commit -s -m "chore: archive Ralph artifacts for #<issue#>"`
 3. _PUSH_ final changes:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
 4. _GENERATE_ reviewer report on PR description:
-   - _READ_ `.ralph/progress.txt` (from archive) and `tasks/prd-<feature-name>.md` to summarize what was implemented
+   - _READ_ `.ralph/archive/feat-<issue#>/progress.txt` and `tasks/prd-<feature-name>.md` to summarize what was implemented
    - _COMPOSE_ a reviewer-friendly PR body:
      ```markdown
      ## Summary
