@@ -353,3 +353,10 @@
 - Files verified: `frontend/src/pages/epics/index.tsx`, `frontend/src/components/modals/CreateEpicModal.tsx`, `frontend/src/components/drawers/app-sidebar.tsx`, `frontend/src/routes/AppRoutes.tsx`, `frontend/src/main.tsx`
 - Typecheck clean, marked `passes: true`
 ---
+
+## 2026-02-20 - US-010 (re-verification)
+- Re-verified existing US-010 implementation — EpicDetailPage with task cards, status dropdown, create/delete, back nav
+- Files verified: `frontend/src/pages/epics/EpicDetailPage.tsx`, `frontend/src/components/modals/CreateTaskModal.tsx`
+- Route `/epics/:id` in AppRoutes.tsx confirmed
+- Typecheck clean, marked `passes: true`
+---
