@@ -360,3 +360,11 @@
 - Route `/epics/:id` in AppRoutes.tsx confirmed
 - Typecheck clean, marked `passes: true`
 ---
+
+## 2026-02-20 - US-011 (re-verification)
+- Re-verified existing US-011 implementation — start_epic_execution tool with SubAgent dispatch
+- assign_task sets assignee, start_epic_execution groups by assignee, validates max 3, dispatches via create_deep_agent
+- Each subagent receives task context and update_task tool
+- Registered in EPIC_TOOLS (11 tools total)
+- Typecheck clean, marked `passes: true`
+---
