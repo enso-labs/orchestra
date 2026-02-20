@@ -32,6 +32,7 @@ import SettingsPage from "@/pages/settings";
 import MemoryEditPage from "@/pages/memories/edit";
 import MemoryCreatePage from "@/pages/memories/create";
 import MemoriesIndexPage from "@/pages/memories";
+import EpicIndexPage from "@/pages/epics";
 
 const AppRoutes: React.FC = () => {
 	return (
@@ -200,6 +201,14 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<MemoryEditPage />
+							</PrivateRoute>
+						}
+					/>
+					<Route
+						path="/epics"
+						element={
+							<PrivateRoute>
+								<EpicIndexPage />
 							</PrivateRoute>
 						}
 					/>
