@@ -62,8 +62,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Already wired via US-003: BaseToolMenu -> Configure Tools -> ToolSelectionModal -> Subagents tab. Uses toggleSubagent/isAgentSelected from AgentContext. useChat sends agent.subagents at lines 226 and 334."
     },
     {
       "id": "US-005",

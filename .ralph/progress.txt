@@ -60,3 +60,14 @@
   - visibleCategories controls what tabs authenticated vs unauthenticated users see
   - useAgentContext exposes toggleSubagent, isAgentSelected, agents for subagent management
 ---
+
+## 2026-02-20 - US-004
+- No additional code changes required — all wiring was completed in US-003
+- Subagent selection is accessible via: BaseToolMenu ("+") → Configure Tools → ToolSelectionModal → Subagents tab
+- Selection uses toggleSubagent/isAgentSelected from useAgentContext (wired in US-003's SubagentsPanel)
+- Verified: useChat.ts sends agent.subagents in payload at lines 226 and 334
+- TypeScript typecheck passes, browser verification done (ToolSelectionModal opens correctly from chat page)
+- **Learnings for future iterations:**
+  - US-003 and US-004 could have been a single story — adding to ToolSelectionModal automatically wires it to the chat page via BaseToolMenu
+  - useChat already sends all agent state fields, so new agent state properties are automatically included in LLM requests
+---
