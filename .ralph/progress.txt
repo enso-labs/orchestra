@@ -83,3 +83,16 @@
   - Use HEREDOC with `gh issue edit --body` for multi-line content
   - Keep integration points tables focused on changed files + their roles
 ---
+
+## 2026-02-20 - US-006
+- Initialized wiki submodule (`git submodule update --init wiki`)
+- Reviewed wiki/docs/assistants/index.md — missing coverage of "Save as Assistant from chat" and subagents
+- Added "Save as Assistant from Chat" section under Creating an Assistant
+- Added "Subagents" section under Advanced Configuration with web UI and API examples
+- Committed inside wiki submodule: `docs: add Save as Assistant from chat and subagents documentation`
+- Files changed: wiki/docs/assistants/index.md
+- **Learnings for future iterations:**
+  - Wiki submodule must be initialized first: `git submodule update --init wiki`
+  - Commit inside wiki/ first, then reference the submodule change in the parent repo
+  - Wiki docs follow Docusaurus format with frontmatter, admonition blocks (:::tip, :::info)
+---

@@ -90,8 +90,8 @@
         "Commit any wiki changes inside the wiki submodule"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added 'Save as Assistant from Chat' section and 'Subagents' section to wiki/docs/assistants/index.md. Committed inside wiki submodule."
     },
     {
       "id": "US-007",
