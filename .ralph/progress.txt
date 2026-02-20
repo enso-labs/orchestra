@@ -1,0 +1,7 @@
+## Codebase Patterns
+- Wiki is a Docusaurus site at wiki/ (git submodule pointing to ruska-ai/wiki)
+- Docs are markdown files in wiki/docs/
+- Images go in wiki/static/img/
+- Sidebar config in wiki/sidebars.ts
+- Changes must be committed inside the wiki submodule first, then submodule ref updated in orchestra
+---
