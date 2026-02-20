@@ -251,7 +251,7 @@
 - Pages follow ChatLayout pattern: `<ChatLayout>` > `<ChatNav>` > header + content sections
 - New providers must be added in `main.tsx` wrapping `<AppRoutes />`
 - Sidebar links: simple `<SidebarGroup>` with `<SidebarGroupLabel asChild>` wrapping a `<Link>`
-- `agent-browser eval` can set localStorage tokens to bypass PrivateRoute for UI testing without a backend
+- `agent-browser eval` can set localStorage tokens to bypass PrivateRoute for UI testing without a backend (key: `enso:auth:token`)
 - The Edit tool has trouble with tab-indented files — use Write to rewrite the whole file when tab indentation causes match failures
 ---
 
@@ -277,4 +277,27 @@
   - Tab-indented files (frontend uses tabs) can cause Edit tool match failures — Write tool is more reliable for these
   - `agent-browser eval "localStorage.setItem(...)"` bypasses auth for UI testing when backend isn't available
   - Task counts on epic list require per-epic API calls — consider adding a batch endpoint or including counts in search response for better performance
+---
+
+## 2026-02-20 - US-010 (feat/812-task-epic-toolkit)
+- Created `frontend/src/pages/epics/EpicDetailPage.tsx` with full task management
+- Task cards showing: title, status badge (color-coded), assignee, blockers (with AlertTriangle icon)
+- Status badge colors: todo=outline, in_progress=default/primary, done=secondary, blocked=destructive
+- Create task via `CreateTaskModal` dialog (following CreateEpicModal pattern)
+- Update task status via `Select` dropdown (Radix UI) with all 4 statuses
+- Delete task with `window.confirm()` confirmation
+- Back navigation to `/epics` with ArrowLeft button
+- Epic header shows name, description, and status summary (counts by status)
+- Empty state with "Create first task" CTA
+- Loading state with spinner, 404 state with "Back to Epics" button
+- Created `frontend/src/components/modals/CreateTaskModal.tsx` following CreateEpicModal pattern exactly
+- Added `/epics/:id` route in `AppRoutes.tsx` as a `<PrivateRoute>`
+- TypeScript typecheck passes, Prettier formatting applied
+- Verified in browser via agent-browser: epics page renders, detail page renders (404 state for non-existent epic), back button present
+- Files changed: `frontend/src/pages/epics/EpicDetailPage.tsx` (new), `frontend/src/components/modals/CreateTaskModal.tsx` (new), `frontend/src/routes/AppRoutes.tsx`
+- **Learnings for future iterations:**
+  - Auth token key is `enso:auth:token` (not `token`) — use `localStorage.setItem('enso:auth:token', 'test-token')` for browser testing bypass
+  - EpicDetailPage manages its own local state (epic, tasks) fetched directly via EpicService, rather than relying solely on context — this allows independent data loading per page
+  - Select component from Radix UI works well for inline status updates on task cards
+  - The detail page refetches tasks after CreateTaskModal closes (via onClose callback) to ensure fresh data
 ---
