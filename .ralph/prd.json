@@ -1,0 +1,107 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/810-docs-drift-wiki",
+  "description": "Documentation Drift Fix - Update assistants/memories docs and create schedules, projects, chat page docs",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Update Assistants Documentation",
+      "description": "As a user, I want a walkthrough on how to configure and deploy assistants so that I can effectively use the feature.",
+      "acceptanceCriteria": [
+        "Assistants page includes step-by-step guide for creating an assistant from the UI",
+        "Documents how to set instructions via AGENTS.md files",
+        "Documents tool attachment and model selection",
+        "Documents using assistants via API",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Update Memories Documentation",
+      "description": "As a user, I want the memories page to have a clear walkthrough so that I understand how to use memories effectively.",
+      "acceptanceCriteria": [
+        "Memories page includes UI walkthrough for CRUD operations",
+        "Documents relationship between AGENTS.md and memories",
+        "Cross-references agents-md tutorial",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Schedules Documentation",
+      "description": "As a user, I want documentation for the schedules/crons feature so that I can set up automated tasks.",
+      "acceptanceCriteria": [
+        "New file wiki/docs/schedules/index.md created",
+        "Documents creating, editing, and deleting schedules",
+        "Documents viewing execution history",
+        "Documents cron expression format",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Create Projects Documentation",
+      "description": "As a user, I want documentation for the projects feature so that I can organize my work.",
+      "acceptanceCriteria": [
+        "New file wiki/docs/projects/index.md created",
+        "Documents creating and managing projects",
+        "Documents associating threads with projects",
+        "Documents project-scoped conversations from chat",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Chat Page Documentation",
+      "description": "As a user, I want documentation for the main chat page so that I understand all available controls.",
+      "acceptanceCriteria": [
+        "New file wiki/docs/chat/index.md created",
+        "Documents ChatInput buttons left to right: Tools menu (+), File manager, Agent menu",
+        "Documents right side controls: Model badge, Submit button",
+        "Documents dictation mode (voice recording)",
+        "Documents image paste/drop and keyboard shortcuts",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Update Sidebar Navigation",
+      "description": "As a user, I want all core features visible in the documentation sidebar.",
+      "acceptanceCriteria": [
+        "sidebars.ts updated to include schedules, projects, and chat pages in Core Features",
+        "Sidebar order is logical",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Verify workspace is clean",
+      "description": "As a developer, I want to ensure all changes are committed and pushed.",
+      "acceptanceCriteria": [
+        "Run git status to verify no remaining uncommitted changes",
+        "If remaining changes, commit and push to branch so they will be visible in the Github PR"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
