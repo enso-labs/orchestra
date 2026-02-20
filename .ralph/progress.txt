@@ -368,3 +368,11 @@
 - Registered in EPIC_TOOLS (11 tools total)
 - Typecheck clean, marked `passes: true`
 ---
+
+## 2026-02-20 - US-012 (re-verification)
+- Ran `ruff check src/` on backend — All checks passed
+- Ran `npx tsc --noEmit` on frontend — no errors
+- Verified git status — working tree clean after commits
+- All 12 user stories now `passes: true` in prd.json
+- Pushed all re-verification commits to origin
+---
