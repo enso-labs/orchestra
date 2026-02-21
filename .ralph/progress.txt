@@ -1,117 +1,74 @@
+# Ralph Progress Log
+Started: Sat Feb 21 15:20:37 MST 2026
+
 ## Codebase Patterns
-- Wiki is a Docusaurus site at wiki/ (git submodule pointing to ruska-ai/wiki)
-- Docs are markdown files in wiki/docs/
-- Images go in wiki/static/img/
-- Sidebar config in wiki/sidebars.ts
-- Changes must be committed inside the wiki submodule first, then submodule ref updated in orchestra
-- AGENTS.md is stored as a memory via the memories system; each memory has a `path` (default "AGENTS.md") and `prepare_memory_files()` in `backend/src/agents/__init__.py` injects enabled memories as files into agent context
-- Wiki submodule starts in detached HEAD — create a feature branch before committing
-- Docusaurus admonitions use `:::tip`, `:::info`, etc. for callout blocks
-- Docusaurus links must use relative markdown paths (`../memories/index.md`), not slug paths (`/memories`) — slug paths cause broken link warnings at build time
-- Sidebar categories can link to a doc via `link: { type: "doc", id: "agents-md/index" }` making the category label clickable
-- App theme toggle has Day/Dusk/Night/System options — must click "Day" for light mode screenshots (not `agent-browser set media light`)
-- Clicking model name near chat input goes to Settings page, not a dropdown — model selection is in Settings
-- The combobox near the chat input is the assistant selector, not the model selector
-- Tool count button next to chat input opens a dropdown with "Upload Photo", "Web Search" toggle, and "Configure Tools" — the latter opens the full Tool Selection modal
-- Tool Selection modal has 4 category tabs: Platform, API, MCP, A2A — each with its own panel
-- MCP Add Server form has Template dropdown (Custom, Ruska MCP, GitHub MCP), Server Name, Transport (SSE/Streamable HTTP/STDIO), URL, Header Key/Value
-- MCP config is saved to user defaults on the backend (not localStorage) via `patchDefaults()`
-- Docusaurus image paths for wiki/static/img/ use `/img/...` in markdown (absolute from static root)
-- Bot user (im-an-ai-agent) has WRITE on ruska-ai/orchestra but only READ on ruska-ai/wiki — must fork wiki and push there
+- Default.tsx uses `jsonValue`/`fallback` pattern: compute data vs JSX element, then single return with ternary
+- Pre-commit hooks run Frontend Prettier, Frontend Lint, Frontend Test automatically on commit
+- Frontend quality commands: `npm run format`, `npm run lint`, `npx tsc --noEmit`, `npx vitest run <file>`
+- Screenshots for PR validation: upload as GitHub PR comment attachments, never commit to repo
+- SSE streaming delivers tool call args atomically (single event) — partial JSON state is sub-millisecond
+- Streaming data flow: SSE → FetchStreamReader → StreamMessageHandler.toolCall() → formatMessages() → DefaultTool
+- Tool call args during streaming: null (pre-args) → partial JSON string (mid-args, very brief) → parsed object (complete)
+- Use `gh api repos/{owner}/{repo}/issues/comments/{id} -X PATCH -f body=...` to update PR comments programmatically
+
 ---
 
-## 2026-02-20 - US-001
-- Updated `wiki/docs/memories/tutorial.md`: Added Step 6 explaining how to store AGENTS.md as a memory, including "Why", "How to Do It", and "Toggling" subsections with a `:::info` callout explaining the mechanism
-- Updated `wiki/docs/memories/index.md`: Added AGENTS.md Integration bullet to Overview, rewrote How It Works steps to reflect file-based injection (not `/memories.md`), added `:::tip` callout linking to the tutorial
-- Files changed: `wiki/docs/memories/tutorial.md`, `wiki/docs/memories/index.md`
-- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+## 2026-02-21 - US-001
+- Refactored Default.tsx to eliminate duplicate JsonView and wrapper div
+- Used `jsonValue: object | null` / `fallback: JSX.Element | null` pattern to separate data resolution from rendering
+- Single JsonView (line 91) and single wrapper div (line 89) in final output
+- Files changed: `frontend/src/components/tools/Default.tsx`
 - **Learnings for future iterations:**
-  - The memories system injects each memory as a separate file (not a single `/memories.md`), based on the memory's `path` field
-  - `prepare_memory_files()` in `backend/src/agents/__init__.py` is the core function that bridges memories → agent files
-  - Disabled memories are filtered out via `enabled` field check
-  - Wiki submodule is detached HEAD by default — must create branch before committing
-- Docusaurus links must use relative markdown paths (e.g., `../memories/index.md`) not shorthand slugs (e.g., `/memories`) to avoid broken link warnings
+  - Prettier auto-formats on save/commit — minor whitespace changes are expected
+  - Distinguishing React elements from data objects is cleanly solved by separate variables rather than runtime type checks
+  - The component handles 5 cases: object input, parsed JSON object string, parsed JSON primitive string, incomplete JSON (SyntaxHighlighter), null/empty (fallback text)
 ---
 
-## 2026-02-20 - US-002
-- Updated `wiki/docs/agents-md/index.md`: Added "Storing AGENTS.md via Memories" section explaining how the memories system persists AGENTS.md instructions across all conversations, with a `:::tip` callout linking to the memories tutorial
-- Updated `wiki/docs/agents-md/tutorial.md`: Added "Store AGENTS.md as a Memory (Recommended)" section with quick steps and `:::info` callout comparing file attachment vs memories vs assistants approaches; updated Next Steps with memories link
-- Updated `wiki/sidebars.ts`: Reorganized Core Features to nest AGENTS.md as a subcategory with its tutorial, removed AGENTS.md tutorial from separate Tutorials category
-- Updated Related Documentation in both files to include cross-references to memories docs
-- Fixed all new links to use relative markdown paths for Docusaurus compatibility
-- Files changed: `wiki/docs/agents-md/index.md`, `wiki/docs/agents-md/tutorial.md`, `wiki/sidebars.ts`
-- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+## 2026-02-21 - US-002
+- Reverted .gitignore to development base branch state using `git checkout development -- .gitignore`
+- Verified `git diff development -- .gitignore` returns empty
+- Files changed: `.gitignore`
 - **Learnings for future iterations:**
-  - Docusaurus requires relative markdown paths (e.g., `../memories/index.md`) — shorthand slug paths like `/memories` cause broken link warnings at build time
-  - The sidebar supports nested categories with `link: { type: "doc", id: "..." }` to make the category label itself link to a doc
-  - Pre-existing broken links exist in the wiki (sandbox, tools pages) — don't try to fix them as part of unrelated stories
+  - Use `git checkout <base-branch> -- <file>` to cleanly revert a file to its base branch state
+  - Always verify with `git diff <base-branch> -- <file>` after reverting
 ---
 
-## 2026-02-20 - US-003
-- Rewrote `wiki/docs/getting-started.md` with a complete 6-step onboarding flow:
-  - Step 1: Create account or sign in (landing page + login page)
-  - Step 2: Explore the interface (sidebar, chat area, top bar, user menu)
-  - Step 3: Configure default model in Settings
-  - Step 4: Create first memory
-  - Step 5: Add AGENTS.md as a memory
-  - Step 6: Send first message
-- Took 5 screenshots from https://chat.ruska.ai using agent-browser:
-  - `wiki/static/img/getting-started/01-landing-page.png` — landing page in light mode
-  - `wiki/static/img/getting-started/02-login-page.png` — login page with email/password/OAuth
-  - `wiki/static/img/getting-started/03-chat-interface.png` — main chat interface after login
-  - `wiki/static/img/getting-started/04-settings-page.png` — Settings page (model, sandbox, keys)
-  - `wiki/static/img/getting-started/05-memories-page.png` — Memories page (empty state)
-- Added cross-references to Memories tutorial, AGENTS.md docs, and Memory Tutorial Step 6
-- All links use relative markdown paths for Docusaurus compatibility
-- Files changed: `wiki/docs/getting-started.md`, `wiki/static/img/getting-started/*.png`
-- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+## 2026-02-21 - US-003
+- Deleted 3 tracked screenshot PNGs via `git rm`: 815-complete.png, 815-streaming-2.png, 815-weather-tool-input.png
+- Deleted 4 untracked screenshot PNGs: 815-streaming-1.png, 815-streaming-3.png, 815-complete-scrolled.png, 815-weather-streaming-1.png
+- Typecheck passes
+- Files changed: `.claude/screenshots/815-*.png` (deleted)
 - **Learnings for future iterations:**
-  - The app's theme toggle has Day/Dusk/Night/System options — must click "Day" for light mode screenshots (not just `agent-browser set media light`)
-  - Clicking the model name (e.g., "gpt-5.2") next to the chat input navigates to the Settings page, not a dropdown
-  - The combobox near the chat input is the assistant selector, not the model selector
-  - The Settings page has: Default Model, Default Sandbox, AI Provider Keys sections, plus model visibility toggles by provider further down
-  - Memories page is at `/memories` (direct sidebar link), not under Settings
+  - Use `git ls-files <pattern>` to distinguish tracked vs untracked files before cleanup
+  - `git rm` stages deletions automatically; no need to `git add` after
+  - Screenshots for PR validation should be uploaded as GitHub PR comment attachments, not committed to repo
 ---
 
-## 2026-02-20 - US-004
-- Rewrote `wiki/docs/tools/mcp.md` Quick Start section with 5-step Manage Tools modal walkthrough:
-  - Step 1: Open Manage Tools modal via tool count button → Configure Tools
-  - Step 2: Navigate to MCP tab (sidebar navigation)
-  - Step 3: Add MCP server (Template, Server Name, Transport, URL, Headers)
-  - Step 4: Save and Fetch Tools (configured servers list, Fetch Tools button)
-  - Step 5: Use MCP tools in chat
-- Replaced all 5 outdated external GitHub-hosted GIF/images with 6 local screenshots:
-  - `wiki/static/img/tools/01-tool-selection-modal.png` — full Tool Selection modal (Platform tab)
-  - `wiki/static/img/tools/02-mcp-empty-state.png` — MCP tab with no servers configured
-  - `wiki/static/img/tools/03-mcp-add-server-form.png` — Add Server form (empty)
-  - `wiki/static/img/tools/04-mcp-template-dropdown.png` — Template dropdown (Custom/Ruska MCP/GitHub MCP)
-  - `wiki/static/img/tools/05-mcp-add-server-filled.png` — Add Server form filled with sample config
-  - `wiki/static/img/tools/06-mcp-server-added.png` — Configured server with Fetch Tools button
-- Added Supported Transports table (SSE, Streamable HTTP, STDIO)
-- Added configuration persistence info callout
-- Preserved API reference sections (MCP info endpoint, Create Thread, Granular Tool Selection)
-- Files changed: `wiki/docs/tools/mcp.md`, `wiki/static/img/tools/*.png`
-- Committed in wiki submodule on branch `feat/807-docs-update-memories-onboarding-mcp`
+## 2026-02-21 - US-004
+- Navigated to /chat with agent-browser in --headed mode, logged in as admin@example.com
+- Sent multiple queries triggering web_search tool calls: weather in SF, NYC, Tokyo, London, Paris, Berlin
+- Captured screenshots during streaming showing tool call with null args and "Calling web_search tool..." status — NO red error
+- Investigated streaming architecture: SSE events deliver tool call args atomically, making partial JSON state sub-millisecond
+- Attempted network throttling (per-byte and per-SSE-event) to slow streaming — confirmed args arrive in single SSE events
+- Verified SyntaxHighlighter fallback via test suite: all 10 DefaultTool tests pass including regression test for incomplete JSON
+- Posted validation evidence as PR #816 comment (https://github.com/ruska-ai/orchestra/pull/816#issuecomment-3939631988)
+- Typecheck passes
+- Files changed: none (browser verification only)
 - **Learnings for future iterations:**
-  - The tool count button (e.g., "4") next to the chat input opens a dropdown menu, not the modal directly — must click "Configure Tools" from the dropdown
-  - Tool Selection modal has 4 category tabs in a left sidebar: Platform, API, MCP, A2A
-  - MCP Add Server form includes Template dropdown with presets (Custom, Ruska MCP, GitHub MCP) that pre-fill fields
-  - Transport options are SSE, Streamable HTTP, and STDIO
-  - MCP configuration is persisted to user defaults on the backend via `patchDefaults()` — not localStorage as the old docs suggested
-  - Header Value field is masked (password-style input) for security
-  - Pressing Escape while a dropdown is open inside the modal closes the entire modal — be careful when automating with agent-browser
-  - Docusaurus image references to `wiki/static/img/` use absolute paths from static root: `/img/tools/01-tool-selection-modal.png`
+  - Tool call args in OpenAI SSE streaming arrive atomically in single events — partial JSON state is not screenshot-capturable
+  - The SyntaxHighlighter fallback is a safety net verified by tests, not a visually observable state with current models
+  - agent-browser `eval` can inject custom JavaScript (fetch throttles, DOM manipulation) into the page
+  - `agent-browser reload` clears injected JavaScript
+  - No custom assistants exist in dev env — default model uses built-in web_search/read_file tools
 ---
 
-## 2026-02-20 - US-005
-- Pushed wiki submodule commits to fork `im-an-ai-agent/wiki` on branch `feat/807-docs-update-memories-onboarding-mcp` (bot lacks write access to `ruska-ai/wiki`)
-- Updated wiki submodule reference in orchestra repo with `git add wiki`
-- Committed all changes (prd.json, progress.txt, wiki submodule ref) in orchestra
-- Pushed orchestra commits to `origin/feat/807-docs-update-memories-onboarding-mcp`
-- Final `git status` shows branch up to date with origin; only remaining unstaged change is `wiki (modified content)` from an unrelated `package-lock.json` change
-- Files changed: `.ralph/prd.json`, `.ralph/progress.txt`, `wiki` (submodule ref)
+## 2026-02-21 - US-005
+- Captured completed state screenshot showing JsonView with parsed JSON args for web_search tool
+- JsonView renders collapsed, interactive JSON: {"query": "current weather in San Francisco", "num_results": 3}
+- Posted validation evidence as PR #816 comment
+- Typecheck passes
+- Files changed: none (browser verification only)
 - **Learnings for future iterations:**
-  - The `im-an-ai-agent` bot user has WRITE permission on `ruska-ai/orchestra` but only READ on `ruska-ai/wiki` — must fork wiki to push submodule commits
-  - When pushing wiki submodule changes, add fork remote: `git remote add fork https://...@github.com/im-an-ai-agent/wiki.git`
-  - A human with write access to `ruska-ai/wiki` will need to push the wiki branch upstream or merge the fork PR
+  - Tool call args show JsonView only when loaded from history (formatMessages applied) — during streaming, args may show null until complete
+  - The SF weather thread from previous iterations served as reference for completed state
 ---
