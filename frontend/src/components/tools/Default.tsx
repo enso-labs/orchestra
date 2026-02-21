@@ -1,6 +1,5 @@
-import JsonView from "@uiw/react-json-view";
-import { githubDarkTheme } from "@uiw/react-json-view/githubDark";
-import { githubLightTheme } from "@uiw/react-json-view/githubLight";
+import { useMemo } from "react";
+import Editor from "@monaco-editor/react";
 import { useTheme } from "@/hooks/useTheme";
 
 interface Props {
@@ -14,70 +13,80 @@ export default function DefaultTool({
 }: Props) {
 	const { theme } = useTheme();
 
+	const content = useMemo(() => {
+		if (!selectedToolMessage) return "";
+
+		const input =
+			selectedToolMessage.args ||
+			selectedToolMessage.input ||
+			selectedToolMessage.content;
+
+		if (input == null) return "";
+
+		if (typeof input === "object") {
+			return JSON.stringify(input, null, 2);
+		}
+
+		// input is a string — try to pretty-print as JSON
+		try {
+			const parsed = JSON.parse(input);
+			return JSON.stringify(parsed, null, 2);
+		} catch {
+			// Mid-stream incomplete JSON or non-JSON text — pass through as-is
+			return String(input);
+		}
+	}, [selectedToolMessage]);
+
+	const language = useMemo(() => {
+		const trimmed = content.trimStart();
+		if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+			return "json";
+		}
+		// Also detect if content was successfully parsed as JSON (pretty-printed)
+		try {
+			JSON.parse(content);
+			return "json";
+		} catch {
+			return "markdown";
+		}
+	}, [content]);
+
+	const height = useMemo(() => {
+		const lineCount = content.split("\n").length;
+		const raw = lineCount * 18 + 10;
+		if (collapsed) {
+			return Math.max(60, Math.min(raw, 100));
+		}
+		return Math.max(60, Math.min(raw, 300));
+	}, [content, collapsed]);
+
 	if (!selectedToolMessage) return null;
 
-	const input =
-		selectedToolMessage.args ||
-		selectedToolMessage.input ||
-		selectedToolMessage.content;
-
-	// Select JSON viewer theme based on current theme
-	const getJsonTheme = () => {
-		if (theme === "light") {
-			return githubLightTheme;
-		}
-		// Use dark theme for both "dark" and "gray" themes, and system default
-		return githubDarkTheme;
-	};
 	return (
-		<div className="max-h-[100px] rounded overflow-x-auto">
-			{(() => {
-				try {
-					const parsedJSON =
-						typeof input === "object" ? input : JSON.parse(input);
-
-					if (parsedJSON === null || parsedJSON === undefined) {
-						return (
-							<span className="text-xs text-muted-foreground p-2">null</span>
-						);
-					}
-
-					// If the parsed result is not an object (e.g. string, number, boolean), display it directly
-					if (typeof parsedJSON !== "object") {
-						return <span className="text-xs p-2">{String(parsedJSON)}</span>;
-					}
-
-					return (
-						<JsonView
-							collapsed={collapsed}
-							value={parsedJSON}
-							onCopied={async (text) => {
-								await navigator.clipboard.writeText(text);
-								alert("Copied to clipboard (Tool Input)");
-							}}
-							shortenTextAfterLength={200}
-							style={{
-								...getJsonTheme(),
-								fontSize: "10px",
-								padding: "5px",
-								whiteSpace: "pre-wrap",
-								wordBreak: "break-word",
-							}}
-						/>
-					);
-				} catch (error) {
-					return (
-						<div className="text-red-500">
-							<p className="font-bold">Error parsing JSON:</p>
-							<p>{(error as Error).message}</p>
-							<p className="mt-2 font-bold">Raw content:</p>
-							<pre className="whitespace-pre-wrap text-xs mt-1 p-2 bg-muted rounded overflow-x-auto">
-								{JSON.stringify(input)}
-							</pre>
-						</div>
-					);
-				}
-			})()}
+		<div style={{ height }}>
+			<Editor
+				value={content}
+				language={language}
+				height={height}
+				theme={theme === "light" ? "light" : "vs-dark"}
+				options={{
+					readOnly: true,
+					domReadOnly: true,
+					minimap: { enabled: false },
+					lineNumbers: "off",
+					wordWrap: "on",
+					fontSize: 11,
+					scrollBeyondLastLine: false,
+					renderLineHighlight: "none",
+					contextmenu: false,
+					folding: !collapsed,
+					scrollbar: {
+						vertical: "hidden",
+						horizontal: "hidden",
+						handleMouseWheel: true,
+					},
+				}}
+			/>
 		</div>
 	);
 }
