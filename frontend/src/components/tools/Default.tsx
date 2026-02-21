@@ -42,13 +42,55 @@ export default function DefaultTool({
 		return oneDark;
 	};
 
-	// If input is already a parsed object, render with JsonView directly
-	if (typeof input === "object" && input !== null && input !== undefined) {
-		return (
-			<div className="max-h-[100px] rounded overflow-x-auto">
+	// Resolve JSON data for JsonView, or fallback content for other cases
+	let jsonValue: object | null = null;
+	let fallback: JSX.Element | null = null;
+
+	if (typeof input === "object" && input !== null) {
+		// Already a parsed object
+		jsonValue = input;
+	} else if (typeof input === "string" && input) {
+		try {
+			const parsed = JSON.parse(input);
+
+			if (parsed === null || parsed === undefined) {
+				fallback = (
+					<span className="text-xs text-muted-foreground p-2">null</span>
+				);
+			} else if (typeof parsed !== "object") {
+				fallback = <span className="text-xs p-2">{String(parsed)}</span>;
+			} else {
+				jsonValue = parsed;
+			}
+		} catch {
+			// JSON is incomplete (still streaming) — display as syntax-highlighted text
+			fallback = (
+				<SyntaxHighlighter
+					language="json"
+					style={getSyntaxTheme()}
+					wrapLongLines={true}
+					customStyle={{
+						margin: 0,
+						padding: "5px",
+						fontSize: "10px",
+						background: "transparent",
+					}}
+				>
+					{input}
+				</SyntaxHighlighter>
+			);
+		}
+	} else {
+		// Fallback for null/undefined/empty input
+		fallback = <span className="text-xs text-muted-foreground p-2">null</span>;
+	}
+
+	return (
+		<div className="max-h-[100px] rounded overflow-x-auto">
+			{jsonValue ? (
 				<JsonView
 					collapsed={collapsed}
-					value={input}
+					value={jsonValue}
 					onCopied={async (text) => {
 						await navigator.clipboard.writeText(text);
 						alert("Copied to clipboard (Tool Input)");
@@ -62,77 +104,9 @@ export default function DefaultTool({
 						wordBreak: "break-word",
 					}}
 				/>
-			</div>
-		);
-	}
-
-	// For string input, try to parse as JSON
-	if (typeof input === "string" && input) {
-		try {
-			const parsedJSON = JSON.parse(input);
-
-			if (parsedJSON === null || parsedJSON === undefined) {
-				return (
-					<div className="max-h-[100px] rounded overflow-x-auto">
-						<span className="text-xs text-muted-foreground p-2">null</span>
-					</div>
-				);
-			}
-
-			if (typeof parsedJSON !== "object") {
-				return (
-					<div className="max-h-[100px] rounded overflow-x-auto">
-						<span className="text-xs p-2">{String(parsedJSON)}</span>
-					</div>
-				);
-			}
-
-			return (
-				<div className="max-h-[100px] rounded overflow-x-auto">
-					<JsonView
-						collapsed={collapsed}
-						value={parsedJSON}
-						onCopied={async (text) => {
-							await navigator.clipboard.writeText(text);
-							alert("Copied to clipboard (Tool Input)");
-						}}
-						shortenTextAfterLength={200}
-						style={{
-							...getJsonTheme(),
-							fontSize: "10px",
-							padding: "5px",
-							whiteSpace: "pre-wrap",
-							wordBreak: "break-word",
-						}}
-					/>
-				</div>
-			);
-		} catch {
-			// JSON is incomplete (still streaming) — display as syntax-highlighted text
-			return (
-				<div className="max-h-[100px] rounded overflow-x-auto">
-					<SyntaxHighlighter
-						language="json"
-						style={getSyntaxTheme()}
-						wrapLongLines={true}
-						customStyle={{
-							margin: 0,
-							padding: "5px",
-							fontSize: "10px",
-							background: "transparent",
-						}}
-					>
-						{input}
-					</SyntaxHighlighter>
-				</div>
-			);
-		}
-	}
-
-	// Fallback for null/undefined/empty input
-	return (
-		<div className="max-h-[100px] rounded overflow-x-auto">
-			<span className="text-xs text-muted-foreground p-2">null</span>
+			) : (
+				fallback
+			)}
 		</div>
 	);
 }
