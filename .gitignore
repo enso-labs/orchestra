@@ -30,6 +30,6 @@
 .cursor/ralph-config.json
 .ralph/prd.json
 .ralph/progress.txt
+!.ralph/archive/
 **/.last-branch
 **/.cloudflared/
-**/.ralph/archive/*
