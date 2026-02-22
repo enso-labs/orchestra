@@ -1,4 +1,4 @@
-import { Wrench, Server, Users, PencilRuler } from "lucide-react";
+import { Wrench, Server, Users, PencilRuler, Bot } from "lucide-react";
 import { ToolCategory, CategoryConfig } from "./types";
 
 const categories: CategoryConfig[] = [
@@ -6,6 +6,7 @@ const categories: CategoryConfig[] = [
 	{ id: "api", label: "API", icon: PencilRuler },
 	{ id: "mcp", label: "MCP", icon: Server },
 	{ id: "a2a", label: "A2A", icon: Users },
+	{ id: "subagents", label: "Subagents", icon: Bot },
 ];
 
 interface SidebarProps {

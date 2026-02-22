@@ -153,6 +153,7 @@ async def test_get_settings_empty(settings_client: AsyncClient) -> None:
     assert defaults["tools"] is None
     assert defaults["mcp"] is None
     assert defaults["a2a"] is None
+    assert defaults["subagents"] is None
     assert isinstance(data["provider_keys"], list)
     assert len(data["provider_keys"]) > 0
     for pk in data["provider_keys"]:
@@ -218,6 +219,49 @@ async def test_patch_default_a2a(settings_client: AsyncClient) -> None:
     resp = await settings_client.patch("/api/settings/default", json={"a2a": a2a_config})
     assert resp.status_code == 200
     assert resp.json()["defaults"]["a2a"] == a2a_config
+
+
+@pytest.mark.asyncio
+async def test_patch_default_subagents(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"subagents": ["agent-id-1", "agent-id-2"]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["subagents"] == ["agent-id-1", "agent-id-2"]
+
+    # Verify it persists via GET
+    get_resp = await settings_client.get("/api/settings")
+    assert get_resp.json()["defaults"]["subagents"] == ["agent-id-1", "agent-id-2"]
+
+
+@pytest.mark.asyncio
+async def test_patch_clear_subagents(settings_client: AsyncClient) -> None:
+    # Set subagents first
+    await settings_client.patch(
+        "/api/settings/default",
+        json={"subagents": ["agent-id-1"]},
+    )
+    # Clear by sending null
+    resp = await settings_client.patch("/api/settings/default", json={"subagents": None})
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["subagents"] is None
+
+
+@pytest.mark.asyncio
+async def test_patch_subagents_does_not_affect_other_defaults(settings_client: AsyncClient) -> None:
+    """Patching subagents does NOT affect other defaults."""
+    # Set model first
+    await settings_client.patch("/api/settings/default", json={"model": "openai/gpt-4"})
+    # Now patch subagents
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"subagents": ["agent-id-1"]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()["defaults"]
+    assert data["subagents"] == ["agent-id-1"]
+    assert data["model"] == "openai/gpt-4"
 
 
 @pytest.mark.asyncio

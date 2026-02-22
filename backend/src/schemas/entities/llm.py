@@ -84,6 +84,15 @@ class Assistant(BaseModel):
     description: str = Field(default="Helpful AI Assistant.")
     model: Optional[str] = None
     system_prompt: Optional[str] = Field(default=None, examples=["You are a helpful assistant."])
+
+    @field_validator("model", mode="before")
+    @classmethod
+    def coerce_empty_model_to_none(cls, v):
+        """Coerce empty and whitespace-only model strings to None."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
     instructions: Optional[str] = Field(default=None, examples=["Your role is to help the user with their task."])
 
     @model_validator(mode="after")

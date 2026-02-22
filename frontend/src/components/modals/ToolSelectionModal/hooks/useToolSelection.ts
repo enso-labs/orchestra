@@ -73,6 +73,17 @@ export function useToolSelection(initialTools: string[] = []) {
 		persistTools(arr);
 	};
 
+	const deselectMultiple = (tools: string[]) => {
+		const toRemove = new Set(tools);
+		const remaining = new Set(
+			[...selectedTools].filter((t) => !toRemove.has(t)),
+		);
+		const arr = Array.from(remaining);
+		setSelectedTools(remaining);
+		setAgentTools(arr);
+		persistTools(arr);
+	};
+
 	const isSelected = (toolName: string) => selectedTools.has(toolName);
 
 	return {
@@ -80,6 +91,7 @@ export function useToolSelection(initialTools: string[] = []) {
 		toggleTool,
 		clearSelection,
 		selectMultiple,
+		deselectMultiple,
 		isSelected,
 		selectedCount: selectedTools.size,
 		selectedArray: Array.from(selectedTools),

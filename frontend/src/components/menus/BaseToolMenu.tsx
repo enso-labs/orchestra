@@ -35,8 +35,11 @@ const FALLBACK_TOOLS = [
 const WEB_SEARCH_TOOLS = ["web_search", "web_scrape"];
 
 export function BaseToolMenu() {
-	const { agent, setAgent, webSearchCheck, setWebSearchCheck } =
+	const { agent, setAgent, agents, webSearchCheck, setWebSearchCheck } =
 		useAgentContext();
+	const [pendingSubagentIds, setPendingSubagentIds] = useState<string[] | null>(
+		null,
+	);
 	const { addFile, setViewMode } = useChatContext();
 	const [open, setOpen] = useState<boolean>(false);
 	const [showToolModal, setShowToolModal] = useState(false);
@@ -89,6 +92,9 @@ export function BaseToolMenu() {
 					mcp,
 					a2a,
 				}));
+				if (res.defaults.subagents) {
+					setPendingSubagentIds(res.defaults.subagents);
+				}
 			})
 			.catch(() => {
 				setAgent((prev) => ({
@@ -97,6 +103,21 @@ export function BaseToolMenu() {
 				}));
 			});
 	}, []);
+
+	// Resolve pending subagent IDs to Agent objects once agents list is available
+	useEffect(() => {
+		if (
+			!pendingSubagentIds ||
+			pendingSubagentIds.length === 0 ||
+			agents.length === 0
+		)
+			return;
+		const resolved = agents.filter(
+			(a) => a.id && pendingSubagentIds.includes(a.id),
+		);
+		setAgent((prev) => ({ ...prev, subagents: resolved }));
+		setPendingSubagentIds(null);
+	}, [agents, pendingSubagentIds]);
 
 	useEffect(() => {
 		localStorage.setItem("enso:tool:search", JSON.stringify(webSearchCheck));

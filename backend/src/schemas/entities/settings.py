@@ -31,6 +31,7 @@ class UserSettings(BaseEntity):
     default_tools: Optional[list[str]] = Field(default=None, description="User's default tool selection")
     default_mcp: Optional[dict] = Field(default=None, description="User's default MCP server configuration")
     default_a2a: Optional[dict] = Field(default=None, description="User's default A2A agent configuration")
+    default_subagents: Optional[list[str]] = Field(default=None, description="User's default subagent selection")
 
 
 class DefaultsResponse(BaseModel):
@@ -41,6 +42,7 @@ class DefaultsResponse(BaseModel):
     tools: Optional[list[str]] = None
     mcp: Optional[dict] = None
     a2a: Optional[dict] = None
+    subagents: Optional[list[str]] = None
 
 
 class UserSettingsResponse(BaseModel):
@@ -58,6 +60,7 @@ class PatchDefaultsRequest(BaseModel):
     tools: Optional[list[str]] = Field(default=None, description="Default tool selection, or null to clear")
     mcp: Optional[dict] = Field(default=None, description="Default MCP server config, or null to clear")
     a2a: Optional[dict] = Field(default=None, description="Default A2A agent config, or null to clear")
+    subagents: Optional[list[str]] = Field(default=None, description="Default subagent selection, or null to clear")
 
 
 class UpsertProviderKeyRequest(BaseModel):

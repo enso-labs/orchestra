@@ -8,6 +8,12 @@ vi.mock("@/context/ChatContext", () => ({
 	useChatContext: () => mockUseChatContext(),
 }));
 
+// Mock useAgentContext
+const mockUseAgentContext = vi.fn();
+vi.mock("@/context/AgentContext", () => ({
+	useAgentContext: () => mockUseAgentContext(),
+}));
+
 // Mock child components to isolate ChatNav
 vi.mock("@/components/buttons/ColorModeButton", () => ({
 	ColorModeButton: () => <button data-testid="color-mode-button" />,
@@ -30,6 +36,18 @@ const defaultContext = {
 describe("ChatNav", () => {
 	beforeEach(() => {
 		mockUseChatContext.mockReturnValue(defaultContext);
+		mockUseAgentContext.mockReturnValue({
+			agent: {
+				model: "",
+				prompt: "",
+				tools: [],
+				subagents: [],
+				mcp: {},
+				a2a: {},
+				files: [],
+			},
+			handleGetAgents: vi.fn(),
+		});
 	});
 
 	it("does not render ModelBadge (moved to ChatInput)", () => {

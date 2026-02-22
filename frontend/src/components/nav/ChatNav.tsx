@@ -1,9 +1,14 @@
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import NewThreadButton from "../buttons/NewThreadButton";
 import ShareButton from "../buttons/thread-share-button";
-import { LayoutGrid, MessageSquare } from "lucide-react";
+import { SaveAsAssistantDialog } from "@/components/dialogs/SaveAsAssistantDialog";
+import { LayoutGrid, MessageSquare, Save } from "lucide-react";
 import { useChatContext } from "@/context/ChatContext";
+import { useAgentContext } from "@/context/AgentContext";
 import { Button } from "@/components/ui/button";
+import AgentService from "@/lib/services/agentService";
+import { toast } from "sonner";
+import { useState } from "react";
 
 export function ChatNav({
 	sidebarTrigger,
@@ -11,7 +16,32 @@ export function ChatNav({
 	sidebarTrigger?: React.ReactNode | undefined;
 }) {
 	const { viewMode, setViewMode, filesMap } = useChatContext();
+	const { agent, handleGetAgents } = useAgentContext();
 	const hasFiles = filesMap.size > 0;
+	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+
+	const handleSaveAsAssistant = async (
+		name: string,
+		description: string,
+	) => {
+		try {
+			await AgentService.create({
+				name,
+				description,
+				model: agent.model,
+				prompt: agent.prompt,
+				tools: agent.tools,
+				subagents: agent.subagents,
+				mcp: agent.mcp,
+				a2a: agent.a2a,
+				files: agent.files,
+			});
+			toast.success("Assistant saved successfully");
+			await handleGetAgents();
+		} catch {
+			toast.error("Failed to save assistant");
+		}
+	};
 
 	return (
 		<header className="bg-transparent mb-1">
@@ -48,6 +78,16 @@ export function ChatNav({
 							</div>
 						)}
 
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-9 w-9"
+							onClick={() => setSaveDialogOpen(true)}
+							aria-label="Save as Assistant"
+							title="Save as Assistant"
+						>
+							<Save className="h-4 w-4" />
+						</Button>
 						<ShareButton />
 						<NewThreadButton />
 						<div className="w-9">
@@ -56,6 +96,11 @@ export function ChatNav({
 					</div>
 				</div>
 			</div>
+			<SaveAsAssistantDialog
+				isOpen={saveDialogOpen}
+				onClose={() => setSaveDialogOpen(false)}
+				onSave={handleSaveAsAssistant}
+			/>
 		</header>
 	);
 }

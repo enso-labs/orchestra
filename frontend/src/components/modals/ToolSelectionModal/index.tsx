@@ -5,7 +5,9 @@ import { PlatformToolsPanel } from "./PlatformToolsPanel";
 import { CustomToolsPanel } from "./CustomToolsPanel";
 import { McpServerPanel } from "./McpServerPanel";
 import { A2aAgentPanel } from "./A2aAgentPanel";
+import { SubagentsPanel } from "./SubagentsPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
+import { useSubagentSelection } from "./hooks/useSubagentSelection";
 import { ToolCategory, Tool, McpServerConfig, A2aServerConfig } from "./types";
 import {
 	listTools,
@@ -45,7 +47,7 @@ export function ToolSelectionModal({
 	initialMcpConfig = {},
 	initialA2aConfig = {},
 }: ToolSelectionModalProps) {
-	const { setAgent } = useAgentContext();
+	const { setAgent, agents, agent } = useAgentContext();
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
@@ -59,14 +61,25 @@ export function ToolSelectionModal({
 	const [isA2aLoading, setIsA2aLoading] = useState(false);
 	const [isToolFormActive, setIsToolFormActive] = useState(false);
 
-	const { selectedTools, toggleTool, selectedCount, flushPersist } =
-		useToolSelection(initialSelectedTools);
+	const {
+		selectedTools,
+		toggleTool,
+		selectMultiple,
+		deselectMultiple,
+		selectedCount,
+		flushPersist,
+	} = useToolSelection(initialSelectedTools);
+	const {
+		toggleSubagent,
+		isAgentSelected,
+		flushPersist: flushSubagentPersist,
+	} = useSubagentSelection();
 
 	const isAuthenticated = !!getAuthToken();
 
 	// Derive visible categories based on auth state
 	const visibleCategories: ToolCategory[] = isAuthenticated
-		? ["platform", "api", "mcp", "a2a"]
+		? ["platform", "api", "mcp", "a2a", "subagents"]
 		: ["platform", "mcp", "a2a"];
 
 	// Fetch platform tools
@@ -106,6 +119,7 @@ export function ToolSelectionModal({
 
 	const handleClose = () => {
 		flushPersist();
+		flushSubagentPersist();
 		onClose();
 	};
 
@@ -226,6 +240,8 @@ export function ToolSelectionModal({
 								tools={platformTools}
 								selectedTools={selectedTools}
 								onToggleSelection={toggleTool}
+								onSelectMultiple={selectMultiple}
+								onDeselectMultiple={deselectMultiple}
 							/>
 						)}
 
@@ -263,8 +279,17 @@ export function ToolSelectionModal({
 							/>
 						)}
 
+						{activeCategory === "subagents" && (
+							<SubagentsPanel
+								agents={agents}
+								selectedSubagents={agent.subagents || []}
+								onToggleSubagent={toggleSubagent}
+								isAgentSelected={isAgentSelected}
+							/>
+						)}
+
 						{/* Status Bar */}
-						{!isToolFormActive && (
+						{!isToolFormActive && activeCategory !== "subagents" && (
 							<div className="flex-shrink-0 border-t border-border px-4 sm:px-6 py-3 sm:py-4 bg-background">
 								<div className="text-sm text-muted-foreground">
 									{selectedCount > 0 ? (
