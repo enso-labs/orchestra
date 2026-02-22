@@ -9,8 +9,11 @@ Started: Sun Feb 22 13:23:33 MST 2026
 - Existing subagent management in useAgent: addAgentToSubagents, removeAgentFromSubagents, toggleSubagent, isAgentSelected
 - Use tsc --project tsconfig.app.json for typechecking (root tsconfig has "files": [])
 - Settings persistence: useToolSelection hook pattern with debounced patchDefaults() calls
+- Empty string guard: Use field_validator(mode='before') + truthy check at usage site for optional string fields that may arrive as "" from frontend
 - User settings repo: _DEFAULTS_FIELD_MAP maps API field names to DB column names
 - Settings route: _build_response builds DefaultsResponse from UserSettings entity
+- PlatformToolsPanel: Tag filter chips use radio-style (activeTag state, null = All), with useMemo for tag extraction, counts, and two-stage filtering (text search → tag filter)
+- Tag counts are computed against text-search-filtered tools, so dimming reflects real availability
 ---
 
 ## 2026-02-22 - US-001
@@ -61,4 +64,35 @@ Started: Sun Feb 22 13:23:33 MST 2026
 - **Learnings for future iterations:**
   - ToolSelectionModal visible categories gated by `isAuthenticated` flag in ToolSelectionModal/index.tsx
   - Three layers of auth protection: UI visibility, hook-level guard, API-level auth middleware
+---
+
+## 2026-02-22 - US-007
+- Added field_validator('model', mode='before') to Assistant class in llm.py that coerces empty and whitespace-only strings to None
+- Changed init_subagents guard in agents/__init__.py from `is not None` to truthy check: `if getattr(subagent, "model", None):`
+- This prevents TypeError when subagents are persisted without an explicit model (empty string "" from frontend)
+- Files changed: backend/src/schemas/entities/llm.py, backend/src/agents/__init__.py
+- All 440 tests pass, format clean
+- **Learnings for future iterations:**
+  - Pydantic field_validator(mode='before') is ideal for coercing empty strings to None before other validation runs
+  - Two-layer defense: validator normalizes data at schema level, guard at usage level prevents passing empty string to init_chat_model
+  - The init_subagents function only sets model on the SubAgent dict when model is truthy, allowing parent model fallback
+---
+
+## 2026-02-22 - US-005
+- Added tag filter chips to PlatformToolsPanel above the tool grid
+- Implemented radio-style tag selection: activeTag state (null = "All"), one active at a time
+- Collected unique tags from tools via useMemo, sorted alphabetically
+- Two-stage filtering: searchFilteredTools (text search only) → filteredTools (+ tag filter)
+- Tag counts computed against text-search-filtered tools so dimmed state reflects real availability
+- Chips: "All (N)" default + one chip per tag with count, e.g. "search (3)"
+- Dimmed styling (bg-secondary/50, text-muted-foreground/50) for tags with zero matches after text search
+- Horizontally scrollable chip bar (overflow-x-auto, flex-nowrap) for mobile
+- Files changed: frontend/src/components/modals/ToolSelectionModal/PlatformToolsPanel.tsx
+- Browser verified: tag chips render correctly, filtering works, text search + tag filter combine properly, dimming works
+- Typecheck and lint pass
+- **Learnings for future iterations:**
+  - Two-stage filtering pattern: compute text-search-filtered set first, then derive tag counts and apply tag filter on top
+  - Radio-style chip UI: use activeTag state with null meaning "All", clicking same tag deselects (returns to All)
+  - Chip dimming: compute counts per tag from the intermediate filtered set, not the full tools list
+  - Overflow scroll for chip bar: use -mx + px trick to extend scroll area to full width while maintaining content padding
 ---

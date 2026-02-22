@@ -1,7 +1,7 @@
 {
   "project": "Orchestra",
   "branchName": "ralph/persist-subagent-selection",
-  "description": "Persist Subagent Selection - Add backend persistence for subagent selections in the Manage Tools modal via PATCH /settings/default",
+  "description": "Persist Subagent Selection - Add backend persistence for subagent selections, fix empty model crash, and add tag filter chips with batch toggle to the Platform tools panel",
   "userStories": [
     {
       "id": "US-001",
@@ -79,6 +79,64 @@
       ],
       "priority": 4,
       "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Fix empty model string crashes subagent initialization",
+      "description": "As a user who has persisted subagent selections without choosing an explicit model, I want the backend to gracefully handle empty model strings so that submitting a query does not crash with TypeError: _init_chat_model_helper() missing 1 required positional argument: 'model'.",
+      "acceptanceCriteria": [
+        "Change init_subagents guard in backend/src/agents/__init__.py from 'is not None' to truthy check: if getattr(subagent, 'model', None):",
+        "Add field_validator('model') to Assistant class in backend/src/schemas/entities/llm.py that coerces empty and whitespace-only strings to None",
+        "Submitting a query with persisted subagents (no explicit model) succeeds without error",
+        "Subagents without a model correctly inherit the parent agent's model (default_model fallback)",
+        "Backend tests pass (make test)",
+        "Format passes (make format)"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add tag filter chips to Platform tools panel",
+      "description": "As a user viewing the Platform tab in the Manage Tools modal, I want clickable tag filter chips above the tool grid so that I can quickly narrow down the 20+ tools to a specific category instead of scrolling through the entire flat grid.",
+      "acceptanceCriteria": [
+        "An 'All' chip is shown by default and is active on initial render",
+        "One chip is rendered for each unique tag derived from the tags[] field on loaded platform tools",
+        "Each chip displays the tag name and count of tools with that tag, e.g. 'search (3)'",
+        "Clicking a tag chip filters the grid to show only tools whose tags[] includes that tag",
+        "Clicking 'All' clears any active tag filter and shows all tools",
+        "Only one tag chip can be active at a time (radio-style, not multi-select)",
+        "Tag filtering works in combination with the existing text search -- both narrow results simultaneously",
+        "Tags with zero matching tools (after text search filtering) are visually dimmed but still clickable",
+        "The chip bar is horizontally scrollable on narrow viewports (mobile)",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add batch enable/disable tools by tag category",
+      "description": "As a user who has filtered by a tag, I want 'Enable All' and 'Disable All' buttons visible when a tag filter is active so that I can quickly toggle all tools in a category without clicking each card individually.",
+      "acceptanceCriteria": [
+        "When any tag filter (not 'All') is active, 'Enable All' and 'Disable All' buttons appear in the toolbar area next to the tag chips",
+        "'Enable All' selects every tool currently visible in the filtered grid",
+        "'Disable All' deselects every tool currently visible in the filtered grid",
+        "The buttons are hidden when the 'All' chip is active (prevents accidentally toggling every tool)",
+        "Batch actions use the existing useToolSelection.selectMultiple() for enabling",
+        "Add deselectMultiple(tools: string[]) method to useToolSelection hook as counterpart to selectMultiple",
+        "Persistence happens via the existing debounced patchDefaults({ tools }) flow -- no extra API calls",
+        "The status bar at the bottom updates immediately to reflect the new selected count",
+        "A toast confirms the action: 'Enabled 3 search tools' / 'Disabled 3 search tools'",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
       "notes": ""
     }
   ]

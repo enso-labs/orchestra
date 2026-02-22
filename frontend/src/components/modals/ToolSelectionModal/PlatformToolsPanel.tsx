@@ -16,8 +16,19 @@ export function PlatformToolsPanel({
 	onToggleSelection,
 }: PlatformToolsPanelProps) {
 	const [searchQuery, setSearchQuery] = useState("");
+	const [activeTag, setActiveTag] = useState<string | null>(null);
 
-	const filteredTools = useMemo(() => {
+	// Collect unique tags sorted alphabetically
+	const allTags = useMemo(() => {
+		const tagSet = new Set<string>();
+		tools.forEach((tool) => {
+			(tool.tags ?? []).forEach((tag) => tagSet.add(tag));
+		});
+		return Array.from(tagSet).sort();
+	}, [tools]);
+
+	// Tools filtered by text search only (for computing tag counts)
+	const searchFilteredTools = useMemo(() => {
 		if (!searchQuery.trim()) return tools;
 
 		const query = searchQuery.toLowerCase();
@@ -28,6 +39,26 @@ export function PlatformToolsPanel({
 				(tool.tags ?? []).some((tag) => tag.toLowerCase().includes(query)),
 		);
 	}, [tools, searchQuery]);
+
+	// Count of tools per tag after text search filtering
+	const tagCounts = useMemo(() => {
+		const counts: Record<string, number> = {};
+		allTags.forEach((tag) => {
+			counts[tag] = searchFilteredTools.filter((tool) =>
+				(tool.tags ?? []).includes(tag),
+			).length;
+		});
+		return counts;
+	}, [allTags, searchFilteredTools]);
+
+	// Final filtered tools: text search + tag filter combined
+	const filteredTools = useMemo(() => {
+		if (!activeTag) return searchFilteredTools;
+
+		return searchFilteredTools.filter((tool) =>
+			(tool.tags ?? []).includes(activeTag),
+		);
+	}, [searchFilteredTools, activeTag]);
 
 	return (
 		<div className="flex flex-col h-full">
@@ -52,6 +83,43 @@ export function PlatformToolsPanel({
 						/>
 					</div>
 				</div>
+
+				{/* Tag Filter Chips */}
+				{allTags.length > 0 && (
+					<div className="overflow-x-auto pt-2 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6">
+						<div className="flex gap-1.5 flex-nowrap pb-1">
+							<button
+								onClick={() => setActiveTag(null)}
+								className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+									activeTag === null
+										? "bg-primary text-primary-foreground"
+										: "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+								}`}
+							>
+								All ({searchFilteredTools.length})
+							</button>
+							{allTags.map((tag) => {
+								const count = tagCounts[tag];
+								const isDimmed = count === 0;
+								return (
+									<button
+										key={tag}
+										onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+										className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+											activeTag === tag
+												? "bg-primary text-primary-foreground"
+												: isDimmed
+													? "bg-secondary/50 text-muted-foreground/50 cursor-pointer"
+													: "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+										}`}
+									>
+										{tag} ({count})
+									</button>
+								);
+							})}
+						</div>
+					</div>
+				)}
 			</div>
 
 			{/* Tool Grid */}
