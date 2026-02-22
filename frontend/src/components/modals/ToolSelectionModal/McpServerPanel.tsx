@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Server, Trash2, Loader2 } from "lucide-react";
+import { Plus, Server, Trash2, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +63,7 @@ export function McpServerPanel({
 	isLoading,
 }: McpServerPanelProps) {
 	const [showAddForm, setShowAddForm] = useState(false);
+	const [editingServer, setEditingServer] = useState<string | null>(null);
 	const [serverName, setServerName] = useState("");
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<keyof typeof MCP_TEMPLATES>("custom");
@@ -111,7 +112,27 @@ export function McpServerPanel({
 		setUrl("");
 		setHeaderKey("");
 		setHeaderValue("");
+		setEditingServer(null);
 		setShowAddForm(false);
+	};
+
+	const handleEditServer = (name: string, config: McpServerConfig) => {
+		setEditingServer(name);
+		setServerName(name);
+		setSelectedTemplate("custom");
+		setTransport(config.transport);
+		setUrl(config.url);
+
+		const firstHeader = Object.entries(config.headers)[0];
+		if (firstHeader) {
+			setHeaderKey(firstHeader[0]);
+			setHeaderValue(firstHeader[1]);
+		} else {
+			setHeaderKey("");
+			setHeaderValue("");
+		}
+
+		setShowAddForm(true);
 	};
 
 	const handleTestConnection = async () => {
@@ -134,7 +155,18 @@ export function McpServerPanel({
 						</p>
 					</div>
 					<Button
-						onClick={() => setShowAddForm(!showAddForm)}
+						onClick={() => {
+							setShowAddForm(!showAddForm);
+							if (showAddForm) {
+								setEditingServer(null);
+								setServerName("");
+								setSelectedTemplate("custom");
+								setTransport("sse");
+								setUrl("");
+								setHeaderKey("");
+								setHeaderValue("");
+							}
+						}}
 						size="sm"
 						variant={showAddForm ? "outline" : "default"}
 					>
@@ -233,7 +265,10 @@ export function McpServerPanel({
 								variant="outline"
 								onClick={() => {
 									setShowAddForm(false);
+									setEditingServer(null);
 									setServerName("");
+									setSelectedTemplate("custom");
+									setTransport("sse");
 									setUrl("");
 									setHeaderKey("");
 									setHeaderValue("");
@@ -245,7 +280,7 @@ export function McpServerPanel({
 								onClick={handleAddServer}
 								disabled={!serverName.trim() || !url.trim()}
 							>
-								Add Server
+								{editingServer ? "Save" : "Add Server"}
 							</Button>
 						</div>
 					</Card>
@@ -293,13 +328,22 @@ export function McpServerPanel({
 												</p>
 											</div>
 										</div>
-										<Button
-											size="icon"
-											variant="ghost"
-											onClick={() => onRemoveServer(name)}
-										>
-											<Trash2 className="h-4 w-4 text-destructive" />
-										</Button>
+										<div className="flex items-center gap-1">
+											<Button
+												size="icon"
+												variant="ghost"
+												onClick={() => handleEditServer(name, config)}
+											>
+												<Pencil className="h-4 w-4 text-muted-foreground" />
+											</Button>
+											<Button
+												size="icon"
+												variant="ghost"
+												onClick={() => onRemoveServer(name)}
+											>
+												<Trash2 className="h-4 w-4 text-destructive" />
+											</Button>
+										</div>
 									</div>
 								</Card>
 							))}
