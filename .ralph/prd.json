@@ -1,111 +1,85 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/803-persist-assistant-subagent-selection",
-  "description": "Persist assistant settings from chat page + per-session subagent selection",
+  "branchName": "ralph/persist-subagent-selection",
+  "description": "Persist Subagent Selection - Add backend persistence for subagent selections in the Manage Tools modal via PATCH /settings/default",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Save as Assistant dialog component",
-      "description": "As a user, I want a dialog that prompts me for a name and description when saving current settings as an assistant.",
+      "title": "Add subagents field to settings API",
+      "description": "As a developer, I need the /settings/default API to support a subagents field so that subagent defaults can be stored and retrieved alongside tools, MCP, and A2A configs.",
       "acceptanceCriteria": [
-        "Create frontend/src/components/dialogs/SaveAsAssistantDialog.tsx with name (required) and description inputs",
-        "Dialog has Save and Cancel buttons",
-        "Name field validates non-empty",
-        "Dialog accepts an onSave callback with name and description",
-        "Typecheck passes with tsc --project tsconfig.app.json"
+        "Add default_subagents: Optional[list[str]] = Field(default=None) to UserSettings model in backend/src/schemas/entities/settings.py",
+        "Add subagents: Optional[list[str]] = None to DefaultsResponse model in backend/src/schemas/entities/settings.py",
+        "Add subagents: Optional[list[str]] = Field(default=None) to PatchDefaultsRequest model in backend/src/schemas/entities/settings.py",
+        "Add 'subagents': 'default_subagents' entry to _DEFAULTS_FIELD_MAP in backend/src/repos/user_settings_repo.py",
+        "Add subagents=settings.default_subagents to _build_response in backend/src/routes/v0/settings.py",
+        "PATCH /settings/default accepts { subagents: ['agent-id-1', 'agent-id-2'] } and returns 200",
+        "PATCH /settings/default accepts { subagents: null } to clear the selection",
+        "GET /settings returns defaults.subagents as null for fresh users",
+        "Patching subagents does NOT affect other defaults (model, tools, mcp, a2a)",
+        "Add test_patch_default_subagents and test_patch_clear_subagents to backend/tests/unit/routes/test_settings_routes.py",
+        "Backend tests pass (make test)",
+        "Format passes (make format)"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Implemented in prior WIP commit. All acceptance criteria verified."
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Wire Save as Assistant to chat page",
-      "description": "As a user, from the chat page I want to persist the current state of settings as an assistant.",
+      "title": "Create useSubagentSelection hook with persistence",
+      "description": "As a user viewing the subagents tab of the Manage Tools modal, I want my subagent selections to be saved automatically so that I don't have to re-select my preferred subagents every time I refresh the page.",
       "acceptanceCriteria": [
-        "Add Save as Assistant action accessible from the chat page (e.g., in ChatNav or agent-section area)",
-        "On click, open SaveAsAssistantDialog",
-        "On save, collect current agent state (model, tools, prompt, mcp, a2a, subagents, files) and POST to /assistants via AgentService.createAssistant()",
-        "On success, show toast notification and refresh agent list",
-        "On error, show error toast",
-        "Typecheck passes with tsc --project tsconfig.app.json",
-        "Verify in browser using agent-browser skill"
+        "Add subagents: string[] | null to DefaultsResponse interface and patchDefaults parameter type in frontend/src/lib/services/userSettingsService.ts",
+        "Create frontend/src/components/modals/ToolSelectionModal/hooks/useSubagentSelection.ts mirroring useToolSelection pattern",
+        "Hook manages a Set<string> of selected agent IDs",
+        "Hook has debounced persistSubagents() that calls patchDefaults({ subagents: [...] }) with 500ms delay",
+        "Hook has toggleSubagent(agent) that adds/removes IDs and updates agent.subagents via AgentContext",
+        "Hook has getAuthToken() guard that skips API calls for unauthenticated users",
+        "Hook has flushPersist() that clears pending debounce timer",
+        "Toast error appears if save fails: 'Failed to save subagent defaults'",
+        "Wire hook into ToolSelectionModal/index.tsx replacing direct useAgentContext() calls for toggleSubagent and isAgentSelected",
+        "Call flushSubagentPersist() in handleClose of ToolSelectionModal",
+        "Typecheck passes (npx tsc --noEmit from frontend/)",
+        "Lint passes (npm run lint from frontend/)"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Save button added to ChatNav with Save icon. Opens SaveAsAssistantDialog, collects agent state, POSTs via AgentService.create(), shows toast, refreshes agents."
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Subagent selection modal component",
-      "description": "As a user, I want a modal to select which subagents to use in my current session.",
+      "title": "Load saved subagent defaults on app start",
+      "description": "As a returning user, I want my saved subagent selections to be loaded when the app starts so that my chat sessions include my preferred subagents without manual re-selection.",
       "acceptanceCriteria": [
-        "Create subagent selection UI (new modal or new tab in ToolSelectionModal)",
-        "Display available agents from the agents list with name, description, and model info",
-        "Each agent has a toggle to add/remove as a subagent for the current session",
-        "Show currently selected subagents with visual indicator",
-        "Typecheck passes with tsc --project tsconfig.app.json"
+        "Modify settings loading useEffect in frontend/src/components/menus/BaseToolMenu.tsx to also extract defaults.subagents",
+        "Store loaded subagent IDs in state (pendingSubagentIds)",
+        "Add a second useEffect watching [agents, pendingSubagentIds] that resolves IDs to Agent objects once agents list is available",
+        "Set resolved agents onto agent.subagents via setAgent",
+        "If a saved agent ID no longer exists (agent was deleted), it is silently filtered out with no error",
+        "If agents list hasn't loaded yet when settings arrive, resolution is deferred until agents are available",
+        "The subagent badges/indicators in the UI reflect the loaded defaults after page refresh",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "Added Subagents tab to ToolSelectionModal with SubagentsPanel component. Shows agent grid with name/description/model, toggle selection, visual indicator (primary bg + check icon)."
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Wire subagent selection to chat page",
-      "description": "As a user, I want to select subagents from the chat page and have them included in my LLM requests.",
+      "title": "Verify unauthenticated users are unaffected",
+      "description": "As an unauthenticated user, I want the subagents tab to remain hidden so that no persistence is attempted and no errors occur.",
       "acceptanceCriteria": [
-        "Add subagent selection trigger in BaseToolMenu or adjacent to it in the chat input area",
-        "Wire selection to existing useAgent toggleSubagent/addAgentToSubagents/removeAgentFromSubagents methods",
-        "Verify selected subagents are included in the LLM request payload (useChat sends agent.subagents)",
-        "Typecheck passes with tsc --project tsconfig.app.json",
-        "Verify in browser using agent-browser skill"
+        "The subagents tab is not visible for unauthenticated users (existing behavior, verify no regression)",
+        "No patchDefaults calls are made for subagents when unauthenticated (auth guard in hook)",
+        "No errors appear in the console related to subagent persistence for unauthenticated users",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill (test as logged-out user)"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Already wired via US-003: BaseToolMenu -> Configure Tools -> ToolSelectionModal -> Subagents tab. Uses toggleSubagent/isAgentSelected from AgentContext. useChat sends agent.subagents at lines 226 and 334."
-    },
-    {
-      "id": "US-005",
-      "title": "Update issue description with integration details",
-      "description": "As a developer, I want the GitHub issue #803 description updated with the key integration points discovered during implementation.",
-      "acceptanceCriteria": [
-        "Update issue #803 body with completed Key Integration Points table listing changed files and functions",
-        "Update issue #803 body with UI Integration Points table listing changed components",
-        "Update issue #803 body with Storage and Architectural Decisions sections",
-        "Use gh issue edit 803 --body to update the issue"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "Updated issue #803 with full Key Integration Points (9 rows), UI Integration Points (6 rows), Storage, and Architectural Decisions sections."
-    },
-    {
-      "id": "US-006",
-      "title": "Check docs for drift and update wiki",
-      "description": "As a developer, I want to check the wiki docs for any drift or additions needed based on these new features.",
-      "acceptanceCriteria": [
-        "Review wiki/docs/assistants/index.md for coverage of Save as Assistant from chat feature",
-        "Review wiki/docs/ for any subagent documentation that needs updating",
-        "If docs changes needed, update the relevant markdown files in wiki/",
-        "Commit any wiki changes inside the wiki submodule"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": "Added 'Save as Assistant from Chat' section and 'Subagents' section to wiki/docs/assistants/index.md. Committed inside wiki submodule."
-    },
-    {
-      "id": "US-007",
-      "title": "Final verification, report, and push",
-      "description": "As a developer, I want all changes committed with a final assessment report.",
-      "acceptanceCriteria": [
-        "Run git status to verify no remaining changes in the workspace",
-        "If remaining changes exist, commit and push to branch so they will be visible in the GitHub PR",
-        "Create a final report assessing: (1) remaining steps that should have been outlined in scope, (2) improvements extracted from the implementation process, scored and ranked by probability of being outlined in future iterations",
-        "Add the final report as a comment on the PR"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "All changes pushed. Final report added as PR #809 comment. TypeScript typecheck passes. Only untracked change is package-lock.json (unrelated)."
+      "notes": ""
     }
   ]
 }
