@@ -18,6 +18,8 @@ import {
 	AlertTriangle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import Editor from "@monaco-editor/react";
+import { useTheme } from "@/hooks/useTheme";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEpicContext } from "@/context/EpicContext";
 import { Task } from "@/lib/entities/epic";
@@ -65,6 +67,7 @@ function EpicDetailPage() {
 	const navigate = useNavigate();
 	const { id } = useParams<{ id: string }>();
 	const { handleUpdateTask, handleDeleteTask } = useEpicContext();
+	const { theme } = useTheme();
 	const [epic, setEpic] = useState<Epic | null>(null);
 	const [tasks, setTasks] = useState<Task[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -270,9 +273,53 @@ function EpicDetailPage() {
 													<CardContent className="pt-0">
 														<div className="space-y-2">
 															{task.description && (
-																<p className="text-xs text-muted-foreground">
-																	{task.description}
-																</p>
+																<div
+																	style={{
+																		height: Math.max(
+																			60,
+																			Math.min(
+																				task.description.split("\n").length *
+																					18 +
+																					10,
+																				200,
+																			),
+																		),
+																	}}
+																>
+																	<Editor
+																		value={task.description}
+																		language="markdown"
+																		height={Math.max(
+																			60,
+																			Math.min(
+																				task.description.split("\n").length *
+																					18 +
+																					10,
+																				200,
+																			),
+																		)}
+																		theme={
+																			theme === "light" ? "light" : "vs-dark"
+																		}
+																		options={{
+																			readOnly: true,
+																			domReadOnly: true,
+																			minimap: { enabled: false },
+																			lineNumbers: "off",
+																			wordWrap: "on",
+																			fontSize: 11,
+																			scrollBeyondLastLine: false,
+																			renderLineHighlight: "none",
+																			contextmenu: false,
+																			folding: false,
+																			scrollbar: {
+																				vertical: "auto",
+																				horizontal: "hidden",
+																				handleMouseWheel: true,
+																			},
+																		}}
+																	/>
+																</div>
 															)}
 															<div className="flex items-center gap-4 flex-wrap">
 																<Badge variant={getStatusColor(task.status)}>
