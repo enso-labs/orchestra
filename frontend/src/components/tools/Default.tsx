@@ -13,29 +13,30 @@ export default function DefaultTool({
 }: Props) {
 	const { theme } = useTheme();
 
+	// Derive raw input value for stable dependency tracking
+	const rawInput =
+		selectedToolMessage?.args ??
+		selectedToolMessage?.input ??
+		selectedToolMessage?.content;
+
 	const content = useMemo(() => {
-		if (!selectedToolMessage) return "";
+		if (rawInput == null) return "";
 
-		const input =
-			selectedToolMessage.args ||
-			selectedToolMessage.input ||
-			selectedToolMessage.content;
-
-		if (input == null) return "";
-
-		if (typeof input === "object") {
-			return JSON.stringify(input, null, 2);
+		if (typeof rawInput === "object") {
+			return JSON.stringify(rawInput, null, 2);
 		}
 
-		// input is a string — try to pretty-print as JSON
+		if (!rawInput) return "";
+
+		// rawInput is a non-empty string — try to pretty-print as JSON
 		try {
-			const parsed = JSON.parse(input);
+			const parsed = JSON.parse(rawInput);
 			return JSON.stringify(parsed, null, 2);
 		} catch {
 			// Mid-stream incomplete JSON or non-JSON text — pass through as-is
-			return String(input);
+			return String(rawInput);
 		}
-	}, [selectedToolMessage]);
+	}, [rawInput]);
 
 	const language = useMemo(() => {
 		const trimmed = content.trimStart();
@@ -60,7 +61,7 @@ export default function DefaultTool({
 		return Math.max(60, Math.min(raw, 300));
 	}, [content, collapsed]);
 
-	if (!selectedToolMessage) return null;
+	if (!selectedToolMessage || !content) return null;
 
 	return (
 		<div style={{ height }}>
