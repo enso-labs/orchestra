@@ -1,7 +1,7 @@
 {
   "project": "Orchestra",
-  "branchName": "ralph/persist-subagent-selection",
-  "description": "Persist Subagent Selection - Add backend persistence for subagent selections, fix empty model crash, and add tag filter chips with batch toggle to the Platform tools panel",
+  "branchName": "feat/820-exec-server-template-edit-mcp",
+  "description": "Add exec server template and edit capability for MCP servers",
   "userStories": [
     {
       "id": "US-001",
