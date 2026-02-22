@@ -191,7 +191,7 @@ async def init_subagents(subagents: list[Assistant], service_context: ServiceCon
             "tools": await init_tools(subagent.tools, subagent.a2a, subagent.mcp, service_context),
         }
 
-        if getattr(subagent, "model", None) is not None:
+        if getattr(subagent, "model", None):
             subagent_dict["model"] = subagent.model
         result.append(subagent_dict)
     return result
