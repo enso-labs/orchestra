@@ -5,28 +5,29 @@ description: "Archive the current Ralph prd.json and progress.txt before startin
 
 # Ralph Archive
 
-Archives the current `.ralph/prd.json` and `.ralph/progress.txt` into `.ralph/archive/YYYY-MM-DD-feature-name/` so a new Ralph run can start clean.
+Archives the current `.ralph/prd.json` and `.ralph/progress.txt` into `.ralph/archive/[feat|bug]-<issue#>/` so a new Ralph run can start clean.
 
 ---
 
 ## The Job
 
-1. Check if `.ralph/prd.json` exists — if not, inform the user there is nothing to archive and stop
-2. Read `.ralph/prd.json` to extract the feature name from `branchName` (strip `ralph/` prefix) or `description`
-3. Create the archive directory: `.ralph/archive/YYYY-MM-DD-feature-name/` using today's date
-4. Move `.ralph/prd.json` to the archive directory
-5. Move `.ralph/progress.txt` to the archive directory (if it exists)
-6. Confirm to the user what was archived and where
+1. Check if `.ralph/prd.json` exists &mdash; if not, inform the user there is nothing to archive and stop
+2. Read `.ralph/prd.json` to extract the branch name from `branchName`
+3. Derive the archive folder name from the branch: `feat/810-feature-name` &rarr; `feat-810`, `bug/796-save-error` &rarr; `bug-796`
+4. Create the archive directory: `.ralph/archive/[feat|bug]-<issue#>/`
+5. Copy `.ralph/prd.json` to the archive directory
+6. Copy `.ralph/progress.txt` to the archive directory (if it exists)
+7. Remove the originals from `.ralph/` root
+8. Confirm to the user what was archived and where
 
 ---
 
 ## Rules
 
-- **Date format:** `YYYY-MM-DD` (e.g., `2026-01-31`)
-- **Feature name:** Derived from `branchName` in the prd.json. Strip the `ralph/` prefix and use as-is (already kebab-case). If branchName contains slashes beyond the `ralph/` prefix (e.g., `feat/123-feature-name`), preserve them in the directory path.
-- **If the archive directory already exists:** Append a numeric suffix (e.g., `2026-01-31-feature-name-2/`)
+- **Directory naming:** `[feat|bug]-<issue#>` derived from `branchName` in prd.json (e.g., `feat/810-feature-name` &rarr; `feat-810`)
+- **If the archive directory already exists:** Append a numeric suffix (e.g., `feat-810-2/`)
 - **Do NOT delete or modify** any files in the archive after moving them
-- **Do NOT create a new prd.json or progress.txt** — that is the ralph skill's job
+- **Do NOT create a new prd.json or progress.txt** &mdash; that is the ralph skill&apos;s job
 
 ---
 
@@ -35,15 +36,15 @@ Archives the current `.ralph/prd.json` and `.ralph/progress.txt` into `.ralph/ar
 Given `.ralph/prd.json` contains:
 ```json
 {
-  "branchName": "ralph/task-status",
-  "description": "Task Status Feature"
+  "branchName": "feat/810-collapsible-tool-inputs",
+  "description": "Collapsible Tool Inputs Feature"
 }
 ```
 
-Running this skill on 2026-01-31 produces:
+Running this skill produces:
 ```
-.ralph/archive/2026-01-31-task-status/prd.json
-.ralph/archive/2026-01-31-task-status/progress.txt
+.ralph/archive/feat-810/prd.json
+.ralph/archive/feat-810/progress.txt
 ```
 
 ---
@@ -53,9 +54,7 @@ Running this skill on 2026-01-31 produces:
 ```bash
 # 1. Read branchName from prd.json
 BRANCH=$(jq -r '.branchName' .ralph/prd.json)
-FEATURE=$(echo "$BRANCH" | sed 's|^ralph/||')
-DATE=$(date +%Y-%m-%d)
-ARCHIVE_DIR=".ralph/archive/${DATE}-${FEATURE}"
+ARCHIVE_DIR=".ralph/archive/$(echo $BRANCH | sed 's|/\([0-9]*\).*|-\1|')"
 
 # 2. Handle collision
 if [ -d "$ARCHIVE_DIR" ]; then
@@ -66,10 +65,11 @@ if [ -d "$ARCHIVE_DIR" ]; then
   ARCHIVE_DIR="${ARCHIVE_DIR}-${SUFFIX}"
 fi
 
-# 3. Create and move
+# 3. Create, copy, and clean
 mkdir -p "$ARCHIVE_DIR"
-mv .ralph/prd.json "$ARCHIVE_DIR/"
-[ -f .ralph/progress.txt ] && mv .ralph/progress.txt "$ARCHIVE_DIR/"
+cp .ralph/prd.json "$ARCHIVE_DIR/"
+[ -f .ralph/progress.txt ] && cp .ralph/progress.txt "$ARCHIVE_DIR/"
+rm -f .ralph/prd.json .ralph/progress.txt
 ```
 
 ---
@@ -77,7 +77,7 @@ mv .ralph/prd.json "$ARCHIVE_DIR/"
 ## Checklist
 
 - [ ] `.ralph/prd.json` exists before archiving
-- [ ] Archive directory uses today's date and feature name
-- [ ] Both `prd.json` and `progress.txt` are moved (not copied)
-- [ ] No files remain in `.ralph/` root (prd.json, progress.txt)
+- [ ] Archive directory uses `[feat|bug]-<issue#>` naming from branchName
+- [ ] Both `prd.json` and `progress.txt` are copied then originals removed
+- [ ] No working files remain in `.ralph/` root (prd.json, progress.txt)
 - [ ] Confirmed archive location to user
