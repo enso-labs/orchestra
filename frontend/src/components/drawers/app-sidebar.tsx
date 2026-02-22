@@ -891,6 +891,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						</SidebarGroupLabel>
 					</SidebarGroup>
 
+					{/* Epics Link */}
+					<SidebarGroup className="border-b border-sidebar-border">
+						<SidebarGroupLabel
+							asChild
+							className={`
+								group/label text-sidebar-foreground hover:bg-sidebar-accent
+								hover:text-sidebar-accent-foreground text-sm
+							`}
+						>
+							<Link to="/epics" className="flex items-center w-full">
+								<FolderKanban className="w-4 h-4 mr-2" />
+								Epics
+							</Link>
+						</SidebarGroupLabel>
+					</SidebarGroup>
+
 					<ProjectsCollapsibleGroup
 						projects={projects}
 						onCreateProject={() => setIsCreateProjectModalOpen(true)}

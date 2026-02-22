@@ -10,6 +10,7 @@ from src.tools.api import API_TOOLS
 from src.tools.bash_tool import BASH_TOOLS
 from src.tools.memory import MEMORY_TOOLS
 from src.tools.thread_search import THREAD_SEARCH_TOOLS
+from src.tools.epic import EPIC_TOOLS
 
 
 def default_tools() -> list[BaseTool]:
@@ -19,6 +20,7 @@ def default_tools() -> list[BaseTool]:
         *FINANCE_TOOLS,
         *MEMORY_TOOLS,
         *THREAD_SEARCH_TOOLS,
+        *EPIC_TOOLS,
     ]
     if APP_ENV == "test":
         default_tools.extend(TEST_TOOLS)
