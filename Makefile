@@ -37,18 +37,22 @@ archive:
 	rm -f .ralph/prd.json .ralph/progress.txt && \
 	echo "Archived to $$ARCHIVE_DIR"
 
-# Add a changelog entry for the current branch (YYYY.MM.DD-RR format)
+# Add a changelog entry for the current branch (YYYY.M.D[-N] format)
 changelog:
-	@TODAY=$$(date -u +%Y.%m.%d) && \
+	@YEAR=$$(date -u +%Y) && MONTH=$$(date -u +%-m) && DAY=$$(date -u +%-d) && \
+	TODAY="$${YEAR}.$${MONTH}.$${DAY}" && \
 	BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
-	LAST_REV=$$(grep -oP "^## $${TODAY}-\K\d+" Changelog.md 2>/dev/null | head -1 || echo "0") && \
-	NEXT_REV=$$(printf "%02d" $$((10#$${LAST_REV} + 1))) && \
-	VERSION="$${TODAY}-$${NEXT_REV}" && \
+	EXISTING=$$(grep -cP "^## $${TODAY}($$|-)" Changelog.md 2>/dev/null || echo "0") && \
+	if [ "$$EXISTING" -eq 0 ]; then VERSION="$${TODAY}"; \
+	else \
+		MAX=$$(grep -oP "^## $${TODAY}-\K\d+" Changelog.md 2>/dev/null | sort -rn | head -1 || echo "1") && \
+		if [ "$$MAX" -gt 1 ]; then VERSION="$${TODAY}-$$((MAX+1))"; else VERSION="$${TODAY}-2"; fi; \
+	fi && \
 	HEADER="## $${VERSION}" && \
 	ENTRY="  - $${BRANCH}" && \
 	FIRST_ENTRY=$$(grep -n '^## ' Changelog.md | head -1 | cut -d: -f1) && \
 	if [ -z "$$FIRST_ENTRY" ]; then \
-		echo "$$HEADER\n\n### Changed\n$$ENTRY" >> Changelog.md; \
+		printf "%s\n\n### Changed\n%s\n" "$$HEADER" "$$ENTRY" >> Changelog.md; \
 	else \
 		sed -i "$${FIRST_ENTRY}i\\$${HEADER}\n\n### Changed\n$${ENTRY}\n" Changelog.md; \
 	fi && \

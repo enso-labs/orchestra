@@ -1,30 +1,47 @@
 #!/bin/bash
 #
-# tag.sh — Create and push a YYYY.MM.DD-RR version tag
+# tag.sh — Create and push a YYYY.M.D[-N] version tag
+#
+# Format: YYYY.M.D (no zero-padding). Multiple releases per day
+# get a -N suffix: 2026.2.22, 2026.2.22-2, 2026.2.22-3, ...
 #
 # Usage:
-#   ./backend/scripts/tag.sh              # auto-generates next tag for today
-#   ./backend/scripts/tag.sh 2026.02.22-03  # use explicit tag
+#   ./backend/scripts/tag.sh                # auto-generates next tag for today
+#   ./backend/scripts/tag.sh 2026.2.22-3    # use explicit tag
 #
 
 set -euo pipefail
 ORIGIN="${GIT_REMOTE:-origin}"
 
-# Generate or accept tag
 if [ -n "${1:-}" ]; then
     TAG="$1"
 else
-    TODAY=$(date -u +%Y.%m.%d)
-    # Find the highest revision for today
-    LAST_REV=$(git tag -l "${TODAY}-*" --sort=-version:refname | head -1 | grep -oP '\d+$' || echo "0")
-    NEXT_REV=$(printf "%02d" $((10#${LAST_REV} + 1)))
-    TAG="${TODAY}-${NEXT_REV}"
+    # YYYY.M.D (no zero-padding)
+    YEAR=$(date -u +%Y)
+    MONTH=$(date -u +%-m)
+    DAY=$(date -u +%-d)
+    TODAY="${YEAR}.${MONTH}.${DAY}"
+
+    # Check existing tags for today
+    EXISTING=$(git tag -l "${TODAY}" "${TODAY}-*" 2>/dev/null | wc -l)
+    if [ "$EXISTING" -eq 0 ]; then
+        TAG="${TODAY}"
+    else
+        # Find highest suffix
+        MAX=$(git tag -l "${TODAY}-*" --sort=-version:refname | head -1 | grep -oP '(?<=-)\d+$' || echo "1")
+        if git tag -l "${TODAY}" --quiet 2>/dev/null | grep -q .; then
+            # Base tag exists, so next is at least -2
+            NEXT=$((MAX > 1 ? MAX + 1 : 2))
+        else
+            NEXT=$((MAX + 1))
+        fi
+        TAG="${TODAY}-${NEXT}"
+    fi
 fi
 
 echo "Tag: $TAG"
 read -p "Message (press enter for none): " MESSAGE
 
-# Confirm
 echo ""
 echo "  Tag:     $TAG"
 echo "  Message: ${MESSAGE:-<empty>}"
