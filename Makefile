@@ -26,6 +26,13 @@ setup:
 ralph:
 	@unset CLAUDECODE; bash .ralph/ralph.sh $(MAX_ITERATIONS)
 
-# Archive current prd.json and progress.txt into dated directory
+# Archive current prd.json and progress.txt into [feat|bug]-<issue#> directory
 archive:
-	claude --dangerously-skip-permissions -p "Archive the latest prd.json & progress.json into \`./.ralph/archive/YYYY-MM-DD/prd.json\` and \`./.ralph/archive/YYYY-MM-DD/progress.json\` respectively. Create the directory if it doesn't exist."
+	@BRANCH=$$(jq -r '.branchName' .ralph/prd.json 2>/dev/null) && \
+	if [ -z "$$BRANCH" ] || [ "$$BRANCH" = "null" ]; then echo "No .ralph/prd.json or branchName found"; exit 1; fi && \
+	ARCHIVE_DIR=".ralph/archive/$$(echo $$BRANCH | sed 's|/\([0-9]*\).*|-\1|')" && \
+	mkdir -p "$$ARCHIVE_DIR" && \
+	cp .ralph/prd.json "$$ARCHIVE_DIR/prd.json" && \
+	[ -f .ralph/progress.txt ] && cp .ralph/progress.txt "$$ARCHIVE_DIR/progress.txt" || true && \
+	rm -f .ralph/prd.json .ralph/progress.txt && \
+	echo "Archived to $$ARCHIVE_DIR"

@@ -33,9 +33,9 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
    - RUN `cd ./.worktrees/<prefix>-<number> && git commit -m "init <branch-name>"` to commit initialization
 
 5. _CREATE_ spec folder for artifacts:
-   - _DETERMINE_ spec folder path: `.claude/specs/<prefix>-<number>-<short-name>/`
-     - Example: `.claude/specs/feature-656-distributed-workers-taskiq/`
-   - RUN `mkdir -p ./.worktrees/<prefix>-<number>/.claude/specs/<prefix>-<number>-<short-name>` to create spec folder
+   - _DETERMINE_ spec folder path: `.claude/plans/<prefix>-<number>-<short-name>/`
+     - Example: `.claude/plans/feature-656-distributed-workers-taskiq/`
+   - RUN `mkdir -p ./.worktrees/<prefix>-<number>/.claude/plans/<prefix>-<number>-<short-name>` to create spec folder
    - _STORE_ spec folder path for later reference
 
 6. _GENERATE_ user stories from issue:
@@ -67,7 +67,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
      - Extracting the core capability being requested
      - Inferring the business value or user benefit
      - Converting issue requirements into testable acceptance criteria
-   - _WRITE_ user stories to `.claude/specs/<prefix>-<number>-<short-name>/USER_STORIES.md`
+   - _WRITE_ user stories to `.claude/plans/<prefix>-<number>-<short-name>/USER_STORIES.md`
    - _REPORT_ "Generated <N> user stories for PR review"
 
 7. _PREPARE_ team query from issue with user stories:
@@ -86,9 +86,9 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 
 8. _INVOKE_ team council analysis (Phases 0-3 ONLY — no implementation):
    - RUN `cd ./.worktrees/<prefix>-<number>` to change to worktree directory
-   - _EXECUTE_ `/team query="<composed-query>" subagents=$SUBAGENTS output_dir=".claude/specs/<prefix>-<number>-<short-name>/"` to run multi-agent council workflow
+   - _EXECUTE_ `/team query="<composed-query>" subagents=$SUBAGENTS output_dir=".claude/plans/<prefix>-<number>-<short-name>/"` to run multi-agent council workflow
    - **IMPORTANT:** Execute ONLY Phases 0-3 of the team workflow. Do NOT proceed to Phase 4 (implementation) or Phase 5 (validation). Stop after generating the task contract.
-   - The team workflow will generate council artifacts into `.claude/specs/<prefix>-<number>-<short-name>/`:
+   - The team workflow will generate council artifacts into `.claude/plans/<prefix>-<number>-<short-name>/`:
      - Phase 0: Context initialization from CLAUDE.md → `INITIAL_REPORT` (in memory)
      - Phase 1: Generate expert proposals → `PROPOSAL_*.md` (one per agent persona)
      - Phase 2: Council review and synthesis → `REVIEW.md`
@@ -97,13 +97,13 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
    - _IF_ missing artifacts: _REPORT_ error and halt
 
 9. _GENERATE_ PRD from council outputs:
-   - _READ_ the council artifacts from `.claude/specs/<prefix>-<number>-<short-name>/`:
+   - _READ_ the council artifacts from `.claude/plans/<prefix>-<number>-<short-name>/`:
      - `REVIEW.md` — Council's unified implementation plan
      - `TASKS.md` — Atomic task breakdown with acceptance criteria
      - `USER_STORIES.md` — User acceptance criteria from Step 6
    - _COMPOSE_ PRD generation query:
      ```
-     Archive previous prd.json & progress.txt THEN load the prd skill and create a PRD for:
+     Archive previous .ralph/prd.json & progress.txt THEN load the prd skill and create a PRD for:
 
      Feature: <issue-title> (Issue #<number>)
      Branch: <branch-name>
@@ -134,7 +134,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
    - _VERIFY_ PRD was created at `tasks/prd-<feature-slug>.md`
    - _REPORT_ "Generated PRD at tasks/prd-<feature-slug>.md"
 
-10. _CONVERT_ PRD to Ralph prd.json format:
+10. _CONVERT_ PRD to Ralph .ralph/prd.json format:
     - _COMPOSE_ conversion query:
       ```
       Load the ralph skill and convert tasks/prd-<feature-slug>.md to .ralph/prd.json
@@ -175,7 +175,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 13. _REPORT_ workflow completion:
     - Issue processed: #<number> - <title>
     - Worktree location: `./.worktrees/<prefix>-<number>`
-    - Spec folder: `.claude/specs/<prefix>-<number>-<short-name>/`
+    - Spec folder: `.claude/plans/<prefix>-<number>-<short-name>/`
     - Branch name: `<branch-name>`
     - Council artifacts (in spec folder):
       - `USER_STORIES.md` (Step 6 — Acceptance criteria)
@@ -220,7 +220,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 Confirm workflow completion with:
 - Issue number and title processed
 - Worktree path: `./.worktrees/<prefix>-<number>`
-- Spec folder: `.claude/specs/<prefix>-<number>-<short-name>/`
+- Spec folder: `.claude/plans/<prefix>-<number>-<short-name>/`
 - Branch name: `<prefix>/<number>-<short-name>`
 - Council analysis: Phases 0-3 completed (proposals, review, tasks)
 - PRD generated: `tasks/prd-<feature-slug>.md`

@@ -28,7 +28,8 @@
 **/ralph-loop*
 # Ralph config (may contain API key)
 .cursor/ralph-config.json
-**/prd.json
-**/progress.txt
+.ralph/prd.json
+.ralph/progress.txt
 **/.last-branch
 **/.cloudflared/
+**/.images

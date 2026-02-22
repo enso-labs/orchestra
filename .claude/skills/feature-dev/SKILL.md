@@ -1,6 +1,6 @@
 ---
 name: feature-dev
-description: "Full-stack feature development from user stories. Orchestrates the complete pipeline: duplication check, GitHub issue creation, branch/worktree setup, PRD generation, Ralph JSON conversion, commit/push, and Ralph execution. Use when you have user stories ready to implement. Triggers on: feature dev, implement story, build feature from story, story to feature."
+description: "Template-driven full-stack feature development from user stories. Orchestrates the complete pipeline: issue template reading, duplication check, GitHub issue creation, branch/worktree setup, PRD generation with agent-browser verification, Ralph JSON conversion, commit/push, and Ralph execution. Use when you have user stories ready to implement. Triggers on: feature dev, implement story, build feature from story, story to feature, template-driven, agent-browser verification."
 ---
 
 # Feature Dev
@@ -14,6 +14,8 @@ Converts one or more user stories into a fully implemented feature by orchestrat
 STORY: $ARGUMENTS.story (optional if `url` is provided)
 URL: $ARGUMENTS.url (optional if `story` is provided)
 ORCHESTRA_PROJECT_ROOT: The **orchestra project root** &mdash; the git repository root where `.claude/`, `.worktrees/`, and `Makefile` live. Resolve via `git rev-parse --show-toplevel`. All paths in this skill are anchored to this variable. Always `cd $ORCHESTRA_PROJECT_ROOT` before running commands to ensure worktrees are created in the correct location.
+PLAN_TEMPLATE_PATH: `.github/ISSUE_TEMPLATE/feature_request.md`
+WORKSPACE_DOCS: `orchestra/wiki`
 
 **Exactly one of `story` or `url` must be provided.**
 
@@ -68,6 +70,23 @@ git add <phase artifacts>
 git commit -s -m "<phase commit message>"
 git push
 ```
+
+---
+
+## Pre-Phase: Read Issue Template
+
+**MANDATORY first step.** Read the issue template to extract conventions before any other work.
+
+1. _READ_ the issue template at `$ORCHESTRA_PROJECT_ROOT/.github/ISSUE_TEMPLATE/feature_request.md`
+2. _EXTRACT_ conventions from the template:
+   - Branch naming pattern (e.g., `feat/[issue#]-[shortdesc]`)
+   - PR title format (e.g., `FROM feat/[issue#]-[shortdesc] TO development`)
+   - Worktree path pattern (e.g., `$WORKSPACE/.worktrees/feat-[issue#]`)
+   - Required issue sections (User Stories, Summary, Key Integration Points, etc.)
+   - Validation tools (`agent-browser` for E2E)
+   - Design principles (simplicity, least changes, TDD-first)
+3. _STORE_ these conventions for use in all subsequent phases
+4. _NOTE_ wiki workspace at `$ORCHESTRA_PROJECT_ROOT/wiki` for feature context and documentation
 
 ---
 
@@ -165,13 +184,9 @@ Check for existing work that overlaps with this feature:
 
 ---
 
-## Phase 3: Archive, Create Branch & Worktree
+## Phase 3: Create Branch & Worktree
 
-1. _ARCHIVE_ previous Ralph run before any new work begins:
-   - _SPAWN_ a subagent to run: `make -C $ORCHESTRA_PROJECT_ROOT archive`
-   - This archives `.ralph/prd.json` and `.ralph/progress.txt` from any previous feature
-   - **Must complete before the first push** to avoid polluting the new branch with stale artifacts
-2. _DETERMINE_ naming:
+1. _DETERMINE_ naming:
    - Branch: `feat/<issue#>-<feature-name>`
    - Worktree path: `$ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>`
 3. _FETCH_ latest development:
@@ -225,11 +240,16 @@ Check for existing work that overlaps with this feature:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>`
 2. _ENTER_ plan mode and research:
    - Explore the codebase to understand existing patterns, files, and architecture relevant to the user stories
+   - Consult documentation at `$ORCHESTRA_PROJECT_ROOT/wiki` for feature context
    - Identify which files will need changes
    - Determine dependency order (schema, backend, frontend, integration)
    - Flag any risks, blockers, or open questions
    - Decide whether stories need to be split, merged, or reordered
-3. _PRESENT_ the plan to the user for approval:
+   - Reference wiki content in the plan when relevant
+3. _WRITE_ plan to `.claude/plans/feat-<issue#>/plan-0.md`:
+   - _CREATE_ directory: `mkdir -p $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.claude/plans/feat-<issue#>`
+   - _STORE_ the plan at `.claude/plans/feat-<issue#>/plan-0.md` &mdash; this file becomes the input for PRD generation in Phase 5
+4. _PRESENT_ the plan to the user for approval:
    ```
    ## Implementation Plan for #<issue#>: <feature-name>
 
@@ -248,9 +268,11 @@ Check for existing work that overlaps with this feature:
 
    ### Approach
    <brief summary of implementation strategy>
+
+   Plan stored at: `.claude/plans/feat-<issue#>/plan-0.md`
    ```
-4. _WAIT_ for user approval before proceeding to Phase 5
-5. _EXIT_ plan mode
+5. _WAIT_ for user approval before proceeding to Phase 5
+6. _EXIT_ plan mode
 
 ---
 
@@ -283,7 +305,13 @@ This phase produces two artifacts in sequence: the PRD markdown file (via `/prd`
    - Add "Verify in browser using agent-browser skill" to UI stories
    ```
 2. _VERIFY_ PRD was created at `tasks/prd-<feature-name>.md`
-3. _COMMIT_ PRD artifact:
+3. _VALIDATE_ agent-browser verification criteria:
+   - _SCAN_ all user stories in the PRD
+   - For UI-changing stories, _ENSURE_ acceptance criteria include:
+     - "Verify in browser using agent-browser skill"
+     - "Take screenshot with agent-browser for visual walkthrough"
+   - _AUTO-ADD_ these criteria if missing from any UI-facing story
+4. _COMMIT_ PRD artifact:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add tasks/prd-<feature-name>.md`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git commit -s -m "docs: add PRD for #<issue#>"`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
@@ -314,18 +342,67 @@ Feed `tasks/prd-<feature-name>.md` from Step 1 directly into the `/ralph` skill.
 
 ---
 
-## Phase 6: Final Push & Mark PR Ready
+## Phase 5.5: Agent-Browser Verification Dry Run
 
-All artifacts have been committed and pushed incrementally in previous phases. This phase catches any stragglers and marks the draft PR as ready for review.
+> **Only applies to features with UI changes.** Skip if the feature is backend-only.
 
-1. _VERIFY_ remote is up to date:
-   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git status`
-   - _IF_ uncommitted changes remain: stage, commit, and push them
-2. _PUSH_ any final changes:
+For features that modify UI:
+
+1. _CHECK_ dev server availability:
+   - _IF_ dev server is not running: _REPORT_ with startup instructions and skip this phase
+2. _TAKE_ "before" screenshots using `agent-browser screenshot`:
+   - Capture the current state of affected UI areas
+   - Store at `tasks/screenshots/feat-<issue#>-before.png`
+3. _COMMIT_ screenshots as planning artifacts:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add tasks/screenshots/`
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git commit -s -m "docs: add before screenshots for #<issue#>"`
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
-3. _MARK_ PR ready for review:
+4. _REPORT_ "Before screenshots captured for visual diff after implementation"
+
+---
+
+## Phase 6: Archive, Final Push & Mark PR Ready
+
+All artifacts have been committed and pushed incrementally in previous phases. This phase archives Ralph artifacts, catches any stragglers, generates a reviewer report, and marks the draft PR as ready for review.
+
+1. _ARCHIVE_ Ralph artifacts into `archive/feat-<issue#>/`:
+   - RUN `mkdir -p $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/archive/feat-<issue#>`
+   - RUN `cp $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/prd.json $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/archive/feat-<issue#>/prd.json`
+   - RUN `cp $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/progress.txt $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/archive/feat-<issue#>/progress.txt`
+   - RUN `rm $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/prd.json $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>/.ralph/progress.txt`
+2. _COMMIT_ archive:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git add .ralph/archive/feat-<issue#>/ && git add -A && git commit -s -m "chore: archive Ralph artifacts for #<issue#>"`
+3. _PUSH_ final changes:
+   - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && git push`
+4. _GENERATE_ reviewer report on PR description:
+   - _READ_ `.ralph/archive/feat-<issue#>/progress.txt` and `tasks/prd-<feature-name>.md` to summarize what was implemented
+   - _COMPOSE_ a reviewer-friendly PR body:
+     ```markdown
+     ## Summary
+     Resolves #<issue#>
+
+     ## What Changed
+     - <bullet summary of implemented stories and key changes>
+
+     ## Stories Completed
+     - [x] US-001: <title>
+     - [x] US-002: <title>
+     ...
+
+     ## Testing
+     - <how to verify the changes>
+     - <any agent-browser screenshots or evidence>
+
+     ## Notes
+     - <any caveats, follow-ups, or reviewer callouts>
+
+     Generated by `/feature-dev` skill.
+     ```
+   - _UPDATE_ PR description:
+     - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && gh pr edit --body "<reviewer report>"`
+5. _MARK_ PR ready for review:
    - RUN `cd $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#> && gh pr ready`
-4. _REPORT_ "All artifacts pushed. PR marked ready for review."
+6. _REPORT_ "Ralph artifacts archived. Reviewer report generated. PR marked ready for review."
 
 ---
 
@@ -372,8 +449,13 @@ All artifacts have been committed and pushed incrementally in previous phases. T
 
 ## Warnings
 
+- **Always read the issue template first** (Pre-Phase) &mdash; conventions drive all downstream phases
 - **Always check for duplicates** before creating issues or branches (Phase 1)
 - **Never skip user confirmation** in Phase 0 &mdash; the user must agree on the feature scope
+- **ALL changes verified via agent-browser** &mdash; UI stories must include agent-browser verification criteria
+- **ALL user story workflows use plan mode** &mdash; plan before generating PRDs
+- **Plan files stored at `.claude/plans/feat-<issue#>/plan-0.md`** &mdash; these become PRD input
+- **Wiki workspace at `orchestra/wiki`** &mdash; consult for feature context and documentation
 - **branchName in prd.json must use `feat/` prefix**, NOT `ralph/` &mdash; it must match the worktree branch exactly
 - **Final story must include git status check** to catch uncommitted artifacts
 - **Do NOT implement** &mdash; Ralph handles implementation. This skill only sets up the pipeline.

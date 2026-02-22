@@ -1,1 +1,1 @@
-READ `./AGENTS.md`
+AGENTS.md

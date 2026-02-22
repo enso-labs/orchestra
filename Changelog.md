@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - feat/803-persist-assistant-subagent-selection (2026-02-20)
+  - feat/807-docs-update-memories-onboarding-mcp (2026-02-20)
   - feat/787-migrate-memories-seeder (2026-02-18)
   - feat/801-search-threads-tool (2026-02-18)
   - feat/736-rlm-skill (2026-02-05)

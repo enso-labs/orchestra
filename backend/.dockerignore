@@ -36,3 +36,4 @@ Makefile
 **/pytest*
 **/pysandbox
 **/ralph-loop*
+**/.images

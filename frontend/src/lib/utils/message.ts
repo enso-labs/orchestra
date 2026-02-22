@@ -36,8 +36,28 @@ export class StreamMessageHandler {
 	public toolCall(response: any) {
 		// Process each tool_call_chunk independently
 		for (const chunk of response.tool_call_chunks) {
-			const tcId = chunk.id;
-			if (!tcId) continue;
+			// Resolve the tool_call_id via index-based mapping.
+			// LangChain only sends chunk.id on the FIRST chunk; subsequent
+			// chunks have id=null but carry the same index value.
+			const indexKey = `_idx_${response.id}_${chunk.index}`;
+			let tcId = chunk.id;
+
+			if (tcId) {
+				// First chunk — store the index->id mapping
+				this.toolCallMapRef.current.set(indexKey, {
+					name: "",
+					args: "",
+					_resolvedId: tcId,
+				} as any);
+			} else {
+				// Subsequent chunk — resolve id from stored mapping
+				const mapped = this.toolCallMapRef.current.get(indexKey) as any;
+				if (mapped?._resolvedId) {
+					tcId = mapped._resolvedId;
+				} else {
+					continue;
+				}
+			}
 
 			// Get or create state for this tool_call_id
 			let state = this.toolCallMapRef.current.get(tcId);
