@@ -77,6 +77,7 @@ The main way external AI Agents find out information about RUSKA will be from th
 - Sign every commit with `git commit -s ...`; keep subject lines imperative and reference issues or tickets when helpful.
 - Before opening a PR, ensure `uv run pytest`, `npm run test`, and any affected docs or `.env` samples reflect your changes; squash WIP noise locally.
 - PRs target `development`, link tracking issues, provide concise change notes, and include screenshots or API traces for UI-facing work.
+- Foramt outputs from plan mode in `.claude/plans/[short-plan-desc].md`
 
 ## Security & Configuration Tips
 - EXTREMELY IMPORTANT: NEVER read a .env* file in your exploration.
