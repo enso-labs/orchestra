@@ -136,7 +136,7 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]

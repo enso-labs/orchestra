@@ -61,8 +61,14 @@ export function ToolSelectionModal({
 	const [isA2aLoading, setIsA2aLoading] = useState(false);
 	const [isToolFormActive, setIsToolFormActive] = useState(false);
 
-	const { selectedTools, toggleTool, selectedCount, flushPersist } =
-		useToolSelection(initialSelectedTools);
+	const {
+		selectedTools,
+		toggleTool,
+		selectMultiple,
+		deselectMultiple,
+		selectedCount,
+		flushPersist,
+	} = useToolSelection(initialSelectedTools);
 	const {
 		toggleSubagent,
 		isAgentSelected,
@@ -234,6 +240,8 @@ export function ToolSelectionModal({
 								tools={platformTools}
 								selectedTools={selectedTools}
 								onToggleSelection={toggleTool}
+								onSelectMultiple={selectMultiple}
+								onDeselectMultiple={deselectMultiple}
 							/>
 						)}
 

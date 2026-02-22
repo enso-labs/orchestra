@@ -3,17 +3,22 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ToolGrid } from "./ToolGrid";
 import { Tool } from "./types";
+import { toast } from "sonner";
 
 interface PlatformToolsPanelProps {
 	tools: Tool[];
 	selectedTools: Set<string>;
 	onToggleSelection: (toolName: string) => void;
+	onSelectMultiple?: (tools: string[]) => void;
+	onDeselectMultiple?: (tools: string[]) => void;
 }
 
 export function PlatformToolsPanel({
 	tools,
 	selectedTools,
 	onToggleSelection,
+	onSelectMultiple,
+	onDeselectMultiple,
 }: PlatformToolsPanelProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -87,7 +92,7 @@ export function PlatformToolsPanel({
 				{/* Tag Filter Chips */}
 				{allTags.length > 0 && (
 					<div className="overflow-x-auto pt-2 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6">
-						<div className="flex gap-1.5 flex-nowrap pb-1">
+						<div className="flex gap-1.5 flex-nowrap pb-1 items-center">
 							<button
 								onClick={() => setActiveTag(null)}
 								className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
@@ -117,6 +122,36 @@ export function PlatformToolsPanel({
 									</button>
 								);
 							})}
+							{/* Batch Enable/Disable buttons - visible when a tag is active */}
+							{activeTag && onSelectMultiple && onDeselectMultiple && (
+								<>
+									<span className="flex-shrink-0 w-px h-4 bg-border mx-1" />
+									<button
+										onClick={() => {
+											const toolNames = filteredTools.map((t) => t.name);
+											onSelectMultiple(toolNames);
+											toast.success(
+												`Enabled ${toolNames.length} ${activeTag} tools`,
+											);
+										}}
+										className="flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer bg-green-500/15 text-green-500 hover:bg-green-500/25"
+									>
+										Enable All
+									</button>
+									<button
+										onClick={() => {
+											const toolNames = filteredTools.map((t) => t.name);
+											onDeselectMultiple(toolNames);
+											toast.success(
+												`Disabled ${toolNames.length} ${activeTag} tools`,
+											);
+										}}
+										className="flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer bg-red-500/15 text-red-500 hover:bg-red-500/25"
+									>
+										Disable All
+									</button>
+								</>
+							)}
 						</div>
 					</div>
 				)}

@@ -96,3 +96,24 @@ Started: Sun Feb 22 13:23:33 MST 2026
   - Chip dimming: compute counts per tag from the intermediate filtered set, not the full tools list
   - Overflow scroll for chip bar: use -mx + px trick to extend scroll area to full width while maintaining content padding
 ---
+
+## 2026-02-22 - US-006
+- Added `deselectMultiple(tools: string[])` to useToolSelection hook as counterpart to `selectMultiple`
+- Added `onSelectMultiple` and `onDeselectMultiple` optional props to PlatformToolsPanel
+- Added "Enable All" and "Disable All" buttons in the chip bar, visible only when a tag filter is active (not "All")
+- Buttons separated from tag chips by a vertical divider (`span` with border color)
+- Enable All: green styling (bg-green-500/15, text-green-500), calls onSelectMultiple with filtered tool names
+- Disable All: red styling (bg-red-500/15, text-red-500), calls onDeselectMultiple with filtered tool names
+- Toast confirms action: "Enabled N {tag} tools" / "Disabled N {tag} tools"
+- Status bar updates immediately (selected count changes via state)
+- Persistence via existing debounced patchDefaults flow (no extra API calls)
+- Buttons hidden when "All" chip is active (prevents accidentally toggling all tools)
+- Files changed: frontend/src/components/modals/ToolSelectionModal/hooks/useToolSelection.ts, frontend/src/components/modals/ToolSelectionModal/PlatformToolsPanel.tsx, frontend/src/components/modals/ToolSelectionModal/index.tsx
+- Browser verified: Enable All / Disable All work, status bar updates, buttons appear/hide based on tag selection
+- Typecheck and lint pass
+- **Learnings for future iterations:**
+  - deselectMultiple mirrors selectMultiple: filter out the Set entries instead of merging them
+  - Batch action buttons inline with chip bar using flex layout + vertical divider for visual separation
+  - Optional props (onSelectMultiple?, onDeselectMultiple?) keep the panel component backward-compatible
+  - Toast messages with tag name give user clear feedback on what category was affected
+---
