@@ -1,4 +1,4 @@
-.PHONY: update-submodules ralph archive setup
+.PHONY: update-submodules ralph archive setup tag changelog
 
 ENV ?= dev
 MAX_ITERATIONS ?= 200
@@ -36,3 +36,24 @@ archive:
 	[ -f .ralph/progress.txt ] && cp .ralph/progress.txt "$$ARCHIVE_DIR/progress.txt" || true && \
 	rm -f .ralph/prd.json .ralph/progress.txt && \
 	echo "Archived to $$ARCHIVE_DIR"
+
+# Add a changelog entry for the current branch (YYYY.MM.DD-RR format)
+changelog:
+	@TODAY=$$(date -u +%Y.%m.%d) && \
+	BRANCH=$$(git rev-parse --abbrev-ref HEAD) && \
+	LAST_REV=$$(grep -oP "^## $${TODAY}-\K\d+" Changelog.md 2>/dev/null | head -1 || echo "0") && \
+	NEXT_REV=$$(printf "%02d" $$((10#$${LAST_REV} + 1))) && \
+	VERSION="$${TODAY}-$${NEXT_REV}" && \
+	HEADER="## $${VERSION}" && \
+	ENTRY="  - $${BRANCH}" && \
+	FIRST_ENTRY=$$(grep -n '^## ' Changelog.md | head -1 | cut -d: -f1) && \
+	if [ -z "$$FIRST_ENTRY" ]; then \
+		echo "$$HEADER\n\n### Changed\n$$ENTRY" >> Changelog.md; \
+	else \
+		sed -i "$${FIRST_ENTRY}i\\$${HEADER}\n\n### Changed\n$${ENTRY}\n" Changelog.md; \
+	fi && \
+	echo "📝 Added $${VERSION} entry for $${BRANCH}"
+
+# Create and push a YYYY.MM.DD-RR git tag
+tag:
+	@bash backend/scripts/tag.sh $(TAG)
