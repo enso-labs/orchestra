@@ -607,6 +607,10 @@ export default function useChat(): ChatContextType {
 			// CRITICAL FIX: Apply formatMessages() to normalize streaming data
 			// This ensures consistency with checkpoint reload behavior
 			const normalizedHistory = formatMessages(streamHandler.history);
+			// Sync in_mem_messages with normalized state so the next SSE event
+			// operates on the same data that React renders (prevents divergence).
+			// Spread into new array to avoid mutating React state directly.
+			in_mem_messages = [...normalizedHistory];
 			setMessagesState(normalizedHistory);
 			// NOTE: Stream stop is now handled by the [DONE] signal in the event handler
 			// The unified handler (handleSSEUnified) and legacy handler both check for [DONE]
