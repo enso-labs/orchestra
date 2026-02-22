@@ -13,6 +13,7 @@ export interface DefaultsResponse {
 	tools: string[] | null;
 	mcp: Record<string, any> | null;
 	a2a: Record<string, any> | null;
+	subagents: string[] | null;
 }
 
 export interface UserSettingsResponse {
@@ -32,6 +33,7 @@ export const patchDefaults = async (
 		tools: string[] | null;
 		mcp: Record<string, any> | null;
 		a2a: Record<string, any> | null;
+		subagents: string[] | null;
 	}>,
 ): Promise<UserSettingsResponse> => {
 	const response = await apiClient.patch("/settings/default", data);

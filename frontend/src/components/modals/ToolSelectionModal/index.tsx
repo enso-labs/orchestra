@@ -7,6 +7,7 @@ import { McpServerPanel } from "./McpServerPanel";
 import { A2aAgentPanel } from "./A2aAgentPanel";
 import { SubagentsPanel } from "./SubagentsPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
+import { useSubagentSelection } from "./hooks/useSubagentSelection";
 import { ToolCategory, Tool, McpServerConfig, A2aServerConfig } from "./types";
 import {
 	listTools,
@@ -46,8 +47,7 @@ export function ToolSelectionModal({
 	initialMcpConfig = {},
 	initialA2aConfig = {},
 }: ToolSelectionModalProps) {
-	const { setAgent, agents, agent, toggleSubagent, isAgentSelected } =
-		useAgentContext();
+	const { setAgent, agents, agent } = useAgentContext();
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
@@ -63,6 +63,11 @@ export function ToolSelectionModal({
 
 	const { selectedTools, toggleTool, selectedCount, flushPersist } =
 		useToolSelection(initialSelectedTools);
+	const {
+		toggleSubagent,
+		isAgentSelected,
+		flushPersist: flushSubagentPersist,
+	} = useSubagentSelection();
 
 	const isAuthenticated = !!getAuthToken();
 
@@ -108,6 +113,7 @@ export function ToolSelectionModal({
 
 	const handleClose = () => {
 		flushPersist();
+		flushSubagentPersist();
 		onClose();
 	};
 
