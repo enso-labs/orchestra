@@ -44,6 +44,12 @@ const MCP_TEMPLATES = {
 		url: "https://mcp.github.com/sse",
 		headers: { Authorization: "Bearer " },
 	},
+	exec: {
+		name: "Exec Server",
+		transport: "stdio" as const,
+		url: "",
+		headers: {},
+	},
 };
 
 export function McpServerPanel({
