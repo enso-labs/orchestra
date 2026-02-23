@@ -6,16 +6,18 @@
     {
       "id": "US-001",
       "title": "Add exec server template to MCP_TEMPLATES",
-      "description": "As a user setting up a local execution MCP server, I want an Exec Server template in the Template dropdown so that I can quickly configure a stdio-based server without manually switching transport.",
+      "description": "As a user setting up the Ubuntu Sandbox exec server, I want an Exec Server template in the Template dropdown so that I can quickly configure the sandbox connection with the correct transport, URL, and auth header pre-filled.",
       "acceptanceCriteria": [
-        "Add new 'exec' entry to MCP_TEMPLATES in frontend/src/components/modals/ToolSelectionModal/McpServerPanel.tsx with name 'Exec Server', transport 'stdio', url '', headers {}",
-        "Selecting 'Exec Server' from the Template dropdown sets transport to 'stdio'",
+        "Add new 'exec' entry to MCP_TEMPLATES in frontend/src/components/modals/ToolSelectionModal/McpServerPanel.tsx with name 'Exec Server', transport 'streamable_http' as const, url 'http://localhost:3005/mcp', headers { 'x-api-key': '' }",
+        "Selecting 'Exec Server' from the Template dropdown sets transport to 'streamable_http'",
+        "URL field is pre-filled with 'http://localhost:3005/mcp'",
+        "Header key is pre-filled with 'x-api-key' and value is empty for the user to fill in",
         "The template appears in the dropdown alongside Custom, Ruska MCP, and GitHub MCP",
         "Typecheck passes (npx tsc --noEmit from frontend/)",
         "Lint passes (npm run lint from frontend/)"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
@@ -35,7 +37,7 @@
         "Lint passes (npm run lint from frontend/)"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]

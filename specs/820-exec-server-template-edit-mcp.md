@@ -4,7 +4,7 @@
 
 Two improvements to the MCP Servers panel in the "Manage Tools" modal (`McpServerPanel.tsx`):
 
-1. **Exec server template**: Add a pre-configured template for local exec/stdio MCP servers to the Template dropdown, alongside Custom, Ruska MCP, and GitHub MCP.
+1. **Exec server template**: Add a pre-configured template for the Ubuntu Sandbox exec server (streamable HTTP at `localhost:3005/mcp`) to the Template dropdown, alongside Custom, Ruska MCP, and GitHub MCP. See [docs](https://docs.ruska.ai/docs/tools/sandbox).
 
 2. **Edit server capability**: Add an edit button (pencil icon) to each configured server card so users can modify existing servers in-place instead of deleting and re-adding them.
 
@@ -18,9 +18,10 @@ Two improvements to the MCP Servers panel in the "Manage Tools" modal (`McpServe
 
 - **Templates**: `MCP_TEMPLATES` object has 3 entries: `custom`, `ruska`, `github` — all use `sse` transport
 - **Server cards**: Each card shows server name, transport, URL, and a single delete button (Trash2 icon)
-- **Form**: The add form supports `sse`, `streamable_http`, and `stdio` transports, but no template defaults to `stdio`
+- **Form**: The add form supports `sse`, `streamable_http`, and `stdio` transports, but no template defaults to `streamable_http`
 - **Types**: `McpServerConfig` has `transport`, `url`, and `headers` fields
 - **Props**: `onAddServer(name, config)` and `onRemoveServer(name)` — no update/edit callback exists
+- **Exec server docs**: https://docs.ruska.ai/docs/tools/sandbox — uses `streamable_http` transport at `http://localhost:3005/mcp` with optional `x-api-key` header
 
 ---
 
@@ -28,19 +29,20 @@ Two improvements to the MCP Servers panel in the "Manage Tools" modal (`McpServe
 
 ### US-001: Exec server template in Template dropdown
 
-**As a** user setting up a local execution MCP server,
+**As a** user setting up the Ubuntu Sandbox exec server,
 **I want** an "Exec Server" template in the Template dropdown,
-**So that** I can quickly configure a stdio-based server without manually switching transport and entering a command.
+**So that** I can quickly configure the sandbox connection with the correct transport, URL, and auth header pre-filled.
 
 #### Acceptance Criteria
 
 - [ ] A new `exec` entry is added to `MCP_TEMPLATES` with:
   - `name`: `"Exec Server"`
-  - `transport`: `"stdio"`
-  - `url`: pre-filled with a sensible default command (e.g. `npx -y @anthropic/mcp-server` or left empty with placeholder guidance)
-  - `headers`: `{}` (not applicable for stdio)
-- [ ] Selecting "Exec Server" from the Template dropdown sets transport to `stdio`
-- [ ] The URL field label/placeholder should contextually update for stdio (e.g. "Command" instead of "URL") — _nice-to-have, not blocking_
+  - `transport`: `"streamable_http"`
+  - `url`: `"http://localhost:3005/mcp"`
+  - `headers`: `{ "x-api-key": "" }` (user fills in their API key)
+- [ ] Selecting "Exec Server" from the Template dropdown sets transport to `streamable_http`
+- [ ] URL is pre-filled with `http://localhost:3005/mcp`
+- [ ] Header key is pre-filled with `x-api-key` and value is empty (user fills in)
 - [ ] The template appears in the dropdown alongside existing templates
 - [ ] Typecheck passes (`npx tsc --noEmit` from `frontend/`)
 
@@ -51,13 +53,13 @@ Add to the `MCP_TEMPLATES` object:
 ```typescript
 exec: {
   name: "Exec Server",
-  transport: "stdio" as const,
-  url: "",
-  headers: {},
+  transport: "streamable_http" as const,
+  url: "http://localhost:3005/mcp",
+  headers: { "x-api-key": "" },
 },
 ```
 
-Consider: when `transport === "stdio"`, the `url` field semantically represents a command. Updating the label is a UX improvement but can be a follow-up.
+Reference: https://docs.ruska.ai/docs/tools/sandbox
 
 ---
 
