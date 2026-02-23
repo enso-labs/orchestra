@@ -9,6 +9,7 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 
 ### Changed
   - feat/830-model-visibility-backend
+  - feat/821-docs-screenshots
 
 ## 2026.2.23-4
 

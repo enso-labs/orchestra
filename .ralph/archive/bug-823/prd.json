@@ -1,50 +1,119 @@
 {
   "project": "Orchestra",
-  "branchName": "bug/823-schedule-calendar-mobile-overflow",
-  "description": "Fix schedule/cron calendar overflow on mobile (iPhone XR)",
+  "branchName": "feat/821-docs-screenshots",
+  "description": "Add screenshots for visual walkthrough in wiki documentation pages for Assistants, Memories, Schedules, Projects, Chat, and Epics",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add mobile CSS breakpoints for calendar",
-      "description": "As a mobile user, I want the calendar to fit within my viewport so I don't have to scroll horizontally.",
+      "title": "Capture and embed Assistants feature screenshots",
+      "description": "As a user, I want screenshots of the Assistants feature in the docs so I can follow along visually.",
       "acceptanceCriteria": [
-        "Add @media (max-width: 480px) breakpoint to frontend/src/styles/calendar.css",
-        "Toolbar stacks vertically (flex-direction: column) on mobile",
-        "Toolbar buttons have smaller padding and font-size on mobile",
-        "Calendar headers have smaller padding and font-size",
-        "Event text has smaller font-size on mobile",
-        "Calendar popup/overlay constrained to max-width: calc(100vw - 2rem) and max-height: 60vh with overflow-y: auto",
-        "Typecheck passes"
+        "Navigate to chat.ruska.ai assistants section using agent-browser",
+        "Capture screenshots: list view, create dialog, configuration, active chat",
+        "Save screenshots to wiki/static/img/assistants/ directory",
+        "Update wiki/docs/assistants/index.md with embedded image references",
+        "Images render correctly in markdown preview",
+        "Verify in browser using agent-browser skill"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "Use agent-browser to navigate and screenshot chat.ruska.ai"
     },
     {
       "id": "US-002",
-      "title": "Fix calendar container responsive sizing",
-      "description": "As a mobile user, I want the calendar container to adapt to my screen size.",
+      "title": "Capture and embed Memories feature screenshots",
+      "description": "As a user, I want screenshots of the Memories feature in the docs so I can follow along visually.",
       "acceptanceCriteria": [
-        "In ScheduleCalendar.tsx, change min-h-[600px] to min-h-[400px] sm:min-h-[600px]",
-        "In CronCalendar.tsx, apply the same responsive min-height change",
-        "Add overflow-x-hidden or overflow-hidden to calendar container divs",
-        "Calendar still renders correctly at desktop sizes (no regression)",
-        "Typecheck passes"
+        "Navigate to chat.ruska.ai memories section using agent-browser",
+        "Capture screenshots: settings view, memory list, memory detail",
+        "Save screenshots to wiki/static/img/memories/ directory",
+        "Update wiki/docs/memories/index.md with embedded image references",
+        "Images render correctly in markdown preview",
+        "Verify in browser using agent-browser skill"
       ],
       "priority": 2,
       "passes": true,
-      "notes": ""
+      "notes": "Light-mode screenshots captured with agent-browser. CodeMirror editor doesn't accept programmatic input."
     },
     {
       "id": "US-003",
-      "title": "Verify and push all changes",
-      "description": "As a developer, I want to ensure all changes are committed and visible in the PR.",
+      "title": "Capture and embed Schedules feature screenshots",
+      "description": "As a user, I want screenshots of the Schedules feature in the docs so I can follow along visually.",
       "acceptanceCriteria": [
-        "Verify if there are any remaining changes by running git status. If remaining changes exist, commit and push to branch."
+        "Navigate to chat.ruska.ai schedules section using agent-browser",
+        "Capture screenshots: list view, creation form, schedule detail",
+        "Save screenshots to wiki/static/img/schedules/ directory",
+        "Update wiki/docs/schedules/index.md with embedded image references (page from wiki PR #7)",
+        "Images render correctly in markdown preview",
+        "Verify in browser using agent-browser skill"
       ],
       "priority": 3,
       "passes": true,
-      "notes": ""
+      "notes": "Schedules page sourced from feat/810-docs-drift-wiki branch. Light-mode screenshots captured."
+    },
+    {
+      "id": "US-004",
+      "title": "Capture and embed Projects feature screenshots",
+      "description": "As a user, I want screenshots of the Projects feature in the docs so I can follow along visually.",
+      "acceptanceCriteria": [
+        "Navigate to chat.ruska.ai projects section using agent-browser",
+        "Capture screenshots: project list, creation dialog, thread association",
+        "Save screenshots to wiki/static/img/projects/ directory",
+        "Update wiki/docs/projects/index.md with embedded image references (page from wiki PR #7)",
+        "Images render correctly in markdown preview",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Projects page sourced from feat/810-docs-drift-wiki branch. Light-mode screenshots captured with agent-browser."
+    },
+    {
+      "id": "US-005",
+      "title": "Capture and embed Chat Page feature screenshots",
+      "description": "As a user, I want screenshots of the Chat Page features in the docs so I can follow along visually.",
+      "acceptanceCriteria": [
+        "Navigate to chat.ruska.ai chat interface using agent-browser",
+        "Capture screenshots: input bar with buttons, dictation mode, file manager, conversation view",
+        "Save screenshots to wiki/static/img/chat/ directory",
+        "Update wiki/docs/chat/index.md with embedded image references (page from wiki PR #7)",
+        "Images render correctly in markdown preview",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Chat page sourced from feat/810-docs-drift-wiki branch. Light-mode screenshots captured with agent-browser."
+    },
+    {
+      "id": "US-006",
+      "title": "Capture and embed Epics feature screenshots and create docs page",
+      "description": "As a user, I want screenshots of the Epics feature in the docs so I can follow along visually.",
+      "acceptanceCriteria": [
+        "Navigate to chat.ruska.ai epics section using agent-browser",
+        "Capture screenshots: grid view, creation form, epic detail with tasks, task status updates",
+        "Save screenshots to wiki/static/img/epics/ directory",
+        "Create wiki/docs/epics/index.md documentation page with embedded screenshots",
+        "Add epics entry to wiki/sidebars.ts navigation",
+        "Images render correctly in markdown preview",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "NEW page created from scratch. Light-mode screenshots captured with agent-browser. Added to sidebars.ts navigation."
+    },
+    {
+      "id": "US-007",
+      "title": "Commit all changes to wiki repo and push for code review",
+      "description": "As a developer, I need all screenshot assets and doc changes committed to the wiki repo and pushed.",
+      "acceptanceCriteria": [
+        "All screenshots committed to wiki repo with descriptive commit message",
+        "All doc page changes committed to wiki repo",
+        "Wiki submodule reference updated in main repo",
+        "All changes pushed to origin",
+        "PR #832 updated with final list of screenshots added"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Wiki branch pushed to origin. Main repo submodule pointer updated and pushed. PR #832 updated with full screenshots summary."
     }
   ]
 }
