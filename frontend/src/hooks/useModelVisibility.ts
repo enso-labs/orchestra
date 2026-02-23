@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { getSettings, patchDefaults } from "@/lib/services/userSettingsService";
 
-const STORAGE_KEY = "orchestra_model_visibility";
+const LOCALSTORAGE_KEY = "orchestra_model_visibility";
 
 const DEFAULT_ENABLED_MODELS = [
 	"anthropic:claude-haiku-4-5",
@@ -28,66 +29,81 @@ const DEFAULT_ENABLED_MODELS = [
 	"xai:grok-4-fast",
 ] as const;
 
-type ModelVisibilitySettings = {
-	enabledModels: string[];
-};
-
-function isSettingsObject(value: unknown): value is ModelVisibilitySettings {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"enabledModels" in value &&
-		Array.isArray((value as { enabledModels?: unknown }).enabledModels)
-	);
-}
-
 export function useModelVisibility() {
-	const [enabledModels, setEnabledModels] = useState<string[]>(() => {
-		if (typeof window === "undefined") return [];
-		try {
-			const saved = localStorage.getItem(STORAGE_KEY);
-			if (!saved) return [...DEFAULT_ENABLED_MODELS];
-			const parsed = JSON.parse(saved) as unknown;
-
-			// Back-compat: if we previously stored an array, treat it as "hidden models"
-			// under the old format and fall back to the new defaults.
-			if (Array.isArray(parsed)) {
-				return [...DEFAULT_ENABLED_MODELS];
-			}
-
-			if (isSettingsObject(parsed)) {
-				return parsed.enabledModels;
-			}
-
-			return [...DEFAULT_ENABLED_MODELS];
-		} catch (e) {
-			console.error("Failed to parse hidden models", e);
-			return [...DEFAULT_ENABLED_MODELS];
-		}
-	});
+	const [enabledModels, setEnabledModels] = useState<string[]>([
+		...DEFAULT_ENABLED_MODELS,
+	]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		try {
-			const payload: ModelVisibilitySettings = { enabledModels };
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-		} catch (e) {
-			console.error("Failed to save hidden models", e);
-		}
-	}, [enabledModels]);
+		let cancelled = false;
+		setIsLoading(true);
+		setError(null);
+		getSettings()
+			.then((res) => {
+				if (cancelled) return;
+				const backendModels = res.defaults.model_visibility;
+				if (backendModels !== null && backendModels !== undefined) {
+					// Backend has data — use it (takes precedence over localStorage)
+					setEnabledModels(backendModels);
+					return;
+				}
+				// Backend is null — check localStorage for migration
+				try {
+					const stored = localStorage.getItem(LOCALSTORAGE_KEY);
+					if (stored) {
+						const parsed: string[] = JSON.parse(stored);
+						if (Array.isArray(parsed) && parsed.length > 0) {
+							setEnabledModels(parsed);
+							patchDefaults({ model_visibility: parsed })
+								.then(() => {
+									localStorage.removeItem(LOCALSTORAGE_KEY);
+								})
+								.catch(() => {
+									// Migration failed — keep localStorage for next attempt
+								});
+							return;
+						}
+					}
+				} catch {
+					// Invalid localStorage data — ignore
+				}
+				// No backend data and no localStorage — keep DEFAULT_ENABLED_MODELS
+			})
+			.catch(() => {
+				if (!cancelled) setError("Failed to load model visibility settings");
+			})
+			.finally(() => {
+				if (!cancelled) setIsLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
-	const toggleModelVisibility = (modelId: string) => {
-		setEnabledModels((prev) =>
-			prev.includes(modelId)
-				? prev.filter((id) => id !== modelId)
-				: [...prev, modelId],
-		);
-	};
+	const toggleModelVisibility = useCallback((modelId: string) => {
+		setEnabledModels((prev: string[]) => {
+			const next = prev.includes(modelId)
+				? prev.filter((id: string) => id !== modelId)
+				: [...prev, modelId];
+			patchDefaults({ model_visibility: next }).catch(() => {
+				setEnabledModels(prev);
+			});
+			return next;
+		});
+	}, []);
 
-	const isModelVisible = (modelId: string) => enabledModels.includes(modelId);
+	const isModelVisible = useCallback(
+		(modelId: string) => enabledModels.includes(modelId),
+		[enabledModels],
+	);
 
 	return {
 		enabledModels,
 		toggleModelVisibility,
 		isModelVisible,
+		isLoading,
+		error,
 	};
 }

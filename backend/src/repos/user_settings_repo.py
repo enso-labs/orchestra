@@ -87,6 +87,7 @@ class UserSettingsRepo(BaseRepo):
         "mcp": "default_mcp",
         "a2a": "default_a2a",
         "subagents": "default_subagents",
+        "model_visibility": "default_model_visibility",
     }
 
     async def patch_defaults(self, data: dict) -> UserSettings:
