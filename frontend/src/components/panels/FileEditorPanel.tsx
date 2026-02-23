@@ -371,8 +371,12 @@ export default function FileEditorPanel() {
 		(filename: string) => {
 			// Use selectTab which opens the tab if not already open
 			selectTab(filename);
+			// On mobile, auto-collapse tree to show editor after file selection
+			if (isMobile) {
+				setIsTreeCollapsed(true);
+			}
 		},
-		[selectTab],
+		[selectTab, isMobile],
 	);
 
 	// Voice recording handlers
@@ -675,7 +679,13 @@ export default function FileEditorPanel() {
 					collapsedSize={0}
 					onCollapse={handleTreeCollapse}
 					onExpand={handleTreeExpand}
-					className={isTreeCollapsed ? "hidden" : ""}
+					className={
+						isTreeCollapsed
+							? "hidden"
+							: isMobile
+								? "!flex-[1_1_100%]"
+								: ""
+					}
 				>
 					<FileTreeSidebar
 						selectedFile={selectedFile}
@@ -689,13 +699,16 @@ export default function FileEditorPanel() {
 					/>
 				</Panel>
 
-				{/* Resize Handle */}
-				{!isTreeCollapsed && (
+				{/* Resize Handle - hidden on mobile since sidebar is full-width */}
+				{!isTreeCollapsed && !isMobile && (
 					<PanelResizeHandle className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize" />
 				)}
 
-				{/* Editor Panel */}
-				<Panel defaultSize={80}>
+				{/* Editor Panel - hidden on mobile when sidebar is full-width */}
+				<Panel
+					defaultSize={80}
+					className={isMobile && !isTreeCollapsed ? "hidden" : ""}
+				>
 					<div className="h-full flex flex-col">
 						{/* File Tabs (VSCode-like) */}
 						<div className="flex items-center border-b border-border bg-muted/30">
