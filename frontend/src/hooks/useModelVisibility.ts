@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { getSettings, patchDefaults } from "@/lib/services/userSettingsService";
 
+const LOCALSTORAGE_KEY = "orchestra_model_visibility";
+
 const DEFAULT_ENABLED_MODELS = [
 	"anthropic:claude-haiku-4-5",
 	"anthropic:claude-opus-4-5",
@@ -41,9 +43,31 @@ export function useModelVisibility() {
 				if (cancelled) return;
 				const backendModels = res.defaults.model_visibility;
 				if (backendModels !== null && backendModels !== undefined) {
+					// Backend has data — use it (takes precedence over localStorage)
 					setEnabledModels(backendModels);
+					return;
 				}
-				// If null, keep the DEFAULT_ENABLED_MODELS already set
+				// Backend is null — check localStorage for migration
+				try {
+					const stored = localStorage.getItem(LOCALSTORAGE_KEY);
+					if (stored) {
+						const parsed: string[] = JSON.parse(stored);
+						if (Array.isArray(parsed) && parsed.length > 0) {
+							setEnabledModels(parsed);
+							patchDefaults({ model_visibility: parsed })
+								.then(() => {
+									localStorage.removeItem(LOCALSTORAGE_KEY);
+								})
+								.catch(() => {
+									// Migration failed — keep localStorage for next attempt
+								});
+							return;
+						}
+					}
+				} catch {
+					// Invalid localStorage data — ignore
+				}
+				// No backend data and no localStorage — keep DEFAULT_ENABLED_MODELS
 			})
 			.catch(() => {
 				// On error, keep defaults
