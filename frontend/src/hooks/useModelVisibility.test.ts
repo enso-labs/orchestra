@@ -80,6 +80,35 @@ describe("useModelVisibility", () => {
 		expect(mockPatchDefaults).toHaveBeenCalledTimes(2);
 	});
 
+	it("should set error when getSettings fails", async () => {
+		mockGetSettings.mockRejectedValue(new Error("Network error"));
+		const { result } = renderHook(() => useModelVisibility());
+		await waitFor(() => expect(result.current.isLoading).toBe(false));
+		expect(result.current.error).toBe(
+			"Failed to load model visibility settings",
+		);
+	});
+
+	it("should revert toggle when patchDefaults fails", async () => {
+		mockGetSettings.mockResolvedValue(makeSettingsResponse(["openai:gpt-5.2"]));
+		mockPatchDefaults.mockRejectedValue(new Error("Network error"));
+
+		const { result } = renderHook(() => useModelVisibility());
+		await waitFor(() => expect(result.current.isLoading).toBe(false));
+		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true);
+
+		// Toggle off — optimistic update
+		act(() => {
+			result.current.toggleModelVisibility("openai:gpt-5.2");
+		});
+		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(false);
+
+		// After rejection, should revert
+		await waitFor(() =>
+			expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true),
+		);
+	});
+
 	it("should expose isLoading state", async () => {
 		let resolveSettings: (value: unknown) => void;
 		mockGetSettings.mockReturnValue(
