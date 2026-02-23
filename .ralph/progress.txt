@@ -17,6 +17,12 @@ Started: Mon Feb 23 04:33:37 UTC 2026
 - The create "+" button on schedules can be clicked via `eval` with `button svg.lucide-plus` selector
 - Missing docs pages can be sourced from `feat/810-docs-drift-wiki` branch using `git checkout remotes/origin/feat/810-docs-drift-wiki -- <path>`
 - Projects section in sidebar is a collapsible button, not a direct page link - click to expand and see project list + Create Project button
+- Epics page at `/epics` route - has a dedicated sidebar link (not collapsible)
+- Epic cards show: status badge (active), title, description preview, and task count
+- Epic detail view has: back button, title, description, task summary (total + done count), and task list with status dropdowns
+- Task statuses: To Do, In Progress, Done, Blocked - changed via dropdown on each task
+- The "+" create button on epics page uses `h1 + button` CSS selector pattern (same as other pages)
+- Epic card can be clicked via `.rounded-xl.border.bg-card` CSS selector (same as assistant cards)
 ---
 
 ## 2026-02-23 04:35 UTC - US-001
@@ -87,4 +93,42 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - Project detail view shows: project name/description, chat input with project badge, model selector, and associated threads list
   - Edit Project Settings is a dialog accessed via the gear/settings icon next to the project heading
   - The theme toggle ref changes between page loads - always re-snapshot to get current refs
+---
+
+## 2026-02-23 - US-005
+- Implemented Chat Page feature screenshots (light mode)
+- Sourced chat/index.md from feat/810-docs-drift-wiki branch
+- Added chat to sidebars.ts navigation (position 2 in Core Features)
+- Files changed:
+  - wiki/docs/chat/index.md (new page from drift branch, added 4 image references)
+  - wiki/sidebars.ts (added "chat/index" to Core Features)
+  - wiki/static/img/chat/01-chat-interface.png (new - main chat interface with sidebar and input bar)
+  - wiki/static/img/chat/02-chat-tools-menu.png (new - tools menu showing Upload Photo, Web Search, Configure Tools)
+  - wiki/static/img/chat/03-chat-file-manager.png (new - editor view with file explorer and code editor)
+  - wiki/static/img/chat/04-chat-conversation.png (new - conversation thread with user message and AI response)
+- **Learnings for future iterations:**
+  - The Day theme persists across page navigations but may need re-selection after reload
+  - The tools menu "+" button has a badge showing active tool count (ref by badge number like @e37)
+  - The Editor view is accessed via the "Switch to editor view" button in the top toolbar
+  - Chat page has sidebar_position: 2 in frontmatter - added as first item in Core Features sidebar
+  - Conversation view shows user messages in dark bubbles and AI responses in plain text, even in Day theme
+---
+
+## 2026-02-23 - US-006
+- Implemented Epics feature screenshots and created NEW docs page (light mode)
+- Epics docs page did not exist on drift branch - created from scratch
+- Added epics to sidebars.ts navigation (between projects and storage in Core Features)
+- Files changed:
+  - wiki/docs/epics/index.md (new page created from scratch with 4 image references)
+  - wiki/sidebars.ts (added "epics/index" to Core Features)
+  - wiki/static/img/epics/01-epics-grid.png (new - grid view with search bar and epic cards)
+  - wiki/static/img/epics/02-create-epic.png (new - Create Epic dialog with name and description)
+  - wiki/static/img/epics/03-epic-detail.png (new - epic detail with task list and status dropdowns)
+  - wiki/static/img/epics/04-task-status.png (new - task status dropdown showing To Do, In Progress, Done, Blocked)
+- **Learnings for future iterations:**
+  - Epics page has a dedicated sidebar link at `/epics` (like Memories, not collapsible like Projects)
+  - Epic cards use the same `.rounded-xl.border.bg-card` CSS class pattern as assistant cards
+  - Task status dropdown has 4 options: To Do, In Progress, Done, Blocked
+  - The `--full` flag on agent-browser screenshot is useful for capturing the full task list
+  - Epic detail shows a summary badge with "Done: N" count next to total task count
 ---

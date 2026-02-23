@@ -80,8 +80,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "Depends on wiki PR #7 being merged for the chat doc page"
+      "passes": true,
+      "notes": "Chat page sourced from feat/810-docs-drift-wiki branch. Light-mode screenshots captured with agent-browser."
     },
     {
       "id": "US-006",
@@ -97,8 +97,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": "This is a NEW page — epics docs page does not exist yet in wiki PR #7"
+      "passes": true,
+      "notes": "NEW page created from scratch. Light-mode screenshots captured with agent-browser. Added to sidebars.ts navigation."
     },
     {
       "id": "US-007",
