@@ -14,6 +14,7 @@ export interface DefaultsResponse {
 	mcp: Record<string, any> | null;
 	a2a: Record<string, any> | null;
 	subagents: string[] | null;
+	model_visibility: string[] | null;
 }
 
 export interface UserSettingsResponse {
@@ -34,6 +35,7 @@ export const patchDefaults = async (
 		mcp: Record<string, any> | null;
 		a2a: Record<string, any> | null;
 		subagents: string[] | null;
+		model_visibility: string[] | null;
 	}>,
 ): Promise<UserSettingsResponse> => {
 	const response = await apiClient.patch("/settings/default", data);

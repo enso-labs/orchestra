@@ -1,21 +1,60 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useModelVisibility } from "./useModelVisibility";
+
+const mockGetSettings = vi.fn();
+const mockPatchDefaults = vi.fn();
+
+vi.mock("@/lib/services/userSettingsService", () => ({
+	getSettings: (...args: unknown[]) => mockGetSettings(...args),
+	patchDefaults: (...args: unknown[]) => mockPatchDefaults(...args),
+}));
+
+const makeSettingsResponse = (model_visibility: string[] | null) => ({
+	defaults: {
+		model: null,
+		sandbox: null,
+		tools: null,
+		mcp: null,
+		a2a: null,
+		subagents: null,
+		model_visibility,
+	},
+	provider_keys: [],
+});
 
 describe("useModelVisibility", () => {
 	beforeEach(() => {
-		localStorage.clear();
 		vi.clearAllMocks();
+		mockGetSettings.mockResolvedValue(makeSettingsResponse(null));
+		mockPatchDefaults.mockResolvedValue(makeSettingsResponse(null));
 	});
 
-	it("should default-enable the approved model list", () => {
+	it("should default-enable the approved model list when backend returns null", async () => {
 		const { result } = renderHook(() => useModelVisibility());
+		await waitFor(() => expect(result.current.isLoading).toBe(false));
 		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true);
 		expect(result.current.isModelVisible("openai:gpt-4o")).toBe(true);
 	});
 
-	it("should toggle visibility", () => {
+	it("should use backend model_visibility when present", async () => {
+		mockGetSettings.mockResolvedValue(
+			makeSettingsResponse(["google_genai:gemini-3-pro-preview"]),
+		);
 		const { result } = renderHook(() => useModelVisibility());
+		await waitFor(() => expect(result.current.isLoading).toBe(false));
+		expect(
+			result.current.isModelVisible("google_genai:gemini-3-pro-preview"),
+		).toBe(true);
+		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(false);
+	});
+
+	it("should toggle visibility and call patchDefaults", async () => {
+		mockPatchDefaults.mockResolvedValue(
+			makeSettingsResponse(["openai:some-experimental-model"]),
+		);
+		const { result } = renderHook(() => useModelVisibility());
+		await waitFor(() => expect(result.current.isLoading).toBe(false));
 
 		act(() => {
 			result.current.toggleModelVisibility("openai:some-experimental-model");
@@ -24,6 +63,11 @@ describe("useModelVisibility", () => {
 		expect(
 			result.current.isModelVisible("openai:some-experimental-model"),
 		).toBe(true);
+		expect(mockPatchDefaults).toHaveBeenCalledWith({
+			model_visibility: expect.arrayContaining([
+				"openai:some-experimental-model",
+			]),
+		});
 
 		act(() => {
 			result.current.toggleModelVisibility("openai:some-experimental-model");
@@ -32,35 +76,24 @@ describe("useModelVisibility", () => {
 		expect(
 			result.current.isModelVisible("openai:some-experimental-model"),
 		).toBe(false);
+		expect(mockPatchDefaults).toHaveBeenCalledTimes(2);
 	});
 
-	it("should persist to localStorage", () => {
-		const { result } = renderHook(() => useModelVisibility());
-
-		act(() => {
-			result.current.toggleModelVisibility("openai:some-experimental-model");
-		});
-
-		const raw = localStorage.getItem("orchestra_model_visibility");
-		expect(raw).toBeTruthy();
-		expect(JSON.parse(raw || "{}")).toEqual(
-			expect.objectContaining({
-				enabledModels: expect.arrayContaining([
-					"openai:some-experimental-model",
-				]),
+	it("should expose isLoading state", async () => {
+		let resolveSettings: (value: unknown) => void;
+		mockGetSettings.mockReturnValue(
+			new Promise((resolve) => {
+				resolveSettings = resolve;
 			}),
 		);
-	});
 
-	it("should load from localStorage", () => {
-		localStorage.setItem(
-			"orchestra_model_visibility",
-			JSON.stringify({ enabledModels: ["google_genai:gemini-3-pro-preview"] }),
-		);
 		const { result } = renderHook(() => useModelVisibility());
-		expect(
-			result.current.isModelVisible("google_genai:gemini-3-pro-preview"),
-		).toBe(true);
-		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(false);
+		expect(result.current.isLoading).toBe(true);
+
+		await act(async () => {
+			resolveSettings!(makeSettingsResponse(null));
+		});
+
+		expect(result.current.isLoading).toBe(false);
 	});
 });
