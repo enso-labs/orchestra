@@ -46,9 +46,9 @@ const MCP_TEMPLATES = {
 	},
 	exec: {
 		name: "Exec Server",
-		transport: "stdio" as const,
-		url: "",
-		headers: {},
+		transport: "streamable_http" as const,
+		url: "http://localhost:3005/mcp",
+		headers: { "x-api-key": "" },
 	},
 };
 
