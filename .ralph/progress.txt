@@ -1,0 +1,47 @@
+# Ralph Progress Log
+Started: Mon Feb 23 04:33:37 UTC 2026
+
+## Codebase Patterns
+- Wiki is a git submodule - commit changes inside wiki/ first, then update submodule pointer in main repo
+- Screenshots go in `wiki/static/img/<feature>/` and are referenced as `![alt](/img/<feature>/filename.png)` in docs
+- Use agent-browser to capture screenshots: `agent-browser open <url>`, toggle to Day theme via UI, then `agent-browser screenshot <path>`
+- The Day theme toggle is a dropdown accessed via the theme icon button, then selecting "Day" from the menu
+- Scrollable container for assistant config is a div with class `h-full w-full rounded-[inherit]` - use `eval` to scroll it
+- The "+" create button next to page headings can be targeted with CSS selector `h1 + button`
+- Wiki builds with `npx docusaurus build` - pre-existing broken links don't block the build
+- CodeMirror editor in memory create/edit form does NOT accept programmatic input via agent-browser fill/type or eval dispatch - screenshot the form as-is
+- The Memories page is at `/memories` route (not in settings) - has its own sidebar link
+- Memory detail view has Preview and Editor tabs - Preview shows rendered markdown, Editor shows raw with line numbers
+---
+
+## 2026-02-23 04:35 UTC - US-001
+- Implemented Assistants feature screenshots
+- Files changed:
+  - wiki/docs/assistants/index.md (added 4 image references)
+  - wiki/static/img/assistants/01-assistants-list.png (new)
+  - wiki/static/img/assistants/02-create-assistant.png (new)
+  - wiki/static/img/assistants/03-assistant-config.png (new)
+  - wiki/static/img/assistants/04-assistant-chat.png (new)
+- **Learnings for future iterations:**
+  - agent-browser default credentials (admin@example.com / test1234) work on chat.ruska.ai
+  - The theme toggle on chat.ruska.ai opens a dropdown menu - must click "Day" for light mode screenshots
+  - Assistant card elements don't have clickable refs directly - use `eval` with CSS selectors like `.rounded-xl.border.bg-card` to click cards
+  - The create "+" button near headings doesn't always get a named ref - use `h1 + button` CSS selector
+  - Wiki submodule starts in detached HEAD - need to create a branch before committing
+---
+
+## 2026-02-23 - US-002
+- Implemented Memories feature screenshots (light mode)
+- Files changed:
+  - wiki/docs/memories/index.md (added 4 image references with descriptive sections)
+  - wiki/static/img/memories/01-memories-list.png (new - list view with search, cards, toggles)
+  - wiki/static/img/memories/02-create-memory.png (new - create form with file name and editor)
+  - wiki/static/img/memories/03-edit-memory.png (new - detail view with Preview tab)
+  - wiki/static/img/memories/04-edit-memory-editor.png (new - detail view with Editor tab)
+- **Learnings for future iterations:**
+  - CodeMirror editors in the app don't accept programmatic text input via agent-browser (fill, type, eval with dispatch/replaceSelection all fail silently)
+  - The Memories page now lives at `/memories` route, not in settings - the sidebar has a dedicated "Memories" link
+  - Memory edit view defaults to Preview tab showing rendered markdown; click "Editor" tab for raw markdown
+  - `agent-browser set media light` alone doesn't switch the app theme - must also click theme dropdown and select "Day"
+  - Existing dark-mode screenshots (settings-memories-*.png, chat-memory-recall.png) are still used by tutorial.md
+---
