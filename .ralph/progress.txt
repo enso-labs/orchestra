@@ -16,6 +16,7 @@ Started: Mon Feb 23 04:33:37 UTC 2026
 - Schedule creation starts with agent selection dialog, then a 3-step wizard (Details, When, What)
 - The create "+" button on schedules can be clicked via `eval` with `button svg.lucide-plus` selector
 - Missing docs pages can be sourced from `feat/810-docs-drift-wiki` branch using `git checkout remotes/origin/feat/810-docs-drift-wiki -- <path>`
+- Projects section in sidebar is a collapsible button, not a direct page link - click to expand and see project list + Create Project button
 ---
 
 ## 2026-02-23 04:35 UTC - US-001
@@ -67,4 +68,23 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - Agent card selection dialog items can be clicked via XPath: `//p[text()='Agent Name']`
   - The `--full` flag on agent-browser screenshot captures full-page scrollable content
   - Missing docs pages exist on `feat/810-docs-drift-wiki` branch and can be checked out
+---
+
+## 2026-02-23 - US-004
+- Implemented Projects feature screenshots (light mode)
+- Sourced projects/index.md from feat/810-docs-drift-wiki branch
+- Added projects to sidebars.ts navigation
+- Files changed:
+  - wiki/docs/projects/index.md (new page from drift branch, added 4 image references)
+  - wiki/sidebars.ts (added "projects/index" to Core Features)
+  - wiki/static/img/projects/01-projects-sidebar.png (new - sidebar with expanded Projects list)
+  - wiki/static/img/projects/02-create-project.png (new - Create Project dialog with name/description)
+  - wiki/static/img/projects/03-project-detail.png (new - project detail with associated threads)
+  - wiki/static/img/projects/04-edit-project.png (new - Edit Project Settings dialog)
+- **Learnings for future iterations:**
+  - Projects section in sidebar is a collapsible button, not a page link - clicking expands to show project list
+  - The "Create Project" button appears inside the expanded Projects section (not via "+" icon)
+  - Project detail view shows: project name/description, chat input with project badge, model selector, and associated threads list
+  - Edit Project Settings is a dialog accessed via the gear/settings icon next to the project heading
+  - The theme toggle ref changes between page loads - always re-snapshot to get current refs
 ---

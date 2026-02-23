@@ -64,8 +64,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": "Depends on wiki PR #7 being merged for the projects doc page"
+      "passes": true,
+      "notes": "Projects page sourced from feat/810-docs-drift-wiki branch. Light-mode screenshots captured with agent-browser."
     },
     {
       "id": "US-005",
