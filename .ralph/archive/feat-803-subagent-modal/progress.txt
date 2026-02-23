@@ -1,0 +1,109 @@
+## Codebase Patterns
+- Frontend state: useAgent hook in frontend/src/hooks/useAgent.ts manages agent state (model, tools, subagents, mcp, a2a, prompt)
+- Agent context: AgentContext wraps useAgent, consumed via useAgentContext()
+- Chat sends agent state via useChat hook: agent.model, agent.tools, agent.subagents, agent.mcp, agent.a2a
+- Tool selection: BaseToolMenu + ToolSelectionModal in frontend/src/components/menus/ and modals/
+- Agent CRUD: POST/PUT/DELETE /assistants in backend/src/routes/v0/assistant.py
+- Frontend service: AgentService in frontend/src/lib/services/agentService.ts
+- Agent schema: Assistant class in backend/src/schemas/entities/llm.py (name, description, model, tools, subagents, mcp, a2a, files, metadata)
+- Existing subagent management in useAgent: addAgentToSubagents, removeAgentFromSubagents, toggleSubagent, isAgentSelected
+- Chat page: frontend/src/pages/chat/chat-v2.tsx → ChatPanel.tsx
+- ChatNav: frontend/src/components/nav/ChatNav.tsx
+- Use tsc --project tsconfig.app.json for typechecking (root tsconfig has "files": [])
+- Wiki submodule at wiki/ — docs changes must be committed inside wiki/ first
+- Dialog pattern: isOpen/onClose/onSave props, local form state, handleSubmit with validation, handleClose resets state
+- shadcn dialog imports: Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter from @/components/ui/dialog
+---
+
+## 2026-02-20 - US-001
+- Verified existing SaveAsAssistantDialog.tsx from prior WIP commit meets all acceptance criteria
+- Component at frontend/src/components/dialogs/SaveAsAssistantDialog.tsx
+- Features: name (required) + description inputs, Save/Cancel buttons, non-empty validation, onSave callback
+- TypeScript typecheck passes (tsc --project tsconfig.app.json)
+- No additional changes needed — WIP was already complete for this story
+- **Learnings for future iterations:**
+  - The WIP commit from the prior Ralph session was fully complete for US-001 despite the "incomplete" commit message
+  - Always verify existing work before re-implementing
+---
+
+## 2026-02-20 - US-002
+- Added "Save as Assistant" button to ChatNav (Save icon)
+- On click opens SaveAsAssistantDialog, on save collects agent state (model, prompt, tools, subagents, mcp, a2a, files)
+- POSTs to /assistants via AgentService.create()
+- Shows toast.success/toast.error via sonner
+- Refreshes agent list via handleGetAgents() after successful save
+- Files changed: frontend/src/components/nav/ChatNav.tsx
+- TypeScript typecheck passes, dev server starts cleanly, browser verification done (page at / loads without errors)
+- **Learnings for future iterations:**
+  - ChatNav is the right place for global chat actions (share, new thread, save)
+  - Toast notifications use `toast` from `"sonner"` (toast.success, toast.error)
+  - AgentService.create() takes an Agent object directly
+  - The unauthenticated view shows AgentSection; ChatNav only appears in authenticated chat view with messages
+---
+
+## 2026-02-20 - US-003
+- Created SubagentsPanel.tsx in ToolSelectionModal directory
+- Added "subagents" to ToolCategory type in types.ts
+- Added Subagents tab with Bot icon to Sidebar.tsx
+- Wired SubagentsPanel into ToolSelectionModal/index.tsx with agents list, toggle, and selection state from AgentContext
+- SubagentsPanel has: search, responsive grid (1/2/3 cols), agent cards with name/description/model, toggle with visual indicator
+- Subagents tab visible only for authenticated users
+- SubagentsPanel has its own status bar (hides the tool count status bar when active)
+- Files changed:
+  - frontend/src/components/modals/ToolSelectionModal/types.ts
+  - frontend/src/components/modals/ToolSelectionModal/Sidebar.tsx
+  - frontend/src/components/modals/ToolSelectionModal/SubagentsPanel.tsx (new)
+  - frontend/src/components/modals/ToolSelectionModal/index.tsx
+- TypeScript typecheck passes
+- **Learnings for future iterations:**
+  - ToolSelectionModal uses a category-based sidebar pattern: add type to ToolCategory, add config to Sidebar categories array, conditionally render panel
+  - visibleCategories controls what tabs authenticated vs unauthenticated users see
+  - useAgentContext exposes toggleSubagent, isAgentSelected, agents for subagent management
+---
+
+## 2026-02-20 - US-004
+- No additional code changes required — all wiring was completed in US-003
+- Subagent selection is accessible via: BaseToolMenu ("+") → Configure Tools → ToolSelectionModal → Subagents tab
+- Selection uses toggleSubagent/isAgentSelected from useAgentContext (wired in US-003's SubagentsPanel)
+- Verified: useChat.ts sends agent.subagents in payload at lines 226 and 334
+- TypeScript typecheck passes, browser verification done (ToolSelectionModal opens correctly from chat page)
+- **Learnings for future iterations:**
+  - US-003 and US-004 could have been a single story — adding to ToolSelectionModal automatically wires it to the chat page via BaseToolMenu
+  - useChat already sends all agent state fields, so new agent state properties are automatically included in LLM requests
+---
+
+## 2026-02-20 - US-005
+- Updated issue #803 body via `gh issue edit 803 --body`
+- Added Key Integration Points table (9 files with functions and roles)
+- Added UI Integration Points table (6 components with change types)
+- Filled Storage section (Supabase PostgreSQL, assistants table, Agent/Assistant schema)
+- Filled Architectural Decisions (backend source of truth, session-only subagent state, user-scoped auth, sonner toasts)
+- Updated acceptance criteria checkboxes
+- **Learnings for future iterations:**
+  - Use HEREDOC with `gh issue edit --body` for multi-line content
+  - Keep integration points tables focused on changed files + their roles
+---
+
+## 2026-02-20 - US-006
+- Initialized wiki submodule (`git submodule update --init wiki`)
+- Reviewed wiki/docs/assistants/index.md — missing coverage of "Save as Assistant from chat" and subagents
+- Added "Save as Assistant from Chat" section under Creating an Assistant
+- Added "Subagents" section under Advanced Configuration with web UI and API examples
+- Committed inside wiki submodule: `docs: add Save as Assistant from chat and subagents documentation`
+- Files changed: wiki/docs/assistants/index.md
+- **Learnings for future iterations:**
+  - Wiki submodule must be initialized first: `git submodule update --init wiki`
+  - Commit inside wiki/ first, then reference the submodule change in the parent repo
+  - Wiki docs follow Docusaurus format with frontmatter, admonition blocks (:::tip, :::info)
+---
+
+## 2026-02-20 - US-007
+- git status clean (only untracked package-lock.json change)
+- TypeScript typecheck passes
+- Pushed 6 commits to origin/feat/803-persist-assistant-subagent-selection
+- Final report added as comment on PR #809
+- All 7 stories now pass
+- **Learnings for future iterations:**
+  - Always push before creating the final report comment so the PR reflects all changes
+  - Final report should include scored improvements for future iteration planning
+---
