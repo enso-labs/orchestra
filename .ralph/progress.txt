@@ -132,3 +132,20 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - The `--full` flag on agent-browser screenshot is useful for capturing the full task list
   - Epic detail shows a summary badge with "Done: N" count next to total task count
 ---
+
+## 2026-02-23 - US-007
+- Committed all wiki changes and pushed for code review
+- Steps completed:
+  - Pushed wiki submodule branch `feat/821-docs-screenshots` to origin (6 commits: US-001 through US-006)
+  - Committed main repo with updated wiki submodule pointer and ralph files
+  - Pushed main repo (4 new commits total to origin)
+  - Updated PR #832 body with comprehensive list of all 24 screenshots across 6 features
+- Files changed:
+  - wiki (submodule pointer updated to 9f35de0e)
+  - .ralph/prd.json (US-007 marked as passes: true)
+  - .ralph/progress.txt (this entry)
+- **Learnings for future iterations:**
+  - `gh pr edit` may fail with GraphQL errors about Projects (classic) deprecation - use `gh api` PATCH instead
+  - Wiki submodule needs its own `git push -u origin <branch>` before the main repo push
+  - The main repo only tracks the submodule pointer commit hash, not individual wiki files
+---
