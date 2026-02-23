@@ -30,6 +30,7 @@ def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -
             mcp=settings.default_mcp,
             a2a=settings.default_a2a,
             subagents=settings.default_subagents,
+            model_visibility=settings.default_model_visibility,
         ),
         provider_keys=statuses,
     )
