@@ -34,6 +34,7 @@ archive:
 	mkdir -p "$$ARCHIVE_DIR" && \
 	cp .ralph/prd.json "$$ARCHIVE_DIR/prd.json" && \
 	[ -f .ralph/progress.txt ] && cp .ralph/progress.txt "$$ARCHIVE_DIR/progress.txt" || true && \
+	if ls specs/*.md >/dev/null 2>&1; then mkdir -p "$$ARCHIVE_DIR/specs" && cp specs/*.md "$$ARCHIVE_DIR/specs/"; fi && \
 	rm -f .ralph/prd.json .ralph/progress.txt && \
 	echo "Archived to $$ARCHIVE_DIR"
 
