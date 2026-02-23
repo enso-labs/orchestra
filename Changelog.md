@@ -2,10 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
-## v0.0.2-rc142
+## 2026.2.22
+
+### Changed
+  - feat/820-exec-server-template-edit-mcp
+  - Adopt YYYY.MM.DD-RR versioning scheme
+
+## 0.1.0-rc20
 
 ### Changed
   - feat/803-persist-assistant-subagent-selection (2026-02-20)
