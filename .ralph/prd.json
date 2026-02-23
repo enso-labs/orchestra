@@ -48,8 +48,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Depends on wiki PR #7 being merged for the schedules doc page"
+      "passes": true,
+      "notes": "Schedules page sourced from feat/810-docs-drift-wiki branch. Light-mode screenshots captured."
     },
     {
       "id": "US-004",

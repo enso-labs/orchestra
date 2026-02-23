@@ -12,6 +12,10 @@ Started: Mon Feb 23 04:33:37 UTC 2026
 - CodeMirror editor in memory create/edit form does NOT accept programmatic input via agent-browser fill/type or eval dispatch - screenshot the form as-is
 - The Memories page is at `/memories` route (not in settings) - has its own sidebar link
 - Memory detail view has Preview and Editor tabs - Preview shows rendered markdown, Editor shows raw with line numbers
+- Schedules page at `/schedules` route - has Calendar, Table views with status cards (Total, Active, Upcoming, Overdue)
+- Schedule creation starts with agent selection dialog, then a 3-step wizard (Details, When, What)
+- The create "+" button on schedules can be clicked via `eval` with `button svg.lucide-plus` selector
+- Missing docs pages can be sourced from `feat/810-docs-drift-wiki` branch using `git checkout remotes/origin/feat/810-docs-drift-wiki -- <path>`
 ---
 
 ## 2026-02-23 04:35 UTC - US-001
@@ -44,4 +48,23 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - Memory edit view defaults to Preview tab showing rendered markdown; click "Editor" tab for raw markdown
   - `agent-browser set media light` alone doesn't switch the app theme - must also click theme dropdown and select "Day"
   - Existing dark-mode screenshots (settings-memories-*.png, chat-memory-recall.png) are still used by tutorial.md
+---
+
+## 2026-02-23 - US-003
+- Implemented Schedules feature screenshots (light mode)
+- Sourced schedules/index.md from feat/810-docs-drift-wiki branch
+- Added schedules to sidebars.ts navigation
+- Files changed:
+  - wiki/docs/schedules/index.md (new page from drift branch, added 4 image references)
+  - wiki/sidebars.ts (added "schedules/index" to Core Features)
+  - wiki/static/img/schedules/01-schedules-list.png (new - calendar view with status cards)
+  - wiki/static/img/schedules/02-create-schedule-select-agent.png (new - agent selection dialog)
+  - wiki/static/img/schedules/03-create-schedule-form.png (new - 3-step creation wizard)
+  - wiki/static/img/schedules/04-schedules-table.png (new - table view with Past/Future toggle)
+- **Learnings for future iterations:**
+  - Schedules creation has a 2-phase flow: first select agent, then 3-step form
+  - The schedules page uses sidebar collapse - not a dedicated nav link like Memories
+  - Agent card selection dialog items can be clicked via XPath: `//p[text()='Agent Name']`
+  - The `--full` flag on agent-browser screenshot captures full-page scrollable content
+  - Missing docs pages exist on `feat/810-docs-drift-wiki` branch and can be checked out
 ---
