@@ -1,0 +1,50 @@
+{
+  "project": "Orchestra",
+  "branchName": "bug/823-schedule-calendar-mobile-overflow",
+  "description": "Fix schedule/cron calendar overflow on mobile (iPhone XR)",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add mobile CSS breakpoints for calendar",
+      "description": "As a mobile user, I want the calendar to fit within my viewport so I don't have to scroll horizontally.",
+      "acceptanceCriteria": [
+        "Add @media (max-width: 480px) breakpoint to frontend/src/styles/calendar.css",
+        "Toolbar stacks vertically (flex-direction: column) on mobile",
+        "Toolbar buttons have smaller padding and font-size on mobile",
+        "Calendar headers have smaller padding and font-size",
+        "Event text has smaller font-size on mobile",
+        "Calendar popup/overlay constrained to max-width: calc(100vw - 2rem) and max-height: 60vh with overflow-y: auto",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Fix calendar container responsive sizing",
+      "description": "As a mobile user, I want the calendar container to adapt to my screen size.",
+      "acceptanceCriteria": [
+        "In ScheduleCalendar.tsx, change min-h-[600px] to min-h-[400px] sm:min-h-[600px]",
+        "In CronCalendar.tsx, apply the same responsive min-height change",
+        "Add overflow-x-hidden or overflow-hidden to calendar container divs",
+        "Calendar still renders correctly at desktop sizes (no regression)",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Verify and push all changes",
+      "description": "As a developer, I want to ensure all changes are committed and visible in the PR.",
+      "acceptanceCriteria": [
+        "Verify if there are any remaining changes by running git status. If remaining changes exist, commit and push to branch."
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
