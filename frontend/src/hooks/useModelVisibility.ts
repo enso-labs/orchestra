@@ -34,10 +34,12 @@ export function useModelVisibility() {
 		...DEFAULT_ENABLED_MODELS,
 	]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
 		setIsLoading(true);
+		setError(null);
 		getSettings()
 			.then((res) => {
 				if (cancelled) return;
@@ -70,7 +72,7 @@ export function useModelVisibility() {
 				// No backend data and no localStorage — keep DEFAULT_ENABLED_MODELS
 			})
 			.catch(() => {
-				// On error, keep defaults
+				if (!cancelled) setError("Failed to load model visibility settings");
 			})
 			.finally(() => {
 				if (!cancelled) setIsLoading(false);
@@ -102,5 +104,6 @@ export function useModelVisibility() {
 		toggleModelVisibility,
 		isModelVisible,
 		isLoading,
+		error,
 	};
 }
