@@ -1,24 +1,50 @@
 {
   "project": "Orchestra",
-  "branchName": "feat-822",
-  "description": "File system sidebar should open full-width on mobile devices so users can read file names without rotating to landscape",
+  "branchName": "feat/826-dedup-ci-jobs",
+  "description": "Remove duplicate CI test jobs and chain deploy-docker to build on tag creation",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Full-width file tree sidebar on mobile viewports",
-      "description": "As a mobile user viewing files in Orchestra, I want the file system sidebar to open at full horizontal width on mobile viewports so that I can read file names and navigate the tree without rotating my device.",
+      "title": "Fix duplicate test job triggers",
+      "description": "As a devops engineer, I want test jobs to run exactly once per PR push, not duplicated by both push and pull_request triggers.",
       "acceptanceCriteria": [
-        "On mobile viewports (< 768px), the file tree sidebar panel opens at full width (100% of the panel group) instead of 20%",
-        "On desktop viewports (>= 768px), the sidebar retains current sizing (defaultSize=20, minSize=15, maxSize=35)",
-        "The resize handle between sidebar and editor is hidden on mobile since the sidebar is full-width",
-        "The collapse/expand toggle still works on mobile to switch between file tree and editor views",
-        "Typecheck passes (npx tsc --noEmit from frontend/)",
-        "Lint passes (npm run lint from frontend/)",
-        "Verify in browser using agent-browser skill"
+        "In .github/workflows/test.yml, change push trigger branches from '*' to only 'development' and 'main'",
+        "pull_request trigger remains unchanged (opened, synchronize, reopened)",
+        "paths-ignore lists remain the same on both triggers",
+        "YAML is valid and properly indented",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Key file: frontend/src/components/panels/FileEditorPanel.tsx. The <Panel> component around FileTreeSidebar needs mobile-responsive props. Use a useMediaQuery hook or window.matchMedia('(max-width: 767px)') to detect mobile. On mobile, override Panel props to defaultSize=100/minSize=100/maxSize=100 or equivalent."
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Chain deploy-docker to auto-trigger after build on tag",
+      "description": "As a developer, I want deploy-docker to automatically trigger after a successful build on tag creation.",
+      "acceptanceCriteria": [
+        "In .github/workflows/deploy-docker.yml, add workflow_run trigger that fires after Build workflow completes",
+        "Add condition to only deploy if workflow_run conclusion is 'success'",
+        "Extract tag from github.event.workflow_run.head_branch for auto-trigger or inputs.tag for manual trigger",
+        "Keep existing workflow_dispatch trigger as manual fallback",
+        "Keep the existing 'rc' tag filter condition",
+        "YAML is valid and properly indented",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Verify and push all changes",
+      "description": "As a developer, I want to ensure all changes are committed and visible in the PR.",
+      "acceptanceCriteria": [
+        "Verify if there are any remaining changes by running git status. If remaining changes exist, commit and push to branch."
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
     }
   ]
 }

@@ -3,7 +3,8 @@ name: Test
 on:
     push:
         branches:
-            - "*"
+            - "development"
+            - "main"
         paths-ignore:
             - "Changelog.md"
             - "docker/**"
