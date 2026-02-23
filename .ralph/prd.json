@@ -17,7 +17,7 @@
         "Lint passes (npm run lint from frontend/)"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -37,7 +37,7 @@
         "Lint passes (npm run lint from frontend/)"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
