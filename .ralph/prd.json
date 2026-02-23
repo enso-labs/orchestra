@@ -1,0 +1,54 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/819-tool-tag-filter-chips",
+  "description": "Add tests for tag filter chips in Platform Tools Panel and verify implementation",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create PlatformToolsPanel test file",
+      "description": "As a developer, I need tests for the tag filter chips feature to ensure it works correctly and prevent regressions.",
+      "acceptanceCriteria": [
+        "Create frontend/src/components/modals/ToolSelectionModal/__tests__/PlatformToolsPanel.test.tsx",
+        "Test that All chip renders and is active by default",
+        "Test that tag chips render with correct names and counts",
+        "Test that clicking a tag chip filters the tool grid",
+        "Test that clicking All clears the tag filter",
+        "Test that text search and tag filtering work together",
+        "Test that zero-count tags appear dimmed",
+        "Test that Enable All and Disable All buttons appear when a tag is active",
+        "Test that Enable All selects all filtered tools",
+        "Test that Disable All deselects all filtered tools",
+        "Test that batch buttons are hidden when All chip is active",
+        "Tests pass (npm test)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "The implementation already exists in PlatformToolsPanel.tsx. This story adds test coverage."
+    },
+    {
+      "id": "US-002",
+      "title": "Verify typecheck and lint pass",
+      "description": "As a developer, I want to ensure the existing implementation passes all code quality checks.",
+      "acceptanceCriteria": [
+        "Run npx tsc --noEmit from frontend directory and confirm no errors",
+        "Run npm run lint from frontend directory and confirm no errors",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Verify and push all changes",
+      "description": "As a developer, I want to ensure all changes are committed and visible in the PR.",
+      "acceptanceCriteria": [
+        "Verify if there are any remaining changes by running git status. If remaining changes exist, commit and push to branch."
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
