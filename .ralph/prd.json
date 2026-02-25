@@ -50,8 +50,8 @@
         "Tests pass"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Check project routing structure — may be pages/api/ or app/api/ depending on Next.js version"
+      "passes": true,
+      "notes": "Created backend/src/routes/v0/copilotkit.py with CopilotKitRemoteEndpoint + LangGraphAGUIAgent. Registered at /api/copilotkit via add_fastapi_endpoint in main.py. Uses lazy graph creation to access app store at request time."
     },
     {
       "id": "US-004",

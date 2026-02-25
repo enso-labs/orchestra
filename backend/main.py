@@ -12,6 +12,7 @@ from fastmcp.server.openapi import RouteMap, MCPType
 load_dotenv()
 
 from src.routes.v0 import create_api_router, mount_static_router
+from src.routes.v0.copilotkit import setup_copilotkit
 from src.utils.logger import logger
 from src.services.db import (
     get_checkpoint_db,
@@ -37,6 +38,8 @@ api_app = FastAPI()
 
 # Include routers
 api_app = create_api_router(api_app)
+# Register CopilotKit runtime endpoint (before static router so route takes priority)
+setup_copilotkit(api_app)
 # Mount specific directories only if they exist
 api_app = mount_static_router(api_app)
 

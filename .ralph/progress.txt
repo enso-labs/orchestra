@@ -27,6 +27,8 @@ Started: Mon Feb 23 04:33:37 UTC 2026
 - Task statuses: To Do, In Progress, Done, Blocked - changed via dropdown on each task
 - The "+" create button on epics page uses `h1 + button` CSS selector pattern (same as other pages)
 - Epic card can be clicked via `.rounded-xl.border.bg-card` CSS selector (same as assistant cards)
+- CopilotKit Python SDK: use `LangGraphAGUIAgent` (not `LangGraphAgent`) with `CopilotKitRemoteEndpoint` and `add_fastapi_endpoint`
+- CopilotKit route must be registered before `mount_static_router` in main.py to avoid SPA catch-all priority issue
 ---
 
 ## 2026-02-23 04:35 UTC - US-001
@@ -180,4 +182,22 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - Frontend is Vite + React (not Next.js) - this affects US-003 runtime route setup (no pages/api/ or app/api/)
   - Build, typecheck, lint, and all 271 tests pass with the new packages
   - 25 npm audit vulnerabilities (23 moderate, 2 high) are pre-existing, not from CopilotKit
+---
+
+## 2026-02-25 - US-003
+- Created CopilotKit runtime API route at /api/copilotkit
+- Files changed:
+  - backend/src/routes/v0/copilotkit.py (new - setup_copilotkit function with CopilotKitRemoteEndpoint + LangGraphAGUIAgent)
+  - backend/main.py (imported and called setup_copilotkit before mount_static_router)
+  - .ralph/prd.json (US-003 marked as passes: true)
+  - .ralph/progress.txt (this entry)
+- **Learnings for future iterations:**
+  - CopilotKit Python SDK uses `LangGraphAGUIAgent` (NOT `LangGraphAgent`) - the old class raises ValueError when passed in a list
+  - `LangGraphAGUIAgent` extends `ag_ui_langgraph.agent.LangGraphAgent`, NOT `copilotkit.langgraph_agent.LangGraphAgent` - they are different classes
+  - `CopilotKitRemoteEndpoint(agents=callable)` accepts a callable for dynamic agent creation per request
+  - `add_fastapi_endpoint(app, sdk, prefix)` registers a catch-all route at `{prefix}/{path:path}` for GET/POST/PUT/DELETE/OPTIONS
+  - CopilotKit handler extracts `CopilotKitContext` with `properties`, `frontend_url`, and `headers` from the request - auth headers forwarded automatically
+  - Route endpoints: `/api/copilotkit/` (info), `/api/copilotkit/agent/{name}` (execute), `/api/copilotkit/agent/{name}/state` (get state), `/api/copilotkit/action/{name}` (execute action)
+  - Graph is lazily created on first request to ensure app.state.store is available (set during lifespan)
+  - Must register CopilotKit route before mount_static_router to avoid SPA catch-all route taking priority
 ---
