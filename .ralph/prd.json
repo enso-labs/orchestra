@@ -1,0 +1,123 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/834-copilotkit-deep-agents",
+  "description": "Integrate CopilotKit Deep Agents for frontend-agent communication via AG-UI protocol",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add CopilotKitMiddleware to deep agent middleware stack",
+      "description": "As a developer, I need the backend agent to support CopilotKit protocol so frontend tools and context are available.",
+      "acceptanceCriteria": [
+        "Import CopilotKitMiddleware from copilotkit package",
+        "Add CopilotKitMiddleware() to middleware list in create_agent() after init_default_middleware()",
+        "Verify copilotkit Python package is in pyproject.toml dependencies",
+        "Agent creates successfully with new middleware",
+        "Existing agent behavior unaffected (middleware is no-op without CopilotKit frontend)",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "File: backend/src/agents/__init__.py. CopilotKitMiddleware is already available via deepagents transitive dep."
+    },
+    {
+      "id": "US-002",
+      "title": "Add CopilotKit frontend packages",
+      "description": "As a developer, I need CopilotKit React packages installed so I can use CopilotKit hooks and components.",
+      "acceptanceCriteria": [
+        "Add @copilotkit/react-core to frontend dependencies",
+        "Add @copilotkit/react-ui to frontend dependencies",
+        "Add @copilotkit/runtime to frontend dependencies",
+        "Frontend builds successfully with new packages",
+        "No dependency conflicts",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Installed @copilotkit/react-core@1.51.4, @copilotkit/react-ui@1.51.4, @copilotkit/runtime@1.51.4 via npm"
+    },
+    {
+      "id": "US-003",
+      "title": "Create CopilotKit runtime API route",
+      "description": "As a developer, I need a server-side API route that bridges the CopilotKit frontend SDK to the Orchestra LangGraph backend.",
+      "acceptanceCriteria": [
+        "Create API route at /api/copilotkit (or equivalent path matching project routing)",
+        "Route uses CopilotRuntime with LangGraphAgent adapter pointing to Orchestra backend",
+        "graphId matches Orchestra's graph registration ('deepagent')",
+        "Route handles POST requests",
+        "Auth headers forwarded from request to backend",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Check project routing structure — may be pages/api/ or app/api/ depending on Next.js version"
+    },
+    {
+      "id": "US-004",
+      "title": "Wrap app with CopilotKit provider",
+      "description": "As a user, I need the app wrapped with CopilotKit provider so all components can use CopilotKit features.",
+      "acceptanceCriteria": [
+        "Find root layout/provider file and add CopilotKit provider wrapper",
+        "Provider configured with runtimeUrl='/api/copilotkit' and agent='deepagent'",
+        "CopilotKit UI styles imported",
+        "App renders successfully with provider",
+        "No visual regressions on existing pages",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Provider is passive — no-op when CopilotKit hooks aren't used"
+    },
+    {
+      "id": "US-005",
+      "title": "Integrate useDefaultTool for tool call rendering",
+      "description": "As a user, I want to see tool calls rendered in the chat interface when the agent uses tools.",
+      "acceptanceCriteria": [
+        "Add useDefaultTool hook to main chat component",
+        "Tool calls show loading state during execution",
+        "Completed tool calls show name, args, and result",
+        "Tool call rendering matches existing chat theme",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Check if Orchestra already has tool call rendering — may need to coordinate with existing implementation"
+    },
+    {
+      "id": "US-006",
+      "title": "Verify streaming compatibility with AG-UI protocol",
+      "description": "As a user, I want agent responses to stream correctly through the CopilotKit protocol.",
+      "acceptanceCriteria": [
+        "Agent streams responses through CopilotKit runtime",
+        "No dropped messages or broken streams",
+        "Short and long responses both work",
+        "Existing non-CopilotKit streaming endpoints still work",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Review backend/src/utils/stream.py for compatibility"
+    },
+    {
+      "id": "US-007",
+      "title": "Push all changes and validate end-to-end",
+      "description": "As a developer, I need all changes committed, pushed, and the PR updated for code review.",
+      "acceptanceCriteria": [
+        "All changes committed with descriptive commit messages",
+        "Branch pushed to origin",
+        "PR #835 updated with final summary of changes",
+        "All backend tests pass",
+        "All frontend tests pass",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill: send a message, agent responds via CopilotKit protocol, tool calls render"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "This is the final validation and push step."
+    }
+  ]
+}

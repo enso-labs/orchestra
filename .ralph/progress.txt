@@ -2,6 +2,10 @@
 Started: Mon Feb 23 04:33:37 UTC 2026
 
 ## Codebase Patterns
+- copilotkit>=0.1.78 requires fastapi>=0.115.0,<0.116.0 but project uses fastapi>=0.116.1 - use `tool.uv.override-dependencies` and `tool.uv.environments` to resolve
+- CopilotKitMiddleware is NOT available via deepagents transitive dep - it's from the separate `copilotkit` PyPI package
+- Agent middleware stack is built in `init_graph()` at `backend/src/agents/__init__.py` via `init_default_middleware(backend=backend) + [custom_middleware] + middleware`
+- `init_default_middleware()` is in `backend/src/utils/middleware.py` and returns compaction, metadata, retry, PII, and AutoEvict middlewares
 - Wiki is a git submodule - commit changes inside wiki/ first, then update submodule pointer in main repo
 - Screenshots go in `wiki/static/img/<feature>/` and are referenced as `![alt](/img/<feature>/filename.png)` in docs
 - Use agent-browser to capture screenshots: `agent-browser open <url>`, toggle to Day theme via UI, then `agent-browser screenshot <path>`
@@ -148,4 +152,32 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - `gh pr edit` may fail with GraphQL errors about Projects (classic) deprecation - use `gh api` PATCH instead
   - Wiki submodule needs its own `git push -u origin <branch>` before the main repo push
   - The main repo only tracks the submodule pointer commit hash, not individual wiki files
+---
+
+## 2026-02-25 - US-001
+- Added CopilotKitMiddleware to deep agent middleware stack
+- Files changed:
+  - backend/pyproject.toml (added copilotkit>=0.1.78, tool.uv config for env/dep resolution)
+  - backend/src/agents/__init__.py (imported CopilotKitMiddleware, added to middleware list)
+  - backend/uv.lock (regenerated with copilotkit and transitive deps)
+- **Learnings for future iterations:**
+  - copilotkit PyPI package has strict fastapi version pins (<0.116.0) incompatible with Orchestra's fastapi>=0.116.1
+  - Solution: use `[tool.uv] override-dependencies = ["fastapi>=0.115.0"]` and `environments = ["sys_platform == 'linux'"]`
+  - CopilotKitMiddleware class lives at `copilotkit.copilotkit_lg_middleware.CopilotKitMiddleware` but is exported from `copilotkit` top-level
+  - copilotkit 0.1.78 also needs `partialjson` and `ag-ui-langgraph` as transitive deps (installed via lock)
+  - 7 pre-existing test failures exist (search tool mocks, LLM route env): not related to this change
+  - The middleware is a no-op when no CopilotKit frontend state is present (no `copilotkit` key in agent state)
+---
+
+## 2026-02-25 - US-002
+- Added CopilotKit frontend packages to frontend dependencies
+- Files changed:
+  - frontend/package.json (added @copilotkit/react-core@^1.51.4, @copilotkit/react-ui@^1.51.4, @copilotkit/runtime@^1.51.4)
+  - frontend/package-lock.json (regenerated with 1848 new packages)
+- **Learnings for future iterations:**
+  - Frontend uses npm (not pnpm) - package-lock.json is the lock file
+  - CopilotKit packages are at v1.51.4 (major version 1.x)
+  - Frontend is Vite + React (not Next.js) - this affects US-003 runtime route setup (no pages/api/ or app/api/)
+  - Build, typecheck, lint, and all 271 tests pass with the new packages
+  - 25 npm audit vulnerabilities (23 moderate, 2 high) are pre-existing, not from CopilotKit
 ---

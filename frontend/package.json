@@ -16,6 +16,9 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
+		"@copilotkit/react-core": "^1.51.4",
+		"@copilotkit/react-ui": "^1.51.4",
+		"@copilotkit/runtime": "^1.51.4",
 		"@hookform/resolvers": "^5.2.2",
 		"@monaco-editor/react": "^4.7.0",
 		"@radix-ui/react-accordion": "^1.2.8",
