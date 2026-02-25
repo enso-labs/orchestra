@@ -2,6 +2,15 @@
 Started: Mon Feb 23 04:33:37 UTC 2026
 
 ## Codebase Patterns
+- `prepare_memory_files()` in `backend/src/agents/__init__.py` returns a 3-tuple: (files_map, memory_sources, original_content)
+- Three callers of `prepare_memory_files`: controllers/llm.py, utils/stream.py, workers/tasks.py
+- `create_file_data(content)` from deepagents creates a dict with `content` (list of lines), `created_at`, `modified_at`
+- AgentMiddleware base class from deepagents supports `awrap_tool_call` for tool interception
+- `make test` uses ENV_FILE=~/.env/orchestra/.env.backend by default; tests need env vars to load
+- Pre-existing failures in tests/unit/tools/test_search.py (6 tests) are unrelated to memory feature
+- `AgentMiddleware.aafter_agent(state, runtime)` runs after all model/tool cycles — ideal for end-of-session hooks
+- `state["files"]` contains FileData dicts with `content: list[str]` (lines) — join with `\n` to get raw string
+- MemoryRepo keys omit the leading `/` that state file paths have — use `path.lstrip("/")` for memory_id
 - Wiki is a git submodule - commit changes inside wiki/ first, then update submodule pointer in main repo
 - Screenshots go in `wiki/static/img/<feature>/` and are referenced as `![alt](/img/<feature>/filename.png)` in docs
 - Use agent-browser to capture screenshots: `agent-browser open <url>`, toggle to Day theme via UI, then `agent-browser screenshot <path>`
@@ -148,4 +157,45 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - `gh pr edit` may fail with GraphQL errors about Projects (classic) deprecation - use `gh api` PATCH instead
   - Wiki submodule needs its own `git push -u origin <branch>` before the main repo push
   - The main repo only tracks the submodule pointer commit hash, not individual wiki files
+---
+
+## 2026-02-25 - US-001
+- Modified `prepare_memory_files()` to return a 3-tuple: `(files_map, memory_sources, original_content)`
+- `original_content` is a `dict[str, str]` mapping each memory path to its raw content string
+- Updated all three callers to unpack the new return value (using `_original_content` for now)
+- Added new test class `TestPrepareMemoryFilesOriginalContent` with 4 tests for the new field
+- Updated existing tests to handle 3-tuple unpacking
+- Updated worker test mocks from `({}, [])` to `({}, [], {})`
+- Files changed:
+  - backend/src/agents/__init__.py (return type + logic)
+  - backend/src/controllers/llm.py (unpack 3-tuple)
+  - backend/src/utils/stream.py (unpack 3-tuple)
+  - backend/src/workers/tasks.py (unpack 3-tuple)
+  - backend/tests/unit/agents/test_prepare_memory_files.py (new tests + updated assertions)
+  - backend/tests/unit/workers/test_worker_model_resolution.py (mock return values)
+- **Learnings for future iterations:**
+  - `create_file_data(content)` from deepagents converts content string to a list of lines
+  - The original_content dict stores raw strings (not file_data format) for easy diffing
+  - All 3 callers currently ignore the original_content (stored as `_original_content`) - US-003 will wire it in
+---
+
+## 2026-02-25 - US-002
+- Created `MemorySyncMiddleware` class extending `AgentMiddleware` in `backend/src/utils/middleware.py`
+- Middleware uses `aafter_agent` hook to compare current file content with original after agent execution
+- Only files listed in `memory_sources` are considered; other files are ignored
+- Changed files are written to `MemoryRepo.update()` with the memory_id (path without leading slash)
+- Errors in sync are caught and logged via `logger.warning` — never propagated to crash the agent
+- Returns `None` (no state updates needed from this middleware)
+- Added comprehensive test suite with 13 tests in `tests/unit/utils/test_memory_sync_middleware.py`
+- Files changed:
+  - backend/src/utils/middleware.py (added MemorySyncMiddleware class, TYPE_CHECKING import for MemoryRepo)
+  - backend/tests/unit/utils/test_memory_sync_middleware.py (new - 13 tests across 5 test classes)
+  - .ralph/prd.json (US-002 marked as passes: true)
+  - .ralph/progress.txt (this entry)
+- **Learnings for future iterations:**
+  - `AgentMiddleware.aafter_agent(state, runtime)` runs after all model/tool cycles complete — ideal for end-of-session sync
+  - `state["files"]` contains `FileData` dicts with `content: list[str]` (lines) — join with `\n` to reconstruct raw string
+  - MemoryRepo keys omit the leading `/` that file paths in state have — use `path.lstrip("/")` for memory_id
+  - The custom logger in `src.utils.logger` doesn't propagate to pytest caplog — use `patch("src.utils.middleware.logger")` instead
+  - Pre-existing 6 test failures in `tests/unit/tools/test_search.py` are unrelated and expected
 ---

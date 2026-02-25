@@ -1,4 +1,7 @@
-from typing import Awaitable, Callable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Awaitable, Callable
+
 from deepagents.backends.utils import (
     format_content_with_line_numbers,
     sanitize_tool_call_id,
@@ -32,6 +35,9 @@ from langchain.agents.middleware import (
 from src.utils.logger import logger
 from src.utils.compacting import compaction_middleware
 from src.utils.format import format_content
+
+if TYPE_CHECKING:
+    from src.repos.memory_repo import MemoryRepo
 
 
 @after_model
@@ -263,6 +269,50 @@ class AutoEvictMiddleware(AgentMiddleware):
 
         tool_result = await handler(request)
         return self._intercept_large_tool_result(tool_result, request.runtime)
+
+
+class MemorySyncMiddleware(AgentMiddleware):
+    """Write-through middleware that persists memory file edits to MemoryRepo.
+
+    After the agent completes execution, this middleware compares the current
+    content of each memory file in the agent state against the original content
+    that was loaded at the start of the session. Any files that have changed
+    are written back to ``MemoryRepo`` so edits survive across sessions.
+
+    Only files listed in ``memory_sources`` are considered; other files in the
+    state are ignored. Sync errors are logged but never propagated so they
+    cannot crash the agent.
+    """
+
+    def __init__(
+        self,
+        memory_repo: "MemoryRepo",
+        memory_sources: list[str],
+        original_content: dict[str, str],
+    ) -> None:
+        self.memory_repo = memory_repo
+        self.memory_sources: set[str] = set(memory_sources or [])
+        self.original_content: dict[str, str] = original_content or {}
+
+    async def aafter_agent(self, state: dict[str, Any], runtime: Runtime[ContextSchema]) -> dict[str, Any] | None:
+        """Compare memory files against originals and persist any changes."""
+        try:
+            files: dict[str, FileData] = state.get("files", {})
+            for path in self.memory_sources:
+                file_data = files.get(path)
+                if file_data is None:
+                    continue
+                current_content = "\n".join(file_data.get("content", []))
+                original = self.original_content.get(path, "")
+                if current_content == original:
+                    continue
+                # MemoryRepo keys omit the leading slash
+                memory_id = path.lstrip("/")
+                await self.memory_repo.update(memory_id=memory_id, content=current_content)
+                logger.info(f"Memory synced: {path}")
+        except Exception as exc:
+            logger.warning(f"Memory sync failed: {exc}")
+        return None
 
 
 def init_default_middleware(
