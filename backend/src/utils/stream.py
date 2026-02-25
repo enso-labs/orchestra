@@ -206,7 +206,9 @@ async def stream_generator(
     """
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
-    memory_files, memory_sources = await prepare_memory_files(service_context.user_id, service_context.memory_service)
+    memory_files, memory_sources, _original_content = await prepare_memory_files(
+        service_context.user_id, service_context.memory_service
+    )
     files_map = {**memory_files, **files_map}
     async with get_checkpoint_db() as checkpointer:
         agent = None

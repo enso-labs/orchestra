@@ -111,7 +111,7 @@ class TestWorkerModelResolution:
             patch(
                 _PATCHES["prepare_memory"],
                 new_callable=AsyncMock,
-                return_value=({}, []),
+                return_value=({}, [], {}),
             ),
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
@@ -155,7 +155,7 @@ class TestWorkerModelResolution:
             patch(
                 _PATCHES["prepare_memory"],
                 new_callable=AsyncMock,
-                return_value=({}, []),
+                return_value=({}, [], {}),
             ),
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
@@ -200,7 +200,7 @@ class TestWorkerModelResolution:
             patch(
                 _PATCHES["prepare_memory"],
                 new_callable=AsyncMock,
-                return_value=({}, []),
+                return_value=({}, [], {}),
             ),
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
@@ -245,7 +245,7 @@ class TestWorkerModelResolution:
             patch(
                 _PATCHES["prepare_memory"],
                 new_callable=AsyncMock,
-                return_value=({}, []),
+                return_value=({}, [], {}),
             ),
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
@@ -287,7 +287,7 @@ class TestWorkerModelResolution:
             patch(
                 _PATCHES["prepare_memory"],
                 new_callable=AsyncMock,
-                return_value=({}, []),
+                return_value=({}, [], {}),
             ),
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(

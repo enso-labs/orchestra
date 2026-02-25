@@ -68,28 +68,33 @@ async def add_memories_to_system():
 async def prepare_memory_files(
     user_id: str | None,
     memory_svc: "MemoryService",
-) -> tuple[dict, list[str] | None]:
+) -> tuple[dict, list[str] | None, dict[str, str]]:
     """Fetch user memories and format them as a StateBackend file.
 
-    Returns a (files_map, memory_sources) tuple suitable for passing to
-    create_deep_agent via the ``memory`` kwarg.  When no memories are
-    available the tuple is ``({}, None)`` so callers can safely unpack
-    without extra guards.
+    Returns a ``(files_map, memory_sources, original_content)`` tuple
+    suitable for passing to ``create_deep_agent`` via the ``memory`` kwarg.
+    ``original_content`` maps each memory path to the raw content string
+    that was loaded, enabling downstream middleware to detect edits by
+    comparing the current file content against the original.
+
+    When no memories are available the tuple is ``({}, None, {})`` so
+    callers can safely unpack without extra guards.
     """
     if not user_id:
-        return {}, None
+        return {}, None, {}
 
     try:
         memories = await memory_svc.search()
     except Exception as exc:
         logger.warning(f"Failed to fetch memories for user {user_id}: {exc}")
-        return {}, None
+        return {}, None, {}
 
     if not memories:
-        return {}, None
+        return {}, None, {}
 
     files_map = {}
     sources = []
+    original_content: dict[str, str] = {}
     for mem in memories:
         data = mem.dict()
         value = data.get("value", {})
@@ -105,8 +110,9 @@ async def prepare_memory_files(
         path = f"/{mem_id}" if not mem_id.startswith("/") else mem_id
         files_map[path] = create_file_data(content)
         sources.append(path)
+        original_content[path] = content
 
-    return files_map, sources if sources else None
+    return files_map, sources if sources else None, original_content
 
 
 def init_graph(

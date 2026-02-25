@@ -118,7 +118,9 @@ class LLMController:
             params.model, api_key, default_sandbox = await self._resolve_user_settings(params.model)
 
             # Load user memories into files_map for MemoryMiddleware
-            memory_files, memory_sources = await prepare_memory_files(self.user_id, self.service_context.memory_service)
+            memory_files, memory_sources, _original_content = await prepare_memory_files(
+                self.user_id, self.service_context.memory_service
+            )
             if memory_files:
                 existing_files = params.input.files or {}
                 params.input.files = {**memory_files, **existing_files}
