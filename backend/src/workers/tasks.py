@@ -235,9 +235,7 @@ async def _execute_agent_stream(
             params.model = DEFAULT_CHAT_MODEL
 
     # Load user memories and merge into files_map
-    memory_files, memory_sources, _original_content = await prepare_memory_files(
-        user_id, service_context.memory_service
-    )
+    memory_files, memory_sources, original_content = await prepare_memory_files(user_id, service_context.memory_service)
     files_map = {**memory_files, **files_map}
 
     # Initialize ToolRuntime and Backend
@@ -263,6 +261,7 @@ async def _execute_agent_stream(
         backend=backend,
         memory=memory_sources,
         api_key=api_key,
+        original_content=original_content,
     )
     params.input.messages[-1].model = agent.model
 

@@ -39,7 +39,7 @@ from src.utils.logger import logger
 from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
-from src.utils.middleware import init_default_middleware
+from src.utils.middleware import MemorySyncMiddleware, init_default_middleware
 from src.tools import default_tools
 
 
@@ -349,6 +349,7 @@ async def construct_agent(
     service_context: ServiceContext = None,
     api_key: str | None = None,
     memory: list[str] | None = None,
+    original_content: dict[str, str] | None = None,
 ):
     """Build and return an Orchestra agent instance.
 
@@ -357,10 +358,26 @@ async def construct_agent(
             reference files in the StateBackend. When provided, MemoryMiddleware
             is added to the agent's middleware stack so the agent can access
             user memories during execution.
+        original_content: Optional mapping of memory file paths to their
+            original content strings. When provided alongside *memory*,
+            a ``MemorySyncMiddleware`` is added to persist edits back to
+            the ``MemoryRepo``.
     """
     try:
         if subagents:
             subagents = await init_subagents(subagents, service_context)
+
+        # Wire MemorySyncMiddleware when memory sources and original content are available
+        if memory is not None and original_content is not None and service_context and service_context.user_id:
+            from src.repos.memory_repo import MemoryRepo
+
+            memory_repo = MemoryRepo(user_id=service_context.user_id, store=service_context.store)
+            sync_mw = MemorySyncMiddleware(
+                memory_repo=memory_repo,
+                memory_sources=memory,
+                original_content=original_content,
+            )
+            middleware = list(middleware) + [sync_mw]
 
         # Asynchronous LLM call
         agent = Orchestra(

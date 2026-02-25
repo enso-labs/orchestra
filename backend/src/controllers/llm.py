@@ -118,7 +118,7 @@ class LLMController:
             params.model, api_key, default_sandbox = await self._resolve_user_settings(params.model)
 
             # Load user memories into files_map for MemoryMiddleware
-            memory_files, memory_sources, _original_content = await prepare_memory_files(
+            memory_files, memory_sources, original_content = await prepare_memory_files(
                 self.user_id, self.service_context.memory_service
             )
             if memory_files:
@@ -139,6 +139,7 @@ class LLMController:
                     service_context=self.service_context,
                     api_key=api_key,
                     memory=memory_sources,
+                    original_content=original_content,
                 )
                 response = await agent.invoke(
                     params.input,

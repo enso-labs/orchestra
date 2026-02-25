@@ -206,7 +206,7 @@ async def stream_generator(
     """
     files_map = config["metadata"].get("files", {}) or input.files or {}
     todos_list = config["metadata"].get("todos", [])
-    memory_files, memory_sources, _original_content = await prepare_memory_files(
+    memory_files, memory_sources, original_content = await prepare_memory_files(
         service_context.user_id, service_context.memory_service
     )
     files_map = {**memory_files, **files_map}
@@ -237,6 +237,7 @@ async def stream_generator(
                 service_context=service_context,
                 api_key=api_key,
                 memory=memory_sources,
+                original_content=original_content,
             )
             input.messages[-1].model = agent.model
             # Send metadata event with thread_id at the start of the stream

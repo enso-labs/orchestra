@@ -199,3 +199,32 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - The custom logger in `src.utils.logger` doesn't propagate to pytest caplog — use `patch("src.utils.middleware.logger")` instead
   - Pre-existing 6 test failures in `tests/unit/tools/test_search.py` are unrelated and expected
 ---
+
+## 2026-02-25 - US-003
+- Wired MemorySyncMiddleware into `construct_agent()` in `backend/src/agents/__init__.py`
+- Added `original_content` parameter to `construct_agent()` — when both `memory` and `original_content` are provided (and user_id exists), a `MemorySyncMiddleware` is instantiated with a `MemoryRepo` and appended to the middleware stack
+- Updated all 3 callers to pass `original_content` (previously `_original_content`) to `construct_agent()`:
+  - `controllers/llm.py` — `llm_invoke()`
+  - `utils/stream.py` — `stream_generator()`
+  - `workers/tasks.py` — `_execute_agent_stream()`
+- Added 6 unit tests in `tests/unit/agents/test_construct_agent_memory_sync.py`:
+  - Middleware added when memory + original_content provided
+  - Middleware NOT added when memory is None
+  - Middleware NOT added when original_content is None
+  - Middleware NOT added when user_id is None
+  - MemoryRepo created with correct user_id and store
+  - Existing custom middleware preserved alongside MemorySyncMiddleware
+- Files changed:
+  - backend/src/agents/__init__.py (construct_agent: new param + middleware wiring)
+  - backend/src/controllers/llm.py (pass original_content)
+  - backend/src/utils/stream.py (pass original_content)
+  - backend/src/workers/tasks.py (pass original_content)
+  - backend/tests/unit/agents/test_construct_agent_memory_sync.py (new — 6 tests)
+  - .ralph/prd.json (US-003 marked as passes: true)
+  - .ralph/progress.txt (this entry)
+- **Learnings for future iterations:**
+  - `construct_agent()` is the centralized place to add middleware — avoids repeating logic in 3 callers
+  - MemoryRepo requires `user_id` and `store` — both available via `service_context`
+  - Local imports inside functions need to be patched at their source module (`src.repos.memory_repo.MemoryRepo`), not at the import site
+  - The `middleware` param in construct_agent is a list that gets appended to default middleware in `init_graph()` — safe to extend with `list(middleware) + [sync_mw]`
+---
