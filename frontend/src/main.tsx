@@ -1,6 +1,8 @@
 import "./styles/globals.css";
+import "@copilotkit/react-ui/styles.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { CopilotKit } from "@copilotkit/react-core";
 import { AppRoutes } from "./routes";
 import ChatProvider from "./context/ChatContext";
 import AgentProvider from "./context/AgentContext";
@@ -29,21 +31,23 @@ if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-			<NuqsAdapter>
-				<AppProvider>
-					<AgentProvider>
-						<ProjectProvider>
-							<PromptProvider>
-								<ChatProvider>
-									<EpicProvider>
-										<AppRoutes />
-									</EpicProvider>
-								</ChatProvider>
-							</PromptProvider>
-						</ProjectProvider>
-					</AgentProvider>
-				</AppProvider>
-			</NuqsAdapter>
+			<CopilotKit runtimeUrl="/api/copilotkit" agent="deepagent">
+				<NuqsAdapter>
+					<AppProvider>
+						<AgentProvider>
+							<ProjectProvider>
+								<PromptProvider>
+									<ChatProvider>
+										<EpicProvider>
+											<AppRoutes />
+										</EpicProvider>
+									</ChatProvider>
+								</PromptProvider>
+							</ProjectProvider>
+						</AgentProvider>
+					</AppProvider>
+				</NuqsAdapter>
+			</CopilotKit>
 		</ThemeProvider>
 	</StrictMode>,
 );
