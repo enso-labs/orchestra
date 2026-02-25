@@ -14,6 +14,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.cache.memory import InMemoryCache
+from copilotkit import CopilotKitMiddleware
 from deepagents import SubAgent, create_deep_agent
 from deepagents.backends import CompositeBackend, StateBackend
 from deepagents.backends.utils import create_file_data
@@ -139,7 +140,7 @@ def init_graph(
         system_prompt=system_prompt,
         checkpointer=checkpointer,
         context_schema=context_schema,
-        middleware=init_default_middleware(backend=backend) + middleware,
+        middleware=init_default_middleware(backend=backend) + [CopilotKitMiddleware()] + middleware,
         store=store,
         cache=CACHE_LLM,
         backend=backend,

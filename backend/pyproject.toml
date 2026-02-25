@@ -11,6 +11,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "authlib>=1.6.3",
     "bs4>=0.0.2",
+    "copilotkit>=0.1.78",
     "cryptography>=45.0.7",
     "daytona>=0.140.0",
     "deepagents==0.3.8",
@@ -75,6 +76,10 @@ dev = [
     "pytest-mock>=3.14.0",
     "respx>=0.22.0"
 ]
+
+[tool.uv]
+environments = ["sys_platform == 'linux'"]
+override-dependencies = ["fastapi>=0.115.0"]
 
 [tool.ruff]
 line-length = 120
