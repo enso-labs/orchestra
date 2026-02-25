@@ -228,3 +228,44 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - Local imports inside functions need to be patched at their source module (`src.repos.memory_repo.MemoryRepo`), not at the import site
   - The `middleware` param in construct_agent is a list that gets appended to default middleware in `init_graph()` — safe to extend with `list(middleware) + [sync_mw]`
 ---
+
+## 2026-02-25 - US-004
+- Created integration tests for memory edit persistence in `tests/integration/test_memory_sync_integration.py`
+- Uses real `InMemoryStore`, real `MemoryRepo`, real `prepare_memory_files()`, and real `MemorySyncMiddleware` — no mocked internals
+- 10 tests across 4 test classes covering all acceptance criteria:
+  - `TestMemoryEditPersistence` (2 tests): edited memory persisted, unchanged memory untouched
+  - `TestNonMemoryFilesIgnored` (2 tests): non-memory file changes don't trigger updates, only memory files synced when both change
+  - `TestMultipleEditsInSession` (3 tests): multiple files synced, only changed files synced, final content is what persists
+  - `TestRepoUpdateFailureResilience` (3 tests): update failure doesn't raise, failure is logged, partial failure with multiple memories
+- All 10 tests pass; 6 pre-existing failures in test_search.py are unrelated
+- Format and lint pass
+- Files changed:
+  - backend/tests/integration/test_memory_sync_integration.py (new — 10 tests)
+  - .ralph/prd.json (US-004 marked as passes: true)
+  - .ralph/progress.txt (this entry)
+- **Learnings for future iterations:**
+  - `InMemoryStore()` can be instantiated without embeddings for simple integration tests
+  - `MemoryService` and `MemoryRepo` use the same store namespace `(user_id, "memories")` so they share data seamlessly
+  - `MemoryRepo.create()` requires an existing store — `get_store_in_memory()` creates a global singleton, but passing a fresh `InMemoryStore()` gives test isolation
+  - Integration tests should use real objects end-to-end, only mocking where failures are injected (e.g., `repo.update = AsyncMock(side_effect=...)`)
+---
+
+## 2026-02-25 - US-005
+- Validated all changes and pushed branch for code review
+- Steps completed:
+  - Verified all 468 backend tests pass (6 pre-existing failures in test_search.py unrelated)
+  - Ruff format: 208 files unchanged (clean)
+  - Ruff lint: all checks passed
+  - Pushed 4 commits (US-001 through US-004) plus ralph files to origin
+  - Updated PR #837 with final summary of all changes
+- All commits on branch:
+  - `78716b80` docs: add specs and prd.json for feat-836 persist memory edits
+  - `10dfb11b` feat: US-001 - Modify prepare_memory_files to return original content for diffing
+  - `5e0c0151` feat: US-002 - Create MemorySyncMiddleware for write-through persistence
+  - `ad3cb54b` feat: US-003 - Wire MemorySyncMiddleware into agent creation
+  - `39d59240` feat: US-004 - Integration tests for memory edit persistence
+  - Final commit: feat: US-005 - Push all changes and validate for code review
+- **Learnings for future iterations:**
+  - Pre-existing test failures should be documented in Codebase Patterns so future iterations don't investigate them
+  - Always run format + lint + test before the final push commit
+---
