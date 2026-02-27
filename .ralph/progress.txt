@@ -201,3 +201,15 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - Graph is lazily created on first request to ensure app.state.store is available (set during lifespan)
   - Must register CopilotKit route before mount_static_router to avoid SPA catch-all route taking priority
 ---
+
+## 2026-02-25 - US-004
+- Wrapped app with CopilotKit provider in frontend/src/main.tsx
+- Files changed:
+  - frontend/src/main.tsx (added CopilotKit import, @copilotkit/react-ui/styles.css import, wrapped provider hierarchy)
+- **Learnings for future iterations:**
+  - CopilotKit provider component is `CopilotKit` from `@copilotkit/react-core` (not CopilotKitProvider)
+  - Provider takes `runtimeUrl` and `agent` props — configured with `/api/copilotkit` and `deepagent`
+  - CopilotKit UI styles are at `@copilotkit/react-ui/styles.css` (there's also a v2/ variant)
+  - Provider placed after ThemeProvider but wrapping all other providers — passive no-op when no CopilotKit hooks are used
+  - All 271 frontend tests pass, typecheck clean — no impact on existing functionality
+---

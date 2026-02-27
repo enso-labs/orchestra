@@ -14,6 +14,7 @@ import ToolTimeline from "../timeline/ToolTimeline";
 import TextSelectionPopover from "../popovers/TextSelectionPopover";
 import TodoList from "./TodoList";
 import { SubagentBadge } from "../badges/SubagentBadge";
+import CopilotToolCallRenderer from "../tools/CopilotToolCallRenderer";
 
 export const Message = memo(
 	function Message({
@@ -444,6 +445,9 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 							</div>
 						);
 					})}
+				</div>
+				<div className="max-w-4xl mx-auto">
+					<CopilotToolCallRenderer />
 				</div>
 				{todos && todos.length > 0 && (
 					<div className="max-w-4xl mx-auto px-5 mt-2 mb-2">
