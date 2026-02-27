@@ -13,8 +13,8 @@
         "Document any findings with file and line references"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "All 10 changed Python files pass ruff format and ruff check. Full src/ (142 files) also clean."
     },
     {
       "id": "US-002",
@@ -29,8 +29,8 @@
         "Document all findings as a numbered list with severity (info/warning/issue)"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Code review complete. 1 warning (partial failure stops remaining syncs), 0 issues. See progress.txt for full findings."
     },
     {
       "id": "US-003",
@@ -43,8 +43,8 @@
         "Document test counts and any unexpected failures"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "476 collected, 468 passed, 6 failed (all in test_search.py — known pre-existing), 2 skipped. All new tests pass."
     },
     {
       "id": "US-004",
@@ -57,8 +57,8 @@
         "Commit review report and all review pipeline files"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Review report generated with APPROVE verdict. All review artifacts committed."
     }
   ]
 }
