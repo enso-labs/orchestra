@@ -1,30 +1,22 @@
 # Spec 004: Wrap App with CopilotKit Provider
 
-## Objective
-Add the `<CopilotKit>` provider to the app layout so all components can use CopilotKit hooks.
+## Summary
+Add `<CopilotKit>` provider to the app root so CopilotKit hooks work throughout the frontend.
 
-## Files Modified
-- App layout file (find the root layout that wraps all pages)
+## Changes
 
-## Implementation
-```tsx
-import { CopilotKit } from "@copilotkit/react-core";
-import "@copilotkit/react-ui/styles.css";
+### Files
+- `frontend/src/app/layout.tsx` or equivalent root component — wrap with provider
 
-// Wrap children with CopilotKit provider:
-<CopilotKit runtimeUrl="/api/copilotkit" agent="deepagent">
-  {children}
-</CopilotKit>
-```
+### Details
+1. Import `CopilotKit` from `@copilotkit/react-core`
+2. Wrap app with `<CopilotKit runtimeUrl="/api/copilotkit" agent="deepagent">`
+3. Import CopilotKit CSS styles
 
-## Notes
-- Provider should wrap inside existing providers (auth, theme, etc.) but outside chat components
-- `agent="deepagent"` must match the key in the runtime route's agents config
-- Import CopilotKit styles for UI components to render correctly
-- This is a non-breaking change — provider is passive when no CopilotKit hooks are used
-
-## Tests
-- App renders successfully with provider
-- No visual regressions
-- Typecheck passes
-- Verify in browser using agent-browser skill
+## Acceptance Criteria
+- [ ] App wrapped with `<CopilotKit>` provider
+- [ ] runtimeUrl points to backend endpoint
+- [ ] CopilotKit styles imported
+- [ ] App renders without errors
+- [ ] Typecheck passes
+- [ ] Verify in browser using agent-browser skill
