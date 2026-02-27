@@ -1,88 +1,64 @@
 {
   "project": "Orchestra",
   "branchName": "feat/836-persist-memory-edits",
-  "description": "Persist memory file edits across sessions via StateBackend-to-MemoryRepo write-through sync",
+  "description": "Review PR #837 — Persist memory file edits across sessions via StateBackend-to-MemoryRepo sync",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Modify prepare_memory_files to return original content for diffing",
-      "description": "As a developer, I need the original content of loaded memory files tracked so the sync middleware can detect changes.",
+      "title": "Static Analysis",
+      "description": "As a reviewer, I want to run static analysis on all changed files so that code quality standards are met.",
       "acceptanceCriteria": [
-        "prepare_memory_files() returns a third element: dict mapping path to original content string",
-        "All callers updated to handle the new return type",
-        "Original content matches what was loaded from MemoryRepo",
-        "Typecheck passes",
-        "Tests pass"
+        "Run ruff format --check backend/ and confirm all files pass",
+        "Run ruff check backend/ and confirm no lint errors",
+        "Document any findings with file and line references"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "File: backend/src/agents/__init__.py. Change return from tuple[dict, list|None] to tuple[dict, list|None, dict[str,str]]"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Create MemorySyncMiddleware for write-through persistence",
-      "description": "As a developer, I need a middleware that detects memory file changes and syncs them to MemoryRepo.",
+      "title": "Code Review",
+      "description": "As a reviewer, I want to inspect the implementation for correctness, patterns, and edge cases.",
       "acceptanceCriteria": [
-        "MemorySyncMiddleware class created extending AgentMiddleware",
-        "Middleware accepts memory_repo, memory_sources, and original_content",
-        "After each agent turn, compares current file content with original",
-        "Changed files are written to MemoryRepo via update()",
-        "Non-memory files are NOT synced",
-        "Sync is async (does not block agent response)",
-        "Errors in sync are logged but do not crash the agent",
-        "Typecheck passes",
-        "Tests pass"
+        "Review prepare_memory_files() 3-tuple return — verify backward compatibility, all 3 callers updated, original_content captures raw strings",
+        "Review MemorySyncMiddleware — verify aafter_agent usage, memory_sources iteration, content join with newline, leading slash strip for memory_id, error handling (caught + logged, never propagated)",
+        "Review construct_agent() wiring — verify precondition checks (memory, original_content, user_id), MemoryRepo construction, existing middleware preserved",
+        "Review test coverage — unit tests cover happy path, no-change, non-memory files, error handling, partial failure; integration tests use real objects",
+        "Check for any .env file reads, vite.config.ts changes, or leaked secrets",
+        "Document all findings as a numbered list with severity (info/warning/issue)"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "File: backend/src/utils/middleware.py. Check deepagents API for how to access current file state after a turn."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Wire MemorySyncMiddleware into agent creation",
-      "description": "As a developer, I need the sync middleware added to the agent middleware stack during create_agent().",
+      "title": "Test Suite Validation",
+      "description": "As a reviewer, I want to run the full backend test suite to confirm no regressions.",
       "acceptanceCriteria": [
-        "MemorySyncMiddleware instantiated with MemoryRepo, memory_sources, and original_content",
-        "Added to middleware stack after default middleware",
-        "Only added when memory_sources is not None",
-        "Agent creates successfully with the new middleware",
-        "Typecheck passes",
-        "Tests pass"
+        "Run make test-backend from the worktree",
+        "All tests pass except known pre-existing failures in test_search.py (6 tests)",
+        "New tests (unit + integration) all pass",
+        "Document test counts and any unexpected failures"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "File: backend/src/agents/__init__.py, create_agent() function"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Integration test: memory edits persist across sessions",
-      "description": "As a developer, I need to verify that memory file edits are actually persisted and loaded in subsequent sessions.",
+      "title": "Review Report and Cleanup",
+      "description": "As a reviewer, I want to produce a final review report and ensure no artifacts are left behind.",
       "acceptanceCriteria": [
-        "Test: create memory, start session, edit file, verify MemoryRepo updated",
-        "Test: non-memory file writes do NOT update MemoryRepo",
-        "Test: multiple edits in one session — final content synced",
-        "Test: MemoryRepo.update() failure does not crash agent",
-        "All tests pass",
-        "Typecheck passes"
+        "Generate review summary with verdict (APPROVE / REQUEST CHANGES / COMMENT)",
+        "Include static analysis results, test results, and numbered findings",
+        "Verify git status shows no uncommitted review artifacts",
+        "Commit review report and all review pipeline files"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Write integration tests using mocked MemoryRepo and StateBackend"
-    },
-    {
-      "id": "US-005",
-      "title": "Push all changes and validate for code review",
-      "description": "As a developer, I need all changes committed, pushed, and PR updated for review.",
-      "acceptanceCriteria": [
-        "All changes committed with descriptive commit messages",
-        "Branch pushed to origin",
-        "PR #837 updated with final summary of changes",
-        "All backend tests pass",
-        "Typecheck passes"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "This is the final validation and push step."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
