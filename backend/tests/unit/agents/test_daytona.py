@@ -36,6 +36,8 @@ class TestCreateDaytonaBackend:
         mock_sandbox = MagicMock()
         mock_backend = MagicMock()
         mock_client = MagicMock()
+        mock_list_result = MagicMock(total=0, items=[])
+        mock_client.list.return_value = mock_list_result
         mock_client.create.return_value = mock_sandbox
         mock_daytona_cls = MagicMock(return_value=mock_client)
         mock_sandbox_cls = MagicMock(return_value=mock_backend)

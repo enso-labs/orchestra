@@ -46,6 +46,8 @@ class TestCreateDaytonaBackend:
         """Returns (sandbox, backend) when Daytona client creates successfully."""
         mock_sandbox = MagicMock()
         mock_client = MagicMock()
+        mock_list_result = MagicMock(total=0, items=[])
+        mock_client.list.return_value = mock_list_result
         mock_client.create.return_value = mock_sandbox
 
         mock_daytona_cls = MagicMock(return_value=mock_client)
@@ -70,6 +72,8 @@ class TestCreateDaytonaBackend:
     def test_returns_none_and_logs_on_create_exception(self) -> None:
         """Returns (None, None) and logs error when client.create() raises."""
         mock_client = MagicMock()
+        mock_list_result = MagicMock(total=0, items=[])
+        mock_client.list.return_value = mock_list_result
         mock_client.create.side_effect = RuntimeError("API connection failed")
 
         mock_daytona_cls = MagicMock(return_value=mock_client)
@@ -94,6 +98,8 @@ class TestCreateDaytonaBackend:
         """Uses DAYTONA_API_KEY constant for authentication."""
         mock_sandbox = MagicMock()
         mock_client = MagicMock()
+        mock_list_result = MagicMock(total=0, items=[])
+        mock_client.list.return_value = mock_list_result
         mock_client.create.return_value = mock_sandbox
 
         mock_daytona_cls = MagicMock(return_value=mock_client)
@@ -118,6 +124,8 @@ class TestCreateDaytonaBackend:
         """Verify sandbox.stop() can be called for cleanup."""
         mock_sandbox = MagicMock()
         mock_client = MagicMock()
+        mock_list_result = MagicMock(total=0, items=[])
+        mock_client.list.return_value = mock_list_result
         mock_client.create.return_value = mock_sandbox
 
         mock_daytona_cls = MagicMock(return_value=mock_client)

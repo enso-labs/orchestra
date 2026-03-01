@@ -250,7 +250,10 @@ def create_daytona_backend():
 
     try:
         client = Daytona(DaytonaConfig(api_key=key))  # type: ignore[misc]
-        sandbox = client.create()
+        sandboxes = client.list()
+        sandbox = sandboxes.items[0] if sandboxes.total else None
+        if not sandbox:
+            sandbox = client.create()
         backend = DaytonaSandbox(sandbox=sandbox)
         return sandbox, backend
     except Exception as exc:
