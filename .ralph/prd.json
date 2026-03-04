@@ -91,7 +91,7 @@
         "All CI checks pass"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Final step — push everything to feat/838-backend-benchmarks"
     }
   ]
