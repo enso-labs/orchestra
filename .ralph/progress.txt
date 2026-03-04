@@ -237,3 +237,18 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - Thread serialization with 200 messages: ~250us — serialization is not a concern at production scale
   - PublicAssistant.from_assistant() is ~10us — safe projection adds minimal overhead
 ---
+
+## 2026-03-04 - US-005
+- Analyzed all 57 benchmark results across repo, route, and service layers
+- No operations exceeded their thresholds (repo >100ms, route >200ms, service >50ms)
+- No optimizations needed — all operations are performant
+- Created backend/BENCHMARKS.md documenting methodology, full results, and key findings
+- Files changed:
+  - backend/BENCHMARKS.md (new - comprehensive benchmark documentation)
+- **Learnings for future iterations:**
+  - All repo operations scale linearly with collection size; 1000 items list in ~23ms
+  - FastAPI route overhead is ~4-5ms per request (DI, validation, serialization) — standard and acceptable
+  - Pydantic validation is negligible even for large payloads (~162us for 100-message LLMRequest)
+  - test_search.py::test_searx_success_no_fallback has a pre-existing failure unrelated to benchmarks
+  - When no optimizations are needed, document the findings anyway to show the analysis was done
+---

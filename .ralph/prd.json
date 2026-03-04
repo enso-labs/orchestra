@@ -77,7 +77,7 @@
         "Typecheck/lint passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "See specs/005-optimization-and-push.md"
     },
     {
