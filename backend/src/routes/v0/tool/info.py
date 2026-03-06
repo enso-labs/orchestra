@@ -25,13 +25,16 @@ async def list_mcp_info(
     config: dict[str, McpServer] = Body(..., examples=MCP_DICT_EXAMPLE),
 ):
     try:
-        for name, server in config.items():
-            config[name] = {
+        # Filter out disabled MCP servers before connecting
+        enabled_config = {name: server for name, server in config.items() if server.enabled is not False}
+        stripped = {}
+        for name, server in enabled_config.items():
+            stripped[name] = {
                 "transport": server.transport,
                 "url": server.url,
                 "headers": server.headers,
             }
-        tools = await tool_service.mcp_tools(config)
+        tools = await tool_service.mcp_tools(stripped)
         return JSONResponse(
             content={
                 "mcp": [
