@@ -1,0 +1,93 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/840-disable-mcp-server-toggle",
+  "description": "Add enable/disable toggle for MCP servers in the manage tools modal so users can disable servers without deleting them",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Backend: Support enabled field in MCP server config",
+      "description": "As a developer, I need the MCP server config to support an optional 'enabled' boolean field so disabled servers can be filtered out during tool loading.",
+      "acceptanceCriteria": [
+        "MCP config dicts accept an optional 'enabled' boolean field",
+        "Missing 'enabled' field defaults to true (backwards compatible)",
+        "Tool service filters out MCP servers where enabled=false before connecting",
+        "Existing tests still pass",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Frontend: Add McpServerConfig enabled field to types",
+      "description": "As a developer, I need the TypeScript McpServerConfig interface to include an optional enabled boolean.",
+      "acceptanceCriteria": [
+        "McpServerConfig interface has 'enabled?: boolean' field",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Frontend: Add toggle switch to MCP server cards",
+      "description": "As a user, I want to see an enable/disable toggle on each MCP server card in the manage tools modal so I can disable a server without deleting it.",
+      "acceptanceCriteria": [
+        "Each MCP server card shows a Switch toggle component",
+        "Toggle is positioned between the edit and delete buttons",
+        "Clicking toggle calls onToggleServer callback with the server name",
+        "Disabled servers have muted/dimmed visual appearance (reduced opacity)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Frontend: Wire toggle to persist enabled state",
+      "description": "As a user, I want my enable/disable choice to be saved so it persists across sessions.",
+      "acceptanceCriteria": [
+        "Toggling a server updates the MCP config with enabled=true/false",
+        "Config is persisted via existing save mechanisms (assistant update or user defaults)",
+        "Disabled servers are excluded when fetching tools",
+        "Re-enabling a server restores its original config",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Tests and cleanup",
+      "description": "As a developer, I want tests covering the new toggle behavior to prevent regressions.",
+      "acceptanceCriteria": [
+        "Backend test: disabled MCP servers are filtered from tool loading",
+        "Frontend test: toggle updates config and visual state",
+        "All existing tests pass",
+        "Lint passes",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Push all changes for code review",
+      "description": "As a developer, I want all changes committed and pushed so they are visible in the PR for code review.",
+      "acceptanceCriteria": [
+        "All changes are committed with descriptive messages",
+        "Branch is pushed to origin",
+        "Draft PR is updated with latest changes",
+        "All CI checks pass"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

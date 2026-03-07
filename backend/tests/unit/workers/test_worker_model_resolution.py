@@ -116,7 +116,7 @@ class TestWorkerModelResolution:
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
-                return_value=(MagicMock(), None),
+                return_value=(MagicMock(), None, "state"),
             ),
         ):
             instance = MockRepo.return_value
@@ -160,7 +160,7 @@ class TestWorkerModelResolution:
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
-                return_value=(MagicMock(), None),
+                return_value=(MagicMock(), None, "state"),
             ),
         ):
             instance = MockRepo.return_value
@@ -205,7 +205,7 @@ class TestWorkerModelResolution:
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
-                return_value=(MagicMock(), None),
+                return_value=(MagicMock(), None, "state"),
             ),
         ):
             instance = MockRepo.return_value
@@ -250,7 +250,7 @@ class TestWorkerModelResolution:
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
-                return_value=(MagicMock(), None),
+                return_value=(MagicMock(), None, "state"),
             ),
         ):
             instance = MockRepo.return_value
@@ -292,7 +292,7 @@ class TestWorkerModelResolution:
             patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
             patch(
                 _PATCHES["init_backend"],
-                return_value=(MagicMock(), None),
+                return_value=(MagicMock(), None, "state"),
             ),
         ):
             mock_construct.return_value = _mock_agent(DEFAULT_CHAT_MODEL)

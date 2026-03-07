@@ -1,4 +1,4 @@
-import ChatInput from "@/components/inputs/ChatInput";
+import ChatComposer from "@/components/chat/ChatComposer";
 import ChatMessages from "@/components/lists/ChatMessages";
 import AgentSection from "@/components/sections/agent-section";
 import { useChatContext } from "@/context/ChatContext";
@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/resizable";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import FileEditorPanel from "@/components/panels/FileEditorPanel";
-import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -21,10 +20,15 @@ interface ChatPanelProps {
 	chatNav?: React.ReactNode | undefined;
 	sidebarTrigger?: React.ReactNode | undefined;
 	showAgentMenu?: boolean;
+	showSandboxStatus?: boolean;
 }
 
-function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
-	const { appVersion } = useAppContext();
+function ChatPanel({
+	agent,
+	chatNav,
+	showAgentMenu = true,
+	showSandboxStatus = false,
+}: ChatPanelProps) {
 	const { messages, viewMode, setViewMode } = useChatContext();
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -36,13 +40,6 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 				<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
 					<AgentSection agent={agent} showAgentMenu={showAgentMenu} />
 				</div>
-				<footer className="mt-auto bg-card">
-					<div className="px-4 sm:px-6 lg:px-8 py-4">
-						<p className="text-center text-muted-foreground text-xs">
-							&copy; 2025 Ensō Labs. All rights reserved. v{appVersion}
-						</p>
-					</div>
-				</footer>
 			</ChatLayout>
 		);
 	}
@@ -56,13 +53,10 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 					<div className="flex-1 min-h-0">
 						<ChatMessages messages={messages} />
 					</div>
-					<div className="sticky bottom-0 bg-background border-border">
-						<div className="max-w-4xl mx-auto">
-							<div className="flex flex-col gap-2 px-4 pb-4">
-								<ChatInput />
-							</div>
-						</div>
-					</div>
+					<ChatComposer
+						showAgentMenu={showAgentMenu}
+						showSandboxStatus={showSandboxStatus}
+					/>
 				</div>
 			) : (
 				<>
@@ -85,13 +79,10 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 								<div className="flex-1 min-h-0">
 									<ChatMessages messages={messages} />
 								</div>
-								<div className="sticky bottom-0 bg-background border-border">
-									<div className="max-w-4xl mx-auto">
-										<div className="flex flex-col gap-2 px-4 pb-4">
-											<ChatInput />
-										</div>
-									</div>
-								</div>
+								<ChatComposer
+									showAgentMenu={showAgentMenu}
+									showSandboxStatus={showSandboxStatus}
+								/>
 							</div>
 						</ResizablePanel>
 					</ResizablePanelGroup>
@@ -104,13 +95,10 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 							<div className="flex-1 min-h-0">
 								<ChatMessages messages={messages} />
 							</div>
-							<div className="sticky bottom-0 bg-background border-border">
-								<div className="max-w-4xl mx-auto">
-									<div className="flex flex-col gap-2 px-4 pb-4">
-										<ChatInput />
-									</div>
-								</div>
-							</div>
+							<ChatComposer
+								showAgentMenu={showAgentMenu}
+								showSandboxStatus={showSandboxStatus}
+							/>
 						</div>
 
 						{/* Foreground: Editor Sheet - Only on mobile */}
