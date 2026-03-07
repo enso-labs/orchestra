@@ -51,6 +51,10 @@ export default function ThreadPage() {
 		threadError,
 	} = useChatContext();
 	const isMobile = useMediaQuery("(max-width: 768px)");
+	const hasLiveThreadState =
+		metadata?.thread_id === threadId && messages.length > 0;
+	const effectiveThreadLoading = !hasLiveThreadState && threadLoading;
+	const effectiveThreadError = !hasLiveThreadState ? threadError : null;
 
 	useModelsEffect();
 	useEffectGetAgents();
@@ -59,14 +63,20 @@ export default function ThreadPage() {
 	useListCheckpointsEffect(!loading, metadata);
 
 	// Load thread data using modularized hook
-	useLoadThreadEffect(threadId, {
-		setCheckpoints,
-		setMessages,
-		setMetadata,
-		setFilesMap,
-		setTodos,
-		setModel,
-	});
+	useLoadThreadEffect(
+		threadId,
+		{
+			setCheckpoints,
+			setMessages,
+			setMetadata,
+			setFilesMap,
+			setTodos,
+			setModel,
+		},
+		{
+			enabled: !hasLiveThreadState,
+		},
+	);
 
 	// Handle project context if on /p/:projectId/t/:threadId
 	useEffect(() => {
@@ -96,11 +106,11 @@ export default function ThreadPage() {
 		};
 	}, [projectId, projects]);
 
-	if (threadError) {
+	if (effectiveThreadError) {
 		return (
 			<ChatLayout>
 				<div className="flex h-full flex-col items-center justify-center gap-4">
-					<p className="text-muted-foreground">{threadError}</p>
+					<p className="text-muted-foreground">{effectiveThreadError}</p>
 					<button
 						onClick={() => navigate("/chat")}
 						className="text-primary hover:underline"
@@ -119,7 +129,7 @@ export default function ThreadPage() {
 					<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 						<ChatNav sidebarTrigger={<SidebarTrigger />} />
 						<div className="flex-1 min-h-0">
-							{threadLoading ? (
+							{effectiveThreadLoading ? (
 								<ChatMessagesSkeleton />
 							) : (
 								<ChatMessages messages={messages} />
@@ -150,7 +160,7 @@ export default function ThreadPage() {
 								<div className="flex flex-col h-full min-h-0 overflow-hidden">
 									<ChatNav sidebarTrigger={<SidebarTrigger />} />
 									<div className="flex-1 min-h-0">
-										{threadLoading ? (
+										{effectiveThreadLoading ? (
 											<ChatMessagesSkeleton />
 										) : (
 											<ChatMessages messages={messages} />
@@ -173,7 +183,7 @@ export default function ThreadPage() {
 							<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 								<ChatNav sidebarTrigger={<SidebarTrigger />} />
 								<div className="flex-1 min-h-0">
-									{threadLoading ? (
+									{effectiveThreadLoading ? (
 										<ChatMessagesSkeleton />
 									) : (
 										<ChatMessages messages={messages} />

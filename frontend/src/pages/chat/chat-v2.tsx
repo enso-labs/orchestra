@@ -6,6 +6,7 @@ import { useAppContext } from "@/context/AppContext";
 import { Agent } from "@/lib/services/agentService";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import useInitialThreadRedirect from "@/hooks/useInitialThreadRedirect";
 
 export function ChatV2Page() {
 	const { loading } = useAppContext();
@@ -15,6 +16,7 @@ export function ChatV2Page() {
 		useListThreadsEffect,
 		useListCheckpointsEffect,
 		metadata,
+		messages,
 		useModelsEffect,
 		useMemoryFilesEffect,
 	} = useChatContext();
@@ -26,6 +28,10 @@ export function ChatV2Page() {
 
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);
+	useInitialThreadRedirect({
+		threadId: metadata?.thread_id,
+		hasMessages: messages.length > 0,
+	});
 
 	const defaultAgent: Agent = {
 		name: "ORCHESTRA",
