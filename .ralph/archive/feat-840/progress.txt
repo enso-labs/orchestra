@@ -3,6 +3,18 @@ Started: Mon Feb 23 04:33:37 UTC 2026
 
 ## Codebase Patterns
 - Wiki is a git submodule - commit changes inside wiki/ first, then update submodule pointer in main repo
+- Benchmark tests use InMemoryStore for speed, not PostgreSQL - repos accept store in constructor
+- All repos inherit from BaseRepo with `(user_id, entity_type)` namespace pattern
+- AssistantService is not a BaseRepo subclass but follows the same store pattern
+- SavedTool and ToolConfig live in `src.repos.tool_repo`, not in schemas
+- Tests need env vars loaded: `set -a && . ~/.env/orchestra/.env.backend && set +a`
+- pytest-benchmark: use `--benchmark-only` to skip non-benchmark tests, `--benchmark-disable` for the opposite
+- SearchFilter import: `from src.schemas.entities import SearchFilter` (not langgraph.store.base)
+- ThreadRepo has no `create()` method — use `update(thread_id, data)` with a new UUID to create threads
+- ToolRepo requires mocking TOOL_LIBRARY when testing tool formatting
+- Health route path: `/api/info/health` (info router prefix `/info` + health router prefix `/health`)
+- FastAPICache must be initialized via `init_cache()` from `src.utils.cache` before testing `@cache`-decorated routes
+- Route benchmarks use `AsyncClient` + `ASGITransport` with dependency overrides for `get_store`, `verify_credentials`, `get_optional_user`, `get_optional_user_from_token`
 - Screenshots go in `wiki/static/img/<feature>/` and are referenced as `![alt](/img/<feature>/filename.png)` in docs
 - Use agent-browser to capture screenshots: `agent-browser open <url>`, toggle to Day theme via UI, then `agent-browser screenshot <path>`
 - The Day theme toggle is a dropdown accessed via the theme icon button, then selecting "Day" from the menu
@@ -148,4 +160,109 @@ Started: Mon Feb 23 04:33:37 UTC 2026
   - `gh pr edit` may fail with GraphQL errors about Projects (classic) deprecation - use `gh api` PATCH instead
   - Wiki submodule needs its own `git push -u origin <branch>` before the main repo push
   - The main repo only tracks the submodule pointer commit hash, not individual wiki files
+---
+
+## 2026-03-04 - US-001
+- Set up benchmark infrastructure for backend performance testing
+- Files changed:
+  - backend/pyproject.toml (added pytest-benchmark>=4.0 to dev dependencies)
+  - backend/tests/benchmarks/__init__.py (new)
+  - backend/tests/benchmarks/conftest.py (shared fixtures and data factories)
+  - backend/tests/benchmarks/test_smoke.py (infrastructure verification test)
+- **Learnings for future iterations:**
+  - InMemoryStore is ideal for benchmark tests — avoids DB setup overhead
+  - pytest-benchmark auto-calibrates rounds; use `--benchmark-only` to isolate benchmark runs
+  - SavedTool/ToolConfig imports come from `src.repos.tool_repo`, not schemas
+  - Data factories should return plain dicts (for repo.create(**kwargs)) or Pydantic models (for typed APIs)
+  - Benchmark conftest fixtures are sync — wrap async calls with `asyncio.get_event_loop().run_until_complete()`
+---
+
+## 2026-03-04 - US-002
+- Benchmarked all repository layer CRUD operations
+- Files changed:
+  - backend/tests/benchmarks/test_memory_repo.py (new - create, list 100/500/1000, search, delete)
+  - backend/tests/benchmarks/test_thread_repo.py (new - create, list, get 20/100 msgs, delete)
+  - backend/tests/benchmarks/test_assistant_repo.py (new - create, list 50/200, get)
+  - backend/tests/benchmarks/test_tool_repo.py (new - list 20/100, lookup by name, delete)
+- Results: 20 benchmarks all pass, no operations exceed 100ms threshold
+- Slowest operations: memory_list_1000 (~27ms mean), tool_list_large (~11ms mean)
+- Fastest operations: assistant_create (~65us), thread_create (~62us)
+- **Learnings for future iterations:**
+  - SearchFilter is in `src.schemas.entities`, NOT `langgraph.store.base`
+  - ThreadRepo has no `create()` — use `update(thread_id, data)` with a new UUID
+  - ToolRepo.search() returns StructuredTool (LangChain), not SavedTool
+  - Use a counter dict (`{"i": 0}`) for unique keys in benchmark rounds to avoid collisions
+  - InMemoryStore handles 1000 items with list in ~27ms — plenty fast for the repo layer
+---
+
+## 2026-03-04 - US-003
+- Benchmarked API route handlers (13 benchmarks) across health, memory, assistant, tool, and LLM routes
+- Files changed:
+  - backend/tests/benchmarks/test_route_benchmarks.py (new - 13 route benchmarks)
+- Results: All 13 benchmarks pass, no endpoints exceed 200ms threshold
+- Fastest: health check (~1.2ms mean), LLM models reset (~1.2ms mean)
+- Slowest: assistant route delete (~9.5ms mean), memory serialization overhead (~9.9ms mean)
+- Serialization overhead: memory list 100 via route (~7.3ms) vs repo-only (~2.8ms from US-002) = ~4.5ms framework overhead
+- **Learnings for future iterations:**
+  - Health route is at `/api/info/health` (info router has `/info` prefix, health router has `/health` prefix)
+  - FastAPICache must be initialized before testing `@cache`-decorated routes — call `init_cache()` from `src.utils.cache`
+  - `get_optional_user` and `get_optional_user_from_token` need separate overrides from `verify_credentials`
+  - For sync pytest-benchmark with async routes: create AsyncClient in fixture with `_run(__aenter__())` and cleanup with `_run(client.aclose())`
+  - Route overhead is ~4-5ms per request (dependency injection, serialization, validation) — negligible for production use
+---
+
+## 2026-03-04 - US-004
+- Benchmarked service layer and agent initialization (24 benchmarks)
+- Files changed:
+  - backend/tests/benchmarks/test_service_benchmarks.py (new - 24 service layer benchmarks)
+- Categories covered:
+  - Service construction: AssistantService, ToolService, LLMService init
+  - Tool resolution: init_tool_library, LLMService.init_tools with/without tool names
+  - Prompt assembly: init_system_prompt basic, full (timezone+instructions), long prompt
+  - Assistant.to_llm_request conversion
+  - Pydantic validation: Assistant, Assistant large, LLMRequest, LLMRequest large
+  - Pydantic serialization: model_dump, model_dump_json, LLMRequest dump, Thread large (200 msgs)
+  - Message conversion: LLMInput.to_langchain_messages (10 and 100 messages)
+  - PublicAssistant safe projection
+  - AssistantService CRUD: create, get, search (50 assistants)
+- Results: All 24 benchmarks pass, no operations exceed 50ms threshold
+- Fastest: prompt assembly basic (~1.1us), service init (~2.8us)
+- Slowest: assistant service search 50 (~1.1ms mean), message conversion 100 (~0.9ms mean)
+- All service operations are sub-millisecond individually; no CPU-bound bottlenecks found
+- **Learnings for future iterations:**
+  - ServiceContext requires a full RunnableConfig with both `configurable` and `metadata` keys
+  - LLMService.init_tools needs A2AServers mock for a2a={} (it instantiates A2AServers internally)
+  - init_tool_library() is ~5us — tool library construction is not a bottleneck
+  - Pydantic validation of LLMRequest with 100 messages: ~152us — validation overhead is negligible
+  - Thread serialization with 200 messages: ~250us — serialization is not a concern at production scale
+  - PublicAssistant.from_assistant() is ~10us — safe projection adds minimal overhead
+---
+
+## 2026-03-04 - US-005
+- Analyzed all 57 benchmark results across repo, route, and service layers
+- No operations exceeded their thresholds (repo >100ms, route >200ms, service >50ms)
+- No optimizations needed — all operations are performant
+- Created backend/BENCHMARKS.md documenting methodology, full results, and key findings
+- Files changed:
+  - backend/BENCHMARKS.md (new - comprehensive benchmark documentation)
+- **Learnings for future iterations:**
+  - All repo operations scale linearly with collection size; 1000 items list in ~23ms
+  - FastAPI route overhead is ~4-5ms per request (DI, validation, serialization) — standard and acceptable
+  - Pydantic validation is negligible even for large payloads (~162us for 100-message LLMRequest)
+  - test_search.py::test_searx_success_no_fallback has a pre-existing failure unrelated to benchmarks
+  - When no optimizations are needed, document the findings anyway to show the analysis was done
+---
+
+## 2026-03-04 - US-006
+- Pushed all benchmark code and optimizations for code review
+- Steps completed:
+  - Committed ralph tracking files (prd.json, progress.txt)
+  - Pushed 6 commits to origin/feat/838-backend-benchmarks
+  - Updated PR #839 body with benchmark results summary table and key findings
+- Files changed:
+  - .ralph/prd.json (US-006 marked as passes: true)
+  - .ralph/progress.txt (this entry)
+- **Learnings for future iterations:**
+  - `gh pr edit` fails with GraphQL Projects (classic) deprecation error — use `gh api repos/{owner}/{repo}/pulls/{number} -X PATCH -f body="..."` instead
+  - PR description should include a results summary table for quick reviewer comprehension
 ---

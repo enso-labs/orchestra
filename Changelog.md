@@ -10,6 +10,11 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ### Changed
   - feat/840-disable-mcp-server-toggle
 
+## 2026.3.4-2
+
+### Changed
+  - feat/838-backend-benchmarks
+
 ## 2026.2.23-5
 
 ### Changed
