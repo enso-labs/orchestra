@@ -2,8 +2,7 @@ import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import NewThreadButton from "../buttons/NewThreadButton";
 import ShareButton from "../buttons/thread-share-button";
 import { SaveAsAssistantDialog } from "@/components/dialogs/SaveAsAssistantDialog";
-import { LayoutGrid, MessageSquare, Save } from "lucide-react";
-import { useChatContext } from "@/context/ChatContext";
+import { Save } from "lucide-react";
 import { useAgentContext } from "@/context/AgentContext";
 import { Button } from "@/components/ui/button";
 import AgentService from "@/lib/services/agentService";
@@ -15,15 +14,10 @@ export function ChatNav({
 }: {
 	sidebarTrigger?: React.ReactNode | undefined;
 }) {
-	const { viewMode, setViewMode, filesMap } = useChatContext();
 	const { agent, handleGetAgents } = useAgentContext();
-	const hasFiles = filesMap.size > 0;
 	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
-	const handleSaveAsAssistant = async (
-		name: string,
-		description: string,
-	) => {
+	const handleSaveAsAssistant = async (name: string, description: string) => {
 		try {
 			await AgentService.create({
 				name,
@@ -50,36 +44,8 @@ export function ChatNav({
 					<div className="flex items-center">{sidebarTrigger}</div>
 
 					<div className="flex items-center gap-2">
-						{/* Mode toggle - only visible when files exist */}
-						{hasFiles && (
-							<div className="flex items-center gap-1 border border-border rounded-lg p-1">
-								<Button
-									variant={viewMode === "chat" ? "secondary" : "ghost"}
-									size="sm"
-									onClick={() => setViewMode("chat")}
-									className="h-8 gap-2"
-									aria-label="Switch to chat view"
-									aria-pressed={viewMode === "chat"}
-								>
-									<MessageSquare className="h-4 w-4" />
-									<span className="hidden sm:inline">Chat</span>
-								</Button>
-								<Button
-									variant={viewMode === "editor" ? "secondary" : "ghost"}
-									size="sm"
-									onClick={() => setViewMode("editor")}
-									className="h-8 gap-2"
-									aria-label="Switch to editor view"
-									aria-pressed={viewMode === "editor"}
-								>
-									<LayoutGrid className="h-4 w-4" />
-									<span className="hidden sm:inline">Editor</span>
-								</Button>
-							</div>
-						)}
-
 						<Button
-							variant="ghost"
+							variant="outline"
 							size="icon"
 							className="h-9 w-9"
 							onClick={() => setSaveDialogOpen(true)}

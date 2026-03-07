@@ -142,7 +142,18 @@ export class FetchStreamReader {
 			case "values":
 				return { type: "values", data: payload };
 			case "error":
-				return { type: "error", data: payload };
+				return {
+					type: "error",
+					data:
+						typeof payload === "object" &&
+						payload !== null &&
+						"error" in payload
+							? payload
+							: {
+									error:
+										typeof payload === "string" ? payload : String(payload),
+								},
+				};
 			default:
 				return null;
 		}
@@ -260,7 +271,18 @@ export class ResponseBodyReader {
 			case "values":
 				return { type: "values", data: payload };
 			case "error":
-				return { type: "error", data: payload };
+				return {
+					type: "error",
+					data:
+						typeof payload === "object" &&
+						payload !== null &&
+						"error" in payload
+							? payload
+							: {
+									error:
+										typeof payload === "string" ? payload : String(payload),
+								},
+				};
 			default:
 				return null;
 		}

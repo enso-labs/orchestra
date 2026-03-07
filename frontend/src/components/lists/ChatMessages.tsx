@@ -8,11 +8,9 @@ import MarkdownCard from "../cards/MarkdownCard";
 import DefaultTool from "../tools/Default";
 import { formatContent } from "@/lib/utils/format";
 import CopyTextButton from "../buttons/CopyTextButton";
-import FileViewer from "../viewers/FileViewer";
 import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
 import TextSelectionPopover from "../popovers/TextSelectionPopover";
-import TodoList from "./TodoList";
 import { SubagentBadge } from "../badges/SubagentBadge";
 
 export const Message = memo(
@@ -23,8 +21,6 @@ export const Message = memo(
 		streamingRate,
 		handleSubmit,
 		loading,
-		filesMap,
-		viewMode,
 		ttft,
 		displayModel,
 	}: {
@@ -34,8 +30,6 @@ export const Message = memo(
 		streamingRate?: { rate: number; count: number } | null;
 		handleSubmit: (content: string) => Promise<void>;
 		loading: boolean;
-		filesMap: Map<string, any>;
-		viewMode: string;
 		ttft?: number | null;
 		displayModel?: string | null;
 	}) {
@@ -195,7 +189,6 @@ export const Message = memo(
 			);
 		}
 
-		const messageFiles = filesMap.get(message.id);
 		const isSubagent = !!message.agent_name;
 
 		return (
@@ -213,14 +206,6 @@ export const Message = memo(
 							content={formatContent(message.content) || "Invalid message"}
 						/>
 					</div>
-
-					{viewMode === "chat" &&
-						messageFiles &&
-						Object.keys(messageFiles).length > 0 && (
-							<div className="mt-2 px-3">
-								<FileViewer files={messageFiles} />
-							</div>
-						)}
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
 					<div className="flex gap-1">
@@ -256,8 +241,6 @@ export const Message = memo(
 			prevProps.messages.length === nextProps.messages.length &&
 			prevProps.loading === nextProps.loading &&
 			prevProps.streamingRate === nextProps.streamingRate &&
-			prevProps.viewMode === nextProps.viewMode &&
-			prevProps.filesMap === nextProps.filesMap &&
 			prevProps.ttft === nextProps.ttft &&
 			prevProps.displayModel === nextProps.displayModel
 		);
@@ -269,12 +252,9 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 	const {
 		streamingRate,
 		handleSubmit,
-		filesMap,
-		viewMode,
 		ttft,
 		submitStartTime,
 		appendToQuery,
-		todos,
 		displayModel,
 	} = useChatContext();
 	const [elapsedTime, setElapsedTime] = useState<number | null>(null);
@@ -397,7 +377,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 			<div
 				ref={scrollRef}
 				onScroll={handleScroll}
-				className="flex-1 overflow-auto p-1 mb-1"
+				className="flex-1 overflow-auto p-1 pb-8"
 			>
 				<div
 					ref={messagesContainerRef}
@@ -436,8 +416,6 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 									streamingRate={streamingRate}
 									handleSubmit={handleSubmit}
 									loading={loading}
-									filesMap={filesMap}
-									viewMode={viewMode}
 									ttft={ttft}
 									displayModel={displayModel}
 								/>
@@ -445,11 +423,6 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 						);
 					})}
 				</div>
-				{todos && todos.length > 0 && (
-					<div className="max-w-4xl mx-auto px-5 mt-2 mb-2">
-						<TodoList todos={todos} />
-					</div>
-				)}
 				{loading && (
 					<div className="flex justify-start p-3 max-w-4xl mx-auto px-5">
 						<Loader2 className="h-5 w-5 animate-spin mx-2" />

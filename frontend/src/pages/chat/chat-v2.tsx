@@ -47,6 +47,7 @@ export function ChatV2Page() {
 			<ChatPanel
 				agent={defaultAgent}
 				chatNav={<ChatNav sidebarTrigger={<SidebarTrigger />} />}
+				showSandboxStatus={true}
 			/>
 		</ChatLayout>
 	);

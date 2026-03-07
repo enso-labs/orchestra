@@ -11,8 +11,10 @@ from src.contexts.service import ServiceContext
 from src.agents import (
     construct_agent,
     init_config,
+    is_daytona_error,
     prepare_memory_files,
     resolve_sandbox_backend,
+    _create_state_backend,
 )
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
@@ -125,7 +127,7 @@ class LLMController:
 
             async with get_checkpoint_db() as checkpointer:
                 runtime = self._init_runtime(params)
-                backend, _sandbox = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
+                backend, _sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,
@@ -145,6 +147,42 @@ class LLMController:
                 )
                 return response
         except Exception as e:
+            if is_daytona_error(e):
+                if default_sandbox == "daytona":
+                    # Explicit daytona mode: surface the detailed error
+                    logger.error(f"Daytona sandbox error (daytona mode): {e}")
+                    if agent and config:
+                        await self._update_store(agent, config)
+                    raise
+                elif default_sandbox in (None, "auto") and effective_type == "daytona":
+                    # Auto mode: fallback to local StateBackend and retry
+                    logger.warning(f"Daytona sandbox error in auto mode, falling back to local: {e}")
+                    try:
+                        fallback_backend, _ = _create_state_backend(runtime)
+                        agent = await construct_agent(
+                            instructions=params.instructions,
+                            system_prompt=params.system_prompt,
+                            model=params.model,
+                            tools=params.tools,
+                            subagents=params.subagents,
+                            checkpointer=checkpointer,
+                            backend=fallback_backend,
+                            service_context=self.service_context,
+                            api_key=api_key,
+                            memory=memory_sources,
+                        )
+                        response = await agent.invoke(
+                            params.input,
+                            config=config,
+                            context=self._init_context(params),
+                        )
+                        return response
+                    except Exception as fallback_err:
+                        logger.exception(f"Fallback also failed in llm_invoke: {fallback_err}")
+                        if agent and config:
+                            await self._update_store(agent, config)
+                        raise fallback_err
+
             logger.exception(f"Error in llm_invoke: {e}")
             if agent and config:
                 await self._update_store(agent, config)
