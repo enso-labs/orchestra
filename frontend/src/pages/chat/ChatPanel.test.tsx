@@ -143,7 +143,13 @@ describe("ChatPanel", () => {
 
 		render(
 			<ChatPanel
-				agent={{ id: "agent1" }}
+				agent={{
+					id: "agent1",
+					name: "Test Agent",
+					description: "desc",
+					model: "gpt-4",
+					tools: [],
+				}}
 				chatNav={<div data-testid="chat-nav" />}
 				showSandboxStatus={true}
 			/>,
