@@ -22,11 +22,13 @@ from deepagents.backends.utils import create_file_data
 # Conditional import for Daytona sandbox support
 try:
     from daytona import Daytona, DaytonaConfig
+    from daytona.common.errors import DaytonaError
     from langchain_daytona import DaytonaSandbox
 except ImportError:
     Daytona = None  # type: ignore[assignment,misc]
     DaytonaConfig = None  # type: ignore[assignment,misc]
     DaytonaSandbox = None  # type: ignore[assignment,misc]
+    DaytonaError = None  # type: ignore[assignment,misc]
 
 from src.constants import APP_ENV, DAYTONA_API_KEY
 from src.contexts.service import ServiceContext
@@ -41,6 +43,13 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 from src.utils.middleware import init_default_middleware
 from src.tools import default_tools
+
+
+def is_daytona_error(exc: Exception) -> bool:
+    """Check if an exception is a DaytonaError (safe when package not installed)."""
+    if DaytonaError is None:
+        return False
+    return isinstance(exc, DaytonaError)
 
 
 CACHE_LLM = InMemoryCache()
@@ -306,7 +315,7 @@ _SANDBOX_FACTORIES: dict[str, Callable] = {
 def resolve_sandbox_backend(
     runtime: ToolRuntime,
     sandbox_type: str | None = None,
-) -> tuple[CompositeBackend, Any]:
+) -> tuple[CompositeBackend, Any, str]:
     """Resolve a sandbox backend based on *sandbox_type*.
 
     Dispatch rules:
@@ -315,20 +324,23 @@ def resolve_sandbox_backend(
     * ``"daytona"`` — try Daytona, fall back to State if unavailable.
     * Any unknown value — treated as ``"auto"``.
 
-    Returns ``(backend, daytona_sandbox_or_None)``.
+    Returns ``(backend, daytona_sandbox_or_None, effective_type)``
+    where effective_type is ``"daytona"`` or ``"state"``.
     """
     effective = sandbox_type if sandbox_type in _SANDBOX_FACTORIES else None
 
     if effective == "state":
-        return _create_state_backend(runtime)
+        backend, sandbox = _create_state_backend(runtime)
+        return backend, sandbox, "state"
 
     # "daytona" or auto (None) — try Daytona first
     result = _create_daytona_backend_checked(runtime)
     if result is not None:
-        return result
+        return result[0], result[1], "daytona"
 
     # Fallback: plain StateBackend (silent, no messages)
-    return _create_state_backend(runtime)
+    backend, sandbox = _create_state_backend(runtime)
+    return backend, sandbox, "state"
 
 
 ################################################################################

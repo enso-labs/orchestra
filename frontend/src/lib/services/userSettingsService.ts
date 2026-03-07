@@ -1,6 +1,6 @@
 import apiClient from "@/lib/utils/apiClient";
 
-export type SandboxType = "auto" | "daytona" | "state";
+export type SandboxType = "daytona" | "state";
 
 export interface ProviderKeyStatus {
 	provider: string;

@@ -14,7 +14,13 @@ from src.schemas.contexts import ContextSchema
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMInput
 from src.constants import APP_LOG_LEVEL
-from src.agents import construct_agent, resolve_sandbox_backend, prepare_memory_files
+from src.agents import (
+    construct_agent,
+    resolve_sandbox_backend,
+    prepare_memory_files,
+    is_daytona_error,
+    _create_state_backend,
+)
 from src.services.db import get_checkpoint_db
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
@@ -223,7 +229,7 @@ async def stream_generator(
                 stream_writer=lambda _: None,
                 config=config,
             )
-            backend, _sandbox = resolve_sandbox_backend(runtime, sandbox_type=sandbox_type)
+            backend, _sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=sandbox_type)
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,
@@ -281,16 +287,62 @@ async def stream_generator(
         except PIIDetectionError as e:
             # Yield error as SSE if streaming fails
             logger.warning(f"Sensitive data detected in the query: {e}")
-            # raise HTTPException(status_code=500, detail=str(e))
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
 
         except Exception as e:
-            # Yield error as SSE if streaming fails
-            logger.exception("Error in stream_generator: %s", e)
-            # raise HTTPException(status_code=500, detail=str(e))
-            error_msg = ujson.dumps(("error", str(e)))
-            yield f"data: {error_msg}\n\n"
+            if is_daytona_error(e):
+                if sandbox_type == "daytona":
+                    # Explicit daytona mode: surface the detailed error
+                    logger.error(f"Daytona sandbox error (daytona mode): {e}")
+                    error_msg = ujson.dumps(("error", f"Daytona sandbox error: {e}"))
+                    yield f"data: {error_msg}\n\n"
+                elif sandbox_type in (None, "auto") and effective_type == "daytona":
+                    # Auto mode: fallback to local StateBackend and retry
+                    logger.warning(f"Daytona sandbox error in auto mode, falling back to local: {e}")
+                    try:
+                        fallback_backend, _ = _create_state_backend(runtime)
+                        agent = await construct_agent(
+                            instructions=instructions,
+                            system_prompt=system_prompt,
+                            model=model,
+                            tools=tools,
+                            subagents=subagents,
+                            checkpointer=checkpointer,
+                            backend=fallback_backend,
+                            service_context=service_context,
+                            api_key=api_key,
+                            memory=memory_sources,
+                        )
+                        async for chunk in agent.astream(
+                            input,
+                            **astream_kwargs,
+                        ):
+                            stream_chunk = handle_multi_mode(chunk)
+                            if stream_chunk:
+                                stream_type = stream_chunk[0]
+                                chunk_data = stream_chunk[1]
+                                if stream_type == "values" and "files" in chunk_data:
+                                    files_map = {**files_map, **chunk_data["files"]}
+                                if stream_type == "values" and "todos" in chunk_data:
+                                    todos_list = chunk_data["todos"]
+                                data = ujson.dumps(stream_chunk)
+                                log_to_file(str(data), agent.model) and APP_LOG_LEVEL == "DEBUG"
+                                logger.debug(f"data: {str(data)}")
+                                yield f"data: {data}\n\n"
+                    except Exception as fallback_err:
+                        logger.exception("Fallback also failed in stream_generator: %s", fallback_err)
+                        error_msg = ujson.dumps(("error", str(fallback_err)))
+                        yield f"data: {error_msg}\n\n"
+                else:
+                    logger.exception("Error in stream_generator: %s", e)
+                    error_msg = ujson.dumps(("error", str(e)))
+                    yield f"data: {error_msg}\n\n"
+            else:
+                # Non-Daytona error: original behavior
+                logger.exception("Error in stream_generator: %s", e)
+                error_msg = ujson.dumps(("error", str(e)))
+                yield f"data: {error_msg}\n\n"
         finally:
             try:
                 if service_context.user_id and checkpointer and agent:

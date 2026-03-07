@@ -9,7 +9,6 @@ from src.schemas.entities.store import BaseEntity
 class SandboxType(str, Enum):
     """Supported sandbox backend types."""
 
-    AUTO = "auto"
     DAYTONA = "daytona"
     STATE = "state"
 

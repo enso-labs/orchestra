@@ -202,6 +202,8 @@ async def _execute_agent_stream(
         construct_agent,
         resolve_sandbox_backend,
         prepare_memory_files,
+        is_daytona_error,
+        _create_state_backend,
     )
     from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
@@ -248,7 +250,7 @@ async def _execute_agent_stream(
         stream_writer=lambda _: None,
         config=config,
     )
-    backend, _sandbox = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
+    backend, _sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
 
     agent = await construct_agent(
         instructions=params.instructions,
@@ -278,44 +280,91 @@ async def _execute_agent_stream(
     await redis_client.xadd(stream_key, {"data": metadata_event})
 
     # Stream to Redis using handle_multi_mode for format consistency
-    async for chunk in agent.astream(
-        params.input,
-        stream_mode=["messages", "values"],
-        config=config,
-        context=ctx_schema,
-    ):
-        # Check for abort signal on every chunk for responsive cancellation
-        if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
-            logger.info(
-                "task_aborted_by_user",
-                extra={
-                    "event": "task_aborted_by_user",
-                    "thread_id": thread_id,
-                    "user_id": user_id,
-                },
-            )
-            # Send abort acknowledgment to client
-            await redis_client.xadd(
-                stream_key,
-                {"data": ujson.dumps(("aborted", {"reason": "user_requested"}))},
-            )
-            await redis_client.xadd(stream_key, {"done": "true"})
-            await redis_client.expire(stream_key, 300)
-            # Clear abort signal
-            await AbortService.clear_abort_signal(thread_id)
-            return {"status": "aborted", "stream_key": stream_key}
+    try:
+        async for chunk in agent.astream(
+            params.input,
+            stream_mode=["messages", "values"],
+            config=config,
+            context=ctx_schema,
+        ):
+            # Check for abort signal on every chunk for responsive cancellation
+            if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
+                logger.info(
+                    "task_aborted_by_user",
+                    extra={
+                        "event": "task_aborted_by_user",
+                        "thread_id": thread_id,
+                        "user_id": user_id,
+                    },
+                )
+                # Send abort acknowledgment to client
+                await redis_client.xadd(
+                    stream_key,
+                    {"data": ujson.dumps(("aborted", {"reason": "user_requested"}))},
+                )
+                await redis_client.xadd(stream_key, {"done": "true"})
+                await redis_client.expire(stream_key, 300)
+                # Clear abort signal
+                await AbortService.clear_abort_signal(thread_id)
+                return {"status": "aborted", "stream_key": stream_key}
 
-        stream_chunk = handle_multi_mode(chunk)
-        if stream_chunk:
-            stream_type = stream_chunk[0]
-            chunk_data = stream_chunk[1]
-            if stream_type == "values" and chunk_data.get("files"):
-                files_map = {**files_map, **chunk_data["files"]}
-            if stream_type == "values" and "todos" in chunk_data:
-                todos_list = chunk_data["todos"]
-            # Serialize to JSON and push to Redis stream
-            data = ujson.dumps(stream_chunk)
-            await redis_client.xadd(stream_key, {"data": data})
+            stream_chunk = handle_multi_mode(chunk)
+            if stream_chunk:
+                stream_type = stream_chunk[0]
+                chunk_data = stream_chunk[1]
+                if stream_type == "values" and chunk_data.get("files"):
+                    files_map = {**files_map, **chunk_data["files"]}
+                if stream_type == "values" and "todos" in chunk_data:
+                    todos_list = chunk_data["todos"]
+                # Serialize to JSON and push to Redis stream
+                data = ujson.dumps(stream_chunk)
+                await redis_client.xadd(stream_key, {"data": data})
+    except Exception as e:
+        if is_daytona_error(e):
+            if default_sandbox == "daytona":
+                # Explicit daytona mode: surface the detailed error
+                logger.error(f"Daytona sandbox error (daytona mode) in worker: {e}")
+                error_msg = ujson.dumps(("error", f"Daytona sandbox error: {e}"))
+                await redis_client.xadd(stream_key, {"data": error_msg})
+                await redis_client.xadd(stream_key, {"done": "true"})
+                await redis_client.expire(stream_key, 300)
+                return {"status": "error", "stream_key": stream_key}
+            elif default_sandbox in (None, "auto") and effective_type == "daytona":
+                # Auto mode: fallback to local StateBackend and retry
+                logger.warning(f"Daytona sandbox error in auto mode worker, falling back to local: {e}")
+                fallback_backend, _ = _create_state_backend(runtime)
+                agent = await construct_agent(
+                    instructions=params.instructions,
+                    system_prompt=params.system_prompt,
+                    tools=params.tools,
+                    model=params.model,
+                    subagents=params.subagents,
+                    checkpointer=checkpointer,
+                    service_context=service_context,
+                    backend=fallback_backend,
+                    memory=memory_sources,
+                    api_key=api_key,
+                )
+                async for chunk in agent.astream(
+                    params.input,
+                    stream_mode=["messages", "values"],
+                    config=config,
+                    context=ctx_schema,
+                ):
+                    stream_chunk = handle_multi_mode(chunk)
+                    if stream_chunk:
+                        stream_type = stream_chunk[0]
+                        chunk_data = stream_chunk[1]
+                        if stream_type == "values" and chunk_data.get("files"):
+                            files_map = {**files_map, **chunk_data["files"]}
+                        if stream_type == "values" and "todos" in chunk_data:
+                            todos_list = chunk_data["todos"]
+                        data = ujson.dumps(stream_chunk)
+                        await redis_client.xadd(stream_key, {"data": data})
+            else:
+                raise
+        else:
+            raise
 
     # Signal completion
     await redis_client.xadd(stream_key, {"done": "true"})

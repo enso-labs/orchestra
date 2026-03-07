@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	Card,
 	CardContent,
@@ -21,6 +21,7 @@ import {
 	toSandboxPatchValue,
 } from "@/lib/config/sandbox";
 import {
+	type ProviderKeyStatus,
 	type SandboxType,
 	getSettings,
 	patchDefaults,
@@ -29,10 +30,25 @@ import {
 export function SandboxSettings() {
 	const [sandbox, setSandbox] = useState<SandboxType>(DEFAULT_SANDBOX);
 	const [loading, setLoading] = useState(false);
+	const [providerKeys, setProviderKeys] = useState<ProviderKeyStatus[]>([]);
+
+	const visibleOptions = useMemo(
+		() =>
+			SANDBOX_OPTIONS.filter((opt) => {
+				if (opt.value !== "daytona") return true;
+				return providerKeys.some(
+					(k) => k.provider === "DAYTONA_API_KEY" && k.is_set,
+				);
+			}),
+		[providerKeys],
+	);
 
 	useEffect(() => {
 		getSettings()
-			.then((res) => setSandbox(normalizeSandboxValue(res.defaults.sandbox)))
+			.then((res) => {
+				setSandbox(normalizeSandboxValue(res.defaults.sandbox));
+				setProviderKeys(res.provider_keys ?? []);
+			})
 			.catch(() => {});
 	}, []);
 
@@ -57,8 +73,7 @@ export function SandboxSettings() {
 			<CardHeader>
 				<CardTitle>Default Sandbox</CardTitle>
 				<CardDescription>
-					Choose the sandbox backend for agent code execution. Auto will try
-					Daytona first, then fall back to local.
+					Choose the sandbox backend for agent code execution.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -67,11 +82,9 @@ export function SandboxSettings() {
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
-						{SANDBOX_OPTIONS.map((opt) => (
+						{visibleOptions.map((opt) => (
 							<SelectItem key={opt.value} value={opt.value}>
-								{opt.value === "auto"
-									? `${opt.label} (Recommended)`
-									: opt.label}
+								{opt.label}
 							</SelectItem>
 						))}
 					</SelectContent>
