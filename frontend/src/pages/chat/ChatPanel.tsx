@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/resizable";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import FileEditorPanel from "@/components/panels/FileEditorPanel";
-import { useAppContext } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -30,7 +29,6 @@ function ChatPanel({
 	showAgentMenu = true,
 	showSandboxStatus = false,
 }: ChatPanelProps) {
-	const { appVersion } = useAppContext();
 	const { messages, viewMode, setViewMode } = useChatContext();
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -42,13 +40,10 @@ function ChatPanel({
 				<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
 					<AgentSection agent={agent} showAgentMenu={showAgentMenu} />
 				</div>
-				<footer className="mt-auto bg-card">
-					<div className="px-4 sm:px-6 lg:px-8 py-4">
-						<p className="text-center text-muted-foreground text-xs">
-							&copy; 2025 Ensō Labs. All rights reserved. v{appVersion}
-						</p>
-					</div>
-				</footer>
+				<ChatComposer
+					showAgentMenu={showAgentMenu}
+					showSandboxStatus={showSandboxStatus}
+				/>
 			</ChatLayout>
 		);
 	}

@@ -133,4 +133,26 @@ describe("ChatPanel", () => {
 			"false",
 		);
 	});
+
+	it("renders ChatComposer on first-load when agent is set and messages are empty", () => {
+		mockUseChatContext.mockReturnValue({
+			messages: [],
+			viewMode: "chat",
+			setViewMode: vi.fn(),
+		});
+
+		render(
+			<ChatPanel
+				agent={{ id: "agent1" }}
+				chatNav={<div data-testid="chat-nav" />}
+				showSandboxStatus={true}
+			/>,
+		);
+
+		const composer = screen.getByTestId("chat-composer");
+		expect(composer).toBeInTheDocument();
+		expect(composer).toHaveAttribute("data-show-agent-menu", "true");
+		expect(composer).toHaveAttribute("data-show-sandbox-status", "true");
+		expect(screen.getByTestId("agent-section")).toBeInTheDocument();
+	});
 });

@@ -60,11 +60,9 @@ export default function ChatInput({
 		enqueue,
 		displayModel,
 		models,
-		useModelsEffect,
 		setModel,
 	} = useChatContext();
 
-	useModelsEffect?.();
 	const { isModelVisible } = useModelVisibility();
 	const visibleModels = (models?.models || []).filter((m: string) =>
 		isModelVisible(m),
@@ -72,9 +70,9 @@ export default function ChatInput({
 
 	const handleModelSelect = async (model: string) => {
 		setModelOpen(false);
-		setModel(model);
 		try {
 			await patchDefaults({ model });
+			setModel(model);
 			toast.success("Default model updated");
 		} catch {
 			toast.error("Failed to update model");
