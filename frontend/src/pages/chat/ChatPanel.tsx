@@ -40,10 +40,6 @@ function ChatPanel({
 				<div className="flex-1 flex flex-col items-center justify-center bg-background p-6">
 					<AgentSection agent={agent} showAgentMenu={showAgentMenu} />
 				</div>
-				<ChatComposer
-					showAgentMenu={showAgentMenu}
-					showSandboxStatus={showSandboxStatus}
-				/>
 			</ChatLayout>
 		);
 	}

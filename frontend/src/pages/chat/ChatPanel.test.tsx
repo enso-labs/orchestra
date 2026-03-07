@@ -134,7 +134,7 @@ describe("ChatPanel", () => {
 		);
 	});
 
-	it("renders ChatComposer on first-load when agent is set and messages are empty", () => {
+	it("renders AgentSection without ChatComposer on initial empty state", () => {
 		mockUseChatContext.mockReturnValue({
 			messages: [],
 			viewMode: "chat",
@@ -155,10 +155,7 @@ describe("ChatPanel", () => {
 			/>,
 		);
 
-		const composer = screen.getByTestId("chat-composer");
-		expect(composer).toBeInTheDocument();
-		expect(composer).toHaveAttribute("data-show-agent-menu", "true");
-		expect(composer).toHaveAttribute("data-show-sandbox-status", "true");
 		expect(screen.getByTestId("agent-section")).toBeInTheDocument();
+		expect(screen.queryByTestId("chat-composer")).not.toBeInTheDocument();
 	});
 });
