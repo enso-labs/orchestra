@@ -54,7 +54,7 @@ describe("useInitialThreadRedirect", () => {
 			}) => useInitialThreadRedirect({ threadId, hasMessages }),
 			{
 				initialProps: {
-					threadId: undefined,
+					threadId: undefined as string | undefined,
 					hasMessages: true,
 				},
 			},
@@ -80,7 +80,7 @@ describe("useInitialThreadRedirect", () => {
 			}) => useInitialThreadRedirect({ threadId, hasMessages }),
 			{
 				initialProps: {
-					threadId: "thread-123",
+					threadId: "thread-123" as string | undefined,
 					hasMessages: true,
 				},
 			},
