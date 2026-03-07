@@ -32,6 +32,7 @@ export interface McpServerConfig {
 	transport: "sse" | "streamable_http" | "stdio";
 	url: string;
 	headers: Record<string, string>;
+	enabled?: boolean;
 }
 
 export interface A2aServerConfig {

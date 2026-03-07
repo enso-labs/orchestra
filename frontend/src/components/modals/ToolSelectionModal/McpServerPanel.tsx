@@ -11,6 +11,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Tool, McpServerConfig } from "./types";
 import { ToolGrid } from "./ToolGrid";
 
@@ -21,6 +22,7 @@ interface McpServerPanelProps {
 	onToggleSelection: (toolName: string) => void;
 	onAddServer: (name: string, config: McpServerConfig) => void;
 	onRemoveServer: (name: string) => void;
+	onToggleServer: (name: string) => void;
 	onTestConnection: (config: Record<string, McpServerConfig>) => Promise<void>;
 	isLoading: boolean;
 }
@@ -59,6 +61,7 @@ export function McpServerPanel({
 	onToggleSelection,
 	onAddServer,
 	onRemoveServer,
+	onToggleServer,
 	onTestConnection,
 	isLoading,
 }: McpServerPanelProps) {
@@ -314,39 +317,50 @@ export function McpServerPanel({
 						</div>
 
 						<div className="space-y-2">
-							{Object.entries(mcpServers).map(([name, config]) => (
-								<Card key={name} className="p-3">
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-3">
-											<Server className="h-4 w-4 text-muted-foreground" />
-											<div>
-												<p className="text-sm font-medium text-foreground">
-													{name}
-												</p>
-												<p className="text-xs text-muted-foreground">
-													{config.transport} • {config.url}
-												</p>
+							{Object.entries(mcpServers).map(([name, config]) => {
+								const isEnabled = config.enabled !== false;
+								return (
+									<Card
+										key={name}
+										className={`p-3 transition-opacity ${!isEnabled ? "opacity-50" : ""}`}
+									>
+										<div className="flex items-center justify-between">
+											<div className="flex items-center gap-3">
+												<Server className="h-4 w-4 text-muted-foreground" />
+												<div>
+													<p className="text-sm font-medium text-foreground">
+														{name}
+													</p>
+													<p className="text-xs text-muted-foreground">
+														{config.transport} • {config.url}
+													</p>
+												</div>
+											</div>
+											<div className="flex items-center gap-1">
+												<Switch
+													checked={isEnabled}
+													onCheckedChange={() => onToggleServer(name)}
+													aria-label={`Toggle ${name}`}
+												/>
+												<Button
+													size="icon"
+													variant="ghost"
+													onClick={() => handleEditServer(name, config)}
+												>
+													<Pencil className="h-4 w-4 text-muted-foreground" />
+												</Button>
+												<Button
+													size="icon"
+													variant="ghost"
+													onClick={() => onRemoveServer(name)}
+												>
+													<Trash2 className="h-4 w-4 text-destructive" />
+												</Button>
 											</div>
 										</div>
-										<div className="flex items-center gap-1">
-											<Button
-												size="icon"
-												variant="ghost"
-												onClick={() => handleEditServer(name, config)}
-											>
-												<Pencil className="h-4 w-4 text-muted-foreground" />
-											</Button>
-											<Button
-												size="icon"
-												variant="ghost"
-												onClick={() => onRemoveServer(name)}
-											>
-												<Trash2 className="h-4 w-4 text-destructive" />
-											</Button>
-										</div>
-									</div>
-								</Card>
-							))}
+									</Card>
+								);
+							})}
 						</div>
 					</div>
 				)}

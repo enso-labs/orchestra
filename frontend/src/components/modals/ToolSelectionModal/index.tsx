@@ -150,12 +150,41 @@ export function ToolSelectionModal({
 		});
 	};
 
+	const handleToggleMcpServer = (name: string) => {
+		setMcpServers((prev) => {
+			const server = prev[name];
+			if (!server) return prev;
+			const updated = {
+				...prev,
+				[name]: { ...server, enabled: server.enabled === false },
+			};
+			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
+			if (getAuthToken()) {
+				patchDefaults({ mcp: updated }).catch(() =>
+					toast.error("Failed to save MCP defaults"),
+				);
+			}
+			return updated;
+		});
+	};
+
 	const handleFetchMcpTools = async (
 		servers: Record<string, McpServerConfig>,
 	) => {
 		setIsMcpLoading(true);
 		try {
-			const response = await getMcpTools(servers);
+			// Filter out disabled servers before fetching tools
+			const enabledServers = Object.fromEntries(
+				Object.entries(servers).filter(
+					([, config]) => config.enabled !== false,
+				),
+			);
+			if (Object.keys(enabledServers).length === 0) {
+				setMcpTools([]);
+				setIsMcpLoading(false);
+				return;
+			}
+			const response = await getMcpTools(enabledServers);
 			const tools = response.mcp || [];
 			setMcpTools(
 				tools.map((tool: any) => ({
@@ -261,6 +290,7 @@ export function ToolSelectionModal({
 								onToggleSelection={toggleTool}
 								onAddServer={handleAddMcpServer}
 								onRemoveServer={handleRemoveMcpServer}
+								onToggleServer={handleToggleMcpServer}
 								onTestConnection={handleFetchMcpTools}
 								isLoading={isMcpLoading}
 							/>

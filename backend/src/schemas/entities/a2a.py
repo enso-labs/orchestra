@@ -1,6 +1,6 @@
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 from src.common.types import AgentCard
 from src.utils.logger import logger
 from src.utils.a2a import A2ACardResolver, a2a_builder
@@ -15,6 +15,7 @@ class McpServer(BaseModel):
     transport: Literal["sse", "streamable_http", "stdio"]
     url: str
     headers: dict[str, str]
+    enabled: Optional[bool] = Field(default=True, description="Whether this MCP server is enabled")
 
     # model_config = {
     #     "json_schema_extra": {

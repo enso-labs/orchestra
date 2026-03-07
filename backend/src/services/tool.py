@@ -60,7 +60,16 @@ class ToolService:
     @staticmethod
     async def mcp_tools(mcp: dict[str, McpServer]):
         try:
-            mcp_client = MultiServerMCPClient(mcp)
+            # Filter out disabled MCP servers (missing 'enabled' defaults to True)
+            enabled_mcp = {
+                name: config
+                for name, config in mcp.items()
+                if (config.get("enabled", True) if isinstance(config, dict) else getattr(config, "enabled", True))
+                is not False
+            }
+            if not enabled_mcp:
+                return []
+            mcp_client = MultiServerMCPClient(enabled_mcp)
             mcp_tools = await mcp_client.get_tools()
             return mcp_tools
         except Exception as e:
