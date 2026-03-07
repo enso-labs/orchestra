@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { FileText, Pencil } from "lucide-react";
-import { useChatContext } from "@/context/ChatContext";
-import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
+import FilePanelTrigger from "@/components/buttons/FilePanelTrigger";
 import {
 	Accordion,
 	AccordionContent,
@@ -24,13 +23,8 @@ interface FileViewerProps {
 }
 
 export default function FileViewer({ files }: FileViewerProps) {
-	const { setViewMode } = useChatContext();
 	const fileNames = Object.keys(files);
 	const [selectedFile, setSelectedFile] = useState<string>(fileNames[0]);
-
-	const handleEditInEditor = () => {
-		setViewMode("editor");
-	};
 
 	// Get file extension for language detection
 	const getLanguage = (filename: string): string => {
@@ -103,15 +97,7 @@ export default function FileViewer({ files }: FileViewerProps) {
 									{fileNames[0]}
 								</span>
 								<div className="flex items-center gap-1">
-									<Button
-										variant="ghost"
-										size="sm"
-										className="h-7 px-2 gap-1"
-										onClick={handleEditInEditor}
-										title="Edit in Editor"
-									>
-										<Pencil className="h-3 w-3" />
-									</Button>
+									<FilePanelTrigger variant="compact" />
 									<CopyTextButton text={getFileContent(files[fileNames[0]])} />
 								</div>
 							</div>
@@ -159,15 +145,7 @@ export default function FileViewer({ files }: FileViewerProps) {
 												{filename}
 											</span>
 											<div className="flex items-center gap-1">
-												<Button
-													variant="ghost"
-													size="sm"
-													className="h-7 px-2 gap-1"
-													onClick={handleEditInEditor}
-													title="Edit in Editor"
-												>
-													<Pencil className="h-3 w-3" />
-												</Button>
+												<FilePanelTrigger variant="compact" />
 												<CopyTextButton
 													text={getFileContent(files[filename])}
 												/>

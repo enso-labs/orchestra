@@ -14,8 +14,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Gradient applied to all 3 ChatPanel layout modes (chat, desktop editor, mobile editor) using Tailwind bg-gradient-to-t from-background to-transparent"
     },
     {
       "id": "US-002",
@@ -29,8 +29,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created FilePanelTrigger component with compact/full variants. Replaces inline triggers in ChatNav (mode toggle), ChatInput (folder button), and FileViewer (edit pencil). Shows file count badge, only visible when files exist."
     },
     {
       "id": "US-003",

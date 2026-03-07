@@ -1,0 +1,41 @@
+# Ralph Progress Log
+Started: Sat Mar  7 19:49:47 UTC 2026
+
+## Codebase Patterns
+- The "sandbox popover" refers to the sticky bottom chat input area in ChatPanel.tsx, not a separate component
+- ChatPanel.tsx has 3 layout modes that each render a sticky bottom input: chat mode, desktop editor (ResizablePanel), and mobile editor (Sheet overlay)
+- Tailwind gradient utilities (bg-gradient-to-t, from-background, to-transparent) work for cross-browser gradients using CSS variables
+- Frontend typecheck: `cd frontend && npx tsc --noEmit`; tests: `npm run test`
+- agent-browser requires `agent-browser close` then re-open with `--args "--no-sandbox"` on headless Linux
+- FilePanelTrigger component accepts `variant` prop: "compact" (icon-only with badge) or "full" (button with text label and count)
+- The file panel trigger only renders when `filesMap.size > 0` — it auto-hides when no files exist
+- BaseToolMenu's file creation flow (addFile + setViewMode) is a compound action, not a simple trigger — keep it using setViewMode directly
+
+---
+
+## 2026-03-07 - US-001
+- Implemented gradient background on the sandbox popover (sticky bottom chat input area)
+- Added a `h-8 bg-gradient-to-t from-background to-transparent pointer-events-none` div above the input in all 3 ChatPanel layout modes
+- Files changed: `frontend/src/pages/chat/ChatPanel.tsx`
+- **Learnings for future iterations:**
+  - The "sandbox popover" is the sticky bottom area in ChatPanel.tsx containing ChatInput, not a separate popover component
+  - There are 3 instances of the sticky bottom input (chat mode, desktop editor right panel, mobile editor background) - all need to be updated consistently
+  - `pointer-events-none` is essential on the gradient overlay to avoid blocking scroll/click interactions
+---
+
+## 2026-03-07 - US-002
+- Created unified FilePanelTrigger component at `frontend/src/components/buttons/FilePanelTrigger.tsx`
+- Replaced inline file editor triggers in ChatNav (mode toggle buttons), ChatInput (folder code button), and FileViewer (edit pencil button)
+- Component has two variants: "compact" (icon button with badge) and "full" (text button with file count)
+- Auto-hides when no files exist, shows file count badge when files are present
+- Files changed:
+  - `frontend/src/components/buttons/FilePanelTrigger.tsx` (new)
+  - `frontend/src/components/nav/ChatNav.tsx` (replaced mode toggle)
+  - `frontend/src/components/inputs/ChatInput.tsx` (replaced folder button)
+  - `frontend/src/components/viewers/FileViewer.tsx` (replaced edit pencil)
+- **Learnings for future iterations:**
+  - BaseToolMenu creates files AND switches to editor — it's a compound action that shouldn't use the unified trigger
+  - ThreadPage and ProjectPage use setViewMode for Sheet close (back navigation) — these are internal nav, not trigger points
+  - The file count in ChatInput was computed from filesMap values, while ChatNav used filesMap.size > 0 — unified component consolidates both
+  - FileViewer had an unused useChatContext import after removing setViewMode usage
+---
