@@ -3,7 +3,6 @@ import NewThreadButton from "../buttons/NewThreadButton";
 import ShareButton from "../buttons/thread-share-button";
 import { SaveAsAssistantDialog } from "@/components/dialogs/SaveAsAssistantDialog";
 import { Save } from "lucide-react";
-import { useChatContext } from "@/context/ChatContext";
 import { useAgentContext } from "@/context/AgentContext";
 import { Button } from "@/components/ui/button";
 import AgentService from "@/lib/services/agentService";
