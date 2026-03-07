@@ -56,10 +56,13 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 					<div className="flex-1 min-h-0">
 						<ChatMessages messages={messages} />
 					</div>
-					<div className="sticky bottom-0 bg-background border-border">
-						<div className="max-w-4xl mx-auto">
-							<div className="flex flex-col gap-2 px-4 pb-4">
-								<ChatInput />
+					<div className="sticky bottom-0">
+						<div className="h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+						<div className="bg-background">
+							<div className="max-w-4xl mx-auto">
+								<div className="flex flex-col gap-2 px-4 pb-4">
+									<ChatInput />
+								</div>
 							</div>
 						</div>
 					</div>
@@ -85,10 +88,13 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 								<div className="flex-1 min-h-0">
 									<ChatMessages messages={messages} />
 								</div>
-								<div className="sticky bottom-0 bg-background border-border">
-									<div className="max-w-4xl mx-auto">
-										<div className="flex flex-col gap-2 px-4 pb-4">
-											<ChatInput />
+								<div className="sticky bottom-0">
+									<div className="h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+									<div className="bg-background">
+										<div className="max-w-4xl mx-auto">
+											<div className="flex flex-col gap-2 px-4 pb-4">
+												<ChatInput />
+											</div>
 										</div>
 									</div>
 								</div>
@@ -104,10 +110,13 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 							<div className="flex-1 min-h-0">
 								<ChatMessages messages={messages} />
 							</div>
-							<div className="sticky bottom-0 bg-background border-border">
-								<div className="max-w-4xl mx-auto">
-									<div className="flex flex-col gap-2 px-4 pb-4">
-										<ChatInput />
+							<div className="sticky bottom-0">
+								<div className="h-8 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+								<div className="bg-background">
+									<div className="max-w-4xl mx-auto">
+										<div className="flex flex-col gap-2 px-4 pb-4">
+											<ChatInput />
+										</div>
 									</div>
 								</div>
 							</div>
