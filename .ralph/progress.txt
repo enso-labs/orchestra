@@ -39,3 +39,14 @@ Started: Sat Mar  7 19:49:47 UTC 2026
   - The file count in ChatInput was computed from filesMap values, while ChatNav used filesMap.size > 0 — unified component consolidates both
   - FileViewer had an unused useChatContext import after removing setViewMode usage
 ---
+
+## 2026-03-07 - US-003
+- Pushed all changes to remote branch: `git push origin feat/845-sandbox-popover-improvements`
+- Created RC tag `0.1.0-rc23` (previous was `0.1.0-rc22`) and pushed to remote
+- Tag message: "RC23: Sandbox popover gradient + unified file panel trigger (#845)"
+- All 3 feature commits are now visible on remote for code review
+- **Learnings for future iterations:**
+  - RC tags follow `0.1.0-rcNN` convention, check latest with `git tag -l "0.1.0-rc*" --sort=-version:refname | head -1`
+  - Branch was tracking origin/development but needed to push to its own feature branch name
+  - Use annotated tags (`git tag -a`) with descriptive messages for RC releases
+---

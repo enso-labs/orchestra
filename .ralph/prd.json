@@ -45,8 +45,8 @@
         "git push origin feat/845-sandbox-popover-improvements is run to ensure all changes are visible"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Pushed branch feat/845-sandbox-popover-improvements and created tag 0.1.0-rc23. All 3 commits (scaffold, US-001, US-002) are on remote."
     }
   ]
 }
