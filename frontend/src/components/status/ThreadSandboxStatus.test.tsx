@@ -27,6 +27,7 @@ describe("ThreadSandboxStatus", () => {
 			defaults: {
 				sandbox: "daytona",
 			},
+			provider_keys: [{ provider: "DAYTONA_API_KEY", is_set: true }],
 		});
 	});
 
@@ -45,6 +46,7 @@ describe("ThreadSandboxStatus", () => {
 			defaults: {
 				sandbox: "state",
 			},
+			provider_keys: [{ provider: "DAYTONA_API_KEY", is_set: true }],
 		});
 
 		render(<ThreadSandboxStatus />);
@@ -53,15 +55,45 @@ describe("ThreadSandboxStatus", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "Sandbox: Daytona" }));
 		fireEvent.click(
-			screen.getByRole("button", { name: "Select Local sandbox" }),
+			screen.getByRole("button", {
+				name: "Select State (Default) sandbox",
+			}),
 		);
 
 		await waitFor(() => {
 			expect(mockPatchDefaults).toHaveBeenCalledWith({ sandbox: "state" });
 			expect(
-				screen.getByRole("button", { name: "Sandbox: Local" }),
+				screen.getByRole("button", {
+					name: "Sandbox: State (Default)",
+				}),
 			).toBeInTheDocument();
 		});
 		expect(mockToastSuccess).toHaveBeenCalledWith("Sandbox updated");
+	});
+
+	it("hides Daytona option when DAYTONA_API_KEY is not set", async () => {
+		mockGetSettings.mockResolvedValue({
+			defaults: { sandbox: "state" },
+			provider_keys: [{ provider: "DAYTONA_API_KEY", is_set: false }],
+		});
+
+		render(<ThreadSandboxStatus />);
+
+		await screen.findByRole("button", { name: "Sandbox: State (Default)" });
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Sandbox: State (Default)" }),
+		);
+
+		await waitFor(() => {
+			expect(
+				screen.getByRole("button", {
+					name: "Select State (Default) sandbox",
+				}),
+			).toBeInTheDocument();
+			expect(
+				screen.queryByRole("button", { name: "Select Daytona sandbox" }),
+			).not.toBeInTheDocument();
+		});
 	});
 });

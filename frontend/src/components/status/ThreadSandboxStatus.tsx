@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	Check,
 	ChevronsUpDown,
@@ -21,6 +21,7 @@ import {
 	toSandboxPatchValue,
 } from "@/lib/config/sandbox";
 import {
+	type ProviderKeyStatus,
 	type SandboxType,
 	getSettings,
 	patchDefaults,
@@ -30,7 +31,19 @@ export default function ThreadSandboxStatus() {
 	const [open, setOpen] = useState(false);
 	const [sandbox, setSandbox] = useState<SandboxType>(DEFAULT_SANDBOX);
 	const [loading, setLoading] = useState(true);
+	const [providerKeys, setProviderKeys] = useState<ProviderKeyStatus[]>([]);
 	const currentOption = getSandboxOption(sandbox);
+
+	const visibleOptions = useMemo(
+		() =>
+			SANDBOX_OPTIONS.filter((opt) => {
+				if (opt.value !== "daytona") return true;
+				return providerKeys.some(
+					(k) => k.provider === "DAYTONA_API_KEY" && k.is_set,
+				);
+			}),
+		[providerKeys],
+	);
 
 	useEffect(() => {
 		let isActive = true;
@@ -42,6 +55,7 @@ export default function ThreadSandboxStatus() {
 				}
 
 				setSandbox(normalizeSandboxValue(res.defaults.sandbox));
+				setProviderKeys(res.provider_keys ?? []);
 			})
 			.catch(() => {
 				if (isActive) {
@@ -115,7 +129,7 @@ export default function ThreadSandboxStatus() {
 						</p>
 					</div>
 					<div className="space-y-1">
-						{SANDBOX_OPTIONS.map((option) => {
+						{visibleOptions.map((option) => {
 							const selected = option.value === sandbox;
 
 							return (
@@ -138,7 +152,6 @@ export default function ThreadSandboxStatus() {
 									<span className="min-w-0">
 										<span className="block text-sm font-medium">
 											{option.label}
-											{option.value === "auto" ? " (Recommended)" : ""}
 										</span>
 										<span className="block text-xs text-muted-foreground">
 											{option.description}

@@ -7,14 +7,14 @@ export type SandboxOption = {
 	description: string;
 };
 
-export const DEFAULT_SANDBOX: SandboxType = "auto";
+export const DEFAULT_SANDBOX: SandboxType = "state";
 
 export const SANDBOX_OPTIONS: readonly SandboxOption[] = [
 	{
-		value: "auto",
-		label: "Auto",
-		shortLabel: "Auto",
-		description: "Try Daytona first, then fall back to local execution.",
+		value: "state",
+		label: "State (Default)",
+		shortLabel: "State",
+		description: "Run agent code with the state sandbox backend.",
 	},
 	{
 		value: "daytona",
@@ -22,21 +22,16 @@ export const SANDBOX_OPTIONS: readonly SandboxOption[] = [
 		shortLabel: "Daytona",
 		description: "Run agent code in the Daytona sandbox backend.",
 	},
-	{
-		value: "state",
-		label: "Local",
-		shortLabel: "Local",
-		description: "Run agent code with the local sandbox backend.",
-	},
 ] as const;
 
 export function normalizeSandboxValue(
 	value: string | null | undefined,
 ): SandboxType {
-	if (value === "daytona" || value === "state") {
+	if (value === "daytona") {
 		return value;
 	}
 
+	// "auto", null, undefined, and any unknown value all resolve to "state"
 	return DEFAULT_SANDBOX;
 }
 
@@ -50,6 +45,6 @@ export function getSandboxOption(
 	);
 }
 
-export function toSandboxPatchValue(value: SandboxType): string | null {
-	return value === DEFAULT_SANDBOX ? null : value;
+export function toSandboxPatchValue(value: SandboxType): string {
+	return value;
 }
