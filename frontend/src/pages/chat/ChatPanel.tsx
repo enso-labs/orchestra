@@ -1,4 +1,4 @@
-import ChatInput from "@/components/inputs/ChatInput";
+import ChatComposer from "@/components/chat/ChatComposer";
 import ChatMessages from "@/components/lists/ChatMessages";
 import AgentSection from "@/components/sections/agent-section";
 import { useChatContext } from "@/context/ChatContext";
@@ -21,9 +21,15 @@ interface ChatPanelProps {
 	chatNav?: React.ReactNode | undefined;
 	sidebarTrigger?: React.ReactNode | undefined;
 	showAgentMenu?: boolean;
+	showSandboxStatus?: boolean;
 }
 
-function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
+function ChatPanel({
+	agent,
+	chatNav,
+	showAgentMenu = true,
+	showSandboxStatus = false,
+}: ChatPanelProps) {
 	const { appVersion } = useAppContext();
 	const { messages, viewMode, setViewMode } = useChatContext();
 	const isMobile = useMediaQuery("(max-width: 768px)");
@@ -56,13 +62,10 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 					<div className="flex-1 min-h-0">
 						<ChatMessages messages={messages} />
 					</div>
-					<div className="sticky bottom-0 bg-background border-border">
-						<div className="max-w-4xl mx-auto">
-							<div className="flex flex-col gap-2 px-4 pb-4">
-								<ChatInput />
-							</div>
-						</div>
-					</div>
+					<ChatComposer
+						showAgentMenu={showAgentMenu}
+						showSandboxStatus={showSandboxStatus}
+					/>
 				</div>
 			) : (
 				<>
@@ -85,13 +88,10 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 								<div className="flex-1 min-h-0">
 									<ChatMessages messages={messages} />
 								</div>
-								<div className="sticky bottom-0 bg-background border-border">
-									<div className="max-w-4xl mx-auto">
-										<div className="flex flex-col gap-2 px-4 pb-4">
-											<ChatInput />
-										</div>
-									</div>
-								</div>
+								<ChatComposer
+									showAgentMenu={showAgentMenu}
+									showSandboxStatus={showSandboxStatus}
+								/>
 							</div>
 						</ResizablePanel>
 					</ResizablePanelGroup>
@@ -104,13 +104,10 @@ function ChatPanel({ agent, chatNav, showAgentMenu = true }: ChatPanelProps) {
 							<div className="flex-1 min-h-0">
 								<ChatMessages messages={messages} />
 							</div>
-							<div className="sticky bottom-0 bg-background border-border">
-								<div className="max-w-4xl mx-auto">
-									<div className="flex flex-col gap-2 px-4 pb-4">
-										<ChatInput />
-									</div>
-								</div>
-							</div>
+							<ChatComposer
+								showAgentMenu={showAgentMenu}
+								showSandboxStatus={showSandboxStatus}
+							/>
 						</div>
 
 						{/* Foreground: Editor Sheet - Only on mobile */}

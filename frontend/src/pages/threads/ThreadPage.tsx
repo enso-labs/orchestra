@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { useChatContext } from "@/context/ChatContext";
 import { ChatNav } from "@/components/nav/ChatNav";
-import ChatInput from "@/components/inputs/ChatInput";
+import ChatComposer from "@/components/chat/ChatComposer";
 import ChatMessages from "@/components/lists/ChatMessages";
 import ChatMessagesSkeleton from "@/components/lists/ChatMessagesSkeleton";
 import { useAppContext } from "@/context/AppContext";
@@ -135,13 +135,7 @@ export default function ThreadPage() {
 								<ChatMessages messages={messages} />
 							)}
 						</div>
-						<div className="sticky bottom-0 bg-background border-border">
-							<div className="max-w-4xl mx-auto">
-								<div className="flex flex-col gap-2 px-4 pb-4">
-									<ChatInput showAgentMenu={true} />
-								</div>
-							</div>
-						</div>
+						<ChatComposer showAgentMenu={true} showSandboxStatus={true} />
 					</div>
 				) : (
 					<>
@@ -166,13 +160,7 @@ export default function ThreadPage() {
 											<ChatMessages messages={messages} />
 										)}
 									</div>
-									<div className="sticky bottom-0 bg-background border-border">
-										<div className="max-w-4xl mx-auto">
-											<div className="flex flex-col gap-2 px-4 pb-4">
-												<ChatInput showAgentMenu={true} />
-											</div>
-										</div>
-									</div>
+									<ChatComposer showAgentMenu={true} showSandboxStatus={true} />
 								</div>
 							</ResizablePanel>
 						</ResizablePanelGroup>
@@ -189,13 +177,7 @@ export default function ThreadPage() {
 										<ChatMessages messages={messages} />
 									)}
 								</div>
-								<div className="sticky bottom-0 bg-background border-border">
-									<div className="max-w-4xl mx-auto">
-										<div className="flex flex-col gap-2 px-4 pb-4">
-											<ChatInput showAgentMenu={true} />
-										</div>
-									</div>
-								</div>
+								<ChatComposer showAgentMenu={true} showSandboxStatus={true} />
 							</div>
 
 							{/* Foreground: Editor Sheet - Only on mobile */}

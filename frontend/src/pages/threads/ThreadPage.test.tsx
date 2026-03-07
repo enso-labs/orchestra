@@ -45,8 +45,20 @@ vi.mock("@/components/nav/ChatNav", () => ({
 	ChatNav: () => <div data-testid="chat-nav" />,
 }));
 
-vi.mock("@/components/inputs/ChatInput", () => ({
-	default: () => <div data-testid="chat-input" />,
+vi.mock("@/components/chat/ChatComposer", () => ({
+	default: ({
+		showAgentMenu,
+		showSandboxStatus,
+	}: {
+		showAgentMenu?: boolean;
+		showSandboxStatus?: boolean;
+	}) => (
+		<div
+			data-testid="chat-composer"
+			data-show-agent-menu={String(showAgentMenu)}
+			data-show-sandbox-status={String(showSandboxStatus)}
+		/>
+	),
 }));
 
 vi.mock("@/components/lists/ChatMessages", () => ({
@@ -208,5 +220,18 @@ describe("ThreadPage", () => {
 			screen.queryByText("No checkpoints found for thread"),
 		).not.toBeInTheDocument();
 		expect(screen.getByTestId("chat-messages")).toHaveTextContent("1");
+	});
+
+	it("renders the composer with sandbox status enabled", () => {
+		renderThreadPage("/thread/live-123");
+
+		expect(screen.getByTestId("chat-composer")).toHaveAttribute(
+			"data-show-agent-menu",
+			"true",
+		);
+		expect(screen.getByTestId("chat-composer")).toHaveAttribute(
+			"data-show-sandbox-status",
+			"true",
+		);
 	});
 });

@@ -14,31 +14,36 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { getSettings, patchDefaults } from "@/lib/services/userSettingsService";
-
-const SANDBOX_OPTIONS = [
-	{ value: "auto", label: "Auto (Recommended)" },
-	{ value: "daytona", label: "Daytona" },
-	{ value: "state", label: "Local" },
-] as const;
+import {
+	DEFAULT_SANDBOX,
+	SANDBOX_OPTIONS,
+	normalizeSandboxValue,
+	toSandboxPatchValue,
+} from "@/lib/config/sandbox";
+import {
+	type SandboxType,
+	getSettings,
+	patchDefaults,
+} from "@/lib/services/userSettingsService";
 
 export function SandboxSettings() {
-	const [sandbox, setSandbox] = useState<string>("auto");
+	const [sandbox, setSandbox] = useState<SandboxType>(DEFAULT_SANDBOX);
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
 		getSettings()
-			.then((res) => setSandbox(res.defaults.sandbox ?? "auto"))
+			.then((res) => setSandbox(normalizeSandboxValue(res.defaults.sandbox)))
 			.catch(() => {});
 	}, []);
 
 	const handleChange = async (value: string) => {
+		const nextSandbox = normalizeSandboxValue(value);
 		setLoading(true);
 		try {
 			const res = await patchDefaults({
-				sandbox: value === "auto" ? null : value,
+				sandbox: toSandboxPatchValue(nextSandbox),
 			});
-			setSandbox(res.defaults.sandbox ?? "auto");
+			setSandbox(normalizeSandboxValue(res.defaults.sandbox));
 			toast.success("Default sandbox updated");
 		} catch {
 			toast.error("Failed to update default sandbox");
@@ -64,7 +69,9 @@ export function SandboxSettings() {
 					<SelectContent>
 						{SANDBOX_OPTIONS.map((opt) => (
 							<SelectItem key={opt.value} value={opt.value}>
-								{opt.label}
+								{opt.value === "auto"
+									? `${opt.label} (Recommended)`
+									: opt.label}
 							</SelectItem>
 						))}
 					</SelectContent>
