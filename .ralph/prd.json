@@ -1,0 +1,52 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/845-sandbox-popover-improvements",
+  "description": "Sandbox popover gradient, unified file panel trigger, and RC tag automation",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Sandbox popover gradient background",
+      "description": "As a user observing the sandbox popover, I want the background behind the component to be a gradient from bottom up to opacity 0% so that the popover blends smoothly into the page.",
+      "acceptanceCriteria": [
+        "Sandbox popover background uses a CSS gradient from bottom (opaque) to top (0% opacity)",
+        "Gradient renders correctly in Chrome and Firefox",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Unified file panel trigger component",
+      "description": "As a user, I want a single component similar to the sandbox popover that provides basic stats and triggers the file panel editor on press, so I'm not confused by multiple trigger points.",
+      "acceptanceCriteria": [
+        "Single unified component replaces all existing FilePanelEditor trigger points",
+        "Component displays basic file/stats info",
+        "Opens FilePanelEditor on press",
+        "Typecheck passes",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "RC tag automation and push all changes",
+      "description": "As a DevOps engineer, I want the last step after commit to create an RC tag so dev can validate branch changes from a deployed environment.",
+      "acceptanceCriteria": [
+        "After final commit, an RC tag is created and pushed",
+        "Tag follows existing rc naming convention (0.1.0-rcNN)",
+        "All changes are pushed to the remote branch for code review",
+        "Process is documented in the workflow",
+        "Typecheck passes",
+        "git push origin feat/845-sandbox-popover-improvements is run to ensure all changes are visible"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
