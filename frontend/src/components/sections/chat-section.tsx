@@ -29,7 +29,10 @@ export function ChatSection() {
 					A2A
 				</a>
 			</p>
-			<div className="flex flex-row gap-2 mb-2">
+			<div className="flex flex-col w-full lg:w-[600px]">
+				<ChatInput showAgentMenu={true} />
+			</div>
+			<div className="flex flex-row gap-2 mt-2">
 				<a href="https://discord.com/invite/QRfjg4YNzU">
 					<img src="https://img.shields.io/badge/Join-Discord-purple" />
 				</a>
@@ -39,9 +42,6 @@ export function ChatSection() {
 				<a href="https://docs.ruska.ai">
 					<img src="https://img.shields.io/badge/View-Docs-blue" />
 				</a>
-			</div>
-			<div className="flex flex-col w-full lg:w-[600px]">
-				<ChatInput showAgentMenu={true} />
 			</div>
 		</>
 	);

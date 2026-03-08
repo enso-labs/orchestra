@@ -22,8 +22,12 @@ export function AgentSection({
 			<h1 className="text-4xl font-bold mt-2 italic">{agent.name}</h1>
 			<p className="text-lg text-muted-foreground mb-2">{agent.description}</p>
 
-			{/* Links between subtext and input */}
-			<div className="flex flex-row flex-wrap justify-center gap-1 mb-3">
+			<div className="flex flex-col w-full lg:w-[600px]">
+				<ChatInput showAgentMenu={showAgentMenu} />
+			</div>
+
+			{/* Links below input */}
+			<div className="flex flex-row flex-wrap justify-center gap-1 mt-3">
 				<Button
 					variant="ghost"
 					size="sm"
@@ -84,10 +88,6 @@ export function AgentSection({
 						Slack
 					</a>
 				</Button>
-			</div>
-
-			<div className="flex flex-col w-full lg:w-[600px]">
-				<ChatInput showAgentMenu={showAgentMenu} />
 			</div>
 		</>
 	);
