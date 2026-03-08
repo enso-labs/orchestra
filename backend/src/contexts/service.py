@@ -10,7 +10,6 @@ from src.services.assistant import AssistantService
 from src.services.prompt import PromptService
 from langgraph.store.base import BaseStore
 from src.utils.logger import logger
-from src.services.epic import EpicService
 from src.services.memory import MemoryService
 from src.services.tool import ToolService
 from src.services.db import get_store_in_memory
@@ -38,7 +37,6 @@ class ServiceContext:
         self.project_service = ProjectService(user_id=self.user_id, store=store)
         self.schedule_service = ScheduleService(user_id=self.user_id, store=store)
         self.assistant_service = AssistantService(user_id=self.user_id, store=store)
-        self.epic_service = EpicService(user_id=self.user_id, store=store)
         self.llm_service = LLMService(
             user_id=self.user_id,
             store=store,

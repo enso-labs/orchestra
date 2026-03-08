@@ -47,36 +47,3 @@ class Thread(BaseEntity):
     files: Optional[Any] = None
     todos: Optional[Any] = None
     score: float | None = None
-
-
-class Epic(BaseEntity):
-    name: str
-    description: Optional[str] = None
-    status: Optional[str] = "active"
-
-
-class EpicUpdate(BaseModel):
-    """Schema for partial epic updates. All fields are optional."""
-
-    name: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-
-
-class Task(BaseEntity):
-    epic_id: str
-    title: str
-    description: Optional[str] = None
-    status: Optional[str] = "todo"
-    assignee: Optional[str] = None
-    blockers: list[str] = Field(default_factory=list)
-
-
-class TaskUpdate(BaseModel):
-    """Schema for partial task updates. All fields are optional."""
-
-    title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-    assignee: Optional[str] = None
-    blockers: Optional[list[str]] = None

@@ -34,7 +34,7 @@ describe("useModelVisibility", () => {
 	it("should default-enable the approved model list when backend returns null", async () => {
 		const { result } = renderHook(() => useModelVisibility());
 		await waitFor(() => expect(result.current.isLoading).toBe(false));
-		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true);
+		expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(true);
 		expect(result.current.isModelVisible("openai:gpt-4o")).toBe(true);
 	});
 
@@ -47,7 +47,7 @@ describe("useModelVisibility", () => {
 		expect(
 			result.current.isModelVisible("google_genai:gemini-3-pro-preview"),
 		).toBe(true);
-		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(false);
+		expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(false);
 	});
 
 	it("should toggle visibility and call patchDefaults", async () => {
@@ -90,22 +90,22 @@ describe("useModelVisibility", () => {
 	});
 
 	it("should revert toggle when patchDefaults fails", async () => {
-		mockGetSettings.mockResolvedValue(makeSettingsResponse(["openai:gpt-5.2"]));
+		mockGetSettings.mockResolvedValue(makeSettingsResponse(["openai:gpt-5.4"]));
 		mockPatchDefaults.mockRejectedValue(new Error("Network error"));
 
 		const { result } = renderHook(() => useModelVisibility());
 		await waitFor(() => expect(result.current.isLoading).toBe(false));
-		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true);
+		expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(true);
 
 		// Toggle off — optimistic update
 		act(() => {
-			result.current.toggleModelVisibility("openai:gpt-5.2");
+			result.current.toggleModelVisibility("openai:gpt-5.4");
 		});
-		expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(false);
+		expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(false);
 
 		// After rejection, should revert
 		await waitFor(() =>
-			expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true),
+			expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(true),
 		);
 	});
 
@@ -143,7 +143,7 @@ describe("useModelVisibility", () => {
 			expect(result.current.isModelVisible("anthropic:claude-sonnet-4-5")).toBe(
 				true,
 			);
-			expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(false);
+			expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(false);
 			expect(mockPatchDefaults).toHaveBeenCalledWith({
 				model_visibility: localModels,
 			});
@@ -165,7 +165,7 @@ describe("useModelVisibility", () => {
 		});
 
 		it("should prefer backend data over localStorage when both exist", async () => {
-			const backendModels = ["openai:gpt-5.2"];
+			const backendModels = ["openai:gpt-5.4"];
 			const localModels = ["openai:gpt-5", "anthropic:claude-sonnet-4-5"];
 			localStorage.setItem(
 				"orchestra_model_visibility",
@@ -176,7 +176,7 @@ describe("useModelVisibility", () => {
 			const { result } = renderHook(() => useModelVisibility());
 			await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-			expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true);
+			expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(true);
 			expect(result.current.isModelVisible("openai:gpt-5")).toBe(false);
 			// Should NOT call patchDefaults for migration
 			expect(mockPatchDefaults).not.toHaveBeenCalled();
@@ -187,7 +187,7 @@ describe("useModelVisibility", () => {
 			await waitFor(() => expect(result.current.isLoading).toBe(false));
 
 			// Should use defaults, no migration PATCH
-			expect(result.current.isModelVisible("openai:gpt-5.2")).toBe(true);
+			expect(result.current.isModelVisible("openai:gpt-5.4")).toBe(true);
 			expect(mockPatchDefaults).not.toHaveBeenCalled();
 		});
 

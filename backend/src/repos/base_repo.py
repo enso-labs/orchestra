@@ -3,7 +3,7 @@ from langgraph.store.base import BaseStore, SearchItem, SearchOp
 
 from src.schemas.entities import SearchFilter
 from src.services.db import get_store_in_memory
-from src.schemas.entities.store import Source, Project, Document, Epic, Task
+from src.schemas.entities.store import Source, Project, Document
 from src.schemas.entities.auth import ApiToken
 from src.schemas.entities.settings import UserSettings
 from src.schemas.entities.memory import Memory
@@ -48,10 +48,6 @@ class BaseRepo:
             return UserSettings.model_validate(item.value)
         elif self.entity_type == "memories":
             return Memory.model_validate(item.value)
-        elif self.entity_type == "epics":
-            return Epic.model_validate(item.value)
-        elif self.entity_type == "tasks":
-            return Task.model_validate(item.value)
         else:
             raise ValueError(f"Invalid entity type: {self.entity_type}")
 

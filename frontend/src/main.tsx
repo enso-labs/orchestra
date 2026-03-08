@@ -8,7 +8,6 @@ import ProjectProvider from "./context/ProjectContext";
 import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
 import { PromptProvider } from "./context/PromptContext";
-import EpicProvider from "./context/EpicContext";
 import { NuqsAdapter } from "nuqs/adapters/react";
 
 // Register service worker
@@ -35,9 +34,7 @@ createRoot(document.getElementById("root")!).render(
 						<ProjectProvider>
 							<PromptProvider>
 								<ChatProvider>
-									<EpicProvider>
-										<AppRoutes />
-									</EpicProvider>
+									<AppRoutes />
 								</ChatProvider>
 							</PromptProvider>
 						</ProjectProvider>
