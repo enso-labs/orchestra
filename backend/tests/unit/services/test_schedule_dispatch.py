@@ -91,6 +91,8 @@ async def test_in_process_when_not_distributed(task_dict_with_thread):
         mock_svc_ctx.checkpointer = mock_cp_instance
         mock_svc_ctx.llm_service.assistant = AsyncMock(return_value=mock_params)
         mock_svc_ctx.thread_service.update = AsyncMock()
+        mock_svc_ctx.thread_service.update_checkpoint_snapshot = AsyncMock()
+        mock_svc_ctx.thread_service.get = AsyncMock(return_value=None)
         mock_svc_ctx.store = mock_store_instance
         mock_svc_ctx.store.fields = []
         mock_ctx.return_value = mock_svc_ctx

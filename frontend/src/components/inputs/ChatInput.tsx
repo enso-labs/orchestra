@@ -61,7 +61,9 @@ export default function ChatInput({
 		displayModel,
 		models,
 		setModel,
+		threadViewMode,
 	} = useChatContext();
+	const isCheckpointPreview = threadViewMode === "checkpoint_preview";
 
 	const { isModelVisible } = useModelVisibility();
 	const visibleModels = (models?.models || []).filter((m: string) =>
@@ -81,6 +83,7 @@ export default function ChatInput({
 
 	// Helper to enqueue and clear input
 	const handleEnqueue = (q: string, imgs: File[]) => {
+		if (isCheckpointPreview) return;
 		enqueue(q, imgs);
 		setQuery("");
 		setImages([]);
@@ -138,9 +141,14 @@ export default function ChatInput({
 			<textarea
 				ref={inputRef}
 				className={`w-full resize-none overflow-y-auto min-h-[48px] max-h-[200px] p-4 pr-14 bg-background border border-input ${isRecording ? "rounded-none" : "rounded-t-3xl"} focus:outline-none border-b-0`}
-				placeholder="How can I help you be more productive?"
+				placeholder={
+					isCheckpointPreview
+						? "Checkpoint preview is read-only"
+						: "How can I help you be more productive?"
+				}
 				rows={1}
 				value={query}
+				disabled={isCheckpointPreview}
 				onChange={handleTextareaResize}
 				onPaste={handlePaste}
 				onDrop={handleDrop}
@@ -150,6 +158,7 @@ export default function ChatInput({
 						e.key === "Enter" &&
 						!e.shiftKey &&
 						!isRecording &&
+						!isCheckpointPreview &&
 						query.length > 0
 					) {
 						e.preventDefault();
@@ -185,6 +194,7 @@ export default function ChatInput({
 							<PopoverTrigger asChild>
 								<button
 									title="Change default model"
+									disabled={isCheckpointPreview}
 									className="cursor-pointer hover:opacity-80 transition-opacity"
 								>
 									<ModelBadge model={displayModel} />
@@ -224,6 +234,7 @@ export default function ChatInput({
 						handleSubmit={handleSubmit}
 						onRecordingChange={setIsRecording}
 						recorderControls={recorderControls}
+						disabled={isCheckpointPreview}
 					/>
 				</div>
 			</div>

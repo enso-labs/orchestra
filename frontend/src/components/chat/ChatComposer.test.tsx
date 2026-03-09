@@ -1,7 +1,13 @@
 import "@testing-library/jest-dom";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ChatComposer from "./ChatComposer";
+
+const mockUseChatContext = vi.fn();
+
+vi.mock("@/context/ChatContext", () => ({
+	useChatContext: () => mockUseChatContext(),
+}));
 
 vi.mock("@/components/inputs/ChatInput", () => ({
 	default: () => <div data-testid="chat-input" />,
@@ -12,6 +18,16 @@ vi.mock("@/components/status/ThreadSandboxStatus", () => ({
 }));
 
 describe("ChatComposer", () => {
+	beforeEach(() => {
+		mockUseChatContext.mockReturnValue({
+			viewMode: "chat",
+			setViewMode: vi.fn(),
+			filesMap: new Map(),
+			todos: [],
+			threadViewMode: "latest",
+		});
+	});
+
 	it("renders the sandbox status above the chat input when enabled", () => {
 		render(<ChatComposer showAgentMenu={true} showSandboxStatus={true} />);
 
@@ -33,5 +49,21 @@ describe("ChatComposer", () => {
 			screen.queryByTestId("thread-sandbox-status"),
 		).not.toBeInTheDocument();
 		expect(screen.getByTestId("chat-input")).toBeInTheDocument();
+	});
+
+	it("shows a read-only notice during checkpoint preview", () => {
+		mockUseChatContext.mockReturnValue({
+			viewMode: "chat",
+			setViewMode: vi.fn(),
+			filesMap: new Map(),
+			todos: [],
+			threadViewMode: "checkpoint_preview",
+		});
+
+		render(<ChatComposer showAgentMenu={true} showSandboxStatus={false} />);
+
+		expect(
+			screen.getByText(/Checkpoint preview is read-only/i),
+		).toBeInTheDocument();
 	});
 });

@@ -17,12 +17,15 @@ const DEFAULT_TAB = "assistant";
 
 function AgentThreadPage() {
 	const { agentId, threadId } = useParams();
+	const [searchParams, setSearchParams] = useSearchParams();
+	const checkpointId = searchParams.get("checkpointId") || undefined;
 	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
 		useAgentContext();
 	const { setModel, useModelsEffect } = useModel();
 	useModelsEffect();
 	const {
 		useListThreadsEffect,
+		useListCheckpointsEffect,
 		messages,
 		useEffectUpdateAssistantId,
 		useLoadThreadEffect,
@@ -33,23 +36,38 @@ function AgentThreadPage() {
 		setTodos,
 		fromBackendFormat,
 		clearFileSystem,
+		threadViewMode,
+		activeCheckpointId,
 	} = useChatContext();
+	const hasLiveThreadState =
+		threadId &&
+		messages.length > 0 &&
+		(checkpointId
+			? threadViewMode === "checkpoint_preview" &&
+				activeCheckpointId === checkpointId
+			: threadViewMode === "latest");
 
 	useEffectGetAgent(agentId!);
 	useEffectGetAgents();
 
 	// Load thread data using modularized hook
-	useLoadThreadEffect(threadId, {
-		setCheckpoints,
-		setMessages,
-		setMetadata,
-		setFilesMap,
-		setTodos,
-		setModel,
-	});
+	useLoadThreadEffect(
+		threadId,
+		{
+			setCheckpoints,
+			setMessages,
+			setMetadata,
+			setFilesMap,
+			setTodos,
+			setModel,
+		},
+		{
+			enabled: !hasLiveThreadState,
+			checkpointId,
+		},
+	);
 
 	const [activeTab, setActiveTab] = useQueryState("tab");
-	const [, setSearchParams] = useSearchParams();
 
 	useEffectUpdateAssistantId();
 
@@ -58,6 +76,7 @@ function AgentThreadPage() {
 	};
 
 	useListThreadsEffect(null, { assistant_id: agentId });
+	useListCheckpointsEffect(true, threadId);
 
 	useEffect(() => {
 		// Only clear search params if there are none on init

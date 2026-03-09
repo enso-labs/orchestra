@@ -22,7 +22,6 @@ from src.agents import Orchestra
 from src.repos.user_settings_repo import UserSettingsRepo
 from src.utils.llm import resolve_api_key
 from src.utils.logger import logger
-from src.utils.format import get_time
 from src.constants.llm import DEFAULT_CHAT_MODEL
 
 
@@ -46,23 +45,24 @@ class LLMController:
         )
 
     async def _update_store(self, agent: Orchestra, config: RunnableConfig) -> None:
-        final_state = await agent.graph.aget_state(config)
+        latest_config = RunnableConfig(configurable={"thread_id": config["configurable"].get("thread_id")})
+        final_state = await agent.graph.aget_state(latest_config)
         configurable = {
-            **final_state.config.get("configurable", {}),
             **config["configurable"],
+            **final_state.config.get("configurable", {}),
         }
         messages = final_state.values.get("messages", [])
+        files = final_state.values.get("files")
+        todos = final_state.values.get("todos")
         self.service_context.store.fields = ["messages", "files"]
-        await self.service_context.thread_service.update(
+        await self.service_context.thread_service.update_checkpoint_snapshot(
             thread_id=configurable.get("thread_id"),
-            data={
-                "thread_id": configurable.get("thread_id"),
-                "checkpoint_id": configurable.get("checkpoint_id"),
-                "assistant_id": configurable.get("assistant_id"),
-                "project_id": configurable.get("project_id"),
-                "messages": messages,
-                "updated_at": get_time(),
-            },
+            checkpoint_id=configurable.get("checkpoint_id"),
+            assistant_id=configurable.get("assistant_id"),
+            project_id=configurable.get("project_id"),
+            messages=messages,
+            files=files,
+            todos=todos,
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
@@ -188,9 +188,8 @@ class LLMController:
                 await self._update_store(agent, config)
             raise e
         finally:
-            if self.service_context.user_id and self.service_context.checkpointer:
-                if agent and config:
-                    await self._update_store(agent, config)
+            if self.service_context.user_id and agent and config:
+                await self._update_store(agent, config)
 
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)

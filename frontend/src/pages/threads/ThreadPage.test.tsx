@@ -131,6 +131,8 @@ describe("ThreadPage", () => {
 		useLoadThreadEffect: mockUseLoadThreadEffect,
 		threadLoading: false,
 		threadError: null,
+		threadViewMode: "latest",
+		activeCheckpointId: null,
 	};
 
 	beforeEach(() => {
@@ -170,7 +172,7 @@ describe("ThreadPage", () => {
 		expect(mockUseLoadThreadEffect).toHaveBeenCalledWith(
 			"live-123",
 			expect.any(Object),
-			{ enabled: false },
+			{ enabled: false, checkpointId: undefined },
 		);
 	});
 
@@ -186,7 +188,7 @@ describe("ThreadPage", () => {
 		expect(mockUseLoadThreadEffect).toHaveBeenCalledWith(
 			"live-123",
 			expect.any(Object),
-			{ enabled: true },
+			{ enabled: true, checkpointId: undefined },
 		);
 	});
 
@@ -202,7 +204,7 @@ describe("ThreadPage", () => {
 		expect(mockUseLoadThreadEffect).toHaveBeenCalledWith(
 			"live-123",
 			expect.any(Object),
-			{ enabled: true },
+			{ enabled: true, checkpointId: undefined },
 		);
 	});
 

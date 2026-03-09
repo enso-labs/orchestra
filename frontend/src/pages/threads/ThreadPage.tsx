@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { useChatContext } from "@/context/ChatContext";
 import { ChatNav } from "@/components/nav/ChatNav";
@@ -27,6 +27,8 @@ export default function ThreadPage() {
 		threadId: string;
 		projectId?: string;
 	}>();
+	const [searchParams] = useSearchParams();
+	const checkpointId = searchParams.get("checkpointId") || undefined;
 	const navigate = useNavigate();
 	const { loading } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
@@ -49,10 +51,17 @@ export default function ThreadPage() {
 		useLoadThreadEffect,
 		threadLoading,
 		threadError,
+		threadViewMode,
+		activeCheckpointId,
 	} = useChatContext();
 	const isMobile = useMediaQuery("(max-width: 768px)");
 	const hasLiveThreadState =
-		metadata?.thread_id === threadId && messages.length > 0;
+		metadata?.thread_id === threadId &&
+		messages.length > 0 &&
+		(checkpointId
+			? threadViewMode === "checkpoint_preview" &&
+				activeCheckpointId === checkpointId
+			: threadViewMode === "latest");
 	const effectiveThreadLoading = !hasLiveThreadState && threadLoading;
 	const effectiveThreadError = !hasLiveThreadState ? threadError : null;
 
@@ -60,7 +69,7 @@ export default function ThreadPage() {
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
 	useListThreadsEffect(!loading);
-	useListCheckpointsEffect(!loading, metadata);
+	useListCheckpointsEffect(!loading, threadId);
 
 	// Load thread data using modularized hook
 	useLoadThreadEffect(
@@ -75,6 +84,7 @@ export default function ThreadPage() {
 		},
 		{
 			enabled: !hasLiveThreadState,
+			checkpointId,
 		},
 	);
 

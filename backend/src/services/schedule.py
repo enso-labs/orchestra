@@ -8,11 +8,11 @@ from apscheduler.triggers.interval import IntervalTrigger
 from src.schemas.contexts import ContextSchema
 from src.utils.logger import logger
 import ujson
+from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
 
 from src.services.db import DB_URI, get_store_in_memory
 from src.schemas.entities.schedule import JobTrigger, Job, Schedule
-from src.utils.format import get_time
 
 jobstores = {"default": SQLAlchemyJobStore(url=DB_URI, tablename="schedules")}
 SCHEDULER = AsyncIOScheduler(jobstores=jobstores)
@@ -127,26 +127,23 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             raise
         finally:
             if service_context.user_id and service_context.checkpointer:
-                final_state = await agent.graph.aget_state(config)
+                latest_config = RunnableConfig(configurable={"thread_id": config["configurable"].get("thread_id")})
+                final_state = await agent.graph.aget_state(latest_config)
                 configurable = {
-                    **final_state.config.get("configurable", {}),
                     **config["configurable"],
+                    **final_state.config.get("configurable", {}),
                 }
                 messages = final_state.values.get("messages", [])
                 messages[-1].model = agent.model
                 service_context.store.fields = ["messages", "files"]
-                await service_context.thread_service.update(
+                await service_context.thread_service.update_checkpoint_snapshot(
                     thread_id=configurable.get("thread_id"),
-                    data={
-                        "thread_id": configurable.get("thread_id"),
-                        "checkpoint_id": configurable.get("checkpoint_id"),
-                        "assistant_id": configurable.get("assistant_id"),
-                        "project_id": configurable.get("project_id"),
-                        "messages": messages,
-                        "todos": todos_list,
-                        "files": files_map,
-                        "updated_at": get_time(),
-                    },
+                    checkpoint_id=configurable.get("checkpoint_id"),
+                    assistant_id=configurable.get("assistant_id"),
+                    project_id=configurable.get("project_id"),
+                    messages=messages,
+                    todos=todos_list,
+                    files=files_map,
                 )
                 logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 

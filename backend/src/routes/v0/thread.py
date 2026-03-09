@@ -1,12 +1,19 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 import uuid
-from fastapi import APIRouter, Body, HTTPException, Depends, status
+from fastapi import APIRouter, Body, HTTPException, Depends, Query, status
 from fastapi.responses import Response, UJSONResponse, StreamingResponse
 from fastapi_cache.decorator import cache
 from langgraph.graph.state import RunnableConfig
 from src.schemas.entities.store import Thread
 from src.contexts.service import ServiceContext
-from src.schemas.entities import SearchFilter, ThreadSemanticSearchRequest
+from src.schemas.entities import (
+    SearchFilter,
+    ThreadSemanticSearchRequest,
+    ThreadCheckpointListResponse,
+    ThreadCheckpointDetailResponse,
+    ForkCheckpointRequest,
+    ForkCheckpointResponse,
+)
 from src.schemas.entities.hitl import (
     InterruptListResponse,
     ResumeRequest,
@@ -31,6 +38,36 @@ from src.utils.stream import stream_from_redis
 router = APIRouter(tags=["Thread"])
 
 
+async def _get_thread_or_404(service_context: ServiceContext, thread_id: str) -> Thread:
+    thread = await service_context.thread_service.get(thread_id)
+    if not thread:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Thread {thread_id} not found")
+    return thread
+
+
+def _build_checkpoint_service(
+    *,
+    user_id: str,
+    store: AsyncPostgresStore,
+    checkpointer,
+    include_graph: bool = False,
+) -> CheckpointService:
+    graph = None
+    if include_graph:
+        graph = init_graph(
+            tools=[],
+            checkpointer=checkpointer,
+            store=store,
+            middleware=[],
+        )
+    return CheckpointService(
+        user_id=user_id,
+        checkpointer=checkpointer,
+        graph=graph,
+        store=store,
+    )
+
+
 @router.post(
     "/threads/search",
     name="Query Threads in Checkpointer",
@@ -47,10 +84,10 @@ async def search_threads(
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             if "thread_id" in search_filter.filter and "checkpoint_id" not in search_filter.filter:
+                thread = await _get_thread_or_404(service_context, search_filter.filter["thread_id"])
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
                     thread_id=search_filter.filter["thread_id"]
                 )
-                thread: Thread = await service_context.thread_service.get(search_filter.filter["thread_id"])
                 if thread and len(checkpoints) > 0:
                     checkpoints[0]["metadata"]["files"] = thread.files
                     checkpoints[0]["metadata"]["todos"] = thread.todos
@@ -68,6 +105,18 @@ async def search_threads(
                                 if msg_id and msg_id in agent_name_map and "agent_name" not in msg:
                                     msg["agent_name"] = agent_name_map[msg_id]
                 return {"checkpoints": checkpoints}
+            if "thread_id" in search_filter.filter and "checkpoint_id" in search_filter.filter:
+                await _get_thread_or_404(service_context, search_filter.filter["thread_id"])
+                checkpoint_service = _build_checkpoint_service(
+                    user_id=user.id,
+                    store=store,
+                    checkpointer=checkpointer,
+                )
+                checkpoint = await checkpoint_service.get_checkpoint_detail(
+                    thread_id=search_filter.filter["thread_id"],
+                    checkpoint_id=search_filter.filter["checkpoint_id"],
+                )
+                return {"checkpoint": checkpoint.model_dump() if checkpoint else None}
 
             threads = await service_context.thread_service.search(search_filter)
             return {"threads": threads}
@@ -113,9 +162,8 @@ async def semantic_search_threads(
                     # Fetch thread data to get title
                     thread_data = await service_context.thread_service.get(thread_id)
                     title = "Untitled Thread"
-                    if thread_data and thread_data.value:
-                        # Try to get title from thread data, fallback to first message
-                        title = thread_data.value.get("title", title)
+                    if thread_data:
+                        title = thread_data.title or title
 
                     enriched_results.append(
                         {
@@ -150,6 +198,7 @@ async def create_thread(
     try:
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            thread.metadata = thread.metadata or {}
             assistant_id = thread.metadata.get("assistant_id", None)
             if assistant_id:
                 assistant = await service_context.assistant_service.get(assistant_id)
@@ -161,7 +210,6 @@ async def create_thread(
 
             thread.id = str(uuid.uuid4())
             checkpoint = empty_checkpoint()
-            await service_context.thread_service.update(thread.id, thread.model_dump(exclude_none=True))
             saved = await checkpointer.aput(
                 config=RunnableConfig(
                     configurable={
@@ -180,6 +228,18 @@ async def create_thread(
                     assistant_id=thread.metadata.get("assistant_id", None),
                 ),
                 new_versions=ChannelVersions(),
+            )
+            await service_context.thread_service.update(
+                thread.id,
+                {
+                    **thread.model_dump(exclude_none=True),
+                    "thread_id": thread.id,
+                    "assistant_id": assistant_id,
+                    "project_id": thread.metadata.get("project_id", None) if thread.metadata else None,
+                    "checkpoint_id": saved["configurable"].get("checkpoint_id"),
+                    "head_checkpoint_id": saved["configurable"].get("checkpoint_id"),
+                    "checkpoint_count": 1,
+                },
             )
             return saved["configurable"]
     except HTTPException:
@@ -203,13 +263,131 @@ async def get_thread(
     try:
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
-            thread = await service_context.thread_service.get(thread_id)
+            thread = await _get_thread_or_404(service_context, thread_id)
             return {"thread": thread.model_dump(exclude_none=True)}
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+        raise
     except Exception as e:
         logger.exception(f"Error getting thread: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+
+
+@router.get(
+    "/threads/{thread_id}/checkpoints",
+    response_model=ThreadCheckpointListResponse,
+    name="List Thread Checkpoints",
+    operation_id="ruska_list_thread_checkpoints",
+    tags=["Thread"],
+)
+async def list_thread_checkpoints(
+    thread_id: str,
+    limit: int = Query(default=20, ge=1, le=100),
+    before: str | None = Query(default=None),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            thread = await _get_thread_or_404(service_context, thread_id)
+            checkpoint_service = _build_checkpoint_service(
+                user_id=user.id,
+                store=store,
+                checkpointer=checkpointer,
+            )
+            checkpoints = await checkpoint_service.list_checkpoint_summaries(
+                thread_id=thread_id,
+                limit=limit,
+                before=before,
+                head_checkpoint_id=thread.head_checkpoint_id,
+            )
+            return ThreadCheckpointListResponse(checkpoints=checkpoints)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error listing checkpoints for thread {thread_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get(
+    "/threads/{thread_id}/checkpoints/{checkpoint_id}",
+    response_model=ThreadCheckpointDetailResponse,
+    name="Get Thread Checkpoint",
+    operation_id="ruska_get_thread_checkpoint",
+    tags=["Thread"],
+)
+async def get_thread_checkpoint(
+    thread_id: str,
+    checkpoint_id: str,
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            await _get_thread_or_404(service_context, thread_id)
+            checkpoint_service = _build_checkpoint_service(
+                user_id=user.id,
+                store=store,
+                checkpointer=checkpointer,
+            )
+            checkpoint = await checkpoint_service.get_checkpoint_detail(
+                thread_id=thread_id,
+                checkpoint_id=checkpoint_id,
+            )
+            if checkpoint is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Checkpoint {checkpoint_id} not found",
+                )
+            return ThreadCheckpointDetailResponse(checkpoint=checkpoint)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting checkpoint {checkpoint_id} for thread {thread_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.post(
+    "/threads/{thread_id}/checkpoints/{checkpoint_id}/fork",
+    response_model=ForkCheckpointResponse,
+    name="Fork Thread Checkpoint",
+    operation_id="ruska_fork_thread_checkpoint",
+    tags=["Thread"],
+)
+async def fork_thread_checkpoint(
+    thread_id: str,
+    checkpoint_id: str,
+    request: ForkCheckpointRequest = Body(default=ForkCheckpointRequest()),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    try:
+        async with get_checkpoint_db() as checkpointer:
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            thread = await _get_thread_or_404(service_context, thread_id)
+            checkpoint_service = _build_checkpoint_service(
+                user_id=user.id,
+                store=store,
+                checkpointer=checkpointer,
+                include_graph=True,
+            )
+            return await checkpoint_service.fork_checkpoint(
+                thread_id=thread_id,
+                checkpoint_id=checkpoint_id,
+                user_id=user.id,
+                source_thread=thread,
+                title=request.title,
+            )
+    except HTTPException:
+        raise
+    except ValueError as e:
+        message = str(e)
+        status_code = status.HTTP_404_NOT_FOUND if "not found" in message.lower() else status.HTTP_409_CONFLICT
+        raise HTTPException(status_code=status_code, detail=message)
+    except Exception as e:
+        logger.exception(f"Error forking checkpoint {checkpoint_id} for thread {thread_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get(
@@ -319,12 +497,10 @@ async def update_thread(
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             # Get existing thread data
-            existing = await service_context.thread_service.get(thread_id)
-            if not existing:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+            existing = await _get_thread_or_404(service_context, thread_id)
 
             # Merge updates with existing data
-            updated_data = {**existing.value, **thread.model_dump(exclude_none=True)}
+            updated_data = {**existing.model_dump(exclude_none=True), **thread.model_dump(exclude_none=True)}
             changed_fields = ", ".join(thread.model_dump(exclude_none=True).keys())
             update_message = f"Thread {thread_id} updated with fields: {changed_fields}"
             logger.info(update_message)
@@ -413,26 +589,12 @@ async def get_thread_interrupts(
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # First, verify the thread exists
-            thread = await service_context.thread_service.get(thread_id)
-            if not thread:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Thread {thread_id} not found",
-                )
-
-            # Create a minimal graph to query interrupt state
-            # The graph needs the checkpointer to access state
-            graph = init_graph(
-                tools=[],
-                checkpointer=checkpointer,
-                store=store,
-            )
-
-            # Create checkpoint service with the graph
-            checkpoint_service = CheckpointService(
+            await _get_thread_or_404(service_context, thread_id)
+            checkpoint_service = _build_checkpoint_service(
                 user_id=user.id,
+                store=store,
                 checkpointer=checkpointer,
-                graph=graph,
+                include_graph=True,
             )
 
             # Get interrupts from the checkpoint state
@@ -475,25 +637,12 @@ async def resume_thread(
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # First, verify the thread exists
-            thread = await service_context.thread_service.get(thread_id)
-            if not thread:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Thread {thread_id} not found",
-                )
-
-            # Create a minimal graph to interact with the thread state
-            graph = init_graph(
-                tools=[],
-                checkpointer=checkpointer,
-                store=store,
-            )
-
-            # Create checkpoint service with the graph
-            checkpoint_service = CheckpointService(
+            await _get_thread_or_404(service_context, thread_id)
+            checkpoint_service = _build_checkpoint_service(
                 user_id=user.id,
+                store=store,
                 checkpointer=checkpointer,
-                graph=graph,
+                include_graph=True,
             )
 
             # Get current interrupts to validate decision_type

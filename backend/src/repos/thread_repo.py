@@ -40,6 +40,10 @@ class ThreadRepo(BaseRepo):
             messages=item.value.get("messages", []),
             files=item.value.get("files", []),
             todos=item.value.get("todos", []),
+            assistant_id=item.value.get("assistant_id"),
+            project_id=item.value.get("project_id"),
+            head_checkpoint_id=item.value.get("head_checkpoint_id") or item.value.get("checkpoint_id"),
+            checkpoint_count=item.value.get("checkpoint_count"),
             score=getattr(item, "score", None),
             updated_at=getattr(item, "updated_at", None),
         )

@@ -1,6 +1,10 @@
 import apiClient from "@/lib/utils/apiClient";
 import {
 	SemanticThread,
+	ThreadRecord,
+	ThreadCheckpointSummary,
+	ThreadCheckpointDetail,
+	ForkCheckpointResponse,
 	ThreadPayload,
 	ThreadSearchRequest,
 } from "@/lib/entities";
@@ -44,6 +48,67 @@ export const findThread = async (threadId: string) => {
 	} catch (error: any) {
 		console.error("Error finding thread:", error);
 		throw new Error(error.response?.data?.detail || "Failed to find thread");
+	}
+};
+
+export const getThread = async (threadId: string): Promise<ThreadRecord> => {
+	try {
+		const response = await apiClient.get(`/threads/${threadId}`);
+		return response.data.thread;
+	} catch (error: any) {
+		console.error("Error getting thread:", error);
+		throw new Error(error.response?.data?.detail || "Failed to get thread");
+	}
+};
+
+export const listThreadCheckpoints = async (
+	threadId: string,
+	params: { limit?: number; before?: string } = {},
+): Promise<ThreadCheckpointSummary[]> => {
+	try {
+		const response = await apiClient.get(`/threads/${threadId}/checkpoints`, {
+			params,
+		});
+		return response.data.checkpoints || [];
+	} catch (error: any) {
+		console.error("Error listing checkpoints:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to list checkpoints",
+		);
+	}
+};
+
+export const getThreadCheckpoint = async (
+	threadId: string,
+	checkpointId: string,
+): Promise<ThreadCheckpointDetail> => {
+	try {
+		const response = await apiClient.get(
+			`/threads/${threadId}/checkpoints/${checkpointId}`,
+		);
+		return response.data.checkpoint;
+	} catch (error: any) {
+		console.error("Error getting checkpoint:", error);
+		throw new Error(error.response?.data?.detail || "Failed to get checkpoint");
+	}
+};
+
+export const forkThreadCheckpoint = async (
+	threadId: string,
+	checkpointId: string,
+	payload: { title?: string } = {},
+): Promise<ForkCheckpointResponse> => {
+	try {
+		const response = await apiClient.post(
+			`/threads/${threadId}/checkpoints/${checkpointId}/fork`,
+			payload,
+		);
+		return response.data;
+	} catch (error: any) {
+		console.error("Error forking checkpoint:", error);
+		throw new Error(
+			error.response?.data?.detail || "Failed to restore checkpoint",
+		);
 	}
 };
 
@@ -217,6 +282,13 @@ export const searchThreads = async (
 	limit: number = 20,
 	offset: number = 0,
 ) => {
+	if (action === "list_checkpoints" && filter.thread_id) {
+		return listThreadCheckpoints(filter.thread_id, { limit });
+	}
+	if (action === "get_checkpoint" && filter.thread_id && filter.checkpoint_id) {
+		return getThreadCheckpoint(filter.thread_id, filter.checkpoint_id);
+	}
+
 	let payload;
 	if (action === "list_threads") {
 		payload = {
@@ -224,21 +296,8 @@ export const searchThreads = async (
 			offset: offset,
 			filter: filter,
 		};
-	} else if (action === "list_checkpoints") {
-		payload = {
-			limit: limit,
-			offset: offset,
-			filter: { thread_id: filter.thread_id },
-		};
-	} else if (action === "get_checkpoint") {
-		payload = {
-			limit: limit,
-			offset: offset,
-			filter: {
-				thread_id: filter.thread_id,
-				checkpoint_id: filter.checkpoint_id,
-			},
-		};
+	} else {
+		throw new Error(`Unsupported search action: ${action}`);
 	}
 	const response = await apiClient.post(`/threads/search`, payload, {
 		headers: {
@@ -249,10 +308,6 @@ export const searchThreads = async (
 
 	if (action === "list_threads") {
 		return data.threads;
-	} else if (action === "list_checkpoints") {
-		return data.checkpoints;
-	} else if (action === "get_checkpoint") {
-		return data.checkpoint;
 	}
 };
 

@@ -234,6 +234,7 @@ def init_config(
         configurable={
             "user_id": user_id,
             "thread_id": metadata.get("thread_id"),
+            "checkpoint_id": metadata.get("checkpoint_id"),
             "assistant_id": metadata.get("assistant_id", None),
             "project_id": metadata.get("project_id", None),
             "files": params.input.files or {},

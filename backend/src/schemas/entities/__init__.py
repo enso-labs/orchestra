@@ -31,6 +31,14 @@ from src.schemas.entities.hitl import (
     ResumeRequest as ResumeRequest,
     ResumeResponse as ResumeResponse,
 )
+from src.schemas.entities.checkpoint import (
+    ThreadCheckpointSummary as ThreadCheckpointSummary,
+    ThreadCheckpointListResponse as ThreadCheckpointListResponse,
+    ThreadCheckpointDetail as ThreadCheckpointDetail,
+    ThreadCheckpointDetailResponse as ThreadCheckpointDetailResponse,
+    ForkCheckpointRequest as ForkCheckpointRequest,
+    ForkCheckpointResponse as ForkCheckpointResponse,
+)
 from src.constants.examples import (
     ADD_DOCUMENTS_EXAMPLE,
     THREAD_HISTORY_EXAMPLE,

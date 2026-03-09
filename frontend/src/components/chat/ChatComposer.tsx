@@ -21,7 +21,9 @@ export default function ChatComposer({
 	showAgentMenu = false,
 	showSandboxStatus = false,
 }: ChatComposerProps) {
-	const { viewMode, setViewMode, filesMap, todos } = useChatContext();
+	const { viewMode, setViewMode, filesMap, todos, threadViewMode } =
+		useChatContext();
+	const isCheckpointPreview = threadViewMode === "checkpoint_preview";
 
 	const fileCount = Array.from(filesMap?.values() || []).reduce(
 		(acc: number, files: any) => acc + Object.keys(files || {}).length,
@@ -130,6 +132,12 @@ export default function ChatComposer({
 								</Button>
 							</div>
 						</div>
+					)}
+					{isCheckpointPreview && (
+						<p className="px-1 text-xs text-muted-foreground">
+							Checkpoint preview is read-only. Return to the latest thread or
+							restore this checkpoint as a new thread to continue chatting.
+						</p>
 					)}
 					<ChatInput showAgentMenu={showAgentMenu} />
 				</div>

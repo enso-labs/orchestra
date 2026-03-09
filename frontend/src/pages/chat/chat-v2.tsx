@@ -27,7 +27,7 @@ export function ChatV2Page() {
 	useEffectUpdateAssistantId();
 
 	useListThreadsEffect(!loading);
-	useListCheckpointsEffect(!loading, metadata);
+	useListCheckpointsEffect(!loading, metadata?.thread_id);
 	useInitialThreadRedirect({
 		threadId: metadata?.thread_id,
 		hasMessages: messages.length > 0,

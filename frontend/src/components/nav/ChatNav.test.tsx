@@ -1,20 +1,24 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import type { ReactNode } from "react";
 
-// Mock useChatContext
 const mockUseChatContext = vi.fn();
 vi.mock("@/context/ChatContext", () => ({
 	useChatContext: () => mockUseChatContext(),
 }));
 
-// Mock useAgentContext
 const mockUseAgentContext = vi.fn();
 vi.mock("@/context/AgentContext", () => ({
 	useAgentContext: () => mockUseAgentContext(),
 }));
 
-// Mock child components to isolate ChatNav
+const mockForkThreadCheckpoint = vi.fn();
+vi.mock("@/lib/services/threadService", () => ({
+	forkThreadCheckpoint: (...args: any[]) => mockForkThreadCheckpoint(...args),
+}));
+
 vi.mock("@/components/buttons/ColorModeButton", () => ({
 	ColorModeButton: () => <button data-testid="color-mode-button" />,
 }));
@@ -24,13 +28,42 @@ vi.mock("../buttons/NewThreadButton", () => ({
 vi.mock("../buttons/thread-share-button", () => ({
 	default: () => <button data-testid="share-button" />,
 }));
+vi.mock("@/components/dialogs/SaveAsAssistantDialog", () => ({
+	SaveAsAssistantDialog: () => null,
+}));
+vi.mock("@/components/ui/sheet", () => ({
+	Sheet: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+	SheetContent: ({ children }: { children: ReactNode }) => (
+		<div>{children}</div>
+	),
+	SheetHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+	SheetTitle: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
 
 import { ChatNav } from "./ChatNav";
 
 const defaultContext = {
-	viewMode: "chat" as const,
-	setViewMode: vi.fn(),
-	filesMap: new Map(),
+	metadata: { thread_id: "thread-123" },
+	checkpoints: [
+		{
+			checkpoint_id: "cp-1",
+			created_at: "2026-03-08T12:00:00Z",
+			source: "input",
+			message_preview: "First turn",
+			model: "openai:gpt-4.1-mini",
+			has_files: false,
+			has_todos: false,
+			has_interrupts: false,
+			is_restorable: true,
+			is_head: true,
+		},
+	],
+	checkpointsLoading: false,
+	checkpointsError: null,
+	threadViewMode: "latest" as const,
+	previewCheckpoint: null,
+	activeCheckpointId: "cp-1",
+	currentThread: { head_checkpoint_id: "cp-1" },
 };
 
 describe("ChatNav", () => {
@@ -48,28 +81,63 @@ describe("ChatNav", () => {
 			},
 			handleGetAgents: vi.fn(),
 		});
+		mockForkThreadCheckpoint.mockResolvedValue({
+			thread_id: "fork-123",
+			head_checkpoint_id: "fork-cp-1",
+			source_thread_id: "thread-123",
+			source_checkpoint_id: "cp-0",
+		});
 	});
 
-	it("does not render ModelBadge (moved to ChatInput)", () => {
-		render(<ChatNav />);
-		expect(screen.queryByTestId("model-badge")).not.toBeInTheDocument();
-	});
+	it("renders core nav elements and a history button", () => {
+		render(
+			<MemoryRouter>
+				<ChatNav />
+			</MemoryRouter>,
+		);
 
-	it("does not render SelectModel", () => {
-		render(<ChatNav />);
-		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-	});
-
-	it("does not accept showModelBadge prop (removed)", () => {
-		// ChatNav no longer has showModelBadge prop
-		render(<ChatNav />);
-		expect(screen.queryByTestId("model-badge")).not.toBeInTheDocument();
-	});
-
-	it("renders core nav elements", () => {
-		render(<ChatNav />);
 		expect(screen.getByTestId("color-mode-button")).toBeInTheDocument();
 		expect(screen.getByTestId("new-thread-button")).toBeInTheDocument();
 		expect(screen.getByTestId("share-button")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /history/i }),
+		).toBeInTheDocument();
+	});
+
+	it("shows the preview banner when a checkpoint preview is active", () => {
+		mockUseChatContext.mockReturnValue({
+			...defaultContext,
+			threadViewMode: "checkpoint_preview",
+			previewCheckpoint: {
+				checkpoint_id: "cp-0",
+				created_at: "2026-03-08T11:00:00Z",
+				is_restorable: true,
+			},
+			activeCheckpointId: "cp-0",
+		});
+
+		render(
+			<MemoryRouter>
+				<ChatNav />
+			</MemoryRouter>,
+		);
+
+		expect(screen.getByText(/Viewing checkpoint from/i)).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Restore as New Thread/i }),
+		).toBeInTheDocument();
+	});
+
+	it("renders checkpoint history entries when the history sheet opens", () => {
+		render(
+			<MemoryRouter>
+				<ChatNav />
+			</MemoryRouter>,
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: /history/i }));
+
+		expect(screen.getByText("Checkpoint History")).toBeInTheDocument();
+		expect(screen.getByText("First turn")).toBeInTheDocument();
 	});
 });

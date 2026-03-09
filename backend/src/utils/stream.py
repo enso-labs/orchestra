@@ -28,7 +28,6 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from src.utils.logger import log_to_file, logger
-from src.utils.format import get_time
 
 # Configurable stream timeout (default 60 seconds)
 STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
@@ -346,27 +345,24 @@ async def stream_generator(
         finally:
             try:
                 if service_context.user_id and checkpointer and agent:
-                    final_state = await agent.graph.aget_state(config)
+                    latest_config = RunnableConfig(configurable={"thread_id": config["configurable"].get("thread_id")})
+                    final_state = await agent.graph.aget_state(latest_config)
                     configurable = {
-                        **final_state.config.get("configurable", {}),
                         **config["configurable"],
+                        **final_state.config.get("configurable", {}),
                     }
                     messages = final_state.values.get("messages", [])
 
                     # Update the store with the final messages and files
                     service_context.store.fields = ["messages", "files"]
-                    await service_context.thread_service.update(
+                    await service_context.thread_service.update_checkpoint_snapshot(
                         thread_id=configurable.get("thread_id"),
-                        data={
-                            "thread_id": configurable.get("thread_id"),
-                            "checkpoint_id": configurable.get("checkpoint_id"),
-                            "assistant_id": configurable.get("assistant_id"),
-                            "project_id": configurable.get("project_id"),
-                            "messages": messages,
-                            "todos": todos_list,
-                            "files": files_map,
-                            "updated_at": get_time(),
-                        },
+                        checkpoint_id=configurable.get("checkpoint_id"),
+                        assistant_id=configurable.get("assistant_id"),
+                        project_id=configurable.get("project_id"),
+                        messages=messages,
+                        todos=todos_list,
+                        files=files_map,
                     )
                     # Log the update for debugging
                     logger.info(f"checkpoint: {ujson.dumps(configurable)}")

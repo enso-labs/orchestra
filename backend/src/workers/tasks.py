@@ -17,6 +17,7 @@ When CHECKPOINT_USE_RESILIENT is enabled:
 
 import ujson
 import redis.asyncio as redis
+from langchain_core.runnables import RunnableConfig
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
 from src.workers.broker import broker, REDIS_URL
@@ -206,7 +207,6 @@ async def _execute_agent_stream(
         _create_state_backend,
     )
     from src.utils.stream import handle_multi_mode
-    from src.utils.format import get_time
     from src.utils.logger import logger
     from src.services.errors import CheckpointConnectionError
     from src.services.abort import AbortService
@@ -375,32 +375,29 @@ async def _execute_agent_stream(
     # Update thread state with graceful checkpoint error handling
     if service_context.user_id and checkpointer:
         try:
-            final_state = await agent.graph.aget_state(config)
+            latest_config = RunnableConfig(configurable={"thread_id": config["configurable"].get("thread_id")})
+            final_state = await agent.graph.aget_state(latest_config)
 
             if not final_state or not final_state.values.get("messages"):
                 logger.warning(f"Checkpoint update resulted in empty state for thread {thread_id}")
 
             configurable = {
-                **final_state.config.get("configurable", {}),
                 **config["configurable"],
+                **final_state.config.get("configurable", {}),
             }
             messages = final_state.values.get("messages", [])
             if messages:
                 messages[-1].model = agent.model
 
             service_context.store.fields = ["messages", "files"]
-            await service_context.thread_service.update(
+            await service_context.thread_service.update_checkpoint_snapshot(
                 thread_id=configurable.get("thread_id"),
-                data={
-                    "thread_id": configurable.get("thread_id"),
-                    "checkpoint_id": configurable.get("checkpoint_id"),
-                    "assistant_id": configurable.get("assistant_id"),
-                    "project_id": configurable.get("project_id"),
-                    "messages": messages,
-                    "todos": todos_list,
-                    "files": files_map,
-                    "updated_at": get_time(),
-                },
+                checkpoint_id=configurable.get("checkpoint_id"),
+                assistant_id=configurable.get("assistant_id"),
+                project_id=configurable.get("project_id"),
+                messages=messages,
+                todos=todos_list,
+                files=files_map,
             )
             logger.info(f"checkpoint: {ujson.dumps(configurable)}")
         except CheckpointConnectionError as e:

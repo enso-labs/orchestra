@@ -46,4 +46,8 @@ class Thread(BaseEntity):
     messages: list[Union[BaseMessage, dict]] = Field(default_factory=list)
     files: Optional[Any] = None
     todos: Optional[Any] = None
+    assistant_id: Optional[str] = None
+    project_id: Optional[str] = None
+    head_checkpoint_id: Optional[str] = None
+    checkpoint_count: Optional[int] = None
     score: float | None = None

@@ -12,6 +12,7 @@ interface ChatSubmitButtonProps {
 	handleSubmit?: (query: string, images: File[]) => void;
 	onRecordingChange?: (isRecording: boolean) => void;
 	recorderControls?: any;
+	disabled?: boolean;
 }
 
 function ChatSubmitButton({
@@ -19,6 +20,7 @@ function ChatSubmitButton({
 	handleSubmit: _handleSubmit,
 	onRecordingChange,
 	recorderControls,
+	disabled = false,
 }: ChatSubmitButtonProps) {
 	// _handleSubmit is kept for backward compatibility but enqueue from context is used instead
 	void _handleSubmit;
@@ -27,6 +29,7 @@ function ChatSubmitButton({
 
 	// Helper to enqueue and clear input
 	const handleEnqueue = () => {
+		if (disabled) return;
 		enqueue(query, images);
 		setQuery("");
 		setImages([]);
@@ -79,7 +82,7 @@ function ChatSubmitButton({
 				event.preventDefault();
 
 				// Only allow recording when query is empty
-				if (query.trim() === "" && images.length === 0) {
+				if (!disabled && query.trim() === "" && images.length === 0) {
 					if (isRecordingInProgress) {
 						handleStopRecording();
 					} else {
@@ -140,6 +143,19 @@ function ChatSubmitButton({
 					</Button>
 				</MainToolTip>
 			</div>
+		);
+	}
+
+	if (disabled) {
+		return (
+			<MainToolTip
+				content="Checkpoint preview is read-only"
+				delayDuration={500}
+			>
+				<Button disabled size="icon" className="w-10 h-10 rounded-full m-1">
+					<ArrowUp className="h-7 w-7" />
+				</Button>
+			</MainToolTip>
 		);
 	}
 

@@ -55,6 +55,8 @@ def _make_service_context(store=None, user_id="user-1"):
     ctx.llm_service.assistant = AsyncMock(side_effect=lambda p: p)
     ctx.memory_service = MagicMock()
     ctx.thread_service.update = AsyncMock()
+    ctx.thread_service.update_checkpoint_snapshot = AsyncMock()
+    ctx.thread_service.get = AsyncMock(return_value=None)
     return ctx
 
 

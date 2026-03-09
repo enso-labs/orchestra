@@ -55,7 +55,7 @@ export default function ProjectPage() {
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
 	useListThreadsEffect(!loading);
-	useListCheckpointsEffect(!loading, metadata);
+	useListCheckpointsEffect(!loading, metadata?.thread_id);
 
 	// Fetch project data
 	useEffect(() => {
