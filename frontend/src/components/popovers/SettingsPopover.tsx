@@ -71,7 +71,7 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => window.open("https://enso.sh", "_blank")}
+						onClick={() => window.open("https://ruska.ai", "_blank")}
 					>
 						<Globe className="h-4 w-4" />
 						Website
@@ -96,7 +96,7 @@ export function SettingsPopover() {
 						onClick={() => {
 							logout();
 							clearMessages();
-							navigate("/");
+							navigate("/login");
 						}}
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"

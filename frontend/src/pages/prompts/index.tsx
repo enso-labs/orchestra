@@ -73,7 +73,11 @@ function PromptsIndexPage() {
 			</div>
 			<div className="absolute top-4 left-4 z-10">
 				<div className="flex flex-row gap-2 items-center">
-					<Button variant="outline" size="icon" onClick={() => navigate("/")}>
+					<Button
+						variant="outline"
+						size="icon"
+						onClick={() => navigate("/chat")}
+					>
 						<HouseIcon />
 					</Button>
 				</div>

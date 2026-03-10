@@ -11,13 +11,15 @@ export function ShareNav() {
 			<div className="mx-auto px-4 sm:px-6 lg:px-4 py-4">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center">
-						<Link to="/" className="flex items-center gap-2">
+						<Link to="/login" className="flex items-center gap-2">
 							<img
 								src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
 								alt="Logo"
 								className="w-8 h-8 rounded-full"
 							/>
-							<h1 className="text-2xl font-bold text-foreground">Ensō</h1>
+							<h1 className="text-2xl font-bold italic text-foreground">
+								ORCHESTRA
+							</h1>
 						</Link>
 					</div>
 

@@ -95,7 +95,7 @@ function SchedulesIndexPage() {
 	const handleEventClick = (event: ScheduleEvent) => {
 		if (event.resource.thread_id) {
 			window.open(
-				`/?t=${event.resource.thread_id}`,
+				`/thread/${event.resource.thread_id}`,
 				"_blank",
 				"noopener,noreferrer",
 			);
@@ -303,7 +303,11 @@ function SchedulesIndexPage() {
 			</div>
 			<div className="absolute top-4 left-4 z-10">
 				<div className="flex flex-row gap-2 items-center">
-					<Button variant="outline" size="icon" onClick={() => navigate("/")}>
+					<Button
+						variant="outline"
+						size="icon"
+						onClick={() => navigate("/chat")}
+					>
 						<HouseIcon />
 					</Button>
 					<MainToolTip content="Agents" delayDuration={500}>

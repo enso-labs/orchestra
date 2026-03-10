@@ -95,8 +95,8 @@ export default function SharedThreadPage() {
 					<p className="text-muted-foreground mb-4">
 						{error || "This shared link may have expired or been revoked"}
 					</p>
-					<Link to="/">
-						<Button variant="outline">Go to Home</Button>
+					<Link to="/login">
+						<Button variant="outline">Go to Login</Button>
 					</Link>
 				</div>
 			</NoAuthLayout>
@@ -112,7 +112,7 @@ export default function SharedThreadPage() {
 		<div className="flex items-center justify-between p-4 border-b border-border shrink-0">
 			<div className="flex items-center gap-4">
 				{/* Branding */}
-				<Link to="/" className="flex items-center gap-0.5">
+				<Link to="/login" className="flex items-center gap-0.5">
 					<img
 						src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
 						alt="Logo"

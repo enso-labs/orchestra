@@ -810,7 +810,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		clearMessages,
 	} = useChatContext();
 	const { projects, useEffectGetProjects } = useProjectContext();
-	const onLogoLinkClick = useLinkClick("/");
+	const onLogoLinkClick = useLinkClick("/chat");
 	// Modal state
 	const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
 		useState(false);
@@ -838,7 +838,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				<SidebarHeader>
 					{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
 					<Link
-						to="/"
+						to="/chat"
 						onClick={(e) => {
 							clearMessages();
 							onLogoLinkClick(e);
