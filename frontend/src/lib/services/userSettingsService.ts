@@ -7,6 +7,12 @@ export interface ProviderKeyStatus {
 	is_set: boolean;
 }
 
+export interface PersistedContextFile {
+	content: string[];
+	created_at: string | null;
+	modified_at: string | null;
+}
+
 export interface DefaultsResponse {
 	model: string | null;
 	sandbox: string | null;
@@ -15,6 +21,8 @@ export interface DefaultsResponse {
 	a2a: Record<string, any> | null;
 	subagents: string[] | null;
 	model_visibility: string[] | null;
+	files: Record<string, PersistedContextFile> | null;
+	deleted_files: string[] | null;
 }
 
 export interface UserSettingsResponse {
@@ -36,6 +44,8 @@ export const patchDefaults = async (
 		a2a: Record<string, any> | null;
 		subagents: string[] | null;
 		model_visibility: string[] | null;
+		files: Record<string, PersistedContextFile> | null;
+		deleted_files: string[] | null;
 	}>,
 ): Promise<UserSettingsResponse> => {
 	const response = await apiClient.patch("/settings/default", data);

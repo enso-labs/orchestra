@@ -1,9 +1,9 @@
-from typing import Optional
-import uuid
 from datetime import datetime, timezone
+import uuid
+from typing import Any, Optional
 
 from src.repos.base_repo import BaseRepo
-from src.schemas.entities.settings import UserSettings, ProviderKeyStatus, SandboxType
+from src.schemas.entities.settings import PersistedContextFile, ProviderKeyStatus, SandboxType, UserSettings
 from src.utils.security import encrypt_value, decrypt_value
 from src.constants import UserTokenKey
 
@@ -50,6 +50,39 @@ class UserSettingsRepo(BaseRepo):
             return None
         return encrypt_value(keys)
 
+    def _validate_absolute_path(self, path: str, field_name: str) -> str:
+        if not isinstance(path, str) or not path.strip():
+            raise ValueError(f"Invalid {field_name} path: expected a non-empty absolute path")
+        if not path.startswith("/"):
+            raise ValueError(f"Invalid {field_name} path '{path}': path must be absolute")
+        return path
+
+    def _normalize_default_files(self, files: Any) -> dict[str, PersistedContextFile] | None:
+        if files is None:
+            return None
+        if not isinstance(files, dict):
+            raise ValueError("Invalid files payload: expected an object keyed by absolute path")
+
+        normalized: dict[str, PersistedContextFile] = {}
+        for path, raw_value in files.items():
+            absolute_path = self._validate_absolute_path(path, "files")
+            if not isinstance(raw_value, dict):
+                raise ValueError(f"Invalid files value for '{absolute_path}': expected an object")
+            if "content" not in raw_value:
+                raise ValueError(f"Invalid files value for '{absolute_path}': missing content")
+            normalized[absolute_path] = PersistedContextFile.model_validate(raw_value)
+
+        return normalized
+
+    def _normalize_deleted_files(self, deleted_files: Any) -> list[str] | None:
+        if deleted_files is None:
+            return None
+        if not isinstance(deleted_files, list):
+            raise ValueError("Invalid deleted_files payload: expected a list of absolute paths")
+
+        normalized = {self._validate_absolute_path(path, "deleted_files") for path in deleted_files}
+        return sorted(normalized)
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -88,6 +121,8 @@ class UserSettingsRepo(BaseRepo):
         "a2a": "default_a2a",
         "subagents": "default_subagents",
         "model_visibility": "default_model_visibility",
+        "files": "default_files",
+        "deleted_files": "default_deleted_files",
     }
 
     async def patch_defaults(self, data: dict) -> UserSettings:
@@ -96,6 +131,10 @@ class UserSettingsRepo(BaseRepo):
             valid = [e.value for e in SandboxType]
             if data["sandbox"] not in valid:
                 raise ValueError(f"Invalid sandbox '{data['sandbox']}'. Must be one of: {valid}")
+        if "files" in data:
+            data["files"] = self._normalize_default_files(data["files"])
+        if "deleted_files" in data:
+            data["deleted_files"] = self._normalize_deleted_files(data["deleted_files"])
         settings = await self._get_or_create()
         for key, value in data.items():
             field = self._DEFAULTS_FIELD_MAP.get(key)

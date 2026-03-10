@@ -31,6 +31,8 @@ def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -
             a2a=settings.default_a2a,
             subagents=settings.default_subagents,
             model_visibility=settings.default_model_visibility,
+            files=settings.default_files,
+            deleted_files=settings.default_deleted_files,
         ),
         provider_keys=statuses,
     )

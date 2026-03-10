@@ -32,9 +32,10 @@ except ImportError:
 
 from src.constants import APP_ENV, DAYTONA_API_KEY
 from src.contexts.service import ServiceContext
-from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
+from src.constants.llm import DEFAULT_CHAT_MODEL
 from src.schemas.entities.llm import Assistant, LLMInput
 from src.services.memory import memory_service
+from src.services.prompt.defaults import get_default_system_prompt
 from src.tools.memory import MEMORY_TOOLS
 from src.schemas.entities import LLMRequest
 from src.utils.logger import logger
@@ -192,7 +193,9 @@ async def init_tools(
 async def init_subagents(subagents: list[Assistant], service_context: ServiceContext) -> list[SubAgent]:
     result = []
     for subagent in subagents:
-        system_prompt = subagent.system_prompt or init_system_prompt(DEFAULT_SYSTEM_PROMPT, {}, subagent.instructions)
+        system_prompt = subagent.system_prompt or init_system_prompt(
+            get_default_system_prompt(), {}, subagent.instructions
+        )
         subagent_dict = {
             "name": subagent.slug,
             "description": subagent.description,

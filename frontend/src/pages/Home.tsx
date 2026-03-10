@@ -8,7 +8,7 @@ import { Agent } from "@/lib/services/agentService";
 import { ChatNav } from "@/components/nav/ChatNav";
 
 export default function Home() {
-	const { messages, useModelsEffect, viewMode, filesMap } = useChatContext();
+	const { messages, useModelsEffect, viewMode, fileSystem } = useChatContext();
 	const { setAgent } = useAgentContext();
 
 	// Fetch available models
@@ -21,7 +21,7 @@ export default function Home() {
 		}));
 	}, []);
 
-	if (messages.length === 0 && viewMode === "chat" && filesMap.size === 0) {
+	if (messages.length === 0 && viewMode === "chat" && fileSystem.size === 0) {
 		return (
 			<NoAuthLayout>
 				<HomeSection />

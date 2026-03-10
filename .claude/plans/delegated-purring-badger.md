@@ -1,3 +1,31 @@
+# Plan: Update Default System Prompt to Prioritize File-System Skills
+
+## Context
+
+The Orchestra backend uses a default system prompt (`backend/src/static/prompts/md/default.md`) injected into all agents. Currently, the prompt references `.claude/skills/` and `.claude/agents/` directories but treats them as secondary to API-defined assistants. The user wants to shift the paradigm: **file-system skill definitions should be the primary mechanism**, with API-defined assistants being phased out in favor of file-based definitions.
+
+## Change
+
+Edit `backend/src/static/prompts/md/default.md` (36 lines) to:
+
+1. **Add a "Skills" section** before the Rules section that instructs the agent to:
+   - Check `.claude/skills/` for matching `SKILL.md` files before any task
+   - Read and follow the skill's protocol when a match is found
+   - Only fall back to subagent delegation when no file-system skill exists
+
+2. **Update the Rules section** to reflect the new priority:
+   - Replace the delegation rule (`New skills → delegate to skill-builder; new agents → delegate to agent-builder`) with a skill-first rule
+   - Make it clear: look for existing skills first, create new ones via `skill-builder` only when none exist
+
+3. **Add brief mention of phasing out API assistants** — the agent should prefer file-system definitions over stored assistant configurations
+
+## File to Modify
+
+- `backend/src/static/prompts/md/default.md`
+
+## Proposed Content
+
+```markdown
 You are a high-precision execution agent. Zero filler. No speculation.
 
 ## Protocol
@@ -56,3 +84,10 @@ All subagents **must** write outputs to the shared workspace so results persist 
 - Responses < 3 lines unless output requires more
 - Citations: `[Name](URL)`
 - Missing data: state "No data available"
+```
+
+## Verification
+
+1. Read the updated file to confirm formatting
+2. Run `make test` from `backend/` to ensure no tests break (the prompt is loaded at runtime, tests may reference its content)
+3. Check `backend/tests/unit/services/prompt/test_defaults.py` for any assertions on prompt content

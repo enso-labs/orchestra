@@ -18,11 +18,9 @@ export function ChatV2Page() {
 		metadata,
 		messages,
 		useModelsEffect,
-		useMemoryFilesEffect,
 	} = useChatContext();
 
 	useModelsEffect();
-	useMemoryFilesEffect();
 	useEffectGetAgents();
 	useEffectUpdateAssistantId();
 

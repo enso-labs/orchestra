@@ -48,53 +48,56 @@ async def test_dispatches_to_taskiq_when_distributed(task_dict_with_thread):
 @patch("src.constants.DISTRIBUTED_WORKERS", False)
 async def test_in_process_when_not_distributed(task_dict_with_thread):
     """When DISTRIBUTED_WORKERS=false, the in-process path runs (not kiq)."""
+    from contextlib import asynccontextmanager
+
     mock_kiq = AsyncMock()
     mock_task = MagicMock()
     mock_task.kiq = mock_kiq
 
+    mock_agent = AsyncMock()
+    mock_agent.model = "gpt-4"
+    mock_agent.invoke = AsyncMock(return_value={"files": {}, "todos": []})
+    mock_agent.graph.aget_state = AsyncMock(
+        return_value=MagicMock(
+            config={"configurable": {}},
+            values={"messages": [MagicMock(model="gpt-4")]},
+        )
+    )
+
+    mock_svc_ctx = MagicMock()
+    mock_svc_ctx.user_id = "u1"
+    mock_svc_ctx.checkpointer = MagicMock()
+    mock_svc_ctx.memory_service = MagicMock()
+    mock_svc_ctx.thread_service.update = AsyncMock()
+    mock_svc_ctx.store = MagicMock()
+    mock_svc_ctx.store.fields = []
+
+    # The assistant side_effect must replace the last message with something
+    # that supports .model assignment (ChatMessage is a strict pydantic model).
+    async def _assistant(params):
+        params.input.messages[-1] = MagicMock(model=None)
+        return params
+
+    mock_svc_ctx.llm_service.assistant = AsyncMock(side_effect=_assistant)
+
+    @asynccontextmanager
+    async def fake_store_db():
+        yield MagicMock()
+
+    @asynccontextmanager
+    async def fake_checkpoint_db():
+        yield MagicMock()
+
     with (
         patch("src.workers.tasks.run_agent_stream", mock_task),
-        patch("src.schemas.entities.LLMRequest") as mock_req,
-        patch("src.agents.construct_agent") as mock_construct,
-        patch("src.agents.init_config") as mock_init_config,
-        patch("src.services.db.get_checkpoint_db") as mock_cp,
-        patch("src.services.db.get_store_db") as mock_store,
-        patch("src.contexts.service.ServiceContext") as mock_ctx,
+        patch("src.services.db.get_store_db", fake_store_db),
+        patch("src.services.db.get_checkpoint_db", fake_checkpoint_db),
+        patch("src.contexts.service.ServiceContext", return_value=mock_svc_ctx),
+        patch("src.agents.init_config", return_value={"metadata": {}, "configurable": {}}),
+        patch("src.agents.construct_agent", AsyncMock(return_value=mock_agent)),
+        patch("src.agents.prepare_memory_files", AsyncMock(return_value=({}, []))),
+        patch("src.services.context_files.resolve_context_files", AsyncMock(return_value={})),
     ):
-        mock_init_config.return_value = {"metadata": {}, "configurable": {}}
-        mock_params = MagicMock()
-        mock_params.metadata.thread_id = "t1"
-        mock_params.metadata.user_id = "u1"
-        mock_params.input.messages = [MagicMock()]
-        mock_req.return_value = mock_params
-
-        mock_agent = AsyncMock()
-        mock_agent.model = "gpt-4"
-        mock_agent.invoke = AsyncMock(return_value={"files": {}, "todos": []})
-        mock_agent.graph.aget_state = AsyncMock(
-            return_value=MagicMock(
-                config={"configurable": {}},
-                values={"messages": [MagicMock(model="gpt-4")]},
-            )
-        )
-        mock_construct.return_value = mock_agent
-
-        mock_store_instance = MagicMock()
-        mock_cp_instance = MagicMock()
-        mock_store.return_value.__aenter__ = AsyncMock(return_value=mock_store_instance)
-        mock_store.return_value.__aexit__ = AsyncMock(return_value=False)
-        mock_cp.return_value.__aenter__ = AsyncMock(return_value=mock_cp_instance)
-        mock_cp.return_value.__aexit__ = AsyncMock(return_value=False)
-
-        mock_svc_ctx = MagicMock()
-        mock_svc_ctx.user_id = "u1"
-        mock_svc_ctx.checkpointer = mock_cp_instance
-        mock_svc_ctx.llm_service.assistant = AsyncMock(return_value=mock_params)
-        mock_svc_ctx.thread_service.update = AsyncMock()
-        mock_svc_ctx.store = mock_store_instance
-        mock_svc_ctx.store.fields = []
-        mock_ctx.return_value = mock_svc_ctx
-
         await scheduled_llm_invoke(task_dict=task_dict_with_thread, user_id="u1", title="test")
 
     mock_kiq.assert_not_called()

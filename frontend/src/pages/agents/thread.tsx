@@ -32,7 +32,9 @@ function AgentThreadPage() {
 		setFilesMap,
 		setTodos,
 		fromBackendFormat,
-		clearFileSystem,
+		clearBackendSyncFiles,
+		clearThreadScopedFiles,
+		runWithPersistentSyncSuspended,
 	} = useChatContext();
 
 	useEffectGetAgent(agentId!);
@@ -82,16 +84,19 @@ function AgentThreadPage() {
 		return () => {
 			setSearchParams(new URLSearchParams());
 			setAgent(INIT_AGENT_STATE.agent);
-			clearFileSystem();
+			clearBackendSyncFiles();
+			clearThreadScopedFiles();
 		};
 	}, []);
 
 	// Sync agent.file_system to fileSystem when agent loads
 	useEffect(() => {
 		if (agent?.files && Object.keys(agent.files).length > 0) {
-			fromBackendFormat(agent.files);
+			runWithPersistentSyncSuspended(() => {
+				fromBackendFormat(agent.files);
+			});
 		}
-	}, [agent?.id, fromBackendFormat]);
+	}, [agent?.id, fromBackendFormat, runWithPersistentSyncSuspended]);
 
 	return (
 		<ChatLayout>

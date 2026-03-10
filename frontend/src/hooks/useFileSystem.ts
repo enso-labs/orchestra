@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 
 /**
  * File data structure stored in the file system
@@ -37,6 +37,14 @@ export interface FileSystemActions {
 
 	// Bulk operations
 	importFiles: (files: Map<string, FileData>) => void;
+	replaceFiles: (files: Map<string, FileData>) => void;
+	syncFiles: (
+		files: Map<string, FileData>,
+		options?: {
+			openNewTabs?: boolean;
+			resetDirtyFiles?: boolean;
+		},
+	) => void;
 	clearFileSystem: () => void;
 	getFilesForSubmission: () => Record<string, FileData>;
 
@@ -71,6 +79,15 @@ export function useFileSystem(): FileSystemHook {
 	const [openTabs, setOpenTabs] = useState<string[]>([]);
 	const [activeFile, setActiveFile] = useState<string | null>(null);
 	const [dirtyFiles, setDirtyFiles] = useState<Set<string>>(() => new Set());
+	const fileSystemRef = useRef(fileSystem);
+	const openTabsRef = useRef(openTabs);
+	const activeFileRef = useRef(activeFile);
+	const dirtyFilesRef = useRef(dirtyFiles);
+
+	fileSystemRef.current = fileSystem;
+	openTabsRef.current = openTabs;
+	activeFileRef.current = activeFile;
+	dirtyFilesRef.current = dirtyFiles;
 
 	// =========================================================================
 	// File Operations (modify fileSystem)
@@ -275,6 +292,66 @@ export function useFileSystem(): FileSystemHook {
 		setActiveFile((prev) => prev || paths[0] || null);
 	}, []);
 
+	const syncFiles = useCallback(
+		(
+			files: Map<string, FileData>,
+			options: {
+				openNewTabs?: boolean;
+				resetDirtyFiles?: boolean;
+			} = {},
+		) => {
+			const nextFiles = files ? new Map(files) : new Map<string, FileData>();
+			const { openNewTabs = true, resetDirtyFiles = false } = options;
+			const nextPaths = Array.from(nextFiles.keys());
+
+			const preservedTabs = openTabsRef.current.filter((path) =>
+				nextFiles.has(path),
+			);
+			const nextOpenTabs = [...preservedTabs];
+
+			if (openNewTabs) {
+				for (const path of nextPaths) {
+					if (!nextOpenTabs.includes(path)) {
+						nextOpenTabs.push(path);
+					}
+				}
+			}
+
+			const currentActive = activeFileRef.current;
+			const nextActive =
+				currentActive && nextFiles.has(currentActive)
+					? currentActive
+					: nextOpenTabs[0] || null;
+
+			const nextDirtyFiles = resetDirtyFiles
+				? new Set<string>()
+				: new Set(
+						Array.from(dirtyFilesRef.current).filter((path) =>
+							nextFiles.has(path),
+						),
+					);
+
+			setFileSystem(nextFiles);
+			setOpenTabs(nextOpenTabs);
+			setActiveFile(nextActive);
+			setDirtyFiles(nextDirtyFiles);
+		},
+		[],
+	);
+
+	/**
+	 * Replace the entire file system with a new set of files.
+	 */
+	const replaceFiles = useCallback(
+		(files: Map<string, FileData>) => {
+			syncFiles(files, {
+				openNewTabs: true,
+				resetDirtyFiles: true,
+			});
+		},
+		[syncFiles],
+	);
+
 	/**
 	 * Clear all file system state
 	 */
@@ -382,6 +459,8 @@ export function useFileSystem(): FileSystemHook {
 			selectTab,
 			// Bulk operations
 			importFiles,
+			replaceFiles,
+			syncFiles,
 			clearFileSystem,
 			getFilesForSubmission,
 			// Backend sync
@@ -404,6 +483,8 @@ export function useFileSystem(): FileSystemHook {
 			closeTab,
 			selectTab,
 			importFiles,
+			replaceFiles,
+			syncFiles,
 			clearFileSystem,
 			getFilesForSubmission,
 			toBackendFormat,

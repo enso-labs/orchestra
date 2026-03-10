@@ -315,3 +315,46 @@ class TestWorkerModelResolution:
             call_kwargs = mock_construct.call_args[1]
             assert call_kwargs["model"] == DEFAULT_CHAT_MODEL
             assert call_kwargs["api_key"] is None
+
+    @pytest.mark.asyncio
+    async def test_worker_uses_prepare_memory_files(self):
+        """Worker execution loads memory files via prepare_memory_files and merges them."""
+        params = _make_params(model="openai:gpt-4o")
+        ctx = _make_service_context()
+
+        with (
+            patch(_PATCHES["settings_repo"]) as MockRepo,
+            patch(_PATCHES["resolve_api_key"], return_value=None),
+            patch(
+                _PATCHES["prepare_memory"],
+                new_callable=AsyncMock,
+                return_value=({"/memory.md": {"content": ["memory"]}}, ["/memory.md"]),
+            ) as mock_prepare_memory,
+            patch(_PATCHES["construct_agent"], new_callable=AsyncMock) as mock_construct,
+            patch(
+                _PATCHES["init_backend"],
+                return_value=(MagicMock(), None, "state"),
+            ),
+        ):
+            instance = MockRepo.return_value
+            instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model=None))
+            instance._decrypt_keys = MagicMock(return_value={})
+
+            mock_construct.return_value = _mock_agent("openai:gpt-4o")
+
+            from src.workers.tasks import _execute_agent_stream
+
+            await _execute_agent_stream(
+                params=params,
+                config={"configurable": {"thread_id": "t1"}},
+                files_map={"/config.md": {"content": ["config"]}},
+                todos_list=[],
+                service_context=ctx,
+                checkpointer=MagicMock(),
+                user_id="user-1",
+                thread_id="t1",
+                stream_key="agent:stream:t1",
+                redis_client=_mock_redis(),
+            )
+
+            mock_prepare_memory.assert_awaited_once()
