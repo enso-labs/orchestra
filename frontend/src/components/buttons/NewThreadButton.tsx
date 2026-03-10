@@ -4,8 +4,14 @@ import { Plus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 function NewThreadButton() {
-	const { messages, clearMessages, metadata, resetToDefault, loadMemoryFiles } =
-		useChatContext();
+	const {
+		messages,
+		clearMessages,
+		metadata,
+		resetToDefault,
+		loadPersistentContextFiles,
+		clearThreadScopedFiles,
+	} = useChatContext();
 	const navigate = useNavigate();
 	const location = useLocation();
 
@@ -14,10 +20,10 @@ function NewThreadButton() {
 			window.open(window.location.href, "_blank");
 		} else {
 			clearMessages();
+			clearThreadScopedFiles?.();
 			// Reset model to user's default for new conversations
 			resetToDefault?.();
-			// Reload memory files after clear wipes the filesystem
-			loadMemoryFiles?.();
+			loadPersistentContextFiles?.();
 			const pathname = location.pathname;
 
 			// Handle thread routes

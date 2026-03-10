@@ -26,7 +26,19 @@ vi.mock("@/layouts/ChatLayout", () => ({
 }));
 
 vi.mock("@/components/sections/agent-section", () => ({
-	default: () => <div data-testid="agent-section" />,
+	default: ({
+		showAgentMenu,
+		showSandboxStatus,
+	}: {
+		showAgentMenu?: boolean;
+		showSandboxStatus?: boolean;
+	}) => (
+		<div
+			data-testid="agent-section"
+			data-show-agent-menu={String(showAgentMenu)}
+			data-show-sandbox-status={String(showSandboxStatus)}
+		/>
+	),
 }));
 
 vi.mock("@/components/chat/ChatComposer", () => ({
@@ -156,6 +168,10 @@ describe("ChatPanel", () => {
 		);
 
 		expect(screen.getByTestId("agent-section")).toBeInTheDocument();
+		expect(screen.getByTestId("agent-section")).toHaveAttribute(
+			"data-show-sandbox-status",
+			"true",
+		);
 		expect(screen.queryByTestId("chat-composer")).not.toBeInTheDocument();
 	});
 });

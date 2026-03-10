@@ -5,6 +5,7 @@ import React, {
 	useCallback,
 	useRef,
 } from "react";
+import { flushSync } from "react-dom";
 import {
 	FileText,
 	Download,
@@ -70,12 +71,12 @@ export default function FileEditorPanel() {
 		dirtyFiles,
 		createFile,
 		updateFile,
-		deleteFile,
+		deletePath,
 		renameFile: renameFileAction,
 		closeTab,
 		selectTab,
 		markDirty,
-		markClean,
+		savePersistentContextFiles,
 		setViewMode,
 	} = useChatContext() as {
 		fileSystem: Map<
@@ -92,12 +93,16 @@ export default function FileEditorPanel() {
 		dirtyFiles: Set<string>;
 		createFile: (path: string, content?: string) => void;
 		updateFile: (path: string, content: string) => void;
-		deleteFile: (path: string) => void;
+		deletePath: (path: string) => void;
 		renameFile: (oldPath: string, newPath: string) => void;
 		closeTab: (path: string) => void;
 		selectTab: (path: string) => void;
 		markDirty: (path: string) => void;
-		markClean: (path: string) => void;
+		savePersistentContextFiles: (options?: {
+			reason?: "manual" | "autosave";
+			showSuccessToast?: boolean;
+			force?: boolean;
+		}) => Promise<boolean>;
 		setViewMode: (mode: string) => void;
 	};
 
@@ -121,6 +126,8 @@ export default function FileEditorPanel() {
 
 	// Debounce timer ref
 	const debounceRef = useRef<NodeJS.Timeout | null>(null);
+	const pendingDebounceFileRef = useRef<string | null>(null);
+	const latestEditorValueRef = useRef<string>("");
 
 	// Track processed blobs to prevent re-processing
 	const processedBlobRef = useRef<Blob | null>(null);
@@ -177,9 +184,34 @@ export default function FileEditorPanel() {
 		() => Array.from(fileSystem.keys()),
 		[fileSystem],
 	);
+	const deleteTargetMatches = useMemo(() => {
+		if (!fileToDelete) {
+			return [];
+		}
+		const folderPrefix = fileToDelete.endsWith("/")
+			? fileToDelete
+			: `${fileToDelete}/`;
+		return allFilePaths.filter(
+			(path) => path === fileToDelete || path.startsWith(folderPrefix),
+		);
+	}, [allFilePaths, fileToDelete]);
+	const isFolderDelete = Boolean(
+		fileToDelete &&
+		!fileSystem.has(fileToDelete) &&
+		deleteTargetMatches.some((path) => path.startsWith(`${fileToDelete}/`)),
+	);
 
 	// Use activeFile from context (no local selectedFile state needed)
 	const selectedFile = activeFile;
+
+	useEffect(() => {
+		if (!selectedFile) {
+			latestEditorValueRef.current = "";
+			return;
+		}
+
+		latestEditorValueRef.current = getFileContent(selectedFile);
+	}, [getFileContent, selectedFile]);
 
 	// Parse selected file path into breadcrumb segments
 	const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
@@ -459,19 +491,87 @@ export default function FileEditorPanel() {
 		(value: string | undefined) => {
 			if (!selectedFile || value === undefined) return;
 
+			latestEditorValueRef.current = value;
+
 			// Mark as dirty immediately
 			markDirty(selectedFile);
 
 			// Debounce the actual update
 			if (debounceRef.current) clearTimeout(debounceRef.current);
+			pendingDebounceFileRef.current = selectedFile;
 			debounceRef.current = setTimeout(() => {
 				updateFile(selectedFile, value);
-				// Clear dirty state after save
-				markClean(selectedFile);
+				debounceRef.current = null;
+				pendingDebounceFileRef.current = null;
 			}, 300);
 		},
-		[selectedFile, updateFile, markDirty, markClean],
+		[selectedFile, updateFile, markDirty],
 	);
+
+	const flushPendingEditorChange = useCallback(() => {
+		if (
+			!selectedFile ||
+			!debounceRef.current ||
+			pendingDebounceFileRef.current !== selectedFile
+		) {
+			return;
+		}
+
+		clearTimeout(debounceRef.current);
+		debounceRef.current = null;
+		pendingDebounceFileRef.current = null;
+
+		flushSync(() => {
+			updateFile(selectedFile, latestEditorValueRef.current);
+		});
+	}, [selectedFile, updateFile]);
+
+	const handleManualPersistentSave = useCallback(async () => {
+		if (!selectedFile || !fileSystem.has(selectedFile)) {
+			return;
+		}
+
+		flushPendingEditorChange();
+		await savePersistentContextFiles({
+			reason: "manual",
+			showSuccessToast: true,
+			force: true,
+		});
+	}, [
+		fileSystem,
+		flushPendingEditorChange,
+		savePersistentContextFiles,
+		selectedFile,
+	]);
+
+	useEffect(() => {
+		return () => {
+			if (debounceRef.current) {
+				clearTimeout(debounceRef.current);
+			}
+		};
+	}, []);
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (
+				!event.altKey ||
+				event.key.toLowerCase() !== "s" ||
+				!selectedFile ||
+				!fileSystem.has(selectedFile)
+			) {
+				return;
+			}
+
+			event.preventDefault();
+			void handleManualPersistentSave();
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [fileSystem, handleManualPersistentSave, selectedFile]);
 
 	// Create new file (createFile auto-opens tab and selects)
 	const handleCreateFile = () => {
@@ -487,14 +587,13 @@ export default function FileEditorPanel() {
 		setPathError("");
 	};
 
-	// Delete file (deleteFile handles tab closing and selection)
+	// Delete file or folder from the visible workspace
 	const handleDeleteFile = () => {
 		if (!fileToDelete) return;
-		deleteFile(fileToDelete);
+		deletePath(fileToDelete);
 		setShowDeleteDialog(false);
 		setFileToDelete(null);
-		// If this was the last file, reset to chat mode
-		if (allFilePaths.length === 1) {
+		if (deleteTargetMatches.length === allFilePaths.length) {
 			setViewMode("chat");
 		}
 	};
@@ -680,11 +779,7 @@ export default function FileEditorPanel() {
 					onCollapse={handleTreeCollapse}
 					onExpand={handleTreeExpand}
 					className={
-						isTreeCollapsed
-							? "hidden"
-							: isMobile
-								? "!flex-[1_1_100%]"
-								: ""
+						isTreeCollapsed ? "hidden" : isMobile ? "!flex-[1_1_100%]" : ""
 					}
 				>
 					<FileTreeSidebar
@@ -1068,7 +1163,9 @@ export default function FileEditorPanel() {
 			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Delete File</DialogTitle>
+						<DialogTitle>
+							Delete {isFolderDelete ? "Folder" : "File"}
+						</DialogTitle>
 					</DialogHeader>
 					<p className="py-4">
 						Are you sure you want to delete{" "}
@@ -1076,6 +1173,13 @@ export default function FileEditorPanel() {
 							{fileToDelete}
 						</span>
 						?
+						{isFolderDelete && (
+							<span className="block mt-2 text-sm text-muted-foreground">
+								This removes {deleteTargetMatches.length} file
+								{deleteTargetMatches.length === 1 ? "" : "s"} from the current
+								workspace.
+							</span>
+						)}
 						{fileToDelete && dirtyFiles.has(fileToDelete) && (
 							<span className="block mt-2 text-sm text-amber-500">
 								This file has unsaved changes.

@@ -1,5 +1,4 @@
 import asyncio
-import os
 from typing import Any, Optional
 from pydantic import BaseModel, computed_field, field_serializer
 from datetime import datetime
@@ -202,11 +201,3 @@ PROMPT_EXAMPLES = {
         public=True,
     ),
 }
-
-
-def fetch_prompt(name: str = "ruska-default"):
-    from langsmith import Client
-
-    client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
-    prompt = client.pull_prompt(name)
-    return prompt

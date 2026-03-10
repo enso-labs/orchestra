@@ -74,7 +74,9 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     from src.schemas.entities import LLMRequest
     from src.agents import construct_agent, Orchestra, init_config
     from src.services.db import get_checkpoint_db, get_store_db
+    from src.services.context_files import resolve_context_files
     from src.contexts.service import ServiceContext
+    from src.agents import prepare_memory_files
 
     logger.info(f"🚀 Starting scheduled LLM job: {title}")
 
@@ -96,6 +98,16 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
         try:
             service_context = ServiceContext(user_id=user_id, store=store, config=config, checkpointer=checkpointer)
             params = await service_context.llm_service.assistant(params)
+            memory_files, _memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
+            params.input.files = await resolve_context_files(
+                user_id=user_id,
+                store=store,
+                memory_files=memory_files,
+                explicit_files={
+                    **(files_map or {}),
+                    **(params.input.files or {}),
+                },
+            )
             agent: Orchestra = await construct_agent(
                 instructions=params.instructions,
                 system_prompt=params.system_prompt,
@@ -119,7 +131,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             response = await agent.invoke(params.input, config=config, context=ctx_schema)
             logger.info("✓ LLM invocation completed successfully")
 
-            files_map = {**files_map, **response.get("files", {})}
+            files_map = {**(params.input.files or {}), **response.get("files", {})}
             todos_list = [*todos_list, *response.get("todos", [])]
             return response
         except Exception as e:

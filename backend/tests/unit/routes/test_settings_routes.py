@@ -154,6 +154,8 @@ async def test_get_settings_empty(settings_client: AsyncClient) -> None:
     assert defaults["mcp"] is None
     assert defaults["a2a"] is None
     assert defaults["subagents"] is None
+    assert defaults["files"] is None
+    assert defaults["deleted_files"] is None
     assert isinstance(data["provider_keys"], list)
     assert len(data["provider_keys"]) > 0
     for pk in data["provider_keys"]:
@@ -276,6 +278,51 @@ async def test_patch_multiple_defaults(settings_client: AsyncClient) -> None:
     assert data["defaults"]["model"] == "openai/gpt-4"
     assert data["defaults"]["tools"] == ["web_search"]
     assert data["defaults"]["mcp"] == {}
+
+
+@pytest.mark.asyncio
+async def test_patch_persistent_files_and_deleted_files(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={
+            "files": {
+                "/profile.md": {
+                    "content": ["hello"],
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "modified_at": "2024-01-02T00:00:00Z",
+                }
+            },
+            "deleted_files": ["/gone.md", "/gone.md", "/archive.md"],
+        },
+    )
+    assert resp.status_code == 200
+    defaults = resp.json()["defaults"]
+    assert defaults["files"]["/profile.md"]["content"] == ["hello"]
+    assert defaults["deleted_files"] == ["/archive.md", "/gone.md"]
+
+
+@pytest.mark.asyncio
+async def test_patch_invalid_persisted_file_path_returns_400(
+    settings_client: AsyncClient,
+) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"files": {"relative.txt": {"content": ["hello"]}}},
+    )
+    assert resp.status_code == 400
+    assert "absolute" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_patch_invalid_deleted_file_path_returns_400(
+    settings_client: AsyncClient,
+) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"deleted_files": ["relative.txt"]},
+    )
+    assert resp.status_code == 400
+    assert "absolute" in resp.json()["detail"]
 
 
 # ---------------------------------------------------------------------------

@@ -22,6 +22,7 @@ from src.agents import (
     _create_state_backend,
 )
 from src.services.db import get_checkpoint_db
+from src.services.context_files import resolve_context_files
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
     AIMessageChunk,
@@ -210,10 +211,18 @@ async def stream_generator(
     precedence over memory files. The resulting memory sources are passed to
     ``construct_agent()`` so that MemoryMiddleware is activated.
     """
-    files_map = config["metadata"].get("files", {}) or input.files or {}
+    explicit_files = {
+        **(config["metadata"].get("files", {}) or {}),
+        **(input.files or {}),
+    }
     todos_list = config["metadata"].get("todos", [])
     memory_files, memory_sources = await prepare_memory_files(service_context.user_id, service_context.memory_service)
-    files_map = {**memory_files, **files_map}
+    files_map = await resolve_context_files(
+        user_id=service_context.user_id,
+        store=service_context.store,
+        memory_files=memory_files,
+        explicit_files=explicit_files,
+    )
     async with get_checkpoint_db() as checkpointer:
         agent = None
         try:

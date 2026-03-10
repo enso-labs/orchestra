@@ -4,10 +4,10 @@ from uuid import uuid4
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.store.base import BaseStore
 
-from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.services.tool import ToolService
 from src.schemas.entities.a2a import A2AServers
 from src.services.db import get_store_in_memory
+from src.services.prompt.defaults import get_default_system_prompt
 from src.schemas.entities.llm import LLMRequest
 from src.services.assistant import AssistantService, Assistant
 from src.utils.llm import filter_tool_call_models
@@ -112,7 +112,7 @@ class LLMService:
 
     def default_system_prompt(self, item: LLMRequest | Assistant) -> str:
         if not item.system_prompt:
-            return DEFAULT_SYSTEM_PROMPT
+            return get_default_system_prompt()
         return item.system_prompt
 
     async def assistant(
@@ -121,9 +121,7 @@ class LLMService:
     ) -> LLMRequest:
         params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         params.input.to_langchain_messages()
-        ## Protection if not defined
-        if not params.system_prompt:
-            params.system_prompt = DEFAULT_SYSTEM_PROMPT
+        explicit_request_system_prompt = "system_prompt" in params.model_fields_set and bool(params.system_prompt)
 
         ## Auto Assign Assistant if ID is provided
         if params.metadata.assistant_id:
@@ -142,13 +140,17 @@ class LLMService:
                     )
 
             if assistant:
-                assistant.system_prompt = self.default_system_prompt(assistant)
                 assistant.tools = await self.init_tools(assistant.tools, assistant.a2a, assistant.mcp)
-                return assistant.to_llm_request(
+                assistant_request = assistant.to_llm_request(
                     input=params.input,
                     model=params.model,
                     metadata=params.metadata,
                 )
+                if explicit_request_system_prompt:
+                    assistant_request.system_prompt = params.system_prompt
+                else:
+                    assistant_request.system_prompt = self.default_system_prompt(assistant)
+                return assistant_request
             else:
                 logger.warning(f"Assistant {params.metadata.assistant_id} not found in user or public namespace")
 

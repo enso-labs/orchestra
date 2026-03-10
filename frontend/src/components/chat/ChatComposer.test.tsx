@@ -7,15 +7,15 @@ vi.mock("@/components/inputs/ChatInput", () => ({
 	default: () => <div data-testid="chat-input" />,
 }));
 
-vi.mock("@/components/status/ThreadSandboxStatus", () => ({
-	default: () => <div data-testid="thread-sandbox-status" />,
+vi.mock("@/components/chat/ChatUtilityRow", () => ({
+	default: () => <div data-testid="chat-utility-row" />,
 }));
 
 describe("ChatComposer", () => {
 	it("renders the sandbox status above the chat input when enabled", () => {
 		render(<ChatComposer showAgentMenu={true} showSandboxStatus={true} />);
 
-		const sandboxStatus = screen.getByTestId("thread-sandbox-status");
+		const sandboxStatus = screen.getByTestId("chat-utility-row");
 		const chatInput = screen.getByTestId("chat-input");
 
 		expect(sandboxStatus).toBeInTheDocument();
@@ -29,9 +29,7 @@ describe("ChatComposer", () => {
 	it("omits the sandbox status when disabled", () => {
 		render(<ChatComposer showAgentMenu={true} showSandboxStatus={false} />);
 
-		expect(
-			screen.queryByTestId("thread-sandbox-status"),
-		).not.toBeInTheDocument();
+		expect(screen.queryByTestId("chat-utility-row")).not.toBeInTheDocument();
 		expect(screen.getByTestId("chat-input")).toBeInTheDocument();
 	});
 });

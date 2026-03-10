@@ -1,7 +1,8 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from src.schemas.entities.store import BaseEntity
 
@@ -20,6 +21,20 @@ class ProviderKeyStatus(BaseModel):
     is_set: bool = Field(default=False, description="Whether a key is configured for this provider")
 
 
+class PersistedContextFile(BaseModel):
+    """Persisted file content stored in user settings."""
+
+    content: list[str] = Field(default_factory=list, description="File content split into lines")
+    created_at: str | datetime | None = Field(default=None, description="When the file was first created")
+    modified_at: str | datetime | None = Field(default=None, description="When the file was last modified")
+
+    @field_serializer("created_at", "modified_at")
+    def serialize_dt(self, dt: str | datetime | None, _info):
+        if isinstance(dt, datetime):
+            return dt.isoformat()
+        return dt
+
+
 class UserSettings(BaseEntity):
     """Persisted user settings entity."""
 
@@ -34,6 +49,12 @@ class UserSettings(BaseEntity):
     default_model_visibility: Optional[list[str]] = Field(
         default=None, description="User's default model visibility list"
     )
+    default_files: Optional[dict[str, PersistedContextFile]] = Field(
+        default=None, description="User's persisted context files keyed by absolute path"
+    )
+    default_deleted_files: Optional[list[str]] = Field(
+        default=None, description="Absolute file-path tombstones that suppress implicit defaults"
+    )
 
 
 class DefaultsResponse(BaseModel):
@@ -46,6 +67,8 @@ class DefaultsResponse(BaseModel):
     a2a: Optional[dict] = None
     subagents: Optional[list[str]] = None
     model_visibility: Optional[list[str]] = None
+    files: Optional[dict[str, PersistedContextFile]] = None
+    deleted_files: Optional[list[str]] = None
 
 
 class UserSettingsResponse(BaseModel):
@@ -65,6 +88,14 @@ class PatchDefaultsRequest(BaseModel):
     a2a: Optional[dict] = Field(default=None, description="Default A2A agent config, or null to clear")
     subagents: Optional[list[str]] = Field(default=None, description="Default subagent selection, or null to clear")
     model_visibility: Optional[list[str]] = Field(default=None, description="Model visibility list, or null to clear")
+    files: Optional[dict[str, PersistedContextFile]] = Field(
+        default=None,
+        description="Full replacement persisted file map keyed by absolute path, or null to clear",
+    )
+    deleted_files: Optional[list[str]] = Field(
+        default=None,
+        description="Full replacement list of deleted absolute file-path tombstones, or null to clear",
+    )
 
 
 class UpsertProviderKeyRequest(BaseModel):

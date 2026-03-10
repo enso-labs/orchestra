@@ -18,7 +18,7 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from src.constants.llm import DEFAULT_SYSTEM_PROMPT
+from src.services.prompt.defaults import get_default_system_prompt
 from src.utils.format import slugify
 
 
@@ -188,7 +188,7 @@ class PublicAssistant(BaseModel):
 class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default=None)
-    system_prompt: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
+    system_prompt: Optional[str] = Field(default_factory=get_default_system_prompt, exclude=True)
     instructions: Optional[str] = Field(default="", exclude=True)
     tools: Optional[List[Any]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
