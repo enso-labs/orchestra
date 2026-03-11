@@ -42,7 +42,7 @@ export interface MetadataEvent {
 	type: "metadata";
 	data: {
 		thread_id: string;
-		run_id: string;
+		run_id?: string;
 		assistant_id: string | null;
 		project_id: string | null;
 	};

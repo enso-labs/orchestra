@@ -1,6 +1,5 @@
 from langgraph.store.base import BaseStore, SearchItem
 
-from src.services.db import get_store_in_memory
 from src.schemas.entities import SearchFilter
 from src.constants import THREAD_SNAPSHOT_MESSAGE_COUNT
 from src.repos.base_repo import BaseRepo
@@ -15,10 +14,10 @@ FIELDS = ["messages"]
 
 
 class ThreadRepo(BaseRepo):
-    def __init__(self, user_id: str, store: BaseStore | None = None):
+    def __init__(self, user_id: str, store: BaseStore) -> None:
         ## Add fields to the store (if supported)
         self.user_id = user_id
-        self.store: BaseStore = store or get_store_in_memory(fields=FIELDS)
+        self.store = store
 
         try:
             self.store.fields = FIELDS
@@ -78,9 +77,11 @@ class ThreadRepo(BaseRepo):
         merged_data = {**(existing.value if existing else {}), **data}
 
         if "metadata" in data or (existing and "metadata" in existing.value):
+            existing_metadata = existing.value.get("metadata") if existing else {}
+            next_metadata = data.get("metadata")
             merged_data["metadata"] = {
-                **(existing.value.get("metadata", {}) if existing else {}),
-                **data.get("metadata", {}),
+                **(existing_metadata if isinstance(existing_metadata, dict) else {}),
+                **(next_metadata if isinstance(next_metadata, dict) else {}),
             }
 
         # Extract last human message for storage

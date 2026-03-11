@@ -15,7 +15,7 @@ export const DistributedResponseSchema = z.object({
 // Schema for metadata event payload
 export const MetadataPayloadSchema = z.object({
 	thread_id: z.string(),
-	run_id: z.string(),
+	run_id: z.string().optional(),
 	assistant_id: z.string().nullable(),
 	project_id: z.string().nullable(),
 });

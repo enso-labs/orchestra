@@ -33,7 +33,14 @@ function writeStore(store: ActiveStreamRecoveryStore): void {
 		return;
 	}
 
-	window.localStorage.setItem(ACTIVE_STREAM_STORAGE_KEY, JSON.stringify(store));
+	try {
+		window.localStorage.setItem(
+			ACTIVE_STREAM_STORAGE_KEY,
+			JSON.stringify(store),
+		);
+	} catch (error) {
+		console.warn("Failed to persist active stream recovery state:", error);
+	}
 }
 
 export function getActiveStreamRecovery(

@@ -641,7 +641,7 @@ export default function useChat(): ChatContextType {
 			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: metadataPayload.thread_id,
-				run_id: metadataPayload.run_id,
+				run_id: metadataPayload.run_id ?? prev?.run_id,
 				assistant_id: metadataPayload.assistant_id,
 				project_id: metadataPayload.project_id,
 			}));
