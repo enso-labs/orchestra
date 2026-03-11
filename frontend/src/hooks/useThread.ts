@@ -164,6 +164,11 @@ export default function useThread(): ThreadContextType {
 				return;
 			}
 
+			if (threadId) {
+				setThreadLoading(true);
+				setThreadError(null);
+			}
+
 			let isActive = true;
 
 			const fetchThread = async () => {

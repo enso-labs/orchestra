@@ -16,6 +16,38 @@ Docker deployment guide for the Orchestra backend.
 
 This guide covers deploying the Orchestra backend using Docker. For local development, see the project root docs in `../README.md`.
 
+## Dockerized Development
+
+For hot-reload local development, use the dedicated dev stack instead of the production-oriented compose flow.
+
+```bash
+cd ..
+BACKEND_ENV_FILE=$HOME/.env/orchestra/.env.backend \
+FRONTEND_ENV_FILE=$HOME/.env/orchestra/.env.frontend \
+make dev.docker.up
+```
+
+This starts:
+
+-   FastAPI backend with reload on `http://localhost:8000`
+-   Vite frontend with reload on `http://localhost:5173`
+-   TaskIQ worker, PostgreSQL, Redis, SearXNG
+-   Dozzle log viewer on `http://localhost:8088`
+
+Useful commands:
+
+```bash
+make dev.docker.logs
+make dev.docker.ps
+make dev.docker.down
+```
+
+If you need the sandbox exec server in the same network, enable the optional profile:
+
+```bash
+COMPOSE_PROFILES=tools make dev.docker.up
+```
+
 ## 📖 Table of Contents
 
 -   [📋 Prerequisites](#-prerequisites)
@@ -89,7 +121,6 @@ The API will be available at `http://localhost:8000`
 | --------------- | --------- | ---------------------------------- |
 | `orchestra`     | 8000      | Backend API                        |
 | `postgres`      | 5432      | PostgreSQL with pgvector           |
-| `pgadmin`       | 4040      | Database admin UI                  |
 | `minio`         | 9000/9001 | S3-compatible file storage         |
 | `search_engine` | 8080      | SearXNG search engine              |
 | `exec_server`   | 3005      | Shell execution server             |

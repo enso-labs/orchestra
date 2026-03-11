@@ -15,7 +15,7 @@ class TestLLMStreamWithDistributedWorkers:
 
     @pytest.mark.asyncio
     async def test_returns_thread_id_when_distributed(self, async_client):
-        """Returns thread_id and distributed=true when workers enabled."""
+        """Returns thread_id, run_id, and distributed=true when workers enabled."""
         with patch.dict(os.environ, {"DISTRIBUTED_WORKERS": "true"}):
             with patch("src.routes.v0.llm.DISTRIBUTED_WORKERS", True):
                 with patch("src.workers.tasks.run_agent_stream") as mock_task:
@@ -33,6 +33,7 @@ class TestLLMStreamWithDistributedWorkers:
                     assert response.status_code == 202
                     data = response.json()
                     assert "thread_id" in data
+                    assert "run_id" in data
                     assert data["distributed"] is True
 
     @pytest.mark.asyncio
@@ -78,6 +79,7 @@ class TestLLMStreamWithDistributedWorkers:
                     assert "task_dict" in kwargs
                     assert "user_id" in kwargs
                     assert "thread_id" in kwargs
+                    assert "run_id" in kwargs
 
 
 class TestThreadStreamEndpoint:
@@ -87,6 +89,7 @@ class TestThreadStreamEndpoint:
     async def test_endpoint_exists(self, async_client):
         """Endpoint exists and is accessible without auth (uses get_optional_user)."""
         thread_id = str(uuid4())
+        run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
             with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
@@ -97,7 +100,10 @@ class TestThreadStreamEndpoint:
 
                 mock_stream.return_value = mock_gen()
 
-                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
+                async with async_client.stream(
+                    "GET",
+                    f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                ) as response:
                     # The endpoint should work even without authentication
                     # since it uses get_optional_user
                     assert response.status_code in [200, 422]
@@ -106,6 +112,7 @@ class TestThreadStreamEndpoint:
     async def test_returns_sse_content_type(self, async_client):
         """Endpoint returns SSE media type."""
         thread_id = str(uuid4())
+        run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
             with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
@@ -116,7 +123,10 @@ class TestThreadStreamEndpoint:
 
                 mock_stream.return_value = mock_gen()
 
-                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
+                async with async_client.stream(
+                    "GET",
+                    f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                ) as response:
                     if response.status_code == 200:
                         assert response.headers["content-type"].startswith("text/event-stream")
 
@@ -124,6 +134,7 @@ class TestThreadStreamEndpoint:
     async def test_streams_data_events(self, async_client):
         """Endpoint streams data events from Redis."""
         thread_id = str(uuid4())
+        run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
             with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
@@ -137,7 +148,10 @@ class TestThreadStreamEndpoint:
                 mock_stream.return_value = mock_gen()
 
                 chunks = []
-                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
+                async with async_client.stream(
+                    "GET",
+                    f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                ) as response:
                     if response.status_code == 200:
                         async for chunk in response.aiter_bytes():
                             chunks.append(chunk.decode())

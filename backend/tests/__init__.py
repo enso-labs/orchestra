@@ -36,10 +36,15 @@ async def get_test_user() -> User:
     )
     from sqlalchemy.pool import NullPool
     from src.constants import DB_URI
+    from src.utils.db import get_asyncpg_connect_args, get_asyncpg_url
 
     # Create a fresh engine and session for this call
-    ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
-    engine = create_async_engine(ASYNC_DB_URI, echo=False, poolclass=NullPool)
+    engine = create_async_engine(
+        get_asyncpg_url(DB_URI),
+        echo=False,
+        poolclass=NullPool,
+        connect_args=get_asyncpg_connect_args(DB_URI),
+    )
     async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session_maker() as db:

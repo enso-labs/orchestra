@@ -102,12 +102,37 @@ For all commands, see `backend/Makefile`.
 
 2. **Start Docker Services**
 
-    Below will start the database, and the GUI for viewing the Postgres DB.
+    Below will start the database service.
 
     ```bash
     cd <project-root>
-    docker compose up postgres pgadmin
+    docker compose up postgres
     ```
+
+### Dockerized Dev Stack
+
+For containerized local development with hot reload, the backend, frontend, worker, and supporting services can all run under `docker-compose.dev.yml`.
+
+```bash
+cd <project-root>
+BACKEND_ENV_FILE=$HOME/.env/orchestra/.env.backend \
+FRONTEND_ENV_FILE=$HOME/.env/orchestra/.env.frontend \
+make dev.docker.up
+```
+
+Useful endpoints while debugging:
+
+-   Frontend: `http://localhost:5173`
+-   Backend API: `http://localhost:8000/docs`
+-   Dozzle log viewer: `http://localhost:8088`
+
+Tail the main service logs in one stream:
+
+```bash
+make dev.docker.logs
+```
+
+If you also want the sandbox exec server inside the stack, start with `COMPOSE_PROFILES=tools make dev.docker.up`.
 
 3. **Setup Server Environment**
 
@@ -328,7 +353,6 @@ The API will be available at `http://localhost:8000`
 | --------------- | --------- | ---------------------------------- |
 | `orchestra`     | 8000      | Backend API                        |
 | `postgres`      | 5432      | PostgreSQL with pgvector           |
-| `pgadmin`       | 4040      | Database admin UI                  |
 | `minio`         | 9000/9001 | S3-compatible file storage         |
 | `search_engine` | 8080      | SearXNG search engine              |
 | `exec_server`   | 3005      | Shell execution server             |

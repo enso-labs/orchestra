@@ -6,7 +6,7 @@ dev:
 	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug --env-file $(ENV_FILE)
 
 dev.worker:
-	@set -a && . $(ENV_FILE) && set +a && uv run taskiq worker src.workers.tasks:broker --reload --reload-dir ./
+	@set -a && . $(ENV_FILE) && set +a && uv run taskiq worker src.workers.tasks:broker
 
 dev.claude:
 	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8031 --log-level debug --env-file $(ENV_FILE)

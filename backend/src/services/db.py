@@ -29,17 +29,18 @@ from src.constants import (
     DB_URI,
     DB_URI_SESSION,
 )
+from src.utils.db import get_asyncpg_connect_args, get_asyncpg_url
 from langgraph.store.postgres import AsyncPostgresStore, PoolConfig
 
 MAX_CONNECTION_POOL_SIZE = None
 
 # SQLAlchemy async engine
-ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
+ASYNC_DB_URI = get_asyncpg_url(DB_URI)
 # Disable statement cache for pgbouncer/connection pooler compatibility
 # See: https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#prepared-statement-cache
 async_engine = create_async_engine(
     ASYNC_DB_URI,
-    connect_args={"statement_cache_size": 0, "ssl": False},
+    connect_args=get_asyncpg_connect_args(DB_URI),
 )
 AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=async_engine)
 

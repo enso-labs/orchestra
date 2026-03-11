@@ -15,16 +15,16 @@ FIELDS = ["messages"]
 
 
 class ThreadRepo(BaseRepo):
-    def __init__(self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)):
+    def __init__(self, user_id: str, store: BaseStore | None = None):
         ## Add fields to the store (if supported)
         self.user_id = user_id
-        self.store: BaseStore = store
+        self.store: BaseStore = store or get_store_in_memory(fields=FIELDS)
 
         try:
             self.store.fields = FIELDS
         except AttributeError:
             pass
-        super().__init__(user_id=user_id, store=store, entity_type="threads")
+        super().__init__(user_id=user_id, store=self.store, entity_type="threads")
 
     def _format(self, item: SearchItem) -> Thread:
         title = item.value.get("title")
@@ -37,6 +37,7 @@ class ThreadRepo(BaseRepo):
         return Thread(
             id=item.key,
             title=title,
+            metadata=item.value.get("metadata", {}),
             messages=item.value.get("messages", []),
             files=item.value.get("files", []),
             todos=item.value.get("todos", []),
@@ -73,16 +74,25 @@ class ThreadRepo(BaseRepo):
             return []
 
     async def update(self, thread_id: str, data: dict):
+        existing = await self._get(thread_id)
+        merged_data = {**(existing.value if existing else {}), **data}
+
+        if "metadata" in data or (existing and "metadata" in existing.value):
+            merged_data["metadata"] = {
+                **(existing.value.get("metadata", {}) if existing else {}),
+                **data.get("metadata", {}),
+            }
+
         # Extract last human message for storage
-        messages = data.get("messages", [])
+        messages = merged_data.get("messages", [])
         messages = from_message_to_dict(messages, include_tool_calls=False)
         recent_messages = (
             messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:] if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT else messages
         )
 
-        data["messages"] = recent_messages
+        merged_data["messages"] = recent_messages
 
-        await self.store.aput(namespace=self._get_namespace(), key=thread_id, value=data)
+        await self.store.aput(namespace=self._get_namespace(), key=thread_id, value=merged_data)
 
         return True
 

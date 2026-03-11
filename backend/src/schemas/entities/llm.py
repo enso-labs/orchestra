@@ -27,6 +27,7 @@ class Config(BaseModel):
 
     user_id: Optional[str] = Field(default=None, description="The user id", examples=[str(uuid4())])
     thread_id: Optional[str] = Field(default=None, description="The thread id", examples=[str(uuid4())])
+    run_id: Optional[str] = Field(default=None, description="The run id", examples=[str(uuid4())])
     checkpoint_id: Optional[str] = Field(default=None, description="The checkpoint id", examples=[str(uuid4())])
     assistant_id: Optional[str] = Field(default=None, description="The assistant id", examples=[str(uuid4())])
     project_id: Optional[str] = Field(default=None, description="The project id", examples=[str(uuid4())])

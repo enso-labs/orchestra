@@ -13,11 +13,14 @@ export class FetchStreamReader {
 	private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 	private decoder = new TextDecoder();
 	private buffer = "";
+	private currentEventId: string | null = null;
 	private eventHandler: ((event: StreamEvent) => void) | null = null;
 	private errorHandler: ((error: Error) => void) | null = null;
 	private closeHandler: (() => void) | null = null;
 	private aborted = false;
 	private _lastError: Error | null = null;
+	private _lastEventId: string | null = null;
+	private _lastStatus: number | null = null;
 
 	constructor(
 		private url: string,
@@ -30,6 +33,14 @@ export class FetchStreamReader {
 	 */
 	get lastError(): Error | null {
 		return this._lastError;
+	}
+
+	get lastEventId(): string | null {
+		return this._lastEventId;
+	}
+
+	get lastStatus(): number | null {
+		return this._lastStatus;
 	}
 
 	onEvent(handler: (event: StreamEvent) => void): this {
@@ -57,9 +68,16 @@ export class FetchStreamReader {
 				},
 				signal: this.options.signal,
 			});
+			this._lastStatus = response.status;
 
 			if (!response.ok) {
-				throw new Error(`Stream failed: ${response.status}`);
+				const error = new Error(
+					`Stream failed: ${response.status}`,
+				) as Error & {
+					status?: number;
+				};
+				error.status = response.status;
+				throw error;
 			}
 
 			this.reader = response.body?.getReader() ?? null;
@@ -106,10 +124,19 @@ export class FetchStreamReader {
 			// Skip keep-alive comments (lines starting with :)
 			if (line.startsWith(":")) continue;
 			// Skip empty lines
-			if (!line.trim()) continue;
+			if (!line.trim()) {
+				this.currentEventId = null;
+				continue;
+			}
+
+			if (line.startsWith("id: ")) {
+				this.currentEventId = line.slice(4);
+				continue;
+			}
 
 			if (line.startsWith("data: ")) {
 				const data = line.slice(6); // Remove 'data: ' prefix
+				this._lastEventId = this.currentEventId ?? this._lastEventId;
 
 				if (data === "[DONE]") {
 					this.eventHandler?.({ type: "done" });
@@ -154,6 +181,8 @@ export class FetchStreamReader {
 										typeof payload === "string" ? payload : String(payload),
 								},
 				};
+			case "aborted":
+				return { type: "aborted", data: payload };
 			default:
 				return null;
 		}
@@ -168,10 +197,12 @@ export class ResponseBodyReader {
 	private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 	private decoder = new TextDecoder();
 	private buffer = "";
+	private currentEventId: string | null = null;
 	private eventHandler: ((event: StreamEvent) => void) | null = null;
 	private errorHandler: ((error: Error) => void) | null = null;
 	private closeHandler: (() => void) | null = null;
 	private aborted = false;
+	private _lastEventId: string | null = null;
 
 	constructor(private response: Response) {}
 
@@ -188,6 +219,10 @@ export class ResponseBodyReader {
 	onClose(handler: () => void): this {
 		this.closeHandler = handler;
 		return this;
+	}
+
+	get lastEventId(): string | null {
+		return this._lastEventId;
 	}
 
 	async start(): Promise<void> {
@@ -235,10 +270,19 @@ export class ResponseBodyReader {
 			// Skip keep-alive comments
 			if (line.startsWith(":")) continue;
 			// Skip empty lines
-			if (!line.trim()) continue;
+			if (!line.trim()) {
+				this.currentEventId = null;
+				continue;
+			}
+
+			if (line.startsWith("id: ")) {
+				this.currentEventId = line.slice(4);
+				continue;
+			}
 
 			if (line.startsWith("data: ")) {
 				const data = line.slice(6);
+				this._lastEventId = this.currentEventId ?? this._lastEventId;
 
 				if (data === "[DONE]") {
 					this.eventHandler?.({ type: "done" });
@@ -283,6 +327,8 @@ export class ResponseBodyReader {
 										typeof payload === "string" ? payload : String(payload),
 								},
 				};
+			case "aborted":
+				return { type: "aborted", data: payload };
 			default:
 				return null;
 		}

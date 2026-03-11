@@ -5,8 +5,9 @@ import { getAuthToken } from "@/lib/utils/auth";
 import { isRetryableError, classifyError } from "./streamError";
 
 // Retry configuration - MAX_ATTEMPTS derived from RETRY_DELAYS length
-const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff in ms
+const RETRY_DELAYS = [1000, 2000, 4000, 8000, 16000];
 const MAX_ATTEMPTS = RETRY_DELAYS.length;
+const NON_TERMINAL_CLOSE_MESSAGE = "Stream closed before terminal event";
 
 // Initial delay before polling in distributed mode
 // This gives the worker time to pick up the task and start the stream
@@ -43,6 +44,7 @@ export interface StreamSource {
 	onClose(handler: () => void): void;
 	start(): Promise<void>;
 	close(): void;
+	getLastEventId(): string | null;
 }
 
 /**
@@ -75,6 +77,10 @@ export class SyncStreamSource implements StreamSource {
 	close(): void {
 		this.reader.close();
 	}
+
+	getLastEventId(): string | null {
+		return this.reader.lastEventId;
+	}
 }
 
 export interface DistributedStreamOptions {
@@ -84,6 +90,7 @@ export interface DistributedStreamOptions {
 	 * Default: false (applies delay to avoid race condition with worker startup)
 	 */
 	skipInitialDelay?: boolean;
+	lastEventId?: string | null;
 }
 
 /**
@@ -103,12 +110,21 @@ export class DistributedStreamSource implements StreamSource {
 	private errorHandler: ((error: Error) => void) | null = null;
 	private closeHandler: (() => void) | null = null;
 	private threadId: string;
+	private runId: string;
+	private lastEventId: string | null;
+	private hasTerminalEvent = false;
 	private skipInitialDelay: boolean;
 
-	constructor(threadId: string, options: DistributedStreamOptions = {}) {
+	constructor(
+		threadId: string,
+		runId: string,
+		options: DistributedStreamOptions = {},
+	) {
 		this.threadId = threadId;
+		this.runId = runId;
 		this.abortController = new AbortController();
 		this.skipInitialDelay = options.skipInitialDelay ?? false;
+		this.lastEventId = options.lastEventId ?? null;
 	}
 
 	onEvent(handler: (event: StreamEvent) => void): void {
@@ -124,40 +140,44 @@ export class DistributedStreamSource implements StreamSource {
 	}
 
 	async start(): Promise<void> {
-		// Apply initial delay for follow-up messages to avoid race condition
-		// where the stream returns stale data from the previous turn
-		if (!this.skipInitialDelay) {
-			await delay(INITIAL_POLL_DELAY_MS, this.abortController.signal);
+		try {
+			// Apply initial delay for follow-up messages to avoid race condition
+			// where the stream returns stale data from the previous turn
+			if (!this.skipInitialDelay && !this.lastEventId) {
+				await delay(INITIAL_POLL_DELAY_MS, this.abortController.signal);
+			}
+			await this.startWithRetry();
+		} finally {
+			if (!this.abortController.signal.aborted) {
+				this.closeHandler?.();
+			}
 		}
-		await this.startWithRetry();
 	}
 
 	private async startWithRetry(): Promise<void> {
-		const maxAttempts = MAX_ATTEMPTS;
-		let attempt = 0;
-
-		while (attempt < maxAttempts) {
+		for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
 			try {
 				await this.createAndStartReader();
 				return; // Success, exit retry loop
 			} catch (error) {
 				const isError = error instanceof Error;
+				const status = isError ? this.getErrorStatus(error) : undefined;
 				const canRetry =
-					isError && isRetryableError(error) && attempt < maxAttempts - 1;
+					isError &&
+					(this.isRecoverableClose(error) || isRetryableError(error, status)) &&
+					attempt < MAX_ATTEMPTS - 1;
 
 				if (canRetry) {
 					const delayMs = RETRY_DELAYS[attempt];
 					console.warn(
-						`Stream error (attempt ${attempt + 1}/${maxAttempts}), retrying in ${delayMs}ms:`,
+						`Stream error (attempt ${attempt + 1}/${MAX_ATTEMPTS}), retrying in ${delayMs}ms:`,
 						error.message,
 					);
 					await delay(delayMs, this.abortController.signal);
-					attempt++;
 				} else {
-					// Non-retryable or max retries exceeded
 					if (this.errorHandler && isError) {
-						const classified = classifyError(error);
-						this.errorHandler(new Error(classified.message));
+						const finalError = this.toFinalError(error);
+						this.errorHandler(finalError);
 					}
 					return;
 				}
@@ -172,36 +192,82 @@ export class DistributedStreamSource implements StreamSource {
 			headers["Authorization"] = `Bearer ${token}`;
 		}
 
-		this.reader = new FetchStreamReader(
-			`${VITE_API_URL}/threads/${this.threadId}/stream`,
-			{
-				headers,
-				signal: this.abortController.signal,
-			},
-		);
+		const url = new URL(`${VITE_API_URL}/threads/${this.threadId}/stream`);
+		url.searchParams.set("run_id", this.runId);
+		if (this.lastEventId) {
+			url.searchParams.set("after", this.lastEventId);
+		}
 
-		// Wire up handlers for events and close only.
-		// Error handling is done in startWithRetry to avoid double-reporting
-		// during retries.
-		if (this.eventHandler) {
-			this.reader.onEvent(this.eventHandler);
-		}
-		if (this.closeHandler) {
-			this.reader.onClose(this.closeHandler);
-		}
-		// Note: We intentionally do NOT wire this.errorHandler to the reader.
-		// The reader.lastError is checked after start() and handled by startWithRetry.
+		this.hasTerminalEvent = false;
+		this.reader = new FetchStreamReader(url.toString(), {
+			headers,
+			signal: this.abortController.signal,
+		});
+
+		this.reader.onEvent((event) => {
+			this.lastEventId = this.reader?.lastEventId ?? this.lastEventId;
+			if (
+				event.type === "done" ||
+				event.type === "error" ||
+				event.type === "aborted"
+			) {
+				this.hasTerminalEvent = true;
+			}
+			this.eventHandler?.(event);
+		});
 
 		await this.reader.start();
 
-		// Check if an error occurred during the stream
 		if (this.reader.lastError) {
 			throw this.reader.lastError;
+		}
+
+		if (!this.abortController.signal.aborted && !this.hasTerminalEvent) {
+			throw new Error(NON_TERMINAL_CLOSE_MESSAGE);
 		}
 	}
 
 	close(): void {
 		this.abortController.abort();
 		this.reader?.close();
+	}
+
+	getLastEventId(): string | null {
+		return this.lastEventId;
+	}
+
+	getThreadId(): string {
+		return this.threadId;
+	}
+
+	getRunId(): string {
+		return this.runId;
+	}
+
+	private getErrorStatus(error: Error): number | undefined {
+		const status = (error as Error & { status?: number }).status;
+		return typeof status === "number" ? status : undefined;
+	}
+
+	private isRecoverableClose(error: Error): boolean {
+		return error.message === NON_TERMINAL_CLOSE_MESSAGE;
+	}
+
+	private toFinalError(error: Error): Error {
+		const status = this.getErrorStatus(error);
+		if (this.isRecoverableClose(error)) {
+			return new Error(
+				"Lost connection to the live stream. Refresh to retry reconnecting.",
+			);
+		}
+
+		const classified = classifyError(error, status);
+		const finalError = new Error(classified.message) as Error & {
+			status?: number;
+			cause?: Error;
+		};
+		finalError.status = status;
+		finalError.cause = error;
+		return finalError;
 	}
 }

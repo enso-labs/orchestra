@@ -33,6 +33,22 @@ from src.utils.format import get_time
 
 # Configurable stream timeout (default 60 seconds)
 STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
+STREAM_KEY_TTL_SECONDS = 300
+
+
+def get_distributed_stream_key(thread_id: str, run_id: str) -> str:
+    return f"agent:stream:{thread_id}:{run_id}"
+
+
+async def distributed_stream_exists(thread_id: str, run_id: str) -> bool:
+    import redis.asyncio as redis
+    from src.workers.broker import REDIS_URL
+
+    redis_client = redis.from_url(REDIS_URL)
+    try:
+        return bool(await redis_client.exists(get_distributed_stream_key(thread_id, run_id)))
+    finally:
+        await redis_client.aclose()
 
 
 ###########################################################################
@@ -389,7 +405,7 @@ async def stream_generator(
 ###########################################################################
 ## Distributed Stream Consumer
 ###########################################################################
-async def stream_from_redis(thread_id: str):
+async def stream_from_redis(thread_id: str, run_id: str, after: str = "0"):
     """
     Consume Redis stream and yield SSE events for distributed workers.
 
@@ -398,6 +414,8 @@ async def stream_from_redis(thread_id: str):
 
     Args:
         thread_id: The thread ID to stream results for.
+        run_id: The run ID for the specific distributed turn.
+        after: Redis stream entry ID to resume after.
 
     Yields:
         SSE-formatted strings in the form "data: {...}\\n\\n"
@@ -405,11 +423,14 @@ async def stream_from_redis(thread_id: str):
     import redis.asyncio as redis
     from src.workers.broker import REDIS_URL
 
-    stream_key = f"agent:stream:{thread_id}"
+    stream_key = get_distributed_stream_key(thread_id, run_id)
     redis_client = redis.from_url(REDIS_URL)
-    last_id = "0"
+    last_id = after or "0"
 
     try:
+        if not await redis_client.exists(stream_key):
+            raise FileNotFoundError(f"Distributed stream not found for thread={thread_id} run={run_id}")
+
         while True:
             # Block for configurable time waiting for messages (default 60s)
             messages = await redis_client.xread(
@@ -425,20 +446,21 @@ async def stream_from_redis(thread_id: str):
             for stream, entries in messages:
                 for entry_id, data in entries:
                     last_id = entry_id
+                    event_id = entry_id.decode() if isinstance(entry_id, bytes) else str(entry_id)
 
                     if b"done" in data:
-                        yield "data: [DONE]\n\n"
+                        yield f"id: {event_id}\ndata: [DONE]\n\n"
                         return
                     if b"error" in data:
                         error_msg = data[b"error"].decode()
-                        yield f'data: {{"error": "{error_msg}"}}\n\n'
-                        yield "data: [DONE]\n\n"
+                        yield f'id: {event_id}\ndata: ["error", {{"error": {ujson.dumps(error_msg)}}}]\n\n'
+                        yield f"id: {event_id}\ndata: [DONE]\n\n"
                         return
                     if b"data" in data:
-                        yield f"data: {data[b'data'].decode()}\n\n"
+                        yield f"id: {event_id}\ndata: {data[b'data'].decode()}\n\n"
     except Exception as e:
         logger.exception(f"Error in stream_from_redis: {e}")
-        yield f'data: {{"error": "{str(e)}"}}\n\n'
+        yield f'data: ["error", {{"error": {ujson.dumps(str(e))}}}]\n\n'
         yield "data: [DONE]\n\n"
     finally:
         await redis_client.aclose()

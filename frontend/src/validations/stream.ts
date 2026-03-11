@@ -8,12 +8,14 @@ import type { StreamEvent, SSEEvent } from "@/lib/entities/stream";
 // Schema for distributed mode POST response
 export const DistributedResponseSchema = z.object({
 	thread_id: z.string().uuid(),
+	run_id: z.string().uuid(),
 	distributed: z.literal(true),
 });
 
 // Schema for metadata event payload
 export const MetadataPayloadSchema = z.object({
 	thread_id: z.string(),
+	run_id: z.string(),
 	assistant_id: z.string().nullable(),
 	project_id: z.string().nullable(),
 });

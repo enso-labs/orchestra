@@ -20,6 +20,49 @@ import redis.asyncio as redis
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
 from src.workers.broker import broker, REDIS_URL
+from src.utils.stream import get_distributed_stream_key, STREAM_KEY_TTL_SECONDS
+
+
+def _build_stream_metadata(
+    *,
+    run_id: str,
+    status: str,
+    started_at: str | None,
+    finished_at: str | None,
+    error: str | None,
+) -> dict[str, str | None]:
+    return {
+        "stream_status": status,
+        "active_run_id": run_id,
+        "active_stream_started_at": started_at,
+        "active_stream_finished_at": finished_at,
+        "active_stream_error": error,
+    }
+
+
+async def _update_thread_stream_state(
+    *,
+    service_context: ServiceContext,
+    thread_id: str,
+    config,
+    files_map,
+    todos_list,
+    metadata: dict[str, str | None],
+) -> None:
+    from src.utils.format import get_time
+
+    await service_context.thread_service.update(
+        thread_id=thread_id,
+        data={
+            "thread_id": thread_id,
+            "assistant_id": config["configurable"].get("assistant_id"),
+            "project_id": config["configurable"].get("project_id"),
+            "files": files_map,
+            "todos": todos_list,
+            "updated_at": get_time(),
+            "metadata": metadata,
+        },
+    )
 
 
 @broker.task(task_name="run_agent_stream")
@@ -27,6 +70,7 @@ async def run_agent_stream(
     task_dict: dict,
     user_id: str,
     thread_id: str,
+    run_id: str,
 ) -> dict:
     """
     Execute agent and stream results via Redis Streams.
@@ -44,6 +88,7 @@ async def run_agent_stream(
         task_dict: Serialized LLMRequest as dict
         user_id: User ID for context
         thread_id: Thread ID for the conversation
+        run_id: Run ID for this specific streamed turn
 
     Returns:
         dict with status and stream_key
@@ -57,11 +102,8 @@ async def run_agent_stream(
     from src.services.errors import CheckpointConnectionError
     from src.services.abort import AbortService
 
-    stream_key = f"agent:stream:{thread_id}"
+    stream_key = get_distributed_stream_key(thread_id, run_id)
     redis_client = redis.from_url(REDIS_URL)
-
-    # Clear any existing stream from previous turns on this thread
-    await redis_client.delete(stream_key)
 
     # Pre-start abort check: Handle race condition where abort arrives before task starts
     if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
@@ -79,19 +121,25 @@ async def run_agent_stream(
             {"data": ujson.dumps(("aborted", {"reason": "pre_aborted"}))},
         )
         await redis_client.xadd(stream_key, {"done": "true"})
-        await redis_client.expire(stream_key, 300)
+        await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
         # Clear the abort signal
         await AbortService.clear_abort_signal(thread_id)
         await redis_client.aclose()
         return {"status": "aborted", "stream_key": stream_key}
+
+    config = None
+    files_map = {}
+    todos_list = []
+    service_context = None
 
     try:
         # Reconstruct request from dict
         params = LLMRequest(**task_dict)
         params.metadata.user_id = user_id
         params.metadata.thread_id = thread_id
+        params.metadata.run_id = run_id
 
-        logger.info(f"Starting distributed agent task for thread: {thread_id}")
+        logger.info(f"Starting distributed agent task for thread: {thread_id}, run: {run_id}")
 
         # Initialize config
         config = init_config(params, user_id)
@@ -121,6 +169,7 @@ async def run_agent_stream(
                     checkpointer=checkpointer,
                     user_id=user_id,
                     thread_id=thread_id,
+                    run_id=run_id,
                     stream_key=stream_key,
                     redis_client=redis_client,
                 )
@@ -145,6 +194,7 @@ async def run_agent_stream(
                     checkpointer=checkpointer,
                     user_id=user_id,
                     thread_id=thread_id,
+                    run_id=run_id,
                     stream_key=stream_key,
                     redis_client=redis_client,
                 )
@@ -159,16 +209,46 @@ async def run_agent_stream(
             },
         )
         await redis_client.xadd(stream_key, {"error": f"Checkpoint error: {e}", "done": "true"})
-        await redis_client.expire(stream_key, 300)
+        await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
+        if service_context and config:
+            await _update_thread_stream_state(
+                service_context=service_context,
+                thread_id=thread_id,
+                config=config,
+                files_map=files_map,
+                todos_list=todos_list,
+                metadata=_build_stream_metadata(
+                    run_id=run_id,
+                    status="error",
+                    started_at=None,
+                    finished_at=None,
+                    error=f"Checkpoint error: {e}",
+                ),
+            )
         raise
 
     except Exception as e:
         logger.exception(f"Task failed for thread {thread_id}: {e}")
         try:
             await redis_client.xadd(stream_key, {"error": str(e), "done": "true"})
-            await redis_client.expire(stream_key, 300)
+            await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
         except Exception as redis_err:
             logger.error(f"Failed to send error to Redis for thread {thread_id}: {redis_err}")
+        if service_context and config:
+            await _update_thread_stream_state(
+                service_context=service_context,
+                thread_id=thread_id,
+                config=config,
+                files_map=files_map,
+                todos_list=todos_list,
+                metadata=_build_stream_metadata(
+                    run_id=run_id,
+                    status="error",
+                    started_at=None,
+                    finished_at=None,
+                    error=str(e),
+                ),
+            )
         raise
     finally:
         await redis_client.aclose()
@@ -183,6 +263,7 @@ async def _execute_agent_stream(
     checkpointer,
     user_id,
     thread_id,
+    run_id,
     stream_key,
     redis_client,
 ) -> dict:
@@ -210,6 +291,8 @@ async def _execute_agent_stream(
     from src.utils.logger import logger
     from src.services.errors import CheckpointConnectionError
     from src.services.abort import AbortService
+
+    started_at = get_time()
 
     # Get assistant config if needed
     params = await service_context.llm_service.assistant(params)
@@ -266,12 +349,28 @@ async def _execute_agent_stream(
     )
     params.input.messages[-1].model = agent.model
 
+    await _update_thread_stream_state(
+        service_context=service_context,
+        thread_id=thread_id,
+        config=config,
+        files_map=files_map,
+        todos_list=todos_list,
+        metadata=_build_stream_metadata(
+            run_id=run_id,
+            status="running",
+            started_at=started_at,
+            finished_at=None,
+            error=None,
+        ),
+    )
+
     # Send metadata event first
     metadata_event = ujson.dumps(
         (
             "metadata",
             {
                 "thread_id": config["configurable"].get("thread_id"),
+                "run_id": config["configurable"].get("run_id"),
                 "assistant_id": config["configurable"].get("assistant_id"),
                 "project_id": config["configurable"].get("project_id"),
             },
@@ -303,9 +402,23 @@ async def _execute_agent_stream(
                     {"data": ujson.dumps(("aborted", {"reason": "user_requested"}))},
                 )
                 await redis_client.xadd(stream_key, {"done": "true"})
-                await redis_client.expire(stream_key, 300)
+                await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
                 # Clear abort signal
                 await AbortService.clear_abort_signal(thread_id)
+                await _update_thread_stream_state(
+                    service_context=service_context,
+                    thread_id=thread_id,
+                    config=config,
+                    files_map=files_map,
+                    todos_list=todos_list,
+                    metadata=_build_stream_metadata(
+                        run_id=run_id,
+                        status="aborted",
+                        started_at=started_at,
+                        finished_at=get_time(),
+                        error=None,
+                    ),
+                )
                 return {"status": "aborted", "stream_key": stream_key}
 
             stream_chunk = handle_multi_mode(chunk)
@@ -327,7 +440,21 @@ async def _execute_agent_stream(
                 error_msg = ujson.dumps(("error", f"Daytona sandbox error: {e}"))
                 await redis_client.xadd(stream_key, {"data": error_msg})
                 await redis_client.xadd(stream_key, {"done": "true"})
-                await redis_client.expire(stream_key, 300)
+                await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
+                await _update_thread_stream_state(
+                    service_context=service_context,
+                    thread_id=thread_id,
+                    config=config,
+                    files_map=files_map,
+                    todos_list=todos_list,
+                    metadata=_build_stream_metadata(
+                        run_id=run_id,
+                        status="error",
+                        started_at=started_at,
+                        finished_at=get_time(),
+                        error=f"Daytona sandbox error: {e}",
+                    ),
+                )
                 return {"status": "error", "stream_key": stream_key}
             elif default_sandbox in (None, "auto") and effective_type == "daytona":
                 # Auto mode: fallback to local StateBackend and retry
@@ -368,9 +495,9 @@ async def _execute_agent_stream(
 
     # Signal completion
     await redis_client.xadd(stream_key, {"done": "true"})
-    await redis_client.expire(stream_key, 300)
+    await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
 
-    logger.info(f"Distributed agent task completed for thread: {thread_id}")
+    logger.info(f"Distributed agent task completed for thread: {thread_id}, run: {run_id}")
 
     # Update thread state with graceful checkpoint error handling
     if service_context.user_id and checkpointer:
@@ -413,5 +540,20 @@ async def _execute_agent_stream(
                     "error": str(e),
                 },
             )
+
+    await _update_thread_stream_state(
+        service_context=service_context,
+        thread_id=thread_id,
+        config=config,
+        files_map=files_map,
+        todos_list=todos_list,
+        metadata=_build_stream_metadata(
+            run_id=run_id,
+            status="completed",
+            started_at=started_at,
+            finished_at=get_time(),
+            error=None,
+        ),
+    )
 
     return {"status": "complete", "stream_key": stream_key}

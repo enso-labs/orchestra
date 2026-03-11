@@ -3,6 +3,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA, VitePWAOptions } from "vite-plugin-pwa";
 
+const proxyTarget = process.env.VITE_PROXY_TARGET || "http://localhost:8000";
+
 const MANIFEST: Partial<VitePWAOptions> = {
 	registerType: "autoUpdate",
 	strategies: "generateSW",
@@ -116,7 +118,7 @@ export default defineConfig({
 		],
 		proxy: {
 			"/api": {
-				target: "http://localhost:8000",
+				target: proxyTarget,
 				changeOrigin: true,
 			},
 		},
