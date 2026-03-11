@@ -198,7 +198,7 @@ export default function ChatProvider({
 		renameFile: baseRenameFile,
 		syncFiles,
 	} = fileSystemHooks;
-	const { setFilesMap } = chatHooks;
+	const { setFilesMap, setSubmissionFiles } = chatHooks;
 
 	const fileSystemRef = useRef(fileSystem);
 	const dirtyFilesRef = useRef(dirtyFiles);
@@ -435,6 +435,7 @@ export default function ChatProvider({
 				modified_at: data.modified_at,
 			};
 		});
+		setSubmissionFiles(contextFiles);
 
 		const hasContextFiles = Object.keys(contextFiles).length > 0;
 		const prevContextFiles = filesMap.get(CONTEXT_FILES_KEY) as
@@ -459,7 +460,7 @@ export default function ChatProvider({
 		next.delete(CONTEXT_FILES_KEY);
 		next.set(CONTEXT_FILES_KEY, contextFiles);
 		setFilesMap(next);
-	}, [fileSystem, filesMap, setFilesMap]);
+	}, [fileSystem, filesMap, setFilesMap, setSubmissionFiles]);
 
 	const { clearQueue } = queueHooks;
 

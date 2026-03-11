@@ -69,6 +69,8 @@ export type ChatContextType = {
 	} | null;
 	filesMap: Map<string, any>;
 	setFilesMap: (filesMap: Map<string, any>) => void;
+	submissionFiles: Record<string, any> | null;
+	setSubmissionFiles: (files: Record<string, any> | null) => void;
 	todos: Todo[];
 	setTodos: (todos: Todo[]) => void;
 	viewMode: "chat" | "editor";
@@ -130,11 +132,34 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [submissionFiles, setSubmissionFilesState] = useState<Record<
+		string,
+		any
+	> | null>(null);
 	const [todos, setTodos] = useState<Todo[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 	const [ttft, setTtft] = useState<number | null>(null);
 	const [submitStartTime, setSubmitStartTime] = useState<number | null>(null);
 	const submitStartTimeRef = useRef<number | null>(null);
+
+	const setSubmissionFiles = useCallback(
+		(files: Record<string, any> | null) => {
+			setSubmissionFilesState(files ? { ...files } : null);
+		},
+		[],
+	);
+
+	const collectFilesFromLegacyMap = useCallback((): Record<string, any> => {
+		const result: Record<string, any> = {};
+		filesMap.forEach((files) => {
+			Object.assign(result, files);
+		});
+		return result;
+	}, [filesMap]);
+
+	const getResolvedSubmissionFiles = useCallback((): Record<string, any> => {
+		return submissionFiles ?? collectFilesFromLegacyMap();
+	}, [collectFilesFromLegacyMap, submissionFiles]);
 
 	const abortQuery = async () => {
 		// Send abort signal to backend for distributed mode (fire-and-forget for responsive UX)
@@ -347,11 +372,7 @@ export default function useChat(): ChatContextType {
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
 
-		// Collect files from filesMap for submission
-		const filesToSubmit: Record<string, any> = {};
-		filesMap.forEach((files) => {
-			Object.assign(filesToSubmit, files);
-		});
+		const filesToSubmit = getResolvedSubmissionFiles();
 
 		// Build payload based on agent type
 		const payload = agent.public
@@ -441,11 +462,7 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
-		// Collect files from filesMap for submission
-		const filesToSubmit: Record<string, any> = {};
-		filesMap.forEach((files) => {
-			Object.assign(filesToSubmit, files);
-		});
+		const filesToSubmit = getResolvedSubmissionFiles();
 
 		// For public agents, only send input and metadata (settings are server-side)
 		const payload = agent.public
@@ -888,14 +905,9 @@ export default function useChat(): ChatContextType {
 		});
 	}, []);
 
-	// Convert filesMap to backend format for submission
 	const getFilesForSubmission = useCallback((): Record<string, any> => {
-		const result: Record<string, any> = {};
-		filesMap.forEach((files) => {
-			Object.assign(result, files);
-		});
-		return result;
-	}, [filesMap]);
+		return getResolvedSubmissionFiles();
+	}, [getResolvedSubmissionFiles]);
 
 	return {
 		responseRef,
@@ -928,6 +940,8 @@ export default function useChat(): ChatContextType {
 		streamingRate,
 		filesMap,
 		setFilesMap,
+		submissionFiles,
+		setSubmissionFiles,
 		todos,
 		setTodos,
 		viewMode,

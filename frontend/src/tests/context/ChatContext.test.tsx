@@ -47,6 +47,9 @@ vi.mock("@/hooks/useMessageQueue", () => ({
 vi.mock("@/hooks/useChat", () => ({
 	default: function useChatMock() {
 		const [filesMap, setFilesMap] = React.useState(new Map<string, any>());
+		const [submissionFiles, setSubmissionFiles] = React.useState<
+			Record<string, any>
+		>({});
 		const [messages, setMessages] = React.useState<any[]>([]);
 		const [metadata, setMetadata] = React.useState<Record<string, any>>({});
 		const [viewMode, setViewMode] = React.useState<"chat" | "editor">("chat");
@@ -60,6 +63,8 @@ vi.mock("@/hooks/useChat", () => ({
 			handleSubmit: vi.fn(),
 			filesMap,
 			setFilesMap,
+			submissionFiles,
+			setSubmissionFiles,
 			messages,
 			setMessages,
 			clearMessages: () => {
@@ -170,6 +175,23 @@ describe("ChatContext persistent files", () => {
 				modified_at: "2024-01-03T00:00:00Z",
 			},
 		});
+		expect(result.current.submissionFiles).toEqual({
+			"/settings.md": {
+				content: ["settings"],
+				created_at: "2024-01-01T00:00:00Z",
+				modified_at: "2024-01-01T00:00:00Z",
+			},
+			"/memory/notes.md": {
+				content: ["memory"],
+				created_at: "2024-01-02T00:00:00Z",
+				modified_at: "2024-01-02T00:00:00Z",
+			},
+			"/memory/nested/todo.md": {
+				content: ["todo"],
+				created_at: "2024-01-03T00:00:00Z",
+				modified_at: "2024-01-03T00:00:00Z",
+			},
+		});
 	});
 
 	it("autosaves only persisted settings files plus user workspace files", async () => {
@@ -238,6 +260,7 @@ describe("ChatContext persistent files", () => {
 			files: {},
 			deleted_files: [],
 		});
+		expect(result.current.submissionFiles).not.toHaveProperty("/settings.md");
 	});
 
 	it("deleting a memory-backed file hides it for the session and reload restores it", async () => {
