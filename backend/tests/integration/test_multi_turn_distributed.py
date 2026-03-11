@@ -200,24 +200,30 @@ class TestStreamConsumer:
         Acceptance: Consumer eventually receives keep-alive or data.
         """
         thread_id = str(uuid4())
+        run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
-                mock_auth.return_value = None
+            with patch("src.routes.v0.thread.distributed_stream_exists", new_callable=AsyncMock) as mock_exists:
+                with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+                    mock_exists.return_value = True
+                    mock_auth.return_value = None
 
-                # Simulate slow worker with keep-alive then data
-                async def slow_generator():
-                    yield ": keep-alive\n\n"
-                    yield 'data: {"message": "finally got response"}\n\n'
-                    yield "data: [DONE]\n\n"
+                    # Simulate slow worker with keep-alive then data
+                    async def slow_generator():
+                        yield ": keep-alive\n\n"
+                        yield 'data: {"message": "finally got response"}\n\n'
+                        yield "data: [DONE]\n\n"
 
-                mock_stream.return_value = slow_generator()
+                    mock_stream.return_value = slow_generator()
 
-                chunks = []
-                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
-                    if response.status_code == 200:
-                        async for chunk in response.aiter_bytes():
-                            chunks.append(chunk.decode())
+                    chunks = []
+                    async with async_client.stream(
+                        "GET",
+                        f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                    ) as response:
+                        if response.status_code == 200:
+                            async for chunk in response.aiter_bytes():
+                                chunks.append(chunk.decode())
 
                 full_response = "".join(chunks)
                 assert "keep-alive" in full_response
@@ -231,22 +237,28 @@ class TestStreamConsumer:
         Acceptance: Client receives error in stream.
         """
         thread_id = str(uuid4())
+        run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
-                mock_auth.return_value = None
+            with patch("src.routes.v0.thread.distributed_stream_exists", new_callable=AsyncMock) as mock_exists:
+                with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+                    mock_exists.return_value = True
+                    mock_auth.return_value = None
 
-                async def error_generator():
-                    yield 'data: {"error": "Something went wrong"}\n\n'
-                    yield "data: [DONE]\n\n"
+                    async def error_generator():
+                        yield 'data: {"error": "Something went wrong"}\n\n'
+                        yield "data: [DONE]\n\n"
 
-                mock_stream.return_value = error_generator()
+                    mock_stream.return_value = error_generator()
 
-                chunks = []
-                async with async_client.stream("GET", f"/api/threads/{thread_id}/stream") as response:
-                    if response.status_code == 200:
-                        async for chunk in response.aiter_bytes():
-                            chunks.append(chunk.decode())
+                    chunks = []
+                    async with async_client.stream(
+                        "GET",
+                        f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                    ) as response:
+                        if response.status_code == 200:
+                            async for chunk in response.aiter_bytes():
+                                chunks.append(chunk.decode())
 
                 full_response = "".join(chunks)
                 assert "error" in full_response

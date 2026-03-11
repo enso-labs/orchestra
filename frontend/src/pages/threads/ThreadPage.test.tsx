@@ -35,6 +35,10 @@ vi.mock("@/hooks/useMediaQuery", () => ({
 	useMediaQuery: () => false,
 }));
 
+vi.mock("@/hooks/useActiveStreamRecovery", () => ({
+	default: () => ({ isRecovering: false }),
+}));
+
 vi.mock("@/layouts/chat-layout-v2", () => ({
 	default: ({ children }: { children: ReactNode }) => (
 		<div data-testid="chat-layout">{children}</div>
@@ -204,6 +208,36 @@ describe("ThreadPage", () => {
 			expect.any(Object),
 			{ enabled: true },
 		);
+	});
+
+	it("clears stale in-memory thread state when the route thread differs", () => {
+		const setMessages = vi.fn();
+		const setCheckpoints = vi.fn();
+		const setFilesMap = vi.fn();
+		const setTodos = vi.fn();
+		const setViewMode = vi.fn();
+		const setMetadata = vi.fn();
+
+		mockUseChatContext.mockReturnValue({
+			...baseChatContext,
+			messages: [{ id: "msg-1", content: "Hello" }],
+			metadata: { thread_id: "other-thread" },
+			setMessages,
+			setCheckpoints,
+			setFilesMap,
+			setTodos,
+			setViewMode,
+			setMetadata,
+		});
+
+		renderThreadPage("/thread/live-123");
+
+		expect(setMessages).toHaveBeenCalledWith([]);
+		expect(setCheckpoints).toHaveBeenCalledWith([]);
+		expect(setFilesMap).toHaveBeenCalledWith(expect.any(Map));
+		expect(setTodos).toHaveBeenCalledWith([]);
+		expect(setViewMode).toHaveBeenCalledWith("chat");
+		expect(setMetadata).toHaveBeenCalledWith(expect.any(Function));
 	});
 
 	it("does not render a stale thread error when reusing live in-memory state", () => {

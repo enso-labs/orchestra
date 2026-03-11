@@ -5,7 +5,7 @@ on:
     branches:
       - development
     paths:
-      - "docs/slides/**"
+      - "decks/slides/**"
       - ".github/workflows/slides.yml"
   # Allow manual trigger
   workflow_dispatch:
@@ -37,7 +37,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "docs"
+          path: "decks"
 
       - name: Deploy to GitHub Pages
         id: deployment

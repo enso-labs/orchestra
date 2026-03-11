@@ -12,7 +12,16 @@ import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
 import type { Todo } from "@/components/lists/TodoList";
 import type { StreamEvent } from "@/lib/entities/stream";
-import type { StreamSource } from "@/lib/utils/streamSource";
+import {
+	DistributedStreamSource,
+	type StreamSource,
+} from "@/lib/utils/streamSource";
+import {
+	removeActiveStreamRecovery,
+	updateActiveStreamRecovery,
+	upsertActiveStreamRecovery,
+} from "@/lib/utils/activeStreamRecovery";
+import { toast } from "sonner";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -72,6 +81,12 @@ export type ChatContextType = {
 	removeFile: (path: string) => void;
 	renameFile: (oldPath: string, newPath: string) => void;
 	getFilesForSubmission: () => Record<string, any>;
+	attachToDistributedStream: (options: {
+		threadId: string;
+		runId: string;
+		lastEventId?: string | null;
+		route?: string;
+	}) => Promise<void>;
 };
 
 export default function useChat(): ChatContextType {
@@ -171,6 +186,143 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
+	const clearDistributedRecovery = (threadId?: string) => {
+		if (threadId) {
+			removeActiveStreamRecovery(threadId);
+		}
+	};
+
+	const persistDistributedRecovery = (
+		source: DistributedStreamSource,
+		route: string,
+	) => {
+		const now = new Date().toISOString();
+		upsertActiveStreamRecovery({
+			threadId: source.getThreadId(),
+			runId: source.getRunId(),
+			lastEventId: source.getLastEventId(),
+			startedAt: now,
+			updatedAt: now,
+			route,
+			status: "running",
+		});
+	};
+
+	const updateDistributedRecoveryCursor = (
+		source: DistributedStreamSource,
+		route: string,
+	) => {
+		updateActiveStreamRecovery(source.getThreadId(), {
+			runId: source.getRunId(),
+			lastEventId: source.getLastEventId(),
+			updatedAt: new Date().toISOString(),
+			route,
+		});
+	};
+
+	const getRoutePath = () =>
+		typeof window !== "undefined" ? window.location.pathname : "/chat";
+
+	const startManagedStream = async (
+		stream: StreamSource,
+		options: {
+			recoveryMode: boolean;
+			route: string;
+		},
+	): Promise<{ controller: AbortController; stream: StreamSource }> => {
+		const controller = new AbortController();
+		const distributedStream =
+			stream instanceof DistributedStreamSource ? stream : null;
+		const threadId = distributedStream?.getThreadId() ?? metadata?.thread_id;
+
+		stream.onEvent((event: StreamEvent) => {
+			if (distributedStream) {
+				updateDistributedRecoveryCursor(distributedStream, options.route);
+			}
+
+			if (
+				event.type === "done" ||
+				event.type === "error" ||
+				event.type === "aborted"
+			) {
+				clearDistributedRecovery(threadId);
+			}
+
+			if (event.type === "done") {
+				setLoading(false);
+				setLoadingMessage("");
+				setController(null);
+				return;
+			}
+
+			if (options.recoveryMode && event.type === "error") {
+				setLoading(false);
+				setLoadingMessage("");
+				setController(null);
+				toast.error(event.data.error || "Lost connection to the live stream.");
+				return;
+			}
+
+			if (options.recoveryMode && event.type === "aborted") {
+				setLoading(false);
+				setLoadingMessage("");
+				setController(null);
+				return;
+			}
+
+			const legacyPayload = convertEventToLegacy(event);
+			if (legacyPayload) {
+				sseHandler(legacyPayload, in_mem_messages);
+			}
+		});
+
+		stream.onError((error: Error) => {
+			console.error("Stream error:", error);
+			const status = (error as Error & { status?: number }).status;
+			setLoading(false);
+			setLoadingMessage("");
+			setController(null);
+
+			if (options.recoveryMode) {
+				if (status === 404 || status === 409) {
+					clearDistributedRecovery(threadId);
+					toast(
+						"Stream ended while reconnecting. Loaded the latest saved thread state.",
+					);
+					return;
+				}
+
+				toast.error(
+					"Lost connection to the live stream. Refresh to retry reconnecting.",
+				);
+				return;
+			}
+
+			alert(error.message);
+
+			const lastMessageIndex =
+				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
+			if (lastMessageIndex >= 0) {
+				setQuery(in_mem_messages[lastMessageIndex].content);
+				clearMessages(lastMessageIndex);
+			}
+		});
+
+		stream.onClose(() => {
+			console.log("Stream connection closed");
+		});
+
+		controller.signal.addEventListener("abort", () => {
+			console.log("Aborting stream connection");
+			stream.close();
+			setLoading(false);
+			setLoadingMessage("");
+		});
+
+		void stream.start();
+		return { controller, stream };
+	};
+
 	/**
 	 * Handles SSE using the new unified stream abstraction.
 	 * Supports both sync mode (direct SSE) and distributed mode (polling).
@@ -226,60 +378,46 @@ export default function useChat(): ChatContextType {
 					subagents: agent.subagents,
 				};
 
-		// Show processing state for distributed mode
-		setLoadingMessage("Processing request...");
-
-		// Get unified stream source (handles both sync and distributed)
+		const route = getRoutePath();
 		const stream = await initiateStream(payload);
+		if (stream instanceof DistributedStreamSource) {
+			persistDistributedRecovery(stream, route);
+		}
 
-		// Create abort controller for cleanup
-		const controller = new AbortController();
-
-		// Handle events from the stream
-		stream.onEvent((event: StreamEvent) => {
-			if (event.type === "done") {
-				setLoading(false);
-				setController(null);
-				return;
-			}
-
-			// Convert to legacy format and process
-			const legacyPayload = convertEventToLegacy(event);
-			if (legacyPayload) {
-				sseHandler(legacyPayload, in_mem_messages);
-			}
+		setLoadingMessage("Processing request...");
+		return startManagedStream(stream, {
+			recoveryMode: false,
+			route,
 		});
+	};
 
-		stream.onError((error: Error) => {
-			console.error("Stream error:", error);
-			alert(error.message);
-			setLoading(false);
-			setController(null);
+	const attachToDistributedStream = async ({
+		threadId,
+		runId,
+		lastEventId = null,
+		route = getRoutePath(),
+	}: {
+		threadId: string;
+		runId: string;
+		lastEventId?: string | null;
+		route?: string;
+	}) => {
+		if (controller) {
+			return;
+		}
 
-			// Restore last message for retry
-			const lastMessageIndex =
-				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
-			if (lastMessageIndex >= 0) {
-				setQuery(in_mem_messages[lastMessageIndex].content);
-				clearMessages(lastMessageIndex);
-			}
+		setLoading(true);
+		setLoadingMessage("Reconnecting stream...");
+		const stream = new DistributedStreamSource(threadId, runId, {
+			skipInitialDelay: true,
+			lastEventId,
 		});
-
-		stream.onClose(() => {
-			console.log("Stream connection closed");
+		persistDistributedRecovery(stream, route);
+		const { controller: nextController } = await startManagedStream(stream, {
+			recoveryMode: true,
+			route,
 		});
-
-		// Handle abort
-		controller.signal.addEventListener("abort", () => {
-			console.log("Aborting stream connection");
-			stream.close();
-			setLoading(false);
-		});
-
-		// Start the stream
-		stream.start();
-
-		return { controller, stream };
+		setController(nextController);
 	};
 
 	const handleSSE = async (
@@ -503,6 +641,7 @@ export default function useChat(): ChatContextType {
 			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: metadataPayload.thread_id,
+				run_id: metadataPayload.run_id ?? prev?.run_id,
 				assistant_id: metadataPayload.assistant_id,
 				project_id: metadataPayload.project_id,
 			}));
@@ -801,5 +940,6 @@ export default function useChat(): ChatContextType {
 		removeFile,
 		renameFile,
 		getFilesForSubmission,
+		attachToDistributedStream,
 	};
 }

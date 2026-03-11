@@ -226,3 +226,71 @@ describe("StreamMessageHandler.toolCall", () => {
 		expect(refs.toolNameRef.current).toBe("my_tool");
 	});
 });
+
+describe("StreamMessageHandler.processResponse", () => {
+	it("replaces cumulative content chunks instead of duplicating them", () => {
+		const refs = createMockRefs();
+		const history: any[] = [];
+		const handler = new StreamMessageHandler(
+			refs.toolNameRef as any,
+			refs.toolCallMapRef as any,
+			history,
+		);
+
+		handler.processResponse(
+			{
+				id: "assistant-1",
+				type: "assistant",
+				content: "Created skill",
+			},
+			"Created skill",
+			-1,
+		);
+
+		handler.processResponse(
+			{
+				id: "assistant-1",
+				type: "assistant",
+				content: "Created skill successfully",
+			},
+			"Created skill successfully",
+			0,
+		);
+
+		expect(history).toHaveLength(1);
+		expect(history[0].content).toBe("Created skill successfully");
+	});
+
+	it("still appends delta chunks when the provider streams increments", () => {
+		const refs = createMockRefs();
+		const history: any[] = [];
+		const handler = new StreamMessageHandler(
+			refs.toolNameRef as any,
+			refs.toolCallMapRef as any,
+			history,
+		);
+
+		handler.processResponse(
+			{
+				id: "assistant-1",
+				type: "assistant",
+				content: "Created ",
+			},
+			"Created ",
+			-1,
+		);
+
+		handler.processResponse(
+			{
+				id: "assistant-1",
+				type: "assistant",
+				content: "skill",
+			},
+			"skill",
+			0,
+		);
+
+		expect(history).toHaveLength(1);
+		expect(history[0].content).toBe("Created skill");
+	});
+});

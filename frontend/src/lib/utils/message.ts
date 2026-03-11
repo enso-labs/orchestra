@@ -132,9 +132,17 @@ export class StreamMessageHandler {
 		expectedContent: string,
 		existingIndex: number,
 	) {
-		// Always append to the related message content
 		const existingMsg = this.history[existingIndex];
-		const updatedContent = formatContent(existingMsg.content) + expectedContent;
+		const existingContent = formatContent(existingMsg.content);
+		let updatedContent = existingContent + expectedContent;
+
+		// Some providers stream cumulative content instead of deltas.
+		// When that happens, replace with the cumulative payload rather than duplicating it.
+		if (!existingContent || expectedContent.startsWith(existingContent)) {
+			updatedContent = expectedContent;
+		} else if (existingContent.endsWith(expectedContent)) {
+			updatedContent = existingContent;
+		}
 
 		this.history[existingIndex] = {
 			...response,

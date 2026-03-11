@@ -1,6 +1,6 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
 import uuid
-from fastapi import APIRouter, Body, HTTPException, Depends, status
+from fastapi import APIRouter, Body, HTTPException, Depends, Query, status
 from fastapi.responses import Response, UJSONResponse, StreamingResponse
 from fastapi_cache.decorator import cache
 from langgraph.graph.state import RunnableConfig
@@ -26,7 +26,7 @@ from langgraph.checkpoint.base import (
     ChannelVersions,
 )
 
-from src.utils.stream import stream_from_redis
+from src.utils.stream import distributed_stream_exists, stream_from_redis
 
 router = APIRouter(tags=["Thread"])
 
@@ -204,9 +204,11 @@ async def get_thread(
         async with get_checkpoint_db() as checkpointer:
             service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             thread = await service_context.thread_service.get(thread_id)
+            if not thread:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
             return {"thread": thread.model_dump(exclude_none=True)}
     except HTTPException:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+        raise
     except Exception as e:
         logger.exception(f"Error getting thread: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
@@ -220,24 +222,62 @@ async def get_thread(
 )
 async def stream_thread(
     thread_id: str,
+    run_id: str = Query(...),
+    after: str | None = Query(default=None),
     user: ProtectedUser = Depends(get_optional_user_from_token),
+    store: AsyncPostgresStore = Depends(get_store),
 ):
     """
     Stream results from a distributed worker via SSE.
 
-    Use this endpoint after POST /llm/stream returns {"distributed": true}.
+    Use this endpoint after POST /llm/stream returns {"distributed": true, "run_id": "..."}.
     The client should connect to this endpoint to receive the streaming
     response from the background worker.
 
     Args:
         thread_id: The thread ID returned from the distributed /llm/stream call.
+        run_id: The run ID returned from the distributed /llm/stream call.
+        after: Optional Redis stream entry ID to resume after.
 
     Returns:
         StreamingResponse with SSE events containing the agent output.
     """
     try:
+        thread = None
+        if user:
+            async with get_checkpoint_db() as checkpointer:
+                service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+                thread = await service_context.thread_service.get(thread_id)
+
+        thread_metadata = thread.metadata if thread and thread.metadata else {}
+        active_run_id = thread_metadata.get("active_run_id")
+        stream_status = thread_metadata.get("stream_status")
+
+        if active_run_id and active_run_id != run_id:
+            if stream_status == "running":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Thread {thread_id} is running a different active run: {active_run_id}",
+                )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id} is no longer retained for thread {thread_id}",
+            )
+
+        stream_exists = await distributed_stream_exists(thread_id, run_id)
+        if not stream_exists:
+            if active_run_id == run_id and stream_status == "running":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Distributed stream for thread {thread_id} run {run_id} is not ready yet",
+                )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Distributed stream for thread {thread_id} run {run_id} was not found",
+            )
+
         return StreamingResponse(
-            stream_from_redis(thread_id),
+            stream_from_redis(thread_id, run_id, after or "0"),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -245,6 +285,8 @@ async def stream_thread(
                 "X-Accel-Buffering": "no",  # Disable nginx buffering
             },
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Error streaming thread {thread_id}: {e}")
         raise HTTPException(

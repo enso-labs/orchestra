@@ -21,6 +21,7 @@ import FileEditorPanel from "@/components/panels/FileEditorPanel";
 import useModel from "@/hooks/useModel";
 import { ArrowLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import useActiveStreamRecovery from "@/hooks/useActiveStreamRecovery";
 
 export default function ThreadPage() {
 	const { threadId, projectId } = useParams<{
@@ -53,8 +54,20 @@ export default function ThreadPage() {
 	const isMobile = useMediaQuery("(max-width: 768px)");
 	const hasLiveThreadState =
 		metadata?.thread_id === threadId && messages.length > 0;
-	const effectiveThreadLoading = !hasLiveThreadState && threadLoading;
-	const effectiveThreadError = !hasLiveThreadState ? threadError : null;
+	const isRouteThreadMismatch =
+		Boolean(threadId) &&
+		Boolean(metadata?.thread_id) &&
+		metadata.thread_id !== threadId;
+	const { isRecovering } = useActiveStreamRecovery(threadId);
+	const effectiveThreadLoading =
+		!hasLiveThreadState &&
+		!threadError &&
+		(threadLoading ||
+			isRecovering ||
+			messages.length === 0 ||
+			isRouteThreadMismatch);
+	const effectiveThreadError =
+		!hasLiveThreadState && !isRecovering ? threadError : null;
 
 	useModelsEffect();
 	useEffectGetAgents();
@@ -77,6 +90,31 @@ export default function ThreadPage() {
 			enabled: !hasLiveThreadState,
 		},
 	);
+
+	useEffect(() => {
+		if (!threadId || metadata?.thread_id === threadId) {
+			return;
+		}
+
+		setMessages([]);
+		setCheckpoints([]);
+		setFilesMap(new Map());
+		setTodos([]);
+		setViewMode("chat");
+		setMetadata((prev: any) => ({
+			...prev,
+			thread_id: threadId,
+		}));
+	}, [
+		threadId,
+		metadata?.thread_id,
+		setMessages,
+		setCheckpoints,
+		setFilesMap,
+		setTodos,
+		setViewMode,
+		setMetadata,
+	]);
 
 	// Handle project context if on /p/:projectId/t/:threadId
 	useEffect(() => {

@@ -47,6 +47,18 @@ export const findThread = async (threadId: string) => {
 	}
 };
 
+export const getThread = async (threadId: string) => {
+	const headers: Record<string, string> = {};
+	const token = getAuthToken();
+	if (token) {
+		headers.Authorization = `Bearer ${token}`;
+	}
+
+	const response = await apiClient.get(`/threads/${threadId}`, { headers });
+
+	return response.data.thread;
+};
+
 /**
  * Creates a new thread with the provided payload
  * @param payload - Thread configuration containing system prompt and other settings
@@ -191,7 +203,7 @@ export async function initiateStream(
 			skipInitialDelay: isFirstTurn,
 		};
 
-		return new DistributedStreamSource(data.thread_id, options);
+		return new DistributedStreamSource(data.thread_id, data.run_id, options);
 	}
 
 	// Sync mode: 200 OK

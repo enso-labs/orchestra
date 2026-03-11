@@ -22,11 +22,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from src.constants import DB_URI
 from src.schemas.models import User
+from src.utils.db import get_asyncpg_connect_args, get_asyncpg_url
 
-ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
+ASYNC_DB_URI = get_asyncpg_url(DB_URI)
 engine = create_async_engine(
     ASYNC_DB_URI,
-    connect_args={"ssl": False},
+    connect_args=get_asyncpg_connect_args(DB_URI),
 )
 AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
