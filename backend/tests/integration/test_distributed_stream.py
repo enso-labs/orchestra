@@ -92,21 +92,23 @@ class TestThreadStreamEndpoint:
         run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
-                mock_auth.return_value = None  # No authentication required
+            with patch("src.routes.v0.thread.distributed_stream_exists", new_callable=AsyncMock) as mock_exists:
+                with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+                    mock_exists.return_value = True
+                    mock_auth.return_value = None  # No authentication required
 
-                async def mock_gen():
-                    yield "data: [DONE]\n\n"
+                    async def mock_gen():
+                        yield "data: [DONE]\n\n"
 
-                mock_stream.return_value = mock_gen()
+                    mock_stream.return_value = mock_gen()
 
-                async with async_client.stream(
-                    "GET",
-                    f"/api/threads/{thread_id}/stream?run_id={run_id}",
-                ) as response:
-                    # The endpoint should work even without authentication
-                    # since it uses get_optional_user
-                    assert response.status_code in [200, 422]
+                    async with async_client.stream(
+                        "GET",
+                        f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                    ) as response:
+                        # The endpoint should work even without authentication
+                        # since it uses get_optional_user
+                        assert response.status_code in [200, 422]
 
     @pytest.mark.asyncio
     async def test_returns_sse_content_type(self, async_client):
@@ -115,20 +117,22 @@ class TestThreadStreamEndpoint:
         run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
-                mock_auth.return_value = None
+            with patch("src.routes.v0.thread.distributed_stream_exists", new_callable=AsyncMock) as mock_exists:
+                with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+                    mock_exists.return_value = True
+                    mock_auth.return_value = None
 
-                async def mock_gen():
-                    yield "data: [DONE]\n\n"
+                    async def mock_gen():
+                        yield "data: [DONE]\n\n"
 
-                mock_stream.return_value = mock_gen()
+                    mock_stream.return_value = mock_gen()
 
-                async with async_client.stream(
-                    "GET",
-                    f"/api/threads/{thread_id}/stream?run_id={run_id}",
-                ) as response:
-                    if response.status_code == 200:
-                        assert response.headers["content-type"].startswith("text/event-stream")
+                    async with async_client.stream(
+                        "GET",
+                        f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                    ) as response:
+                        if response.status_code == 200:
+                            assert response.headers["content-type"].startswith("text/event-stream")
 
     @pytest.mark.asyncio
     async def test_streams_data_events(self, async_client):
@@ -137,30 +141,32 @@ class TestThreadStreamEndpoint:
         run_id = str(uuid4())
 
         with patch("src.routes.v0.thread.stream_from_redis") as mock_stream:
-            with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
-                mock_auth.return_value = None
+            with patch("src.routes.v0.thread.distributed_stream_exists", new_callable=AsyncMock) as mock_exists:
+                with patch("src.routes.v0.thread.get_optional_user_from_token") as mock_auth:
+                    mock_exists.return_value = True
+                    mock_auth.return_value = None
 
-                async def mock_gen():
-                    yield 'data: {"test": "chunk1"}\n\n'
-                    yield 'data: {"test": "chunk2"}\n\n'
-                    yield "data: [DONE]\n\n"
+                    async def mock_gen():
+                        yield 'data: {"test": "chunk1"}\n\n'
+                        yield 'data: {"test": "chunk2"}\n\n'
+                        yield "data: [DONE]\n\n"
 
-                mock_stream.return_value = mock_gen()
+                    mock_stream.return_value = mock_gen()
 
-                chunks = []
-                async with async_client.stream(
-                    "GET",
-                    f"/api/threads/{thread_id}/stream?run_id={run_id}",
-                ) as response:
-                    if response.status_code == 200:
-                        async for chunk in response.aiter_bytes():
-                            chunks.append(chunk.decode())
+                    chunks = []
+                    async with async_client.stream(
+                        "GET",
+                        f"/api/threads/{thread_id}/stream?run_id={run_id}",
+                    ) as response:
+                        if response.status_code == 200:
+                            async for chunk in response.aiter_bytes():
+                                chunks.append(chunk.decode())
 
-                        assert len(chunks) > 0
-                        full_response = "".join(chunks)
-                        assert "chunk1" in full_response
-                        assert "chunk2" in full_response
-                        assert "[DONE]" in full_response
+                            assert len(chunks) > 0
+                            full_response = "".join(chunks)
+                            assert "chunk1" in full_response
+                            assert "chunk2" in full_response
+                            assert "[DONE]" in full_response
 
 
 class TestBackwardCompatibility:

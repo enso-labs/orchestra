@@ -136,6 +136,7 @@ class TestWorkerModelResolution:
                 checkpointer=MagicMock(),
                 user_id="user-1",
                 thread_id="t1",
+                run_id="run-1",
                 stream_key="agent:stream:t1",
                 redis_client=_mock_redis(),
             )
@@ -180,6 +181,7 @@ class TestWorkerModelResolution:
                 checkpointer=MagicMock(),
                 user_id="user-1",
                 thread_id="t1",
+                run_id="run-1",
                 stream_key="agent:stream:t1",
                 redis_client=_mock_redis(),
             )
@@ -225,6 +227,7 @@ class TestWorkerModelResolution:
                 checkpointer=MagicMock(),
                 user_id="user-1",
                 thread_id="t1",
+                run_id="run-1",
                 stream_key="agent:stream:t1",
                 redis_client=_mock_redis(),
             )
@@ -270,6 +273,7 @@ class TestWorkerModelResolution:
                 checkpointer=MagicMock(),
                 user_id="user-1",
                 thread_id="t1",
+                run_id="run-1",
                 stream_key="agent:stream:t1",
                 redis_client=_mock_redis(),
             )
@@ -308,6 +312,7 @@ class TestWorkerModelResolution:
                 checkpointer=MagicMock(),
                 user_id="",
                 thread_id="t1",
+                run_id="run-1",
                 stream_key="agent:stream:t1",
                 redis_client=_mock_redis(),
             )
@@ -353,6 +358,7 @@ class TestWorkerModelResolution:
                 checkpointer=MagicMock(),
                 user_id="user-1",
                 thread_id="t1",
+                run_id="run-1",
                 stream_key="agent:stream:t1",
                 redis_client=_mock_redis(),
             )
