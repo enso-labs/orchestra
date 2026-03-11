@@ -3,7 +3,8 @@ name: Test
 on:
     push:
         branches:
-            - "*"
+            # Run on pushes to any branch, including namespaced branches like feat/foo.
+            - "**"
         paths-ignore:
             - "Changelog.md"
             - "docker/**"
@@ -18,22 +19,6 @@ on:
             - "website/**"
             - "sandboxes/**"
             - "wiki/**"
-    # pull_request:
-    #     types: [opened, synchronize, reopened]
-    #     paths-ignore:
-    #         - "Changelog.md"
-    #         - "docker/**"
-    #         - "docker-compose.yml"
-    #         - "decks/**"
-    #         - ".dockerignore"
-    #         - "README.md"
-    #         - "deployment/**"
-    #         - "examples/**"
-    #         - "openspec/**"
-    #         - "cli/**"
-    #         - "website/**"
-    #         - "sandboxes/**"
-    #         - "wiki/**"
 jobs:
     ###############################################################
     ## Test Frontend
