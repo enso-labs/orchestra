@@ -10,6 +10,9 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ### Changed
   - feat/840-disable-mcp-server-toggle
 
+### Fixed
+  - fix/855-files-map-not-persisted-across-threads (2026-03-11)
+
 ## 2026.3.4-2
 
 ### Changed
