@@ -29,7 +29,7 @@ export default function SharedThreadPage() {
 	const lastFetchedTokenRef = useRef<string | null>(null);
 	const isMobile = useIsMobile();
 
-	const { setFilesMap, setViewMode } = useChatContext();
+	const { setFilesMap, setViewMode, clearThreadScopedFiles } = useChatContext();
 
 	useEffect(() => {
 		async function fetchSharedThread() {
@@ -71,8 +71,13 @@ export default function SharedThreadPage() {
 			}
 		}
 
-		fetchSharedThread();
-	}, [shareToken, setFilesMap, setViewMode]);
+		void fetchSharedThread();
+
+		return () => {
+			clearThreadScopedFiles();
+			setViewMode("chat");
+		};
+	}, [clearThreadScopedFiles, shareToken, setFilesMap, setViewMode]);
 
 	if (loading) {
 		return (

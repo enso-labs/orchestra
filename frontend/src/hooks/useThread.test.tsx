@@ -158,4 +158,50 @@ describe("useThread", () => {
 		expect(callbacks.setMessages).not.toHaveBeenCalled();
 		expect(callbacks.setMetadata).not.toHaveBeenCalled();
 	});
+
+	it("ignores historical metadata.files when hydrating a thread", async () => {
+		mockSearchThreads.mockResolvedValueOnce([
+			{
+				metadata: {
+					thread_id: "thread-123",
+					files: {
+						"/historical.txt": {
+							content: ["legacy"],
+							created_at: "2024-01-01T00:00:00Z",
+							modified_at: "2024-01-01T00:00:00Z",
+						},
+					},
+					todos: [],
+				},
+				values: {
+					messages: [
+						{ id: "msg-1", role: "user", content: "Hello" },
+						{ id: "msg-2", role: "assistant", content: "Hi" },
+					],
+				},
+			},
+		]);
+
+		const callbacks: ThreadCallbacks = {
+			setCheckpoints: vi.fn(),
+			setMessages: vi.fn(),
+			setMetadata: vi.fn(),
+			setFilesMap: vi.fn(),
+			setTodos: vi.fn(),
+			setModel: vi.fn(),
+		};
+
+		render(
+			<UseLoadThreadEffectHarness
+				threadId="thread-123"
+				enabled={true}
+				callbacks={callbacks}
+				onStateChange={() => undefined}
+			/>,
+		);
+
+		await waitFor(() => {
+			expect(callbacks.setFilesMap).toHaveBeenCalledWith(new Map());
+		});
+	});
 });

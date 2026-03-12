@@ -1,7 +1,7 @@
 import React from "react";
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { FileTreeNode } from "@/components/panels/FileTree/FileTreeNode";
 import { FileTreeSidebar } from "@/components/panels/FileTree/FileTreeSidebar";
 
@@ -46,10 +46,12 @@ vi.mock("@/components/ui/context-menu", () => ({
 	ContextMenuItem: ({
 		children,
 		onClick,
+		onSelect,
 	}: {
 		children: React.ReactNode;
 		onClick?: () => void;
-	}) => <button onClick={onClick}>{children}</button>,
+		onSelect?: () => void;
+	}) => <button onClick={onSelect ?? onClick}>{children}</button>,
 	ContextMenuTrigger: ({ children }: { children: React.ReactNode }) => (
 		<>{children}</>
 	),
@@ -82,6 +84,7 @@ describe("FileTreeSidebar", () => {
 	});
 
 	it("keeps Delete and removes Rename for folder nodes", () => {
+		const onDelete = vi.fn();
 		render(
 			<FileTreeNode
 				item={{
@@ -101,13 +104,16 @@ describe("FileTreeSidebar", () => {
 				onSelect={vi.fn()}
 				onToggle={vi.fn()}
 				onRename={vi.fn()}
-				onDelete={vi.fn()}
+				onDelete={onDelete}
 				onNewFile={vi.fn()}
 			/>,
 		);
 
 		expect(screen.getByText("Delete")).toBeInTheDocument();
 		expect(screen.queryByText("Rename")).not.toBeInTheDocument();
+
+		fireEvent.click(screen.getByText("Delete"));
+		expect(onDelete).toHaveBeenCalledWith("/memory");
 	});
 
 	it("updates the rendered tree immediately when folder files disappear", () => {

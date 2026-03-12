@@ -234,7 +234,7 @@ describe("ThreadPage", () => {
 
 		expect(setMessages).toHaveBeenCalledWith([]);
 		expect(setCheckpoints).toHaveBeenCalledWith([]);
-		expect(setFilesMap).toHaveBeenCalledWith(expect.any(Map));
+		expect(setFilesMap).not.toHaveBeenCalled();
 		expect(setTodos).toHaveBeenCalledWith([]);
 		expect(setViewMode).toHaveBeenCalledWith("chat");
 		expect(setMetadata).toHaveBeenCalledWith(expect.any(Function));

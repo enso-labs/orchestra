@@ -62,6 +62,18 @@ interface BreadcrumbSegment {
 	isLast: boolean;
 }
 
+type EditorActionType = "new_file" | "rename" | "delete";
+type PendingEditorAction = {
+	type: EditorActionType;
+	path?: string;
+} | null;
+type PostDialogAction = {
+	type: "delete";
+	path: string;
+	switchToChat: boolean;
+} | null;
+type FocusTarget = "editor" | "chat";
+
 export default function FileEditorPanel() {
 	// Use new fileSystem with proper tab semantics
 	const {
@@ -78,6 +90,7 @@ export default function FileEditorPanel() {
 		markDirty,
 		savePersistentContextFiles,
 		setViewMode,
+		inputRef,
 	} = useChatContext() as {
 		fileSystem: Map<
 			string,
@@ -104,23 +117,28 @@ export default function FileEditorPanel() {
 			force?: boolean;
 		}) => Promise<boolean>;
 		setViewMode: (mode: string) => void;
+		inputRef: React.RefObject<HTMLTextAreaElement>;
 	};
 
 	const [copied, setCopied] = useState(false);
 	const [showPreview, setShowPreview] = useState(false);
 
 	// Dialog states
-	const [showNewFileDialog, setShowNewFileDialog] = useState(false);
-	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-	const [showRenameDialog, setShowRenameDialog] = useState(false);
+	const [pendingEditorAction, setPendingEditorAction] =
+		useState<PendingEditorAction>(null);
+	const [activeDialog, setActiveDialog] = useState<EditorActionType | null>(
+		null,
+	);
+	const [postDialogAction, setPostDialogAction] =
+		useState<PostDialogAction>(null);
 	const [newFilePath, setNewFilePath] = useState("");
-	const [fileToDelete, setFileToDelete] = useState<string | null>(null);
-	const [fileToRename, setFileToRename] = useState<string | null>(null);
+	const [dialogPath, setDialogPath] = useState<string | null>(null);
 	const [renamePath, setRenamePath] = useState("");
 	const [pathError, setPathError] = useState("");
 
 	// Rename input ref for inline editing
 	const renameInputRef = useRef<HTMLInputElement>(null);
+	const editorPrimaryActionRef = useRef<HTMLButtonElement>(null);
 	const [inlineRenaming, setInlineRenaming] = useState<string | null>(null);
 	const [inlineRenamePath, setInlineRenamePath] = useState("");
 
@@ -185,20 +203,20 @@ export default function FileEditorPanel() {
 		[fileSystem],
 	);
 	const deleteTargetMatches = useMemo(() => {
-		if (!fileToDelete) {
+		if (activeDialog !== "delete" || !dialogPath) {
 			return [];
 		}
-		const folderPrefix = fileToDelete.endsWith("/")
-			? fileToDelete
-			: `${fileToDelete}/`;
+		const folderPrefix = dialogPath.endsWith("/")
+			? dialogPath
+			: `${dialogPath}/`;
 		return allFilePaths.filter(
-			(path) => path === fileToDelete || path.startsWith(folderPrefix),
+			(path) => path === dialogPath || path.startsWith(folderPrefix),
 		);
-	}, [allFilePaths, fileToDelete]);
+	}, [activeDialog, allFilePaths, dialogPath]);
 	const isFolderDelete = Boolean(
-		fileToDelete &&
-		!fileSystem.has(fileToDelete) &&
-		deleteTargetMatches.some((path) => path.startsWith(`${fileToDelete}/`)),
+		dialogPath &&
+		!fileSystem.has(dialogPath) &&
+		deleteTargetMatches.some((path) => path.startsWith(`${dialogPath}/`)),
 	);
 
 	// Use activeFile from context (no local selectedFile state needed)
@@ -486,6 +504,103 @@ export default function FileEditorPanel() {
 		return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 	};
 
+	const getNewFileDraftPath = useCallback((parentPath?: string): string => {
+		if (!parentPath) {
+			return "";
+		}
+
+		if (parentPath === "/") {
+			return "/";
+		}
+
+		return parentPath.endsWith("/") ? parentPath : `${parentPath}/`;
+	}, []);
+
+	const restoreFocus = useCallback(
+		(target: FocusTarget) => {
+			if (typeof window === "undefined") {
+				return;
+			}
+
+			let attempts = 0;
+			const focusOnAvailableTarget = () => {
+				const element =
+					target === "chat" ? inputRef.current : editorPrimaryActionRef.current;
+				if (element) {
+					element.focus();
+					return;
+				}
+
+				if (attempts < 5) {
+					attempts += 1;
+					window.requestAnimationFrame(focusOnAvailableTarget);
+				}
+			};
+
+			window.requestAnimationFrame(focusOnAvailableTarget);
+		},
+		[inputRef],
+	);
+
+	const handleDialogCloseAutoFocus = useCallback((event: Event) => {
+		event.preventDefault();
+	}, []);
+
+	useEffect(() => {
+		if (!pendingEditorAction || activeDialog !== null) {
+			return;
+		}
+
+		const animationFrame = window.requestAnimationFrame(() => {
+			if (pendingEditorAction.type === "new_file") {
+				setNewFilePath(getNewFileDraftPath(pendingEditorAction.path));
+				setDialogPath(null);
+			}
+
+			if (pendingEditorAction.type === "rename") {
+				setDialogPath(pendingEditorAction.path ?? null);
+				setRenamePath(pendingEditorAction.path ?? "");
+			}
+
+			if (pendingEditorAction.type === "delete") {
+				setDialogPath(pendingEditorAction.path ?? null);
+			}
+
+			setPathError("");
+			setActiveDialog(pendingEditorAction.type);
+			setPendingEditorAction(null);
+		});
+
+		return () => {
+			window.cancelAnimationFrame(animationFrame);
+		};
+	}, [activeDialog, getNewFileDraftPath, pendingEditorAction]);
+
+	useEffect(() => {
+		if (!postDialogAction || activeDialog !== null) {
+			return;
+		}
+
+		const animationFrame = window.requestAnimationFrame(() => {
+			if (postDialogAction.type === "delete") {
+				deletePath(postDialogAction.path);
+				setPostDialogAction(null);
+
+				if (postDialogAction.switchToChat) {
+					setViewMode("chat");
+					restoreFocus("chat");
+					return;
+				}
+
+				restoreFocus("editor");
+			}
+		});
+
+		return () => {
+			window.cancelAnimationFrame(animationFrame);
+		};
+	}, [activeDialog, deletePath, postDialogAction, restoreFocus, setViewMode]);
+
 	// Handle content change with debounce
 	const handleContentChange = useCallback(
 		(value: string | undefined) => {
@@ -582,59 +697,80 @@ export default function FileEditorPanel() {
 			return;
 		}
 		createFile(normalizedPath, "");
-		setShowNewFileDialog(false);
+		setActiveDialog(null);
 		setNewFilePath("");
 		setPathError("");
+		restoreFocus("editor");
 	};
 
-	// Delete file or folder from the visible workspace
-	const handleDeleteFile = () => {
-		if (!fileToDelete) return;
-		deletePath(fileToDelete);
-		setShowDeleteDialog(false);
-		setFileToDelete(null);
-		if (deleteTargetMatches.length === allFilePaths.length) {
-			setViewMode("chat");
-		}
-	};
+	const closeNewFileDialog = useCallback(() => {
+		setActiveDialog(null);
+		setNewFilePath("");
+		setPathError("");
+		restoreFocus("editor");
+	}, [restoreFocus]);
 
-	// Start delete flow
-	const initiateDelete = useCallback(
-		(filename: string, e?: React.MouseEvent) => {
-			e?.stopPropagation();
-			setFileToDelete(filename);
-			setShowDeleteDialog(true);
-		},
-		[],
-	);
+	const closeDeleteDialog = useCallback(() => {
+		setActiveDialog(null);
+		setDialogPath(null);
+		setPathError("");
+		restoreFocus("editor");
+	}, [restoreFocus]);
 
 	// Rename file (renameFileAction handles tab and selection update)
 	const handleRenameFile = () => {
-		if (!fileToRename) return;
+		if (!dialogPath) return;
 		const normalizedPath = normalizePath(renamePath);
-		const error = validatePath(normalizedPath, fileToRename);
+		const error = validatePath(normalizedPath, dialogPath);
 		if (error) {
 			setPathError(error);
 			return;
 		}
-		renameFileAction(fileToRename, normalizedPath);
-		setShowRenameDialog(false);
-		setFileToRename(null);
+		renameFileAction(dialogPath, normalizedPath);
+		setActiveDialog(null);
+		setDialogPath(null);
 		setRenamePath("");
 		setPathError("");
+		restoreFocus("editor");
 	};
 
-	// Start rename flow (context menu)
+	const closeRenameDialog = useCallback(() => {
+		setActiveDialog(null);
+		setDialogPath(null);
+		setRenamePath("");
+		setPathError("");
+		restoreFocus("editor");
+	}, [restoreFocus]);
+
+	// Start deferred editor flows after Radix menus finish dismissing.
+	const initiateDelete = useCallback((filename: string) => {
+		setPendingEditorAction({ type: "delete", path: filename });
+	}, []);
+
 	const initiateRename = useCallback((filename: string) => {
-		setFileToRename(filename);
-		setRenamePath(filename);
-		setShowRenameDialog(true);
+		setPendingEditorAction({ type: "rename", path: filename });
 	}, []);
 
 	// Stable callbacks for FileTreeSidebar to prevent memo invalidation
-	const handleOpenNewFileDialog = useCallback(() => {
-		setShowNewFileDialog(true);
+	const handleOpenNewFileDialog = useCallback((parentPath?: string) => {
+		setPendingEditorAction({ type: "new_file", path: parentPath });
 	}, []);
+
+	const handleDeleteConfirm = useCallback(() => {
+		if (!dialogPath) {
+			return;
+		}
+
+		const switchToChat = deleteTargetMatches.length === allFilePaths.length;
+		setActiveDialog(null);
+		setDialogPath(null);
+		setPathError("");
+		setPostDialogAction({
+			type: "delete",
+			path: dialogPath,
+			switchToChat,
+		});
+	}, [allFilePaths.length, deleteTargetMatches.length, dialogPath]);
 
 	const handleTreeCollapse = useCallback(() => {
 		setIsTreeCollapsed(true);
@@ -879,12 +1015,12 @@ export default function FileEditorPanel() {
 											</ContextMenuTrigger>
 											<ContextMenuContent>
 												<ContextMenuItem
-													onClick={() => initiateRename(filename)}
+													onSelect={() => initiateRename(filename)}
 												>
 													Rename
 												</ContextMenuItem>
 												<ContextMenuItem
-													onClick={() => initiateDelete(filename)}
+													onSelect={() => initiateDelete(filename)}
 													className="text-destructive"
 												>
 													Delete
@@ -894,7 +1030,8 @@ export default function FileEditorPanel() {
 									))}
 									{/* New File Button */}
 									<button
-										onClick={() => setShowNewFileDialog(true)}
+										ref={editorPrimaryActionRef}
+										onClick={() => handleOpenNewFileDialog()}
 										className="px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
 										title="New File"
 										aria-label="Create new file"
@@ -1109,7 +1246,7 @@ export default function FileEditorPanel() {
 									<p>No files yet</p>
 									<Button
 										variant="outline"
-										onClick={() => setShowNewFileDialog(true)}
+										onClick={() => handleOpenNewFileDialog()}
 										className="gap-2"
 									>
 										<Plus className="h-4 w-4" />
@@ -1123,8 +1260,15 @@ export default function FileEditorPanel() {
 			</PanelGroup>
 
 			{/* New File Dialog */}
-			<Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
-				<DialogContent>
+			<Dialog
+				open={activeDialog === "new_file"}
+				onOpenChange={(open) => {
+					if (!open) {
+						closeNewFileDialog();
+					}
+				}}
+			>
+				<DialogContent onCloseAutoFocus={handleDialogCloseAutoFocus}>
 					<DialogHeader>
 						<DialogTitle>Create New File</DialogTitle>
 					</DialogHeader>
@@ -1144,14 +1288,7 @@ export default function FileEditorPanel() {
 						)}
 					</div>
 					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => {
-								setShowNewFileDialog(false);
-								setNewFilePath("");
-								setPathError("");
-							}}
-						>
+						<Button variant="ghost" onClick={closeNewFileDialog}>
 							Cancel
 						</Button>
 						<Button onClick={handleCreateFile}>Create</Button>
@@ -1160,8 +1297,15 @@ export default function FileEditorPanel() {
 			</Dialog>
 
 			{/* Delete Confirmation Dialog */}
-			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-				<DialogContent>
+			<Dialog
+				open={activeDialog === "delete"}
+				onOpenChange={(open) => {
+					if (!open) {
+						closeDeleteDialog();
+					}
+				}}
+			>
+				<DialogContent onCloseAutoFocus={handleDialogCloseAutoFocus}>
 					<DialogHeader>
 						<DialogTitle>
 							Delete {isFolderDelete ? "Folder" : "File"}
@@ -1170,7 +1314,7 @@ export default function FileEditorPanel() {
 					<p className="py-4">
 						Are you sure you want to delete{" "}
 						<span className="font-mono text-sm bg-muted px-1 rounded">
-							{fileToDelete}
+							{dialogPath}
 						</span>
 						?
 						{isFolderDelete && (
@@ -1180,23 +1324,17 @@ export default function FileEditorPanel() {
 								workspace.
 							</span>
 						)}
-						{fileToDelete && dirtyFiles.has(fileToDelete) && (
+						{dialogPath && dirtyFiles.has(dialogPath) && (
 							<span className="block mt-2 text-sm text-amber-500">
 								This file has unsaved changes.
 							</span>
 						)}
 					</p>
 					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => {
-								setShowDeleteDialog(false);
-								setFileToDelete(null);
-							}}
-						>
+						<Button variant="ghost" onClick={closeDeleteDialog}>
 							Cancel
 						</Button>
-						<Button variant="destructive" onClick={handleDeleteFile}>
+						<Button variant="destructive" onClick={handleDeleteConfirm}>
 							Delete
 						</Button>
 					</DialogFooter>
@@ -1204,8 +1342,15 @@ export default function FileEditorPanel() {
 			</Dialog>
 
 			{/* Rename Dialog */}
-			<Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
-				<DialogContent>
+			<Dialog
+				open={activeDialog === "rename"}
+				onOpenChange={(open) => {
+					if (!open) {
+						closeRenameDialog();
+					}
+				}}
+			>
+				<DialogContent onCloseAutoFocus={handleDialogCloseAutoFocus}>
 					<DialogHeader>
 						<DialogTitle>Rename File</DialogTitle>
 					</DialogHeader>
@@ -1225,15 +1370,7 @@ export default function FileEditorPanel() {
 						)}
 					</div>
 					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => {
-								setShowRenameDialog(false);
-								setFileToRename(null);
-								setRenamePath("");
-								setPathError("");
-							}}
-						>
+						<Button variant="ghost" onClick={closeRenameDialog}>
 							Cancel
 						</Button>
 						<Button onClick={handleRenameFile}>Rename</Button>

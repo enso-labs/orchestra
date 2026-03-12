@@ -5,7 +5,7 @@ import { MainToolTip } from "@/components/tooltips/MainToolTip";
 interface FileTreeHeaderProps {
 	isCollapsed?: boolean;
 	onToggleCollapse?: () => void;
-	onNewFile?: () => void;
+	onNewFile?: (parentPath?: string) => void;
 	onRefresh?: () => void;
 }
 

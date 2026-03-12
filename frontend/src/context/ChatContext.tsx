@@ -276,7 +276,7 @@ export default function ChatProvider({
 		clearFileSystem: baseClearFileSystem,
 		createFile: baseCreateFile,
 		updateFile: baseUpdateFile,
-		deleteFile: baseDeleteFile,
+		deleteFiles: baseDeleteFiles,
 		renameFile: baseRenameFile,
 		syncFiles,
 	} = fileSystemHooks;
@@ -346,45 +346,65 @@ export default function ChatProvider({
 		});
 	}, []);
 
-	const removePathFromAllSources = useCallback((path: string) => {
+	const removePathsFromAllSources = useCallback((paths: string[]) => {
+		const pathsToRemove = new Set(paths);
+		if (pathsToRemove.size === 0) {
+			return;
+		}
+
 		setSettingsFiles((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setMemoryFiles((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setBaselineOverrides((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setBackendSyncFiles((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setThreadScopedFiles((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 	}, []);
@@ -398,6 +418,25 @@ export default function ChatProvider({
 			const next = new Set(prev);
 			next.add(path);
 			return next;
+		});
+	}, []);
+
+	const addPersistentDeletions = useCallback((paths: string[]) => {
+		const pathsToAdd = paths.filter(Boolean);
+		if (pathsToAdd.length === 0) {
+			return;
+		}
+
+		setPersistentDeletedPaths((prev) => {
+			const next = new Set(prev);
+			let changed = false;
+			pathsToAdd.forEach((path) => {
+				if (!next.has(path)) {
+					next.add(path);
+					changed = true;
+				}
+			});
+			return changed ? next : prev;
 		});
 	}, []);
 
@@ -953,25 +992,29 @@ export default function ChatProvider({
 				return;
 			}
 
-			matches.forEach((matchedPath) => {
+			const durableMatches = matches.filter((matchedPath) => {
 				const existing = fileSystemRef.current.get(matchedPath);
-				baseDeleteFile(matchedPath);
-				removePathFromAllSources(matchedPath);
-				if (existing && isDurableSource(existing.source)) {
-					addPersistentDeletion(matchedPath);
-					logger(
-						"ownership delete durable path=%s source=%s",
-						matchedPath,
-						existing.source,
-					);
+				if (!existing || !isDurableSource(existing.source)) {
+					return false;
 				}
+
+				logger(
+					"ownership delete durable path=%s source=%s",
+					matchedPath,
+					existing.source,
+				);
+				return true;
 			});
+
+			baseDeleteFiles(matches);
+			removePathsFromAllSources(matches);
+			addPersistentDeletions(durableMatches);
 		},
 		[
-			addPersistentDeletion,
-			baseDeleteFile,
+			addPersistentDeletions,
+			baseDeleteFiles,
 			getVisibleWorkspaceFiles,
-			removePathFromAllSources,
+			removePathsFromAllSources,
 		],
 	);
 

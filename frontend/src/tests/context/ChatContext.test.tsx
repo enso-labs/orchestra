@@ -254,6 +254,54 @@ describe("ChatContext persistent files", () => {
 		expect(result.current.fileSystem.has("/memory/notes.md")).toBe(true);
 	});
 
+	it("deleting a folder removes all matching files in one pass without touching durable survivors", async () => {
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		act(() => {
+			result.current.createFile("/keep.md", "keep");
+			result.current.createFile("/folder/a.md", "a");
+			result.current.createFile("/folder/b.md", "b");
+			result.current.markDirty("/folder/b.md");
+			result.current.selectTab("/keep.md");
+			result.current.selectTab("/folder/b.md");
+		});
+
+		expect(result.current.activeFile).toBe("/folder/b.md");
+		expect(result.current.openTabs).toEqual(
+			expect.arrayContaining([
+				"/settings.md",
+				"/memory/notes.md",
+				"/memory/nested/todo.md",
+				"/keep.md",
+				"/folder/a.md",
+				"/folder/b.md",
+			]),
+		);
+
+		act(() => {
+			result.current.deletePath("/folder");
+		});
+
+		expect(result.current.fileSystem.has("/folder/a.md")).toBe(false);
+		expect(result.current.fileSystem.has("/folder/b.md")).toBe(false);
+		expect(result.current.fileSystem.get("/keep.md")?.content).toEqual([
+			"keep",
+		]);
+		expect(result.current.openTabs).toEqual(
+			expect.arrayContaining([
+				"/settings.md",
+				"/memory/notes.md",
+				"/memory/nested/todo.md",
+				"/keep.md",
+			]),
+		);
+		expect(result.current.openTabs).toHaveLength(4);
+		expect(result.current.activeFile).toBe("/keep.md");
+		expect(result.current.dirtyFiles.has("/folder/b.md")).toBe(false);
+	});
+
 	it("renaming a memory-backed file promotes it and tombstones the original path", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
@@ -465,10 +513,19 @@ describe("ChatContext persistent files", () => {
 		});
 	});
 
-	it("replaces stale thread-scoped files when switching threads while keeping durable baseline files", async () => {
+	it("clearing transient thread files keeps durable workspace files and dirty state", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
+
+		act(() => {
+			result.current.createFile("/draft.md", "draft");
+		});
+
+		act(() => {
+			result.current.markDirty("/draft.md");
+			result.current.updateFile("/draft.md", "draft change");
+		});
 
 		await act(async () => {
 			result.current.setFilesMap(
@@ -478,26 +535,6 @@ describe("ChatContext persistent files", () => {
 						{
 							"/thread-a.txt": {
 								content: ["thread-a"],
-								created_at: "2024-01-04T00:00:00Z",
-								modified_at: "2024-01-04T00:00:00Z",
-							},
-						},
-					],
-				]),
-			);
-		});
-
-		expect(result.current.fileSystem.has("/thread-a.txt")).toBe(true);
-		expect(result.current.fileSystem.has("/settings.md")).toBe(true);
-
-		await act(async () => {
-			result.current.setFilesMap(
-				new Map([
-					[
-						"thread-b",
-						{
-							"/thread-b.txt": {
-								content: ["thread-b"],
 								created_at: "2024-01-05T00:00:00Z",
 								modified_at: "2024-01-05T00:00:00Z",
 							},
@@ -505,11 +542,25 @@ describe("ChatContext persistent files", () => {
 					],
 				]),
 			);
+			await Promise.resolve();
+		});
+
+		expect(result.current.fileSystem.has("/thread-a.txt")).toBe(true);
+		expect(result.current.fileSystem.get("/draft.md")?.content).toEqual([
+			"draft change",
+		]);
+		expect(result.current.dirtyFiles.has("/draft.md")).toBe(true);
+
+		act(() => {
+			result.current.clearThreadScopedFiles();
 		});
 
 		expect(result.current.fileSystem.has("/thread-a.txt")).toBe(false);
-		expect(result.current.fileSystem.has("/thread-b.txt")).toBe(true);
-		expect(result.current.fileSystem.has("/memory/notes.md")).toBe(true);
+		expect(result.current.fileSystem.get("/draft.md")?.content).toEqual([
+			"draft change",
+		]);
+		expect(result.current.fileSystem.has("/settings.md")).toBe(true);
+		expect(result.current.dirtyFiles.has("/draft.md")).toBe(true);
 	});
 
 	it("keeps unsaved durable changes when reloading persistent context before autosave fires", async () => {

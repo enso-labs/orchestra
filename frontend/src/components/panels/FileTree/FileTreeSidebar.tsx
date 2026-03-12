@@ -13,7 +13,7 @@ interface FileTreeSidebarProps {
 	selectedFile: string | null;
 	dirtyFiles: Set<string>;
 	onFileSelect: (path: string) => void;
-	onNewFile: () => void;
+	onNewFile: (parentPath?: string) => void;
 	onRename: (path: string) => void;
 	onDelete: (path: string) => void;
 	isCollapsed?: boolean;

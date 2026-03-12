@@ -100,21 +100,9 @@ export default function useThread(): ThreadContextType {
 					? threadData.todos
 					: [];
 
-				// Build filesMap
+				// Historical thread files remain in metadata for backward compatibility,
+				// but they are not authoritative for the editable workspace.
 				const filesMap = new Map<string, any>();
-				if (threadData.files && Object.keys(threadData.files).length > 0) {
-					const formattedMsgs = formatMessages(
-						checkpointsData[0].values.messages,
-					);
-					const latestAiMessage = formattedMsgs
-						.slice()
-						.reverse()
-						.find((msg: any) => ["ai", "assistant"].includes(msg.role));
-
-					if (latestAiMessage) {
-						filesMap.set(latestAiMessage.id, threadData.files);
-					}
-				}
 
 				// Format messages
 				const messages = formatMessages(checkpointsData[0].values.messages);

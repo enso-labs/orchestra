@@ -55,7 +55,7 @@ def is_authorized_model(model: str) -> bool:
 async def get_optional_user_from_token(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db, scope="function"),
 ) -> Optional[User]:
     """
     Get optional user from Bearer token or API key.
@@ -82,7 +82,7 @@ async def get_optional_user(
     request: Request,
     params: LLMRequest,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db, scope="function"),
 ) -> Optional[User]:
     if credentials is None:
         # Check for API Key if no Bearer token
@@ -121,7 +121,7 @@ async def get_optional_user(
 async def verify_credentials(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_async_db),  # type: ignore
+    db: AsyncSession = Depends(get_async_db, scope="function"),  # type: ignore
 ) -> User:
     # 1. Check for API Key in headers
     api_key = request.headers.get("x-api-key")
