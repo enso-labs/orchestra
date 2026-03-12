@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import ChatPanel from "./ChatPanel";
 import { useAgentContext } from "@/context/AgentContext";
@@ -18,7 +20,22 @@ export function ChatV2Page() {
 		metadata,
 		messages,
 		useModelsEffect,
+		clearMessages,
 	} = useChatContext();
+	const location = useLocation();
+	const staleThreadId = (
+		location.state as { staleThreadId?: string } | null | undefined
+	)?.staleThreadId;
+
+	// When navigating here from NewThreadButton with a staleThreadId,
+	// force-clear any lingering messages/metadata from the previous thread.
+	// This handles the case where clearMessages() in the button's onClick
+	// didn't fully flush before the route change.
+	useEffect(() => {
+		if (staleThreadId && (messages.length > 0 || metadata?.thread_id)) {
+			clearMessages();
+		}
+	}, [staleThreadId]);
 
 	useModelsEffect();
 	useEffectGetAgents();

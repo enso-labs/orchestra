@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type UseInitialThreadRedirectOptions = {
 	threadId?: string;
@@ -11,6 +11,10 @@ export default function useInitialThreadRedirect({
 	hasMessages,
 }: UseInitialThreadRedirectOptions): void {
 	const navigate = useNavigate();
+	const location = useLocation();
+	const staleThreadId = (
+		location.state as { staleThreadId?: string } | null | undefined
+	)?.staleThreadId;
 	const lastNavigatedThreadIdRef = useRef<string | null>(null);
 
 	useEffect(() => {
@@ -23,11 +27,16 @@ export default function useInitialThreadRedirect({
 			return;
 		}
 
+		// Skip redirect when the threadId matches the stale one we just left
+		if (threadId === staleThreadId) {
+			return;
+		}
+
 		if (lastNavigatedThreadIdRef.current === threadId) {
 			return;
 		}
 
 		lastNavigatedThreadIdRef.current = threadId;
 		navigate(`/thread/${threadId}`, { replace: true });
-	}, [hasMessages, navigate, threadId]);
+	}, [hasMessages, navigate, staleThreadId, threadId]);
 }
