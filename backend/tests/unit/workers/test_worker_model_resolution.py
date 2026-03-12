@@ -352,7 +352,10 @@ class TestWorkerModelResolution:
             await _execute_agent_stream(
                 params=params,
                 config={"configurable": {"thread_id": "t1"}},
-                files_map={"/config.md": {"content": ["config"]}},
+                files_map={
+                    "/memory.md": {"content": ["memory-override"]},
+                    "/notes.md": {"content": ["notes"]},
+                },
                 todos_list=[],
                 service_context=ctx,
                 checkpointer=MagicMock(),
@@ -364,3 +367,4 @@ class TestWorkerModelResolution:
             )
 
             mock_prepare_memory.assert_awaited_once()
+            assert mock_construct.call_args[1]["memory"] == ["/memory.md"]

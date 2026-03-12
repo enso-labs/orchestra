@@ -58,6 +58,7 @@ describe("NewThreadButton", () => {
 			resetToDefault: vi.fn(),
 			loadPersistentContextFiles: vi.fn(),
 			clearThreadScopedFiles: vi.fn(),
+			clearBackendSyncFiles: vi.fn(),
 		});
 	});
 
@@ -69,6 +70,7 @@ describe("NewThreadButton", () => {
 		const context = mockUseChatContext.mock.results[0].value;
 		expect(context.clearMessages).toHaveBeenCalledTimes(1);
 		expect(context.clearThreadScopedFiles).toHaveBeenCalledTimes(1);
+		expect(context.clearBackendSyncFiles).toHaveBeenCalledTimes(1);
 		expect(context.resetToDefault).toHaveBeenCalledTimes(1);
 		expect(context.loadPersistentContextFiles).toHaveBeenCalledTimes(1);
 		expect(mockNavigate).toHaveBeenCalledWith("/chat");
@@ -90,6 +92,7 @@ describe("NewThreadButton", () => {
 			resetToDefault: vi.fn(),
 			loadPersistentContextFiles: vi.fn(),
 			clearThreadScopedFiles: vi.fn(),
+			clearBackendSyncFiles: vi.fn(),
 		});
 
 		const { container } = renderAt("/chat");

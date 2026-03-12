@@ -74,7 +74,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     from src.schemas.entities import LLMRequest
     from src.agents import construct_agent, Orchestra, init_config
     from src.services.db import get_checkpoint_db, get_store_db
-    from src.services.context_files import resolve_context_files
+    from src.services.context_files import resolve_context_files, select_memory_sources
     from src.contexts.service import ServiceContext
     from src.agents import prepare_memory_files
 
@@ -99,14 +99,20 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
             service_context = ServiceContext(user_id=user_id, store=store, config=config, checkpointer=checkpointer)
             params = await service_context.llm_service.assistant(params)
             memory_files, _memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
+            explicit_files = {
+                **(files_map or {}),
+                **(params.input.files or {}),
+            }
+            memory_sources = select_memory_sources(
+                explicit_files=explicit_files,
+                memory_files=memory_files,
+            )
+            selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
             params.input.files = await resolve_context_files(
                 user_id=user_id,
                 store=store,
-                memory_files=memory_files,
-                explicit_files={
-                    **(files_map or {}),
-                    **(params.input.files or {}),
-                },
+                memory_files=selected_memory_files,
+                explicit_files=explicit_files,
             )
             agent: Orchestra = await construct_agent(
                 instructions=params.instructions,
@@ -116,6 +122,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
                 subagents=params.subagents,
                 checkpointer=checkpointer,
                 service_context=service_context,
+                memory=memory_sources,
             )
             params.input.messages[-1].model = agent.model
             # Avoid isinstance checks with subscripted generics—use duck typing or explicit conversion

@@ -11,6 +11,7 @@ function NewThreadButton() {
 		resetToDefault,
 		loadPersistentContextFiles,
 		clearThreadScopedFiles,
+		clearBackendSyncFiles,
 	} = useChatContext();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -21,6 +22,7 @@ function NewThreadButton() {
 		} else {
 			clearMessages();
 			clearThreadScopedFiles?.();
+			clearBackendSyncFiles?.();
 			// Reset model to user's default for new conversations
 			resetToDefault?.();
 			loadPersistentContextFiles?.();

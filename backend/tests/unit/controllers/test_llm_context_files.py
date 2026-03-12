@@ -29,7 +29,15 @@ async def test_llm_invoke_uses_resolved_context_files():
         patch.object(controller, "_resolve_user_settings", AsyncMock(return_value=("openai:gpt-4o", None, None))),
         patch(
             "src.controllers.llm.prepare_memory_files",
-            AsyncMock(return_value=({"/memory.md": {"content": ["memory"]}}, [])),
+            AsyncMock(
+                return_value=(
+                    {
+                        "/memory.md": {"content": ["memory"]},
+                        "/resolved.md": {"content": ["memory resolved"]},
+                    },
+                    ["/memory.md", "/resolved.md"],
+                )
+            ),
         ),
         patch(
             "src.controllers.llm.resolve_context_files",
@@ -37,10 +45,12 @@ async def test_llm_invoke_uses_resolved_context_files():
         ) as mock_resolve_context_files,
         patch("src.controllers.llm.get_checkpoint_db", fake_checkpoint_db),
         patch("src.controllers.llm.resolve_sandbox_backend", return_value=(MagicMock(), None, "state")),
-        patch("src.controllers.llm.construct_agent", AsyncMock(return_value=agent)),
+        patch("src.controllers.llm.construct_agent", AsyncMock(return_value=agent)) as mock_construct_agent,
     ):
+        params.input.files = {"/resolved.md": {"content": ["explicit"]}}
         await controller.llm_invoke(params)
 
     mock_resolve_context_files.assert_awaited_once()
     assert params.input.files == {"/resolved.md": {"content": ["resolved"]}}
+    assert mock_construct_agent.await_args.kwargs["memory"] == ["/resolved.md"]
     agent.invoke.assert_awaited_once()

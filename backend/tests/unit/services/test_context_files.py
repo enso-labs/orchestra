@@ -3,7 +3,7 @@ from langgraph.store.memory import InMemoryStore
 import pytest
 
 from src.repos.user_settings_repo import UserSettingsRepo
-from src.services.context_files import resolve_context_files
+from src.services.context_files import resolve_context_files, select_memory_sources
 
 
 @pytest.mark.asyncio
@@ -75,3 +75,28 @@ async def test_empty_settings_preserve_existing_memory_behavior():
     )
 
     assert resolved == {"/memory.md": {"content": ["memory"]}}
+
+
+def test_select_memory_sources_returns_only_explicit_memory_paths():
+    selected = select_memory_sources(
+        explicit_files={
+            "/AGENTS.md": {"content": ["agents"]},
+            "/notes.md": {"content": ["notes"]},
+            "/SOUL.md": {"content": ["soul"]},
+        },
+        memory_files={
+            "/AGENTS.md": {"content": ["memory agents"]},
+            "/SOUL.md": {"content": ["memory soul"]},
+        },
+    )
+
+    assert selected == ["/AGENTS.md", "/SOUL.md"]
+
+
+def test_select_memory_sources_returns_none_without_overlap():
+    selected = select_memory_sources(
+        explicit_files={"/notes.md": {"content": ["notes"]}},
+        memory_files={"/AGENTS.md": {"content": ["memory agents"]}},
+    )
+
+    assert selected is None

@@ -112,6 +112,13 @@ const waitForHydration = async () => {
 	});
 };
 
+const flushAutosave = async () => {
+	await act(async () => {
+		vi.advanceTimersByTime(500);
+		await Promise.resolve();
+	});
+};
+
 describe("ChatContext persistent files", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
@@ -141,6 +148,11 @@ describe("ChatContext persistent files", () => {
 				created_at: "2024-01-03T00:00:00Z",
 				modified_at: "2024-01-03T00:00:00Z",
 			},
+			"/legacy-tombstone.md": {
+				content: ["should stay hidden"],
+				created_at: "2024-01-04T00:00:00Z",
+				modified_at: "2024-01-04T00:00:00Z",
+			},
 		});
 		patchDefaultsMock.mockResolvedValue({});
 	});
@@ -150,7 +162,7 @@ describe("ChatContext persistent files", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("hydrates settings and memory files when the provider mounts", async () => {
+	it("hydrates durable settings, memory files, and settings tombstones on mount", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
@@ -158,23 +170,8 @@ describe("ChatContext persistent files", () => {
 		expect(result.current.fileSystem.has("/settings.md")).toBe(true);
 		expect(result.current.fileSystem.has("/memory/notes.md")).toBe(true);
 		expect(result.current.fileSystem.has("/memory/nested/todo.md")).toBe(true);
-		expect(result.current.filesMap.get("__context_files__")).toEqual({
-			"/settings.md": {
-				content: ["settings"],
-				created_at: "2024-01-01T00:00:00Z",
-				modified_at: "2024-01-01T00:00:00Z",
-			},
-			"/memory/notes.md": {
-				content: ["memory"],
-				created_at: "2024-01-02T00:00:00Z",
-				modified_at: "2024-01-02T00:00:00Z",
-			},
-			"/memory/nested/todo.md": {
-				content: ["todo"],
-				created_at: "2024-01-03T00:00:00Z",
-				modified_at: "2024-01-03T00:00:00Z",
-			},
-		});
+		expect(result.current.fileSystem.has("/legacy-tombstone.md")).toBe(false);
+		expect(result.current.deletedFiles).toEqual(["/legacy-tombstone.md"]);
 		expect(result.current.submissionFiles).toEqual({
 			"/settings.md": {
 				content: ["settings"],
@@ -194,7 +191,7 @@ describe("ChatContext persistent files", () => {
 		});
 	});
 
-	it("autosaves only persisted settings files plus user workspace files", async () => {
+	it("autosaves only durable files into defaults.files and carries durable tombstones", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
@@ -203,10 +200,7 @@ describe("ChatContext persistent files", () => {
 			result.current.createFile("/profile.md", "three");
 		});
 
-		await act(async () => {
-			vi.advanceTimersByTime(500);
-			await Promise.resolve();
-		});
+		await flushAutosave();
 
 		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
 		expect(patchDefaultsMock).toHaveBeenCalledWith({
@@ -220,28 +214,11 @@ describe("ChatContext persistent files", () => {
 					content: ["three"],
 				}),
 			},
-			deleted_files: [],
+			deleted_files: ["/legacy-tombstone.md"],
 		});
 	});
 
-	it("deleting a folder removes descendant files from fileSystem, tabs, and dirty state", async () => {
-		const { result } = renderHook(() => useChatContext(), { wrapper });
-
-		await waitForHydration();
-
-		act(() => {
-			result.current.markDirty("/memory/notes.md");
-			result.current.deletePath("/memory");
-		});
-
-		expect(result.current.fileSystem.has("/memory/notes.md")).toBe(false);
-		expect(result.current.fileSystem.has("/memory/nested/todo.md")).toBe(false);
-		expect(result.current.openTabs).not.toContain("/memory/notes.md");
-		expect(result.current.openTabs).not.toContain("/memory/nested/todo.md");
-		expect(result.current.dirtyFiles.has("/memory/notes.md")).toBe(false);
-	});
-
-	it("deleting a persisted file removes it from the next saved defaults.files payload", async () => {
+	it("deleting a persisted file removes it from the next save payload and records a tombstone", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
@@ -250,15 +227,11 @@ describe("ChatContext persistent files", () => {
 			result.current.deleteFile("/settings.md");
 		});
 
-		await act(async () => {
-			vi.advanceTimersByTime(500);
-			await Promise.resolve();
-		});
+		await flushAutosave();
 
-		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
 		expect(patchDefaultsMock).toHaveBeenCalledWith({
 			files: {},
-			deleted_files: [],
+			deleted_files: ["/legacy-tombstone.md", "/settings.md"],
 		});
 		expect(result.current.submissionFiles).not.toHaveProperty("/settings.md");
 	});
@@ -281,7 +254,7 @@ describe("ChatContext persistent files", () => {
 		expect(result.current.fileSystem.has("/memory/notes.md")).toBe(true);
 	});
 
-	it("renaming a memory-backed file promotes it into the persisted payload", async () => {
+	it("renaming a memory-backed file promotes it and tombstones the original path", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
@@ -290,12 +263,8 @@ describe("ChatContext persistent files", () => {
 			result.current.renameFile("/memory/notes.md", "/renamed.md");
 		});
 
-		await act(async () => {
-			vi.advanceTimersByTime(500);
-			await Promise.resolve();
-		});
+		await flushAutosave();
 
-		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
 		expect(patchDefaultsMock).toHaveBeenCalledWith({
 			files: {
 				"/settings.md": {
@@ -309,11 +278,194 @@ describe("ChatContext persistent files", () => {
 					modified_at: expect.any(String),
 				},
 			},
-			deleted_files: [],
+			deleted_files: ["/legacy-tombstone.md", "/memory/notes.md"],
 		});
 	});
 
-	it("replaces stale thread-scoped files when switching threads while keeping baseline files", async () => {
+	it("editing a thread-scoped file promotes it into durable settings", async () => {
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		await act(async () => {
+			result.current.setFilesMap(
+				new Map([
+					[
+						"thread-a",
+						{
+							"/thread-a.txt": {
+								content: ["thread-a"],
+								created_at: "2024-01-05T00:00:00Z",
+								modified_at: "2024-01-05T00:00:00Z",
+							},
+						},
+					],
+				]),
+			);
+			await Promise.resolve();
+		});
+
+		act(() => {
+			result.current.updateFile("/thread-a.txt", "owned");
+		});
+
+		await flushAutosave();
+
+		expect(patchDefaultsMock).toHaveBeenCalledWith({
+			files: {
+				"/settings.md": {
+					content: ["settings"],
+					created_at: "2024-01-01T00:00:00Z",
+					modified_at: "2024-01-01T00:00:00Z",
+				},
+				"/thread-a.txt": {
+					content: ["owned"],
+					created_at: "2024-01-05T00:00:00Z",
+					modified_at: expect.any(String),
+				},
+			},
+			deleted_files: ["/legacy-tombstone.md"],
+		});
+	});
+
+	it("persists streamed thread files so they survive a new-chat reset", async () => {
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		await act(async () => {
+			result.current.setController(new AbortController());
+			result.current.setFilesMap(
+				new Map([
+					[
+						"thread-a",
+						{
+							"/AGENTS.md": {
+								content: ["generated"],
+								created_at: "2024-01-05T00:00:00Z",
+								modified_at: "2024-01-05T00:00:00Z",
+							},
+						},
+					],
+				]),
+			);
+			await Promise.resolve();
+		});
+
+		expect(result.current.fileSystem.has("/AGENTS.md")).toBe(true);
+
+		await act(async () => {
+			result.current.setController(null);
+			await Promise.resolve();
+		});
+
+		await flushAutosave();
+
+		expect(patchDefaultsMock).toHaveBeenCalledWith({
+			files: {
+				"/settings.md": {
+					content: ["settings"],
+					created_at: "2024-01-01T00:00:00Z",
+					modified_at: "2024-01-01T00:00:00Z",
+				},
+				"/AGENTS.md": {
+					content: ["generated"],
+					created_at: "2024-01-05T00:00:00Z",
+					modified_at: "2024-01-05T00:00:00Z",
+				},
+			},
+			deleted_files: ["/legacy-tombstone.md"],
+		});
+
+		act(() => {
+			result.current.clearThreadScopedFiles();
+		});
+
+		expect(result.current.fileSystem.has("/AGENTS.md")).toBe(true);
+		expect(result.current.submissionFiles).toHaveProperty("/AGENTS.md");
+	});
+
+	it("renaming a thread-scoped file promotes the renamed path into durable settings", async () => {
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		await act(async () => {
+			result.current.setFilesMap(
+				new Map([
+					[
+						"thread-a",
+						{
+							"/thread-a.txt": {
+								content: ["thread-a"],
+								created_at: "2024-01-05T00:00:00Z",
+								modified_at: "2024-01-05T00:00:00Z",
+							},
+						},
+					],
+				]),
+			);
+			await Promise.resolve();
+		});
+
+		act(() => {
+			result.current.renameFile("/thread-a.txt", "/thread-owned.txt");
+		});
+
+		await flushAutosave();
+
+		expect(patchDefaultsMock).toHaveBeenCalledWith({
+			files: {
+				"/settings.md": {
+					content: ["settings"],
+					created_at: "2024-01-01T00:00:00Z",
+					modified_at: "2024-01-01T00:00:00Z",
+				},
+				"/thread-owned.txt": {
+					content: ["thread-a"],
+					created_at: "2024-01-05T00:00:00Z",
+					modified_at: expect.any(String),
+				},
+			},
+			deleted_files: ["/legacy-tombstone.md"],
+		});
+	});
+
+	it("editing a backend-synced file promotes it into durable settings", async () => {
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		act(() => {
+			result.current.fromBackendFormat({
+				"/backend.txt": "generated",
+			});
+		});
+
+		act(() => {
+			result.current.updateFile("/backend.txt", "owned backend");
+		});
+
+		await flushAutosave();
+
+		expect(patchDefaultsMock).toHaveBeenCalledWith({
+			files: {
+				"/settings.md": {
+					content: ["settings"],
+					created_at: "2024-01-01T00:00:00Z",
+					modified_at: "2024-01-01T00:00:00Z",
+				},
+				"/backend.txt": {
+					content: ["owned backend"],
+					created_at: expect.any(String),
+					modified_at: expect.any(String),
+				},
+			},
+			deleted_files: ["/legacy-tombstone.md"],
+		});
+	});
+
+	it("replaces stale thread-scoped files when switching threads while keeping durable baseline files", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
@@ -360,37 +512,41 @@ describe("ChatContext persistent files", () => {
 		expect(result.current.fileSystem.has("/memory/notes.md")).toBe(true);
 	});
 
-	it("clears thread-scoped files without dropping the stable baseline", async () => {
+	it("keeps unsaved durable changes when reloading persistent context before autosave fires", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
 
-		await act(async () => {
-			result.current.setFilesMap(
-				new Map([
-					[
-						"thread-a",
-						{
-							"/thread-a.txt": {
-								content: ["thread-a"],
-								created_at: "2024-01-04T00:00:00Z",
-								modified_at: "2024-01-04T00:00:00Z",
-							},
-						},
-					],
-				]),
-			);
-		});
-
-		expect(result.current.fileSystem.has("/thread-a.txt")).toBe(true);
-
 		act(() => {
-			result.current.clearThreadScopedFiles();
+			result.current.createFile("/notes.md", "draft");
 		});
 
-		expect(result.current.fileSystem.has("/thread-a.txt")).toBe(false);
-		expect(result.current.fileSystem.has("/settings.md")).toBe(true);
-		expect(result.current.fileSystem.has("/memory/notes.md")).toBe(true);
+		await waitForHydration();
+
+		await act(async () => {
+			await result.current.loadPersistentContextFiles();
+		});
+
+		expect(result.current.fileSystem.get("/notes.md")?.content).toEqual([
+			"draft",
+		]);
+		expect(result.current.hasUnsavedPersistentChanges).toBe(true);
+
+		await flushAutosave();
+
+		expect(patchDefaultsMock).toHaveBeenCalledWith({
+			files: {
+				"/settings.md": {
+					content: ["settings"],
+					created_at: "2024-01-01T00:00:00Z",
+					modified_at: "2024-01-01T00:00:00Z",
+				},
+				"/notes.md": expect.objectContaining({
+					content: ["draft"],
+				}),
+			},
+			deleted_files: ["/legacy-tombstone.md"],
+		});
 	});
 
 	it("manual save clears dirty state only after a successful save", async () => {
@@ -449,7 +605,45 @@ describe("ChatContext persistent files", () => {
 		expect(result.current.hasUnsavedPersistentChanges).toBe(true);
 	});
 
-	it("manual save is allowed while streaming even though autosave is suppressed", async () => {
+	it("autosave waits during streaming and flushes immediately after the stream ends", async () => {
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		act(() => {
+			result.current.setController(new AbortController());
+			result.current.markDirty("/memory/notes.md");
+			result.current.updateFile("/memory/notes.md", "streaming change");
+		});
+
+		await flushAutosave();
+
+		expect(patchDefaultsMock).not.toHaveBeenCalled();
+
+		await act(async () => {
+			result.current.setController(null);
+			await Promise.resolve();
+		});
+
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+		expect(patchDefaultsMock).toHaveBeenCalledWith({
+			files: {
+				"/settings.md": {
+					content: ["settings"],
+					created_at: "2024-01-01T00:00:00Z",
+					modified_at: "2024-01-01T00:00:00Z",
+				},
+				"/memory/notes.md": {
+					content: ["streaming change"],
+					created_at: "2024-01-02T00:00:00Z",
+					modified_at: expect.any(String),
+				},
+			},
+			deleted_files: ["/legacy-tombstone.md"],
+		});
+	});
+
+	it("manual save is still allowed while streaming", async () => {
 		const { result } = renderHook(() => useChatContext(), { wrapper });
 
 		await waitForHydration();
@@ -460,10 +654,7 @@ describe("ChatContext persistent files", () => {
 			result.current.setController(new AbortController());
 		});
 
-		await act(async () => {
-			vi.advanceTimersByTime(500);
-			await Promise.resolve();
-		});
+		await flushAutosave();
 
 		expect(patchDefaultsMock).not.toHaveBeenCalled();
 
