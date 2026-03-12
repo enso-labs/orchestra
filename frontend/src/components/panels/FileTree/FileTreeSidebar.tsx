@@ -174,7 +174,7 @@ export function FileTreeSidebar({
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={onNewFile}
+						onClick={() => onNewFile()}
 						className="gap-2"
 					>
 						<FolderPlus className="h-4 w-4" />
