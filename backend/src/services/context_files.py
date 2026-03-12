@@ -8,6 +8,21 @@ from langgraph.store.base import BaseStore
 from src.repos.user_settings_repo import UserSettingsRepo
 
 
+def select_memory_sources(
+    *,
+    explicit_files: dict[str, Any] | None,
+    memory_files: dict[str, Any] | None,
+) -> list[str] | None:
+    """Return memory paths that are explicitly present in the request files map."""
+
+    if not explicit_files or not memory_files:
+        return None
+
+    available_memory_paths = set(memory_files.keys())
+    selected_sources = [path for path in explicit_files.keys() if path in available_memory_paths]
+    return selected_sources or None
+
+
 async def resolve_context_files(
     *,
     user_id: str | None,

@@ -16,6 +16,7 @@ const mockChatContext = vi.hoisted(() => ({
 	markDirty: vi.fn(),
 	savePersistentContextFiles: vi.fn(),
 	setViewMode: vi.fn(),
+	inputRef: { current: null },
 }));
 
 vi.mock("@/context/ChatContext", () => ({
@@ -158,10 +159,12 @@ vi.mock("@/components/ui/context-menu", () => ({
 	ContextMenuItem: ({
 		children,
 		onClick,
+		onSelect,
 	}: {
 		children: React.ReactNode;
 		onClick?: () => void;
-	}) => <button onClick={onClick}>{children}</button>,
+		onSelect?: () => void;
+	}) => <button onClick={onSelect ?? onClick}>{children}</button>,
 	ContextMenuTrigger: ({ children }: { children: React.ReactNode }) => (
 		<>{children}</>
 	),

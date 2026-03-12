@@ -291,6 +291,7 @@ async def _execute_agent_stream(
     from src.utils.logger import logger
     from src.services.errors import CheckpointConnectionError
     from src.services.abort import AbortService
+    from src.services.context_files import select_memory_sources
 
     started_at = get_time()
 
@@ -319,9 +320,14 @@ async def _execute_agent_stream(
         if not params.model:
             params.model = DEFAULT_CHAT_MODEL
 
-    # Load user memories and merge into files_map
-    memory_files, memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
-    files_map = {**memory_files, **files_map}
+    # Load only memory-backed files that were explicitly submitted in the request.
+    memory_files, _memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
+    memory_sources = select_memory_sources(
+        explicit_files=files_map,
+        memory_files=memory_files,
+    )
+    selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
+    files_map = {**selected_memory_files, **files_map}
 
     # Initialize ToolRuntime and Backend
     ctx_schema = ContextSchema(model=params.model or "", user_id=user_id)

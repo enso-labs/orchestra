@@ -149,9 +149,9 @@ export const FileTreeNode = memo(function FileTreeNode({
 			<ContextMenuContent>
 				{isFolder ? (
 					<>
-						<ContextMenuItem onClick={handleNewFile}>New File</ContextMenuItem>
+						<ContextMenuItem onSelect={handleNewFile}>New File</ContextMenuItem>
 						<ContextMenuItem
-							onClick={handleDelete}
+							onSelect={handleDelete}
 							className="text-destructive"
 						>
 							Delete
@@ -159,11 +159,11 @@ export const FileTreeNode = memo(function FileTreeNode({
 					</>
 				) : (
 					<>
-						<ContextMenuItem onClick={() => onRename?.(item.data.path)}>
+						<ContextMenuItem onSelect={() => onRename?.(item.data.path)}>
 							Rename
 						</ContextMenuItem>
 						<ContextMenuItem
-							onClick={handleDelete}
+							onSelect={handleDelete}
 							className="text-destructive"
 						>
 							Delete

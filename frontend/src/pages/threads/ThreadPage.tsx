@@ -98,7 +98,6 @@ export default function ThreadPage() {
 
 		setMessages([]);
 		setCheckpoints([]);
-		setFilesMap(new Map());
 		setTodos([]);
 		setViewMode("chat");
 		setMetadata((prev: any) => ({
@@ -110,7 +109,6 @@ export default function ThreadPage() {
 		metadata?.thread_id,
 		setMessages,
 		setCheckpoints,
-		setFilesMap,
 		setTodos,
 		setViewMode,
 		setMetadata,

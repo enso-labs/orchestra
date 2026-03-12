@@ -6,6 +6,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import debug from "debug";
 import useConfigHook from "@/hooks/useConfigHook";
 import useImageHook from "@/hooks/useImageHook";
 import useChat from "@/hooks/useChat";
@@ -33,6 +34,13 @@ export const PERSISTENT_SETTINGS_SOURCE = "__persistent_settings__";
 export const MEMORY_FILES_SOURCE = "__memory_files__";
 export const USER_FILES_SOURCE = "__user_files__";
 export const BACKEND_SYNC_SOURCE = "__backend_sync__";
+
+const logger = debug("hooks:chat-context");
+
+const DURABLE_SOURCES = new Set<string>([
+	PERSISTENT_SETTINGS_SOURCE,
+	USER_FILES_SOURCE,
+]);
 
 const NON_THREAD_SCOPED_SOURCES = new Set<string>([
 	PERSISTENT_SETTINGS_SOURCE,
@@ -71,6 +79,23 @@ const normalizeFileData = (
 		modified_at: fileData.modified_at || now,
 		...(source ? { source } : {}),
 	};
+};
+
+const fileDataEqual = (
+	left: FileData | undefined,
+	right: FileData,
+): boolean => {
+	if (!left) {
+		return false;
+	}
+
+	return (
+		left.created_at === right.created_at &&
+		left.modified_at === right.modified_at &&
+		left.content.length === right.content.length &&
+		left.content.every((line, index) => line === right.content[index]) &&
+		left.source === right.source
+	);
 };
 
 const fileRecordsEqual = (
@@ -118,11 +143,16 @@ const mergeFileMaps = (
 const buildPersistentPayload = (
 	settingsFiles: Map<string, FileData>,
 	baselineOverrides: Map<string, FileData>,
+	persistentDeletedPaths: Set<string>,
 ) => {
 	const files: Record<string, PersistedContextFile> = {};
 	const persistedFiles = mergeFileMaps(settingsFiles, baselineOverrides);
 
 	persistedFiles.forEach((file, path) => {
+		if (!shouldPersistPath(path, file, persistentDeletedPaths)) {
+			return;
+		}
+
 		files[path] = {
 			content: [...file.content],
 			created_at: file.created_at,
@@ -132,8 +162,46 @@ const buildPersistentPayload = (
 
 	return {
 		files,
-		deleted_files: [] as string[],
+		deleted_files: Array.from(persistentDeletedPaths).sort(),
 	};
+};
+
+const buildVisibleWorkspaceFiles = ({
+	memoryFiles,
+	settingsFiles,
+	backendSyncFiles,
+	baselineOverrides,
+	threadScopedFiles,
+	persistentDeletedPaths,
+}: {
+	memoryFiles: Map<string, FileData>;
+	settingsFiles: Map<string, FileData>;
+	backendSyncFiles: Map<string, FileData>;
+	baselineOverrides: Map<string, FileData>;
+	threadScopedFiles: Map<string, FileData>;
+	persistentDeletedPaths: Set<string>;
+}): Map<string, FileData> => {
+	const next = new Map<string, FileData>();
+
+	const mergeWithDeleteFilter = (
+		files: Map<string, FileData>,
+		filterDeleted = false,
+	) => {
+		files.forEach((file, path) => {
+			if (filterDeleted && persistentDeletedPaths.has(path)) {
+				return;
+			}
+			next.set(path, file);
+		});
+	};
+
+	mergeWithDeleteFilter(memoryFiles, true);
+	mergeWithDeleteFilter(settingsFiles, true);
+	mergeWithDeleteFilter(backendSyncFiles);
+	mergeWithDeleteFilter(baselineOverrides);
+	mergeWithDeleteFilter(threadScopedFiles);
+
+	return next;
 };
 
 const isPathDescendant = (path: string, prefix: string): boolean => {
@@ -143,6 +211,20 @@ const isPathDescendant = (path: string, prefix: string): boolean => {
 
 const isThreadScopedSource = (source?: string): boolean =>
 	Boolean(source && !NON_THREAD_SCOPED_SOURCES.has(source));
+
+const isDurableSource = (source?: string): boolean =>
+	Boolean(source && DURABLE_SOURCES.has(source));
+
+const isPromotableTransientSource = (source?: string): boolean =>
+	source === MEMORY_FILES_SOURCE ||
+	source === BACKEND_SYNC_SOURCE ||
+	isThreadScopedSource(source);
+
+const shouldPersistPath = (
+	path: string,
+	file: FileData,
+	deletedPaths: Set<string>,
+): boolean => isDurableSource(file.source) && !deletedPaths.has(path);
 
 const promoteToUserFile = (
 	file: FileData,
@@ -194,11 +276,11 @@ export default function ChatProvider({
 		clearFileSystem: baseClearFileSystem,
 		createFile: baseCreateFile,
 		updateFile: baseUpdateFile,
-		deleteFile: baseDeleteFile,
+		deleteFiles: baseDeleteFiles,
 		renameFile: baseRenameFile,
 		syncFiles,
 	} = fileSystemHooks;
-	const { setFilesMap } = chatHooks;
+	const { setFilesMap, setSubmissionFiles } = chatHooks;
 
 	const fileSystemRef = useRef(fileSystem);
 	const dirtyFilesRef = useRef(dirtyFiles);
@@ -208,6 +290,8 @@ export default function ChatProvider({
 	const baselineOverridesRef = useRef(new Map<string, FileData>());
 	const backendSyncFilesRef = useRef(new Map<string, FileData>());
 	const threadScopedFilesRef = useRef(new Map<string, FileData>());
+	const persistentDeletedPathsRef = useRef(new Set<string>());
+	const pendingPersistentFlushRef = useRef(false);
 
 	const [settingsFiles, setSettingsFiles] = useState<Map<string, FileData>>(
 		() => new Map(),
@@ -224,6 +308,9 @@ export default function ChatProvider({
 	const [threadScopedFiles, setThreadScopedFiles] = useState<
 		Map<string, FileData>
 	>(() => new Map());
+	const [persistentDeletedPaths, setPersistentDeletedPaths] = useState<
+		Set<string>
+	>(() => new Set());
 
 	fileSystemRef.current = fileSystem;
 	dirtyFilesRef.current = dirtyFiles;
@@ -233,6 +320,7 @@ export default function ChatProvider({
 	baselineOverridesRef.current = baselineOverrides;
 	backendSyncFilesRef.current = backendSyncFiles;
 	threadScopedFilesRef.current = threadScopedFiles;
+	persistentDeletedPathsRef.current = persistentDeletedPaths;
 
 	const runWithPersistentSyncSuspended = useCallback((callback: () => void) => {
 		autosaveSkipCountRef.current += 1;
@@ -248,53 +336,117 @@ export default function ChatProvider({
 	);
 
 	const getVisibleWorkspaceFiles = useCallback(() => {
-		return mergeFileMaps(
-			memoryFilesRef.current,
-			settingsFilesRef.current,
-			backendSyncFilesRef.current,
-			baselineOverridesRef.current,
-			threadScopedFilesRef.current,
-		);
+		return buildVisibleWorkspaceFiles({
+			memoryFiles: memoryFilesRef.current,
+			settingsFiles: settingsFilesRef.current,
+			backendSyncFiles: backendSyncFilesRef.current,
+			baselineOverrides: baselineOverridesRef.current,
+			threadScopedFiles: threadScopedFilesRef.current,
+			persistentDeletedPaths: persistentDeletedPathsRef.current,
+		});
 	}, []);
 
-	const removePathFromAllSources = useCallback((path: string) => {
+	const removePathsFromAllSources = useCallback((paths: string[]) => {
+		const pathsToRemove = new Set(paths);
+		if (pathsToRemove.size === 0) {
+			return;
+		}
+
 		setSettingsFiles((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setMemoryFiles((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setBaselineOverrides((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setBackendSyncFiles((prev) => {
-			if (!prev.has(path)) {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
 				return prev;
 			}
-			const next = new Map(prev);
-			next.delete(path);
 			return next;
 		});
 		setThreadScopedFiles((prev) => {
+			let changed = false;
+			const next = new Map(prev);
+			pathsToRemove.forEach((path) => {
+				changed = next.delete(path) || changed;
+			});
+			if (!changed) {
+				return prev;
+			}
+			return next;
+		});
+	}, []);
+
+	const addPersistentDeletion = useCallback((path: string) => {
+		setPersistentDeletedPaths((prev) => {
+			if (prev.has(path)) {
+				return prev;
+			}
+
+			const next = new Set(prev);
+			next.add(path);
+			return next;
+		});
+	}, []);
+
+	const addPersistentDeletions = useCallback((paths: string[]) => {
+		const pathsToAdd = paths.filter(Boolean);
+		if (pathsToAdd.length === 0) {
+			return;
+		}
+
+		setPersistentDeletedPaths((prev) => {
+			const next = new Set(prev);
+			let changed = false;
+			pathsToAdd.forEach((path) => {
+				if (!next.has(path)) {
+					next.add(path);
+					changed = true;
+				}
+			});
+			return changed ? next : prev;
+		});
+	}, []);
+
+	const removePersistentDeletion = useCallback((path: string) => {
+		setPersistentDeletedPaths((prev) => {
 			if (!prev.has(path)) {
 				return prev;
 			}
-			const next = new Map(prev);
+
+			const next = new Set(prev);
 			next.delete(path);
 			return next;
 		});
@@ -307,6 +459,7 @@ export default function ChatProvider({
 				buildPersistentPayload(
 					settingsFilesRef.current,
 					baselineOverridesRef.current,
+					persistentDeletedPathsRef.current,
 				),
 			);
 			return;
@@ -318,8 +471,21 @@ export default function ChatProvider({
 				MemoryService.getFiles(),
 			]);
 			const persistedFiles = settings.defaults.files || {};
+			const persistedDeletedFiles = new Set(
+				settings.defaults.deleted_files || [],
+			);
 			const nextSettingsFiles = new Map<string, FileData>();
 			const nextMemoryFiles = new Map<string, FileData>();
+			const currentPersistentSignature = JSON.stringify(
+				buildPersistentPayload(
+					settingsFilesRef.current,
+					baselineOverridesRef.current,
+					persistentDeletedPathsRef.current,
+				),
+			);
+			const hasLocalUnsavedPersistentChanges =
+				persistentContextLoadedRef.current &&
+				currentPersistentSignature !== lastSavedPersistentSignatureRef.current;
 
 			Object.entries(persistedFiles).forEach(([path, fileData]) => {
 				nextSettingsFiles.set(
@@ -335,13 +501,30 @@ export default function ChatProvider({
 				);
 			});
 
-			autosaveSkipCountRef.current += 1;
-			setSettingsFiles(nextSettingsFiles);
-			setMemoryFiles(nextMemoryFiles);
-			persistentContextLoadedRef.current = true;
-			lastSavedPersistentSignatureRef.current = JSON.stringify(
-				buildPersistentPayload(nextSettingsFiles, baselineOverridesRef.current),
+			const nextLastSavedSignature = JSON.stringify(
+				buildPersistentPayload(
+					nextSettingsFiles,
+					new Map(),
+					persistedDeletedFiles,
+				),
 			);
+
+			logger(
+				"hydrate settings=%d memory=%d deleted=%d preserve_local=%o",
+				nextSettingsFiles.size,
+				nextMemoryFiles.size,
+				persistedDeletedFiles.size,
+				hasLocalUnsavedPersistentChanges,
+			);
+
+			autosaveSkipCountRef.current += 1;
+			setMemoryFiles(nextMemoryFiles);
+			if (!hasLocalUnsavedPersistentChanges) {
+				setSettingsFiles(nextSettingsFiles);
+				setPersistentDeletedPaths(persistedDeletedFiles);
+				lastSavedPersistentSignatureRef.current = nextLastSavedSignature;
+			}
+			persistentContextLoadedRef.current = true;
 		} catch (error) {
 			persistentContextLoadedRef.current = true;
 			console.error("Failed to load persistent context files:", error);
@@ -353,13 +536,14 @@ export default function ChatProvider({
 	}, [loadPersistentContextFiles]);
 
 	useEffect(() => {
-		const nextVisibleFiles = mergeFileMaps(
+		const nextVisibleFiles = buildVisibleWorkspaceFiles({
 			memoryFiles,
 			settingsFiles,
 			backendSyncFiles,
 			baselineOverrides,
 			threadScopedFiles,
-		);
+			persistentDeletedPaths,
+		});
 
 		syncFiles(nextVisibleFiles, {
 			openNewTabs: true,
@@ -371,6 +555,7 @@ export default function ChatProvider({
 		backendSyncFiles,
 		baselineOverrides,
 		threadScopedFiles,
+		persistentDeletedPaths,
 		syncFiles,
 	]);
 
@@ -381,6 +566,7 @@ export default function ChatProvider({
 		prevFilesMapRef.current = filesMap;
 
 		const nextThreadFiles = new Map<string, FileData>();
+		const nextDurableFiles = new Map<string, FileData>();
 		filesMap.forEach(
 			(messageFiles: Record<string, unknown>, messageId: string) => {
 				if (messageId === CONTEXT_FILES_KEY) {
@@ -408,14 +594,41 @@ export default function ChatProvider({
 							created_at?: string;
 							modified_at?: string;
 						};
-						nextThreadFiles.set(path, normalizeFileData(fileData, messageId));
+						const normalizedFile = normalizeFileData(fileData, messageId);
+						if (isStreamingRef.current) {
+							nextDurableFiles.set(path, promoteToUserFile(normalizedFile));
+							return;
+						}
+
+						nextThreadFiles.set(path, normalizedFile);
 					},
 				);
 			},
 		);
 
+		if (nextDurableFiles.size > 0) {
+			setBaselineOverrides((prev) => {
+				let changed = false;
+				const next = new Map(prev);
+
+				nextDurableFiles.forEach((file, path) => {
+					if (fileDataEqual(next.get(path), file)) {
+						return;
+					}
+
+					next.set(path, file);
+					changed = true;
+				});
+
+				return changed ? next : prev;
+			});
+			nextDurableFiles.forEach((_file, path) => {
+				removePersistentDeletion(path);
+			});
+		}
+
 		setThreadScopedFiles(nextThreadFiles);
-	}, [filesMap]);
+	}, [filesMap, removePersistentDeletion]);
 
 	const messagesLength = chatHooks.messages.length;
 	const isStreaming = !!chatHooks.controller;
@@ -435,6 +648,7 @@ export default function ChatProvider({
 				modified_at: data.modified_at,
 			};
 		});
+		setSubmissionFiles(contextFiles);
 
 		const hasContextFiles = Object.keys(contextFiles).length > 0;
 		const prevContextFiles = filesMap.get(CONTEXT_FILES_KEY) as
@@ -459,7 +673,7 @@ export default function ChatProvider({
 		next.delete(CONTEXT_FILES_KEY);
 		next.set(CONTEXT_FILES_KEY, contextFiles);
 		setFilesMap(next);
-	}, [fileSystem, filesMap, setFilesMap]);
+	}, [fileSystem, filesMap, setFilesMap, setSubmissionFiles]);
 
 	const { clearQueue } = queueHooks;
 
@@ -473,6 +687,7 @@ export default function ChatProvider({
 		const payload = buildPersistentPayload(
 			settingsFilesRef.current,
 			baselineOverridesRef.current,
+			persistentDeletedPathsRef.current,
 		);
 
 		return {
@@ -486,7 +701,6 @@ export default function ChatProvider({
 	const hasUnsavedPersistentChanges =
 		isAuthenticated &&
 		persistentContextLoadedRef.current &&
-		autosaveSkipCountRef.current === 0 &&
 		persistentPayloadSignature !== lastSavedPersistentSignatureRef.current;
 
 	const savePersistentContextFiles = useCallback(
@@ -499,15 +713,17 @@ export default function ChatProvider({
 				return false;
 			}
 
-			if (autosaveSkipCountRef.current > 0) {
-				return false;
-			}
-
 			if (reason !== "manual" && isStreamingRef.current) {
+				pendingPersistentFlushRef.current = true;
+				logger("autosave suppressed reason=%s cause=streaming", reason);
 				return false;
 			}
 
 			if (persistentSaveInFlightRef.current) {
+				if (reason !== "manual") {
+					pendingPersistentFlushRef.current = true;
+					logger("autosave suppressed reason=%s cause=in_flight", reason);
+				}
 				return false;
 			}
 
@@ -522,6 +738,13 @@ export default function ChatProvider({
 			}
 
 			const dirtyPaths = Array.from(dirtyFilesRef.current);
+			logger(
+				"persistent save start reason=%s files=%d deleted=%d dirty=%d",
+				reason,
+				Object.keys(payload.files).length,
+				payload.deleted_files.length,
+				dirtyPaths.length,
+			);
 
 			persistentSaveInFlightRef.current = true;
 			try {
@@ -537,7 +760,9 @@ export default function ChatProvider({
 
 				setSettingsFiles(nextPersistedFiles);
 				setBaselineOverrides(new Map());
+				setPersistentDeletedPaths(new Set(payload.deleted_files));
 				lastSavedPersistentSignatureRef.current = signature;
+				pendingPersistentFlushRef.current = false;
 				dirtyPaths.forEach((path) => {
 					markClean(path);
 				});
@@ -546,9 +771,16 @@ export default function ChatProvider({
 					toast.success("Changes saved");
 				}
 
+				logger(
+					"persistent save success reason=%s files=%d deleted=%d",
+					reason,
+					nextPersistedFiles.size,
+					payload.deleted_files.length,
+				);
 				return true;
 			} catch (error) {
 				console.error("Failed to persist context files:", error);
+				logger("persistent save failure reason=%s", reason);
 				toast.error("Failed to save context files");
 				return false;
 			} finally {
@@ -559,18 +791,19 @@ export default function ChatProvider({
 	);
 
 	useEffect(() => {
-		if (
-			!isAuthenticated ||
-			!persistentContextLoadedRef.current ||
-			isStreaming
-		) {
+		if (!isAuthenticated || !persistentContextLoadedRef.current) {
 			return;
 		}
 
 		if (autosaveSkipCountRef.current > 0) {
 			autosaveSkipCountRef.current -= 1;
-			lastSavedPersistentSignatureRef.current = persistentPayloadSignature;
-			return;
+			logger(
+				"autosave skipped cause=sync_skip remaining=%d",
+				autosaveSkipCountRef.current,
+			);
+			if (autosaveSkipCountRef.current > 0) {
+				return;
+			}
 		}
 
 		if (
@@ -579,10 +812,17 @@ export default function ChatProvider({
 			return;
 		}
 
+		if (isStreaming) {
+			pendingPersistentFlushRef.current = true;
+			logger("autosave queued cause=streaming");
+			return;
+		}
+
 		if (persistentSaveTimerRef.current) {
 			window.clearTimeout(persistentSaveTimerRef.current);
 		}
 
+		logger("autosave scheduled delay_ms=500");
 		persistentSaveTimerRef.current = window.setTimeout(() => {
 			persistentSaveTimerRef.current = null;
 			void savePersistentContextFiles({
@@ -603,6 +843,23 @@ export default function ChatProvider({
 		savePersistentContextFiles,
 	]);
 
+	const previousStreamingRef = useRef(isStreaming);
+
+	useEffect(() => {
+		const wasStreaming = previousStreamingRef.current;
+		previousStreamingRef.current = isStreaming;
+
+		if (isStreaming || !wasStreaming || !pendingPersistentFlushRef.current) {
+			return;
+		}
+
+		logger("autosave flush after streaming");
+		void savePersistentContextFiles({
+			reason: "autosave",
+			showSuccessToast: false,
+		});
+	}, [isStreaming, savePersistentContextFiles]);
+
 	const createFile = useCallback(
 		(path: string, content?: string) => {
 			const fileData = normalizeFileData(
@@ -618,8 +875,10 @@ export default function ChatProvider({
 				next.set(path, fileData);
 				return next;
 			});
+			removePersistentDeletion(path);
+			logger("ownership create durable path=%s", path);
 		},
-		[baseCreateFile],
+		[baseCreateFile, removePersistentDeletion],
 	);
 
 	const updateFile = useCallback(
@@ -638,14 +897,20 @@ export default function ChatProvider({
 			baseUpdateFile(path, content);
 
 			if (existing.source === PERSISTENT_SETTINGS_SOURCE) {
-				setSettingsFiles((prev) => {
+				setBaselineOverrides((prev) => {
 					const next = new Map(prev);
 					next.set(path, {
-						...nextFile,
-						source: PERSISTENT_SETTINGS_SOURCE,
+						...promoteToUserFile(nextFile),
 					});
 					return next;
 				});
+				removePersistentDeletion(path);
+				logger(
+					"ownership promote path=%s from=%s to=%s action=edit",
+					path,
+					existing.source,
+					USER_FILES_SOURCE,
+				);
 				return;
 			}
 
@@ -672,19 +937,22 @@ export default function ChatProvider({
 					next.set(path, promoteToUserFile(nextFile));
 					return next;
 				});
+				removePersistentDeletion(path);
+				logger(
+					"ownership promote path=%s from=%s to=%s action=edit",
+					path,
+					existing.source,
+					USER_FILES_SOURCE,
+				);
 				return;
 			}
 
 			if (existing.source === BACKEND_SYNC_SOURCE) {
 				setBackendSyncFiles((prev) => {
 					const next = new Map(prev);
-					next.set(path, {
-						...nextFile,
-						source: BACKEND_SYNC_SOURCE,
-					});
+					next.delete(path);
 					return next;
 				});
-				return;
 			}
 
 			if (isThreadScopedSource(existing.source)) {
@@ -693,14 +961,24 @@ export default function ChatProvider({
 					next.delete(path);
 					return next;
 				});
+			}
+
+			if (isPromotableTransientSource(existing.source)) {
 				setBaselineOverrides((prev) => {
 					const next = new Map(prev);
 					next.set(path, promoteToUserFile(nextFile));
 					return next;
 				});
+				removePersistentDeletion(path);
+				logger(
+					"ownership promote path=%s from=%s to=%s action=edit",
+					path,
+					existing.source,
+					USER_FILES_SOURCE,
+				);
 			}
 		},
-		[baseUpdateFile],
+		[baseUpdateFile, removePersistentDeletion],
 	);
 
 	const deletePath = useCallback(
@@ -714,12 +992,30 @@ export default function ChatProvider({
 				return;
 			}
 
-			matches.forEach((matchedPath) => {
-				baseDeleteFile(matchedPath);
-				removePathFromAllSources(matchedPath);
+			const durableMatches = matches.filter((matchedPath) => {
+				const existing = fileSystemRef.current.get(matchedPath);
+				if (!existing || !isDurableSource(existing.source)) {
+					return false;
+				}
+
+				logger(
+					"ownership delete durable path=%s source=%s",
+					matchedPath,
+					existing.source,
+				);
+				return true;
 			});
+
+			baseDeleteFiles(matches);
+			removePathsFromAllSources(matches);
+			addPersistentDeletions(durableMatches);
 		},
-		[baseDeleteFile, getVisibleWorkspaceFiles, removePathFromAllSources],
+		[
+			addPersistentDeletions,
+			baseDeleteFiles,
+			getVisibleWorkspaceFiles,
+			removePathsFromAllSources,
+		],
 	);
 
 	const deleteFile = useCallback(
@@ -744,15 +1040,20 @@ export default function ChatProvider({
 			};
 
 			if (existing.source === PERSISTENT_SETTINGS_SOURCE) {
-				setSettingsFiles((prev) => {
+				setBaselineOverrides((prev) => {
 					const next = new Map(prev);
 					next.delete(oldPath);
-					next.set(newPath, {
-						...renamedFile,
-						source: PERSISTENT_SETTINGS_SOURCE,
-					});
+					next.set(newPath, promoteToUserFile(renamedFile));
 					return next;
 				});
+				addPersistentDeletion(oldPath);
+				removePersistentDeletion(newPath);
+				logger(
+					"ownership promote path=%s from=%s to=%s action=rename",
+					oldPath,
+					existing.source,
+					USER_FILES_SOURCE,
+				);
 				return;
 			}
 
@@ -766,24 +1067,22 @@ export default function ChatProvider({
 					});
 					return next;
 				});
-				return;
-			}
-
-			if (existing.source === BACKEND_SYNC_SOURCE) {
-				setBackendSyncFiles((prev) => {
-					const next = new Map(prev);
-					next.delete(oldPath);
-					next.set(newPath, {
-						...renamedFile,
-						source: BACKEND_SYNC_SOURCE,
-					});
-					return next;
-				});
+				addPersistentDeletion(oldPath);
+				removePersistentDeletion(newPath);
 				return;
 			}
 
 			if (existing.source === MEMORY_FILES_SOURCE) {
 				setMemoryFiles((prev) => {
+					const next = new Map(prev);
+					next.delete(oldPath);
+					return next;
+				});
+				addPersistentDeletion(oldPath);
+			}
+
+			if (existing.source === BACKEND_SYNC_SOURCE) {
+				setBackendSyncFiles((prev) => {
 					const next = new Map(prev);
 					next.delete(oldPath);
 					return next;
@@ -804,8 +1103,17 @@ export default function ChatProvider({
 				next.set(newPath, promoteToUserFile(renamedFile));
 				return next;
 			});
+			removePersistentDeletion(newPath);
+			if (isPromotableTransientSource(existing.source)) {
+				logger(
+					"ownership promote path=%s from=%s to=%s action=rename",
+					oldPath,
+					existing.source,
+					USER_FILES_SOURCE,
+				);
+			}
 		},
-		[baseRenameFile],
+		[addPersistentDeletion, baseRenameFile, removePersistentDeletion],
 	);
 
 	const clearThreadScopedFiles = useCallback(() => {
@@ -823,6 +1131,7 @@ export default function ChatProvider({
 		setBaselineOverrides(new Map());
 		setBackendSyncFiles(new Map());
 		setThreadScopedFiles(new Map());
+		setPersistentDeletedPaths(new Set());
 		baseClearFileSystem();
 		hydrateFilesMap(new Map());
 	}, [baseClearFileSystem, hydrateFilesMap]);
@@ -866,7 +1175,7 @@ export default function ChatProvider({
 				renameFile,
 				clearFileSystem,
 				fromBackendFormat,
-				deletedFiles: [],
+				deletedFiles: Array.from(persistentDeletedPaths),
 				hasUnsavedPersistentChanges,
 				savePersistentContextFiles,
 				setFilesMap: hydrateFilesMap,

@@ -39,7 +39,15 @@ async def test_stream_generator_uses_resolved_context_files():
     with (
         patch(
             "src.utils.stream.prepare_memory_files",
-            AsyncMock(return_value=({"/memory.md": {"content": ["memory"]}}, [])),
+            AsyncMock(
+                return_value=(
+                    {
+                        "/memory.md": {"content": ["memory"]},
+                        "/config.md": {"content": ["memory config"]},
+                    },
+                    ["/memory.md", "/config.md"],
+                )
+            ),
         ),
         patch(
             "src.utils.stream.resolve_context_files",
@@ -47,7 +55,7 @@ async def test_stream_generator_uses_resolved_context_files():
         ) as mock_resolve_context_files,
         patch("src.utils.stream.get_checkpoint_db", fake_checkpoint_db),
         patch("src.utils.stream.resolve_sandbox_backend", return_value=(MagicMock(), None, "state")),
-        patch("src.utils.stream.construct_agent", AsyncMock(return_value=agent)),
+        patch("src.utils.stream.construct_agent", AsyncMock(return_value=agent)) as mock_construct_agent,
     ):
         chunks = [
             chunk
@@ -67,3 +75,4 @@ async def test_stream_generator_uses_resolved_context_files():
 
     assert chunks
     mock_resolve_context_files.assert_awaited_once()
+    assert mock_construct_agent.await_args.kwargs["memory"] == ["/config.md"]

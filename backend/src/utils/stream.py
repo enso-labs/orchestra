@@ -22,7 +22,7 @@ from src.agents import (
     _create_state_backend,
 )
 from src.services.db import get_checkpoint_db
-from src.services.context_files import resolve_context_files
+from src.services.context_files import resolve_context_files, select_memory_sources
 from src.utils.messages import from_message_to_dict
 from langchain_core.messages import (
     AIMessageChunk,
@@ -232,11 +232,16 @@ async def stream_generator(
         **(input.files or {}),
     }
     todos_list = config["metadata"].get("todos", [])
-    memory_files, memory_sources = await prepare_memory_files(service_context.user_id, service_context.memory_service)
+    memory_files, _memory_sources = await prepare_memory_files(service_context.user_id, service_context.memory_service)
+    memory_sources = select_memory_sources(
+        explicit_files=explicit_files,
+        memory_files=memory_files,
+    )
+    selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
     files_map = await resolve_context_files(
         user_id=service_context.user_id,
         store=service_context.store,
-        memory_files=memory_files,
+        memory_files=selected_memory_files,
         explicit_files=explicit_files,
     )
     async with get_checkpoint_db() as checkpointer:

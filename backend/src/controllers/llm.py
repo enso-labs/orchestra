@@ -20,7 +20,7 @@ from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
 from src.repos.user_settings_repo import UserSettingsRepo
-from src.services.context_files import resolve_context_files
+from src.services.context_files import resolve_context_files, select_memory_sources
 from src.utils.llm import resolve_api_key
 from src.utils.logger import logger
 from src.utils.format import get_time
@@ -121,12 +121,20 @@ class LLMController:
             params.model, api_key, default_sandbox = await self._resolve_user_settings(params.model)
 
             # Load user memories into files_map for MemoryMiddleware
-            memory_files, memory_sources = await prepare_memory_files(self.user_id, self.service_context.memory_service)
+            memory_files, _memory_sources = await prepare_memory_files(
+                self.user_id, self.service_context.memory_service
+            )
+            explicit_files = params.input.files or {}
+            memory_sources = select_memory_sources(
+                explicit_files=explicit_files,
+                memory_files=memory_files,
+            )
+            selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
             params.input.files = await resolve_context_files(
                 user_id=self.user_id,
                 store=self.store,
-                memory_files=memory_files,
-                explicit_files=params.input.files,
+                memory_files=selected_memory_files,
+                explicit_files=explicit_files,
             )
 
             async with get_checkpoint_db() as checkpointer:
