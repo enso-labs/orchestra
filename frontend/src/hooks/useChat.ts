@@ -261,6 +261,10 @@ export default function useChat(): ChatContextType {
 		const threadId = distributedStream?.getThreadId() ?? metadata?.thread_id;
 
 		stream.onEvent((event: StreamEvent) => {
+			// Bail out if the stream was aborted (prevents stale SSE events from
+			// re-populating messages/metadata after clearMessages)
+			if (controller.signal.aborted) return;
+
 			if (distributedStream) {
 				updateDistributedRecoveryCursor(distributedStream, options.route);
 			}

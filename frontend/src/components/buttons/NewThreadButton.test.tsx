@@ -55,6 +55,7 @@ describe("NewThreadButton", () => {
 			messages: [{ id: "msg-1" }],
 			clearMessages: vi.fn(),
 			metadata: { assistant_id: "assistant-1" },
+			abortQuery: vi.fn(),
 			resetToDefault: vi.fn(),
 			loadPersistentContextFiles: vi.fn(),
 			clearThreadScopedFiles: vi.fn(),
@@ -68,12 +69,46 @@ describe("NewThreadButton", () => {
 		fireEvent.click(screen.getByTitle("New Chat"));
 
 		const context = mockUseChatContext.mock.results[0].value;
+		expect(context.abortQuery).toHaveBeenCalledTimes(1);
 		expect(context.clearMessages).toHaveBeenCalledTimes(1);
 		expect(context.clearThreadScopedFiles).toHaveBeenCalledTimes(1);
 		expect(context.clearBackendSyncFiles).toHaveBeenCalledTimes(1);
 		expect(context.resetToDefault).toHaveBeenCalledTimes(1);
 		expect(context.loadPersistentContextFiles).toHaveBeenCalledTimes(1);
-		expect(mockNavigate).toHaveBeenCalledWith("/chat");
+		expect(mockNavigate).toHaveBeenCalledWith("/chat", {
+			state: { staleThreadId: undefined },
+		});
+	});
+
+	it("aborts the active stream before clearing messages", () => {
+		mockUseChatContext.mockReturnValue({
+			messages: [{ id: "msg-1" }],
+			clearMessages: vi.fn(),
+			metadata: { thread_id: "thread-1", assistant_id: "assistant-1" },
+			abortQuery: vi.fn(),
+			resetToDefault: vi.fn(),
+			loadPersistentContextFiles: vi.fn(),
+			clearThreadScopedFiles: vi.fn(),
+			clearBackendSyncFiles: vi.fn(),
+		});
+
+		renderAt("/thread/thread-1");
+
+		fireEvent.click(screen.getByTitle("New Chat"));
+
+		const context = mockUseChatContext.mock.results[0].value;
+		expect(context.abortQuery).toHaveBeenCalledTimes(1);
+		expect(context.clearMessages).toHaveBeenCalledTimes(1);
+
+		// Verify abort was called before clearMessages
+		const abortOrder = context.abortQuery.mock.invocationCallOrder[0];
+		const clearOrder = context.clearMessages.mock.invocationCallOrder[0];
+		expect(abortOrder).toBeLessThan(clearOrder);
+
+		// Verify staleThreadId is passed
+		expect(mockNavigate).toHaveBeenCalledWith("/chat", {
+			state: { staleThreadId: "thread-1" },
+		});
 	});
 
 	it("navigates assistant thread resets back to the assistant route", () => {
@@ -89,6 +124,7 @@ describe("NewThreadButton", () => {
 			messages: [],
 			clearMessages: vi.fn(),
 			metadata: {},
+			abortQuery: vi.fn(),
 			resetToDefault: vi.fn(),
 			loadPersistentContextFiles: vi.fn(),
 			clearThreadScopedFiles: vi.fn(),
@@ -97,5 +133,26 @@ describe("NewThreadButton", () => {
 
 		const { container } = renderAt("/chat");
 		expect(container).toBeEmptyDOMElement();
+	});
+
+	it("passes staleThreadId when falling back from a project route to /chat", () => {
+		mockUseChatContext.mockReturnValue({
+			messages: [{ id: "msg-1" }],
+			clearMessages: vi.fn(),
+			metadata: { thread_id: "proj-thread-1" },
+			abortQuery: vi.fn(),
+			resetToDefault: vi.fn(),
+			loadPersistentContextFiles: vi.fn(),
+			clearThreadScopedFiles: vi.fn(),
+			clearBackendSyncFiles: vi.fn(),
+		});
+
+		renderAt("/p/project-1");
+
+		fireEvent.click(screen.getByTitle("New Chat"));
+
+		expect(mockNavigate).toHaveBeenCalledWith("/chat", {
+			state: { staleThreadId: "proj-thread-1" },
+		});
 	});
 });
