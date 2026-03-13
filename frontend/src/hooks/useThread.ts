@@ -100,9 +100,15 @@ export default function useThread(): ThreadContextType {
 					? threadData.todos
 					: [];
 
-				// Historical thread files remain in metadata for backward compatibility,
-				// but they are not authoritative for the editable workspace.
+				// Restore thread-scoped files from the backend checkpoint metadata
 				const filesMap = new Map<string, any>();
+				if (
+					threadData.files &&
+					typeof threadData.files === "object" &&
+					Object.keys(threadData.files).length > 0
+				) {
+					filesMap.set("thread", threadData.files);
+				}
 
 				// Format messages
 				const messages = formatMessages(checkpointsData[0].values.messages);

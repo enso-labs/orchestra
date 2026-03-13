@@ -159,18 +159,63 @@ describe("useThread", () => {
 		expect(callbacks.setMetadata).not.toHaveBeenCalled();
 	});
 
-	it("ignores historical metadata.files when hydrating a thread", async () => {
+	it("hydrates filesMap from metadata.files when loading a thread", async () => {
+		const threadFiles = {
+			"/historical.txt": {
+				content: ["legacy"],
+				created_at: "2024-01-01T00:00:00Z",
+				modified_at: "2024-01-01T00:00:00Z",
+			},
+		};
+
 		mockSearchThreads.mockResolvedValueOnce([
 			{
 				metadata: {
 					thread_id: "thread-123",
-					files: {
-						"/historical.txt": {
-							content: ["legacy"],
-							created_at: "2024-01-01T00:00:00Z",
-							modified_at: "2024-01-01T00:00:00Z",
-						},
-					},
+					files: threadFiles,
+					todos: [],
+				},
+				values: {
+					messages: [
+						{ id: "msg-1", role: "user", content: "Hello" },
+						{ id: "msg-2", role: "assistant", content: "Hi" },
+					],
+				},
+			},
+		]);
+
+		const callbacks: ThreadCallbacks = {
+			setCheckpoints: vi.fn(),
+			setMessages: vi.fn(),
+			setMetadata: vi.fn(),
+			setFilesMap: vi.fn(),
+			setTodos: vi.fn(),
+			setModel: vi.fn(),
+		};
+
+		render(
+			<UseLoadThreadEffectHarness
+				threadId="thread-123"
+				enabled={true}
+				callbacks={callbacks}
+				onStateChange={() => undefined}
+			/>,
+		);
+
+		const expected = new Map<string, any>();
+		expected.set("thread", threadFiles);
+
+		await waitFor(() => {
+			expect(callbacks.setFilesMap).toHaveBeenCalledWith(expected);
+		});
+	});
+
+	it("returns empty filesMap when metadata.files is empty", async () => {
+		mockSearchThreads.mockResolvedValueOnce([
+			{
+				metadata: {
+					thread_id: "thread-123",
+					files: {},
 					todos: [],
 				},
 				values: {

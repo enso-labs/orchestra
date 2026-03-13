@@ -581,14 +581,6 @@ export default function ChatProvider({
 						if (dirtyFilesRef.current.has(path)) {
 							return;
 						}
-						if (
-							settingsFilesRef.current.has(path) ||
-							baselineOverridesRef.current.has(path) ||
-							backendSyncFilesRef.current.has(path)
-						) {
-							return;
-						}
-
 						const fileData = data as {
 							content?: string | string[];
 							created_at?: string;
