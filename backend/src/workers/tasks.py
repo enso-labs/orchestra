@@ -23,6 +23,34 @@ from src.workers.broker import broker, REDIS_URL
 from src.utils.stream import get_distributed_stream_key, STREAM_KEY_TTL_SECONDS
 
 
+class _RunScopedStore:
+    """Thin proxy around a shared store that isolates mutable attributes per-run.
+
+    The singleton ``AsyncPostgresStore`` in ``WorkerState`` is shared across
+    concurrent task executions.  Downstream code (``ThreadRepo``, ``LLMController``)
+    mutates ``store.fields`` to control which columns are returned.  Without
+    isolation those mutations leak across tasks.
+
+    This proxy captures ``fields`` on a per-run basis while delegating every
+    other attribute access to the underlying store.
+    """
+
+    __slots__ = ("_store", "fields")
+
+    def __init__(self, store):
+        object.__setattr__(self, "_store", store)
+        object.__setattr__(self, "fields", getattr(store, "fields", []))
+
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "_store"), name)
+
+    def __setattr__(self, name, value):
+        if name in ("fields",):
+            object.__setattr__(self, name, value)
+        else:
+            setattr(object.__getattribute__(self, "_store"), name, value)
+
+
 def _build_stream_metadata(
     *,
     run_id: str,
@@ -105,34 +133,37 @@ async def run_agent_stream(
     stream_key = get_distributed_stream_key(thread_id, run_id)
     redis_client = redis.from_url(REDIS_URL)
 
-    # Pre-start abort check: Handle race condition where abort arrives before task starts
-    if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
-        logger.info(
-            "task_pre_aborted",
-            extra={
-                "event": "task_pre_aborted",
-                "thread_id": thread_id,
-                "user_id": user_id,
-            },
-        )
-        # Write abort marker to stream for any listening clients
-        await redis_client.xadd(
-            stream_key,
-            {"data": ujson.dumps(("aborted", {"reason": "pre_aborted"}))},
-        )
-        await redis_client.xadd(stream_key, {"done": "true"})
-        await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
-        # Clear the abort signal
-        await AbortService.clear_abort_signal(thread_id)
-        await redis_client.aclose()
-        return {"status": "aborted", "stream_key": stream_key}
-
     config = None
     files_map = {}
     todos_list = []
     service_context = None
 
     try:
+        # Write initializing event immediately so clients waiting for the stream
+        # see activity before the heavy init work (model loading, DB connections, etc.)
+        await redis_client.xadd(stream_key, {"data": ujson.dumps(("initializing", {"run_id": run_id}))})
+        await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
+
+        # Pre-start abort check: Handle race condition where abort arrives before task starts
+        if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
+            logger.info(
+                "task_pre_aborted",
+                extra={
+                    "event": "task_pre_aborted",
+                    "thread_id": thread_id,
+                    "user_id": user_id,
+                },
+            )
+            # Write abort marker to stream for any listening clients
+            await redis_client.xadd(
+                stream_key,
+                {"data": ujson.dumps(("aborted", {"reason": "pre_aborted"}))},
+            )
+            await redis_client.xadd(stream_key, {"done": "true"})
+            await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
+            # Clear the abort signal
+            await AbortService.clear_abort_signal(thread_id)
+            return {"status": "aborted", "stream_key": stream_key}
         # Reconstruct request from dict
         params = LLMRequest(**task_dict)
         params.metadata.user_id = user_id
@@ -148,31 +179,30 @@ async def run_agent_stream(
 
         # Get checkpointer based on mode
         if CHECKPOINT_USE_RESILIENT:
-            # Use worker-level checkpointer (persistent per worker)
-            from src.workers.state import get_worker_checkpointer
+            # Use worker-level singletons (persistent per worker)
+            from src.workers.state import get_worker_checkpointer, get_worker_store
 
             checkpointer = await get_worker_checkpointer()
-            # Store still uses per-task context manager
-            async with get_store_db() as store:
-                service_context = ServiceContext(
-                    user_id=user_id,
-                    store=store,
-                    config=config,
-                    checkpointer=checkpointer,
-                )
-                return await _execute_agent_stream(
-                    params=params,
-                    config=config,
-                    files_map=files_map,
-                    todos_list=todos_list,
-                    service_context=service_context,
-                    checkpointer=checkpointer,
-                    user_id=user_id,
-                    thread_id=thread_id,
-                    run_id=run_id,
-                    stream_key=stream_key,
-                    redis_client=redis_client,
-                )
+            store = _RunScopedStore(await get_worker_store())
+            service_context = ServiceContext(
+                user_id=user_id,
+                store=store,
+                config=config,
+                checkpointer=checkpointer,
+            )
+            return await _execute_agent_stream(
+                params=params,
+                config=config,
+                files_map=files_map,
+                todos_list=todos_list,
+                service_context=service_context,
+                checkpointer=checkpointer,
+                user_id=user_id,
+                thread_id=thread_id,
+                run_id=run_id,
+                stream_key=stream_key,
+                redis_client=redis_client,
+            )
         else:
             # Legacy mode: per-task checkpointer
             async with (

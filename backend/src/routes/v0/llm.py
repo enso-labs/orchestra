@@ -147,7 +147,11 @@ async def llm_stream(
         return StreamingResponse(
             assistant,
             media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
         )
     except Exception as e:
         logger.exception(f"Error in llm_stream: {e}")
