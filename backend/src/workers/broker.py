@@ -9,8 +9,10 @@ Environment Variables:
 
 import asyncio
 import os
+from collections.abc import AsyncGenerator
 
 from redis.exceptions import ConnectionError
+from taskiq.acks import AckableMessage
 from taskiq_redis import RedisStreamBroker, RedisAsyncResultBackend
 
 from src.utils.logger import logger
@@ -34,7 +36,7 @@ class ResilientRedisStreamBroker(RedisStreamBroker):
     already used by ListQueueBroker.
     """
 
-    async def listen(self):
+    async def listen(self) -> AsyncGenerator[AckableMessage, None]:
         """Listen with automatic reconnect on ConnectionError."""
         while True:
             try:
