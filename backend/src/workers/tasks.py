@@ -105,6 +105,11 @@ async def run_agent_stream(
     stream_key = get_distributed_stream_key(thread_id, run_id)
     redis_client = redis.from_url(REDIS_URL)
 
+    # Write initializing event immediately so clients waiting for the stream
+    # see activity before the heavy init work (model loading, DB connections, etc.)
+    await redis_client.xadd(stream_key, {"data": ujson.dumps(("initializing", {"run_id": run_id}))})
+    await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
+
     # Pre-start abort check: Handle race condition where abort arrives before task starts
     if await AbortService.check_abort_signal(thread_id, expected_user_id=user_id):
         logger.info(
@@ -148,31 +153,30 @@ async def run_agent_stream(
 
         # Get checkpointer based on mode
         if CHECKPOINT_USE_RESILIENT:
-            # Use worker-level checkpointer (persistent per worker)
-            from src.workers.state import get_worker_checkpointer
+            # Use worker-level singletons (persistent per worker)
+            from src.workers.state import get_worker_checkpointer, get_worker_store
 
             checkpointer = await get_worker_checkpointer()
-            # Store still uses per-task context manager
-            async with get_store_db() as store:
-                service_context = ServiceContext(
-                    user_id=user_id,
-                    store=store,
-                    config=config,
-                    checkpointer=checkpointer,
-                )
-                return await _execute_agent_stream(
-                    params=params,
-                    config=config,
-                    files_map=files_map,
-                    todos_list=todos_list,
-                    service_context=service_context,
-                    checkpointer=checkpointer,
-                    user_id=user_id,
-                    thread_id=thread_id,
-                    run_id=run_id,
-                    stream_key=stream_key,
-                    redis_client=redis_client,
-                )
+            store = await get_worker_store()
+            service_context = ServiceContext(
+                user_id=user_id,
+                store=store,
+                config=config,
+                checkpointer=checkpointer,
+            )
+            return await _execute_agent_stream(
+                params=params,
+                config=config,
+                files_map=files_map,
+                todos_list=todos_list,
+                service_context=service_context,
+                checkpointer=checkpointer,
+                user_id=user_id,
+                thread_id=thread_id,
+                run_id=run_id,
+                stream_key=stream_key,
+                redis_client=redis_client,
+            )
         else:
             # Legacy mode: per-task checkpointer
             async with (

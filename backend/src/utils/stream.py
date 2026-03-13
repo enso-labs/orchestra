@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import os
 from langchain.agents.middleware import PIIDetectionError
@@ -433,8 +434,16 @@ async def stream_from_redis(thread_id: str, run_id: str, after: str = "0"):
     last_id = after or "0"
 
     try:
-        if not await redis_client.exists(stream_key):
-            raise FileNotFoundError(f"Distributed stream not found for thread={thread_id} run={run_id}")
+        # Wait for stream to appear (worker may still be initializing)
+        max_wait_seconds = 30
+        poll_interval = 1.0
+        waited = 0.0
+        while not await redis_client.exists(stream_key):
+            if waited >= max_wait_seconds:
+                raise FileNotFoundError(f"Distributed stream not found for thread={thread_id} run={run_id}")
+            yield ": waiting\n\n"
+            await asyncio.sleep(poll_interval)
+            waited += poll_interval
 
         while True:
             # Block for configurable time waiting for messages (default 60s)
