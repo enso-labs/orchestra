@@ -1,8 +1,12 @@
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator, AsyncIterator
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from fastapi import Request
-from typing import AsyncGenerator, AsyncIterator
+
+try:
+    from fastapi import Request
+except ImportError:
+    Request = object
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import IndexConfig
 from langgraph.store.postgres.base import PostgresIndexConfig

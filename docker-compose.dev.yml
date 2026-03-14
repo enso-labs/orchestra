@@ -1,5 +1,11 @@
 name: orchestra-dev
 
+networks:
+    storage:
+        external: true
+    services:
+        external: true
+
 x-backend-common: &backend-common
     build:
         context: ./backend
@@ -7,11 +13,11 @@ x-backend-common: &backend-common
     working_dir: /app
     init: true
     env_file:
-        - path: ${BACKEND_ENV_FILE:-./backend/.env.docker.dev}
-          required: false
+        - ~/.env/orchestra/.env.backend
     environment:
         APP_ENV: development
         APP_LOG_LEVEL: DEBUG
+        POSTGRES_CONNECTION_STRING: "postgresql://admin:test1234@postgres:5432/lg_template_dev"
         REDIS_URL: redis://redis:6379/0
         SEARX_SEARCH_HOST_URL: http://search_engine:8080
         DISTRIBUTED_WORKERS: "true"
@@ -21,47 +27,12 @@ x-backend-common: &backend-common
         - backend_uv_cache:/root/.cache/uv
     extra_hosts:
         - host.docker.internal:host-gateway
+    networks:
+        - default
+        - storage
+        - services
 
 services:
-    postgres:
-        image: pgvector/pgvector:pg16
-        environment:
-            POSTGRES_USER: admin
-            POSTGRES_PASSWORD: test1234
-            POSTGRES_MULTIPLE_DATABASES: lg_template_dev,lg_template_test
-        ports:
-            - "5432:5432"
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-            - ./docker/postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
-        healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
-
-    redis:
-        image: redis:7-alpine
-        ports:
-            - "6379:6379"
-        command: redis-server --appendonly yes
-        volumes:
-            - redis_data:/data
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
-
-    search_engine:
-        image: searxng/searxng
-        ports:
-            - "8080:8080"
-        volumes:
-            - ./docker/searxng/settings.yml:/etc/searxng/settings.yml:ro
-        environment:
-            SEARXNG_SETTINGS_PATH: /etc/searxng/settings.yml
-
     backend:
         <<: *backend-common
         ports:
@@ -70,15 +41,8 @@ services:
             [
                 "/bin/sh",
                 "-lc",
-                "uv sync --frozen --dev --no-install-project && uv run alembic upgrade head && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug",
+                "uv sync --frozen --dev --extra api --no-install-project && uv run alembic upgrade head && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug",
             ]
-        depends_on:
-            postgres:
-                condition: service_healthy
-            redis:
-                condition: service_healthy
-            search_engine:
-                condition: service_started
         healthcheck:
             test:
                 [
@@ -91,6 +55,11 @@ services:
             timeout: 5s
             retries: 10
             start_period: 45s
+        deploy:
+            resources:
+                limits:
+                    cpus: "2"
+                    memory: 2G
 
     worker:
         <<: *backend-common
@@ -98,13 +67,9 @@ services:
             [
                 "/bin/sh",
                 "-lc",
-                "uv sync --frozen --dev --no-install-project && uv run taskiq worker src.workers.tasks:broker",
+                "uv sync --frozen --dev --extra api --no-install-project && uv run taskiq worker src.workers.tasks:broker",
             ]
         depends_on:
-            postgres:
-                condition: service_healthy
-            redis:
-                condition: service_healthy
             backend:
                 condition: service_healthy
         healthcheck:
@@ -113,6 +78,11 @@ services:
             timeout: 5s
             retries: 10
             start_period: 30s
+        deploy:
+            resources:
+                limits:
+                    cpus: "2"
+                    memory: 2G
 
     frontend:
         build:
@@ -120,69 +90,34 @@ services:
             dockerfile: Dockerfile.dev
         working_dir: /app
         init: true
-        env_file:
-            - path: ${FRONTEND_ENV_FILE:-./frontend/.env.docker.dev}
-              required: false
-        environment:
-            CHOKIDAR_USEPOLLING: "true"
-            WATCHPACK_POLLING: "true"
-            VITE_PROXY_TARGET: http://backend:8000
         ports:
             - "5173:5173"
-        command:
-            [
-                "/bin/sh",
-                "-lc",
-                "npm install && npm run dev -- --host 0.0.0.0 --port 5173",
-            ]
+        environment:
+            VITE_PROXY_TARGET: http://backend:8000
+            CHOKIDAR_USEPOLLING: "true"
+            WATCHPACK_POLLING: "true"
         volumes:
             - ./frontend:/app
             - frontend_node_modules:/app/node_modules
-            - frontend_npm_cache:/root/.npm
+        user: "0:0"
+        command:
+            [
+                "/bin/sh",
+                "-c",
+                "npm install && npm run dev -- --host 0.0.0.0 --port 5173",
+            ]
         depends_on:
             backend:
                 condition: service_healthy
-        extra_hosts:
-            - host.docker.internal:host-gateway
-        healthcheck:
-            test:
-                [
-                    "CMD",
-                    "node",
-                    "-e",
-                    "fetch('http://127.0.0.1:5173').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))",
-                ]
-            interval: 15s
-            timeout: 5s
-            retries: 10
-            start_period: 45s
-
-    dozzle:
-        image: amir20/dozzle:latest
-        ports:
-            - "8088:8080"
-        environment:
-            DOZZLE_NO_ANALYTICS: "true"
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro
-
-    exec_server:
-        profiles: ["tools"]
-        build:
-            context: ./sandboxes/ubuntu
-            dockerfile: Dockerfile
-        env_file:
-            - path: ${EXEC_SERVER_ENV_FILE:-./sandboxes/ubuntu/.env}
-              required: false
-        ports:
-            - "3005:3005"
-        volumes:
-            - ${HOME}/.ssh:/root/.ssh:ro
+        networks:
+            - default
+        deploy:
+            resources:
+                limits:
+                    cpus: "1"
+                    memory: 1G
 
 volumes:
     backend_uv_cache:
     backend_venv:
     frontend_node_modules:
-    frontend_npm_cache:
-    postgres_data:
-    redis_data:

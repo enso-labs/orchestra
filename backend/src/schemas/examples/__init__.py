@@ -1,4 +1,7 @@
-from fastapi.openapi.models import Example
+try:
+    from fastapi.openapi.models import Example
+except ImportError:
+    Example = dict
 
 
 class Examples:
