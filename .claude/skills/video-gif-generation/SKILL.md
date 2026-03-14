@@ -265,3 +265,67 @@ After the ffmpeg command completes:
    ```
 
 3. **Report the result** to the user with the output path and file size.
+
+## Error Handling
+
+Handle failures at each stage of the workflow with clear, actionable feedback. The goal is to preserve any partial output and help the user resolve the issue.
+
+### Recording Start Failure
+
+If `agent-browser record start <path>.webm` returns a non-zero exit code or outputs an error:
+
+- **Stop immediately** — do not attempt browser actions.
+- Report the error to the user with the exact error message from agent-browser.
+- Suggest fixes:
+  > Recording failed to start. Possible causes:
+  > - agent-browser is not running or has no active page — try `agent-browser open <url>` first.
+  > - The output path is not writable — check directory permissions.
+  > - Another recording may already be in progress — try `agent-browser record stop` first.
+
+### Browser Action Failure During Recording
+
+If any agent-browser command (click, fill, navigate, etc.) fails while recording is active:
+
+1. **Stop the recording immediately** to save what was captured so far:
+   ```bash
+   agent-browser record stop
+   ```
+2. **Check the partial .webm file** — it may contain useful footage up to the failure point:
+   ```bash
+   ls -la <output-path>.webm
+   ```
+3. **Report the failure** to the user with:
+   - Which action failed and the error message.
+   - That a partial recording was saved (if the .webm is non-empty).
+   - Suggestion to fix the failing step and re-record.
+
+Do NOT delete the partial .webm — the user may want to review what was captured.
+
+### Empty Recording (0 Bytes)
+
+If the output `.webm` file exists but is 0 bytes after `agent-browser record stop`:
+
+- Report to the user:
+  > The recording completed but captured nothing (0-byte file). This usually means:
+  > - No browser page was open when recording started — ensure `agent-browser open <url>` runs before `agent-browser record start`.
+  > - The recording started and stopped too quickly — add waits between actions.
+  > - The browser viewport was not visible — check viewport configuration.
+- Delete the empty .webm file.
+- Do NOT proceed to GIF conversion.
+
+### FFmpeg Conversion Failure
+
+If the `ffmpeg` command returns a non-zero exit code or outputs an error:
+
+- **Preserve the .webm file** — do NOT delete it. The user can retry conversion or use the video directly.
+- Report the error to the user with the exact ffmpeg error output.
+- Suggest fixes:
+  > GIF conversion failed. The original video has been preserved at `<path>.webm`. Possible causes:
+  > - The .webm file may be corrupted — try playing it with `ffplay <path>.webm`.
+  > - ffmpeg may not support the codec — try re-recording.
+  > - Insufficient disk space — check with `df -h`.
+  >
+  > You can retry conversion manually:
+  > ```
+  > ffmpeg -i <input>.webm -filter_complex "[0:v] fps=12,scale=800:-1:flags=lanczos,split [a][b];[a] palettegen=stats_mode=full [p];[b][p] paletteuse=dither=sierra2_4a" -loop 0 <output>.gif
+  > ```
