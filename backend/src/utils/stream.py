@@ -183,31 +183,34 @@ def handle_multi_mode(chunk: dict):
             chunk[1]["messages"] = from_message_to_dict(chunk[1]["messages"])
             return chunk
 
-        if "messages" in chunk:
-            i0, i1 = chunk[0], chunk[1]
-            msg = i1[0]
-            current_agent = None
+        if "messages" not in chunk:
+            logger.error(f"Invalid chunk: {chunk}")
+            return None
 
-            if agent_name := dict(msg).get("lc_agent_name"):
-                if agent_name != current_agent:
-                    logger.warning(f"🤖 {agent_name}: ")
+        i0, i1 = chunk[0], chunk[1]
+        msg = i1[0]
 
-            if isinstance(msg, ToolMessage):
-                return (i0, (_to_dict(msg), i1[1] or None))
+        if agent_name := dict(msg).get("lc_agent_name"):
+            logger.warning(f"🤖 {agent_name}: ")
 
-            if isinstance(msg, AIMessageChunk):
-                stop = (
-                    msg.response_metadata.get("finish_reason")
-                    or msg.response_metadata.get("stop_reasoning")
-                    or msg.response_metadata.get("stop_reason")
-                )
-                content = msg.content or msg.additional_kwargs.get("reasoning_content")
-                if msg.tool_calls or msg.tool_call_chunks or stop or content:
-                    return (i0, (_to_dict(msg), i1[1] or None))
-                logger.warning(f"No content: {chunk}")
-                return None
+        if isinstance(msg, ToolMessage):
+            return (i0, (_to_dict(msg), i1[1] or None))
 
-        logger.error(f"Invalid chunk: {chunk}")
+        if not isinstance(msg, AIMessageChunk):
+            logger.error(f"Invalid chunk: {chunk}")
+            return None
+
+        stop = (
+            msg.response_metadata.get("finish_reason")
+            or msg.response_metadata.get("stop_reasoning")
+            or msg.response_metadata.get("stop_reason")
+        )
+        content = msg.content or msg.additional_kwargs.get("reasoning_content")
+        if msg.tool_calls or msg.tool_call_chunks or stop or content:
+            return (i0, (_to_dict(msg), i1[1] or None))
+
+        logger.warning(f"No content: {chunk}")
+        return None
     except Exception as e:
         logger.error(f"Error in handle_multi_mode: {e}")
     return None
