@@ -12,13 +12,9 @@ x-backend-common: &backend-common
     environment:
         APP_ENV: development
         APP_LOG_LEVEL: DEBUG
-        APP_SECRET_KEY: 6WhxV3XZiV8WEuIm956lU1UYcuLz8JQgGmTtGZnmNAk=
-        JWT_SECRET_KEY: docker-dev-jwt-secret
-        POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@postgres:5432/lg_template_dev?sslmode=disable
-        POSTGRES_CONNECTION_STRING_SESSION: postgresql://admin:test1234@postgres:5432/lg_template_dev?sslmode=disable
         REDIS_URL: redis://redis:6379/0
-        DISTRIBUTED_WORKERS: "true"
         SEARX_SEARCH_HOST_URL: http://search_engine:8080
+        DISTRIBUTED_WORKERS: "true"
     volumes:
         - ./backend:/app
         - backend_venv:/app/.venv
