@@ -99,6 +99,7 @@ export default function ChatUtilityRow() {
 					</Popover>
 				)}
 				<Button
+					data-tour="files-toggle-button"
 					variant="ghost"
 					size="sm"
 					className="h-8 rounded-full border border-border/60 px-3 text-xs text-muted-foreground hover:text-foreground"
