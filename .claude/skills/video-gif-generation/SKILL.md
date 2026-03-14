@@ -80,3 +80,93 @@ agent-browser set media dark
 ```
 
 GIF FPS and max width are applied later during the ffmpeg conversion step — store the user's requested values (or the defaults of 12 FPS and 800px max width) for use in that step.
+
+## Recording Workflow
+
+Follow this lifecycle to record a browser workflow as a `.webm` video file.
+
+### Step 1: Configure the Browser
+
+Apply viewport and display settings before starting the recording (see [Configuration](#configuration) above):
+
+```bash
+agent-browser set viewport 1280 720
+agent-browser set media light
+```
+
+### Step 2: Start Recording
+
+Begin video capture by specifying an output path for the `.webm` file:
+
+```bash
+agent-browser record start <output-path>.webm
+```
+
+For example: `agent-browser record start demo.webm`
+
+### Step 3: Execute Browser Actions
+
+Perform the workflow steps using agent-browser commands between `record start` and `record stop`. Use any agent-browser actions needed — navigate, click, fill, snapshot, etc.
+
+After each navigation, wait for the page to fully load before continuing:
+
+```bash
+agent-browser open <url>
+agent-browser wait --load networkidle
+
+agent-browser click @e2
+agent-browser wait --load networkidle
+```
+
+Use `agent-browser wait --load networkidle` after any action that triggers a page navigation or significant network activity. This ensures the page is fully rendered before the next action, producing a clean recording.
+
+For non-navigation interactions (typing, clicking buttons that update the DOM without navigating), use a short delay if needed:
+
+```bash
+agent-browser wait 500
+```
+
+### Step 4: Stop Recording
+
+Once all workflow steps are complete, stop the recording:
+
+```bash
+agent-browser record stop
+```
+
+### Step 5: Verify Output
+
+Confirm the recording was saved successfully by checking the output file exists and is non-empty:
+
+```bash
+ls -la <output-path>.webm
+```
+
+- **If the file exists and has size > 0**: The recording succeeded. Proceed to GIF conversion (if requested) or report success.
+- **If the file is missing or 0 bytes**: The recording failed — report the issue to the user.
+
+### Complete Recording Example
+
+```bash
+# 1. Configure
+agent-browser set viewport 1280 720
+agent-browser set media light
+
+# 2. Start recording
+agent-browser record start workflow-demo.webm
+
+# 3. Perform actions
+agent-browser open http://localhost:3000
+agent-browser wait --load networkidle
+agent-browser click @e5
+agent-browser wait 500
+agent-browser fill @e8 "Hello World"
+agent-browser click @e10
+agent-browser wait --load networkidle
+
+# 4. Stop recording
+agent-browser record stop
+
+# 5. Verify
+ls -la workflow-demo.webm
+```
