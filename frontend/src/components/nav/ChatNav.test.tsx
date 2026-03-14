@@ -24,6 +24,9 @@ vi.mock("../buttons/NewThreadButton", () => ({
 vi.mock("../buttons/thread-share-button", () => ({
 	default: () => <button data-testid="share-button" />,
 }));
+vi.mock("@/components/buttons/HelpButton", () => ({
+	HelpButton: () => <button data-testid="help-button" />,
+}));
 
 import { ChatNav } from "./ChatNav";
 

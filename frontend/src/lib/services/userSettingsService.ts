@@ -23,6 +23,7 @@ export interface DefaultsResponse {
 	model_visibility: string[] | null;
 	files: Record<string, PersistedContextFile> | null;
 	deleted_files: string[] | null;
+	onboarding_completed: boolean | null;
 }
 
 export interface UserSettingsResponse {
@@ -46,6 +47,7 @@ export const patchDefaults = async (
 		model_visibility: string[] | null;
 		files: Record<string, PersistedContextFile> | null;
 		deleted_files: string[] | null;
+		onboarding_completed: boolean | null;
 	}>,
 ): Promise<UserSettingsResponse> => {
 	const response = await apiClient.patch("/settings/default", data);

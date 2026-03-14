@@ -502,6 +502,7 @@ function ProjectsCollapsibleGroup({
 			title={`Projects (${projects.length} items)`}
 			defaultOpen={false}
 			className="group/collapsible"
+			data-tour="projects-section"
 		>
 			<SidebarGroup className="border-b border-sidebar-border">
 				<SidebarGroupLabel
@@ -618,6 +619,7 @@ function CollapsibleGroup({
 			title={`${title} (${items.length} items)`}
 			defaultOpen={type === "threads"}
 			className="group/collapsible"
+			{...(type === "threads" ? { "data-tour": "threads-section" } : {})}
 		>
 			<SidebarGroup className="border-b border-sidebar-border">
 				<SidebarGroupLabel
@@ -834,7 +836,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	return (
 		<>
-			<Sidebar {...props} autoFocus={false}>
+			<Sidebar {...props} autoFocus={false} data-tour="sidebar">
 				<SidebarHeader>
 					{/* <VersionSwitcher versions={versions} defaultVersion={versions[0]} /> */}
 					<Link
@@ -868,7 +870,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 								hover:text-sidebar-accent-foreground text-sm
 							`}
 						>
-							<Link to="/assistants" className="flex items-center w-full">
+							<Link
+								to="/assistants"
+								className="flex items-center w-full"
+								data-tour="assistants-link"
+							>
 								<Bot className="w-4 h-4 mr-2" />
 								Assistants
 							</Link>
@@ -884,7 +890,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 								hover:text-sidebar-accent-foreground text-sm
 							`}
 						>
-							<Link to="/memories" className="flex items-center w-full">
+							<Link
+								to="/memories"
+								className="flex items-center w-full"
+								data-tour="memories-link"
+							>
 								<Brain className="w-4 h-4 mr-2" />
 								Memories
 							</Link>
@@ -909,7 +919,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					/>
 				</SidebarContent>
 				<SidebarFooter>
-					<SettingsPopover />
+					<div data-tour="settings-popover">
+						<SettingsPopover />
+					</div>
 				</SidebarFooter>
 				<SidebarRail />
 			</Sidebar>

@@ -55,6 +55,9 @@ class UserSettings(BaseEntity):
     default_deleted_files: Optional[list[str]] = Field(
         default=None, description="Absolute file-path tombstones that suppress implicit defaults"
     )
+    onboarding_completed: Optional[bool] = Field(
+        default=None, description="Whether the user has completed the onboarding tour"
+    )
 
 
 class DefaultsResponse(BaseModel):
@@ -69,6 +72,7 @@ class DefaultsResponse(BaseModel):
     model_visibility: Optional[list[str]] = None
     files: Optional[dict[str, PersistedContextFile]] = None
     deleted_files: Optional[list[str]] = None
+    onboarding_completed: Optional[bool] = None
 
 
 class UserSettingsResponse(BaseModel):
@@ -95,6 +99,9 @@ class PatchDefaultsRequest(BaseModel):
     deleted_files: Optional[list[str]] = Field(
         default=None,
         description="Full replacement list of deleted absolute file-path tombstones, or null to clear",
+    )
+    onboarding_completed: Optional[bool] = Field(
+        default=None, description="Whether the user has completed the onboarding tour"
     )
 
 

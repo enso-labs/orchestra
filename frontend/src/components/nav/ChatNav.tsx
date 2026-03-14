@@ -1,6 +1,7 @@
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import NewThreadButton from "../buttons/NewThreadButton";
 import ShareButton from "../buttons/thread-share-button";
+import { HelpButton } from "@/components/buttons/HelpButton";
 import { SaveAsAssistantDialog } from "@/components/dialogs/SaveAsAssistantDialog";
 import { Save } from "lucide-react";
 import { useAgentContext } from "@/context/AgentContext";
@@ -43,7 +44,7 @@ export function ChatNav({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center">{sidebarTrigger}</div>
 
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2" data-tour="chat-nav-actions">
 						<Button
 							variant="outline"
 							size="icon"
@@ -56,6 +57,7 @@ export function ChatNav({
 						</Button>
 						<ShareButton />
 						<NewThreadButton />
+						<HelpButton />
 						<div className="w-9">
 							<ColorModeButton />
 						</div>
