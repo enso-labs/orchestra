@@ -35,6 +35,10 @@ from src.utils.format import get_time
 # Configurable stream timeout (default 60 seconds)
 STREAM_TIMEOUT_MS = int(os.getenv("STREAM_TIMEOUT_MS", "60000"))
 STREAM_KEY_TTL_SECONDS = 300
+# Max lifetime for a stream_from_redis consumer (default 10 minutes)
+MAX_STREAM_LIFETIME_SECONDS = int(os.getenv("MAX_STREAM_LIFETIME_SECONDS", "600"))
+# After this many consecutive empty XREAD results, assume worker is dead
+MAX_CONSECUTIVE_EMPTY = int(os.getenv("MAX_STREAM_CONSECUTIVE_EMPTY", "5"))
 
 
 def get_distributed_stream_key(thread_id: str, run_id: str) -> str:
@@ -429,6 +433,8 @@ async def stream_from_redis(thread_id: str, run_id: str, after: str = "0"):
     import redis.asyncio as redis
     from src.workers.broker import REDIS_URL
 
+    import time
+
     stream_key = get_distributed_stream_key(thread_id, run_id)
     redis_client = redis.from_url(REDIS_URL)
     last_id = after or "0"
@@ -445,7 +451,22 @@ async def stream_from_redis(thread_id: str, run_id: str, after: str = "0"):
             await asyncio.sleep(poll_interval)
             waited += poll_interval
 
+        # Fix 3: Track lifetime and consecutive empty reads
+        start_time = time.monotonic()
+        consecutive_empty = 0
+
         while True:
+            # Check max lifetime
+            elapsed = time.monotonic() - start_time
+            if elapsed > MAX_STREAM_LIFETIME_SECONDS:
+                logger.warning(
+                    f"stream_from_redis exceeded max lifetime ({MAX_STREAM_LIFETIME_SECONDS}s) "
+                    f"for thread={thread_id} run={run_id}"
+                )
+                yield f'data: ["error", {{"error": "Stream timed out after {MAX_STREAM_LIFETIME_SECONDS}s"}}]\n\n'
+                yield "data: [DONE]\n\n"
+                return
+
             # Block for configurable time waiting for messages (default 60s)
             messages = await redis_client.xread(
                 {stream_key: last_id},
@@ -453,9 +474,21 @@ async def stream_from_redis(thread_id: str, run_id: str, after: str = "0"):
             )
 
             if not messages:
+                consecutive_empty += 1
+                if consecutive_empty >= MAX_CONSECUTIVE_EMPTY:
+                    logger.warning(
+                        f"stream_from_redis: {consecutive_empty} consecutive empty reads "
+                        f"for thread={thread_id} run={run_id} — worker likely crashed"
+                    )
+                    yield 'data: ["error", {"error": "Stream stalled — worker may have crashed"}]\n\n'
+                    yield "data: [DONE]\n\n"
+                    return
                 # No messages yet, yield a keep-alive comment
                 yield ": keep-alive\n\n"
                 continue
+
+            # Reset consecutive empty counter on successful read
+            consecutive_empty = 0
 
             for stream, entries in messages:
                 for entry_id, data in entries:

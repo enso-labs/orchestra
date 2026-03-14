@@ -162,9 +162,15 @@ export class DistributedStreamSource implements StreamSource {
 			} catch (error) {
 				const isError = error instanceof Error;
 				const status = isError ? this.getErrorStatus(error) : undefined;
+				// Fix 2: Treat 404 as retryable for the first 3 attempts.
+				// After a fresh POST /llm/stream 202, a 404 on the stream endpoint
+				// almost certainly means the worker hasn't created the Redis key yet.
+				const is404Race = status === 404 && attempt < 3;
 				const canRetry =
 					isError &&
-					(this.isRecoverableClose(error) || isRetryableError(error, status)) &&
+					(is404Race ||
+						this.isRecoverableClose(error) ||
+						isRetryableError(error, status)) &&
 					attempt < MAX_ATTEMPTS - 1;
 
 				if (canRetry) {

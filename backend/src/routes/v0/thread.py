@@ -1,4 +1,5 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
+import os
 import uuid
 from fastapi import APIRouter, Body, HTTPException, Depends, Query, status
 from fastapi.responses import Response, UJSONResponse, StreamingResponse
@@ -264,13 +265,57 @@ async def stream_thread(
                 detail=f"Run {run_id} is no longer retained for thread {thread_id}",
             )
 
+        sse_headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+
+        # Fix 4: Detect stale "running" status from a dead worker
+        max_stream_lifetime = int(os.getenv("MAX_STREAM_LIFETIME_SECONDS", "600"))
+        active_stream_started_at = thread_metadata.get("active_stream_started_at")
+        if stream_status == "running" and active_stream_started_at:
+            from src.utils.format import get_time
+            from datetime import datetime
+
+            try:
+                started = datetime.fromisoformat(active_stream_started_at)
+                now = datetime.fromisoformat(get_time())
+                elapsed = (now - started).total_seconds()
+                if elapsed > max_stream_lifetime:
+                    logger.warning(
+                        f"Stale running stream detected for thread {thread_id} run {active_run_id}: "
+                        f"started {elapsed:.0f}s ago (limit {max_stream_lifetime}s)"
+                    )
+                    # Update stream_status to error so future requests don't hit this path
+                    if user:
+                        async with get_checkpoint_db() as checkpointer:
+                            svc = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+                            await svc.thread_service.update(
+                                thread_id,
+                                {**thread_metadata, "stream_status": "error"},
+                            )
+                    raise HTTPException(
+                        status_code=status.HTTP_410_GONE,
+                        detail=f"Stream for thread {thread_id} run {active_run_id} has expired (worker likely crashed)",
+                    )
+            except (ValueError, TypeError):
+                pass  # If timestamp is unparseable, skip stale detection
+
+        # Fix 1: When stream_status is "running" and run_id matches, skip the
+        # distributed_stream_exists() pre-check. The worker may not have created
+        # the Redis stream key yet, but stream_from_redis() has its own internal
+        # 30-second wait loop that handles this gracefully.
+        if active_run_id == run_id and stream_status == "running":
+            return StreamingResponse(
+                stream_from_redis(thread_id, run_id, after or "0"),
+                media_type="text/event-stream",
+                headers=sse_headers,
+            )
+
+        # For completed/errored/aborted streams, check if Redis still has the data
         stream_exists = await distributed_stream_exists(thread_id, run_id)
         if not stream_exists:
-            if active_run_id == run_id and stream_status == "running":
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=f"Distributed stream for thread {thread_id} run {run_id} is not ready yet",
-                )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Distributed stream for thread {thread_id} run {run_id} was not found",
@@ -279,11 +324,7 @@ async def stream_thread(
         return StreamingResponse(
             stream_from_redis(thread_id, run_id, after or "0"),
             media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",  # Disable nginx buffering
-            },
+            headers=sse_headers,
         )
     except HTTPException:
         raise
