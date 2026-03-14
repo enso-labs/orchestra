@@ -203,3 +203,65 @@ agent-browser record stop
 # 5. Verify
 ls -la workflow-demo.webm
 ```
+
+## Video-to-GIF Conversion
+
+Convert a recorded `.webm` video to a high-quality animated GIF using ffmpeg's two-pass palettegen/paletteuse pipeline. This produces significantly better color quality than a single-pass conversion.
+
+### Conversion Command Template
+
+Run this two-pass ffmpeg command via Bash, substituting `<input>`, `<output>`, `<fps>`, and `<max_width>` with actual values:
+
+```bash
+ffmpeg -i <input>.webm -filter_complex "[0:v] fps=<fps>,scale=<max_width>:-1:flags=lanczos,split [a][b];[a] palettegen=stats_mode=full [p];[b][p] paletteuse=dither=sierra2_4a" -loop 0 <output>.gif
+```
+
+**Filter breakdown:**
+
+| Filter | Purpose |
+|--------|---------|
+| `fps=<fps>` | Set output frame rate (default 12, range 5–30) |
+| `scale=<max_width>:-1:flags=lanczos` | Scale width to max_width, preserve aspect ratio, use Lanczos resampling for high-quality downscaling |
+| `split [a][b]` | Duplicate the stream for two-pass processing |
+| `palettegen=stats_mode=full` | Generate an optimal 256-color palette from all frames |
+| `paletteuse=dither=sierra2_4a` | Apply the palette with Sierra dithering for smooth gradients |
+| `-loop 0` | Loop the GIF infinitely |
+
+### Default Values
+
+Use these defaults unless the user specifies otherwise:
+
+- **FPS**: 12 (range 5–30)
+- **Max width**: 800px (range 320–1920)
+
+If the user requests custom values, substitute them in the command. Clamp values to the valid ranges — if a user requests 60 FPS, use 30; if they request 100px width, use 320.
+
+### Example: Convert with Defaults
+
+```bash
+ffmpeg -i workflow-demo.webm -filter_complex "[0:v] fps=12,scale=800:-1:flags=lanczos,split [a][b];[a] palettegen=stats_mode=full [p];[b][p] paletteuse=dither=sierra2_4a" -loop 0 workflow-demo.gif
+```
+
+### Example: Convert with Custom Settings
+
+User requests 24 FPS at 1280px max width:
+
+```bash
+ffmpeg -i workflow-demo.webm -filter_complex "[0:v] fps=24,scale=1280:-1:flags=lanczos,split [a][b];[a] palettegen=stats_mode=full [p];[b][p] paletteuse=dither=sierra2_4a" -loop 0 workflow-demo.gif
+```
+
+### Post-Conversion Steps
+
+After the ffmpeg command completes:
+
+1. **Verify the GIF exists and is non-empty:**
+   ```bash
+   ls -la <output>.gif
+   ```
+
+2. **Delete the intermediate .webm file** (only after confirming the GIF was created successfully):
+   ```bash
+   rm <input>.webm
+   ```
+
+3. **Report the result** to the user with the output path and file size.
