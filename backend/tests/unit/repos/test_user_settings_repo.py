@@ -33,6 +33,18 @@ class TestUserSettingsRepo(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.store = InMemoryStore()
         self.repo = UserSettingsRepo(user_id=TEST_USER_ID, store=self.store)
+        # Disable Redis cache for unit tests -- cache tests live in test_user_settings_cache.py
+        self._cache_patches = [
+            patch.object(self.repo, "_get_cached", return_value=None),
+            patch.object(self.repo, "_set_cached", return_value=None),
+            patch.object(self.repo, "_invalidate_cache", return_value=None),
+        ]
+        for p in self._cache_patches:
+            p.start()
+
+    async def asyncTearDown(self):
+        for p in self._cache_patches:
+            p.stop()
 
     # ------------------------------------------------------------------
     # get_settings

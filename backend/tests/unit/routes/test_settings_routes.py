@@ -2,7 +2,7 @@
 
 import json
 from typing import AsyncGenerator
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -75,6 +75,12 @@ async def settings_client() -> AsyncGenerator[AsyncClient, None]:
         }
     )
 
+    # Disable Redis cache so tests use only the InMemoryStore
+    fake_redis = AsyncMock()
+    fake_redis.get = AsyncMock(return_value=None)
+    fake_redis.set = AsyncMock(return_value=None)
+    fake_redis.delete = AsyncMock(return_value=None)
+
     with (
         patch(
             "src.repos.user_settings_repo.encrypt_value",
@@ -83,6 +89,10 @@ async def settings_client() -> AsyncGenerator[AsyncClient, None]:
         patch(
             "src.repos.user_settings_repo.decrypt_value",
             side_effect=_mock_decrypt,
+        ),
+        patch(
+            "src.common.utils.redis_cache.get_redis_client",
+            return_value=fake_redis,
         ),
     ):
         transport = ASGITransport(app=app)
