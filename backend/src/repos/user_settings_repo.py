@@ -36,9 +36,11 @@ class UserSettingsRepo(BaseRepo):
             client = await get_redis_client()
             raw = await client.get(self._cache_key())
             if raw is not None:
+                logger.info("settings_cache_hit user_id=%s", self.user_id)
                 return UserSettings.model_validate(json.loads(raw))
+            logger.info("settings_cache_miss user_id=%s", self.user_id)
         except Exception:
-            logger.debug("Redis cache miss/error for %s", self._cache_key())
+            logger.warning("settings_cache_error op=get user_id=%s", self.user_id, exc_info=True)
         return None
 
     async def _set_cached(self, settings: UserSettings) -> None:
@@ -49,8 +51,9 @@ class UserSettingsRepo(BaseRepo):
             client = await get_redis_client()
             data = json.dumps(settings.model_dump(exclude_none=True, mode="json"))
             await client.set(self._cache_key(), data, ex=_CACHE_TTL)
+            logger.info("settings_cache_set user_id=%s ttl=%d", self.user_id, _CACHE_TTL)
         except Exception:
-            logger.debug("Redis cache write error for %s", self._cache_key())
+            logger.warning("settings_cache_error op=set user_id=%s", self.user_id, exc_info=True)
 
     async def _invalidate_cache(self) -> None:
         """Delete cached settings from Redis."""
@@ -59,8 +62,9 @@ class UserSettingsRepo(BaseRepo):
 
             client = await get_redis_client()
             await client.delete(self._cache_key())
+            logger.info("settings_cache_invalidate user_id=%s", self.user_id)
         except Exception:
-            logger.debug("Redis cache invalidation error for %s", self._cache_key())
+            logger.warning("settings_cache_error op=invalidate user_id=%s", self.user_id, exc_info=True)
 
     # ------------------------------------------------------------------
     # Helpers
