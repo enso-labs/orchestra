@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Response, Body, Query
+from fastapi import APIRouter, Depends, Response, Body, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi_cache.decorator import cache
 
@@ -26,16 +26,16 @@ router = APIRouter(tags=["Schedule"])
     operation_id="ruska_recent_executions",
 )
 async def get_recent_executions(
+    request: Request,
     limit: int = Query(default=20, ge=1, le=100),
     user: ProtectedUser = Depends(verify_credentials),
 ):
-    from src.services.db import AsyncSessionLocal
     from src.repos.schedule_execution_repo import ScheduleExecutionRepo
 
-    async with AsyncSessionLocal() as db:
-        repo = ScheduleExecutionRepo(db=db, user_id=str(user.id))
-        executions = await repo.get_recent(limit=limit)
-        return {"executions": [e.to_dict() for e in executions]}
+    store = request.app.state.store
+    repo = ScheduleExecutionRepo(user_id=str(user.id), store=store)
+    executions = await repo.get_recent(limit=limit)
+    return {"executions": [e.model_dump(mode="json") for e in executions]}
 
 
 @router.get(
@@ -43,24 +43,22 @@ async def get_recent_executions(
     operation_id="ruska_executions_by_date",
 )
 async def get_executions_by_date(
+    request: Request,
     start_date: Optional[datetime] = Query(default=None),
     end_date: Optional[datetime] = Query(default=None),
     user: ProtectedUser = Depends(verify_credentials),
 ):
-    from src.services.db import AsyncSessionLocal
     from src.repos.schedule_execution_repo import ScheduleExecutionRepo
 
-    if not start_date or not end_date:
-        # Default to recent if no date range
-        async with AsyncSessionLocal() as db:
-            repo = ScheduleExecutionRepo(db=db, user_id=str(user.id))
-            executions = await repo.get_recent(limit=50)
-            return {"executions": [e.to_dict() for e in executions]}
+    store = request.app.state.store
+    repo = ScheduleExecutionRepo(user_id=str(user.id), store=store)
 
-    async with AsyncSessionLocal() as db:
-        repo = ScheduleExecutionRepo(db=db, user_id=str(user.id))
-        executions = await repo.get_by_date_range(start_date=start_date, end_date=end_date)
-        return {"executions": [e.to_dict() for e in executions]}
+    if not start_date or not end_date:
+        executions = await repo.get_recent(limit=50)
+        return {"executions": [e.model_dump(mode="json") for e in executions]}
+
+    executions = await repo.get_by_date_range(start_date=start_date, end_date=end_date)
+    return {"executions": [e.model_dump(mode="json") for e in executions]}
 
 
 ################################################################################
@@ -90,16 +88,16 @@ async def get_jobs(
 )
 async def get_schedule_executions(
     schedule_id: str,
+    request: Request,
     limit: int = Query(default=50, ge=1, le=200),
     user: ProtectedUser = Depends(verify_credentials),
 ):
-    from src.services.db import AsyncSessionLocal
     from src.repos.schedule_execution_repo import ScheduleExecutionRepo
 
-    async with AsyncSessionLocal() as db:
-        repo = ScheduleExecutionRepo(db=db, user_id=str(user.id))
-        executions = await repo.get_by_schedule(schedule_id=schedule_id, limit=limit)
-        return {"executions": [e.to_dict() for e in executions]}
+    store = request.app.state.store
+    repo = ScheduleExecutionRepo(user_id=str(user.id), store=store)
+    executions = await repo.get_by_schedule(schedule_id=schedule_id, limit=limit)
+    return {"executions": [e.model_dump(mode="json") for e in executions]}
 
 
 ################################################################################

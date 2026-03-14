@@ -7,6 +7,7 @@ from src.schemas.entities.store import Source, Project, Document
 from src.schemas.entities.auth import ApiToken
 from src.schemas.entities.settings import UserSettings
 from src.schemas.entities.memory import Memory
+from src.schemas.entities.schedule_execution import ScheduleExecution
 from src.utils.logger import logger
 
 
@@ -48,6 +49,8 @@ class BaseRepo:
             return UserSettings.model_validate(item.value)
         elif self.entity_type == "memories":
             return Memory.model_validate(item.value)
+        elif self.entity_type == "schedule_executions":
+            return ScheduleExecution.model_validate(item.value)
         else:
             raise ValueError(f"Invalid entity type: {self.entity_type}")
 

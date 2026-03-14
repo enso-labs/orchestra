@@ -2,16 +2,21 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import select, desc
-from sqlalchemy.ext.asyncio import AsyncSession
+from langgraph.store.base import BaseStore, SearchItem
 
-from src.schemas.models.schedule_execution import ScheduleExecution
+from src.repos.base_repo import BaseRepo
+from src.services.db import get_store_in_memory
+from src.schemas.entities.schedule_execution import ScheduleExecution
+from src.schemas.entities import SearchFilter
 
 
-class ScheduleExecutionRepo:
-    def __init__(self, db: AsyncSession, user_id: str):
-        self.db = db
-        self.user_id = user_id
+class ScheduleExecutionRepo(BaseRepo):
+    def __init__(self, user_id: str, store: Optional[BaseStore] = None):
+        store = store or get_store_in_memory()
+        super().__init__(user_id=user_id, store=store, entity_type="schedule_executions")
+
+    def _format(self, item: SearchItem) -> ScheduleExecution:
+        return ScheduleExecution.model_validate(item.value)
 
     async def create(
         self,
@@ -21,18 +26,20 @@ class ScheduleExecutionRepo:
         thread_id: str | None = None,
         metadata: dict | None = None,
     ) -> ScheduleExecution:
+        now = datetime.now()
+        execution_id = str(uuid4())
         execution = ScheduleExecution(
-            id=uuid4(),
+            id=execution_id,
             schedule_id=schedule_id,
-            user_id=self.user_id,
             thread_id=thread_id,
             status=status,
             scheduled_time=scheduled_time,
-            metadata_=metadata or {},
+            started_at=now if status == "running" else None,
+            metadata=metadata or {},
+            created_at=now,
+            updated_at=now,
         )
-        self.db.add(execution)
-        await self.db.commit()
-        await self.db.refresh(execution)
+        await self._set(key=execution_id, value=execution)
         return execution
 
     async def update_status(
@@ -46,68 +53,52 @@ class ScheduleExecutionRepo:
         error_message: str | None = None,
         metadata: dict | None = None,
     ) -> Optional[ScheduleExecution]:
-        result = await self.db.execute(select(ScheduleExecution).filter(ScheduleExecution.id == execution_id))
-        execution = result.scalar_one_or_none()
-        if not execution:
+        item = await self._get(execution_id)
+        if not item:
             return None
 
-        execution.status = status
-        if started_at is not None:
-            execution.started_at = started_at
-        if completed_at is not None:
-            execution.completed_at = completed_at
-        if duration_ms is not None:
-            execution.duration_ms = duration_ms
-        if thread_id is not None:
-            execution.thread_id = thread_id
-        if error_message is not None:
-            execution.error_message = error_message
-        if metadata is not None:
-            execution.metadata_ = metadata
-
-        await self.db.commit()
-        await self.db.refresh(execution)
-        return execution
+        existing = ScheduleExecution.model_validate(item.value)
+        updated = ScheduleExecution(
+            id=existing.id,
+            schedule_id=existing.schedule_id,
+            thread_id=thread_id if thread_id is not None else existing.thread_id,
+            status=status,
+            scheduled_time=existing.scheduled_time,
+            started_at=started_at if started_at is not None else existing.started_at,
+            completed_at=completed_at if completed_at is not None else existing.completed_at,
+            duration_ms=duration_ms if duration_ms is not None else existing.duration_ms,
+            error_message=error_message if error_message is not None else existing.error_message,
+            metadata=metadata if metadata is not None else existing.metadata,
+            created_at=existing.created_at,
+            updated_at=datetime.now(),
+        )
+        await self._set(key=execution_id, value=updated)
+        return updated
 
     async def get_by_schedule(self, schedule_id: str, limit: int = 50) -> list[ScheduleExecution]:
-        result = await self.db.execute(
-            select(ScheduleExecution)
-            .filter(
-                ScheduleExecution.schedule_id == schedule_id,
-                ScheduleExecution.user_id == self.user_id,
-            )
-            .order_by(desc(ScheduleExecution.created_at))
-            .limit(limit)
+        search_filter = SearchFilter(
+            filter={"schedule_id": schedule_id},
+            limit=limit,
         )
-        return list(result.scalars().all())
+        items: list[SearchItem] = await self._search(search_filter)
+        executions = [self._format(item) for item in items]
+        executions.sort(key=lambda e: e.created_at or datetime.min, reverse=True)
+        return executions
 
     async def get_recent(self, limit: int = 20) -> list[ScheduleExecution]:
-        result = await self.db.execute(
-            select(ScheduleExecution)
-            .filter(ScheduleExecution.user_id == self.user_id)
-            .order_by(desc(ScheduleExecution.created_at))
-            .limit(limit)
-        )
-        return list(result.scalars().all())
+        search_filter = SearchFilter(limit=limit)
+        items: list[SearchItem] = await self._search(search_filter)
+        executions = [self._format(item) for item in items]
+        executions.sort(key=lambda e: e.created_at or datetime.min, reverse=True)
+        return executions
 
-    async def get_by_date_range(self, start_date: datetime, end_date: datetime) -> list[ScheduleExecution]:
-        result = await self.db.execute(
-            select(ScheduleExecution)
-            .filter(
-                ScheduleExecution.user_id == self.user_id,
-                ScheduleExecution.created_at >= start_date,
-                ScheduleExecution.created_at <= end_date,
-            )
-            .order_by(desc(ScheduleExecution.created_at))
-        )
-        return list(result.scalars().all())
-
-    async def count_by_status(self, schedule_id: str, status: str) -> int:
-        result = await self.db.execute(
-            select(ScheduleExecution).filter(
-                ScheduleExecution.schedule_id == schedule_id,
-                ScheduleExecution.user_id == self.user_id,
-                ScheduleExecution.status == status,
-            )
-        )
-        return len(list(result.scalars().all()))
+    async def get_by_date_range(
+        self, start_date: datetime, end_date: datetime, limit: int = 200
+    ) -> list[ScheduleExecution]:
+        search_filter = SearchFilter(limit=limit)
+        items: list[SearchItem] = await self._search(search_filter)
+        executions = [self._format(item) for item in items]
+        # Filter by date range in-memory (Store doesn't support date range queries natively)
+        filtered = [e for e in executions if e.created_at and start_date <= e.created_at <= end_date]
+        filtered.sort(key=lambda e: e.created_at or datetime.min, reverse=True)
+        return filtered

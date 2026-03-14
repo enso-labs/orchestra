@@ -48,6 +48,51 @@ def create_trigger(trigger: JobTrigger):
         raise ValueError("Invalid trigger type")
 
 
+async def _record_execution(
+    user_id: str,
+    schedule_id: str,
+    status: str,
+    scheduled_time=None,
+    started_at=None,
+    completed_at=None,
+    duration_ms=None,
+    thread_id=None,
+    error_message=None,
+    metadata=None,
+    execution_id=None,
+):
+    """Helper to create or update execution records via Store-based repo."""
+    from datetime import datetime
+    from src.services.db import get_store_db
+    from src.repos.schedule_execution_repo import ScheduleExecutionRepo
+
+    try:
+        async with get_store_db() as store:
+            repo = ScheduleExecutionRepo(user_id=user_id, store=store)
+            if execution_id:
+                return await repo.update_status(
+                    execution_id=execution_id,
+                    status=status,
+                    started_at=started_at,
+                    completed_at=completed_at,
+                    duration_ms=duration_ms,
+                    thread_id=thread_id,
+                    error_message=error_message,
+                    metadata=metadata,
+                )
+            else:
+                return await repo.create(
+                    schedule_id=schedule_id,
+                    scheduled_time=scheduled_time or datetime.now(),
+                    status=status,
+                    thread_id=thread_id,
+                    metadata=metadata,
+                )
+    except Exception as exc:
+        logger.warning(f"Failed to record execution: {exc}")
+        return None
+
+
 async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None, schedule_id: str = None):
     """
     Standalone function for scheduled LLM invocations.
@@ -62,186 +107,165 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None,
 
     # Record execution start if we have a schedule_id
     if schedule_id:
-        try:
-            from src.services.db import AsyncSessionLocal
-            from src.repos.schedule_execution_repo import ScheduleExecutionRepo
+        execution = await _record_execution(
+            user_id=user_id,
+            schedule_id=schedule_id,
+            status="running",
+            scheduled_time=start_time,
+        )
+        if execution:
+            execution_id = execution.id
 
-            async with AsyncSessionLocal() as db:
-                repo = ScheduleExecutionRepo(db=db, user_id=user_id)
-                execution = await repo.create(
-                    schedule_id=schedule_id,
-                    scheduled_time=start_time,
-                    status="running",
-                )
-                execution.started_at = start_time
-                await db.commit()
-                execution_id = str(execution.id)
-        except Exception as exc:
-            logger.warning(f"Failed to create execution record: {exc}")
+    # Distributed mode: dispatch to TaskIQ worker
+    if DISTRIBUTED_WORKERS:
+        from src.workers.tasks import run_agent_stream
 
-    try:
-        # Distributed mode: dispatch to TaskIQ worker
-        if DISTRIBUTED_WORKERS:
-            from src.workers.tasks import run_agent_stream
+        metadata = task_dict.get("metadata") or {}
+        thread_id = metadata.get("thread_id") or str(uuid4())
+        logger.info(f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker (thread_id={thread_id})")
+        await run_agent_stream.kiq(
+            task_dict=task_dict,
+            user_id=user_id,
+            thread_id=thread_id,
+        )
 
-            metadata = task_dict.get("metadata") or {}
-            thread_id = metadata.get("thread_id") or str(uuid4())
-            logger.info(f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker (thread_id={thread_id})")
-            await run_agent_stream.kiq(
-                task_dict=task_dict,
+        # Mark execution success (dispatch succeeded)
+        if execution_id:
+            elapsed = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+            await _record_execution(
                 user_id=user_id,
+                schedule_id=schedule_id,
+                status="success",
+                execution_id=execution_id,
+                completed_at=datetime.now(timezone.utc),
+                duration_ms=elapsed,
                 thread_id=thread_id,
             )
+        return
 
-            # Mark execution success (dispatch succeeded)
-            if execution_id:
-                try:
-                    elapsed = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
-                    async with AsyncSessionLocal() as db:
-                        repo = ScheduleExecutionRepo(db=db, user_id=user_id)
-                        await repo.update_status(
-                            execution_id=execution_id,
-                            status="success",
-                            completed_at=datetime.now(timezone.utc),
-                            duration_ms=elapsed,
-                            thread_id=thread_id,
-                        )
-                except Exception as exc:
-                    logger.warning(f"Failed to update execution record: {exc}")
-            return
+    # In-process mode: execute directly
+    from src.schemas.entities import LLMRequest
+    from src.agents import construct_agent, Orchestra, init_config
+    from src.services.db import get_checkpoint_db, get_store_db
+    from src.services.context_files import resolve_context_files, select_memory_sources
+    from src.contexts.service import ServiceContext
+    from src.agents import prepare_memory_files
 
-        # In-process mode: execute directly
-        from src.schemas.entities import LLMRequest
-        from src.agents import construct_agent, Orchestra, init_config
-        from src.services.db import get_checkpoint_db, get_store_db
-        from src.services.context_files import resolve_context_files, select_memory_sources
-        from src.contexts.service import ServiceContext
-        from src.agents import prepare_memory_files
+    logger.info(f"🚀 Starting scheduled LLM job: {title}")
 
-        logger.info(f"🚀 Starting scheduled LLM job: {title}")
+    # Reconstruct LLMRequest from dict
+    params = LLMRequest(**task_dict)
+    params.metadata.user_id = user_id
+    params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
+    logger.info("✓ Successfully reconstructed LLMRequest")
 
-        # Reconstruct LLMRequest from dict
-        params = LLMRequest(**task_dict)
-        params.metadata.user_id = user_id
-        params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
-        logger.info("✓ Successfully reconstructed LLMRequest")
+    # Initialize config and get files and todos
+    config = init_config(params, user_id)
+    files_map = config["metadata"].get("files", {})
+    todos_list = config["metadata"].get("todos", [])
 
-        # Initialize config and get files and todos
-        config = init_config(params, user_id)
-        files_map = config["metadata"].get("files", {})
-        todos_list = config["metadata"].get("todos", [])
-
-        async with (
-            get_store_db() as store,
-            get_checkpoint_db() as checkpointer,
-        ):
+    async with (
+        get_store_db() as store,
+        get_checkpoint_db() as checkpointer,
+    ):
+        try:
+            service_context = ServiceContext(user_id=user_id, store=store, config=config, checkpointer=checkpointer)
+            params = await service_context.llm_service.assistant(params)
+            memory_files, _memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
+            explicit_files = {
+                **(files_map or {}),
+                **(params.input.files or {}),
+            }
+            memory_sources = select_memory_sources(
+                explicit_files=explicit_files,
+                memory_files=memory_files,
+            )
+            selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
+            params.input.files = await resolve_context_files(
+                user_id=user_id,
+                store=store,
+                memory_files=selected_memory_files,
+                explicit_files=explicit_files,
+            )
+            agent: Orchestra = await construct_agent(
+                instructions=params.instructions,
+                system_prompt=params.system_prompt,
+                tools=params.tools,
+                model=params.model,
+                subagents=params.subagents,
+                checkpointer=checkpointer,
+                service_context=service_context,
+                memory=memory_sources,
+            )
+            params.input.messages[-1].model = agent.model
             try:
-                service_context = ServiceContext(user_id=user_id, store=store, config=config, checkpointer=checkpointer)
-                params = await service_context.llm_service.assistant(params)
-                memory_files, _memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
-                explicit_files = {
-                    **(files_map or {}),
-                    **(params.input.files or {}),
-                }
-                memory_sources = select_memory_sources(
-                    explicit_files=explicit_files,
-                    memory_files=memory_files,
-                )
-                selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
-                params.input.files = await resolve_context_files(
-                    user_id=user_id,
-                    store=store,
-                    memory_files=selected_memory_files,
-                    explicit_files=explicit_files,
-                )
-                agent: Orchestra = await construct_agent(
-                    instructions=params.instructions,
-                    system_prompt=params.system_prompt,
-                    tools=params.tools,
-                    model=params.model,
-                    subagents=params.subagents,
-                    checkpointer=checkpointer,
-                    service_context=service_context,
-                    memory=memory_sources,
-                )
-                params.input.messages[-1].model = agent.model
-                try:
-                    if not hasattr(params.input.messages[-1], "type"):
-                        params.input = params.input.to_langchain_messages()
-                except Exception:
+                if not hasattr(params.input.messages[-1], "type"):
                     params.input = params.input.to_langchain_messages()
+            except Exception:
+                params.input = params.input.to_langchain_messages()
 
-                ctx_schema = ContextSchema(model=params.model, user_id=user_id)
-                response = await agent.invoke(params.input, config=config, context=ctx_schema)
-                logger.info("✓ LLM invocation completed successfully")
+            ctx_schema = ContextSchema(model=params.model, user_id=user_id)
+            response = await agent.invoke(params.input, config=config, context=ctx_schema)
+            logger.info("✓ LLM invocation completed successfully")
 
-                files_map = {**(params.input.files or {}), **response.get("files", {})}
-                todos_list = [*todos_list, *response.get("todos", [])]
+            files_map = {**(params.input.files or {}), **response.get("files", {})}
+            todos_list = [*todos_list, *response.get("todos", [])]
 
-                # Mark execution success
-                if execution_id:
-                    try:
-                        elapsed = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
-                        async with AsyncSessionLocal() as db:
-                            repo = ScheduleExecutionRepo(db=db, user_id=user_id)
-                            await repo.update_status(
-                                execution_id=execution_id,
-                                status="success",
-                                completed_at=datetime.now(timezone.utc),
-                                duration_ms=elapsed,
-                                thread_id=params.metadata.thread_id,
-                            )
-                    except Exception as exc:
-                        logger.warning(f"Failed to update execution record: {exc}")
+            # Mark execution success
+            if execution_id:
+                elapsed = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+                await _record_execution(
+                    user_id=user_id,
+                    schedule_id=schedule_id,
+                    status="success",
+                    execution_id=execution_id,
+                    completed_at=datetime.now(timezone.utc),
+                    duration_ms=elapsed,
+                    thread_id=params.metadata.thread_id,
+                )
 
-                return response
-            except Exception as e:
-                logger.error(f"❌ Error in scheduled job: {e}", exc_info=True)
+            return response
+        except Exception as e:
+            logger.error(f"❌ Error in scheduled job: {e}", exc_info=True)
 
-                # Mark execution failure
-                if execution_id:
-                    try:
-                        elapsed = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
-                        async with AsyncSessionLocal() as db:
-                            repo = ScheduleExecutionRepo(db=db, user_id=user_id)
-                            await repo.update_status(
-                                execution_id=execution_id,
-                                status="failure",
-                                completed_at=datetime.now(timezone.utc),
-                                duration_ms=elapsed,
-                                error_message=str(e)[:2000],
-                            )
-                    except Exception as exc:
-                        logger.warning(f"Failed to update execution record: {exc}")
+            # Mark execution failure
+            if execution_id:
+                elapsed = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+                await _record_execution(
+                    user_id=user_id,
+                    schedule_id=schedule_id,
+                    status="failure",
+                    execution_id=execution_id,
+                    completed_at=datetime.now(timezone.utc),
+                    duration_ms=elapsed,
+                    error_message=str(e)[:2000],
+                )
 
-                raise
-            finally:
-                if service_context.user_id and service_context.checkpointer:
-                    final_state = await agent.graph.aget_state(config)
-                    configurable = {
-                        **final_state.config.get("configurable", {}),
-                        **config["configurable"],
-                    }
-                    messages = final_state.values.get("messages", [])
-                    messages[-1].model = agent.model
-                    service_context.store.fields = ["messages", "files"]
-                    await service_context.thread_service.update(
-                        thread_id=configurable.get("thread_id"),
-                        data={
-                            "thread_id": configurable.get("thread_id"),
-                            "checkpoint_id": configurable.get("checkpoint_id"),
-                            "assistant_id": configurable.get("assistant_id"),
-                            "project_id": configurable.get("project_id"),
-                            "messages": messages,
-                            "todos": todos_list,
-                            "files": files_map,
-                            "updated_at": get_time(),
-                        },
-                    )
-                    logger.info(f"checkpoint: {ujson.dumps(configurable)}")
-    except Exception:
-        # Re-raise but ensure we don't mask the original exception
-        raise
+            raise
+        finally:
+            if service_context.user_id and service_context.checkpointer:
+                final_state = await agent.graph.aget_state(config)
+                configurable = {
+                    **final_state.config.get("configurable", {}),
+                    **config["configurable"],
+                }
+                messages = final_state.values.get("messages", [])
+                messages[-1].model = agent.model
+                service_context.store.fields = ["messages", "files"]
+                await service_context.thread_service.update(
+                    thread_id=configurable.get("thread_id"),
+                    data={
+                        "thread_id": configurable.get("thread_id"),
+                        "checkpoint_id": configurable.get("checkpoint_id"),
+                        "assistant_id": configurable.get("assistant_id"),
+                        "project_id": configurable.get("project_id"),
+                        "messages": messages,
+                        "todos": todos_list,
+                        "files": files_map,
+                        "updated_at": get_time(),
+                    },
+                )
+                logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
 
 def create_job(job: Job):
@@ -375,26 +399,16 @@ class ScheduleService:
         title = job.kwargs.get("title", "Untitled Schedule")
         thread_id = str(uuid4())
 
-        # Create execution record
-        execution_id = None
-        try:
-            from src.services.db import AsyncSessionLocal
-            from src.repos.schedule_execution_repo import ScheduleExecutionRepo
-
-            async with AsyncSessionLocal() as db:
-                repo = ScheduleExecutionRepo(db=db, user_id=self.user_id)
-                execution = await repo.create(
-                    schedule_id=job_id,
-                    scheduled_time=datetime.now(timezone.utc),
-                    status="running",
-                    thread_id=thread_id,
-                    metadata={"trigger": "manual"},
-                )
-                execution.started_at = datetime.now(timezone.utc)
-                await db.commit()
-                execution_id = str(execution.id)
-        except Exception as exc:
-            logger.warning(f"Failed to create execution record for run-now: {exc}")
+        # Create execution record via Store
+        execution = await _record_execution(
+            user_id=str(self.user_id),
+            schedule_id=job_id,
+            status="running",
+            scheduled_time=datetime.now(timezone.utc),
+            thread_id=thread_id,
+            metadata={"trigger": "manual"},
+        )
+        execution_id = execution.id if execution else str(uuid4())
 
         # Dispatch via TaskIQ
         from src.constants import DISTRIBUTED_WORKERS
@@ -423,7 +437,7 @@ class ScheduleService:
                 misfire_grace_time=300,
             )
 
-        return {"execution_id": execution_id or str(uuid4()), "thread_id": thread_id}
+        return {"execution_id": execution_id, "thread_id": thread_id}
 
     def delete_job(self, job_id: str) -> None:
         try:
