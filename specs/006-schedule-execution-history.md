@@ -6,67 +6,41 @@ Orchestra's scheduling system (APScheduler + TaskIQ) fires cron jobs but provide
 
 ## Changes
 
-### 1. Alembic migration: `schedule_executions` table
+### 1. Pydantic entity
 
-**File:** `backend/migrations/versions/0002_add_schedule_executions.py`
-
-```sql
-CREATE TABLE schedule_executions (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    schedule_id     VARCHAR NOT NULL,
-    user_id         VARCHAR NOT NULL,
-    thread_id       VARCHAR,
-    status          VARCHAR NOT NULL DEFAULT 'scheduled',
-    scheduled_time  TIMESTAMPTZ NOT NULL,
-    started_at      TIMESTAMPTZ,
-    completed_at    TIMESTAMPTZ,
-    duration_ms     INTEGER,
-    error_message   TEXT,
-    metadata        JSONB DEFAULT '{}',
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX ix_schedule_executions_schedule_id ON schedule_executions (schedule_id);
-CREATE INDEX ix_schedule_executions_user_id ON schedule_executions (user_id);
-CREATE INDEX ix_schedule_executions_status ON schedule_executions (status);
-CREATE INDEX ix_schedule_executions_created_at ON schedule_executions (created_at DESC);
-```
-
-Columns match the frontend `ScheduleExecution` interface exactly.
-
-### 2. SQLAlchemy model
-
-**File:** `backend/src/schemas/models/schedule_execution.py`
+**File:** `backend/src/schemas/entities/schedule_execution.py`
 
 ```python
-class ScheduleExecution(Base):
-    __tablename__ = "schedule_executions"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
-    schedule_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
-    user_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
-    thread_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    status: Mapped[str] = mapped_column(String, nullable=False, default="scheduled")
-    scheduled_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+class ScheduleExecution(BaseModel):
+    id: str
+    schedule_id: str
+    thread_id: Optional[str] = None
+    status: str = "scheduled"  # scheduled | running | success | failure | skipped
+    scheduled_time: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+    error_message: Optional[str] = None
+    metadata: dict = Field(default_factory=dict)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 ```
 
-### 3. Repository
+Fields match the frontend `ScheduleExecution` interface exactly.
+
+### 2. Repository (LangGraph Store pattern)
 
 **File:** `backend/src/repos/schedule_execution_repo.py`
 
-Following the `UserRepo` SQL pattern (not BaseRepo/Store pattern):
+Following the `MemoryRepo`/`ThreadRepo` BaseRepo pattern with namespace `(user_id, "schedule_executions")`:
 
-- `create(schedule_id, user_id, scheduled_time, **kwargs) -> ScheduleExecution`
+- `create(schedule_id, scheduled_time, **kwargs) -> ScheduleExecution`
 - `update_status(execution_id, status, **kwargs) -> ScheduleExecution | None`
-- `get_by_schedule(schedule_id, user_id, limit=50) -> list[ScheduleExecution]`
-- `get_recent(user_id, limit=20) -> list[ScheduleExecution]`
-- `get_by_date_range(user_id, start_date, end_date) -> list[ScheduleExecution]`
+- `get_by_schedule(schedule_id, limit=50) -> list[ScheduleExecution]`
+- `get_recent(limit=20) -> list[ScheduleExecution]`
+- `get_by_date_range(start_date, end_date) -> list[ScheduleExecution]`
+
+No Alembic migration required — data is stored in the LangGraph Postgres Store.
 
 ### 4. Record executions in `scheduled_llm_invoke`
 
@@ -131,9 +105,9 @@ class RunNowResponse(BaseModel):
 
 ## Files Modified
 
-- `backend/migrations/versions/0002_add_schedule_executions.py` (new)
-- `backend/src/schemas/models/schedule_execution.py` (new)
+- `backend/src/schemas/entities/schedule_execution.py` (new)
 - `backend/src/repos/schedule_execution_repo.py` (new)
+- `backend/src/repos/base_repo.py` (modified — add schedule_executions to _format)
 - `backend/src/services/schedule.py` (modified)
 - `backend/src/routes/v0/schedule.py` (modified)
 - `backend/src/schemas/entities/schedule.py` (modified)
@@ -141,14 +115,11 @@ class RunNowResponse(BaseModel):
 ## Verification
 
 ```bash
-# Run migration
-alembic upgrade head
-
-# Verify table exists
-psql -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'schedule_executions';"
-
 # Create a schedule, wait for execution, check history
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v0/schedules/$SCHEDULE_ID/executions
+
+# Recent executions across all schedules
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v0/schedules/executions/recent
 
 # Run now
 curl -X POST -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v0/schedules/$JOB_ID/run
