@@ -58,6 +58,7 @@ class UserSettings(BaseEntity):
     onboarding_completed: Optional[bool] = Field(
         default=None, description="Whether the user has completed the onboarding tour"
     )
+    default_timezone: Optional[str] = Field(default=None, description="User's preferred IANA timezone identifier")
 
 
 class DefaultsResponse(BaseModel):
@@ -73,6 +74,7 @@ class DefaultsResponse(BaseModel):
     files: Optional[dict[str, PersistedContextFile]] = None
     deleted_files: Optional[list[str]] = None
     onboarding_completed: Optional[bool] = None
+    timezone: Optional[str] = None
 
 
 class UserSettingsResponse(BaseModel):
@@ -103,6 +105,7 @@ class PatchDefaultsRequest(BaseModel):
     onboarding_completed: Optional[bool] = Field(
         default=None, description="Whether the user has completed the onboarding tour"
     )
+    timezone: Optional[str] = Field(default=None, description="IANA timezone identifier, or null to clear")
 
 
 class UpsertProviderKeyRequest(BaseModel):

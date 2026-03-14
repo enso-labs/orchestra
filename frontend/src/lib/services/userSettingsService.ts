@@ -24,6 +24,7 @@ export interface DefaultsResponse {
 	files: Record<string, PersistedContextFile> | null;
 	deleted_files: string[] | null;
 	onboarding_completed: boolean | null;
+	timezone: string | null;
 }
 
 export interface UserSettingsResponse {
@@ -48,6 +49,7 @@ export const patchDefaults = async (
 		files: Record<string, PersistedContextFile> | null;
 		deleted_files: string[] | null;
 		onboarding_completed: boolean | null;
+		timezone: string | null;
 	}>,
 ): Promise<UserSettingsResponse> => {
 	const response = await apiClient.patch("/settings/default", data);
