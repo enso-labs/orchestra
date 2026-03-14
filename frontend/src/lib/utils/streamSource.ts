@@ -198,7 +198,10 @@ export class DistributedStreamSource implements StreamSource {
 			headers["Authorization"] = `Bearer ${token}`;
 		}
 
-		const url = new URL(`${VITE_API_URL}/threads/${this.threadId}/stream`);
+		const url = new URL(
+			`${VITE_API_URL}/threads/${this.threadId}/stream`,
+			window.location.origin,
+		);
 		url.searchParams.set("run_id", this.runId);
 		if (this.lastEventId) {
 			url.searchParams.set("after", this.lastEventId);

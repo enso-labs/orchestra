@@ -40,10 +40,18 @@ class UserSettingsRepo(BaseRepo):
         return settings
 
     def _decrypt_keys(self, settings: UserSettings) -> dict[str, str]:
-        """Return decrypted key map, or empty dict if nothing stored."""
+        """Return decrypted key map, or empty dict if nothing stored or key mismatch."""
         if not settings.encrypted_keys:
             return {}
-        return decrypt_value(settings.encrypted_keys)
+        try:
+            return decrypt_value(settings.encrypted_keys)
+        except ValueError:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Failed to decrypt user settings keys (APP_SECRET_KEY mismatch). Returning empty keys."
+            )
+            return {}
 
     def _encrypt_keys(self, keys: dict[str, str]) -> Optional[str]:
         if not keys:
