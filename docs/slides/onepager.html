@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruska AI - 1-Page Handout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#09090b',
+            foreground: '#fafafa',
+            card: '#0f0f12',
+            'green-accent': '#22c55e',
+            'green-muted': '#4ade80',
+            'purple-accent': '#a855f7',
+            'purple-muted': '#c084fc',
+            'muted-fg': '#a1a1aa',
+            border: '#27272a',
+          },
+          fontFamily: {
+            montserrat: ['Montserrat', 'sans-serif'],
+            space: ['"Space Grotesk"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    @page {
+      size: letter;
+      margin: 0.35in;
+    }
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .page { padding: 0; max-width: none; }
+    }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: #09090b;
+      color: #fafafa;
+      margin: 0;
+      padding: 0;
+    }
+    .page {
+      max-width: 7.7in;
+      margin: 0 auto;
+      padding: 0.35in;
+    }
+    .section { padding: 6px 0; border-bottom: 1px solid #27272a; }
+    .section-label { font-size: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.15em; color: #a1a1aa; margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between" style="padding-bottom:6px;border-bottom:1px solid #27272a;">
+      <div class="flex items-center gap-2.5">
+        <img src="images/ruska_logo_200.png" alt="Ruska AI" class="w-9 h-9 rounded-lg">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-space font-bold text-xl tracking-tight leading-none">Ruska AI</h1>
+            <span class="inline-flex items-center gap-1 rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px">
+              <span class="inline-flex rounded-full h-1.5 w-1.5 bg-green-accent"></span>
+              <span class="text-[8px] font-medium text-green-muted">Accepting New Clients</span>
+            </span>
+          </div>
+          <p class="text-[10px] text-muted-fg mt-px font-light">AI Automation Built &amp; Maintained For Your Business</p>
+        </div>
+      </div>
+      <div class="flex gap-1">
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">Enterprise-Grade</span>
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">Not Vibe Coded</span>
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">You Own Everything</span>
+      </div>
+    </div>
+
+    <!-- WHAT I DO -->
+    <div class="section">
+      <p class="section-label">What I Do</p>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="bg-card border border-border rounded-lg px-2 py-2 text-center">
+          <div class="mx-auto mb-1 w-6 h-6 flex items-center justify-center rounded-md bg-green-accent/20">
+            <svg class="w-3.5 h-3.5 text-green-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+            </svg>
+          </div>
+          <p class="font-medium text-[10px] text-foreground">Identify</p>
+          <p class="text-[9px] text-muted-fg mt-px font-light leading-tight">Map workflows, find automation opportunities</p>
+        </div>
+        <div class="bg-card border border-border rounded-lg px-2 py-2 text-center">
+          <div class="mx-auto mb-1 w-6 h-6 flex items-center justify-center rounded-md bg-green-accent/20">
+            <svg class="w-3.5 h-3.5 text-green-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.1-5.1m0 0L11.42 4.97m-5.1 5.1H21M3 21V3"/>
+            </svg>
+          </div>
+          <p class="font-medium text-[10px] text-foreground">Build</p>
+          <p class="text-[9px] text-muted-fg mt-px font-light leading-tight">Production-ready systems with proven AI tools</p>
+        </div>
+        <div class="bg-card border border-border rounded-lg px-2 py-2 text-center">
+          <div class="mx-auto mb-1 w-6 h-6 flex items-center justify-center rounded-md bg-green-accent/20">
+            <svg class="w-3.5 h-3.5 text-green-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/>
+            </svg>
+          </div>
+          <p class="font-medium text-[10px] text-foreground">Maintain</p>
+          <p class="text-[9px] text-muted-fg mt-px font-light leading-tight">Monitor, improve, add automations as you grow</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHAT'S INCLUDED -->
+    <div class="section">
+      <p class="section-label">What&apos;s Included</p>
+      <div class="grid grid-cols-3 gap-x-3 gap-y-0.5">
+        <div class="flex items-center gap-1">
+          <svg class="w-2.5 h-2.5 text-green-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-[9px] text-foreground">Custom Automation Setup</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <svg class="w-2.5 h-2.5 text-green-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-[9px] text-foreground">Workflow Integration</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <svg class="w-2.5 h-2.5 text-green-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-[9px] text-foreground">Monitoring &amp; Analytics</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <svg class="w-2.5 h-2.5 text-green-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-[9px] text-foreground">Security &amp; Data Privacy</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <svg class="w-2.5 h-2.5 text-green-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-[9px] text-foreground">Infrastructure Management</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <svg class="w-2.5 h-2.5 text-green-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-[9px] text-foreground">Continuous Improvement</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="section">
+      <p class="section-label">How It Works</p>
+      <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-1.5">
+        <div class="bg-card border-2 border-green-accent/40 rounded-lg px-2 py-1.5 text-center">
+          <div class="mx-auto mb-0.5 w-5 h-5 flex items-center justify-center rounded bg-green-accent/20">
+            <span class="text-green-muted font-space font-bold text-[9px]">1</span>
+          </div>
+          <p class="font-medium text-[10px] text-foreground">Discovery Call</p>
+          <p class="text-[8px] text-muted-fg font-light">Free. 30 min.</p>
+        </div>
+        <svg class="w-3 h-3 text-green-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        <div class="bg-card border border-border rounded-lg px-2 py-1.5 text-center">
+          <div class="mx-auto mb-0.5 w-5 h-5 flex items-center justify-center rounded bg-green-accent/20">
+            <span class="text-green-muted font-space font-bold text-[9px]">2</span>
+          </div>
+          <p class="font-medium text-[10px] text-foreground">Custom Setup</p>
+          <p class="text-[8px] text-muted-fg font-light">2&ndash;4 weeks</p>
+        </div>
+        <svg class="w-3 h-3 text-green-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        <div class="bg-card border border-border rounded-lg px-2 py-1.5 text-center">
+          <div class="mx-auto mb-0.5 w-5 h-5 flex items-center justify-center rounded bg-green-accent/20">
+            <span class="text-green-muted font-space font-bold text-[9px]">3</span>
+          </div>
+          <p class="font-medium text-[10px] text-foreground">Ongoing Retainer</p>
+          <p class="text-[8px] text-muted-fg font-light">Monthly</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH ECOSYSTEM -->
+    <div class="section">
+      <p class="section-label">Technology Ecosystem</p>
+      <div class="flex flex-wrap gap-1 mb-1">
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">Claude Code</span>
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">OpenClaw</span>
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">Orchestra</span>
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">Anthropic Claude</span>
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">LangGraph</span>
+        <span class="rounded-full border border-green-accent/30 bg-green-accent/10 px-1.5 py-px text-[8px] font-medium text-green-muted">MCP</span>
+      </div>
+      <div class="flex flex-wrap gap-1">
+        <span class="rounded-full border border-purple-accent/30 bg-purple-accent/10 px-1.5 py-px text-[8px] font-medium text-purple-muted">Python</span>
+        <span class="rounded-full border border-purple-accent/30 bg-purple-accent/10 px-1.5 py-px text-[8px] font-medium text-purple-muted">Docker</span>
+        <span class="rounded-full border border-purple-accent/30 bg-purple-accent/10 px-1.5 py-px text-[8px] font-medium text-purple-muted">Supabase</span>
+        <span class="rounded-full border border-purple-accent/30 bg-purple-accent/10 px-1.5 py-px text-[8px] font-medium text-purple-muted">Next.js</span>
+        <span class="rounded-full border border-purple-accent/30 bg-purple-accent/10 px-1.5 py-px text-[8px] font-medium text-purple-muted">PostgreSQL</span>
+        <span class="rounded-full border border-purple-accent/30 bg-purple-accent/10 px-1.5 py-px text-[8px] font-medium text-purple-muted">Tailwind CSS</span>
+      </div>
+    </div>
+
+    <!-- TRUST -->
+    <div class="section">
+      <p class="section-label">Why Ruska AI</p>
+      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div class="bg-card border border-green-accent/30 bg-green-accent/5 rounded-lg px-2 py-1.5 text-center">
+          <p class="font-semibold text-[10px] text-foreground">&ldquo;You Own Everything&rdquo;</p>
+          <p class="text-[8px] text-muted-fg font-light leading-snug">No lock-in. Your code, your infrastructure, your IP.</p>
+        </div>
+        <p class="text-[9px] text-muted-fg font-light text-center leading-tight">Ryan Eggleston<br>Founder</p>
+        <div class="bg-card border border-green-accent/30 bg-green-accent/5 rounded-lg px-2 py-1.5 text-center">
+          <p class="font-semibold text-[10px] text-foreground">&ldquo;Full Transparency&rdquo;</p>
+          <p class="text-[8px] text-muted-fg font-light leading-snug">Regular updates. No surprise invoices.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA BAR -->
+    <div style="padding:5px 0;border-bottom:1px solid #27272a;background:linear-gradient(to right, rgba(34,197,94,0.08), rgba(34,197,94,0.15), rgba(34,197,94,0.08));">
+      <div class="flex justify-center items-center gap-5">
+        <div class="text-center">
+          <p class="text-[8px] text-muted-fg font-light">Book a Call</p>
+          <p class="text-[9px] font-medium text-green-muted">cal.com/ruska-ai/ai-audit</p>
+        </div>
+        <div class="w-px h-5 bg-border"></div>
+        <div class="text-center">
+          <p class="text-[8px] text-muted-fg font-light">Services</p>
+          <p class="text-[9px] font-medium text-green-muted">ruska.ai/services</p>
+        </div>
+        <div class="w-px h-5 bg-border"></div>
+        <div class="text-center">
+          <p class="text-[8px] text-muted-fg font-light">Email</p>
+          <p class="text-[9px] font-medium text-green-muted">reggleston@ruska.ai</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT -->
+    <div style="padding-top:6px;">
+      <img src="screenshots/orchestra-chat.png" alt="Orchestra AI Agent Platform" class="w-full rounded-lg border border-border" style="max-height:340px;object-fit:cover;object-position:top;">
+      <p class="text-[8px] text-muted-fg text-center mt-1 font-light">Orchestra &mdash; AI Agent Platform &nbsp;|&nbsp; chat.ruska.ai</p>
+    </div>
+
+  </div>
+</body>
+</html>
