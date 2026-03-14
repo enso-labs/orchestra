@@ -2,6 +2,7 @@ import { ApiTokensSettings } from "@/components/settings/ApiTokensSettings";
 import { DefaultModelSettings } from "@/components/settings/DefaultModelSettings";
 import { SandboxSettings } from "@/components/settings/SandboxSettings";
 import { ModelVisibilitySettings } from "@/components/settings/ModelVisibilitySettings";
+import { TimezoneSettings } from "@/components/settings/TimezoneSettings";
 import { UserApiKeysSettings } from "@/components/settings/UserApiKeysSettings";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
@@ -25,6 +26,7 @@ export default function SettingsPage() {
 								</div>
 
 								<DefaultModelSettings />
+								<TimezoneSettings />
 								<SandboxSettings />
 								<UserApiKeysSettings />
 								<ApiTokensSettings />

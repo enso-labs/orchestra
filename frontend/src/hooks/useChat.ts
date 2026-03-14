@@ -22,6 +22,7 @@ import {
 	upsertActiveStreamRecovery,
 } from "@/lib/utils/activeStreamRecovery";
 import { toast } from "sonner";
+import { getSettings } from "@/lib/services/userSettingsService";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -125,6 +126,14 @@ export default function useChat(): ChatContextType {
 		startTime: number;
 		rate: number | null;
 	} | null>(null);
+
+	const [savedTimezone, setSavedTimezone] = useState<string | null>(null);
+
+	useEffect(() => {
+		getSettings()
+			.then((res) => setSavedTimezone(res.defaults.timezone))
+			.catch(() => {});
+	}, []);
 
 	const [arcade, setArcade] = useState({
 		tools: [] as string[],
@@ -583,7 +592,8 @@ export default function useChat(): ChatContextType {
 			...metadata,
 			assistant_id: agent.id,
 			current_utc: new Date().toISOString(),
-			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			timezone:
+				savedTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
 			language: Intl.DateTimeFormat().resolvedOptions().locale,
 		};
 	};

@@ -34,6 +34,7 @@ def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -
             files=settings.default_files,
             deleted_files=settings.default_deleted_files,
             onboarding_completed=settings.onboarding_completed,
+            timezone=settings.default_timezone,
         ),
         provider_keys=statuses,
     )
