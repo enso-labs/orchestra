@@ -186,6 +186,10 @@ class PublicAssistant(BaseModel):
         return dt.isoformat() if dt else None
 
 
+VALID_STREAM_MODES = {"messages", "values", "updates", "tasks", "debug", "custom", "checkpoints"}
+DEFAULT_STREAM_MODES: list[str] = ["messages", "values"]
+
+
 class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default=None)
@@ -196,6 +200,47 @@ class LLMRequest(BaseModel):
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
     metadata: Optional[Config] = Field(default_factory=Config, description="LangGraph configuration")
+    stream_mode: Optional[List[str]] = Field(
+        default=None,
+        description=(
+            "LangGraph stream modes to receive. Valid values: messages, values, updates, tasks, debug, custom, "
+            "checkpoints. Defaults to ['messages', 'values'] when not provided. Ignored by /llm/invoke."
+        ),
+    )
+
+    @field_validator("stream_mode", mode="before")
+    @classmethod
+    def coerce_and_validate_stream_mode(cls, v):
+        """Coerce string to list, empty list to None, deduplicate, and validate mode names."""
+        if v is None:
+            return None
+        # Coerce single string to list
+        if isinstance(v, str):
+            v = [v]
+        if not isinstance(v, list):
+            raise ValueError("stream_mode must be a string, list of strings, or null")
+        # Empty list falls back to default
+        if len(v) == 0:
+            return None
+        # Validate mode names
+        invalid = [mode for mode in v if mode not in VALID_STREAM_MODES]
+        if invalid:
+            raise ValueError(f"Invalid stream mode(s): {invalid}. Valid options: {sorted(VALID_STREAM_MODES)}")
+        # Deduplicate while preserving order
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for mode in v:
+            if mode not in seen:
+                seen.add(mode)
+                deduped.append(mode)
+        return deduped
+
+    @computed_field
+    @property
+    def resolved_stream_mode(self) -> list[str]:
+        """Return the effective stream modes, falling back to default when stream_mode is None."""
+        return self.stream_mode if self.stream_mode is not None else DEFAULT_STREAM_MODES
+
     # Inference dictation parameters
     generate_files: Optional[bool] = Field(
         default=False,
