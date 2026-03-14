@@ -213,6 +213,77 @@ def handle_multi_mode(chunk: dict):
     return None
 
 
+class _StreamState:
+    """Mutable state container for tracking files and todos during streaming."""
+
+    __slots__ = ("files_map", "todos_list")
+
+    def __init__(self, files_map: dict, todos_list: list):
+        self.files_map = files_map
+        self.todos_list = todos_list
+
+
+def _process_and_format_chunk(chunk, agent_model, state: _StreamState) -> str | None:
+    """Process a raw stream chunk, update state, and return SSE-formatted data or None."""
+    stream_chunk = handle_multi_mode(chunk)
+    if not stream_chunk:
+        return None
+    stream_type = stream_chunk[0]
+    chunk_data = stream_chunk[1]
+    if stream_type == "values" and "files" in chunk_data:
+        state.files_map = {**state.files_map, **chunk_data["files"]}
+    if stream_type == "values" and "todos" in chunk_data:
+        state.todos_list = chunk_data["todos"]
+    data = ujson.dumps(stream_chunk)
+    log_to_file(str(data), agent_model) and APP_LOG_LEVEL == "DEBUG"
+    logger.debug(f"data: {str(data)}")
+    return f"data: {data}\n\n"
+
+
+def _build_astream_kwargs(agent, config, ctx) -> dict:
+    """Build keyword arguments for agent.astream, optionally enabling subgraphs."""
+    kwargs = {
+        "stream_mode": ["messages", "values"],
+        "config": config,
+        "context": ctx,
+    }
+    try:
+        if "subgraphs" in inspect.signature(agent.astream).parameters:
+            kwargs["subgraphs"] = True
+    except Exception:
+        pass
+    return kwargs
+
+
+async def _persist_final_state(
+    agent, config, service_context: ServiceContext, state: _StreamState
+) -> None:
+    """Persist the final checkpoint state after streaming completes."""
+    if not (service_context.user_id and agent):
+        return
+    final_state = await agent.graph.aget_state(config)
+    configurable = {
+        **final_state.config.get("configurable", {}),
+        **config["configurable"],
+    }
+    messages = final_state.values.get("messages", [])
+    service_context.store.fields = ["messages", "files"]
+    await service_context.thread_service.update(
+        thread_id=configurable.get("thread_id"),
+        data={
+            "thread_id": configurable.get("thread_id"),
+            "checkpoint_id": configurable.get("checkpoint_id"),
+            "assistant_id": configurable.get("assistant_id"),
+            "project_id": configurable.get("project_id"),
+            "messages": messages,
+            "todos": state.todos_list,
+            "files": state.files_map,
+            "updated_at": get_time(),
+        },
+    )
+    logger.info(f"checkpoint: {ujson.dumps(configurable)}")
+
+
 async def stream_generator(
     input: LLMInput,
     model: BaseChatModel,
@@ -236,7 +307,6 @@ async def stream_generator(
         **(config["metadata"].get("files", {}) or {}),
         **(input.files or {}),
     }
-    todos_list = config["metadata"].get("todos", [])
     memory_files, _memory_sources = await prepare_memory_files(service_context.user_id, service_context.memory_service)
     memory_sources = select_memory_sources(
         explicit_files=explicit_files,
@@ -249,6 +319,10 @@ async def stream_generator(
         memory_files=selected_memory_files,
         explicit_files=explicit_files,
     )
+    state = _StreamState(
+        files_map=files_map,
+        todos_list=config["metadata"].get("todos", []),
+    )
     async with get_checkpoint_db() as checkpointer:
         agent = None
         try:
@@ -257,7 +331,7 @@ async def stream_generator(
                 user_id=service_context.user_id,
             )
             runtime = ToolRuntime(
-                state={"messages": [], "files": files_map},
+                state={"messages": [], "files": state.files_map},
                 context=ctx,
                 tool_call_id="tc",
                 store=service_context.store,
@@ -290,37 +364,13 @@ async def stream_generator(
                 )
             )
             yield f"data: {metadata_event}\n\n"
-            astream_kwargs = {
-                "stream_mode": ["messages", "values"],
-                "config": config,
-                "context": ctx,
-            }
-            try:
-                if "subgraphs" in inspect.signature(agent.astream).parameters:
-                    astream_kwargs["subgraphs"] = True
-            except Exception:
-                # Be conservative if signature inspection fails.
-                pass
+            astream_kwargs = _build_astream_kwargs(agent, config, ctx)
 
-            async for chunk in agent.astream(
-                input,
-                **astream_kwargs,
-            ):
-                # Serialize and yield each chunk as SSE
-                stream_chunk = handle_multi_mode(chunk)
-                if stream_chunk:
-                    stream_type = stream_chunk[0]
-                    chunk_data = stream_chunk[1]
-                    if stream_type == "values" and "files" in chunk_data:
-                        files_map = {**files_map, **chunk_data["files"]}
-                    if stream_type == "values" and "todos" in chunk_data:
-                        todos_list = chunk_data["todos"]
-                    data = ujson.dumps(stream_chunk)
-                    log_to_file(str(data), agent.model) and APP_LOG_LEVEL == "DEBUG"
-                    logger.debug(f"data: {str(data)}")
-                    yield f"data: {data}\n\n"
+            async for chunk in agent.astream(input, **astream_kwargs):
+                sse_line = _process_and_format_chunk(chunk, agent.model, state)
+                if sse_line:
+                    yield sse_line
         except PIIDetectionError as e:
-            # Yield error as SSE if streaming fails
             logger.warning(f"Sensitive data detected in the query: {e}")
             error_msg = ujson.dumps(("error", str(e)))
             yield f"data: {error_msg}\n\n"
@@ -328,12 +378,10 @@ async def stream_generator(
         except Exception as e:
             if is_daytona_error(e):
                 if sandbox_type == "daytona":
-                    # Explicit daytona mode: surface the detailed error
                     logger.error(f"Daytona sandbox error (daytona mode): {e}")
                     error_msg = ujson.dumps(("error", f"Daytona sandbox error: {e}"))
                     yield f"data: {error_msg}\n\n"
                 elif sandbox_type in (None, "auto") and effective_type == "daytona":
-                    # Auto mode: fallback to local StateBackend and retry
                     logger.warning(f"Daytona sandbox error in auto mode, falling back to local: {e}")
                     try:
                         fallback_backend, _ = _create_state_backend(runtime)
@@ -349,22 +397,10 @@ async def stream_generator(
                             api_key=api_key,
                             memory=memory_sources,
                         )
-                        async for chunk in agent.astream(
-                            input,
-                            **astream_kwargs,
-                        ):
-                            stream_chunk = handle_multi_mode(chunk)
-                            if stream_chunk:
-                                stream_type = stream_chunk[0]
-                                chunk_data = stream_chunk[1]
-                                if stream_type == "values" and "files" in chunk_data:
-                                    files_map = {**files_map, **chunk_data["files"]}
-                                if stream_type == "values" and "todos" in chunk_data:
-                                    todos_list = chunk_data["todos"]
-                                data = ujson.dumps(stream_chunk)
-                                log_to_file(str(data), agent.model) and APP_LOG_LEVEL == "DEBUG"
-                                logger.debug(f"data: {str(data)}")
-                                yield f"data: {data}\n\n"
+                        async for chunk in agent.astream(input, **astream_kwargs):
+                            sse_line = _process_and_format_chunk(chunk, agent.model, state)
+                            if sse_line:
+                                yield sse_line
                     except Exception as fallback_err:
                         logger.exception("Fallback also failed in stream_generator: %s", fallback_err)
                         error_msg = ujson.dumps(("error", str(fallback_err)))
@@ -374,37 +410,13 @@ async def stream_generator(
                     error_msg = ujson.dumps(("error", str(e)))
                     yield f"data: {error_msg}\n\n"
             else:
-                # Non-Daytona error: original behavior
                 logger.exception("Error in stream_generator: %s", e)
                 error_msg = ujson.dumps(("error", str(e)))
                 yield f"data: {error_msg}\n\n"
         finally:
             try:
-                if service_context.user_id and checkpointer and agent:
-                    final_state = await agent.graph.aget_state(config)
-                    configurable = {
-                        **final_state.config.get("configurable", {}),
-                        **config["configurable"],
-                    }
-                    messages = final_state.values.get("messages", [])
-
-                    # Update the store with the final messages and files
-                    service_context.store.fields = ["messages", "files"]
-                    await service_context.thread_service.update(
-                        thread_id=configurable.get("thread_id"),
-                        data={
-                            "thread_id": configurable.get("thread_id"),
-                            "checkpoint_id": configurable.get("checkpoint_id"),
-                            "assistant_id": configurable.get("assistant_id"),
-                            "project_id": configurable.get("project_id"),
-                            "messages": messages,
-                            "todos": todos_list,
-                            "files": files_map,
-                            "updated_at": get_time(),
-                        },
-                    )
-                    # Log the update for debugging
-                    logger.info(f"checkpoint: {ujson.dumps(configurable)}")
+                if checkpointer:
+                    await _persist_final_state(agent, config, service_context, state)
             except Exception as e:
                 logger.exception("Failed to persist final checkpoint state: %s", e)
 
