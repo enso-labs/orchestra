@@ -104,17 +104,40 @@ jobs:
                   username: ${{ secrets.GHCR_USERNAME || github.actor }}
                   password: ${{ secrets.GHCR_PAT }}
 
-            - name: Build and push Docker image
+            - name: Build and push API image
               working-directory: ./backend
               run: |
-                  # Use the tag name for the Docker image version
-                  DOCKER_IMAGE=ghcr.io/ruska-ai/orchestra:${GITHUB_REF#refs/tags/}
-                  DOCKER_LATEST=ghcr.io/ruska-ai/orchestra:latest
+                  TAG=${GITHUB_REF#refs/tags/}
+                  docker build --target api \
+                    -t ghcr.io/ruska-ai/orchestra-api:$TAG \
+                    -t ghcr.io/ruska-ai/orchestra-api:latest \
+                    -t ghcr.io/ruska-ai/orchestra:$TAG \
+                    -t ghcr.io/ruska-ai/orchestra:latest \
+                    .
+                  docker push ghcr.io/ruska-ai/orchestra-api:$TAG
+                  docker push ghcr.io/ruska-ai/orchestra-api:latest
+                  docker push ghcr.io/ruska-ai/orchestra:$TAG
+                  docker push ghcr.io/ruska-ai/orchestra:latest
 
-                  echo "Building images: $DOCKER_IMAGE and $DOCKER_LATEST"
-                  docker build --squash -t $DOCKER_IMAGE -t $DOCKER_LATEST .
-                  docker push $DOCKER_IMAGE
-                  docker push $DOCKER_LATEST
+            - name: Build and push Worker image
+              working-directory: ./backend
+              run: |
+                  TAG=${GITHUB_REF#refs/tags/}
+                  docker build --target worker \
+                    -t ghcr.io/ruska-ai/orchestra-worker:$TAG \
+                    -t ghcr.io/ruska-ai/orchestra-worker:latest \
+                    .
+                  docker push ghcr.io/ruska-ai/orchestra-worker:$TAG
+                  docker push ghcr.io/ruska-ai/orchestra-worker:latest
+
+            - name: Report image sizes
+              run: |
+                  echo "## Docker Image Sizes" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "| Image | Size |" >> $GITHUB_STEP_SUMMARY
+                  echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
+                  docker images ghcr.io/ruska-ai/orchestra-api --format "| API | {{.Size}} |" | head -1 >> $GITHUB_STEP_SUMMARY
+                  docker images ghcr.io/ruska-ai/orchestra-worker --format "| Worker | {{.Size}} |" | head -1 >> $GITHUB_STEP_SUMMARY
 
     deploy:
         needs: build
@@ -152,8 +175,9 @@ jobs:
                     echo '--- Logging into GHCR ---'
                     echo \"$GHCR_TOKEN\" | docker login ghcr.io -u \"$GHCR_USERNAME\" --password-stdin
 
-                    echo '--- Pulling new image ---'
-                    docker pull $GHCR_IMAGE:$TAG
+                    echo '--- Pulling new images ---'
+                    docker pull $GHCR_IMAGE-api:$TAG
+                    docker pull $GHCR_IMAGE-worker:$TAG
 
                     echo '--- Starting staging container (graphchat_new) on port 8006 ---'
                     docker stop graphchat_new 2>/dev/null || true
@@ -164,7 +188,7 @@ jobs:
                       --network graphchat_default \
                       --env-file ./backend/.env \
                       -p 8006:8000 \
-                      $GHCR_IMAGE:$TAG
+                      $GHCR_IMAGE-api:$TAG
 
                     echo '--- Waiting a few seconds for startup ---'
                     sleep 10
@@ -201,7 +225,7 @@ jobs:
                       -e APP_VERSION=$TAG \
                       -e VITE_APP_VERSION=$TAG \
                       -p 8005:8000 \
-                      $GHCR_IMAGE:$TAG
+                      $GHCR_IMAGE-api:$TAG
 
                     echo '--- Ensuring redis7 is on graphchat_default network ---'
                     docker network connect graphchat_default redis7 2>/dev/null || echo 'redis7 already on network or not found'
@@ -222,9 +246,7 @@ jobs:
                       -e DB_POOL_MAX_SIZE=5 \
                       --memory=1g \
                       --cpus=1 \
-                      --entrypoint uv \
-                      $GHCR_IMAGE:$TAG \
-                      run taskiq worker src.workers.tasks:broker
+                      $GHCR_IMAGE-worker:$TAG
 
                     echo '--- Worker deployment complete ---'
 

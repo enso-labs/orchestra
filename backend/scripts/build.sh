@@ -22,18 +22,30 @@ FULL_IMAGE="$REGISTRY/$REPOSITORY/$IMAGE_NAME"
 cp "$PROJECT_ROOT/docker/README.md" "$BACKEND_DIR/README.md"
 cp "$PROJECT_ROOT/LICENSE" "$BACKEND_DIR/LICENSE"
 
-# Build the Docker image from backend directory
-docker build --squash -t $FULL_IMAGE:$TAG "$BACKEND_DIR"
-docker tag $FULL_IMAGE:$TAG $FULL_IMAGE:latest
+# Build both targets
+docker build --target api -t $FULL_IMAGE-api:$TAG -t $FULL_IMAGE-api:latest "$BACKEND_DIR"
+docker build --target worker -t $FULL_IMAGE-worker:$TAG -t $FULL_IMAGE-worker:latest "$BACKEND_DIR"
+
+# Backward compat alias (orchestra:TAG -> orchestra-api:TAG)
+docker tag $FULL_IMAGE-api:$TAG $FULL_IMAGE:$TAG
+docker tag $FULL_IMAGE-api:latest $FULL_IMAGE:latest
+
+echo ""
+echo "=== Built Images ==="
+docker images | grep "$FULL_IMAGE" | head -6
 
 ########################################################################
 ## GitHub Container Registry
 ########################################################################
 echo ""
-echo "Do you want to push the image to GitHub Container Registry? (y/n)"
+echo "Do you want to push the images to GitHub Container Registry? (y/n)"
 read -r response
 if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
 then
+  docker push $FULL_IMAGE-api:$TAG
+  docker push $FULL_IMAGE-api:latest
+  docker push $FULL_IMAGE-worker:$TAG
+  docker push $FULL_IMAGE-worker:latest
   docker push $FULL_IMAGE:$TAG
   docker push $FULL_IMAGE:latest
 fi

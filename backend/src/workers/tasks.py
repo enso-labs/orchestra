@@ -19,7 +19,8 @@ import ujson
 import redis.asyncio as redis
 from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
-from src.workers.broker import broker, REDIS_URL
+from src.workers.broker import broker
+from src.constants.redis import REDIS_URL
 from src.utils.stream import get_distributed_stream_key, STREAM_KEY_TTL_SECONDS
 
 
