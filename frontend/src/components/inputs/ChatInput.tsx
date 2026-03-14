@@ -184,6 +184,7 @@ export default function ChatInput({
 						<Popover open={modelOpen} onOpenChange={setModelOpen}>
 							<PopoverTrigger asChild>
 								<button
+									data-tour="model-selector"
 									title="Change default model"
 									className="cursor-pointer hover:opacity-80 transition-opacity"
 								>
@@ -219,12 +220,14 @@ export default function ChatInput({
 							</PopoverContent>
 						</Popover>
 					)}
-					<ChatSubmitButton
-						abortQuery={abortQuery}
-						handleSubmit={handleSubmit}
-						onRecordingChange={setIsRecording}
-						recorderControls={recorderControls}
-					/>
+					<div data-tour="chat-submit-button">
+						<ChatSubmitButton
+							abortQuery={abortQuery}
+							handleSubmit={handleSubmit}
+							onRecordingChange={setIsRecording}
+							recorderControls={recorderControls}
+						/>
+					</div>
 				</div>
 			</div>
 			<ImagePreviewModal
