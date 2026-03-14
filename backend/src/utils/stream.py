@@ -47,7 +47,7 @@ def get_distributed_stream_key(thread_id: str, run_id: str) -> str:
 
 async def distributed_stream_exists(thread_id: str, run_id: str) -> bool:
     import redis.asyncio as redis
-    from src.constants.redis import REDIS_URL
+    from src.workers.broker import REDIS_URL
 
     redis_client = redis.from_url(REDIS_URL)
     try:
@@ -431,7 +431,7 @@ async def stream_from_redis(thread_id: str, run_id: str, after: str = "0"):
         SSE-formatted strings in the form "data: {...}\\n\\n"
     """
     import redis.asyncio as redis
-    from src.constants.redis import REDIS_URL
+    from src.workers.broker import REDIS_URL
 
     import time
 

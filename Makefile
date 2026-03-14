@@ -1,11 +1,12 @@
-.PHONY: update-submodules ralph archive setup tag changelog dev.storage.up dev.storage.down dev.storage.ps dev.services.up dev.services.down dev.services.ps dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate benchmark.images test.images
+.PHONY: update-submodules ralph archive setup tag changelog dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate
 
 ENV ?= dev
 MAX_ITERATIONS ?= 200
-DOCKER_STORAGE_COMPOSE = docker compose -f docker-compose.storage.yml
-DOCKER_SERVICES_COMPOSE = docker compose -f docker-compose.services.yml
-DOCKER_DEV_COMPOSE = docker compose -f docker-compose.dev.yml
-DOCKER_DEV_LOG_SERVICES ?= backend worker frontend
+BACKEND_ENV_FILE ?= $(HOME)/.env/orchestra/.env.backend
+FRONTEND_ENV_FILE ?= $(HOME)/.env/orchestra/.env.frontend
+EXEC_SERVER_ENV_FILE ?= $(CURDIR)/sandboxes/ubuntu/.env
+DOCKER_DEV_COMPOSE = BACKEND_ENV_FILE=$(BACKEND_ENV_FILE) FRONTEND_ENV_FILE=$(FRONTEND_ENV_FILE) EXEC_SERVER_ENV_FILE=$(EXEC_SERVER_ENV_FILE) docker compose -f docker-compose.dev.yml
+DOCKER_DEV_LOG_SERVICES ?= backend frontend worker postgres redis search_engine
 
 update-submodules:
 	@echo "🔍 Initializing submodules..."
@@ -67,24 +68,6 @@ changelog:
 tag:
 	@bash backend/scripts/tag.sh $(TAG)
 
-dev.storage.up:
-	@$(DOCKER_STORAGE_COMPOSE) up -d
-
-dev.storage.down:
-	@$(DOCKER_STORAGE_COMPOSE) down --remove-orphans
-
-dev.storage.ps:
-	@$(DOCKER_STORAGE_COMPOSE) ps
-
-dev.services.up:
-	@$(DOCKER_SERVICES_COMPOSE) up --build -d
-
-dev.services.down:
-	@$(DOCKER_SERVICES_COMPOSE) down --remove-orphans
-
-dev.services.ps:
-	@$(DOCKER_SERVICES_COMPOSE) ps
-
 dev.docker.up:
 	@$(DOCKER_DEV_COMPOSE) up --build -d
 
@@ -99,11 +82,3 @@ dev.docker.ps:
 
 dev.docker.migrate:
 	@$(DOCKER_DEV_COMPOSE) run --rm backend uv run alembic upgrade head
-
-# Image benchmarks — build both targets and report sizes
-benchmark.images:
-	bash backend/scripts/benchmark-images.sh
-
-# Integration test with split images
-test.images:
-	bash backend/scripts/test-images.sh $(TAG)

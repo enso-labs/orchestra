@@ -2,7 +2,7 @@
 
 import redis.asyncio as redis
 
-from src.constants.redis import REDIS_URL
+from src.workers.broker import REDIS_URL
 
 _client: redis.Redis | None = None
 

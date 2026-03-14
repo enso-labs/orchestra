@@ -12,8 +12,7 @@ Usage:
     await run_agent_stream.kiq(task_dict, user_id, thread_id, config_dict)as
 """
 
-from src.workers.broker import broker
+from src.workers.broker import broker, REDIS_URL
 from src.workers.tasks import run_agent_stream
-from src.constants.redis import REDIS_URL
 
 __all__ = ["broker", "run_agent_stream", "REDIS_URL"]
