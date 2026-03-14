@@ -1,113 +1,120 @@
 {
   "project": "Orchestra",
-  "branchName": "feat/736-rlm-skill",
-  "description": "RLM Skill - Recursive Language Model pattern for processing large inputs using Sonnet orchestrator and parallel Haiku subagents",
+  "branchName": "ralph/video-gif-generation-skill",
+  "description": "Video & GIF Generation Skill - Claude Code skill that records browser workflows as video and converts them to high-quality GIFs using agent-browser and ffmpeg",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create RLM skill directory and SKILL.md with core workflow",
-      "description": "As a developer, I need the RLM skill created with directory structure and SKILL.md containing the full decompose-process-synthesize workflow so Claude can process large inputs.",
+      "title": "Create skill directory and SKILL.md with frontmatter",
+      "description": "As a developer, I need the skill directory and SKILL.md file created with valid YAML frontmatter so the skill can be loaded by Claude Code.",
       "acceptanceCriteria": [
-        "Directory created at .claude/skills/rlm/",
-        "SKILL.md has valid YAML frontmatter with name: rlm",
-        "YAML description includes trigger keywords: analyze large, recursive analysis, deep analysis, process large input, comprehensive review, rlm, recursive reasoning",
-        "SKILL.md contains purpose statement explaining the RLM pattern",
-        "SKILL.md contains Prerequisites section (Task tool access, scratchpad directory)",
-        "SKILL.md contains Step 1: Assess Task Complexity with size thresholds (>50 files or >10K lines or >100K tokens triggers RLM, otherwise process directly)",
-        "SKILL.md contains Step 2: Decompose the Problem with 3 strategies: uniform chunking (split by ~200 lines), keyword filtering (use Grep to narrow), structural decomposition (parse sections/functions/headings)",
-        "SKILL.md contains decision criteria for choosing between the 3 strategies based on input type and query type",
-        "SKILL.md contains chunk size guidance: target ~200 lines or ~8K tokens per chunk with 5-10 lines overlap",
-        "SKILL.md contains Step 3: Spawn Worker Sub-Agents with Task tool invocation pattern explicitly specifying model: haiku and subagent_type: general-purpose",
-        "SKILL.md contains Step 4: Evaluate Completeness with convergence criteria (completeness >= 90% AND confidence >= 80%, max 3 iterations)",
-        "SKILL.md contains iterative deepening pattern: if gaps found, re-decompose and spawn new Haiku batch (workaround for no-nesting constraint)",
-        "SKILL.md contains Step 5: Synthesize Final Output with aggregation and deduplication instructions",
-        "SKILL.md explicitly states model selection: Sonnet for supervisor (decomposition + synthesis), Haiku for workers (chunk processing)",
-        "All instructions use imperative form (Analyze, Decompose, Spawn, not You should analyze)",
-        "SKILL.md is under 5000 words",
+        "Directory created at .claude/skills/video-gif-generation/",
+        "SKILL.md created with valid YAML frontmatter including name and description",
+        "Description includes trigger keywords: record workflow, create gif, record demo, browser recording, workflow gif, screen recording",
+        "SKILL.md body contains a placeholder heading and brief intro referencing agent-browser skill",
+        "Skill file is under 3000 words",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "This is the main skill file. Read existing skills at .claude/skills/reflection/SKILL.md and .claude/skills/prd/SKILL.md for patterns. Read expert analyses at .claude/plans/plan-rlm-skill/ for detailed design guidance."
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Add error handling, fallback patterns, and model selection guidance to SKILL.md",
-      "description": "As Claude, I need error handling instructions and clear model routing rules in the skill so I can recover gracefully from failures.",
+      "title": "Add prerequisite validation instructions to SKILL.md",
+      "description": "As Claude, I need instructions in the skill to verify that agent-browser and ffmpeg are installed before attempting a recording.",
       "acceptanceCriteria": [
-        "SKILL.md contains Error Handling section",
-        "Single subagent failure: retry once with same prompt",
-        "Multiple failures (>30% of chunks): fall back to Sonnet-only processing",
-        "All failures: process entire input directly with Sonnet without chunking",
-        "Partial results: produce output noting gaps and completeness percentage",
-        "Graceful degradation ladder documented: Full RLM -> Partial -> Sonnet fallback -> Best-effort",
-        "SKILL.md contains Model Selection section with table: Sonnet for decomposition/synthesis, Haiku for chunk processing",
-        "SKILL.md contains When NOT to Use RLM section (small inputs <500 lines, single file, simple queries)",
+        "SKILL.md includes a Prerequisites section",
+        "Instructions to run agent-browser --version and check for success",
+        "Instructions to run ffmpeg -version and check for success (only when GIF output requested)",
+        "Clear error messages with install instructions if either tool is missing",
+        "Prerequisite check runs once at the start of the workflow, not repeated per step",
         "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
-      "notes": "Edit the SKILL.md created in US-001. Add these sections after the main workflow steps."
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Add 3 realistic example scenarios to SKILL.md",
-      "description": "As Claude, I need concrete examples showing the RLM pattern applied to real tasks so I understand the expected workflow end-to-end.",
+      "title": "Add viewport and display configuration instructions to SKILL.md",
+      "description": "As a product team member, I want Claude to configure the browser viewport and color scheme before recording starts for consistent output.",
       "acceptanceCriteria": [
-        "SKILL.md contains Examples section with 3 scenarios",
-        "Example 1: Comprehensive codebase security review - 150 files split into 5 module-based chunks, parallel Haiku analysis, synthesized security report with findings by severity",
-        "Example 2: Long document analysis - 80-page paper split into section-based chunks, extract key findings per section, unified summary",
-        "Example 3: Multi-file question answering - trace auth flow across 30+ files, layer-based chunks (frontend/API/backend/database), end-to-end trace output",
-        "Each example shows all 3 phases: Decomposition plan, Processing (Task tool calls with model: haiku), Synthesis",
-        "Examples demonstrate model routing: Sonnet for strategy and synthesis, Haiku for chunks",
-        "Each example shows the user request and the expected output format",
+        "SKILL.md includes a Configuration section with default settings table",
+        "Default viewport is 1280x720 configured via agent-browser before recording",
+        "Light mode set by default using agent-browser set media light",
+        "Instructions for user to override viewport dimensions and color scheme",
+        "Default FPS is 12 (range 5-30), default max width is 800px (range 320-1920)",
         "Typecheck passes"
       ],
       "priority": 3,
       "passes": true,
-      "notes": "Edit the SKILL.md created in US-001. Add Examples section. Keep examples concise but complete - show the workflow not just the result."
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Create references/prompt-templates.md with Haiku subagent templates",
-      "description": "As Claude, I need reusable prompt templates for spawning Haiku chunk-processing subagents so I can maintain consistency across RLM invocations.",
+      "title": "Add recording workflow orchestration instructions to SKILL.md",
+      "description": "As a product team member, I want Claude to record a browser workflow so I get a video file of the automation.",
       "acceptanceCriteria": [
-        "File created at .claude/skills/rlm/references/prompt-templates.md",
-        "Contains extraction prompt template: for pulling specific information from chunks (findings, positions, confidence)",
-        "Contains analysis prompt template: for analyzing chunks against a query (claims, evidence, caveats)",
-        "Contains filtering prompt template: for determining chunk relevance (relevance score 0-1, key passages, INCLUDE/SKIP action)",
-        "Contains synthesis prompt template: for final Sonnet aggregation (integrate findings, resolve contradictions, cite sources)",
-        "All templates are self-contained: include placeholders for original query, chunk content, chunk number/total, output format",
-        "All templates specify structured output format with findings, confidence, and cross-references",
-        "All chunk templates include constraint: Focus ONLY on this chunk, do NOT reference external content",
-        "All chunk templates specify model: haiku in usage notes",
-        "Synthesis template specifies model: sonnet in usage notes",
+        "SKILL.md documents full recording lifecycle: configure viewport, start recording, execute actions, stop recording",
+        "Recording starts with agent-browser record start <output-path>.webm",
+        "Browser actions execute between start and stop using agent-browser skill commands",
+        "agent-browser wait --load networkidle used after navigation to ensure pages load",
+        "Recording stops with agent-browser record stop",
+        "Output .webm file verified to exist and be non-empty after recording stops",
         "Typecheck passes"
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Create the references/ subdirectory and prompt-templates.md. These templates are loaded contextually by Claude when the RLM skill is active."
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Create install.sh script for standalone skill installation",
-      "description": "As a developer who finds this skill on GitHub, I want a single install.sh script so I can download and install the RLM skill into any project without cloning the entire Orchestra repo.",
+      "title": "Add output path and naming convention instructions to SKILL.md",
+      "description": "As a user, I want sensible default output paths so I don't have to specify where to save files.",
       "acceptanceCriteria": [
-        "Script created at .claude/skills/rlm/install.sh",
-        "Script is executable (chmod +x)",
-        "Script creates .claude/skills/rlm/ directory in the current project by default",
-        "Script supports --global flag to install to ~/.claude/skills/rlm/ instead",
-        "Script downloads SKILL.md and references/prompt-templates.md from the repo raw GitHub URLs (use https://raw.githubusercontent.com/ruska-ai/orchestra/master/.claude/skills/rlm/ as base URL)",
-        "Script validates that both files were downloaded successfully and are non-empty",
-        "Script prints success message with usage instructions after install (e.g. 'RLM skill installed. Trigger with: analyze large, recursive analysis, rlm')",
-        "Script is idempotent — running again overwrites existing files without error",
-        "Script includes header comment with one-liner usage: curl -fsSL <raw-url>/install.sh | bash",
-        "Script uses set -e for error handling",
+        "Default output directory is the current working directory",
+        "If user provides a name (e.g. demo), output is demo.gif or demo.webm",
+        "If user provides a full path, that path is used as-is",
+        "Intermediate .webm stored alongside the final output",
+        "If output file already exists, Claude asks before overwriting",
         "Typecheck passes"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "Use raw.githubusercontent.com URLs for the ruska-ai/orchestra repo. The script should be simple — mkdir, curl, validate, print. Check .claude/skills/agent-browser/ or similar for any existing install patterns."
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add video-to-GIF conversion instructions to SKILL.md",
+      "description": "As a product team member, I want to convert the recorded video into a high-quality GIF with configurable quality settings.",
+      "acceptanceCriteria": [
+        "SKILL.md includes the ffmpeg command template with palettegen and paletteuse filters",
+        "Lanczos scaling used for high-quality downscaling",
+        "GIF loops infinitely by default (-loop 0)",
+        "User can override FPS (5-30) and max width (320-1920)",
+        "Intermediate .webm file deleted after successful GIF conversion",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add error handling instructions to SKILL.md",
+      "description": "As a user, I want clear feedback when something goes wrong during recording so I know what happened and how to fix it.",
+      "acceptanceCriteria": [
+        "If agent-browser record start fails, Claude reports error and stops",
+        "If a browser action fails during recording, Claude stops recording, saves capture, and reports failure",
+        "If ffmpeg conversion fails, Claude preserves the .webm file and reports the conversion error",
+        "If output .webm is empty (0 bytes), Claude reports that recording captured nothing",
+        "Error messages are actionable with suggestions for fixing the issue",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
     }
   ]
 }

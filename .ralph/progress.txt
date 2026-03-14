@@ -1,97 +1,94 @@
-# Ralph Progress Log
-Started: 2026-02-05
-Feature: RLM Skill (feat/736-rlm-skill)
----
+# Ralph Progress: Video & GIF Generation Skill
+# Branch: ralph/video-gif-generation-skill
+# Started: 2026-03-14
 
 ## Codebase Patterns
-- Skills live in `.claude/skills/<name>/SKILL.md` with YAML frontmatter (name + description)
-- Trigger keywords go in the YAML `description` field, not in the markdown body
-- Skills must be under 5,000 words
-- Use imperative form for all instructions (Analyze, Decompose, Spawn, not "You should...")
-- No typecheck/lint needed for markdown-only changes in `.claude/` directory
+- Skills are markdown files at `.claude/skills/<name>/SKILL.md` with YAML frontmatter (name, description)
+- Existing agent-browser skill at `.claude/skills/agent-browser/SKILL.md` is the reference for browser commands
+- Pre-commit hooks run automatically; no backend/frontend checks needed for markdown-only changes
+
 ---
 
-## 2026-02-05 - US-001
-- Created `.claude/skills/rlm/` directory
-- Created `SKILL.md` with complete RLM workflow: Assess → Decompose → Spawn Workers → Evaluate → Synthesize
-- Includes 3 decomposition strategies (uniform chunking, keyword filtering, structural decomposition)
-- Decision table for choosing strategy based on input type and query type
-- Convergence criteria: completeness >= 90%, confidence >= 80%, max 3 iterations
-- Model selection table: Sonnet for supervisor, Haiku for workers
-- Task tool invocation pattern with explicit model: haiku and subagent_type: general-purpose
-- Word count: 1,418 (well under 5,000 limit)
-- Files changed: `.claude/skills/rlm/SKILL.md`
+## 2026-03-14 - US-001
+- Created `.claude/skills/video-gif-generation/` directory and `SKILL.md`
+- SKILL.md includes YAML frontmatter with name and description containing all trigger keywords
+- Body contains heading and intro paragraph referencing agent-browser skill
+- Files changed: `.claude/skills/video-gif-generation/SKILL.md`
 - **Learnings for future iterations:**
-  - Read existing skills (reflection, prd) first to understand YAML frontmatter pattern
-  - Expert analyses in `.claude/plans/plan-rlm-skill/` provided detailed design guidance
-  - The no-nesting constraint (subagents cannot spawn sub-subagents) is the key architectural constraint - handled via iterative deepening
-  - Chunk size of ~200 lines / ~8K tokens is a good default based on expert analysis
+  - Claude Code auto-detects new skills immediately after file creation
+  - Markdown-only skills have no typecheck requirements
+  - The agent-browser skill documents `record start/stop`, `set viewport`, `set media`, and `wait` commands needed for video recording
 ---
 
-## 2026-02-05 - US-002
-- Added Error Handling section with 4 failure scenarios (single, multiple, all, partial)
-- Added Graceful Degradation Ladder table: Full RLM -> Partial -> Sonnet fallback -> Best-effort
-- Added When NOT to Use RLM section (small inputs <500 lines, single file, simple queries)
-- Model Selection section already existed from US-001 (Sonnet for decomposition/synthesis, Haiku for chunks)
-- Word count: 1,842 (still well under 5,000 limit)
-- Files changed: `.claude/skills/rlm/SKILL.md`
+## 2026-03-14 - US-002
+- Added Prerequisites section to SKILL.md with validation instructions
+- agent-browser --version check runs first, with install instructions on failure
+- ffmpeg -version check only runs when GIF output is requested
+- Both checks run once at workflow start, not per step
+- Files changed: `.claude/skills/video-gif-generation/SKILL.md`
 - **Learnings for future iterations:**
-  - Model Selection was already covered in US-001, no need to duplicate
-  - The graceful degradation ladder is clearest as a table format
-  - Keep error handling instructions concise and action-oriented
+  - Prerequisite checks should be conditional — ffmpeg only needed for GIF, not video-only workflows
+  - Install instructions vary by platform; include Ubuntu/Debian, macOS, and Windows options for common tools
 ---
 
-## 2026-02-05 - US-003
-- Added Examples section with 3 complete scenarios showing all phases
-- Example 1: Codebase security review (150 files, 5 module-based chunks, severity-ranked findings)
-- Example 2: Long document analysis (80-page paper, 6 section-based chunks, unified summary)
-- Example 3: Multi-file question answering (35 files, 4 layer-based chunks, end-to-end auth trace)
-- Each example shows: user request, decomposition plan, Task tool invocation with model: haiku, synthesized output
-- Word count: 3,036 (under 5,000 limit, ~1,964 remaining for US-004 if needed in SKILL.md)
-- Files changed: `.claude/skills/rlm/SKILL.md`
+## 2026-03-14 - US-003
+- Added Configuration section to SKILL.md with default settings table and override instructions
+- Default viewport 1280x720, light mode, 12 FPS, 800px max width — all with documented ranges
+- Configuration commands run before recording starts using agent-browser set viewport/media
+- User override examples included for custom dimensions and dark mode
+- Files changed: `.claude/skills/video-gif-generation/SKILL.md`
 - **Learnings for future iterations:**
-  - Examples are most useful when they show the full workflow end-to-end
-  - Showing the Task tool call syntax explicitly helps future invocations
-  - Keeping examples concise but complete is a good balance
+  - GIF-specific settings (FPS, max width) are ffmpeg parameters, not agent-browser settings — document them in config but apply during conversion
+  - Settings table format works well for quick-reference defaults with ranges
 ---
 
-## 2026-02-05 - US-004
-- Created `.claude/skills/rlm/references/` directory
-- Created `prompt-templates.md` with 4 reusable templates:
-  - Extraction template (model: haiku): pull findings, positions, confidence
-  - Analysis template (model: haiku): claims, evidence, caveats
-  - Filtering template (model: haiku): relevance score 0-1, INCLUDE/SKIP action
-  - Synthesis template (model: sonnet): integrate findings, resolve contradictions
-- All templates are self-contained with placeholders for query, chunk content, chunk number/total
-- All chunk templates include "Focus ONLY on this chunk" constraint
-- Files changed: `.claude/skills/rlm/references/prompt-templates.md`
+## 2026-03-14 - US-004
+- Added Recording Workflow section to SKILL.md with full lifecycle: configure, start, execute, stop, verify
+- Documents `agent-browser record start <path>.webm` and `agent-browser record stop`
+- Includes `agent-browser wait --load networkidle` after navigations for clean recordings
+- Output verification checks file exists and is non-empty
+- Complete end-to-end example included
+- Files changed: `.claude/skills/video-gif-generation/SKILL.md`
 - **Learnings for future iterations:**
-  - References directory is for contextual loading - templates are loaded when the skill is active
-  - Keep templates generic enough to adapt to different extraction/analysis tasks
-  - The synthesis template is the only one that uses model: sonnet
+  - `agent-browser wait --load networkidle` is the correct wait strategy after navigation — ensures all network requests settle before continuing
+  - For non-navigation DOM updates, a short `agent-browser wait 500` delay is sufficient
+  - Always verify output file size after recording — a 0-byte file means the recording captured nothing
 ---
 
-## 2026-02-05 - US-005
-- Created `.claude/skills/rlm/install.sh` for standalone skill installation
-- Script is executable (chmod +x)
-- Supports `--global` flag for `~/.claude/skills/rlm/` installation
-- Downloads SKILL.md and references/prompt-templates.md from raw.githubusercontent.com
-- Validates downloads are non-empty, uses `set -e` for error handling
-- Idempotent — running again overwrites existing files without error
-- Prints success message with trigger keywords
-- Header includes one-liner `curl` usage
-- Files changed: `.claude/skills/rlm/install.sh`
+## 2026-03-14 - US-005
+- Added Output Paths & Naming section to SKILL.md with path resolution rules
+- Three resolution modes: full path (as-is), name only (cwd + extension), no name (auto-generate)
+- Intermediate .webm stored alongside final GIF output
+- Overwrite protection: check if files exist and ask user before overwriting
+- Files changed: `.claude/skills/video-gif-generation/SKILL.md`
 - **Learnings for future iterations:**
-  - No existing install.sh patterns in the repo — this is the first standalone installer
-  - `curl -fsSL` with `-o` is the standard pattern for downloading raw GitHub files
-  - `[ ! -s file ]` checks both existence and non-emptiness in one test
-  - No typecheck/lint needed for shell scripts in `.claude/` directory
+  - Path resolution logic should be documented as ordered rules (most specific first) for clarity
+  - Overwrite protection is important for any file-writing skill — always check before clobbering
 ---
 
-## ALL STORIES COMPLETE
-US-001: passes: true
-US-002: passes: true
-US-003: passes: true
-US-004: passes: true
-US-005: passes: true
+## 2026-03-14 - US-006
+- Added Video-to-GIF Conversion section to SKILL.md with complete ffmpeg pipeline
+- Two-pass palettegen/paletteuse filter chain for optimal GIF color quality
+- Lanczos scaling for high-quality downscaling, infinite loop (-loop 0) by default
+- Default 12 FPS and 800px max width, with user override support (clamped to valid ranges)
+- Post-conversion: verify GIF, delete intermediate .webm, report result
+- Files changed: `.claude/skills/video-gif-generation/SKILL.md`
+- **Learnings for future iterations:**
+  - ffmpeg's `filter_complex` with palettegen+paletteuse produces significantly better GIF quality than single-pass `-vf` conversion
+  - Sierra 2-4a dithering (`sierra2_4a`) is a good balance of quality and file size for screen recordings
+  - Always clamp user-provided values to valid ranges rather than rejecting them outright
+---
+
+## 2026-03-14 - US-007
+- Added Error Handling section to SKILL.md covering all failure modes
+- Recording start failure: stop immediately, report error with actionable suggestions
+- Browser action failure during recording: stop recording to preserve partial capture, report which action failed
+- Empty recording (0 bytes): report likely causes, delete empty file, do not proceed to GIF conversion
+- FFmpeg conversion failure: preserve .webm file, report error with retry command
+- All error messages include actionable suggestions for fixing the issue
+- Files changed: `.claude/skills/video-gif-generation/SKILL.md`
+- **Learnings for future iterations:**
+  - Error handling should always preserve partial output — never delete files the user might want to inspect
+  - Actionable error messages should include: what went wrong, likely causes, and specific commands to fix or retry
+  - For multi-stage workflows, each stage needs its own error handling with appropriate cleanup behavior
 ---
