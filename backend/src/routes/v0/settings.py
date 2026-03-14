@@ -33,6 +33,7 @@ def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -
             model_visibility=settings.default_model_visibility,
             files=settings.default_files,
             deleted_files=settings.default_deleted_files,
+            onboarding_completed=settings.onboarding_completed,
         ),
         provider_keys=statuses,
     )

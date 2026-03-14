@@ -11,7 +11,7 @@ export default function ChatComposer({
 	showSandboxStatus = false,
 }: ChatComposerProps) {
 	return (
-		<div className="relative shrink-0 bg-background">
+		<div className="relative shrink-0 bg-background" data-tour="chat-input">
 			<div className="pointer-events-none absolute -top-8 left-0 right-0 h-8 bg-gradient-to-b from-transparent to-background" />
 			<div className="max-w-4xl mx-auto px-4 pb-4">
 				<div className="flex flex-col gap-2">
