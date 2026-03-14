@@ -1,0 +1,95 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import {
+	DEFAULT_SANDBOX,
+	SANDBOX_OPTIONS,
+	normalizeSandboxValue,
+	toSandboxPatchValue,
+} from "@/lib/config/sandbox";
+import {
+	type ProviderKeyStatus,
+	type SandboxType,
+	getSettings,
+	patchDefaults,
+} from "@/lib/services/userSettingsService";
+
+export function SandboxSettings() {
+	const [sandbox, setSandbox] = useState<SandboxType>(DEFAULT_SANDBOX);
+	const [loading, setLoading] = useState(false);
+	const [providerKeys, setProviderKeys] = useState<ProviderKeyStatus[]>([]);
+
+	const visibleOptions = useMemo(
+		() =>
+			SANDBOX_OPTIONS.filter((opt) => {
+				if (opt.value !== "daytona") return true;
+				return providerKeys.some(
+					(k) => k.provider === "DAYTONA_API_KEY" && k.is_set,
+				);
+			}),
+		[providerKeys],
+	);
+
+	useEffect(() => {
+		getSettings()
+			.then((res) => {
+				setSandbox(normalizeSandboxValue(res.defaults.sandbox));
+				setProviderKeys(res.provider_keys ?? []);
+			})
+			.catch(() => {});
+	}, []);
+
+	const handleChange = async (value: string) => {
+		const nextSandbox = normalizeSandboxValue(value);
+		setLoading(true);
+		try {
+			const res = await patchDefaults({
+				sandbox: toSandboxPatchValue(nextSandbox),
+			});
+			setSandbox(normalizeSandboxValue(res.defaults.sandbox));
+			toast.success("Default sandbox updated");
+		} catch {
+			toast.error("Failed to update default sandbox");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>Default Sandbox</CardTitle>
+				<CardDescription>
+					Choose the sandbox backend for agent code execution.
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<Select value={sandbox} onValueChange={handleChange} disabled={loading}>
+					<SelectTrigger className="w-full max-w-sm">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{visibleOptions.map((opt) => (
+							<SelectItem key={opt.value} value={opt.value}>
+								{opt.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</CardContent>
+		</Card>
+	);
+}

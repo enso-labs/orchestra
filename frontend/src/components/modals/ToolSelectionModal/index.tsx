@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Sidebar } from "./Sidebar";
 import { PlatformToolsPanel } from "./PlatformToolsPanel";
 import { CustomToolsPanel } from "./CustomToolsPanel";
 import { McpServerPanel } from "./McpServerPanel";
 import { A2aAgentPanel } from "./A2aAgentPanel";
+import { SubagentsPanel } from "./SubagentsPanel";
 import { useToolSelection } from "./hooks/useToolSelection";
+import { useSubagentSelection } from "./hooks/useSubagentSelection";
 import { ToolCategory, Tool, McpServerConfig, A2aServerConfig } from "./types";
 import {
 	listTools,
@@ -15,6 +16,21 @@ import {
 } from "@/lib/services/toolService";
 import { useAgentContext } from "@/context/AgentContext";
 import { Agent } from "@/lib/services/agentService";
+import { patchDefaults } from "@/lib/services/userSettingsService";
+import { getAuthToken } from "@/lib/utils/auth";
+import { toast } from "sonner";
+import { X } from "lucide-react";
+
+const FALLBACK_TOOLS: Tool[] = [
+	{ name: "web_search", description: "Search the web", tags: ["search"] },
+	{ name: "web_scrape", description: "Scrape web pages", tags: ["search"] },
+	{
+		name: "math_calculator",
+		description: "Calculate math expressions",
+		tags: ["utility"],
+	},
+	{ name: "think_tool", description: "Think step by step", tags: ["utility"] },
+];
 
 interface ToolSelectionModalProps {
 	isOpen: boolean;
@@ -22,7 +38,6 @@ interface ToolSelectionModalProps {
 	initialSelectedTools?: string[];
 	initialMcpConfig?: Record<string, McpServerConfig>;
 	initialA2aConfig?: Record<string, A2aServerConfig>;
-	onApply: (selectedTools: string[]) => void;
 }
 
 export function ToolSelectionModal({
@@ -31,9 +46,8 @@ export function ToolSelectionModal({
 	initialSelectedTools = [],
 	initialMcpConfig = {},
 	initialA2aConfig = {},
-	onApply,
 }: ToolSelectionModalProps) {
-	const { setAgent } = useAgentContext();
+	const { setAgent, agents, agent } = useAgentContext();
 	const [activeCategory, setActiveCategory] =
 		useState<ToolCategory>("platform");
 	const [platformTools, setPlatformTools] = useState<Tool[]>([]);
@@ -47,16 +61,34 @@ export function ToolSelectionModal({
 	const [isA2aLoading, setIsA2aLoading] = useState(false);
 	const [isToolFormActive, setIsToolFormActive] = useState(false);
 
-	const { selectedTools, toggleTool, selectedArray, selectedCount } =
-		useToolSelection(initialSelectedTools);
+	const {
+		selectedTools,
+		toggleTool,
+		selectMultiple,
+		deselectMultiple,
+		selectedCount,
+		flushPersist,
+	} = useToolSelection(initialSelectedTools);
+	const {
+		toggleSubagent,
+		isAgentSelected,
+		flushPersist: flushSubagentPersist,
+	} = useSubagentSelection();
 
-	useEffect(() => {
-		setAgent((prev: Agent) => ({ ...prev, mcp: mcpServers, a2a: a2aServers }));
-	}, [mcpServers, a2aServers]);
+	const isAuthenticated = !!getAuthToken();
+
+	// Derive visible categories based on auth state
+	const visibleCategories: ToolCategory[] = isAuthenticated
+		? ["platform", "api", "mcp", "a2a", "subagents"]
+		: ["platform", "mcp", "a2a"];
 
 	// Fetch platform tools
 	useEffect(() => {
 		if (isOpen && activeCategory === "platform") {
+			if (!isAuthenticated) {
+				setPlatformTools(FALLBACK_TOOLS);
+				return;
+			}
 			listTools()
 				.then((data) => {
 					setPlatformTools(data.tools || []);
@@ -85,24 +117,53 @@ export function ToolSelectionModal({
 		}
 	}, [isOpen, a2aServers]);
 
-	const handleApply = () => {
-		onApply(selectedArray);
-		onClose();
-	};
-
 	const handleClose = () => {
-		// Optionally: confirm if changes were made
+		flushPersist();
+		flushSubagentPersist();
 		onClose();
 	};
 
 	const handleAddMcpServer = (name: string, config: McpServerConfig) => {
-		setMcpServers((prev) => ({ ...prev, [name]: config }));
+		setMcpServers((prev) => {
+			const updated = { ...prev, [name]: config };
+			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
+			if (getAuthToken()) {
+				patchDefaults({ mcp: updated }).catch(() =>
+					toast.error("Failed to save MCP defaults"),
+				);
+			}
+			return updated;
+		});
 	};
 
 	const handleRemoveMcpServer = (name: string) => {
 		setMcpServers((prev) => {
 			const updated = { ...prev };
 			delete updated[name];
+			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
+			if (getAuthToken()) {
+				patchDefaults({ mcp: updated }).catch(() =>
+					toast.error("Failed to save MCP defaults"),
+				);
+			}
+			return updated;
+		});
+	};
+
+	const handleToggleMcpServer = (name: string) => {
+		setMcpServers((prev) => {
+			const server = prev[name];
+			if (!server) return prev;
+			const updated = {
+				...prev,
+				[name]: { ...server, enabled: server.enabled === false },
+			};
+			setAgent((prev: Agent) => ({ ...prev, mcp: updated }));
+			if (getAuthToken()) {
+				patchDefaults({ mcp: updated }).catch(() =>
+					toast.error("Failed to save MCP defaults"),
+				);
+			}
 			return updated;
 		});
 	};
@@ -112,7 +173,18 @@ export function ToolSelectionModal({
 	) => {
 		setIsMcpLoading(true);
 		try {
-			const response = await getMcpTools(servers);
+			// Filter out disabled servers before fetching tools
+			const enabledServers = Object.fromEntries(
+				Object.entries(servers).filter(
+					([, config]) => config.enabled !== false,
+				),
+			);
+			if (Object.keys(enabledServers).length === 0) {
+				setMcpTools([]);
+				setIsMcpLoading(false);
+				return;
+			}
+			const response = await getMcpTools(enabledServers);
 			const tools = response.mcp || [];
 			setMcpTools(
 				tools.map((tool: any) => ({
@@ -132,13 +204,28 @@ export function ToolSelectionModal({
 	};
 
 	const handleAddA2aServer = (name: string, config: A2aServerConfig) => {
-		setA2aServers((prev) => ({ ...prev, [name]: config }));
+		setA2aServers((prev) => {
+			const updated = { ...prev, [name]: config };
+			setAgent((prev: Agent) => ({ ...prev, a2a: updated }));
+			if (getAuthToken()) {
+				patchDefaults({ a2a: updated }).catch(() =>
+					toast.error("Failed to save A2A defaults"),
+				);
+			}
+			return updated;
+		});
 	};
 
 	const handleRemoveA2aServer = (name: string) => {
 		setA2aServers((prev) => {
 			const updated = { ...prev };
 			delete updated[name];
+			setAgent((prev: Agent) => ({ ...prev, a2a: updated }));
+			if (getAuthToken()) {
+				patchDefaults({ a2a: updated }).catch(() =>
+					toast.error("Failed to save A2A defaults"),
+				);
+			}
 			return updated;
 		});
 	};
@@ -161,11 +248,19 @@ export function ToolSelectionModal({
 		<Dialog open={isOpen} onOpenChange={handleClose}>
 			<DialogContent className="max-w-[1400px] w-full sm:w-[95vw] h-[100vh] sm:h-[90vh] max-h-none sm:max-h-[900px] p-0 gap-0">
 				<DialogTitle className="sr-only">Tool Selection</DialogTitle>
+				<button
+					onClick={handleClose}
+					className="absolute right-3 top-3 z-10 rounded-sm p-1 opacity-70 hover:opacity-100 sm:hidden"
+					aria-label="Close"
+				>
+					<X className="h-5 w-5" />
+				</button>
 
 				<div className="flex flex-col sm:flex-row h-full overflow-hidden">
 					<Sidebar
 						activeCategory={activeCategory}
 						onCategoryChange={setActiveCategory}
+						visibleCategories={visibleCategories}
 					/>
 
 					<div className="flex-1 flex flex-col overflow-hidden">
@@ -174,6 +269,8 @@ export function ToolSelectionModal({
 								tools={platformTools}
 								selectedTools={selectedTools}
 								onToggleSelection={toggleTool}
+								onSelectMultiple={selectMultiple}
+								onDeselectMultiple={deselectMultiple}
 							/>
 						)}
 
@@ -193,6 +290,7 @@ export function ToolSelectionModal({
 								onToggleSelection={toggleTool}
 								onAddServer={handleAddMcpServer}
 								onRemoveServer={handleRemoveMcpServer}
+								onToggleServer={handleToggleMcpServer}
 								onTestConnection={handleFetchMcpTools}
 								isLoading={isMcpLoading}
 							/>
@@ -211,35 +309,27 @@ export function ToolSelectionModal({
 							/>
 						)}
 
-						{/* Action Bar - Hidden when editing a tool form */}
-						{!isToolFormActive && (
+						{activeCategory === "subagents" && (
+							<SubagentsPanel
+								agents={agents}
+								selectedSubagents={agent.subagents || []}
+								onToggleSubagent={toggleSubagent}
+								isAgentSelected={isAgentSelected}
+							/>
+						)}
+
+						{/* Status Bar */}
+						{!isToolFormActive && activeCategory !== "subagents" && (
 							<div className="flex-shrink-0 border-t border-border px-4 sm:px-6 py-3 sm:py-4 bg-background">
-								<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-									<div className="text-sm text-muted-foreground">
-										{selectedCount > 0 ? (
-											<span>
-												Selected: <strong>{selectedCount}</strong> tool
-												{selectedCount !== 1 ? "s" : ""}
-											</span>
-										) : (
-											<span>No tools selected</span>
-										)}
-									</div>
-									<div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-										<Button
-											variant="outline"
-											onClick={handleClose}
-											className="flex-1 sm:flex-none"
-										>
-											Cancel
-										</Button>
-										<Button
-											onClick={handleApply}
-											className="flex-1 sm:flex-none"
-										>
-											Apply Changes
-										</Button>
-									</div>
+								<div className="text-sm text-muted-foreground">
+									{selectedCount > 0 ? (
+										<span>
+											Selected: <strong>{selectedCount}</strong> tool
+											{selectedCount !== 1 ? "s" : ""}
+										</span>
+									) : (
+										<span>No tools selected</span>
+									)}
 								</div>
 							</div>
 						)}

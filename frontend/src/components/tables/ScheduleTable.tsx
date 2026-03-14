@@ -61,9 +61,7 @@ export function ScheduleTable({
 		const filtered = events.filter((event) => {
 			return view === "past" ? event.start < now : event.start >= now;
 		});
-		return filtered.sort(
-			(a, b) => b.start.getTime() - a.start.getTime(),
-		);
+		return filtered.sort((a, b) => b.start.getTime() - a.start.getTime());
 	}, [events, view]);
 
 	return (
@@ -92,21 +90,13 @@ export function ScheduleTable({
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b bg-muted/50">
-								<th className="text-left p-3 font-medium">
-									Schedule Name
-								</th>
-								<th className="text-left p-3 font-medium">
-									Status
-								</th>
-								<th className="text-left p-3 font-medium">
-									Agent/Skill
-								</th>
+								<th className="text-left p-3 font-medium">Schedule Name</th>
+								<th className="text-left p-3 font-medium">Status</th>
+								<th className="text-left p-3 font-medium">Agent/Skill</th>
 								<th className="text-left p-3 font-medium">
 									{view === "past" ? "Last Run" : "Next Run"}
 								</th>
-								<th className="text-right p-3 font-medium">
-									Actions
-								</th>
+								<th className="text-right p-3 font-medium">Actions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -115,15 +105,9 @@ export function ScheduleTable({
 									key={event.id}
 									className="border-b last:border-b-0 hover:bg-muted/50"
 								>
-									<td className="p-3 font-medium">
-										{event.title}
-									</td>
+									<td className="p-3 font-medium">{event.title}</td>
 									<td className="p-3">
-										<Badge
-											variant={getStatusVariant(
-												event.resource.status,
-											)}
-										>
+										<Badge variant={getStatusVariant(event.resource.status)}>
 											{event.resource.status}
 										</Badge>
 									</td>
@@ -138,32 +122,20 @@ export function ScheduleTable({
 									<td className="p-3 text-right">
 										<DropdownMenu>
 											<DropdownMenuTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-8 w-8"
-												>
+												<Button variant="ghost" size="icon" className="h-8 w-8">
 													<MoreHorizontal className="h-4 w-4" />
 												</Button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
 												<DropdownMenuItem
-													onClick={() =>
-														onEdit?.(
-															event.resource
-																.schedule_id,
-														)
-													}
+													onClick={() => onEdit?.(event.resource.schedule_id)}
 												>
 													<Pencil className="h-4 w-4 mr-2" />
 													Edit
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													onClick={() =>
-														onDuplicate?.(
-															event.resource
-																.schedule_id,
-														)
+														onDuplicate?.(event.resource.schedule_id)
 													}
 												>
 													<Copy className="h-4 w-4 mr-2" />
@@ -171,12 +143,7 @@ export function ScheduleTable({
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													className="text-destructive"
-													onClick={() =>
-														onDelete?.(
-															event.resource
-																.schedule_id,
-														)
-													}
+													onClick={() => onDelete?.(event.resource.schedule_id)}
 												>
 													<Trash2 className="h-4 w-4 mr-2" />
 													Delete
@@ -193,8 +160,7 @@ export function ScheduleTable({
 				<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 					<p className="text-lg font-medium">No schedules found</p>
 					<p className="text-sm">
-						No {view === "past" ? "past" : "upcoming"} schedules to
-						display.
+						No {view === "past" ? "past" : "upcoming"} schedules to display.
 					</p>
 				</div>
 			)}

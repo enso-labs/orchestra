@@ -1,4 +1,5 @@
 import ChatInput from "@/components/inputs/ChatInput";
+import ChatUtilityRow from "@/components/chat/ChatUtilityRow";
 import { Agent } from "@/lib/services/agentService";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Newspaper, Share2, MessageCircle } from "lucide-react";
@@ -6,11 +7,13 @@ import { BookOpen, Newspaper, Share2, MessageCircle } from "lucide-react";
 interface AgentSectionProps {
 	agent: Agent;
 	showAgentMenu?: boolean;
+	showSandboxStatus?: boolean;
 }
 
 export function AgentSection({
 	agent,
 	showAgentMenu = false,
+	showSandboxStatus = false,
 }: AgentSectionProps) {
 	return (
 		<>
@@ -21,11 +24,13 @@ export function AgentSection({
 			/>
 			<h1 className="text-4xl font-bold mt-2 italic">{agent.name}</h1>
 			<p className="text-lg text-muted-foreground mb-2">{agent.description}</p>
-			<div className="flex flex-col w-full lg:w-[600px]">
+
+			<div className="flex w-full flex-col gap-2 lg:w-[600px]">
+				{showSandboxStatus && <ChatUtilityRow />}
 				<ChatInput showAgentMenu={showAgentMenu} />
 			</div>
 
-			{/* Links intentionally sit beneath Tagline */}
+			{/* Links below input */}
 			<div className="flex flex-row flex-wrap justify-center gap-1 mt-3">
 				<Button
 					variant="ghost"

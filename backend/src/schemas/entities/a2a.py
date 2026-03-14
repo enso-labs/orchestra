@@ -1,13 +1,12 @@
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 from src.common.types import AgentCard
 from src.utils.logger import logger
 from src.utils.a2a import A2ACardResolver, a2a_builder
 from src.constants.examples import (
     A2A_SERVER_EXAMPLE,
     A2A_DICT_EXAMPLE,
-    MCP_SERVER_EXAMPLE,
     MCP_DICT_EXAMPLE,
 )
 
@@ -16,6 +15,7 @@ class McpServer(BaseModel):
     transport: Literal["sse", "streamable_http", "stdio"]
     url: str
     headers: dict[str, str]
+    enabled: Optional[bool] = Field(default=True, description="Whether this MCP server is enabled")
 
     # model_config = {
     #     "json_schema_extra": {
@@ -56,9 +56,7 @@ class A2AServers(BaseModel):
         agent_cards = []
         for server in self.a2a.values():
             try:
-                card = A2ACardResolver(
-                    server.base_url, server.agent_card_path
-                ).get_agent_card()
+                card = A2ACardResolver(server.base_url, server.agent_card_path).get_agent_card()
                 agent_cards.append(card)
             except Exception as e:
                 logger.error(f"Error fetching agent card for {server.base_url}: {e}")
@@ -67,9 +65,7 @@ class A2AServers(BaseModel):
     def fetch_agent_cards_as_tools(self, thread_id: str) -> list[StructuredTool]:
         tools = []
         for key, config in self.a2a.items():
-            card = A2ACardResolver(
-                config.base_url, config.agent_card_path
-            ).get_agent_card()
+            card = A2ACardResolver(config.base_url, config.agent_card_path).get_agent_card()
 
             async def send_task(query: str, config: A2AServer = config):
                 return await a2a_builder(config.base_url, query, thread_id)

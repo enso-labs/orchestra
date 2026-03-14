@@ -4,10 +4,10 @@ from uuid import uuid4
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.store.base import BaseStore
 
-from src.constants.llm import DEFAULT_SYSTEM_PROMPT
 from src.services.tool import ToolService
 from src.schemas.entities.a2a import A2AServers
 from src.services.db import get_store_in_memory
+from src.services.prompt.defaults import get_default_system_prompt
 from src.schemas.entities.llm import LLMRequest
 from src.services.assistant import AssistantService, Assistant
 from src.utils.llm import filter_tool_call_models
@@ -52,9 +52,7 @@ class LLMService:
             response.raise_for_status()  # Raises exception for 4xx/5xx status codes
             self._models_cache = response.json() or {}
             self._cache_time = now
-            logger.info(
-                f"Models fetched successfully and cached for {self._ttl} seconds"
-            )
+            logger.info(f"Models fetched successfully and cached for {self._ttl} seconds")
         except (requests.RequestException, ValueError) as e:
             logger.warning(f"Failed to fetch models: {e}")
             # Keep old cache if present; otherwise empty dict
@@ -93,13 +91,9 @@ class LLMService:
         return [f"{normalized_provider}:{model}" for model in tool_models]
 
     async def init_tools(self, tools: list[str], a2a: dict, mcp: dict):
-        tool_map = {
-            t.name: t for t in init_tool_library(user_id=self.user_id)
-        }  # O(n) index
+        tool_map = {t.name: t for t in init_tool_library(user_id=self.user_id)}  # O(n) index
         filtered_tools = (
-            A2AServers(a2a=a2a).fetch_agent_cards_as_tools(
-                self.config["configurable"].get("thread_id")
-            )
+            A2AServers(a2a=a2a).fetch_agent_cards_as_tools(self.config["configurable"].get("thread_id"))
             + await self.tool_service.mcp_tools(mcp)
             + [tool_map[name] for name in (tools or ()) if name in tool_map]
         )
@@ -118,7 +112,7 @@ class LLMService:
 
     def default_system_prompt(self, item: LLMRequest | Assistant) -> str:
         if not item.system_prompt:
-            return DEFAULT_SYSTEM_PROMPT
+            return get_default_system_prompt()
         return item.system_prompt
 
     async def assistant(
@@ -127,24 +121,18 @@ class LLMService:
     ) -> LLMRequest:
         params.metadata.thread_id = params.metadata.thread_id or str(uuid4())
         params.input.to_langchain_messages()
-        ## Protection if not defined
-        if not params.system_prompt:
-            params.system_prompt = DEFAULT_SYSTEM_PROMPT
+        explicit_request_system_prompt = "system_prompt" in params.model_fields_set and bool(params.system_prompt)
 
         ## Auto Assign Assistant if ID is provided
         if params.metadata.assistant_id:
             # Try user's namespace first (if user_id exists)
             assistant: Assistant | None = None
             if self.user_id:
-                assistant = await self.assistant_service.get(
-                    params.metadata.assistant_id
-                )
+                assistant = await self.assistant_service.get(params.metadata.assistant_id)
 
             # Fall back to public namespace if not found in user namespace
             if not assistant:
-                assistant = await self.assistant_service.get_public(
-                    params.metadata.assistant_id
-                )
+                assistant = await self.assistant_service.get_public(params.metadata.assistant_id)
                 if assistant:
                     logger.info(
                         f"Loading public assistant {params.metadata.assistant_id} "
@@ -152,19 +140,19 @@ class LLMService:
                     )
 
             if assistant:
-                assistant.system_prompt = self.default_system_prompt(assistant)
-                assistant.tools = await self.init_tools(
-                    assistant.tools, assistant.a2a, assistant.mcp
-                )
-                return assistant.to_llm_request(
+                assistant.tools = await self.init_tools(assistant.tools, assistant.a2a, assistant.mcp)
+                assistant_request = assistant.to_llm_request(
                     input=params.input,
                     model=params.model,
                     metadata=params.metadata,
                 )
+                if explicit_request_system_prompt:
+                    assistant_request.system_prompt = params.system_prompt
+                else:
+                    assistant_request.system_prompt = self.default_system_prompt(assistant)
+                return assistant_request
             else:
-                logger.warning(
-                    f"Assistant {params.metadata.assistant_id} not found in user or public namespace"
-                )
+                logger.warning(f"Assistant {params.metadata.assistant_id} not found in user or public namespace")
 
         ### Collect all tools
         params.system_prompt = self.default_system_prompt(params)

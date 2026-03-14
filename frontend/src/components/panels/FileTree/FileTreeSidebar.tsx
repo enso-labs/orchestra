@@ -13,7 +13,7 @@ interface FileTreeSidebarProps {
 	selectedFile: string | null;
 	dirtyFiles: Set<string>;
 	onFileSelect: (path: string) => void;
-	onNewFile: () => void;
+	onNewFile: (parentPath?: string) => void;
 	onRename: (path: string) => void;
 	onDelete: (path: string) => void;
 	isCollapsed?: boolean;
@@ -174,7 +174,7 @@ export function FileTreeSidebar({
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={onNewFile}
+						onClick={() => onNewFile()}
 						className="gap-2"
 					>
 						<FolderPlus className="h-4 w-4" />

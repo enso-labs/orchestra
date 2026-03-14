@@ -27,9 +27,7 @@ async def revise_prompt(
         revisions = await prompt_service.list_revisions(prompt_id)
         existing_prompt = revisions[-1]
         if not existing_prompt:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Prompt not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prompt not found")
         if prompt.content is not None:
             existing_prompt.content = prompt.content
         if prompt.name is not None:

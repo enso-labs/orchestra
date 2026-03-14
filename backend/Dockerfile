@@ -1,59 +1,82 @@
 # =============================================================================
-# Stage 1: Build - Install deps and compile .py to .pyc
+# Stage 1: Base builder — shared deps (langchain, DB, auth, redis, taskiq)
 # =============================================================================
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.12-slim-bookworm AS base-builder
 
-# Install curl and unzip (required for Deno install)
-RUN apt-get update && apt-get install -y --no-install-recommends curl unzip && rm -rf /var/lib/apt/lists/*
-
-# Install Deno to a shared location
-ENV DENO_INSTALL="/opt/deno"
-RUN mkdir -p $DENO_INSTALL/bin && \
-    curl -fsSL https://deno.land/install.sh | DENO_INSTALL=$DENO_INSTALL sh
-
-# uv CLI
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
-
-ENV PATH="$DENO_INSTALL/bin:$PATH"
 WORKDIR /app
 
-# Copy only dep files first for better caching
+# Copy only dep files first for caching
 COPY pyproject.toml uv.lock* /app/
 
-# Install deps into virtual environment
+# Install core deps (no extras, no dev)
 RUN python -m venv /app/.venv && \
     . /app/.venv/bin/activate && \
     uv sync --frozen --no-cache --no-dev
 
+# =============================================================================
+# Stage 2: API builder — adds api extra + frontend assets
+# =============================================================================
+FROM base-builder AS api-builder
+
+# Install API-specific deps
+RUN . /app/.venv/bin/activate && \
+    uv sync --frozen --no-cache --no-dev --extra api
+
+# Copy app code (includes src/public/ with frontend build)
+COPY . /app
+
+# Compile to bytecode + remove source
+RUN python -m compileall -b -f -q /app && \
+    find /app -type f -name "*.py" \
+      ! -path "/app/migrations/*" \
+      ! -path "/app/seeds/*" \
+      -delete
+
+# =============================================================================
+# Stage 3: Worker builder — core deps only, no API files
+# =============================================================================
+FROM base-builder AS worker-builder
+
 # Copy app code
 COPY . /app
 
-# Compile all .py files to .pyc (optimized bytecode)
-RUN python -m compileall -b -f -q /app
+# Remove files the Worker never needs
+RUN rm -rf /app/src/public /app/src/routes /app/main.py
 
-# Remove all .py source files, keep only .pyc
-# Exclude migrations/ directory - Alembic requires .py files
-RUN find /app -type f -name "*.py" ! -path "/app/migrations/*" -delete
+# Compile to bytecode + remove source
+RUN python -m compileall -b -f -q /app && \
+    find /app -type f -name "*.py" \
+      ! -path "/app/migrations/*" \
+      ! -path "/app/seeds/*" \
+      -delete
 
 # =============================================================================
-# Stage 2: Runtime - Ship only .pyc bytecode (distroless)
+# Stage 4: API runtime
 # =============================================================================
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm AS api
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    DENO_INSTALL="/opt/deno" \
-    PATH="/opt/deno/bin:/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
-
-# Copy Deno binary from builder
-COPY --from=builder /opt/deno /opt/deno
-
-# Copy uv CLI
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
-
-# Copy virtual environment and compiled bytecode from builder
-COPY --from=builder /app /app
+COPY --from=api-builder /app /app
 
 ENTRYPOINT ["python", "-B", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# =============================================================================
+# Stage 5: Worker runtime
+# =============================================================================
+FROM python:3.12-slim-bookworm AS worker
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/app/.venv/bin:$PATH"
+
+WORKDIR /app
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
+COPY --from=worker-builder /app /app
+
+ENTRYPOINT ["python", "-B", "-m", "taskiq", "worker", "src.workers.tasks:broker"]

@@ -29,7 +29,7 @@ export default function SharedThreadPage() {
 	const lastFetchedTokenRef = useRef<string | null>(null);
 	const isMobile = useIsMobile();
 
-	const { setFilesMap, setViewMode } = useChatContext();
+	const { setFilesMap, setViewMode, clearThreadScopedFiles } = useChatContext();
 
 	useEffect(() => {
 		async function fetchSharedThread() {
@@ -71,8 +71,13 @@ export default function SharedThreadPage() {
 			}
 		}
 
-		fetchSharedThread();
-	}, [shareToken, setFilesMap, setViewMode]);
+		void fetchSharedThread();
+
+		return () => {
+			clearThreadScopedFiles();
+			setViewMode("chat");
+		};
+	}, [clearThreadScopedFiles, shareToken, setFilesMap, setViewMode]);
 
 	if (loading) {
 		return (
@@ -160,7 +165,7 @@ export default function SharedThreadPage() {
 	// On mobile: vertical layout (stacked), on desktop: horizontal layout (side-by-side)
 	if (hasFiles) {
 		return (
-			<NoAuthLayout showModelSelector={false}>
+			<NoAuthLayout>
 				<div className="flex flex-col w-full h-[calc(100vh-8rem)]">
 					<Header />
 					<div className="flex-1 min-h-0">
@@ -207,7 +212,7 @@ export default function SharedThreadPage() {
 
 	// Default layout without files
 	return (
-		<NoAuthLayout showModelSelector={false}>
+		<NoAuthLayout>
 			<div className="flex flex-col max-w-4xl mx-auto w-full h-[calc(100vh-8rem)]">
 				<Header />
 

@@ -42,7 +42,6 @@ class UserRepo:
 
     async def update(self, user_data: dict) -> Optional[User]:
         """Update user data."""
-        user_id = self.user_id
         user = await self.get_by_id()
         if user:
             for key, value in user_data.items():
@@ -53,7 +52,6 @@ class UserRepo:
 
     async def delete(self) -> bool:
         """Delete a user."""
-        user_id = self.user_id
         user = await self.get_by_id()
         if user:
             await self.db.delete(user)

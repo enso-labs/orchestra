@@ -1,16 +1,17 @@
 from typing import Annotated, Literal
-from fastapi import Body, HTTPException, status, Depends, APIRouter
+from fastapi import Body, HTTPException, Request, status, Depends, APIRouter
 from fastapi.responses import UJSONResponse
+from langgraph.store.base import BaseStore
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from src.constants.mock import MockResponse
 from src.repos.user_repo import UserRepo
 from src.services.airtable import AirtableService
 from src.services.oauth import OAuthService
-from src.services.db import get_async_db
+from src.services.db import get_async_db, get_store
 from src.utils.auth import verify_credentials, create_access_token
 from src.utils.logger import logger
+from src.utils.memory_seed import seed_default_memories
 from src.schemas.models import User
 from src.schemas.entities.auth import UserCreate, UserLogin, UserResponse, TokenResponse
 
@@ -25,13 +26,14 @@ router = APIRouter(tags=["Auth"])
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: MockResponse.LOGIN_RESPONSE,
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Username or email already exists"
-        },
+        status.HTTP_400_BAD_REQUEST: {"description": "Username or email already exists"},
     },
 )
 async def register(
-    user_data: Annotated[UserCreate, Body()], db: AsyncSession = Depends(get_async_db)
+    request: Request,
+    user_data: Annotated[UserCreate, Body()],
+    db: AsyncSession = Depends(get_async_db),
+    store: BaseStore = Depends(get_store),
 ):
     user_repo = UserRepo(db)
     # Check if username exists
@@ -43,24 +45,24 @@ async def register(
 
     # Check if email exists
     if await user_repo.get_by_email(user_data.email):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     # Create new user
     user = await user_repo.create(user_data)
     # Create user response
-    user_response = UserResponse(
-        id=str(user.id), username=user.username, email=user.email, name=user.name
-    )
+    user_response = UserResponse(id=str(user.id), username=user.username, email=user.email, name=user.name)
     await airtable_service.create_contact(user_response)
+
+    # Seed default memories for the new user
+    try:
+        await seed_default_memories(str(user.id), store)
+    except Exception as e:
+        logger.error(f"Failed to seed default memories for user {user.id}: {e}")
 
     # Create access token with full user object
     access_token = create_access_token(user)
 
-    return TokenResponse(
-        access_token=access_token, token_type="bearer", user=user_response
-    )
+    return TokenResponse(access_token=access_token, token_type="bearer", user=user_response)
 
 
 @router.post(
@@ -72,9 +74,7 @@ async def register(
     },
 )
 async def login(
-    credentials: UserLogin = Body(
-        default=UserLogin(email="admin@example.com", password="test1234")
-    ),
+    credentials: UserLogin = Body(default=UserLogin(email="admin@example.com", password="test1234")),
     db: AsyncSession = Depends(get_async_db),
 ):
     try:
@@ -88,9 +88,7 @@ async def login(
                 headers={"WWW-Authenticate": "Basic"},
             )
 
-        if not User.verify_and_upgrade_password(
-            credentials.password, user.hashed_password
-        ):
+        if not User.verify_and_upgrade_password(credentials.password, user.hashed_password):
             logger.warning(f"Incorrect password for user: {credentials.email}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -99,9 +97,7 @@ async def login(
             )
 
         # Create user response
-        user_response = UserResponse(
-            id=str(user.id), username=user.username, email=user.email, name=user.name
-        )
+        user_response = UserResponse(id=str(user.id), username=user.username, email=user.email, name=user.name)
 
         # Create access token with full user object
         access_token = create_access_token(user)
@@ -110,13 +106,9 @@ async def login(
         await airtable_service.latest_login(user.email)
     except Exception as e:
         logger.exception(f"Error logging in: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    return TokenResponse(
-        access_token=access_token, token_type="bearer", user=user_response
-    )
+    return TokenResponse(access_token=access_token, token_type="bearer", user=user_response)
 
 
 @router.get("/auth/user", tags=["Auth"])
@@ -137,14 +129,16 @@ async def auth(provider: Literal["github", "google", "azure"]):
             redirect_uri=oauth_service.oauth.server_metadata["redirect_uri"]
         )
     except Exception as e:
-        return UJSONResponse(
-            content={"detail": str(e)}, status_code=status.HTTP_400_BAD_REQUEST
-        )
+        return UJSONResponse(content={"detail": str(e)}, status_code=status.HTTP_400_BAD_REQUEST)
 
 
 @router.get("/auth/{provider}/callback", tags=["Auth"], include_in_schema=False)
 async def auth_callback(
-    provider: str, code: str, db: AsyncSession = Depends(get_async_db)
+    request: Request,
+    provider: str,
+    code: str,
+    db: AsyncSession = Depends(get_async_db),
+    store: BaseStore = Depends(get_store),
 ):
     try:
         # Get the user info from the OAuth provider
@@ -154,9 +148,7 @@ async def auth_callback(
         # Check if the user_info has a status code
         status_code = user_info.get("status") or None
         if status_code and int(status_code) != 200:
-            raise HTTPException(
-                status_code=int(status_code), detail=user_info.get("message")
-            )
+            raise HTTPException(status_code=int(status_code), detail=user_info.get("message"))
 
         user_repo = UserRepo(db)
         # Check if the user already exists
@@ -169,7 +161,7 @@ async def auth_callback(
             # Update airtable with latest login
             try:
                 await airtable_service.latest_login(existing_user.email)
-            except Exception as e:
+            except Exception:
                 await airtable_service.create_contact(
                     UserResponse(
                         id=str(existing_user.id),
@@ -193,7 +185,7 @@ async def auth_callback(
             access=1,
         )
         # Add the new user to the database
-        await user_repo.create(new_user)
+        new_user = await user_repo.create(new_user)
 
         # Create user response
         user_response = UserResponse(
@@ -203,6 +195,12 @@ async def auth_callback(
             name=user_info.get("name"),
         )
         await airtable_service.create_contact(user_response)
+
+        # Seed default memories for the new OAuth user
+        try:
+            await seed_default_memories(str(new_user.id), store)
+        except Exception as e:
+            logger.error(f"Failed to seed default memories for OAuth user {new_user.id}: {e}")
 
         access_token = create_access_token(
             {
@@ -222,6 +220,4 @@ async def auth_callback(
         return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.exception(str(e))
-        return UJSONResponse(
-            detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return UJSONResponse(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

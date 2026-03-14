@@ -1,11 +1,20 @@
 import { useChatContext } from "@/context/ChatContext";
+import { removeActiveStreamRecovery } from "@/lib/utils/activeStreamRecovery";
 import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 function NewThreadButton() {
-	const { messages, clearMessages, metadata, resetToDefault } =
-		useChatContext();
+	const {
+		messages,
+		clearMessages,
+		metadata,
+		abortQuery,
+		resetToDefault,
+		loadPersistentContextFiles,
+		clearThreadScopedFiles,
+		clearBackendSyncFiles,
+	} = useChatContext();
 	const navigate = useNavigate();
 	const location = useLocation();
 
@@ -13,25 +22,44 @@ function NewThreadButton() {
 		if (e.ctrlKey) {
 			window.open(window.location.href, "_blank");
 		} else {
+			// Abort active stream BEFORE clearing to prevent race condition
+			// where SSE handler re-populates stale thread_id after clear
+			abortQuery();
+			if (metadata?.thread_id) {
+				removeActiveStreamRecovery(metadata.thread_id);
+			}
+
+			// Capture navigation values before clearing metadata
+			const pathname = location.pathname;
+			const threadId = metadata?.thread_id;
+			const assistantId = metadata?.assistant_id;
+			const projectId = metadata?.project_id;
+
+			// Clear state eagerly. React may batch these updates, so the
+			// destination page also guards against stale state via the
+			// staleThreadId navigation state.
 			clearMessages();
+			clearThreadScopedFiles?.();
+			clearBackendSyncFiles?.();
 			// Reset model to user's default for new conversations
 			resetToDefault?.();
-			const pathname = location.pathname;
+			loadPersistentContextFiles?.();
 
-			// Handle thread routes
+			// Navigate — pass staleThreadId so the destination page can
+			// force-clear any lingering messages that survived batching.
 			if (pathname.startsWith("/thread/")) {
-				// On /thread/:threadId - go back to chat
-				navigate("/chat");
+				navigate("/chat", {
+					state: { staleThreadId: threadId },
+				});
 			} else if (pathname.startsWith("/assistant/")) {
-				// On /assistant/:agentId/thread/:threadId - go to agent thread page
-				navigate(`/assistant/${metadata?.assistant_id}`);
+				navigate(`/assistant/${assistantId}`);
 			} else if (pathname.match(/^\/p\/[^/]+\/t\//)) {
-				// On /p/:projectId/t/:threadId - extract projectId and go to project page
-				const projectId = pathname.split("/")[2];
-				navigate(`/p/${projectId}`);
-			} else if (pathname.startsWith("/p/") && !metadata?.project_id) {
-				// On project page but no project_id in metadata - go to chat
-				navigate("/chat");
+				const pathProjectId = pathname.split("/")[2];
+				navigate(`/p/${pathProjectId}`);
+			} else if (pathname.startsWith("/p/") && !projectId) {
+				navigate("/chat", {
+					state: { staleThreadId: threadId },
+				});
 			}
 		}
 	};

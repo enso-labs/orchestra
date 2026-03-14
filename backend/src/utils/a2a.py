@@ -4,7 +4,6 @@ import json
 from httpx_sse import connect_sse
 from typing import Any, AsyncIterable
 from src.utils.logger import logger
-from fastapi.responses import StreamingResponse, JSONResponse
 from src.common.types import (
     AgentCard,
     GetTaskRequest,
@@ -60,14 +59,10 @@ class A2AClient:
         request = SendTaskRequest(params=payload)
         return SendTaskResponse(**await self._send_request(request))
 
-    async def send_task_streaming(
-        self, payload: dict[str, Any]
-    ) -> AsyncIterable[SendTaskStreamingResponse]:
+    async def send_task_streaming(self, payload: dict[str, Any]) -> AsyncIterable[SendTaskStreamingResponse]:
         request = SendTaskStreamingRequest(params=payload)
         with httpx.Client(timeout=None) as client:
-            with connect_sse(
-                client, "POST", self.url, json=request.model_dump()
-            ) as event_source:
+            with connect_sse(client, "POST", self.url, json=request.model_dump()) as event_source:
                 try:
                     for sse in event_source.iter_sse():
                         yield SendTaskStreamingResponse(**json.loads(sse.data))
@@ -80,9 +75,7 @@ class A2AClient:
         async with httpx.AsyncClient() as client:
             try:
                 # Image generation could take time, adding timeout
-                response = await client.post(
-                    self.url, json=request.model_dump(), timeout=30
-                )
+                response = await client.post(self.url, json=request.model_dump(), timeout=30)
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as e:
@@ -98,15 +91,11 @@ class A2AClient:
         request = CancelTaskRequest(params=payload)
         return CancelTaskResponse(**await self._send_request(request))
 
-    async def set_task_callback(
-        self, payload: dict[str, Any]
-    ) -> SetTaskPushNotificationResponse:
+    async def set_task_callback(self, payload: dict[str, Any]) -> SetTaskPushNotificationResponse:
         request = SetTaskPushNotificationRequest(params=payload)
         return SetTaskPushNotificationResponse(**await self._send_request(request))
 
-    async def get_task_callback(
-        self, payload: dict[str, Any]
-    ) -> GetTaskPushNotificationResponse:
+    async def get_task_callback(self, payload: dict[str, Any]) -> GetTaskPushNotificationResponse:
         request = GetTaskPushNotificationRequest(params=payload)
         return GetTaskPushNotificationResponse(**await self._send_request(request))
 
@@ -139,6 +128,8 @@ async def process_a2a_streaming(
             logger.exception("Stream generation failed")
             raise
 
+    from fastapi.responses import StreamingResponse
+
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
@@ -155,6 +146,8 @@ async def process_a2a(thread: dict, thread_id: str):
             },
         }
     )
+    from fastapi.responses import JSONResponse
+
     return JSONResponse(content={"answer": response.result.model_dump()})
 
 

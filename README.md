@@ -102,12 +102,37 @@ For all commands, see `backend/Makefile`.
 
 2. **Start Docker Services**
 
-    Below will start the database, and the GUI for viewing the Postgres DB.
+    Below will start the database service.
 
     ```bash
     cd <project-root>
-    docker compose up postgres pgadmin
+    docker compose up postgres
     ```
+
+### Dockerized Dev Stack
+
+For containerized local development with hot reload, the backend, frontend, worker, and supporting services can all run under `docker-compose.dev.yml`.
+
+```bash
+cd <project-root>
+BACKEND_ENV_FILE=$HOME/.env/orchestra/.env.backend \
+FRONTEND_ENV_FILE=$HOME/.env/orchestra/.env.frontend \
+make dev.docker.up
+```
+
+Useful endpoints while debugging:
+
+-   Frontend: `http://localhost:5173`
+-   Backend API: `http://localhost:8000/docs`
+-   Dozzle log viewer: `http://localhost:8088`
+
+Tail the main service logs in one stream:
+
+```bash
+make dev.docker.logs
+```
+
+If you also want the sandbox exec server inside the stack, start with `COMPOSE_PROFILES=tools make dev.docker.up`.
 
 3. **Setup Server Environment**
 
@@ -207,7 +232,43 @@ This project uses Alembic for database migrations. Here's how to work with migra
 
 ## 🗺️ Roadmap
 
--   [ ] [Human-In-The-Loop](https://langchain-ai.github.io/langgraph/how-tos/create-react-agent-hitl/#usage)
+Stay up to date on [Discord](https://discord.com/invite/QRfjg4YNzU). Full release history in [Changelog.md](./Changelog.md).
+
+### March 2026
+
+| Feature | Category | Status |
+|---------|----------|--------|
+| Human-In-The-Loop | Agent Control | 🔵 Planned |
+
+### February 2026
+
+| Feature | Category | Status |
+|---------|----------|--------|
+| [Search Threads](https://github.com/ruska-ai/orchestra/issues/801) | UX | ✅ Shipped |
+| [Migrate Memories Seeder](https://github.com/ruska-ai/orchestra/issues/787) | Data | ✅ Shipped |
+| [Docs Agent Guidance](https://github.com/ruska-ai/orchestra/issues/804) | Docs | 🟡 In Progress |
+| [RLM Skill](https://github.com/ruska-ai/orchestra/issues/736) | Skills | ✅ Shipped |
+| [Frontend Schedule Refactor](https://github.com/ruska-ai/orchestra/issues/722) | Scheduling | ✅ Shipped |
+
+### January 2026
+
+| Feature | Category | Status |
+|---------|----------|--------|
+| [Distributed Workers (TaskIQ)](https://github.com/ruska-ai/orchestra/issues/656) | Infra | ✅ Shipped |
+| [Public Agents](https://github.com/ruska-ai/orchestra/issues/471) | Agents | ✅ Shipped |
+| [File Tree Sidebar](https://github.com/ruska-ai/orchestra/issues/650) | UX | ✅ Shipped |
+| [AWS Model Support](https://github.com/ruska-ai/orchestra/issues/666) | Integrations | ✅ Shipped |
+| [Shareable Thread Links](https://github.com/ruska-ai/orchestra/issues/663) | UX | ✅ Shipped |
+| [Subagent Tool Calls](https://github.com/ruska-ai/orchestra/issues/694) | UX | ✅ Shipped |
+| [User Default Settings](https://github.com/ruska-ai/orchestra/issues/665) | Settings | ✅ Shipped |
+| [Speech Dictation](https://github.com/ruska-ai/orchestra/issues/654) | UX | ✅ Shipped |
+
+<details>
+<summary>📦 Archive (Dec 2025 and earlier)</summary>
+
+See [Changelog.md](./Changelog.md) for the full release history.
+
+</details>
 
 ---
 
@@ -292,7 +353,6 @@ The API will be available at `http://localhost:8000`
 | --------------- | --------- | ---------------------------------- |
 | `orchestra`     | 8000      | Backend API                        |
 | `postgres`      | 5432      | PostgreSQL with pgvector           |
-| `pgadmin`       | 4040      | Database admin UI                  |
 | `minio`         | 9000/9001 | S3-compatible file storage         |
 | `search_engine` | 8080      | SearXNG search engine              |
 | `exec_server`   | 3005      | Shell execution server             |

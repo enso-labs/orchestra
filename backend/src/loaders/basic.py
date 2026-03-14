@@ -46,11 +46,7 @@ class Base64Loader(BaseLoader):
                 if "base64," in file:
                     base64_string = file.split("base64,")[-1]
                     # Extract MIME type from data URI
-                    mime_type = (
-                        file.split(":")[1].split(";")[0]
-                        if ":" in file
-                        else "text/plain"
-                    )
+                    mime_type = file.split(":")[1].split(";")[0] if ":" in file else "text/plain"
                     file_name = "uploaded_file"
                 else:
                     raise ValueError(f"Invalid base64 data format: {file}")
@@ -70,9 +66,7 @@ class Base64Loader(BaseLoader):
                     content = content_bytes.decode("utf-8")
                 except UnicodeDecodeError:
                     content = "Error decoding data: Data is not valid UTF-8."
-                document = Document(
-                    page_content=content, metadata={"source": file_name}
-                )
+                document = Document(page_content=content, metadata={"source": file_name})
 
             documents.append(document)
         return documents

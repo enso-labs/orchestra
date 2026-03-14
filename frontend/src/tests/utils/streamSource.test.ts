@@ -111,6 +111,7 @@ describe("DistributedStreamSource", () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		vi.resetAllMocks();
 	});
 
@@ -122,7 +123,7 @@ describe("DistributedStreamSource", () => {
 		mockFetch.mockResolvedValue(mockResponse);
 
 		// Skip initial delay for faster tests
-		const source = new DistributedStreamSource("dist-123", {
+		const source = new DistributedStreamSource("dist-123", "run-123", {
 			skipInitialDelay: true,
 		});
 
@@ -130,7 +131,7 @@ describe("DistributedStreamSource", () => {
 
 		// Verify the URL is correct
 		expect(mockFetch).toHaveBeenCalledWith(
-			"http://test-api.com/threads/dist-123/stream",
+			"http://test-api.com/threads/dist-123/stream?run_id=run-123",
 			expect.objectContaining({
 				method: "GET",
 			}),
@@ -150,7 +151,7 @@ describe("DistributedStreamSource", () => {
 		mockFetch.mockResolvedValue(mockResponse);
 
 		const events: StreamEvent[] = [];
-		const source = new DistributedStreamSource("dist-123", {
+		const source = new DistributedStreamSource("dist-123", "run-123", {
 			skipInitialDelay: true,
 		});
 		source.onEvent((event) => events.push(event));
@@ -166,7 +167,7 @@ describe("DistributedStreamSource", () => {
 
 	it("should implement same interface as SyncStreamSource", () => {
 		const syncSource = new SyncStreamSource(createMockResponse([]));
-		const distSource = new DistributedStreamSource("test-123", {
+		const distSource = new DistributedStreamSource("test-123", "run-123", {
 			skipInitialDelay: true,
 		});
 
@@ -185,16 +186,19 @@ describe("DistributedStreamSource", () => {
 	});
 
 	it("should call error handler on network error", async () => {
+		vi.useFakeTimers();
 		// Network error during fetch
-		mockFetch.mockRejectedValueOnce(new Error("Failed to fetch"));
+		mockFetch.mockRejectedValue(new Error("Failed to fetch"));
 
 		const errors: Error[] = [];
-		const source = new DistributedStreamSource("error-123", {
+		const source = new DistributedStreamSource("error-123", "run-123", {
 			skipInitialDelay: true,
 		});
 		source.onError((error) => errors.push(error));
 
-		await source.start();
+		const startPromise = source.start();
+		await vi.runAllTimersAsync();
+		await startPromise;
 
 		// Error handler should be called
 		expect(errors).toHaveLength(1);
@@ -203,6 +207,7 @@ describe("DistributedStreamSource", () => {
 	});
 
 	it("should call error handler on stream failure", async () => {
+		vi.useFakeTimers();
 		// Server error response
 		const mockResponse = {
 			ok: false,
@@ -212,12 +217,14 @@ describe("DistributedStreamSource", () => {
 		mockFetch.mockResolvedValue(mockResponse);
 
 		const errors: Error[] = [];
-		const source = new DistributedStreamSource("fail-123", {
+		const source = new DistributedStreamSource("fail-123", "run-123", {
 			skipInitialDelay: true,
 		});
 		source.onError((error) => errors.push(error));
 
-		await source.start();
+		const startPromise = source.start();
+		await vi.runAllTimersAsync();
+		await startPromise;
 
 		// Error handler should be called
 		expect(errors).toHaveLength(1);
@@ -232,7 +239,7 @@ describe("DistributedStreamSource", () => {
 		mockFetch.mockResolvedValue(mockResponse);
 
 		const errors: Error[] = [];
-		const source = new DistributedStreamSource("auth-fail-123", {
+		const source = new DistributedStreamSource("auth-fail-123", "run-123", {
 			skipInitialDelay: true,
 		});
 		source.onError((error) => errors.push(error));

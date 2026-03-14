@@ -134,9 +134,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
         self._lock = asyncio.Lock()
 
         # Fallback saver
-        self._fallback_saver: Optional[MemorySaver] = (
-            MemorySaver() if enable_fallback else None
-        )
+        self._fallback_saver: Optional[MemorySaver] = MemorySaver() if enable_fallback else None
         self._using_fallback: bool = False
 
         # Metrics
@@ -163,9 +161,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
 
             try:
                 kwargs = self._get_connection_kwargs()
-                self._connection = await AsyncConnection.connect(
-                    self._connection_string, **kwargs
-                )
+                self._connection = await AsyncConnection.connect(self._connection_string, **kwargs)
                 self._saver = AsyncPostgresSaver(self._connection)
                 self._is_connected = True
                 self._using_fallback = False
@@ -185,9 +181,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
                         "error": str(e),
                     },
                 )
-                raise CheckpointConnectionError(
-                    f"Initial connection failed: {e}"
-                ) from e
+                raise CheckpointConnectionError(f"Initial connection failed: {e}") from e
 
     async def close(self) -> None:
         """Close connection and cleanup resources."""
@@ -264,9 +258,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
 
             # Establish new connection
             kwargs = self._get_connection_kwargs()
-            self._connection = await AsyncConnection.connect(
-                self._connection_string, **kwargs
-            )
+            self._connection = await AsyncConnection.connect(self._connection_string, **kwargs)
             self._saver = AsyncPostgresSaver(self._connection)
             self._is_connected = True
             self._using_fallback = False
@@ -432,9 +424,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
 
         async def _op():
             if self._saver:
-                return await self._saver.aput(
-                    config, checkpoint, metadata, new_versions
-                )
+                return await self._saver.aput(config, checkpoint, metadata, new_versions)
             return config
 
         result = await self._execute_with_retry("aput", _op)
@@ -476,9 +466,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
     ) -> AsyncIterator[CheckpointTuple]:
         """List checkpoints. Note: This is a generator, reconnect per iteration."""
         if self._using_fallback and self._fallback_saver:
-            for item in self._fallback_saver.list(
-                config, filter=filter, before=before, limit=limit
-            ):
+            for item in self._fallback_saver.list(config, filter=filter, before=before, limit=limit):
                 yield item
             return
 
@@ -488,9 +476,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
                 await self._reconnect()
 
             if self._saver:
-                async for checkpoint in self._saver.alist(
-                    config, filter=filter, before=before, limit=limit
-                ):
+                async for checkpoint in self._saver.alist(config, filter=filter, before=before, limit=limit):
                     yield checkpoint
         except Exception as e:
             error_class = classify_checkpoint_error(e)
@@ -503,9 +489,7 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
             )
             if self._enable_fallback and self._fallback_saver is not None:
                 self._using_fallback = True
-                for item in self._fallback_saver.list(
-                    config, filter=filter, before=before, limit=limit
-                ):
+                for item in self._fallback_saver.list(config, filter=filter, before=before, limit=limit):
                     yield item
             else:
                 raise error_class(str(e), original_error=e)

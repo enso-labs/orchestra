@@ -1,4 +1,3 @@
-from uuid import uuid4
 from datetime import datetime
 from typing import Optional
 
@@ -15,17 +14,17 @@ class MemoryRepo(BaseRepo):
         store = store or get_store_in_memory()
         super().__init__(user_id=user_id, store=store, entity_type="memories")
 
-    async def create(self, content: str, metadata: Optional[dict] = None) -> Memory:
-        memory_id = f"memory_{uuid4()}"
+    async def create(self, content: str, metadata: Optional[dict] = None, path: str = "AGENTS.md") -> Memory:
         now = datetime.now()
         memory = Memory(
-            id=memory_id,
+            id=path,
             content=content,
+            enabled=True,
             metadata=metadata or {},
             created_at=now,
             updated_at=now,
         )
-        await self._set(key=memory_id, value=memory)
+        await self._set(key=path, value=memory)
         return memory
 
     async def get(self, memory_id: str) -> Optional[Memory]:
@@ -35,7 +34,11 @@ class MemoryRepo(BaseRepo):
         return Memory.model_validate(item.value)
 
     async def update(
-        self, memory_id: str, content: str, metadata: Optional[dict] = None
+        self,
+        memory_id: str,
+        content: str,
+        metadata: Optional[dict] = None,
+        enabled: Optional[bool] = None,
     ) -> Optional[Memory]:
         existing = await self.get(memory_id)
         if existing is None:
@@ -44,6 +47,7 @@ class MemoryRepo(BaseRepo):
         updated = Memory(
             id=memory_id,
             content=content,
+            enabled=enabled if enabled is not None else existing.enabled,
             metadata=metadata if metadata is not None else existing.metadata,
             created_at=existing.created_at,
             updated_at=now,
@@ -58,9 +62,7 @@ class MemoryRepo(BaseRepo):
         await self._delete(memory_id)
         return True
 
-    async def list(
-        self, limit: int = 10, offset: int = 0, query: str = ""
-    ) -> tuple[list[Memory], int]:
+    async def list(self, limit: int = 10, offset: int = 0, query: str = "") -> tuple[list[Memory], int]:
         search_filter = SearchFilter(
             query=query,
             limit=limit,

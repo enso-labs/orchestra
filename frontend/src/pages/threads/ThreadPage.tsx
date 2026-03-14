@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { useChatContext } from "@/context/ChatContext";
 import { ChatNav } from "@/components/nav/ChatNav";
-import ChatInput from "@/components/inputs/ChatInput";
+import ChatComposer from "@/components/chat/ChatComposer";
 import ChatMessages from "@/components/lists/ChatMessages";
 import ChatMessagesSkeleton from "@/components/lists/ChatMessagesSkeleton";
 import { useAppContext } from "@/context/AppContext";
@@ -21,6 +21,7 @@ import FileEditorPanel from "@/components/panels/FileEditorPanel";
 import useModel from "@/hooks/useModel";
 import { ArrowLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import useActiveStreamRecovery from "@/hooks/useActiveStreamRecovery";
 
 export default function ThreadPage() {
 	const { threadId, projectId } = useParams<{
@@ -51,6 +52,22 @@ export default function ThreadPage() {
 		threadError,
 	} = useChatContext();
 	const isMobile = useMediaQuery("(max-width: 768px)");
+	const hasLiveThreadState =
+		metadata?.thread_id === threadId && messages.length > 0;
+	const isRouteThreadMismatch =
+		Boolean(threadId) &&
+		Boolean(metadata?.thread_id) &&
+		metadata.thread_id !== threadId;
+	const { isRecovering } = useActiveStreamRecovery(threadId);
+	const effectiveThreadLoading =
+		!hasLiveThreadState &&
+		!threadError &&
+		(threadLoading ||
+			isRecovering ||
+			messages.length === 0 ||
+			isRouteThreadMismatch);
+	const effectiveThreadError =
+		!hasLiveThreadState && !isRecovering ? threadError : null;
 
 	useModelsEffect();
 	useEffectGetAgents();
@@ -59,14 +76,43 @@ export default function ThreadPage() {
 	useListCheckpointsEffect(!loading, metadata);
 
 	// Load thread data using modularized hook
-	useLoadThreadEffect(threadId, {
-		setCheckpoints,
+	useLoadThreadEffect(
+		threadId,
+		{
+			setCheckpoints,
+			setMessages,
+			setMetadata,
+			setFilesMap,
+			setTodos,
+			setModel,
+		},
+		{
+			enabled: !hasLiveThreadState,
+		},
+	);
+
+	useEffect(() => {
+		if (!threadId || metadata?.thread_id === threadId) {
+			return;
+		}
+
+		setMessages([]);
+		setCheckpoints([]);
+		setTodos([]);
+		setViewMode("chat");
+		setMetadata((prev: any) => ({
+			...prev,
+			thread_id: threadId,
+		}));
+	}, [
+		threadId,
+		metadata?.thread_id,
 		setMessages,
-		setMetadata,
-		setFilesMap,
+		setCheckpoints,
 		setTodos,
-		setModel,
-	});
+		setViewMode,
+		setMetadata,
+	]);
 
 	// Handle project context if on /p/:projectId/t/:threadId
 	useEffect(() => {
@@ -87,7 +133,7 @@ export default function ThreadPage() {
 		return () => {
 			if (projectId) {
 				setMetadata((prev: any) => {
-					const { project_id, ...rest } = prev;
+					const { project_id: _project_id, ...rest } = prev;
 					return rest;
 				});
 				localStorage.removeItem("current_project_id");
@@ -96,11 +142,11 @@ export default function ThreadPage() {
 		};
 	}, [projectId, projects]);
 
-	if (threadError) {
+	if (effectiveThreadError) {
 		return (
 			<ChatLayout>
 				<div className="flex h-full flex-col items-center justify-center gap-4">
-					<p className="text-muted-foreground">{threadError}</p>
+					<p className="text-muted-foreground">{effectiveThreadError}</p>
 					<button
 						onClick={() => navigate("/chat")}
 						className="text-primary hover:underline"
@@ -119,19 +165,13 @@ export default function ThreadPage() {
 					<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 						<ChatNav sidebarTrigger={<SidebarTrigger />} />
 						<div className="flex-1 min-h-0">
-							{threadLoading ? (
+							{effectiveThreadLoading ? (
 								<ChatMessagesSkeleton />
 							) : (
 								<ChatMessages messages={messages} />
 							)}
 						</div>
-						<div className="sticky bottom-0 bg-background border-border">
-							<div className="max-w-4xl mx-auto">
-								<div className="flex flex-col gap-2 px-4 pb-4">
-									<ChatInput showAgentMenu={true} />
-								</div>
-							</div>
-						</div>
+						<ChatComposer showAgentMenu={true} showSandboxStatus={true} />
 					</div>
 				) : (
 					<>
@@ -150,19 +190,13 @@ export default function ThreadPage() {
 								<div className="flex flex-col h-full min-h-0 overflow-hidden">
 									<ChatNav sidebarTrigger={<SidebarTrigger />} />
 									<div className="flex-1 min-h-0">
-										{threadLoading ? (
+										{effectiveThreadLoading ? (
 											<ChatMessagesSkeleton />
 										) : (
 											<ChatMessages messages={messages} />
 										)}
 									</div>
-									<div className="sticky bottom-0 bg-background border-border">
-										<div className="max-w-4xl mx-auto">
-											<div className="flex flex-col gap-2 px-4 pb-4">
-												<ChatInput showAgentMenu={true} />
-											</div>
-										</div>
-									</div>
+									<ChatComposer showAgentMenu={true} showSandboxStatus={true} />
 								</div>
 							</ResizablePanel>
 						</ResizablePanelGroup>
@@ -173,19 +207,13 @@ export default function ThreadPage() {
 							<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 								<ChatNav sidebarTrigger={<SidebarTrigger />} />
 								<div className="flex-1 min-h-0">
-									{threadLoading ? (
+									{effectiveThreadLoading ? (
 										<ChatMessagesSkeleton />
 									) : (
 										<ChatMessages messages={messages} />
 									)}
 								</div>
-								<div className="sticky bottom-0 bg-background border-border">
-									<div className="max-w-4xl mx-auto">
-										<div className="flex flex-col gap-2 px-4 pb-4">
-											<ChatInput showAgentMenu={true} />
-										</div>
-									</div>
-								</div>
+								<ChatComposer showAgentMenu={true} showSandboxStatus={true} />
 							</div>
 
 							{/* Foreground: Editor Sheet - Only on mobile */}

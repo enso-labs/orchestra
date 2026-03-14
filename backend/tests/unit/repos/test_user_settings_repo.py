@@ -33,6 +33,18 @@ class TestUserSettingsRepo(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.store = InMemoryStore()
         self.repo = UserSettingsRepo(user_id=TEST_USER_ID, store=self.store)
+        # Disable Redis cache for unit tests -- cache tests live in test_user_settings_cache.py
+        self._cache_patches = [
+            patch.object(self.repo, "_get_cached", return_value=None),
+            patch.object(self.repo, "_set_cached", return_value=None),
+            patch.object(self.repo, "_invalidate_cache", return_value=None),
+        ]
+        for p in self._cache_patches:
+            p.start()
+
+    async def asyncTearDown(self):
+        for p in self._cache_patches:
+            p.stop()
 
     # ------------------------------------------------------------------
     # get_settings
@@ -128,6 +140,68 @@ class TestUserSettingsRepo(unittest.IsolatedAsyncioTestCase):
         """get_decrypted_key returns None for unset provider."""
         result = await self.repo.get_decrypted_key("OPENAI_API_KEY")
         self.assertIsNone(result)
+
+    # ------------------------------------------------------------------
+    # set_default_sandbox
+    # ------------------------------------------------------------------
+
+    async def test_set_default_sandbox(self, _dec, _enc):
+        """Setting a default sandbox persists and is returned."""
+        await self.repo.set_default_sandbox("daytona")
+        settings, _ = await self.repo.get_settings()
+        self.assertEqual(settings.default_sandbox, "daytona")
+
+    async def test_clear_default_sandbox(self, _dec, _enc):
+        """Setting sandbox to None clears the default."""
+        await self.repo.set_default_sandbox("state")
+        await self.repo.set_default_sandbox(None)
+        settings, _ = await self.repo.get_settings()
+        self.assertIsNone(settings.default_sandbox)
+
+    async def test_patch_defaults_persists_files_and_deleted_files(self, _dec, _enc):
+        """patch_defaults stores persisted files and normalized tombstones."""
+        await self.repo.patch_defaults(
+            {
+                "files": {
+                    "/profile.md": {
+                        "content": ["hello"],
+                        "created_at": "2024-01-01T00:00:00Z",
+                        "modified_at": "2024-01-02T00:00:00Z",
+                    }
+                },
+                "deleted_files": ["/tmp.md", "/tmp.md", "/archive.md"],
+            }
+        )
+
+        settings, _ = await self.repo.get_settings()
+        assert settings.default_files is not None
+        assert "/profile.md" in settings.default_files
+        assert settings.default_files["/profile.md"].content == ["hello"]
+        assert settings.default_deleted_files == ["/archive.md", "/tmp.md"]
+
+    async def test_patch_defaults_rejects_invalid_file_paths(self, _dec, _enc):
+        """patch_defaults rejects non-absolute persisted file paths."""
+        with self.assertRaises(ValueError):
+            await self.repo.patch_defaults(
+                {
+                    "files": {
+                        "relative.txt": {
+                            "content": ["hello"],
+                        }
+                    }
+                }
+            )
+
+    async def test_patch_defaults_rejects_invalid_deleted_file_paths(self, _dec, _enc):
+        """patch_defaults rejects non-absolute deleted file tombstones."""
+        with self.assertRaises(ValueError):
+            await self.repo.patch_defaults({"deleted_files": ["relative.txt"]})
+
+    async def test_set_invalid_sandbox_raises(self, _dec, _enc):
+        """Setting an invalid sandbox value raises ValueError."""
+        with self.assertRaises(ValueError) as ctx:
+            await self.repo.set_default_sandbox("invalid_backend")
+        self.assertIn("Invalid sandbox", str(ctx.exception))
 
     # ------------------------------------------------------------------
     # invalid provider rejection

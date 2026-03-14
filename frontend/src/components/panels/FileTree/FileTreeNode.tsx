@@ -82,10 +82,6 @@ export const FileTreeNode = memo(function FileTreeNode({
 	}, [isFolder, item.data.path, onSelect]);
 
 	// Context menu handlers
-	const handleRename = useCallback(() => {
-		onRename?.(item.data.path);
-	}, [item.data.path, onRename]);
-
 	const handleDelete = useCallback(() => {
 		onDelete?.(item.data.path);
 	}, [item.data.path, onDelete]);
@@ -153,10 +149,9 @@ export const FileTreeNode = memo(function FileTreeNode({
 			<ContextMenuContent>
 				{isFolder ? (
 					<>
-						<ContextMenuItem onClick={handleNewFile}>New File</ContextMenuItem>
-						<ContextMenuItem onClick={handleRename}>Rename</ContextMenuItem>
+						<ContextMenuItem onSelect={handleNewFile}>New File</ContextMenuItem>
 						<ContextMenuItem
-							onClick={handleDelete}
+							onSelect={handleDelete}
 							className="text-destructive"
 						>
 							Delete
@@ -164,9 +159,11 @@ export const FileTreeNode = memo(function FileTreeNode({
 					</>
 				) : (
 					<>
-						<ContextMenuItem onClick={handleRename}>Rename</ContextMenuItem>
+						<ContextMenuItem onSelect={() => onRename?.(item.data.path)}>
+							Rename
+						</ContextMenuItem>
 						<ContextMenuItem
-							onClick={handleDelete}
+							onSelect={handleDelete}
 							className="text-destructive"
 						>
 							Delete

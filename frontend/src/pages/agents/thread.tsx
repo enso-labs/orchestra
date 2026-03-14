@@ -12,6 +12,7 @@ import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import useModel from "@/hooks/useModel";
+import useActiveStreamRecovery from "@/hooks/useActiveStreamRecovery";
 
 const DEFAULT_TAB = "assistant";
 
@@ -32,11 +33,14 @@ function AgentThreadPage() {
 		setFilesMap,
 		setTodos,
 		fromBackendFormat,
-		clearFileSystem,
+		clearBackendSyncFiles,
+		clearThreadScopedFiles,
+		runWithPersistentSyncSuspended,
 	} = useChatContext();
 
-	useEffectGetAgent(agentId);
+	useEffectGetAgent(agentId!);
 	useEffectGetAgents();
+	useActiveStreamRecovery(threadId);
 
 	// Load thread data using modularized hook
 	useLoadThreadEffect(threadId, {
@@ -82,16 +86,19 @@ function AgentThreadPage() {
 		return () => {
 			setSearchParams(new URLSearchParams());
 			setAgent(INIT_AGENT_STATE.agent);
-			clearFileSystem();
+			clearBackendSyncFiles();
+			clearThreadScopedFiles();
 		};
 	}, []);
 
 	// Sync agent.file_system to fileSystem when agent loads
 	useEffect(() => {
 		if (agent?.files && Object.keys(agent.files).length > 0) {
-			fromBackendFormat(agent.files);
+			runWithPersistentSyncSuspended(() => {
+				fromBackendFormat(agent.files);
+			});
 		}
-	}, [agent?.id, fromBackendFormat]);
+	}, [agent?.id, fromBackendFormat, runWithPersistentSyncSuspended]);
 
 	return (
 		<ChatLayout>
@@ -111,7 +118,7 @@ function AgentThreadPage() {
 							</TabsList>
 						</Tabs>
 					</div>
-					<ChatNav sidebarTrigger={null} showModelSelector={false} />
+					<ChatNav sidebarTrigger={null} />
 				</div>
 
 				<Tabs

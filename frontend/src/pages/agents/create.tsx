@@ -13,11 +13,12 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 function AgentCreatePage() {
 	const { agent, setAgent, useEffectGetAgents } = useAgentContext();
-	const { useListThreadsEffect, messages } = useChatContext();
+	const { useListThreadsEffect, messages, useModelsEffect } = useChatContext();
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
 
 	useEffectGetAgents();
+	useModelsEffect();
 
 	const handleTabChange = (value: string) => {
 		setActiveTab(value);

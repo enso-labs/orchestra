@@ -27,8 +27,7 @@ class ServiceContext:
         self.store = store or get_store_in_memory()
         self.checkpointer = checkpointer
         self.user_id = user_id or (
-            config["configurable"].get("user_id", None)
-            or config["metadata"].get("user_id", None)
+            config["configurable"].get("user_id", None) or config["metadata"].get("user_id", None)
         )
 
         self.tool_service = ToolService(user_id=self.user_id, store=store)
@@ -46,15 +45,11 @@ class ServiceContext:
             config=config,
         )
         if checkpointer:
-            self.checkpoint_service = CheckpointService(
-                user_id=self.user_id, checkpointer=checkpointer
-            )
+            self.checkpoint_service = CheckpointService(user_id=self.user_id, checkpointer=checkpointer)
 
     async def delete_thread(self, thread_id: str):
         try:
-            deleted_checkpoints = (
-                await self.checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            )
+            deleted_checkpoints = await self.checkpoint_service.delete_checkpoints_for_thread(thread_id)
             if not deleted_checkpoints:
                 raise ValueError(f"Failed to delete checkpoints for thread {thread_id}")
             deleted_thread = await self.thread_service.delete(thread_id)

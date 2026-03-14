@@ -5,15 +5,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { logout } from "@/lib/utils/auth";
-import {
-	Settings,
-	Cog,
-
-	FileText,
-	Book,
-	Globe,
-	Key,
-} from "lucide-react";
+import { Settings, Cog, FileText, Book, Globe, Key } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";

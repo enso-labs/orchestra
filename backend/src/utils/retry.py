@@ -90,9 +90,7 @@ def retry_db_operation(
 
                         # Check if error should be retried
                         if classify_error is not None and not classify_error(e):
-                            logger.warning(
-                                f"Non-retryable error in {func.__name__}: {e}"
-                            )
+                            logger.warning(f"Non-retryable error in {func.__name__}: {e}")
                             if on_failure:
                                 on_failure(e, attempt + 1)
                             raise
@@ -108,9 +106,7 @@ def retry_db_operation(
                                 on_retry(e, attempt + 1, current_delay)
                             await asyncio.sleep(current_delay)
                         else:
-                            logger.error(
-                                f"All {tries} retries exhausted for {func.__name__}: {e}"
-                            )
+                            logger.error(f"All {tries} retries exhausted for {func.__name__}: {e}")
                             if on_failure:
                                 on_failure(e, tries)
                             raise
@@ -134,9 +130,7 @@ def retry_db_operation(
 
                         # Check if error should be retried
                         if classify_error is not None and not classify_error(e):
-                            logger.warning(
-                                f"Non-retryable error in {func.__name__}: {e}"
-                            )
+                            logger.warning(f"Non-retryable error in {func.__name__}: {e}")
                             if on_failure:
                                 on_failure(e, attempt + 1)
                             raise
@@ -152,9 +146,7 @@ def retry_db_operation(
                                 on_retry(e, attempt + 1, current_delay)
                             time.sleep(current_delay)
                         else:
-                            logger.error(
-                                f"All {tries} retries exhausted for {func.__name__}: {e}"
-                            )
+                            logger.error(f"All {tries} retries exhausted for {func.__name__}: {e}")
                             if on_failure:
                                 on_failure(e, tries)
                             raise

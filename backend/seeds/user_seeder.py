@@ -22,11 +22,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from src.constants import DB_URI
 from src.schemas.models import User
+from src.utils.db import get_asyncpg_connect_args, get_asyncpg_url
 
-ASYNC_DB_URI = DB_URI.replace("postgresql://", "postgresql+asyncpg://")
+ASYNC_DB_URI = get_asyncpg_url(DB_URI)
 engine = create_async_engine(
     ASYNC_DB_URI,
-    connect_args={"ssl": False},
+    connect_args=get_asyncpg_connect_args(DB_URI),
 )
 AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -34,9 +35,7 @@ AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=e
 async def seed_admin():
     async with AsyncSessionLocal() as db:
         try:
-            result = await db.execute(
-                select(User).filter(User.email == "admin@example.com")
-            )
+            result = await db.execute(select(User).filter(User.email == "admin@example.com"))
             admin = result.scalar_one_or_none()
             if admin:
                 print("Admin exists, skipping seeding")
@@ -58,9 +57,7 @@ async def seed_admin():
 async def seed_user():
     async with AsyncSessionLocal() as db:
         try:
-            result = await db.execute(
-                select(User).filter(User.email == "user@example.com")
-            )
+            result = await db.execute(select(User).filter(User.email == "user@example.com"))
             user = result.scalar_one_or_none()
             if user:
                 print("User exists, skipping seeding")

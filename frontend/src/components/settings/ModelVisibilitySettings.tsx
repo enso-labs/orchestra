@@ -11,8 +11,10 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useModelVisibility } from "@/hooks/useModelVisibility";
 import { useChatContext } from "@/context/ChatContext";
 
@@ -40,7 +42,8 @@ const PROVIDER_ORDER = [
 
 export function ModelVisibilitySettings() {
 	const { models, useModelsEffect } = useChatContext();
-	const { isModelVisible, toggleModelVisibility } = useModelVisibility();
+	const { isModelVisible, toggleModelVisibility, isLoading, error } =
+		useModelVisibility();
 
 	// Ensure models are loaded on the Settings page as well.
 	useModelsEffect?.();
@@ -71,7 +74,17 @@ export function ModelVisibilitySettings() {
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				{allModels.length === 0 ? (
+				{isLoading ? (
+					<div className="space-y-3">
+						{Array.from({ length: 4 }).map((_, i) => (
+							<Skeleton key={i} className="h-10 w-full rounded-md" />
+						))}
+					</div>
+				) : error ? (
+					<Alert variant="destructive">
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
+				) : allModels.length === 0 ? (
 					<div className="text-muted-foreground">No models available.</div>
 				) : (
 					<Accordion type="multiple" className="w-full">
@@ -118,6 +131,7 @@ export function ModelVisibilitySettings() {
 													<Switch
 														id={`model-${modelId}`}
 														checked={isModelVisible(modelId)}
+														disabled={isLoading}
 														onCheckedChange={() =>
 															toggleModelVisibility(modelId)
 														}

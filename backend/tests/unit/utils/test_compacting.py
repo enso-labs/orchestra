@@ -11,9 +11,7 @@ from src.utils.compacting import SummarizationMiddleware
 # --- Helper factories ---
 
 
-def _make_messages(
-    n: int, content_size: int = 100, include_system: bool = False
-) -> list[BaseMessage]:
+def _make_messages(n: int, content_size: int = 100, include_system: bool = False) -> list[BaseMessage]:
     """Create a list of messages with predictable token estimates.
 
     Each message has content of `content_size` chars → ~content_size//4 tokens.
@@ -107,6 +105,8 @@ class TestSummarizationNoOp:
 
 
 class TestSummarizationCompaction:
+    MODEL = "openai:test-model"
+
     @pytest.mark.asyncio
     @patch("src.utils.compacting.init_chat_model")
     async def test_triggers_compaction(self, mock_init: MagicMock) -> None:
@@ -114,7 +114,7 @@ class TestSummarizationCompaction:
         mock_llm.ainvoke.return_value = AIMessage(content="Summary of conversation.")
         mock_init.return_value = mock_llm
 
-        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2)
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2, model=self.MODEL)
         msgs = _make_messages(6, content_size=100)
         result = await mw.compact(msgs)
 
@@ -128,7 +128,7 @@ class TestSummarizationCompaction:
         mock_llm.ainvoke.return_value = AIMessage(content="Summary.")
         mock_init.return_value = mock_llm
 
-        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2)
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2, model=self.MODEL)
         msgs = _make_messages(6, content_size=100, include_system=True)
         result = await mw.compact(msgs)
 
@@ -144,7 +144,7 @@ class TestSummarizationCompaction:
         mock_init.return_value = mock_llm
 
         recent_count = 3
-        mw = SummarizationMiddleware(token_threshold=10, recent_messages=recent_count)
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=recent_count, model=self.MODEL)
         msgs = _make_messages(8, content_size=100)
         result = await mw.compact(msgs)
 
@@ -158,7 +158,7 @@ class TestSummarizationCompaction:
         mock_llm.ainvoke.return_value = AIMessage(content="Key facts here.")
         mock_init.return_value = mock_llm
 
-        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2)
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2, model=self.MODEL)
         msgs = _make_messages(6, content_size=100)
         result = await mw.compact(msgs)
 
@@ -173,12 +173,12 @@ class TestSummarizationCompaction:
         mock_llm.ainvoke.return_value = AIMessage(content="Summary.")
         mock_init.return_value = mock_llm
 
-        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2)
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2, model=self.MODEL)
         msgs = _make_messages(6, content_size=100)
         result = await mw.compact(msgs)
 
         summary_msg = result[0]
-        assert summary_msg.metadata["compacted"] is True
+        assert summary_msg.additional_kwargs["compacted"] is True
 
     @pytest.mark.asyncio
     @patch("src.utils.compacting.init_chat_model")
@@ -187,13 +187,13 @@ class TestSummarizationCompaction:
         mock_llm.ainvoke.return_value = AIMessage(content="Summary.")
         mock_init.return_value = mock_llm
 
-        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2)
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2, model=self.MODEL)
         msgs = _make_messages(6, content_size=100)
         result = await mw.compact(msgs)
 
         summary_msg = result[0]
         # 6 messages - 2 recent = 4 middle messages summarized
-        assert summary_msg.metadata["original_count"] == 4
+        assert summary_msg.additional_kwargs["original_count"] == 4
 
     @pytest.mark.asyncio
     @patch("src.utils.compacting.init_chat_model")
@@ -202,9 +202,7 @@ class TestSummarizationCompaction:
         mock_llm.ainvoke.return_value = AIMessage(content="Summary.")
         mock_init.return_value = mock_llm
 
-        mw = SummarizationMiddleware(
-            token_threshold=10, recent_messages=2, model="openai:gpt-4"
-        )
+        mw = SummarizationMiddleware(token_threshold=10, recent_messages=2, model="openai:gpt-4")
         msgs = _make_messages(6, content_size=100)
         await mw.compact(msgs)
 

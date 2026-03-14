@@ -1,7 +1,6 @@
 **/.env*
 **/logs
 **/tests
-**/seeds
 **/sandbox
 **/scripts
 **/langgraph.json
@@ -37,3 +36,6 @@ Makefile
 **/pytest*
 **/pysandbox
 **/ralph-loop*
+**/.images
+dist
+htmlcov

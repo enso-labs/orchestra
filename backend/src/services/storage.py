@@ -23,11 +23,7 @@ class StorageService:
         return cls._instance
 
     def __init__(self, access_key_id, secret_access_key, minio_server: str = None):
-        self.minio_server = (
-            minio_server
-            if minio_server
-            else (MINIO_HOST or f"s3.{S3_REGION}.amazonaws.com")
-        )
+        self.minio_server = minio_server if minio_server else (MINIO_HOST or f"s3.{S3_REGION}.amazonaws.com")
         self.access_key_id = access_key_id
         self.secret_access_key = secret_access_key
         self.client = Minio(
@@ -67,8 +63,7 @@ class StorageService:
                 file_info = {
                     "filename": os.path.basename(obj.object_name),
                     "size": obj.size,
-                    "content_type": mimetypes.guess_type(obj.object_name)[0]
-                    or "application/octet-stream",
+                    "content_type": mimetypes.guess_type(obj.object_name)[0] or "application/octet-stream",
                     "object_name": obj.object_name,
                     "last_modified": obj.last_modified.isoformat(),
                     "etag": obj.etag,
@@ -96,9 +91,7 @@ class StorageService:
             logging.error("Error deleting file %s: %s", path, err)
             raise ValueError(f"Failed to delete file: {err}") from err
 
-    def upload_file(
-        self, upload_file: UploadFile, bucket, directory=None, object_name=None
-    ):
+    def upload_file(self, upload_file: UploadFile, bucket, directory=None, object_name=None):
         """Upload a file to a MinIO bucket asynchronously with appropriate content type"""
         if object_name is None:
             object_name = upload_file.filename
@@ -120,9 +113,7 @@ class StorageService:
                     upload_file.size,
                     content_type=content_type,
                 )
-                logging.info(
-                    f"Successfully uploaded {upload_file.filename} to {object_name}"
-                )
+                logging.info(f"Successfully uploaded {upload_file.filename} to {object_name}")
             except S3Error as err:
                 logging.error("Error uploading file %s: %s", upload_file.filename, err)
 
@@ -138,9 +129,7 @@ class StorageService:
         threads = []
         for file in files:
             extension = os.path.splitext(file.filename)[1].lower()
-            directory = (
-                f"{prefix}/{extension.strip('.')}" if prefix else extension.strip(".")
-            )
+            directory = f"{prefix}/{extension.strip('.')}" if prefix else extension.strip(".")
             thread = self.upload_file(file, bucket, directory=directory)
             threads.append(thread)
 
@@ -195,15 +184,11 @@ class StorageService:
                 if url:
                     urls[object_name] = url
             except S3Error as err:
-                logging.error(
-                    f"Error generating presigned URL for {object_name}: {err}"
-                )
+                logging.error(f"Error generating presigned URL for {object_name}: {err}")
                 continue
         return urls
 
-    def upload_and_get_presigned_urls(
-        self, files, bucket, prefix=None, expiration=3600, include_presigned=False
-    ):
+    def upload_and_get_presigned_urls(self, files, bucket, prefix=None, expiration=3600, include_presigned=False):
         """Upload files and return their info with direct URLs and optional presigned URLs
         :param files: List of FastAPI UploadFile objects
         :param bucket: Bucket to upload to
@@ -219,18 +204,14 @@ class StorageService:
         object_names = []
         for file in files:
             extension = os.path.splitext(file.filename)[1].lower()
-            directory = (
-                f"{prefix}/{extension.strip('.')}" if prefix else extension.strip(".")
-            )
+            directory = f"{prefix}/{extension.strip('.')}" if prefix else extension.strip(".")
             object_name = os.path.join(directory, file.filename)
             object_names.append(object_name)
 
         # Generate presigned URLs if requested
         presigned_urls = {}
         if include_presigned:
-            presigned_urls = self.create_presigned_urls(
-                bucket, object_names, expiration=expiration
-            )
+            presigned_urls = self.create_presigned_urls(bucket, object_names, expiration=expiration)
 
         # Combine results with direct URLs and optional presigned URLs
         results = []

@@ -25,24 +25,19 @@ export function ScheduleCalendar({
 	events,
 	onEventClick,
 }: ScheduleCalendarProps) {
-	const eventStyleGetter = useCallback(
-		(event: ScheduleEvent) => {
-			const backgroundColor = getExecutionStatusColor(
-				event.resource.status,
-			);
-			return {
-				style: {
-					backgroundColor,
-					borderRadius: "4px",
-					opacity: 0.9,
-					color: "white",
-					border: "none",
-					display: "block",
-				},
-			};
-		},
-		[],
-	);
+	const eventStyleGetter = useCallback((event: ScheduleEvent) => {
+		const backgroundColor = getExecutionStatusColor(event.resource.status);
+		return {
+			style: {
+				backgroundColor,
+				borderRadius: "4px",
+				opacity: 0.9,
+				color: "white",
+				border: "none",
+				display: "block",
+			},
+		};
+	}, []);
 
 	const handleSelectEvent = useCallback(
 		(event: ScheduleEvent) => {
@@ -55,7 +50,7 @@ export function ScheduleCalendar({
 	const views: View[] = useMemo(() => ["month", "week", "day"], []);
 
 	return (
-		<div className="schedule-calendar h-full min-h-[600px]">
+		<div className="schedule-calendar h-full min-h-[400px] sm:min-h-[600px] overflow-hidden pb-6">
 			<Calendar<ScheduleEvent>
 				localizer={localizer}
 				events={events}
@@ -64,7 +59,7 @@ export function ScheduleCalendar({
 				eventPropGetter={eventStyleGetter}
 				onSelectEvent={handleSelectEvent}
 				popup
-				style={{ height: "100%" }}
+				style={{ height: "calc(100% - 24px)" }}
 			/>
 		</div>
 	);

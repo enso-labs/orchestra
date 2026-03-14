@@ -126,7 +126,7 @@ export function ApiToolForm({
 				},
 			};
 			await onSave(payload);
-		} catch (error) {
+		} catch (_error) {
 			// Error handled by parent (toast)
 		} finally {
 			setIsSubmitting(false);

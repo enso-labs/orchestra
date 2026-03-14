@@ -19,23 +19,17 @@ from src.utils.retrieval import langconnect_proxy
 from src.constants import LANGCONNECT_SERVER_URL
 
 
-CLIENT_SPEC = (
-    fetch_openapi_spec_sync(f"{LANGCONNECT_SERVER_URL}/openapi.json")
-    if LANGCONNECT_SERVER_URL
-    else None
-)
+CLIENT_SPEC = fetch_openapi_spec_sync(f"{LANGCONNECT_SERVER_URL}/openapi.json") if LANGCONNECT_SERVER_URL else None
 TAG = "RAG"
 if CLIENT_SPEC:
-    gateway = APIRouter(prefix=f"/rag")
+    gateway = APIRouter(prefix="/rag")
 
     @gateway.get(
         "/collections",
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
         responses={
-            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections"]["get"][
-                "responses"
-            ]["200"],
+            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections"]["get"]["responses"]["200"],
         },
         summary=CLIENT_SPEC["paths"]["/collections"]["get"]["summary"],
         description=CLIENT_SPEC["paths"]["/collections"]["get"]["description"],
@@ -50,12 +44,8 @@ if CLIENT_SPEC:
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
         responses={
-            status.HTTP_201_CREATED: CLIENT_SPEC["paths"]["/collections"]["post"][
-                "responses"
-            ]["201"],
-            status.HTTP_422_UNPROCESSABLE_ENTITY: CLIENT_SPEC["paths"]["/collections"][
-                "post"
-            ]["responses"]["422"],
+            status.HTTP_201_CREATED: CLIENT_SPEC["paths"]["/collections"]["post"]["responses"]["201"],
+            status.HTTP_422_UNPROCESSABLE_ENTITY: CLIENT_SPEC["paths"]["/collections"]["post"]["responses"]["422"],
         },
         status_code=status.HTTP_201_CREATED,
         summary=CLIENT_SPEC["paths"]["/collections"]["post"]["summary"],
@@ -74,14 +64,10 @@ if CLIENT_SPEC:
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
         responses={
-            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections/{collection_id}"][
-                "get"
-            ]["responses"]["200"],
+            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections/{collection_id}"]["get"]["responses"]["200"],
         },
         summary=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["get"]["summary"],
-        description=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["get"][
-            "description"
-        ],
+        description=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["get"]["description"],
         response_model=get_response_model("CollectionResponse", CLIENT_SPEC),
     )
     async def collection_get(request: Request, collection_id: UUID):
@@ -92,19 +78,11 @@ if CLIENT_SPEC:
         "/collections/{collection_id}",
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
-        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"][
-            "summary"
-        ],
-        description=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"][
-            "description"
-        ],
-        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"][
-            "operationId"
-        ],
+        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"]["summary"],
+        description=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"]["description"],
+        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"]["operationId"],
         responses={
-            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections/{collection_id}"][
-                "patch"
-            ]["responses"]["200"],
+            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections/{collection_id}"]["patch"]["responses"]["200"],
         },
         response_model=get_response_model("CollectionResponse", CLIENT_SPEC),
     )
@@ -121,15 +99,9 @@ if CLIENT_SPEC:
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
         status_code=status.HTTP_204_NO_CONTENT,
-        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["delete"][
-            "summary"
-        ],
-        description=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["delete"][
-            "description"
-        ],
-        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["delete"][
-            "operationId"
-        ],
+        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["delete"]["summary"],
+        description=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["delete"]["description"],
+        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}"]["delete"]["operationId"],
     )
     async def collection_delete(request: Request, collection_id: UUID):
         response = await langconnect_proxy(request)
@@ -143,19 +115,13 @@ if CLIENT_SPEC:
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
         responses={
-            status.HTTP_200_OK: CLIENT_SPEC["paths"][
-                "/collections/{collection_id}/documents"
-            ]["get"]["responses"]["200"],
+            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["get"]["responses"][
+                "200"
+            ],
         },
-        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["get"][
-            "summary"
-        ],
-        description=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"][
-            "get"
-        ]["description"],
-        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"][
-            "get"
-        ]["operationId"],
+        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["get"]["summary"],
+        description=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["get"]["description"],
+        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["get"]["operationId"],
         response_model=list[get_response_model("DocumentResponse", CLIENT_SPEC)],
     )
     async def documents_list(
@@ -172,19 +138,13 @@ if CLIENT_SPEC:
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
         responses={
-            status.HTTP_200_OK: CLIENT_SPEC["paths"][
-                "/collections/{collection_id}/documents"
-            ]["post"]["responses"]["200"],
+            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["post"]["responses"][
+                "200"
+            ],
         },
-        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["post"][
-            "summary"
-        ],
-        description=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"][
-            "post"
-        ]["description"],
-        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"][
-            "post"
-        ]["operationId"],
+        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["post"]["summary"],
+        description=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["post"]["description"],
+        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents"]["post"]["operationId"],
         response_model=dict[str, Any],
     )
     async def documents_create(
@@ -217,15 +177,9 @@ if CLIENT_SPEC:
                 },
             }
         },
-        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/search"][
-            "post"
-        ]["summary"],
-        description=CLIENT_SPEC["paths"][
-            "/collections/{collection_id}/documents/search"
-        ]["post"]["description"],
-        operation_id=CLIENT_SPEC["paths"][
-            "/collections/{collection_id}/documents/search"
-        ]["post"]["operationId"],
+        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/search"]["post"]["summary"],
+        description=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/search"]["post"]["description"],
+        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/search"]["post"]["operationId"],
         # response_model=list[get_response_model("SearchResult", CLIENT_SPEC)],
     )
     async def documents_search(
@@ -241,19 +195,17 @@ if CLIENT_SPEC:
         dependencies=[Depends(HTTPBearer())],
         tags=[TAG],
         responses={
-            status.HTTP_200_OK: CLIENT_SPEC["paths"][
-                "/collections/{collection_id}/documents/{document_id}"
-            ]["delete"]["responses"]["200"],
+            status.HTTP_200_OK: CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/{document_id}"]["delete"][
+                "responses"
+            ]["200"],
         },
-        summary=CLIENT_SPEC["paths"][
-            "/collections/{collection_id}/documents/{document_id}"
-        ]["delete"]["summary"],
-        description=CLIENT_SPEC["paths"][
-            "/collections/{collection_id}/documents/{document_id}"
-        ]["delete"]["description"],
-        operation_id=CLIENT_SPEC["paths"][
-            "/collections/{collection_id}/documents/{document_id}"
-        ]["delete"]["operationId"],
+        summary=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/{document_id}"]["delete"]["summary"],
+        description=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/{document_id}"]["delete"][
+            "description"
+        ],
+        operation_id=CLIENT_SPEC["paths"]["/collections/{collection_id}/documents/{document_id}"]["delete"][
+            "operationId"
+        ],
         # response_model=dict[str, bool],
     )
     async def documents_delete(

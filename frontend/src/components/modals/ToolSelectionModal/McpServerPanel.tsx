@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Server, Trash2, Loader2 } from "lucide-react";
+import { Plus, Server, Trash2, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Tool, McpServerConfig } from "./types";
 import { ToolGrid } from "./ToolGrid";
 
@@ -21,6 +22,7 @@ interface McpServerPanelProps {
 	onToggleSelection: (toolName: string) => void;
 	onAddServer: (name: string, config: McpServerConfig) => void;
 	onRemoveServer: (name: string) => void;
+	onToggleServer: (name: string) => void;
 	onTestConnection: (config: Record<string, McpServerConfig>) => Promise<void>;
 	isLoading: boolean;
 }
@@ -44,6 +46,12 @@ const MCP_TEMPLATES = {
 		url: "https://mcp.github.com/sse",
 		headers: { Authorization: "Bearer " },
 	},
+	exec: {
+		name: "Exec Server",
+		transport: "streamable_http" as const,
+		url: "http://localhost:3005/mcp",
+		headers: { "x-api-key": "" },
+	},
 };
 
 export function McpServerPanel({
@@ -53,10 +61,12 @@ export function McpServerPanel({
 	onToggleSelection,
 	onAddServer,
 	onRemoveServer,
+	onToggleServer,
 	onTestConnection,
 	isLoading,
 }: McpServerPanelProps) {
 	const [showAddForm, setShowAddForm] = useState(false);
+	const [editingServer, setEditingServer] = useState<string | null>(null);
 	const [serverName, setServerName] = useState("");
 	const [selectedTemplate, setSelectedTemplate] =
 		useState<keyof typeof MCP_TEMPLATES>("custom");
@@ -105,7 +115,27 @@ export function McpServerPanel({
 		setUrl("");
 		setHeaderKey("");
 		setHeaderValue("");
+		setEditingServer(null);
 		setShowAddForm(false);
+	};
+
+	const handleEditServer = (name: string, config: McpServerConfig) => {
+		setEditingServer(name);
+		setServerName(name);
+		setSelectedTemplate("custom");
+		setTransport(config.transport);
+		setUrl(config.url);
+
+		const firstHeader = Object.entries(config.headers)[0];
+		if (firstHeader) {
+			setHeaderKey(firstHeader[0]);
+			setHeaderValue(firstHeader[1]);
+		} else {
+			setHeaderKey("");
+			setHeaderValue("");
+		}
+
+		setShowAddForm(true);
 	};
 
 	const handleTestConnection = async () => {
@@ -117,10 +147,10 @@ export function McpServerPanel({
 	return (
 		<div className="flex flex-col h-full">
 			{/* Header */}
-			<div className="flex-shrink-0 border-b border-border px-4 sm:px-8 lg:px-12 py-4 sm:py-6 space-y-4">
+			<div className="flex-shrink-0 border-b border-border px-3 sm:px-4 lg:px-6 py-3 sm:py-4 space-y-4">
 				<div className="flex items-center justify-between">
 					<div>
-						<h2 className="text-xl sm:text-2xl font-semibold text-foreground">
+						<h2 className="text-lg sm:text-xl font-semibold text-foreground">
 							MCP Servers
 						</h2>
 						<p className="text-sm text-muted-foreground">
@@ -128,7 +158,18 @@ export function McpServerPanel({
 						</p>
 					</div>
 					<Button
-						onClick={() => setShowAddForm(!showAddForm)}
+						onClick={() => {
+							setShowAddForm(!showAddForm);
+							if (showAddForm) {
+								setEditingServer(null);
+								setServerName("");
+								setSelectedTemplate("custom");
+								setTransport("sse");
+								setUrl("");
+								setHeaderKey("");
+								setHeaderValue("");
+							}
+						}}
 						size="sm"
 						variant={showAddForm ? "outline" : "default"}
 					>
@@ -227,7 +268,10 @@ export function McpServerPanel({
 								variant="outline"
 								onClick={() => {
 									setShowAddForm(false);
+									setEditingServer(null);
 									setServerName("");
+									setSelectedTemplate("custom");
+									setTransport("sse");
 									setUrl("");
 									setHeaderKey("");
 									setHeaderValue("");
@@ -239,7 +283,7 @@ export function McpServerPanel({
 								onClick={handleAddServer}
 								disabled={!serverName.trim() || !url.trim()}
 							>
-								Add Server
+								{editingServer ? "Save" : "Add Server"}
 							</Button>
 						</div>
 					</Card>
@@ -273,30 +317,50 @@ export function McpServerPanel({
 						</div>
 
 						<div className="space-y-2">
-							{Object.entries(mcpServers).map(([name, config]) => (
-								<Card key={name} className="p-3">
-									<div className="flex items-center justify-between">
-										<div className="flex items-center gap-3">
-											<Server className="h-4 w-4 text-muted-foreground" />
-											<div>
-												<p className="text-sm font-medium text-foreground">
-													{name}
-												</p>
-												<p className="text-xs text-muted-foreground">
-													{config.transport} • {config.url}
-												</p>
+							{Object.entries(mcpServers).map(([name, config]) => {
+								const isEnabled = config.enabled !== false;
+								return (
+									<Card
+										key={name}
+										className={`p-3 transition-opacity ${!isEnabled ? "opacity-50" : ""}`}
+									>
+										<div className="flex items-center justify-between">
+											<div className="flex items-center gap-3">
+												<Server className="h-4 w-4 text-muted-foreground" />
+												<div>
+													<p className="text-sm font-medium text-foreground">
+														{name}
+													</p>
+													<p className="text-xs text-muted-foreground">
+														{config.transport} • {config.url}
+													</p>
+												</div>
+											</div>
+											<div className="flex items-center gap-1">
+												<Switch
+													checked={isEnabled}
+													onCheckedChange={() => onToggleServer(name)}
+													aria-label={`Toggle ${name}`}
+												/>
+												<Button
+													size="icon"
+													variant="ghost"
+													onClick={() => handleEditServer(name, config)}
+												>
+													<Pencil className="h-4 w-4 text-muted-foreground" />
+												</Button>
+												<Button
+													size="icon"
+													variant="ghost"
+													onClick={() => onRemoveServer(name)}
+												>
+													<Trash2 className="h-4 w-4 text-destructive" />
+												</Button>
 											</div>
 										</div>
-										<Button
-											size="icon"
-											variant="ghost"
-											onClick={() => onRemoveServer(name)}
-										>
-											<Trash2 className="h-4 w-4 text-destructive" />
-										</Button>
-									</div>
-								</Card>
-							))}
+									</Card>
+								);
+							})}
 						</div>
 					</div>
 				)}

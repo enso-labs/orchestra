@@ -1,6 +1,6 @@
 import { ApiTokensSettings } from "@/components/settings/ApiTokensSettings";
 import { DefaultModelSettings } from "@/components/settings/DefaultModelSettings";
-import { MemorySettings } from "@/components/settings/MemorySettings";
+import { SandboxSettings } from "@/components/settings/SandboxSettings";
 import { ModelVisibilitySettings } from "@/components/settings/ModelVisibilitySettings";
 import { UserApiKeysSettings } from "@/components/settings/UserApiKeysSettings";
 import ChatLayout from "@/layouts/chat-layout-v2";
@@ -12,10 +12,7 @@ export default function SettingsPage() {
 	return (
 		<ChatLayout>
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-				<ChatNav
-					sidebarTrigger={<SidebarTrigger />}
-					showModelSelector={false}
-				/>
+				<ChatNav sidebarTrigger={<SidebarTrigger />} />
 				<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 					<div className="flex-1 min-h-0">
 						<ScrollArea className="h-full">
@@ -28,10 +25,10 @@ export default function SettingsPage() {
 								</div>
 
 								<DefaultModelSettings />
+								<SandboxSettings />
 								<UserApiKeysSettings />
 								<ApiTokensSettings />
 								<ModelVisibilitySettings />
-								<MemorySettings />
 							</div>
 						</ScrollArea>
 					</div>

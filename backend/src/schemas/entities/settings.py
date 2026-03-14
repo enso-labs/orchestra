@@ -1,43 +1,107 @@
+from datetime import datetime
+from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel, Field, field_serializer
 
 from src.schemas.entities.store import BaseEntity
+
+
+class SandboxType(str, Enum):
+    """Supported sandbox backend types."""
+
+    DAYTONA = "daytona"
+    STATE = "state"
 
 
 class ProviderKeyStatus(BaseModel):
     """Status of a provider API key (never exposes the raw key)."""
 
     provider: str = Field(..., description="Provider name matching UserTokenKey enum")
-    is_set: bool = Field(
-        default=False, description="Whether a key is configured for this provider"
-    )
+    is_set: bool = Field(default=False, description="Whether a key is configured for this provider")
+
+
+class PersistedContextFile(BaseModel):
+    """Persisted file content stored in user settings."""
+
+    content: list[str] = Field(default_factory=list, description="File content split into lines")
+    created_at: str | datetime | None = Field(default=None, description="When the file was first created")
+    modified_at: str | datetime | None = Field(default=None, description="When the file was last modified")
+
+    @field_serializer("created_at", "modified_at")
+    def serialize_dt(self, dt: str | datetime | None, _info):
+        if isinstance(dt, datetime):
+            return dt.isoformat()
+        return dt
 
 
 class UserSettings(BaseEntity):
     """Persisted user settings entity."""
 
     user_id: str = Field(..., description="ID of the user who owns these settings")
-    default_model: Optional[str] = Field(
-        default=None, description="User's default AI model identifier"
+    default_model: Optional[str] = Field(default=None, description="User's default AI model identifier")
+    encrypted_keys: Optional[str] = Field(default=None, description="Fernet-encrypted JSON blob of provider API keys")
+    default_sandbox: Optional[str] = Field(default=None, description="User's default sandbox backend type")
+    default_tools: Optional[list[str]] = Field(default=None, description="User's default tool selection")
+    default_mcp: Optional[dict] = Field(default=None, description="User's default MCP server configuration")
+    default_a2a: Optional[dict] = Field(default=None, description="User's default A2A agent configuration")
+    default_subagents: Optional[list[str]] = Field(default=None, description="User's default subagent selection")
+    default_model_visibility: Optional[list[str]] = Field(
+        default=None, description="User's default model visibility list"
     )
-    encrypted_keys: Optional[str] = Field(
-        default=None, description="Fernet-encrypted JSON blob of provider API keys"
+    default_files: Optional[dict[str, PersistedContextFile]] = Field(
+        default=None, description="User's persisted context files keyed by absolute path"
     )
+    default_deleted_files: Optional[list[str]] = Field(
+        default=None, description="Absolute file-path tombstones that suppress implicit defaults"
+    )
+    onboarding_completed: Optional[bool] = Field(
+        default=None, description="Whether the user has completed the onboarding tour"
+    )
+
+
+class DefaultsResponse(BaseModel):
+    """Nested defaults sub-object in the API response."""
+
+    model: Optional[str] = None
+    sandbox: Optional[str] = None
+    tools: Optional[list[str]] = None
+    mcp: Optional[dict] = None
+    a2a: Optional[dict] = None
+    subagents: Optional[list[str]] = None
+    model_visibility: Optional[list[str]] = None
+    files: Optional[dict[str, PersistedContextFile]] = None
+    deleted_files: Optional[list[str]] = None
+    onboarding_completed: Optional[bool] = None
 
 
 class UserSettingsResponse(BaseModel):
     """API response model – never includes raw keys."""
 
-    default_model: Optional[str] = None
+    defaults: DefaultsResponse = Field(default_factory=DefaultsResponse)
     provider_keys: list[ProviderKeyStatus] = Field(default_factory=list)
 
 
-class UpdateDefaultModelRequest(BaseModel):
-    """Request to set a user's default model."""
+class PatchDefaultsRequest(BaseModel):
+    """Request to partially update user default settings."""
 
-    model: Optional[str] = Field(
+    model: Optional[str] = Field(default=None, description="Model identifier to set as default, or null to clear")
+    sandbox: Optional[str] = Field(default=None, description="Sandbox type to set as default, or null to clear")
+    tools: Optional[list[str]] = Field(default=None, description="Default tool selection, or null to clear")
+    mcp: Optional[dict] = Field(default=None, description="Default MCP server config, or null to clear")
+    a2a: Optional[dict] = Field(default=None, description="Default A2A agent config, or null to clear")
+    subagents: Optional[list[str]] = Field(default=None, description="Default subagent selection, or null to clear")
+    model_visibility: Optional[list[str]] = Field(default=None, description="Model visibility list, or null to clear")
+    files: Optional[dict[str, PersistedContextFile]] = Field(
         default=None,
-        description="Model identifier to set as default, or null to clear",
+        description="Full replacement persisted file map keyed by absolute path, or null to clear",
+    )
+    deleted_files: Optional[list[str]] = Field(
+        default=None,
+        description="Full replacement list of deleted absolute file-path tombstones, or null to clear",
+    )
+    onboarding_completed: Optional[bool] = Field(
+        default=None, description="Whether the user has completed the onboarding tour"
     )
 
 

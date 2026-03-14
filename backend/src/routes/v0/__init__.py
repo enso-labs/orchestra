@@ -75,9 +75,7 @@ def mount_static_router(app: FastAPI):
                 return FileResponse(f"src/public/{filename}")
 
             # For /icons/* paths, check if the file exists
-            if filename.startswith("icons/") and os.path.exists(
-                f"src/public/{filename}"
-            ):
+            if filename.startswith("icons/") and os.path.exists(f"src/public/{filename}"):
                 return FileResponse(f"src/public/{filename}")
 
             # For all other routes, serve the index.html for SPA routing

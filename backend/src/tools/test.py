@@ -55,9 +55,7 @@ def send_webhook_to_channel(
     env, tool_call = get_tool_call_env(runtime)
     TEST_WEBHOOK_URL = (env or {}).get("TEST_WEBHOOK_URL")
     if not TEST_WEBHOOK_URL:
-        raise ValueError(
-            f"TEST_WEBHOOK_URL not found in metadata for tool call {(tool_call or {}).get('name')}"
-        )
+        raise ValueError(f"TEST_WEBHOOK_URL not found in metadata for tool call {(tool_call or {}).get('name')}")
     return text
 
 

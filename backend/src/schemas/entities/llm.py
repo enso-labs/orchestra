@@ -18,28 +18,19 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
-from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_SYSTEM_PROMPT
+from src.services.prompt.defaults import get_default_system_prompt
 from src.utils.format import slugify
 
 
 class Config(BaseModel):
     model_config = ConfigDict(extra="allow")  # ✅ allow arbitrary extra fields
 
-    user_id: Optional[str] = Field(
-        default=None, description="The user id", examples=[str(uuid4())]
-    )
-    thread_id: Optional[str] = Field(
-        default=None, description="The thread id", examples=[str(uuid4())]
-    )
-    checkpoint_id: Optional[str] = Field(
-        default=None, description="The checkpoint id", examples=[str(uuid4())]
-    )
-    assistant_id: Optional[str] = Field(
-        default=None, description="The assistant id", examples=[str(uuid4())]
-    )
-    project_id: Optional[str] = Field(
-        default=None, description="The project id", examples=[str(uuid4())]
-    )
+    user_id: Optional[str] = Field(default=None, description="The user id", examples=[str(uuid4())])
+    thread_id: Optional[str] = Field(default=None, description="The thread id", examples=[str(uuid4())])
+    run_id: Optional[str] = Field(default=None, description="The run id", examples=[str(uuid4())])
+    checkpoint_id: Optional[str] = Field(default=None, description="The checkpoint id", examples=[str(uuid4())])
+    assistant_id: Optional[str] = Field(default=None, description="The assistant id", examples=[str(uuid4())])
+    project_id: Optional[str] = Field(default=None, description="The project id", examples=[str(uuid4())])
     graph_id: Optional[Literal["react", "deepagent"]] = Field(
         default=None, description="The graph id", examples=["react", "deepagent"]
     )
@@ -93,19 +84,22 @@ class Assistant(BaseModel):
     name: str
     description: str = Field(default="Helpful AI Assistant.")
     model: Optional[str] = None
-    system_prompt: Optional[str] = Field(
-        default=None, examples=["You are a helpful assistant."]
-    )
-    instructions: Optional[str] = Field(
-        default=None, examples=["Your role is to help the user with their task."]
-    )
+    system_prompt: Optional[str] = Field(default=None, examples=["You are a helpful assistant."])
+
+    @field_validator("model", mode="before")
+    @classmethod
+    def coerce_empty_model_to_none(cls, v):
+        """Coerce empty and whitespace-only model strings to None."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    instructions: Optional[str] = Field(default=None, examples=["Your role is to help the user with their task."])
 
     @model_validator(mode="after")
     def validate_system_prompt_or_instructions(self):
         if self.system_prompt and self.instructions:
-            raise ValueError(
-                "Only one of system_prompt or instructions may be set, not both."
-            )
+            raise ValueError("Only one of system_prompt or instructions may be set, not both.")
         return self
 
     tools: list[str]
@@ -121,15 +115,9 @@ class Assistant(BaseModel):
     created_at: Optional[datetime] = None
 
     # Public agent fields
-    public: bool = Field(
-        default=False, description="Whether the assistant is publicly accessible"
-    )
-    owner_id: Optional[str] = Field(
-        default=None, description="The user ID of the assistant owner"
-    )
-    published_at: Optional[datetime] = Field(
-        default=None, description="When the assistant was made public"
-    )
+    public: bool = Field(default=False, description="Whether the assistant is publicly accessible")
+    owner_id: Optional[str] = Field(default=None, description="The user ID of the assistant owner")
+    published_at: Optional[datetime] = Field(default=None, description="When the assistant was made public")
 
     @computed_field
     @property
@@ -200,16 +188,14 @@ class PublicAssistant(BaseModel):
 
 class LLMRequest(BaseModel):
     input: LLMInput
-    model: Optional[str] = Field(default=DEFAULT_CHAT_MODEL)
-    system_prompt: Optional[str] = Field(default=DEFAULT_SYSTEM_PROMPT, exclude=True)
+    model: Optional[str] = Field(default=None)
+    system_prompt: Optional[str] = Field(default_factory=get_default_system_prompt, exclude=True)
     instructions: Optional[str] = Field(default="", exclude=True)
     tools: Optional[List[Any]] = Field(default_factory=list)
     a2a: Optional[dict[str, dict]] = Field(default_factory=dict)
     mcp: Optional[dict[str, dict]] = Field(default_factory=dict)
     subagents: Optional[List[Assistant]] = Field(default_factory=list)
-    metadata: Optional[Config] = Field(
-        default_factory=Config, description="LangGraph configuration"
-    )
+    metadata: Optional[Config] = Field(default_factory=Config, description="LangGraph configuration")
     # Inference dictation parameters
     generate_files: Optional[bool] = Field(
         default=False,
@@ -248,9 +234,7 @@ class LLMRequest(BaseModel):
         path = PurePosixPath(v)
         for part in path.parts:
             if part == "..":
-                raise ValueError(
-                    "Path traversal is not allowed: '..' segments are forbidden"
-                )
+                raise ValueError("Path traversal is not allowed: '..' segments are forbidden")
 
         # Normalize the path while preserving leading '/'
         had_leading_slash = v.startswith("/")

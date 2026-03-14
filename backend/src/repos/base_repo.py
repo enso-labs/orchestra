@@ -1,6 +1,5 @@
 from typing import Any
 from langgraph.store.base import BaseStore, SearchItem, SearchOp
-from langchain_core.documents import Document
 
 from src.schemas.entities import SearchFilter
 from src.services.db import get_store_in_memory

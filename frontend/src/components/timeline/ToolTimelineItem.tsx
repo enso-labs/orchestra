@@ -20,6 +20,7 @@ interface ToolMessage {
 	artifact?: any;
 	args?: any;
 	input?: any;
+	agent_name?: string | null;
 }
 
 interface ToolTimelineItemProps {
@@ -144,7 +145,7 @@ export default function ToolTimelineItem({
 								: "bg-red-500/20 text-red-500",
 						)}
 					>
-						{message.name}
+						{message.agent_name || message.name}
 					</span>
 					{!isExpanded && (
 						<span className="text-xs text-muted-foreground truncate">

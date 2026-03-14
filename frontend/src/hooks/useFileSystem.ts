@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 
 /**
  * File data structure stored in the file system
@@ -28,6 +28,7 @@ export interface FileSystemActions {
 	createFile: (path: string, content?: string) => void;
 	updateFile: (path: string, content: string) => void;
 	deleteFile: (path: string) => void;
+	deleteFiles: (paths: string[]) => void;
 	renameFile: (oldPath: string, newPath: string) => void;
 
 	// Tab operations (modify openTabs only)
@@ -37,6 +38,14 @@ export interface FileSystemActions {
 
 	// Bulk operations
 	importFiles: (files: Map<string, FileData>) => void;
+	replaceFiles: (files: Map<string, FileData>) => void;
+	syncFiles: (
+		files: Map<string, FileData>,
+		options?: {
+			openNewTabs?: boolean;
+			resetDirtyFiles?: boolean;
+		},
+	) => void;
 	clearFileSystem: () => void;
 	getFilesForSubmission: () => Record<string, FileData>;
 
@@ -50,6 +59,27 @@ export interface FileSystemActions {
 }
 
 export type FileSystemHook = FileSystemState & FileSystemActions;
+
+const getAdjacentTabAfterRemoval = (
+	previousTabs: string[],
+	remainingTabs: string[],
+	removedPath: string,
+): string | null => {
+	const removedIndex = previousTabs.indexOf(removedPath);
+	if (removedIndex === -1) {
+		return remainingTabs[0] || null;
+	}
+
+	const survivingTabsBeforeRemoved = previousTabs
+		.slice(0, removedIndex)
+		.filter((path) => remainingTabs.includes(path)).length;
+
+	return (
+		remainingTabs[survivingTabsBeforeRemoved] ||
+		remainingTabs[survivingTabsBeforeRemoved - 1] ||
+		null
+	);
+};
 
 /**
  * Custom hook for managing file system state with VSCode-like tab semantics.
@@ -71,6 +101,15 @@ export function useFileSystem(): FileSystemHook {
 	const [openTabs, setOpenTabs] = useState<string[]>([]);
 	const [activeFile, setActiveFile] = useState<string | null>(null);
 	const [dirtyFiles, setDirtyFiles] = useState<Set<string>>(() => new Set());
+	const fileSystemRef = useRef(fileSystem);
+	const openTabsRef = useRef(openTabs);
+	const activeFileRef = useRef(activeFile);
+	const dirtyFilesRef = useRef(dirtyFiles);
+
+	fileSystemRef.current = fileSystem;
+	openTabsRef.current = openTabs;
+	activeFileRef.current = activeFile;
+	dirtyFilesRef.current = dirtyFiles;
 
 	// =========================================================================
 	// File Operations (modify fileSystem)
@@ -120,75 +159,89 @@ export function useFileSystem(): FileSystemHook {
 	/**
 	 * Delete file from fileSystem AND close any open tabs
 	 */
-	const deleteFile = useCallback(
-		(path: string) => {
-			setFileSystem((prev) => {
-				const next = new Map(prev);
-				next.delete(path);
-				return next;
+	const deleteFiles = useCallback((paths: string[]) => {
+		const uniquePaths = Array.from(new Set(paths)).filter(Boolean);
+		if (uniquePaths.length === 0) {
+			return;
+		}
+
+		const pathsToRemove = new Set(uniquePaths);
+
+		setFileSystem((prev) => {
+			let changed = false;
+			const next = new Map(prev);
+			uniquePaths.forEach((path) => {
+				changed = next.delete(path) || changed;
 			});
+			return changed ? next : prev;
+		});
 
-			// Remove from dirty files
-			setDirtyFiles((prev) => {
-				const next = new Set(prev);
-				next.delete(path);
-				return next;
+		setDirtyFiles((prev) => {
+			let changed = false;
+			const next = new Set(prev);
+			uniquePaths.forEach((path) => {
+				changed = next.delete(path) || changed;
 			});
+			return changed ? next : prev;
+		});
 
-			// Remove from tabs and handle active file selection in one operation
-			setOpenTabs((prev) => {
-				const idx = prev.indexOf(path);
-				const filtered = prev.filter((p) => p !== path);
+		setOpenTabs((prev) => {
+			const filtered = prev.filter((path) => !pathsToRemove.has(path));
+			if (filtered.length === prev.length) {
+				return prev;
+			}
 
-				// If this was the active file, select adjacent
-				if (activeFile === path) {
-					const newActive = filtered[idx] || filtered[idx - 1] || null;
-					setActiveFile(newActive);
+			setActiveFile((currentActive) => {
+				if (!currentActive || !pathsToRemove.has(currentActive)) {
+					return currentActive;
 				}
 
-				return filtered;
+				return getAdjacentTabAfterRemoval(prev, filtered, currentActive);
 			});
+
+			return filtered;
+		});
+	}, []);
+
+	const deleteFile = useCallback(
+		(path: string) => {
+			deleteFiles([path]);
 		},
-		[activeFile],
+		[deleteFiles],
 	);
 
 	/**
 	 * Rename file (move to new path)
 	 */
-	const renameFile = useCallback(
-		(oldPath: string, newPath: string) => {
-			setFileSystem((prev) => {
-				const existing = prev.get(oldPath);
-				if (!existing) return prev;
+	const renameFile = useCallback((oldPath: string, newPath: string) => {
+		setFileSystem((prev) => {
+			const existing = prev.get(oldPath);
+			if (!existing) return prev;
 
-				const next = new Map(prev);
-				next.delete(oldPath);
-				next.set(newPath, {
-					...existing,
-					modified_at: new Date().toISOString(),
-				});
-				return next;
+			const next = new Map(prev);
+			next.delete(oldPath);
+			next.set(newPath, {
+				...existing,
+				modified_at: new Date().toISOString(),
 			});
+			return next;
+		});
 
-			// Update tabs
-			setOpenTabs((prev) => prev.map((p) => (p === oldPath ? newPath : p)));
+		// Update tabs
+		setOpenTabs((prev) => prev.map((p) => (p === oldPath ? newPath : p)));
+		setActiveFile((currentActive) =>
+			currentActive === oldPath ? newPath : currentActive,
+		);
 
-			// Update active
-			if (activeFile === oldPath) {
-				setActiveFile(newPath);
-			}
-
-			// Update dirty tracking
-			setDirtyFiles((prev) => {
-				if (!prev.has(oldPath)) return prev;
-				const next = new Set(prev);
-				next.delete(oldPath);
-				next.add(newPath);
-				return next;
-			});
-		},
-		[activeFile],
-	);
+		// Update dirty tracking
+		setDirtyFiles((prev) => {
+			if (!prev.has(oldPath)) return prev;
+			const next = new Set(prev);
+			next.delete(oldPath);
+			next.add(newPath);
+			return next;
+		});
+	}, []);
 
 	// =========================================================================
 	// Tab Operations (modify openTabs only - DO NOT delete files)
@@ -208,30 +261,31 @@ export function useFileSystem(): FileSystemHook {
 	 * Close a tab WITHOUT deleting the file
 	 * This is the key VSCode behavior: closing a tab keeps the file
 	 */
-	const closeTab = useCallback(
-		(path: string) => {
-			setOpenTabs((prev) => {
-				const filtered = prev.filter((p) => p !== path);
+	const closeTab = useCallback((path: string) => {
+		setOpenTabs((prev) => {
+			if (!prev.includes(path)) {
+				return prev;
+			}
 
-				// If closing active tab, select adjacent
-				if (activeFile === path) {
-					const idx = prev.indexOf(path);
-					const newActive = filtered[idx] || filtered[idx - 1] || null;
-					setActiveFile(newActive);
+			const filtered = prev.filter((currentPath) => currentPath !== path);
+			setActiveFile((currentActive) => {
+				if (currentActive !== path) {
+					return currentActive;
 				}
 
-				return filtered;
+				return getAdjacentTabAfterRemoval(prev, filtered, path);
 			});
 
-			// Clear dirty state for closed tab
-			setDirtyFiles((prev) => {
-				const next = new Set(prev);
-				next.delete(path);
-				return next;
-			});
-		},
-		[activeFile],
-	);
+			return filtered;
+		});
+
+		// Clear dirty state for closed tab
+		setDirtyFiles((prev) => {
+			const next = new Set(prev);
+			next.delete(path);
+			return next;
+		});
+	}, []);
 
 	/**
 	 * Select a tab as active
@@ -274,6 +328,66 @@ export function useFileSystem(): FileSystemHook {
 		// Set first imported file as active if nothing selected
 		setActiveFile((prev) => prev || paths[0] || null);
 	}, []);
+
+	const syncFiles = useCallback(
+		(
+			files: Map<string, FileData>,
+			options: {
+				openNewTabs?: boolean;
+				resetDirtyFiles?: boolean;
+			} = {},
+		) => {
+			const nextFiles = files ? new Map(files) : new Map<string, FileData>();
+			const { openNewTabs = true, resetDirtyFiles = false } = options;
+			const nextPaths = Array.from(nextFiles.keys());
+
+			const preservedTabs = openTabsRef.current.filter((path) =>
+				nextFiles.has(path),
+			);
+			const nextOpenTabs = [...preservedTabs];
+
+			if (openNewTabs) {
+				for (const path of nextPaths) {
+					if (!nextOpenTabs.includes(path)) {
+						nextOpenTabs.push(path);
+					}
+				}
+			}
+
+			const currentActive = activeFileRef.current;
+			const nextActive =
+				currentActive && nextFiles.has(currentActive)
+					? currentActive
+					: nextOpenTabs[0] || null;
+
+			const nextDirtyFiles = resetDirtyFiles
+				? new Set<string>()
+				: new Set(
+						Array.from(dirtyFilesRef.current).filter((path) =>
+							nextFiles.has(path),
+						),
+					);
+
+			setFileSystem(nextFiles);
+			setOpenTabs(nextOpenTabs);
+			setActiveFile(nextActive);
+			setDirtyFiles(nextDirtyFiles);
+		},
+		[],
+	);
+
+	/**
+	 * Replace the entire file system with a new set of files.
+	 */
+	const replaceFiles = useCallback(
+		(files: Map<string, FileData>) => {
+			syncFiles(files, {
+				openNewTabs: true,
+				resetDirtyFiles: true,
+			});
+		},
+		[syncFiles],
+	);
 
 	/**
 	 * Clear all file system state
@@ -375,6 +489,7 @@ export function useFileSystem(): FileSystemHook {
 			createFile,
 			updateFile,
 			deleteFile,
+			deleteFiles,
 			renameFile,
 			// Tab operations
 			openTab,
@@ -382,6 +497,8 @@ export function useFileSystem(): FileSystemHook {
 			selectTab,
 			// Bulk operations
 			importFiles,
+			replaceFiles,
+			syncFiles,
 			clearFileSystem,
 			getFilesForSubmission,
 			// Backend sync
@@ -399,11 +516,14 @@ export function useFileSystem(): FileSystemHook {
 			createFile,
 			updateFile,
 			deleteFile,
+			deleteFiles,
 			renameFile,
 			openTab,
 			closeTab,
 			selectTab,
 			importFiles,
+			replaceFiles,
+			syncFiles,
 			clearFileSystem,
 			getFilesForSubmission,
 			toBackendFormat,

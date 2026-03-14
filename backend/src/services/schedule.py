@@ -1,5 +1,5 @@
 from uuid import uuid4
-from fastapi import HTTPException
+
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -62,10 +62,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
 
         metadata = task_dict.get("metadata") or {}
         thread_id = metadata.get("thread_id") or str(uuid4())
-        logger.info(
-            f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker"
-            f" (thread_id={thread_id})"
-        )
+        logger.info(f"🚀 Dispatching scheduled job '{title}' to TaskIQ worker (thread_id={thread_id})")
         await run_agent_stream.kiq(
             task_dict=task_dict,
             user_id=user_id,
@@ -77,7 +74,9 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     from src.schemas.entities import LLMRequest
     from src.agents import construct_agent, Orchestra, init_config
     from src.services.db import get_checkpoint_db, get_store_db
+    from src.services.context_files import resolve_context_files, select_memory_sources
     from src.contexts.service import ServiceContext
+    from src.agents import prepare_memory_files
 
     logger.info(f"🚀 Starting scheduled LLM job: {title}")
 
@@ -97,10 +96,24 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
         get_checkpoint_db() as checkpointer,
     ):
         try:
-            service_context = ServiceContext(
-                user_id=user_id, store=store, config=config, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user_id, store=store, config=config, checkpointer=checkpointer)
             params = await service_context.llm_service.assistant(params)
+            memory_files, _memory_sources = await prepare_memory_files(user_id, service_context.memory_service)
+            explicit_files = {
+                **(files_map or {}),
+                **(params.input.files or {}),
+            }
+            memory_sources = select_memory_sources(
+                explicit_files=explicit_files,
+                memory_files=memory_files,
+            )
+            selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
+            params.input.files = await resolve_context_files(
+                user_id=user_id,
+                store=store,
+                memory_files=selected_memory_files,
+                explicit_files=explicit_files,
+            )
             agent: Orchestra = await construct_agent(
                 instructions=params.instructions,
                 system_prompt=params.system_prompt,
@@ -109,6 +122,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
                 subagents=params.subagents,
                 checkpointer=checkpointer,
                 service_context=service_context,
+                memory=memory_sources,
             )
             params.input.messages[-1].model = agent.model
             # Avoid isinstance checks with subscripted generics—use duck typing or explicit conversion
@@ -121,12 +135,10 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
                 params.input = params.input.to_langchain_messages()
 
             ctx_schema = ContextSchema(model=params.model, user_id=user_id)
-            response = await agent.invoke(
-                params.input, config=config, context=ctx_schema
-            )
+            response = await agent.invoke(params.input, config=config, context=ctx_schema)
             logger.info("✓ LLM invocation completed successfully")
 
-            files_map = {**files_map, **response.get("files", {})}
+            files_map = {**(params.input.files or {}), **response.get("files", {})}
             todos_list = [*todos_list, *response.get("todos", [])]
             return response
         except Exception as e:
@@ -193,9 +205,9 @@ class ScheduleService:
     def get_job(self, job_id: str) -> Schedule:
         job = self.scheduler.get_job(job_id)
         if job.kwargs.get("user_id") != self.user_id:
-            raise HTTPException(
-                status_code=403, detail="Not authorized to access this job"
-            )
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
         schedule = Schedule(
             id=job.id,
@@ -238,12 +250,14 @@ class ScheduleService:
         # Get existing job and verify ownership
         existing_job = self.scheduler.get_job(job_id)
         if not existing_job:
+            from fastapi import HTTPException
+
             raise HTTPException(status_code=404, detail="Schedule not found")
 
         if existing_job.kwargs.get("user_id") != self.user_id:
-            raise HTTPException(
-                status_code=403, detail="Not authorized to access this job"
-            )
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
         # Prepare update parameters
         update_params = {}
@@ -283,15 +297,17 @@ class ScheduleService:
         try:
             job = self.scheduler.get_job(job_id)
             if job.kwargs.get("user_id") != self.user_id:
-                raise HTTPException(
-                    status_code=403, detail="Not authorized to access this job"
-                )
+                from fastapi import HTTPException
+
+                raise HTTPException(status_code=403, detail="Not authorized to access this job")
             self.scheduler.remove_job(job_id)
 
             print(f"✅ Scheduled job deleted: {job_id}")
             print(f"   Job ID: {job_id}")
             return True
         except Exception as e:
+            from fastapi import HTTPException
+
             raise HTTPException(status_code=500, detail=f"Failed to delete job: {e}")
 
 

@@ -20,11 +20,7 @@ router = APIRouter(tags=["Schedule"])
 ################################################################################
 @router.get(
     "/schedules",
-    responses={
-        200: {
-            "content": {"application/json": {"example": Examples.SCHEDULE_LIST_EXAMPLE}}
-        }
-    },
+    responses={200: {"content": {"application/json": {"example": Examples.SCHEDULE_LIST_EXAMPLE}}}},
     operation_id="ruska_list_schedules",
     tags=["mcp"],
 )
@@ -42,11 +38,7 @@ async def get_jobs(
 ################################################################################
 @router.get(
     "/schedules/{job_id}",
-    responses={
-        200: {
-            "content": {"application/json": {"example": Examples.SCHEDULE_FIND_EXAMPLE}}
-        }
-    },
+    responses={200: {"content": {"application/json": {"example": Examples.SCHEDULE_FIND_EXAMPLE}}}},
     operation_id="ruska_get_schedule",
     tags=["mcp"],
 )
@@ -65,15 +57,7 @@ async def get_job(
 @router.post(
     "/schedules",
     status_code=201,
-    responses={
-        201: {
-            "content": {
-                "application/json": {
-                    "example": Examples.SCHEDULE_CREATED_RESPONSE_EXAMPLE
-                }
-            }
-        }
-    },
+    responses={201: {"content": {"application/json": {"example": Examples.SCHEDULE_CREATED_RESPONSE_EXAMPLE}}}},
     operation_id="ruska_create_schedule",
     tags=["mcp"],
 )
@@ -105,9 +89,7 @@ async def create_job(
 )
 async def update_job(
     job_id: str,
-    job_update: ScheduleUpdate = Body(
-        openapi_examples={"update_schedule": Examples.SCHEDULE_UPDATE_EXAMPLE}
-    ),
+    job_update: ScheduleUpdate = Body(openapi_examples={"update_schedule": Examples.SCHEDULE_UPDATE_EXAMPLE}),
     user: ProtectedUser = Depends(verify_credentials),
 ):
     schedule_service.user_id = user.id
@@ -126,9 +108,7 @@ async def update_job(
 ################################################################################
 ### Delete Schedule
 ################################################################################
-@router.delete(
-    "/schedules/{job_id}", operation_id="ruska_delete_schedule", tags=["mcp"]
-)
+@router.delete("/schedules/{job_id}", operation_id="ruska_delete_schedule", tags=["mcp"])
 async def delete_job(
     job_id: str,
     user: ProtectedUser = Depends(verify_credentials),

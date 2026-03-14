@@ -4,7 +4,6 @@ from langgraph.store.base import BaseStore, SearchItem
 from src.repos.base_repo import BaseRepo
 from src.schemas.entities import Document, SearchFilter
 from src.repos.source_repo import Source, SourceRepo
-from src.repos.doc_repo import DocRepo
 from src.services.db import get_store_in_memory
 from src.utils.logger import logger
 from src.schemas.entities.store import Project

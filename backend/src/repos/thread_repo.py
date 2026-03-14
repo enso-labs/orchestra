@@ -1,13 +1,11 @@
 from langgraph.store.base import BaseStore, SearchItem
-from langgraph.checkpoint.base import create_checkpoint
 
-from src.services.db import get_store_in_memory
 from src.schemas.entities import SearchFilter
 from src.constants import THREAD_SNAPSHOT_MESSAGE_COUNT
 from src.repos.base_repo import BaseRepo
 from src.schemas.entities.store import Thread
+from src.utils.format import format_content
 from src.utils.logger import logger
-from src.utils.format import format_xml_thread
 from src.utils.messages import from_message_to_dict
 from src.utils.retry import retry_db_operation
 
@@ -16,23 +14,29 @@ FIELDS = ["messages"]
 
 
 class ThreadRepo(BaseRepo):
-    def __init__(
-        self, user_id: str, store: BaseStore = get_store_in_memory(fields=FIELDS)
-    ):
+    def __init__(self, user_id: str, store: BaseStore) -> None:
         ## Add fields to the store (if supported)
         self.user_id = user_id
-        self.store: BaseStore = store
+        self.store = store
 
         try:
             self.store.fields = FIELDS
         except AttributeError:
             pass
-        super().__init__(user_id=user_id, store=store, entity_type="threads")
+        super().__init__(user_id=user_id, store=self.store, entity_type="threads")
 
     def _format(self, item: SearchItem) -> Thread:
+        title = item.value.get("title")
+        if not title:
+            messages = item.value.get("messages", [])
+            for msg in reversed(messages):
+                if isinstance(msg, dict) and msg.get("type") in ("human", "user"):
+                    title = format_content(msg.get("content", ""))[:100]
+                    break
         return Thread(
             id=item.key,
-            title=item.value.get("title", None),
+            title=title,
+            metadata=item.value.get("metadata", {}),
             messages=item.value.get("messages", []),
             files=item.value.get("files", []),
             todos=item.value.get("todos", []),
@@ -46,44 +50,50 @@ class ThreadRepo(BaseRepo):
         search_filter: SearchFilter,
     ) -> list[dict]:
         try:
-            async with self.store as store:
-                if search_filter.query:
-                    queried_threads: list[SearchItem] = await store.asearch(
-                        self._get_namespace(),
-                        limit=search_filter.limit,
-                        filter=search_filter.filter,
-                        query=search_filter.query,
-                    )
-                    return [self._format(thread) for thread in queried_threads]
-                threads = await store.asearch(
+            if search_filter.query:
+                queried_threads: list[SearchItem] = await self.store.asearch(
                     self._get_namespace(),
                     limit=search_filter.limit,
                     filter=search_filter.filter,
+                    query=search_filter.query,
                 )
-                return sorted(
-                    [thread.dict() for thread in threads],
-                    key=lambda x: x.get("updated_at"),
-                    reverse=True,
-                )
+                return [self._format(thread) for thread in queried_threads]
+            threads = await self.store.asearch(
+                self._get_namespace(),
+                limit=search_filter.limit,
+                filter=search_filter.filter,
+            )
+            return sorted(
+                [thread.dict() for thread in threads],
+                key=lambda x: x.get("updated_at"),
+                reverse=True,
+            )
         except Exception as e:
             logger.error(f"Error searching threads: {e}")
             return []
 
     async def update(self, thread_id: str, data: dict):
+        existing = await self._get(thread_id)
+        merged_data = {**(existing.value if existing else {}), **data}
+
+        if "metadata" in data or (existing and "metadata" in existing.value):
+            existing_metadata = existing.value.get("metadata") if existing else {}
+            next_metadata = data.get("metadata")
+            merged_data["metadata"] = {
+                **(existing_metadata if isinstance(existing_metadata, dict) else {}),
+                **(next_metadata if isinstance(next_metadata, dict) else {}),
+            }
+
         # Extract last human message for storage
-        messages = data.get("messages", [])
+        messages = merged_data.get("messages", [])
         messages = from_message_to_dict(messages, include_tool_calls=False)
         recent_messages = (
-            messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:]
-            if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT
-            else messages
+            messages[-THREAD_SNAPSHOT_MESSAGE_COUNT:] if len(messages) > THREAD_SNAPSHOT_MESSAGE_COUNT else messages
         )
 
-        data["messages"] = recent_messages
+        merged_data["messages"] = recent_messages
 
-        await self.store.aput(
-            namespace=self._get_namespace(), key=thread_id, value=data
-        )
+        await self.store.aput(namespace=self._get_namespace(), key=thread_id, value=merged_data)
 
         return True
 

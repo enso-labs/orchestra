@@ -1,5 +1,6 @@
 """Tests for scheduled_llm_invoke TaskIQ dispatch path."""
 
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import UUID
 
@@ -129,3 +130,61 @@ async def test_thread_id_generated_when_no_metadata(task_dict_no_metadata):
 
     call_kwargs = mock_task.kiq.call_args[1]
     UUID(call_kwargs["thread_id"])
+
+
+@pytest.mark.asyncio
+async def test_in_process_mode_uses_resolved_context_files(task_dict_with_thread_id):
+    agent = AsyncMock()
+    agent.model = "gpt-4"
+    agent.invoke = AsyncMock(return_value={"files": {}, "todos": []})
+    agent.graph.aget_state = AsyncMock(
+        return_value=MagicMock(
+            config={"configurable": {}},
+            values={"messages": [MagicMock(model=None)]},
+        )
+    )
+
+    service_context = MagicMock()
+
+    async def _assistant(params):
+        params.input.messages[-1] = MagicMock(model=None)
+        return params
+
+    service_context.llm_service.assistant = AsyncMock(side_effect=_assistant)
+    service_context.memory_service = MagicMock()
+    service_context.thread_service.update = AsyncMock()
+    service_context.store = MagicMock()
+    service_context.user_id = "user-1"
+    service_context.checkpointer = MagicMock()
+
+    @asynccontextmanager
+    async def fake_store_db():
+        yield MagicMock()
+
+    @asynccontextmanager
+    async def fake_checkpoint_db():
+        yield MagicMock()
+
+    with (
+        _patch_distributed(False),
+        patch("src.services.db.get_store_db", fake_store_db),
+        patch("src.services.db.get_checkpoint_db", fake_checkpoint_db),
+        patch("src.contexts.service.ServiceContext", return_value=service_context),
+        patch("src.agents.init_config", return_value={"configurable": {"thread_id": "t1"}, "metadata": {}}),
+        patch("src.agents.construct_agent", AsyncMock(return_value=agent)),
+        patch(
+            "src.agents.prepare_memory_files",
+            AsyncMock(return_value=({"/memory.md": {"content": ["memory"]}}, [])),
+        ),
+        patch(
+            "src.services.context_files.resolve_context_files",
+            AsyncMock(return_value={"/resolved.md": {"content": ["resolved"]}}),
+        ) as mock_resolve_context_files,
+    ):
+        await scheduled_llm_invoke(
+            task_dict=task_dict_with_thread_id,
+            user_id="user-1",
+            title="Test Job",
+        )
+
+    mock_resolve_context_files.assert_awaited_once()

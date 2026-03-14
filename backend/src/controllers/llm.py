@@ -1,4 +1,3 @@
-from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
 from langchain.tools import ToolRuntime
 import ujson
 
@@ -9,23 +8,30 @@ from src.schemas.contexts import ContextSchema
 from src.schemas.entities.schedule import ScheduleCreate
 from src.schemas.entities import LLMRequest
 from src.contexts.service import ServiceContext
-from src.agents import construct_agent, init_config
+from src.agents import (
+    construct_agent,
+    init_config,
+    is_daytona_error,
+    prepare_memory_files,
+    resolve_sandbox_backend,
+    _create_state_backend,
+)
 from src.services.db import get_checkpoint_db
 from src.utils.stream import stream_generator
 from src.agents import Orchestra
 from src.repos.user_settings_repo import UserSettingsRepo
+from src.services.context_files import resolve_context_files, select_memory_sources
 from src.utils.llm import resolve_api_key
 from src.utils.logger import logger
 from src.utils.format import get_time
+from src.constants.llm import DEFAULT_CHAT_MODEL
 
 
 class LLMController:
     def __init__(self, user_id: str | None, store: BaseStore, config: RunnableConfig):
         self.user_id = user_id
         self.store = store
-        self.service_context = ServiceContext(
-            user_id=self.user_id, store=self.store, config=config
-        )
+        self.service_context = ServiceContext(user_id=self.user_id, store=self.store, config=config)
 
     def _init_context(self, request: LLMRequest) -> ContextSchema:
         return ContextSchema(model=request.model, user_id=self.user_id)
@@ -39,15 +45,6 @@ class LLMController:
             stream_writer=lambda _: None,
             config=self.service_context.config,
         )
-
-    def init_backend(self, request: LLMRequest) -> CompositeBackend:
-        runtime = self._init_runtime(request)
-        store_backend = StoreBackend(runtime)
-        built_routes = {
-            f"/users/{runtime.context.user_id}/memories/": store_backend,
-            f"/users/{runtime.context.user_id}/config/": store_backend,
-        }
-        return CompositeBackend(default=StateBackend(runtime), routes=built_routes)
 
     async def _update_store(self, agent: Orchestra, config: RunnableConfig) -> None:
         final_state = await agent.graph.aget_state(config)
@@ -70,14 +67,18 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
-    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None]:
-        """Resolve user default model and API key.
+    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None, str | None]:
+        """Resolve user default model, API key, and sandbox preference.
 
-        Returns (model, api_key) where model may be overridden by user default
-        and api_key is the resolved key for the provider.
+        Returns (model, api_key, default_sandbox) where model may be overridden
+        by user default, api_key is the resolved key for the provider, and
+        default_sandbox is the user's sandbox backend preference.
         """
         if not self.user_id:
-            return model, None
+            # Unauthenticated users: fall back to system default if no model
+            if not model:
+                model = DEFAULT_CHAT_MODEL
+            return model, None, None
 
         settings_repo = UserSettingsRepo(self.user_id, self.store)
         settings = await settings_repo._get_or_create()
@@ -87,25 +88,58 @@ class LLMController:
         if not model and settings.default_model:
             model = settings.default_model
 
+        # Final fallback to system default
+        if not model:
+            model = DEFAULT_CHAT_MODEL
+
+        # Read sandbox preference from settings
+        default_sandbox = getattr(settings, "default_sandbox", None)
+
         # Guard against None model before resolving API key
         if not model:
-            return model, None
+            return model, None, default_sandbox
 
         api_key = resolve_api_key(model, user_keys if user_keys else None)
-        return model, api_key
+        return model, api_key, default_sandbox
 
     async def llm_invoke(self, params: LLMRequest):
+        """Invoke the agent synchronously and return the final response.
+
+        Automatically loads user memories via ``prepare_memory_files()`` and
+        merges them into ``params.input.files`` before backend initialisation.
+        Existing user files take precedence over memory files. The resulting
+        memory sources are passed to ``construct_agent()`` so that
+        MemoryMiddleware is activated.
+        """
         agent = None
         config = None
         try:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
 
-            # Resolve user-configured API key and default model
-            params.model, api_key = await self._resolve_user_settings(params.model)
+            # Resolve user-configured API key, default model, and sandbox
+            params.model, api_key, default_sandbox = await self._resolve_user_settings(params.model)
+
+            # Load user memories into files_map for MemoryMiddleware
+            memory_files, _memory_sources = await prepare_memory_files(
+                self.user_id, self.service_context.memory_service
+            )
+            explicit_files = params.input.files or {}
+            memory_sources = select_memory_sources(
+                explicit_files=explicit_files,
+                memory_files=memory_files,
+            )
+            selected_memory_files = {path: memory_files[path] for path in (memory_sources or [])}
+            params.input.files = await resolve_context_files(
+                user_id=self.user_id,
+                store=self.store,
+                memory_files=selected_memory_files,
+                explicit_files=explicit_files,
+            )
 
             async with get_checkpoint_db() as checkpointer:
-                backend = self.init_backend(params)
+                runtime = self._init_runtime(params)
+                backend, _sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,
@@ -116,6 +150,7 @@ class LLMController:
                     backend=backend,
                     service_context=self.service_context,
                     api_key=api_key,
+                    memory=memory_sources,
                 )
                 response = await agent.invoke(
                     params.input,
@@ -124,6 +159,42 @@ class LLMController:
                 )
                 return response
         except Exception as e:
+            if is_daytona_error(e):
+                if default_sandbox == "daytona":
+                    # Explicit daytona mode: surface the detailed error
+                    logger.error(f"Daytona sandbox error (daytona mode): {e}")
+                    if agent and config:
+                        await self._update_store(agent, config)
+                    raise
+                elif default_sandbox in (None, "auto") and effective_type == "daytona":
+                    # Auto mode: fallback to local StateBackend and retry
+                    logger.warning(f"Daytona sandbox error in auto mode, falling back to local: {e}")
+                    try:
+                        fallback_backend, _ = _create_state_backend(runtime)
+                        agent = await construct_agent(
+                            instructions=params.instructions,
+                            system_prompt=params.system_prompt,
+                            model=params.model,
+                            tools=params.tools,
+                            subagents=params.subagents,
+                            checkpointer=checkpointer,
+                            backend=fallback_backend,
+                            service_context=self.service_context,
+                            api_key=api_key,
+                            memory=memory_sources,
+                        )
+                        response = await agent.invoke(
+                            params.input,
+                            config=config,
+                            context=self._init_context(params),
+                        )
+                        return response
+                    except Exception as fallback_err:
+                        logger.exception(f"Fallback also failed in llm_invoke: {fallback_err}")
+                        if agent and config:
+                            await self._update_store(agent, config)
+                        raise fallback_err
+
             logger.exception(f"Error in llm_invoke: {e}")
             if agent and config:
                 await self._update_store(agent, config)
@@ -136,8 +207,8 @@ class LLMController:
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)
 
-        # Resolve user-configured API key and default model
-        assistant.model, api_key = await self._resolve_user_settings(assistant.model)
+        # Resolve user-configured API key, default model, and sandbox
+        assistant.model, api_key, default_sandbox = await self._resolve_user_settings(assistant.model)
 
         return stream_generator(
             input=assistant.input,
@@ -149,6 +220,7 @@ class LLMController:
             service_context=self.service_context,
             instructions=assistant.instructions,
             api_key=api_key,
+            sandbox_type=default_sandbox,
         )
 
     async def llm_task(self, job: ScheduleCreate):

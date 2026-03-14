@@ -17,7 +17,7 @@ function AgentEditPage() {
 	const { agentId } = useParams();
 	const { agent, setAgent, useEffectGetAgent, useEffectGetAgents } =
 		useAgentContext();
-	useEffectGetAgent(agentId);
+	useEffectGetAgent(agentId!);
 	useEffectGetAgents();
 
 	const {
@@ -26,7 +26,9 @@ function AgentEditPage() {
 		useEffectUpdateAssistantId,
 		useModelsEffect,
 		fromBackendFormat,
-		clearFileSystem,
+		clearBackendSyncFiles,
+		clearThreadScopedFiles,
+		runWithPersistentSyncSuspended,
 	} = useChatContext();
 	useModelsEffect();
 	const [activeTab, setActiveTab] = useQueryState("tab");
@@ -63,16 +65,19 @@ function AgentEditPage() {
 		return () => {
 			setSearchParams(new URLSearchParams());
 			setAgent(INIT_AGENT_STATE.agent);
-			clearFileSystem();
+			clearBackendSyncFiles();
+			clearThreadScopedFiles();
 		};
 	}, []);
 
 	// Sync agent.file_system to fileSystem when agent loads
 	useEffect(() => {
 		if (agent?.files && Object.keys(agent.files).length > 0) {
-			fromBackendFormat(agent.files);
+			runWithPersistentSyncSuspended(() => {
+				fromBackendFormat(agent.files);
+			});
 		}
-	}, [agent?.id, fromBackendFormat]);
+	}, [agent?.id, fromBackendFormat, runWithPersistentSyncSuspended]);
 
 	return (
 		<ChatLayout>
@@ -92,7 +97,7 @@ function AgentEditPage() {
 							</TabsList>
 						</Tabs>
 					</div>
-					<ChatNav sidebarTrigger={null} showModelSelector={false} />
+					<ChatNav sidebarTrigger={null} />
 				</div>
 
 				<Tabs

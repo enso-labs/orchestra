@@ -13,7 +13,7 @@ export interface ToolDetail extends Tool {
 	metadata: Record<string, any>;
 }
 
-export type ToolCategory = "platform" | "mcp" | "a2a" | "api";
+export type ToolCategory = "platform" | "mcp" | "a2a" | "api" | "subagents";
 
 export interface ToolSelectionState {
 	selectedTools: Set<string>;
@@ -32,6 +32,7 @@ export interface McpServerConfig {
 	transport: "sse" | "streamable_http" | "stdio";
 	url: string;
 	headers: Record<string, string>;
+	enabled?: boolean;
 }
 
 export interface A2aServerConfig {

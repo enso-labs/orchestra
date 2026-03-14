@@ -31,9 +31,7 @@ class TestSourceService(unittest.IsolatedAsyncioTestCase):
                 },
             ),
         ]
-        created_source = await self.source_service.create(
-            project_id="test-project", source=VALID_SOURCES[0]
-        )
+        created_source = await self.source_service.create(project_id="test-project", source=VALID_SOURCES[0])
 
         # Verify the created source
         assert created_source.type == VALID_SOURCES[0].type

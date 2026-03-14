@@ -1,6 +1,7 @@
 # https://langchain-ai.github.io/langgraph/reference/checkpoints/#langgraph.checkpoint.postgres.BasePostgresSaver
+import os
 import uuid
-from fastapi import APIRouter, Body, HTTPException, Depends, status
+from fastapi import APIRouter, Body, HTTPException, Depends, Query, status
 from fastapi.responses import Response, UJSONResponse, StreamingResponse
 from fastapi_cache.decorator import cache
 from langgraph.graph.state import RunnableConfig
@@ -26,7 +27,7 @@ from langgraph.checkpoint.base import (
     ChannelVersions,
 )
 
-from src.utils.stream import stream_from_redis
+from src.utils.stream import distributed_stream_exists, stream_from_redis
 
 router = APIRouter(tags=["Thread"])
 
@@ -39,39 +40,41 @@ router = APIRouter(tags=["Thread"])
 )
 @cache(expire=15)
 async def search_threads(
-    search_filter: SearchFilter = Body(
-        openapi_examples=Examples.THREAD_SEARCH_EXAMPLES
-    ),
+    search_filter: SearchFilter = Body(openapi_examples=Examples.THREAD_SEARCH_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
-            if (
-                "thread_id" in search_filter.filter
-                and "checkpoint_id" not in search_filter.filter
-            ):
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+            if "thread_id" in search_filter.filter and "checkpoint_id" not in search_filter.filter:
                 checkpoints = await service_context.checkpoint_service.list_checkpoints(
                     thread_id=search_filter.filter["thread_id"]
                 )
-                thread: Thread = await service_context.thread_service.get(
-                    search_filter.filter["thread_id"]
-                )
+                thread: Thread = await service_context.thread_service.get(search_filter.filter["thread_id"])
                 if thread and len(checkpoints) > 0:
                     checkpoints[0]["metadata"]["files"] = thread.files
                     checkpoints[0]["metadata"]["todos"] = thread.todos
+                    # Backfill agent_name from thread snapshot into checkpoint messages
+                    if thread.messages:
+                        agent_name_map: dict[str, str | None] = {}
+                        for msg in thread.messages:
+                            msg_dict = msg if isinstance(msg, dict) else msg.model_dump()
+                            msg_id = msg_dict.get("id")
+                            if msg_id and "agent_name" in msg_dict:
+                                agent_name_map[msg_id] = msg_dict["agent_name"]
+                        if agent_name_map:
+                            for msg in checkpoints[0].get("values", {}).get("messages", []):
+                                msg_id = msg.get("id")
+                                if msg_id and msg_id in agent_name_map and "agent_name" not in msg:
+                                    msg["agent_name"] = agent_name_map[msg_id]
                 return {"checkpoints": checkpoints}
 
             threads = await service_context.thread_service.search(search_filter)
             return {"threads": threads}
     except Exception as e:
         logger.exception(f"Error searching threads: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(
@@ -81,9 +84,7 @@ async def search_threads(
     tags=["mcp"],
 )
 async def semantic_search_threads(
-    request: ThreadSemanticSearchRequest = Body(
-        openapi_examples=Examples.THREAD_SEMANTIC_SEARCH_EXAMPLES
-    ),
+    request: ThreadSemanticSearchRequest = Body(openapi_examples=Examples.THREAD_SEMANTIC_SEARCH_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
     store: AsyncPostgresStore = Depends(get_store),
 ):
@@ -96,17 +97,13 @@ async def semantic_search_threads(
             )
 
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # Perform semantic search
-            search_results = (
-                await service_context.thread_service.thread_snapshot_repo.search(
-                    query=request.query,
-                    limit=request.limit,
-                    assistant_id=request.assistant_id,
-                )
+            search_results = await service_context.thread_service.thread_snapshot_repo.search(
+                query=request.query,
+                limit=request.limit,
+                assistant_id=request.assistant_id,
             )
 
             # Enrich results with thread titles
@@ -137,9 +134,7 @@ async def semantic_search_threads(
         raise
     except Exception as e:
         logger.exception(f"Error performing semantic search: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(
@@ -155,9 +150,7 @@ async def create_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             assistant_id = thread.metadata.get("assistant_id", None)
             if assistant_id:
                 assistant = await service_context.assistant_service.get(assistant_id)
@@ -169,9 +162,7 @@ async def create_thread(
 
             thread.id = str(uuid.uuid4())
             checkpoint = empty_checkpoint()
-            await service_context.thread_service.update(
-                thread.id, thread.model_dump(exclude_none=True)
-            )
+            await service_context.thread_service.update(thread.id, thread.model_dump(exclude_none=True))
             saved = await checkpointer.aput(
                 config=RunnableConfig(
                     configurable={
@@ -196,9 +187,7 @@ async def create_thread(
         raise
     except Exception as e:
         logger.exception(f"Error updating thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get(
@@ -214,20 +203,16 @@ async def get_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             thread = await service_context.thread_service.get(thread_id)
+            if not thread:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
             return {"thread": thread.model_dump(exclude_none=True)}
     except HTTPException:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found"
-        )
+        raise
     except Exception as e:
         logger.exception(f"Error getting thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
 
 @router.get(
@@ -238,31 +223,111 @@ async def get_thread(
 )
 async def stream_thread(
     thread_id: str,
+    run_id: str = Query(...),
+    after: str | None = Query(default=None),
     user: ProtectedUser = Depends(get_optional_user_from_token),
+    store: AsyncPostgresStore = Depends(get_store),
 ):
     """
     Stream results from a distributed worker via SSE.
 
-    Use this endpoint after POST /llm/stream returns {"distributed": true}.
+    Use this endpoint after POST /llm/stream returns {"distributed": true, "run_id": "..."}.
     The client should connect to this endpoint to receive the streaming
     response from the background worker.
 
     Args:
         thread_id: The thread ID returned from the distributed /llm/stream call.
+        run_id: The run ID returned from the distributed /llm/stream call.
+        after: Optional Redis stream entry ID to resume after.
 
     Returns:
         StreamingResponse with SSE events containing the agent output.
     """
     try:
+        thread = None
+        if user:
+            async with get_checkpoint_db() as checkpointer:
+                service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+                thread = await service_context.thread_service.get(thread_id)
+
+        thread_metadata = thread.metadata if thread and thread.metadata else {}
+        active_run_id = thread_metadata.get("active_run_id")
+        stream_status = thread_metadata.get("stream_status")
+
+        if active_run_id and active_run_id != run_id:
+            if stream_status == "running":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Thread {thread_id} is running a different active run: {active_run_id}",
+                )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id} is no longer retained for thread {thread_id}",
+            )
+
+        sse_headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+
+        # Fix 4: Detect stale "running" status from a dead worker
+        max_stream_lifetime = int(os.getenv("MAX_STREAM_LIFETIME_SECONDS", "600"))
+        active_stream_started_at = thread_metadata.get("active_stream_started_at")
+        if stream_status == "running" and active_stream_started_at:
+            from src.utils.format import get_time
+            from datetime import datetime
+
+            try:
+                started = datetime.fromisoformat(active_stream_started_at)
+                now = datetime.fromisoformat(get_time())
+                elapsed = (now - started).total_seconds()
+                if elapsed > max_stream_lifetime:
+                    logger.warning(
+                        f"Stale running stream detected for thread {thread_id} run {active_run_id}: "
+                        f"started {elapsed:.0f}s ago (limit {max_stream_lifetime}s)"
+                    )
+                    # Update stream_status to error so future requests don't hit this path
+                    if user:
+                        async with get_checkpoint_db() as checkpointer:
+                            svc = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
+                            await svc.thread_service.update(
+                                thread_id,
+                                {**thread_metadata, "stream_status": "error"},
+                            )
+                    raise HTTPException(
+                        status_code=status.HTTP_410_GONE,
+                        detail=f"Stream for thread {thread_id} run {active_run_id} has expired (worker likely crashed)",
+                    )
+            except (ValueError, TypeError):
+                pass  # If timestamp is unparseable, skip stale detection
+
+        # Fix 1: When stream_status is "running" and run_id matches, skip the
+        # distributed_stream_exists() pre-check. The worker may not have created
+        # the Redis stream key yet, but stream_from_redis() has its own internal
+        # 30-second wait loop that handles this gracefully.
+        if active_run_id == run_id and stream_status == "running":
+            return StreamingResponse(
+                stream_from_redis(thread_id, run_id, after or "0"),
+                media_type="text/event-stream",
+                headers=sse_headers,
+            )
+
+        # For completed/errored/aborted streams, check if Redis still has the data
+        stream_exists = await distributed_stream_exists(thread_id, run_id)
+        if not stream_exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Distributed stream for thread {thread_id} run {run_id} was not found",
+            )
+
         return StreamingResponse(
-            stream_from_redis(thread_id),
+            stream_from_redis(thread_id, run_id, after or "0"),
             media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",  # Disable nginx buffering
-            },
+            headers=sse_headers,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Error streaming thread {thread_id}: {e}")
         raise HTTPException(
@@ -335,19 +400,16 @@ async def update_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             # Get existing thread data
             existing = await service_context.thread_service.get(thread_id)
             if not existing:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found"
-                )
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
 
             # Merge updates with existing data
             updated_data = {**existing.value, **thread.model_dump(exclude_none=True)}
-            update_message = f"Thread {thread_id} updated with fields: {', '.join(thread.model_dump(exclude_none=True).keys())}"
+            changed_fields = ", ".join(thread.model_dump(exclude_none=True).keys())
+            update_message = f"Thread {thread_id} updated with fields: {changed_fields}"
             logger.info(update_message)
             await service_context.thread_service.update(thread_id, updated_data)
             return UJSONResponse(
@@ -358,9 +420,7 @@ async def update_thread(
         raise
     except Exception as e:
         logger.exception(f"Error updating thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.delete(
@@ -376,18 +436,14 @@ async def delete_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.exception(f"Error deleting thread: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.delete(
@@ -396,7 +452,7 @@ async def delete_thread(
     operation_id="ruska_delete_assistant_thread",
     tags=["mcp"],
 )
-async def delete_thread(
+async def delete_assistant_thread(
     assistant_id: str,
     thread_id: str,
     user: ProtectedUser = Depends(verify_credentials),
@@ -404,9 +460,7 @@ async def delete_thread(
 ):
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
             await service_context.delete_thread(thread_id)
             return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
@@ -439,9 +493,7 @@ async def get_thread_interrupts(
     """
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # First, verify the thread exists
             thread = await service_context.thread_service.get(thread_id)
@@ -479,9 +531,7 @@ async def get_thread_interrupts(
         raise
     except Exception as e:
         logger.exception(f"Error getting interrupts for thread {thread_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post(
@@ -505,9 +555,7 @@ async def resume_thread(
     """
     try:
         async with get_checkpoint_db() as checkpointer:
-            service_context = ServiceContext(
-                user_id=user.id, store=store, checkpointer=checkpointer
-            )
+            service_context = ServiceContext(user_id=user.id, store=store, checkpointer=checkpointer)
 
             # First, verify the thread exists
             thread = await service_context.thread_service.get(thread_id)
@@ -548,7 +596,10 @@ async def resume_thread(
                         allowed = [a.value for a in interrupt.config.allowed_actions]
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Decision type '{decision.decision_type.value}' not allowed. Allowed actions: {allowed}",
+                            detail=(
+                                f"Decision type '{decision.decision_type.value}' "
+                                f"not allowed. Allowed actions: {allowed}"
+                            ),
                         )
 
             # Resume the thread with the provided decisions
@@ -575,6 +626,4 @@ async def resume_thread(
         )
     except Exception as e:
         logger.exception(f"Error resuming thread {thread_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

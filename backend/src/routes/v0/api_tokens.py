@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List
 from src.schemas.models import User
@@ -20,9 +20,7 @@ class CreateApiTokenResponse(BaseModel):
 
 
 @router.get("/tokens", response_model=List[ApiToken])
-async def list_api_tokens(
-    user: User = Depends(verify_credentials), store=Depends(get_store)
-):
+async def list_api_tokens(user: User = Depends(verify_credentials), store=Depends(get_store)):
     repo = ApiTokenRepo(str(user.id), store)
     return await repo.list_tokens()
 
@@ -46,9 +44,7 @@ async def create_api_token(
 
 
 @router.delete("/tokens/{token_id}")
-async def revoke_api_token(
-    token_id: str, user: User = Depends(verify_credentials), store=Depends(get_store)
-):
+async def revoke_api_token(token_id: str, user: User = Depends(verify_credentials), store=Depends(get_store)):
     repo = ApiTokenRepo(str(user.id), store)
     success = await repo.revoke_token(token_id)
     if not success:

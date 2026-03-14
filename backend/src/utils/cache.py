@@ -33,9 +33,7 @@ def user_cache_key_builder(
 
     # Hash relevant kwargs (exclude non-serializable objects)
     excluded_keys = {"user", "store", "request", "response"}
-    filtered_kwargs = {
-        k: v for k, v in kwargs.items() if k not in excluded_keys and v is not None
-    }
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k not in excluded_keys and v is not None}
 
     # Create hash of kwargs for cache key uniqueness
     if filtered_kwargs:

@@ -47,6 +47,9 @@ export type ThreadContextType = {
 			setTodos: (todos: Todo[]) => void;
 			setModel: (model: string) => void;
 		},
+		options?: {
+			enabled?: boolean;
+		},
 	) => void;
 };
 
@@ -97,20 +100,14 @@ export default function useThread(): ThreadContextType {
 					? threadData.todos
 					: [];
 
-				// Build filesMap
+				// Restore thread-scoped files from the backend checkpoint metadata
 				const filesMap = new Map<string, any>();
-				if (threadData.files && Object.keys(threadData.files).length > 0) {
-					const formattedMsgs = formatMessages(
-						checkpointsData[0].values.messages,
-					);
-					const latestAiMessage = formattedMsgs
-						.slice()
-						.reverse()
-						.find((msg: any) => ["ai", "assistant"].includes(msg.role));
-
-					if (latestAiMessage) {
-						filesMap.set(latestAiMessage.id, threadData.files);
-					}
+				if (
+					threadData.files &&
+					typeof threadData.files === "object" &&
+					Object.keys(threadData.files).length > 0
+				) {
+					filesMap.set("thread", threadData.files);
 				}
 
 				// Format messages
@@ -148,12 +145,34 @@ export default function useThread(): ThreadContextType {
 			setTodos: (todos: Todo[]) => void;
 			setModel: (model: string) => void;
 		},
+		options: {
+			enabled?: boolean;
+		} = {},
 	) => {
+		const enabled = options.enabled ?? true;
+
 		useEffect(() => {
+			if (!enabled) {
+				setThreadLoading(false);
+				setThreadError(null);
+				return;
+			}
+
+			if (threadId) {
+				setThreadLoading(true);
+				setThreadError(null);
+			}
+
+			let isActive = true;
+
 			const fetchThread = async () => {
 				if (!threadId) return;
 
 				const data = await loadThread(threadId);
+				if (!isActive || !data) {
+					return;
+				}
+
 				if (data) {
 					callbacks.setCheckpoints(data.checkpoints);
 					callbacks.setMessages(data.messages);
@@ -166,7 +185,11 @@ export default function useThread(): ThreadContextType {
 			};
 
 			fetchThread();
-		}, [threadId]);
+
+			return () => {
+				isActive = false;
+			};
+		}, [threadId, enabled]);
 	};
 
 	const fetchThreads = async (

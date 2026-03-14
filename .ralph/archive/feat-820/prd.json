@@ -1,0 +1,44 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/820-exec-server-template-edit-mcp",
+  "description": "Add exec server template and edit capability for MCP servers in the Manage Tools modal",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add exec server template to MCP_TEMPLATES",
+      "description": "As a user setting up the Ubuntu Sandbox exec server, I want an Exec Server template in the Template dropdown so that I can quickly configure the sandbox connection with the correct transport, URL, and auth header pre-filled.",
+      "acceptanceCriteria": [
+        "Add new 'exec' entry to MCP_TEMPLATES in frontend/src/components/modals/ToolSelectionModal/McpServerPanel.tsx with name 'Exec Server', transport 'streamable_http' as const, url 'http://localhost:3005/mcp', headers { 'x-api-key': '' }",
+        "Selecting 'Exec Server' from the Template dropdown sets transport to 'streamable_http'",
+        "URL field is pre-filled with 'http://localhost:3005/mcp'",
+        "Header key is pre-filled with 'x-api-key' and value is empty for the user to fill in",
+        "The template appears in the dropdown alongside Custom, Ruska MCP, and GitHub MCP",
+        "Typecheck passes (npx tsc --noEmit from frontend/)",
+        "Lint passes (npm run lint from frontend/)"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Add edit button to MCP server cards",
+      "description": "As a user who has already configured an MCP server, I want an edit button on the server card so that I can modify the server's URL, transport, or headers without deleting and re-creating it.",
+      "acceptanceCriteria": [
+        "Import Pencil icon from lucide-react in McpServerPanel.tsx",
+        "Add editingServer state: const [editingServer, setEditingServer] = useState<string | null>(null)",
+        "Each server card shows a Pencil icon button alongside the existing Trash2 delete button",
+        "Clicking the pencil icon opens the add form pre-populated with the server's current config (name, transport, url, first header key/value)",
+        "The form submit button text changes from 'Add Server' to 'Save' when editingServer is not null",
+        "Saving an edited server calls onAddServer(name, updatedConfig) which overwrites the existing entry in the Record",
+        "After saving, editingServer is cleared and the form resets and closes",
+        "Clicking Cancel while editing clears editingServer and resets the form",
+        "Typecheck passes (npx tsc --noEmit from frontend/)",
+        "Lint passes (npm run lint from frontend/)"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

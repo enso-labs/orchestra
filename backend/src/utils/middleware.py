@@ -35,9 +35,7 @@ from src.utils.format import format_content
 
 
 @after_model
-def add_ai_message_metadata(
-    state: AgentState, runtime: Runtime[ContextSchema]
-) -> dict | None:
+def add_ai_message_metadata(state: AgentState, runtime: Runtime[ContextSchema]) -> dict | None:
     """Attach AI message metadata to final response."""
     if state["messages"]:
         last_msg = state["messages"][-1]
@@ -144,9 +142,7 @@ class AutoEvictMiddleware(AgentMiddleware):
         tool_token_limit_before_evict: int = 10000,
         evict_dir: str = "/large_tool_results",
     ):
-        self.backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = (
-            backend
-        )
+        self.backend: BackendProtocol | Callable[[ToolRuntime], BackendProtocol] = backend
         self.evict_dir = evict_dir
         self.tool_token_limit_before_evict = tool_token_limit_before_evict
 
@@ -169,10 +165,7 @@ class AutoEvictMiddleware(AgentMiddleware):
         resolved_backend: BackendProtocol,
     ) -> tuple[ToolMessage, dict[str, FileData] | None]:
         content = message.content
-        if (
-            not isinstance(content, str)
-            or len(content) <= 4 * self.tool_token_limit_before_evict
-        ):
+        if not isinstance(content, str) or len(content) <= 4 * self.tool_token_limit_before_evict:
             return message, None
 
         sanitized_id = sanitize_tool_call_id(message.tool_call_id)
@@ -196,12 +189,9 @@ class AutoEvictMiddleware(AgentMiddleware):
     def _intercept_large_tool_result(
         self, tool_result: ToolMessage | Command, runtime: ToolRuntime
     ) -> ToolMessage | Command:
-        if isinstance(tool_result, ToolMessage) and isinstance(
-            tool_result.content, str
-        ):
+        if isinstance(tool_result, ToolMessage) and isinstance(tool_result.content, str):
             if not (
-                self.tool_token_limit_before_evict
-                and len(tool_result.content) > 4 * self.tool_token_limit_before_evict
+                self.tool_token_limit_before_evict and len(tool_result.content) > 4 * self.tool_token_limit_before_evict
             ):
                 return tool_result
             resolved_backend = self._get_backend(runtime)
@@ -268,10 +258,7 @@ class AutoEvictMiddleware(AgentMiddleware):
         Returns:
             The raw ToolMessage, or a pseudo tool message with the ToolResult in state.
         """
-        if (
-            self.tool_token_limit_before_evict is None
-            or request.tool_call["name"] in TOOL_GENERATORS
-        ):
+        if self.tool_token_limit_before_evict is None or request.tool_call["name"] in TOOL_GENERATORS:
             return await handler(request)
 
         tool_result = await handler(request)

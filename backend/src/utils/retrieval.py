@@ -67,21 +67,15 @@ async def langconnect_proxy(
             data_fields = {}
             extracted_metadatas = []
 
-            if request.headers.get("content-type", "").startswith(
-                "multipart/form-data"
-            ):
+            if request.headers.get("content-type", "").startswith("multipart/form-data"):
                 form = await request.form()
 
                 for key, value in form.items():
-                    if isinstance(value, UploadFile) or isinstance(
-                        value, StarletteUploadFile
-                    ):
+                    if isinstance(value, UploadFile) or isinstance(value, StarletteUploadFile):
                         # Read file content
                         try:
                             content = await value.read()
-                            logger.debug(
-                                f"File content type: {type(content)}, size: {len(content)}"
-                            )
+                            logger.debug(f"File content type: {type(content)}, size: {len(content)}")
 
                             # Extract metadata from the file
                             file_metadata = extract_file_metadata(
@@ -90,9 +84,7 @@ async def langconnect_proxy(
                                 content_type=value.content_type,
                             )
                             extracted_metadatas.append(file_metadata)
-                            logger.debug(
-                                f"Extracted metadata for {value.filename}: {file_metadata}"
-                            )
+                            logger.debug(f"Extracted metadata for {value.filename}: {file_metadata}")
 
                             files_data[key] = (
                                 value.filename,
@@ -101,9 +93,7 @@ async def langconnect_proxy(
                             )
 
                         except Exception as file_error:
-                            logger.error(
-                                f"Error reading file {value.filename}: {file_error}"
-                            )
+                            logger.error(f"Error reading file {value.filename}: {file_error}")
                             raise file_error
                     else:
                         # Handle regular form fields
@@ -112,9 +102,7 @@ async def langconnect_proxy(
                 # Add extracted metadata as JSON to the request
                 if extracted_metadatas:
                     data_fields["metadatas_json"] = json.dumps(extracted_metadatas)
-                    logger.debug(
-                        f"Adding metadatas_json to request: {data_fields['metadatas_json']}"
-                    )
+                    logger.debug(f"Adding metadatas_json to request: {data_fields['metadatas_json']}")
 
             # Build request with appropriate content
             if files_data or data_fields:
@@ -135,11 +123,7 @@ async def langconnect_proxy(
                     request.method,
                     full_url,
                     content=body,
-                    headers={
-                        k: v
-                        for k, v in request.headers.items()
-                        if k.lower() not in ["host", "content-length"]
-                    },
+                    headers={k: v for k, v in request.headers.items() if k.lower() not in ["host", "content-length"]},
                 )
 
             return proxy_resp

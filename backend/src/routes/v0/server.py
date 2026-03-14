@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, Field
-import json
 import uuid
 
 from src.utils.auth import verify_credentials
@@ -17,21 +16,15 @@ router = APIRouter(
 
 
 class Config(BaseModel):
-    type: str = Field(
-        ..., description="Server type: 'mcp' or 'a2a'", pattern="^(mcp|a2a)$"
-    )
+    type: str = Field(..., description="Server type: 'mcp' or 'a2a'", pattern="^(mcp|a2a)$")
     config: dict
 
 
 class ServerCreate(Config):
     name: str
     description: Optional[str] = None
-    documentation: Optional[str] = Field(
-        None, description="Markdown documentation for the server"
-    )
-    documentation_url: Optional[str] = Field(
-        None, description="External URL for server documentation"
-    )
+    documentation: Optional[str] = Field(None, description="Markdown documentation for the server")
+    documentation_url: Optional[str] = Field(None, description="External URL for server documentation")
     public: bool = False
 
 
@@ -84,9 +77,7 @@ class ConnectionTestResponse(BaseModel):
 async def get_servers(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(verify_credentials),
-    type: Optional[str] = Query(
-        None, description="Filter by server type ('mcp' or 'a2a')"
-    ),
+    type: Optional[str] = Query(None, description="Filter by server type ('mcp' or 'a2a')"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -99,9 +90,7 @@ async def get_servers(
     # Count total servers first
     from sqlalchemy import func
 
-    count_query = (
-        select(func.count()).select_from(Server).filter(Server.user_id == user.id)
-    )
+    count_query = select(func.count()).select_from(Server).filter(Server.user_id == user.id)
     if type:
         count_query = count_query.filter(Server.type == type)
     total = await db.scalar(count_query)
@@ -121,9 +110,7 @@ async def get_servers(
 @router.get("/public", response_model=ServerListResponse)
 async def get_public_servers(
     db: AsyncSession = Depends(get_async_db),
-    type: Optional[str] = Query(
-        None, description="Filter by server type ('mcp' or 'a2a')"
-    ),
+    type: Optional[str] = Query(None, description="Filter by server type ('mcp' or 'a2a')"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -165,9 +152,7 @@ async def get_server(
         raise HTTPException(status_code=404, detail="Server not found")
 
     if not server.public and str(server.user_id) != user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to access this server"
-        )
+        raise HTTPException(status_code=403, detail="Not authorized to access this server")
 
     return ServerResponse(**server.to_dict())
 
@@ -186,9 +171,7 @@ async def get_server_by_slug(
         raise HTTPException(status_code=404, detail="Server not found")
 
     if not server.public and str(server.user_id) != user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to access this server"
-        )
+        raise HTTPException(status_code=403, detail="Not authorized to access this server")
 
     return ServerResponse(**server.to_dict())
 
@@ -239,9 +222,7 @@ async def update_server(
         raise HTTPException(status_code=404, detail="Server not found")
 
     if str(server.user_id) != user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to update this server"
-        )
+        raise HTTPException(status_code=403, detail="Not authorized to update this server")
 
     # Validate server configuration
     validation = await validate_server_config(server_data)
@@ -279,9 +260,7 @@ async def partial_update_server(
         raise HTTPException(status_code=404, detail="Server not found")
 
     if str(server.user_id) != user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to update this server"
-        )
+        raise HTTPException(status_code=403, detail="Not authorized to update this server")
 
     # Update fields if provided
     if server_data.name is not None:
@@ -326,9 +305,7 @@ async def delete_server(
         raise HTTPException(status_code=404, detail="Server not found")
 
     if str(server.user_id) != user.id:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to delete this server"
-        )
+        raise HTTPException(status_code=403, detail="Not authorized to delete this server")
 
     await db.delete(server)
     await db.commit()
@@ -345,23 +322,17 @@ async def validate_server_config(
 
     # Validate server type
     if server_data.type not in ["mcp", "a2a"]:
-        errors.append(
-            {"field": "type", "message": "Server type must be either 'mcp' or 'a2a'"}
-        )
+        errors.append({"field": "type", "message": "Server type must be either 'mcp' or 'a2a'"})
 
     # Validate configuration based on server type
     if server_data.type == "mcp":
         # MCP server validation
         config = server_data.config
         if not isinstance(config, dict):
-            errors.append(
-                {"field": "config", "message": "Configuration must be an object"}
-            )
+            errors.append({"field": "config", "message": "Configuration must be an object"})
 
         if "transport" not in config:
-            errors.append(
-                {"field": "config.transport", "message": "Transport is required"}
-            )
+            errors.append({"field": "config.transport", "message": "Transport is required"})
         elif config["transport"] not in ["sse"]:
             errors.append(
                 {
@@ -377,14 +348,10 @@ async def validate_server_config(
         # A2A server validation
         config = server_data.config
         if not isinstance(config, dict):
-            errors.append(
-                {"field": "config", "message": "Configuration must be an object"}
-            )
+            errors.append({"field": "config", "message": "Configuration must be an object"})
 
         if "base_url" not in config:
-            errors.append(
-                {"field": "config.base_url", "message": "Base URL is required"}
-            )
+            errors.append({"field": "config.base_url", "message": "Base URL is required"})
 
         if "agent_card_path" not in config:
             errors.append(
@@ -418,9 +385,7 @@ async def test_connection(
         raise HTTPException(status_code=404, detail="Server not found")
 
     if str(server.user_id) != user.id and not server.public:
-        raise HTTPException(
-            status_code=403, detail="Not authorized to test this server"
-        )
+        raise HTTPException(status_code=403, detail="Not authorized to test this server")
 
     # Implementation will depend on the server type and how you want to test connections
     # This is a placeholder implementation

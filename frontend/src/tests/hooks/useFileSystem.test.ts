@@ -218,6 +218,30 @@ describe("useFileSystem", () => {
 
 			expect(result.current.activeFile).toBeNull();
 		});
+
+		it("should delete multiple files in one transaction and keep adjacent active tab", () => {
+			const { result } = renderHook(() => useFileSystem());
+
+			act(() => {
+				result.current.createFile("/keep.txt");
+				result.current.createFile("/folder/a.txt");
+				result.current.createFile("/folder/b.txt");
+				result.current.markDirty("/folder/b.txt");
+			});
+
+			expect(result.current.activeFile).toBe("/folder/b.txt");
+
+			act(() => {
+				result.current.deleteFiles(["/folder/a.txt", "/folder/b.txt"]);
+			});
+
+			expect(result.current.fileSystem.has("/folder/a.txt")).toBe(false);
+			expect(result.current.fileSystem.has("/folder/b.txt")).toBe(false);
+			expect(result.current.fileSystem.has("/keep.txt")).toBe(true);
+			expect(result.current.openTabs).toEqual(["/keep.txt"]);
+			expect(result.current.activeFile).toBe("/keep.txt");
+			expect(result.current.dirtyFiles.has("/folder/b.txt")).toBe(false);
+		});
 	});
 
 	describe("renameFile", () => {

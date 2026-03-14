@@ -22,21 +22,15 @@ router = APIRouter(tags=[TAG])
     responses={
         status.HTTP_200_OK: {
             "description": "Add documents to the vector store.",
-            "content": {
-                "application/json": {"example": DocIds.model_json_schema()["example"]}
-            },
+            "content": {"application/json": {"example": DocIds.model_json_schema()["example"]}},
         }
     },
 )
-def add_documents(
-    body: Annotated[AddDocuments, Body()], username: str = Depends(verify_credentials)
-):
+def add_documents(body: Annotated[AddDocuments, Body()], username: str = Depends(verify_credentials)):
     logger.info(f"Adding documents to the vector store: {body.documents}")
     created = VectorStore().add_docs(body.documents)
     if created:
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"documents": created}
-        )
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"documents": created})
     else:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -54,16 +48,12 @@ def add_documents(
             "description": "List all documents in the vector store.",
             "content": {"application/json": {"example": LIST_DOCUMENTS_EXAMPLE}},
         },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Failed to delete documents from the vector store."
-        },
+        status.HTTP_400_BAD_REQUEST: {"description": "Failed to delete documents from the vector store."},
     },
 )
 def list_documents(username: str = Depends(verify_credentials)):
     vectorstore = VectorStore()
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"documents": vectorstore.list_docs()}
-    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"documents": vectorstore.list_docs()})
 
 
 ################################################################################
@@ -74,9 +64,7 @@ def list_documents(username: str = Depends(verify_credentials)):
     responses={
         status.HTTP_200_OK: {
             "description": "Update a document in the vector store.",
-            "content": {
-                "application/json": {"example": LIST_DOCUMENTS_EXAMPLE["documents"][0]}
-            },
+            "content": {"application/json": {"example": LIST_DOCUMENTS_EXAMPLE["documents"][0]}},
         }
     },
 )
@@ -88,9 +76,7 @@ def update_document(
     logger.info(f"Updating document in the vector store: {body}")
     updated = VectorStore().edit_doc(id, body)
     if updated:
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"documents": updated}
-        )
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"documents": updated})
     else:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -106,20 +92,14 @@ def update_document(
     responses={
         status.HTTP_200_OK: {
             "description": "Find document by id.",
-            "content": {
-                "application/json": {
-                    "example": {"document": LIST_DOCUMENTS_EXAMPLE["documents"][0]}
-                }
-            },
+            "content": {"application/json": {"example": {"document": LIST_DOCUMENTS_EXAMPLE["documents"][0]}}},
         }
     },
 )
 def find_document(id: str, username: str = Depends(verify_credentials)):
     vectorstore = VectorStore()
     doc = vectorstore.find_docs_by_ids([id])[0]
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"document": doc.model_dump()}
-    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"document": doc.model_dump()})
 
 
 ################################################################################
@@ -131,14 +111,10 @@ def find_document(id: str, username: str = Depends(verify_credentials)):
         status.HTTP_204_NO_CONTENT: {
             "description": "Delete documents from the vector store.",
         },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Failed to delete documents from the vector store."
-        },
+        status.HTTP_400_BAD_REQUEST: {"description": "Failed to delete documents from the vector store."},
     },
 )
-def delete_documents(
-    body: Annotated[DocIds, Body()], username: str = Depends(verify_credentials)
-):
+def delete_documents(body: Annotated[DocIds, Body()], username: str = Depends(verify_credentials)):
     logger.info(f"Deleting documents from the vector store: {body.documents}")
     deleted = VectorStore().delete_docs(body.documents)
     if deleted:

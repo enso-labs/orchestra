@@ -54,12 +54,19 @@ function createStreamResponse(lines: string[]): Response {
 /**
  * Creates a mock 202 Accepted response for distributed mode.
  */
-function createDistributedResponse(threadId: string): Response {
+function createDistributedResponse(
+	threadId: string,
+	runId = "run-123",
+): Response {
 	return {
 		ok: true,
 		status: 202,
 		headers: new Headers({ "Content-Type": "application/json" }),
-		json: async () => ({ thread_id: threadId, distributed: true }),
+		json: async () => ({
+			thread_id: threadId,
+			run_id: runId,
+			distributed: true,
+		}),
 	} as unknown as Response;
 }
 
@@ -69,6 +76,7 @@ describe("Distributed Stream Integration", () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		vi.resetAllMocks();
 	});
 
@@ -297,12 +305,13 @@ describe("Distributed Stream Integration", () => {
 
 	describe("Error recovery", () => {
 		it("should report network errors to error handler", async () => {
+			vi.useFakeTimers();
 			const postResponse = createDistributedResponse("error-123");
 
 			// POST succeeds, GET fails
 			mockFetch
 				.mockResolvedValueOnce(postResponse)
-				.mockRejectedValueOnce(new Error("Failed to fetch"));
+				.mockRejectedValue(new Error("Failed to fetch"));
 
 			const payload = {
 				input: { messages: [{ role: "user" as const, content: "Hello" }] },
@@ -314,7 +323,9 @@ describe("Distributed Stream Integration", () => {
 			const errors: Error[] = [];
 
 			source.onError((error) => errors.push(error));
-			await source.start();
+			const startPromise = source.start();
+			await vi.runAllTimersAsync();
+			await startPromise;
 
 			// Error should be reported
 			expect(errors).toHaveLength(1);

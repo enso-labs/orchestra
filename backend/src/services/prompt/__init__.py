@@ -1,9 +1,12 @@
 import asyncio
-import os
 from typing import Any, Optional
 from pydantic import BaseModel, computed_field, field_serializer
 from datetime import datetime
-from fastapi.openapi.models import Example
+
+try:
+    from fastapi.openapi.models import Example
+except ImportError:
+    Example = dict
 from langgraph.store.base import SearchItem
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore
@@ -85,9 +88,7 @@ class PromptService:
                 value=prompt.model_dump(),
             )
         else:
-            await self.store.adelete(
-                self._get_namespace(prompt_id, public=True), str(prompt.v)
-            )
+            await self.store.adelete(self._get_namespace(prompt_id, public=True), str(prompt.v))
 
         await self._update_revision(prompt_id, prompt)
         return prompt.public
@@ -110,12 +111,8 @@ class PromptService:
             logger.exception(f"Error updating {STORE_KEY} {prompt_id}: {e}")
             return False
 
-    async def list_revisions(
-        self, prompt_id: str, limit: int = 1000, public: bool = False
-    ) -> list[Prompt]:
-        revisions = await self.store.asearch(
-            self._get_namespace(prompt_id, public), limit=limit
-        )
+    async def list_revisions(self, prompt_id: str, limit: int = 1000, public: bool = False) -> list[Prompt]:
+        revisions = await self.store.asearch(self._get_namespace(prompt_id, public), limit=limit)
         return [self._format([revision])[0] for revision in revisions]
 
     async def get(self, prompt_id: str, v: int = 1) -> Any:
@@ -178,13 +175,9 @@ class PromptService:
             except Exception as e:
                 error_msg = str(e).lower()
                 if "connection" in error_msg and "closed" in error_msg:
-                    logger.warning(
-                        f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}"
-                    )
+                    logger.warning(f"Store connection closed on attempt {attempt + 1}/{max_retries}: {e}")
                     if attempt < max_retries - 1:
-                        await asyncio.sleep(
-                            retry_delay * (2**attempt)
-                        )  # Exponential backoff
+                        await asyncio.sleep(retry_delay * (2**attempt))  # Exponential backoff
                         continue
                 raise e
 
@@ -212,11 +205,3 @@ PROMPT_EXAMPLES = {
         public=True,
     ),
 }
-
-
-def fetch_prompt(name: str = "ruska-default"):
-    from langsmith import Client
-
-    client = Client(api_key=os.getenv("LANGSMITH_API_KEY"))
-    prompt = client.pull_prompt(name)
-    return prompt

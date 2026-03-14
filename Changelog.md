@@ -2,12 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
-## v0.0.2-rc142
+## 2026.3.6-2
 
 ### Changed
+  - feat/840-disable-mcp-server-toggle
+
+### Fixed
+  - fix/855-files-map-not-persisted-across-threads (2026-03-11)
+
+## 2026.3.4-2
+
+### Changed
+  - feat/838-backend-benchmarks
+
+## 2026.2.23-5
+
+### Changed
+  - feat/830-model-visibility-backend
+  - feat/821-docs-screenshots
+
+## 2026.2.23-4
+
+### Changed
+  - bug/823-schedule-calendar-mobile-overflow
+
+## 2026.2.23-3
+
+### Changed
+  - feat/826-dedup-ci-jobs
+
+## 2026.2.23-2
+
+### Changed
+  - feat/826-dedup-ci-jobs (2026-02-23)
+  - feat-822
+
+## 2026.2.22
+
+### Changed
+  - feat/820-exec-server-template-edit-mcp
+  - Adopt YYYY.MM.DD-RR versioning scheme
+
+## 0.1.0-rc20
+
+### Changed
+  - feat/803-persist-assistant-subagent-selection (2026-02-20)
+  - feat/807-docs-update-memories-onboarding-mcp (2026-02-20)
+  - feat/787-migrate-memories-seeder (2026-02-18)
+  - feat/801-search-threads-tool (2026-02-18)
   - feat/736-rlm-skill (2026-02-05)
   - feat/722-frontend-schedule-refactor (2026-02-01)
   - feat/724-add-watcher-to-worker-reload (2026-02-01)

@@ -67,6 +67,66 @@ export function getExecutionStatusColor(status: string): string {
 }
 
 /**
+ * Maps schedule definitions to projected calendar events using their next_run_time.
+ * This ensures schedules appear on the calendar even when they have no executions yet.
+ */
+export function mapSchedulesToProjectedEvents(
+	schedules: Schedule[],
+): ScheduleEvent[] {
+	return schedules
+		.filter((s) => s.next_run_time)
+		.map((schedule) => {
+			const start = new Date(schedule.next_run_time);
+			const end = new Date(start.getTime() + 30 * 60 * 1000);
+			const agentId =
+				schedule.agent_id ?? schedule.task?.metadata?.agent_id ?? null;
+
+			return {
+				id: `projected-${schedule.id}`,
+				title: schedule.title ?? "Unknown Schedule",
+				start,
+				end,
+				resource: {
+					schedule_id: schedule.id,
+					execution_id: "",
+					thread_id: null,
+					status: "scheduled",
+					agent_id: agentId,
+				},
+			};
+		});
+}
+
+/**
+ * Merges execution-based events with projected events, deduplicating
+ * projected events that are already covered by an execution within 1 hour.
+ */
+export function mergeAndDeduplicateEvents(
+	executionEvents: ScheduleEvent[],
+	projectedEvents: ScheduleEvent[],
+): ScheduleEvent[] {
+	const coveredScheduleIds = new Set<string>();
+	const ONE_HOUR_MS = 60 * 60 * 1000;
+
+	for (const exec of executionEvents) {
+		for (const proj of projectedEvents) {
+			if (
+				exec.resource.schedule_id === proj.resource.schedule_id &&
+				Math.abs(exec.start.getTime() - proj.start.getTime()) < ONE_HOUR_MS
+			) {
+				coveredScheduleIds.add(proj.resource.schedule_id);
+			}
+		}
+	}
+
+	const filteredProjected = projectedEvents.filter(
+		(p) => !coveredScheduleIds.has(p.resource.schedule_id),
+	);
+
+	return [...executionEvents, ...filteredProjected];
+}
+
+/**
  * Filters executions by period (PAST or FUTURE) and sorts descending by scheduled_time.
  */
 export function filterExecutionsByPeriod(

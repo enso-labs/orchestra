@@ -78,7 +78,7 @@ export function AgentCreateForm() {
 		isAgentSelected,
 		updateQueryStateModel,
 	} = useAgentContext();
-	const { toBackendFormat } = useChatContext();
+	const { toBackendFormat, setModel } = useChatContext();
 	const [isEditing, setIsEditing] = useState(!agentId);
 	const [originalAgent, setOriginalAgent] = useState<Agent | null>(null);
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
@@ -256,6 +256,11 @@ export function AgentCreateForm() {
 		form.setValue("description", agent.description);
 		form.setValue("model", agent.model);
 		form.setValue("public", agent.public || false);
+
+		// Sync ChatContext model so SelectModel displays the agent's saved model
+		if (agent.model) {
+			setModel(agent.model);
+		}
 
 		// Determine mode and set values
 		if (
@@ -677,7 +682,11 @@ export function AgentCreateForm() {
 									<FormControl>
 										<SelectModel
 											disabled={!isEditing}
-											onModelSelected={updateQueryStateModel}
+											onChange={(value) => {
+												setModel(value);
+												form.setValue("model", value);
+												updateQueryStateModel(value);
+											}}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -715,14 +724,14 @@ export function AgentCreateForm() {
 												field.onChange(checked);
 												try {
 													if (checked) {
-														await agentService.publish(agent.id);
+														await agentService.publish(agent.id!);
 														alert("Agent published successfully!");
 													} else {
-														await agentService.unpublish(agent.id);
+														await agentService.unpublish(agent.id!);
 														alert("Agent unpublished successfully!");
 													}
 													setAgent({ ...agent, public: checked });
-												} catch (error) {
+												} catch (_error) {
 													// Revert on failure
 													field.onChange(!checked);
 													alert(
@@ -1028,10 +1037,6 @@ export function AgentCreateForm() {
 				initialSelectedTools={agent.tools || []}
 				initialMcpConfig={agent.mcp as Record<string, any>}
 				initialA2aConfig={agent.a2a as Record<string, any>}
-				onApply={(selectedTools) => {
-					setAgent({ ...agent, tools: selectedTools });
-					setIsToolModalOpen(false);
-				}}
 			/>
 
 			{/* Prompt Selection Modal */}

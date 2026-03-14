@@ -58,7 +58,7 @@ mcp_app = mcp.http_app(path="/mcp")
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting up...")
-    print(f"Environment Settings:")
+    print("Environment Settings:")
     print(f"APP_VERSION: {APP_VERSION}")
     print(f"LOG_LEVEL: {LOG_LEVEL}")
     print(f"HOST: {HOST}")
@@ -100,7 +100,7 @@ app = FastAPI(
         "This is a simple API for building chatbots with LangGraph. "
         "It allows you to create new threads, query existing threads, "
         "and get the history of a thread.\n Check out the repo on "
-        f"<a href='https://github.com/ruska-ai/orchestra'>Github</a>"
+        "<a href='https://github.com/ruska-ai/orchestra'>Github</a>"
     ),
     contact={"name": "Ryan Eggleston", "email": "reggleston@ruska.ai"},
     debug=True,

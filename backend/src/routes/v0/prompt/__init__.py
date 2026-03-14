@@ -18,9 +18,7 @@ router = APIRouter(tags=["Prompt"], prefix="/prompts")
 ################################################################################
 ### Search Prompts
 ################################################################################
-@router.post(
-    "/search", name="Query Prompts", operation_id="ruska_search_prompts", tags=["mcp"]
-)
+@router.post("/search", name="Query Prompts", operation_id="ruska_search_prompts", tags=["mcp"])
 async def search_prompts(
     prompt_search: PromptSearch = Body(...),
     user: ProtectedUser = Depends(verify_credentials),
@@ -29,9 +27,7 @@ async def search_prompts(
     service_context = ServiceContext(user_id=user.id, store=store)
     # Return single prompt revision
     if "id" in prompt_search.filter and "v" in prompt_search.filter:
-        prompt = await service_context.prompt_service.get(
-            prompt_search.filter["id"], prompt_search.filter["v"]
-        )
+        prompt = await service_context.prompt_service.get(prompt_search.filter["id"], prompt_search.filter["v"])
         return {"prompts": [prompt]}
     ## Return single prompt
     if "id" in prompt_search.filter:
@@ -72,9 +68,7 @@ async def view_public_prompt(
     prompt_service.store = store
     revisions = await prompt_service.list_revisions(prompt_id, public=True)
     if not revisions:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Prompt not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prompt not found")
     return Response(content=revisions[-1].content, media_type="text/plain")
 
 

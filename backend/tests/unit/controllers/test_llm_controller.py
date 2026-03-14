@@ -13,9 +13,7 @@ class TestLLMRequestFileGeneration:
         from src.schemas.entities.llm import LLMRequest
 
         payload = {
-            "input": {
-                "messages": [{"role": "user", "content": "Create a Python script"}]
-            },
+            "input": {"messages": [{"role": "user", "content": "Create a Python script"}]},
             "generate_files": True,
         }
         request = LLMRequest(**payload)
@@ -98,7 +96,4 @@ class TestLLMRequestFileGeneration:
         assert request.generate_files is True
         assert request.target_file == "/hello.py"
         assert request.file_context == "# Existing code here"
-        assert (
-            request.input.messages[0].content
-            == "Create a Python script that prints hello world"
-        )
+        assert request.input.messages[0].content == "Create a Python script that prints hello world"

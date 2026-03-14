@@ -1,25 +1,35 @@
-import { Wrench, Server, Users, PencilRuler } from "lucide-react";
+import { Wrench, Server, Users, PencilRuler, Bot } from "lucide-react";
 import { ToolCategory, CategoryConfig } from "./types";
 
 const categories: CategoryConfig[] = [
 	{ id: "platform", label: "Platform", icon: Wrench },
-	{ id: "api", label: "API Tools", icon: PencilRuler },
-	{ id: "mcp", label: "MCP Servers", icon: Server },
-	{ id: "a2a", label: "A2A Agents", icon: Users },
+	{ id: "api", label: "API", icon: PencilRuler },
+	{ id: "mcp", label: "MCP", icon: Server },
+	{ id: "a2a", label: "A2A", icon: Users },
+	{ id: "subagents", label: "Subagents", icon: Bot },
 ];
 
 interface SidebarProps {
 	activeCategory: ToolCategory;
 	onCategoryChange: (category: ToolCategory) => void;
+	visibleCategories?: ToolCategory[];
 }
 
-export function Sidebar({ activeCategory, onCategoryChange }: SidebarProps) {
+export function Sidebar({
+	activeCategory,
+	onCategoryChange,
+	visibleCategories,
+}: SidebarProps) {
+	const filteredCategories = visibleCategories
+		? categories.filter((c) => visibleCategories.includes(c.id))
+		: categories;
+
 	return (
 		<>
 			{/* Mobile: Horizontal scrolling tabs */}
 			<div className="sm:hidden border-b border-border flex-shrink-0 overflow-x-auto">
 				<nav className="flex p-2 gap-1 min-w-max">
-					{categories.map((category) => {
+					{filteredCategories.map((category) => {
 						const Icon = category.icon;
 						const isActive = activeCategory === category.id;
 
@@ -49,7 +59,7 @@ export function Sidebar({ activeCategory, onCategoryChange }: SidebarProps) {
 			{/* Desktop: Vertical sidebar */}
 			<div className="hidden sm:block w-60 border-r border-border flex-shrink-0">
 				<nav className="p-4 space-y-1">
-					{categories.map((category) => {
+					{filteredCategories.map((category) => {
 						const Icon = category.icon;
 						const isActive = activeCategory === category.id;
 

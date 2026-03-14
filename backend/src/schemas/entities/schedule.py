@@ -33,7 +33,8 @@ class JobTrigger(BaseModel):
         if APP_ENV != "test":
             if minute_field in ("*", "*/1"):
                 raise ValueError(
-                    "Cron expression must not schedule more frequently than 1 hour (minute field must not be '*' or '*/1')"
+                    "Cron expression must not schedule more frequently than 1 hour "
+                    "(minute field must not be '*' or '*/1')"
                 )
             if hour_field == "*":
                 raise ValueError(
@@ -88,11 +89,7 @@ class JobUpdated(BaseModel):
         json_schema_extra={"example": {"id": "123e4567-e89b-12d3-a456-426614174000"}},
     )
 
-    model_config = {
-        "json_schema_extra": {
-            "example": {"job": {"id": "123e4567-e89b-12d3-a456-426614174000"}}
-        }
-    }
+    model_config = {"json_schema_extra": {"example": {"job": {"id": "123e4567-e89b-12d3-a456-426614174000"}}}}
 
 
 class JobList(BaseModel):
@@ -118,9 +115,7 @@ class JobList(BaseModel):
 class JobDeleted(BaseModel):
     message: str = Field(..., json_schema_extra={"example": "Job deleted successfully"})
 
-    model_config = {
-        "json_schema_extra": {"example": {"message": "Job deleted successfully"}}
-    }
+    model_config = {"json_schema_extra": {"example": {"message": "Job deleted successfully"}}}
 
 
 ######################################################
@@ -155,9 +150,7 @@ class ScheduleUpdate(BaseModel):
                 "task": {
                     "model": "openai:gpt-5-nano",
                     "system": "You are a helpful assistant.",
-                    "messages": [
-                        {"role": "user", "content": "Updated weather check for Dallas?"}
-                    ],
+                    "messages": [{"role": "user", "content": "Updated weather check for Dallas?"}],
                     "tools": [],
                     "a2a": {},
                     "mcp": {},

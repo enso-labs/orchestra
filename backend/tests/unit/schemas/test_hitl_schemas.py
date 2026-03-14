@@ -138,9 +138,7 @@ class TestInterruptConfig(unittest.TestCase):
 
     def test_custom_allowed_actions(self):
         """Test custom allowed_actions subset."""
-        config = InterruptConfig(
-            allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT]
-        )
+        config = InterruptConfig(allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT])
         self.assertEqual(len(config.allowed_actions), 2)
         self.assertIn(DecisionType.ACCEPT, config.allowed_actions)
         self.assertIn(DecisionType.REJECT, config.allowed_actions)
@@ -170,9 +168,7 @@ class TestInterruptInfo(unittest.TestCase):
 
     def test_full_fields(self):
         """Test InterruptInfo with all fields populated."""
-        config = InterruptConfig(
-            allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT]
-        )
+        config = InterruptConfig(allowed_actions=[DecisionType.ACCEPT, DecisionType.REJECT])
         info = InterruptInfo(
             tool_name="http_request",
             tool_args={"method": "POST", "url": "https://api.example.com"},
@@ -290,16 +286,12 @@ class TestResumeRequest(unittest.TestCase):
         # Check for min_length validation
         error_msg = str(context.exception)
         self.assertTrue(
-            "at least 1" in error_msg.lower()
-            or "too_short" in error_msg.lower()
-            or "min_length" in error_msg.lower()
+            "at least 1" in error_msg.lower() or "too_short" in error_msg.lower() or "min_length" in error_msg.lower()
         )
 
     def test_serialization(self):
         """Test ResumeRequest serializes correctly."""
-        request = ResumeRequest(
-            decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)]
-        )
+        request = ResumeRequest(decisions=[HumanDecision(decision_type=DecisionType.ACCEPT)])
         json_data = request.model_dump()
         self.assertEqual(len(json_data["decisions"]), 1)
         self.assertEqual(json_data["decisions"][0]["decision_type"], "accept")

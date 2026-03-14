@@ -80,9 +80,7 @@ class TestGetInterrupts(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result[0].tool_name, "http_request")
         self.assertEqual(result[0].tool_args["url"], "https://example.com")
         self.assertEqual(result[0].tool_args["method"], "POST")
-        self.assertEqual(
-            result[0].description, "Make an HTTP POST request to example.com"
-        )
+        self.assertEqual(result[0].description, "Make an HTTP POST request to example.com")
 
         # Verify allowed actions based on config
         allowed_actions = result[0].config.allowed_actions
@@ -233,14 +231,10 @@ class TestResumeWithDecision(unittest.IsolatedAsyncioTestCase):
         mock_state_with_interrupt.interrupts = [mock_interrupt]
 
         mock_state_after_resume = MagicMock()
-        mock_state_after_resume.config = {
-            "configurable": {"checkpoint_id": "new-cp-123"}
-        }
+        mock_state_after_resume.config = {"configurable": {"checkpoint_id": "new-cp-123"}}
 
         mock_graph = MagicMock()
-        mock_graph.aget_state = AsyncMock(
-            side_effect=[mock_state_with_interrupt, mock_state_after_resume]
-        )
+        mock_graph.aget_state = AsyncMock(side_effect=[mock_state_with_interrupt, mock_state_after_resume])
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
         service = CheckpointService(user_id="test-user", graph=mock_graph)
@@ -267,14 +261,10 @@ class TestResumeWithDecision(unittest.IsolatedAsyncioTestCase):
         mock_state_with_interrupt.interrupts = [mock_interrupt]
 
         mock_state_after_resume = MagicMock()
-        mock_state_after_resume.config = {
-            "configurable": {"checkpoint_id": "new-cp-456"}
-        }
+        mock_state_after_resume.config = {"configurable": {"checkpoint_id": "new-cp-456"}}
 
         mock_graph = MagicMock()
-        mock_graph.aget_state = AsyncMock(
-            side_effect=[mock_state_with_interrupt, mock_state_after_resume]
-        )
+        mock_graph.aget_state = AsyncMock(side_effect=[mock_state_with_interrupt, mock_state_after_resume])
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
         service = CheckpointService(user_id="test-user", graph=mock_graph)
@@ -304,14 +294,10 @@ class TestResumeWithDecision(unittest.IsolatedAsyncioTestCase):
         mock_state_with_interrupt.interrupts = [mock_interrupt]
 
         mock_state_after_resume = MagicMock()
-        mock_state_after_resume.config = {
-            "configurable": {"checkpoint_id": "new-cp-789"}
-        }
+        mock_state_after_resume.config = {"configurable": {"checkpoint_id": "new-cp-789"}}
 
         mock_graph = MagicMock()
-        mock_graph.aget_state = AsyncMock(
-            side_effect=[mock_state_with_interrupt, mock_state_after_resume]
-        )
+        mock_graph.aget_state = AsyncMock(side_effect=[mock_state_with_interrupt, mock_state_after_resume])
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
         service = CheckpointService(user_id="test-user", graph=mock_graph)
@@ -339,14 +325,10 @@ class TestResumeWithDecision(unittest.IsolatedAsyncioTestCase):
         mock_state_with_interrupt.interrupts = [mock_interrupt]
 
         mock_state_after_resume = MagicMock()
-        mock_state_after_resume.config = {
-            "configurable": {"checkpoint_id": "new-cp-rej"}
-        }
+        mock_state_after_resume.config = {"configurable": {"checkpoint_id": "new-cp-rej"}}
 
         mock_graph = MagicMock()
-        mock_graph.aget_state = AsyncMock(
-            side_effect=[mock_state_with_interrupt, mock_state_after_resume]
-        )
+        mock_graph.aget_state = AsyncMock(side_effect=[mock_state_with_interrupt, mock_state_after_resume])
         mock_graph.ainvoke = AsyncMock(return_value={"result": "rejected"})
 
         service = CheckpointService(user_id="test-user", graph=mock_graph)
@@ -396,9 +378,7 @@ class TestResumeWithDecision(unittest.IsolatedAsyncioTestCase):
         mock_state_after_resume.config = {"configurable": {"checkpoint_id": "multi-cp"}}
 
         mock_graph = MagicMock()
-        mock_graph.aget_state = AsyncMock(
-            side_effect=[mock_state_with_interrupts, mock_state_after_resume]
-        )
+        mock_graph.aget_state = AsyncMock(side_effect=[mock_state_with_interrupts, mock_state_after_resume])
         mock_graph.ainvoke = AsyncMock(return_value={"result": "success"})
 
         service = CheckpointService(user_id="test-user", graph=mock_graph)

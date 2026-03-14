@@ -1,4 +1,4 @@
-.PHONY: dev claude build run tag seeds test format
+.PHONY: dev claude build run tag seeds seeds.memory test format lint
 
 ENV_FILE ?= $(HOME)/.env/orchestra/.env.backend
 
@@ -6,7 +6,7 @@ dev:
 	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug --env-file $(ENV_FILE)
 
 dev.worker:
-	@set -a && . $(ENV_FILE) && set +a && uv run taskiq worker src.workers.tasks:broker --reload --reload-dir ./
+	@set -a && . $(ENV_FILE) && set +a && uv run taskiq worker src.workers.tasks:broker
 
 dev.claude:
 	uv run uvicorn main:app --reload --host 0.0.0.0 --port 8031 --log-level debug --env-file $(ENV_FILE)
@@ -20,8 +20,14 @@ tag:
 seeds.user:
 	uv run python -m seeds.user_seeder --env-file $(ENV_FILE)
 
+seeds.memory:
+	uv run python -m seeds.memory_seeder --env-file $(ENV_FILE)
+
 format:
 	uvx ruff format
+
+lint:
+	uvx ruff check
 
 test:
 	@set -a && . $(ENV_FILE) && set +a && uv run pytest

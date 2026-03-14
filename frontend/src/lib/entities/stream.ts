@@ -7,6 +7,7 @@
 // Response type from POST in distributed mode
 export interface DistributedStreamResponse {
 	thread_id: string;
+	run_id: string;
 	distributed: true;
 }
 
@@ -23,7 +24,9 @@ export function isDistributedResponse(
 		"distributed" in response &&
 		(response as DistributedStreamResponse).distributed === true &&
 		"thread_id" in response &&
-		typeof (response as DistributedStreamResponse).thread_id === "string"
+		typeof (response as DistributedStreamResponse).thread_id === "string" &&
+		"run_id" in response &&
+		typeof (response as DistributedStreamResponse).run_id === "string"
 	);
 }
 
@@ -39,6 +42,7 @@ export interface MetadataEvent {
 	type: "metadata";
 	data: {
 		thread_id: string;
+		run_id?: string;
 		assistant_id: string | null;
 		project_id: string | null;
 	};
@@ -80,3 +84,13 @@ export interface DoneSignal {
 }
 
 export type StreamEvent = SSEEvent | DoneSignal;
+
+export type ActiveStreamRecoveryRecord = {
+	threadId: string;
+	runId: string;
+	lastEventId: string | null;
+	startedAt: string;
+	updatedAt: string;
+	route: string;
+	status: "running";
+};

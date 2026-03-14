@@ -1,8 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import {
-	SidebarMenuButton,
-	SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { ScheduleExecution } from "@/lib/entities/schedule";
 import { getExecutionStatusColor } from "@/lib/utils/calendar";
 
@@ -22,15 +19,18 @@ export function ScheduleSidebarItem({
 				? "🔴"
 				: "🔵";
 	const statusColor = getExecutionStatusColor(execution.status);
-	const relativeTime = formatDistanceToNow(
-		new Date(execution.scheduled_time),
-		{ addSuffix: true },
-	);
+	const relativeTime = formatDistanceToNow(new Date(execution.scheduled_time), {
+		addSuffix: true,
+	});
 	const hasThread = !!execution.thread_id;
 
 	const handleClick = () => {
 		if (hasThread) {
-			window.open(`/thread/${execution.thread_id}`, "_blank", "noopener,noreferrer");
+			window.open(
+				`/thread/${execution.thread_id}`,
+				"_blank",
+				"noopener,noreferrer",
+			);
 		}
 	};
 
@@ -47,10 +47,7 @@ export function ScheduleSidebarItem({
 					title={hasThread ? `Open thread` : "Execution pending"}
 				>
 					<div className="flex items-center gap-2 w-full min-w-0">
-						<span
-							className="shrink-0 text-xs"
-							style={{ color: statusColor }}
-						>
+						<span className="shrink-0 text-xs" style={{ color: statusColor }}>
 							{statusEmoji}
 						</span>
 						<div className="flex flex-col min-w-0 flex-1">

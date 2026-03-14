@@ -1,12 +1,33 @@
 import apiClient from "@/lib/utils/apiClient";
 
+export type SandboxType = "daytona" | "state";
+
 export interface ProviderKeyStatus {
 	provider: string;
 	is_set: boolean;
 }
 
+export interface PersistedContextFile {
+	content: string[];
+	created_at: string | null;
+	modified_at: string | null;
+}
+
+export interface DefaultsResponse {
+	model: string | null;
+	sandbox: string | null;
+	tools: string[] | null;
+	mcp: Record<string, any> | null;
+	a2a: Record<string, any> | null;
+	subagents: string[] | null;
+	model_visibility: string[] | null;
+	files: Record<string, PersistedContextFile> | null;
+	deleted_files: string[] | null;
+	onboarding_completed: boolean | null;
+}
+
 export interface UserSettingsResponse {
-	default_model: string | null;
+	defaults: DefaultsResponse;
 	provider_keys: ProviderKeyStatus[];
 }
 
@@ -15,10 +36,21 @@ export const getSettings = async (): Promise<UserSettingsResponse> => {
 	return response.data;
 };
 
-export const updateDefaultModel = async (
-	model: string | null,
+export const patchDefaults = async (
+	data: Partial<{
+		model: string | null;
+		sandbox: string | null;
+		tools: string[] | null;
+		mcp: Record<string, any> | null;
+		a2a: Record<string, any> | null;
+		subagents: string[] | null;
+		model_visibility: string[] | null;
+		files: Record<string, PersistedContextFile> | null;
+		deleted_files: string[] | null;
+		onboarding_completed: boolean | null;
+	}>,
 ): Promise<UserSettingsResponse> => {
-	const response = await apiClient.put("/settings/default-model", { model });
+	const response = await apiClient.patch("/settings/default", data);
 	return response.data;
 };
 

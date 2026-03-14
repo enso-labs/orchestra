@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from langgraph.store.base import BaseStore
 
-from src.workers.broker import REDIS_URL
+from src.constants.redis import REDIS_URL
 from src.services.thread import ThreadService
 from src.utils.logger import logger
 
@@ -168,9 +168,7 @@ class AbortService:
             await redis_client.aclose()
 
     @staticmethod
-    async def check_abort_signal(
-        thread_id: str, expected_user_id: Optional[str] = None
-    ) -> bool:
+    async def check_abort_signal(thread_id: str, expected_user_id: Optional[str] = None) -> bool:
         """Check if an abort signal exists for a thread from the expected user.
 
         Used by workers to poll for abort requests. This is a static method

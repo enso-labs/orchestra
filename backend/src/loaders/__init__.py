@@ -1,6 +1,7 @@
+from typing import Literal
+
 from langchain_community.document_loaders import (
     CSVLoader,
-    DirectoryLoader,
     GitbookLoader,
     PyPDFLoader,
     TextLoader,
@@ -8,9 +9,6 @@ from langchain_community.document_loaders import (
     RecursiveUrlLoader,
     ReadTheDocsLoader,
     DataFrameLoader,
-    UnstructuredHTMLLoader,
-    UnstructuredMarkdownLoader,
-    UnstructuredURLLoader,
     WebBaseLoader,
     YoutubeLoader,
     SitemapLoader,
@@ -22,7 +20,6 @@ from .basic import Base64Loader, CopyPasteLoader
 
 import nest_asyncio
 from contextlib import contextmanager
-from functools import wraps
 
 # Don't apply nest_asyncio globally as it conflicts with uvicorn's loop_factory parameter
 # Instead, apply it conditionally only when needed for specific loaders
@@ -69,7 +66,7 @@ class Loader:
 
     @staticmethod
     def create(
-        loader_type: (
+        loader_type: Literal[
             "gitbook",
             "web_base",
             "website",
@@ -88,7 +85,7 @@ class Loader:
             "json",
             "pandas",
             "readthedocs",
-        ),  # type: ignore
+        ],
         loader_config,
     ) -> BaseLoader:
         loader_class = Loader.LOADER_CLASSES.get(loader_type)

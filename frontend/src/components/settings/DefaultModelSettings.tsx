@@ -25,10 +25,7 @@ import {
 import { toast } from "sonner";
 import { useChatContext } from "@/context/ChatContext";
 import { useModelVisibility } from "@/hooks/useModelVisibility";
-import {
-	getSettings,
-	updateDefaultModel,
-} from "@/lib/services/userSettingsService";
+import { getSettings, patchDefaults } from "@/lib/services/userSettingsService";
 
 export function DefaultModelSettings() {
 	const { models, useModelsEffect } = useChatContext();
@@ -41,7 +38,7 @@ export function DefaultModelSettings() {
 
 	useEffect(() => {
 		getSettings()
-			.then((res) => setDefaultModel(res.default_model))
+			.then((res) => setDefaultModel(res.defaults.model))
 			.catch(() => {});
 	}, []);
 
@@ -55,8 +52,8 @@ export function DefaultModelSettings() {
 		setOpen(false);
 		setLoading(true);
 		try {
-			const res = await updateDefaultModel(model);
-			setDefaultModel(res.default_model);
+			const res = await patchDefaults({ model });
+			setDefaultModel(res.defaults.model);
 			toast.success("Default model updated");
 		} catch {
 			toast.error("Failed to update default model");
@@ -68,8 +65,8 @@ export function DefaultModelSettings() {
 	const handleClear = async () => {
 		setLoading(true);
 		try {
-			const res = await updateDefaultModel(null);
-			setDefaultModel(res.default_model);
+			const res = await patchDefaults({ model: null });
+			setDefaultModel(res.defaults.model);
 			toast.success("Default model cleared");
 		} catch {
 			toast.error("Failed to clear default model");

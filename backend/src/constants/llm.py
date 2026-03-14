@@ -1,6 +1,5 @@
 import os
 from enum import Enum
-from src.services.prompt import fetch_prompt
 from src.constants import (
     OPENAI_API_KEY,
     ANTHROPIC_API_KEY,
@@ -52,24 +51,14 @@ class ChatModels(str, Enum):
     if AWS_BEARER_TOKEN_BEDROCK:
         # Claude 4.5 models via Bedrock - require inference profiles (us. prefix for US region)
         # See: https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html
-        BEDROCK_CLAUDE_4_5_SONNET = (
-            "bedrock_converse:us.anthropic.claude-sonnet-4-5-20250929-v1:0"
-        )
-        BEDROCK_CLAUDE_4_5_HAIKU = (
-            "bedrock_converse:us.anthropic.claude-haiku-4-5-20251001-v1:0"
-        )
-        BEDROCK_CLAUDE_4_5_OPUS = (
-            "bedrock_converse:us.anthropic.claude-opus-4-5-20251101-v1:0"
-        )
+        BEDROCK_CLAUDE_4_5_SONNET = "bedrock_converse:us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+        BEDROCK_CLAUDE_4_5_HAIKU = "bedrock_converse:us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        BEDROCK_CLAUDE_4_5_OPUS = "bedrock_converse:us.anthropic.claude-opus-4-5-20251101-v1:0"
         # Moonshot Kimi K2 (deep reasoning with tool use)
         BEDROCK_KIMI_K2_THINKING = "bedrock_converse:us.moonshot.kimi-k2-thinking"
         # Claude 3.5 models via Bedrock (legacy - direct model IDs still work)
-        BEDROCK_CLAUDE_3_5_SONNET = (
-            "bedrock_converse:us.anthropic.claude-3-5-sonnet-20241022-v2:0"
-        )
-        BEDROCK_CLAUDE_3_5_HAIKU = (
-            "bedrock_converse:us.anthropic.claude-3-5-haiku-20241022-v1:0"
-        )
+        BEDROCK_CLAUDE_3_5_SONNET = "bedrock_converse:us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+        BEDROCK_CLAUDE_3_5_HAIKU = "bedrock_converse:us.anthropic.claude-3-5-haiku-20241022-v1:0"
         # Amazon Titan
         BEDROCK_TITAN_TEXT_PREMIER = "bedrock_converse:amazon.titan-text-premier-v1:0"
         # Meta Llama
@@ -142,29 +131,6 @@ def get_free_models():
     return sorted(models)
 
 
-def get_system_prompt():
-    """
-    Fetch and return the default system prompt as a string.
-
-    Returns:
-        str: The system prompt content, or a fallback message if fetching fails.
-    """
-    try:
-        prompt = fetch_prompt("ruska-default")
-        # Try to extract content from LangSmith Prompt object
-        if hasattr(prompt, "content"):
-            return prompt.content
-        elif hasattr(prompt, "template"):
-            return prompt.template
-        else:
-            prompt = prompt.format_prompt()
-            content = prompt.messages[-1].content
-            return content
-    except Exception as e:
-        logger.error(f"Error fetching system prompt: {e}")
-        return "You are a helpful AI assistant."
-
-
 def get_default_chat_model():
     """Get the default chat model based on available API keys."""
     if OPENAI_API_KEY:
@@ -197,7 +163,7 @@ def get_default_low_cost_model():
 
 DEFAULT_CHAT_MODEL = get_default_chat_model()
 DEFAULT_CHAT_MODEL_BASIC = get_default_low_cost_model()
-DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value
+DEFAULT_CHAT_MODEL_ADVANCED = ChatModels.OPENAI_GPT_5_2.value if hasattr(ChatModels, "OPENAI_GPT_5_2") else None
 
 
 def _safe_int_env(var_name: str, default: int) -> int:
@@ -218,8 +184,7 @@ def _safe_int_env(var_name: str, default: int) -> int:
         return int(raw_value)
     except ValueError:
         logger.warning(
-            f"Invalid value for {var_name}: '{raw_value}' is not a valid integer. "
-            f"Using default value: {default}"
+            f"Invalid value for {var_name}: '{raw_value}' is not a valid integer. Using default value: {default}"
         )
         return default
 
@@ -228,10 +193,3 @@ def _safe_int_env(var_name: str, default: int) -> int:
 DEFAULT_COMPACTION_TOKEN_THRESHOLD = _safe_int_env("COMPACTION_TOKEN_THRESHOLD", 170000)
 DEFAULT_COMPACTION_RECENT_MESSAGES = _safe_int_env("COMPACTION_RECENT_MESSAGES", 6)
 DEFAULT_COMPACTION_MODEL = DEFAULT_CHAT_MODEL_BASIC or DEFAULT_CHAT_MODEL
-
-# Initialize default system prompt with error handling to prevent import-time failures
-try:
-    DEFAULT_SYSTEM_PROMPT = get_system_prompt()
-except Exception as e:
-    logger.error(f"Failed to initialize DEFAULT_SYSTEM_PROMPT at import time: {e}")
-    DEFAULT_SYSTEM_PROMPT: str = "You are a helpful AI assistant."

@@ -18,7 +18,7 @@ const mockChatContext = {
 	dirtyFiles: new Set<string>(),
 	createFile: vi.fn(),
 	updateFile: vi.fn(),
-	deleteFile: vi.fn(),
+	deletePath: vi.fn(),
 	renameFile: vi.fn(),
 	closeTab: vi.fn(),
 	selectTab: vi.fn(),

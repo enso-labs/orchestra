@@ -2,7 +2,7 @@
 
 import json
 from typing import AsyncGenerator
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -75,6 +75,12 @@ async def settings_client() -> AsyncGenerator[AsyncClient, None]:
         }
     )
 
+    # Disable Redis cache so tests use only the InMemoryStore
+    fake_redis = AsyncMock()
+    fake_redis.get = AsyncMock(return_value=None)
+    fake_redis.set = AsyncMock(return_value=None)
+    fake_redis.delete = AsyncMock(return_value=None)
+
     with (
         patch(
             "src.repos.user_settings_repo.encrypt_value",
@@ -83,6 +89,10 @@ async def settings_client() -> AsyncGenerator[AsyncClient, None]:
         patch(
             "src.repos.user_settings_repo.decrypt_value",
             side_effect=_mock_decrypt,
+        ),
+        patch(
+            "src.common.utils.redis_cache.get_redis_client",
+            return_value=fake_redis,
         ),
     ):
         transport = ASGITransport(app=app)
@@ -130,10 +140,8 @@ async def test_get_settings_requires_auth(no_auth_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_put_default_model_requires_auth(no_auth_client: AsyncClient) -> None:
-    resp = await no_auth_client.put(
-        "/api/settings/default-model", json={"model": "openai/gpt-4"}
-    )
+async def test_patch_defaults_requires_auth(no_auth_client: AsyncClient) -> None:
+    resp = await no_auth_client.patch("/api/settings/default", json={"model": "openai/gpt-4"})
     assert resp.status_code in (401, 403)
 
 
@@ -148,7 +156,16 @@ async def test_get_settings_empty(settings_client: AsyncClient) -> None:
     resp = await settings_client.get("/api/settings")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["default_model"] is None
+    assert "defaults" in data
+    defaults = data["defaults"]
+    assert defaults["model"] is None
+    assert defaults["sandbox"] is None
+    assert defaults["tools"] is None
+    assert defaults["mcp"] is None
+    assert defaults["a2a"] is None
+    assert defaults["subagents"] is None
+    assert defaults["files"] is None
+    assert defaults["deleted_files"] is None
     assert isinstance(data["provider_keys"], list)
     assert len(data["provider_keys"]) > 0
     for pk in data["provider_keys"]:
@@ -156,29 +173,166 @@ async def test_get_settings_empty(settings_client: AsyncClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests: PUT /settings/default-model
+# Tests: PATCH /settings/default
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_set_default_model(settings_client: AsyncClient) -> None:
-    resp = await settings_client.put(
-        "/api/settings/default-model", json={"model": "anthropic/claude-3"}
-    )
+async def test_patch_default_model(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch("/api/settings/default", json={"model": "anthropic/claude-3"})
     assert resp.status_code == 200
-    assert resp.json()["default_model"] == "anthropic/claude-3"
+    assert resp.json()["defaults"]["model"] == "anthropic/claude-3"
 
 
 @pytest.mark.asyncio
-async def test_clear_default_model(settings_client: AsyncClient) -> None:
-    await settings_client.put(
-        "/api/settings/default-model", json={"model": "openai/gpt-4"}
-    )
-    resp = await settings_client.put(
-        "/api/settings/default-model", json={"model": None}
+async def test_patch_clear_default_model(settings_client: AsyncClient) -> None:
+    await settings_client.patch("/api/settings/default", json={"model": "openai/gpt-4"})
+    resp = await settings_client.patch("/api/settings/default", json={"model": None})
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["model"] is None
+
+
+@pytest.mark.asyncio
+async def test_patch_default_sandbox(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch("/api/settings/default", json={"sandbox": "daytona"})
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["sandbox"] == "daytona"
+
+    # Verify it persists via GET
+    get_resp = await settings_client.get("/api/settings")
+    assert get_resp.json()["defaults"]["sandbox"] == "daytona"
+
+
+@pytest.mark.asyncio
+async def test_patch_invalid_sandbox_returns_400(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch("/api/settings/default", json={"sandbox": "invalid_backend"})
+    assert resp.status_code == 400
+    assert "Invalid sandbox" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_patch_default_tools(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch("/api/settings/default", json={"tools": ["web_search", "think_tool"]})
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["tools"] == ["web_search", "think_tool"]
+
+
+@pytest.mark.asyncio
+async def test_patch_default_mcp(settings_client: AsyncClient) -> None:
+    mcp_config = {"my-server": {"url": "http://localhost:3000"}}
+    resp = await settings_client.patch("/api/settings/default", json={"mcp": mcp_config})
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["mcp"] == mcp_config
+
+
+@pytest.mark.asyncio
+async def test_patch_default_a2a(settings_client: AsyncClient) -> None:
+    a2a_config = {"agent-1": {"url": "http://localhost:4000"}}
+    resp = await settings_client.patch("/api/settings/default", json={"a2a": a2a_config})
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["a2a"] == a2a_config
+
+
+@pytest.mark.asyncio
+async def test_patch_default_subagents(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"subagents": ["agent-id-1", "agent-id-2"]},
     )
     assert resp.status_code == 200
-    assert resp.json()["default_model"] is None
+    assert resp.json()["defaults"]["subagents"] == ["agent-id-1", "agent-id-2"]
+
+    # Verify it persists via GET
+    get_resp = await settings_client.get("/api/settings")
+    assert get_resp.json()["defaults"]["subagents"] == ["agent-id-1", "agent-id-2"]
+
+
+@pytest.mark.asyncio
+async def test_patch_clear_subagents(settings_client: AsyncClient) -> None:
+    # Set subagents first
+    await settings_client.patch(
+        "/api/settings/default",
+        json={"subagents": ["agent-id-1"]},
+    )
+    # Clear by sending null
+    resp = await settings_client.patch("/api/settings/default", json={"subagents": None})
+    assert resp.status_code == 200
+    assert resp.json()["defaults"]["subagents"] is None
+
+
+@pytest.mark.asyncio
+async def test_patch_subagents_does_not_affect_other_defaults(settings_client: AsyncClient) -> None:
+    """Patching subagents does NOT affect other defaults."""
+    # Set model first
+    await settings_client.patch("/api/settings/default", json={"model": "openai/gpt-4"})
+    # Now patch subagents
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"subagents": ["agent-id-1"]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()["defaults"]
+    assert data["subagents"] == ["agent-id-1"]
+    assert data["model"] == "openai/gpt-4"
+
+
+@pytest.mark.asyncio
+async def test_patch_multiple_defaults(settings_client: AsyncClient) -> None:
+    """PATCH with multiple keys updates all of them in a single call."""
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"model": "openai/gpt-4", "tools": ["web_search"], "mcp": {}},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["defaults"]["model"] == "openai/gpt-4"
+    assert data["defaults"]["tools"] == ["web_search"]
+    assert data["defaults"]["mcp"] == {}
+
+
+@pytest.mark.asyncio
+async def test_patch_persistent_files_and_deleted_files(settings_client: AsyncClient) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={
+            "files": {
+                "/profile.md": {
+                    "content": ["hello"],
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "modified_at": "2024-01-02T00:00:00Z",
+                }
+            },
+            "deleted_files": ["/gone.md", "/gone.md", "/archive.md"],
+        },
+    )
+    assert resp.status_code == 200
+    defaults = resp.json()["defaults"]
+    assert defaults["files"]["/profile.md"]["content"] == ["hello"]
+    assert defaults["deleted_files"] == ["/archive.md", "/gone.md"]
+
+
+@pytest.mark.asyncio
+async def test_patch_invalid_persisted_file_path_returns_400(
+    settings_client: AsyncClient,
+) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"files": {"relative.txt": {"content": ["hello"]}}},
+    )
+    assert resp.status_code == 400
+    assert "absolute" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_patch_invalid_deleted_file_path_returns_400(
+    settings_client: AsyncClient,
+) -> None:
+    resp = await settings_client.patch(
+        "/api/settings/default",
+        json={"deleted_files": ["relative.txt"]},
+    )
+    assert resp.status_code == 400
+    assert "absolute" in resp.json()["detail"]
 
 
 # ---------------------------------------------------------------------------
@@ -228,9 +382,7 @@ async def test_delete_provider_key(settings_client: AsyncClient) -> None:
     )
     resp = await settings_client.delete("/api/settings/provider-keys/OPENAI_API_KEY")
     assert resp.status_code == 200
-    openai = next(
-        p for p in resp.json()["provider_keys"] if p["provider"] == "OPENAI_API_KEY"
-    )
+    openai = next(p for p in resp.json()["provider_keys"] if p["provider"] == "OPENAI_API_KEY")
     assert openai["is_set"] is False
 
 
@@ -241,3 +393,20 @@ async def test_delete_invalid_provider_returns_400(
     resp = await settings_client.delete("/api/settings/provider-keys/BAD_PROVIDER")
     assert resp.status_code == 400
     assert "Invalid provider" in resp.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Tests: GET /settings includes default_sandbox
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_settings_includes_default_sandbox(
+    settings_client: AsyncClient,
+) -> None:
+    """GET /settings response includes the default_sandbox field (null by default)."""
+    resp = await settings_client.get("/api/settings")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "defaults" in data
+    assert data["defaults"]["sandbox"] is None

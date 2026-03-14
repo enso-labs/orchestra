@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 import respx
+from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 from main import app
 from sqlalchemy import text
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import NullPool
 from src.constants import DB_URI
 from src.services.db import get_async_db, get_store, get_store_db, get_checkpoint_db
+from src.utils.db import get_asyncpg_connect_args, get_asyncpg_url
 from langgraph.store.memory import InMemoryStore
 from taskiq import InMemoryBroker
 
@@ -19,20 +21,15 @@ async def ensure_database_exists(db_uri: str) -> None:
     if "/" not in db_uri:
         return
 
-    base_uri, db_name = db_uri.rsplit("/", 1)
-    if "?" in db_name:
-        db_name = db_name.split("?")[0]
-
-    # Convert to asyncpg format for async engine
-    postgres_uri = f"{base_uri}/postgres".replace(
-        "postgresql://", "postgresql+asyncpg://"
-    )
+    url = make_url(db_uri)
+    db_name = url.database
+    postgres_uri = url.set(database="postgres")
 
     try:
         engine = create_async_engine(
-            postgres_uri,
+            get_asyncpg_url(postgres_uri),
             isolation_level="AUTOCOMMIT",
-            connect_args={"ssl": False},
+            connect_args=get_asyncpg_connect_args(postgres_uri, statement_cache_size=None),
         )
         async with engine.connect() as conn:
             result = await conn.execute(
@@ -70,21 +67,14 @@ def event_loop():
 @pytest.fixture
 async def test_engine():
     """Create a fresh async engine for each test."""
-    # Convert to asyncpg format and remove sslmode (asyncpg doesn't support it)
-    url = make_url(DB_URI)
-    url = url.set(drivername="postgresql+asyncpg")
-
-    # Remove sslmode from query parameters
-    query_params = dict(url.query)
-    query_params.pop("sslmode", None)
-    url = url.update_query_dict(query_params)
+    url = get_asyncpg_url(DB_URI)
 
     try:
         engine = create_async_engine(
             url,
             echo=False,
             poolclass=NullPool,  # No connection pooling for tests
-            connect_args={"ssl": False},  # asyncpg SSL configuration
+            connect_args=get_asyncpg_connect_args(DB_URI),
         )
 
         # Test connection
@@ -107,9 +97,7 @@ async def test_engine():
 @pytest.fixture
 async def test_db(test_engine):
     """Provide a test database session."""
-    async_session_maker = async_sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session_maker = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session_maker() as session:
         yield session
 
@@ -154,8 +142,10 @@ async def async_client(test_store, test_db):
     app.state.store = test_store
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+    # Patch is_authorized_model to allow all models in tests (no API keys = empty free list)
+    with patch("src.utils.auth.is_authorized_model", return_value=True):
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            yield client
 
     # Clean up
     app.dependency_overrides.clear()
@@ -191,9 +181,7 @@ async def mock_external_services():
     with respx.mock:
         # Mock Airtable API endpoints
         respx.post("https://api.airtable.com/v0/app6sU4AprV9uZze6/Contacts").mock(
-            return_value=respx.MockResponse(
-                status_code=200, json={"id": "mock_record_id", "fields": {}}
-            )
+            return_value=respx.MockResponse(status_code=200, json={"id": "mock_record_id", "fields": {}})
         )
         respx.get("https://api.airtable.com/v0/app6sU4AprV9uZze6/Contacts").mock(
             return_value=respx.MockResponse(
@@ -204,11 +192,7 @@ async def mock_external_services():
         respx.route(
             method="PATCH",
             url__regex=r"^https://api\.airtable\.com/v0/app6sU4AprV9uZze6/Contacts/.+$",
-        ).mock(
-            return_value=respx.MockResponse(
-                status_code=200, json={"id": "mock_record_id", "fields": {}}
-            )
-        )
+        ).mock(return_value=respx.MockResponse(status_code=200, json={"id": "mock_record_id", "fields": {}}))
 
         # Mock OpenAI Chat API endpoints
         respx.post(url__regex=r"^https://api\.openai\.com/v1/chat/completions.*").mock(

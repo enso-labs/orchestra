@@ -45,10 +45,12 @@ apiClient.interceptors.response.use(
 		config.retryCount = config.retryCount || 0;
 
 		if (error.response?.status === 401) {
-			// Handle unauthorized access, e.g., logout user
-			console.error("Unauthorized! Redirecting to login...");
-			localStorage.removeItem(TOKEN_NAME); // Clear token
-			window.location.href = "/login"; // Redirect to login page
+			if (getAuthToken()) {
+				// Session expired — clear token and redirect
+				console.error("Unauthorized! Redirecting to login...");
+				localStorage.removeItem(TOKEN_NAME);
+				window.location.href = "/login";
+			}
 			return Promise.reject(error);
 		}
 

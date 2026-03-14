@@ -42,11 +42,7 @@ class TestToolRuntime:
     context: Dict[str, Any] = field(default=None)
     config: RunnableConfig = field(
         default_factory=lambda: RunnableConfig(
-            metadata={
-                MockToolVars.TEST_TOOL_NAME: {
-                    "env": {"TEST_WEBHOOK_URL": "https://example.com/webhook"}
-                }
-            }
+            metadata={MockToolVars.TEST_TOOL_NAME: {"env": {"TEST_WEBHOOK_URL": "https://example.com/webhook"}}}
         )
     )
     stream_writer: FakeStreamWriter = field(default_factory=FakeStreamWriter)

@@ -8,6 +8,20 @@ repos:
             files: ^backend/
             pass_filenames: false
             always_run: false
+          - id: backend-lint
+            name: Backend Lint
+            entry: bash -c 'cd backend && make lint'
+            language: system
+            files: ^backend/
+            pass_filenames: false
+            always_run: false
+          - id: backend-test
+            name: Backend Test
+            entry: bash -c 'cd backend && make test ENV_FILE=~/.env/orchestra/.env.backend.test'
+            language: system
+            files: ^backend/
+            pass_filenames: false
+            always_run: false
           - id: frontend-prettier
             name: Frontend Prettier
             entry: npx prettier --write
@@ -18,6 +32,13 @@ repos:
           - id: frontend-lint
             name: Frontend Lint
             entry: bash -c 'cd frontend && npm run lint'
+            language: system
+            files: ^frontend/
+            pass_filenames: false
+            always_run: false
+          - id: frontend-test
+            name: Frontend Test
+            entry: bash -c 'cd frontend && npm run test'
             language: system
             files: ^frontend/
             pass_filenames: false

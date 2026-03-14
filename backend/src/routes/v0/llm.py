@@ -29,7 +29,9 @@ from src.schemas.entities import LLMRequest
 from src.utils.llm import audio_to_text
 from src.agents import init_config
 from src.services.db import get_store
+from src.contexts.service import ServiceContext
 from src.utils.rate_limit import limiter
+from src.utils.format import get_time
 from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
 from src.repos.user_settings_repo import UserSettingsRepo
 
@@ -89,31 +91,52 @@ async def llm_stream(
     """
     try:
         user_id = user.id if user else None
-        thread_id = (
-            params.metadata.thread_id
-            if params.metadata and params.metadata.thread_id
-            else str(uuid4())
-        )
+        thread_id = params.metadata.thread_id if params.metadata and params.metadata.thread_id else str(uuid4())
         config = init_config(params, user_id=user_id)
 
         # Distributed mode: enqueue task and return thread_id for polling
         if DISTRIBUTED_WORKERS:
             from src.workers.tasks import run_agent_stream
 
+            run_id = str(uuid4())
+            started_at = get_time()
+
             # Ensure thread_id is set in metadata
             if params.metadata:
                 params.metadata.thread_id = thread_id
+                params.metadata.run_id = run_id
+
+            # Persist active run metadata immediately so early stream attaches
+            # see a retryable "running/not ready" state instead of a stale 404.
+            service_context = ServiceContext(user_id=user_id, store=store, config=config)
+            await service_context.thread_service.update(
+                thread_id,
+                {
+                    "thread_id": thread_id,
+                    "assistant_id": config["configurable"].get("assistant_id"),
+                    "project_id": config["configurable"].get("project_id"),
+                    "updated_at": started_at,
+                    "metadata": {
+                        "stream_status": "running",
+                        "active_run_id": run_id,
+                        "active_stream_started_at": started_at,
+                        "active_stream_finished_at": None,
+                        "active_stream_error": None,
+                    },
+                },
+            )
 
             await run_agent_stream.kiq(
                 task_dict=params.model_dump(),
                 user_id=str(user_id) if user_id else "",
                 thread_id=thread_id,
+                run_id=run_id,
             )
 
-            logger.info(f"Enqueued distributed task for thread: {thread_id}")
+            logger.info(f"Enqueued distributed task for thread: {thread_id}, run: {run_id}")
 
             return JSONResponse(
-                content={"thread_id": thread_id, "distributed": True},
+                content={"thread_id": thread_id, "run_id": run_id, "distributed": True},
                 status_code=status.HTTP_202_ACCEPTED,
                 headers={"Cache-Control": "no-cache"},
             )
@@ -124,13 +147,15 @@ async def llm_stream(
         return StreamingResponse(
             assistant,
             media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
         )
     except Exception as e:
         logger.exception(f"Error in llm_stream: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -167,9 +192,7 @@ async def transcribe(
         )
     except Exception as e:
         logger.exception(str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -239,6 +262,4 @@ async def list_models(
 )
 async def reset_models():
     llm_service._reset_cache()
-    return JSONResponse(
-        status_code=status.HTTP_200_OK, content={"message": "Models reset successfully"}
-    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Models reset successfully"})

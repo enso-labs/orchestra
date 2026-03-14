@@ -22,9 +22,7 @@ router = APIRouter(tags=["Project"], prefix="/projects")
 ################################################################################
 ### Search Projects
 ################################################################################
-@router.post(
-    "/search", name="Query Projects", operation_id="ruska_search_projects", tags=["mcp"]
-)
+@router.post("/search", name="Query Projects", operation_id="ruska_search_projects", tags=["mcp"])
 async def search_projects(
     project_search: SearchFilter = Body(...),
     user: ProtectedUser = Depends(verify_credentials),
@@ -37,9 +35,7 @@ async def search_projects(
         doc_repo = service_context.project_service.project_repo.source_repo.doc_repo
         documents = await doc_repo._search(
             SearchFilter(
-                filter={
-                    "metadata": {"$eq": {"project_id": project_search.filter["id"]}}
-                },
+                filter={"metadata": {"$eq": {"project_id": project_search.filter["id"]}}},
                 limit=project_search.limit,
                 offset=project_search.offset,
                 query=project_search.query,
@@ -65,18 +61,14 @@ async def search_projects(
         return {"project": project.model_dump(exclude_none=True)}
 
     # If id is not provided, return all projects
-    projects: list[Project] = await service_context.project_service.search(
-        project_search
-    )
+    projects: list[Project] = await service_context.project_service.search(project_search)
     return {"projects": [project.model_dump(exclude_none=True) for project in projects]}
 
 
 ################################################################################
 ### Create Project
 ################################################################################
-@router.post(
-    "", name="Create Project", operation_id="ruska_create_project", tags=["mcp"]
-)
+@router.post("", name="Create Project", operation_id="ruska_create_project", tags=["mcp"])
 async def create_project(
     project: Project = Body(openapi_examples=Examples.PROJECT_EXAMPLES),
     user: ProtectedUser = Depends(verify_credentials),
@@ -180,15 +172,11 @@ async def get_project_sources(
 ):
     try:
         service_context = ServiceContext(user_id=user.id, store=store)
-        sources: list[Source] = await service_context.project_service.get_sources(
-            project_id
-        )
+        sources: list[Source] = await service_context.project_service.get_sources(project_id)
         return {"sources": [source.model_dump(exclude_none=True) for source in sources]}
     except Exception as e:
         logger.exception(f"Error getting sources for project {project_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -208,15 +196,11 @@ async def add_project_sources(
 ):
     try:
         service_context = ServiceContext(user_id=user.id, store=store)
-        sources: list[Source] = await service_context.project_service.add_sources(
-            project_id, sources
-        )
+        sources: list[Source] = await service_context.project_service.add_sources(project_id, sources)
         return {"sources": [source.model_dump(exclude_none=True) for source in sources]}
     except Exception as e:
         logger.exception(f"Error adding sources to project {project_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 ################################################################################
@@ -239,9 +223,5 @@ async def delete_project_source(
         await service_context.project_service.delete_source(source_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as e:
-        logger.exception(
-            f"Error deleting source {source_id} from project {project_id}: {e}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        logger.exception(f"Error deleting source {source_id} from project {project_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

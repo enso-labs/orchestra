@@ -9,7 +9,7 @@ from src.constants.examples import Examples
 from src.services.db import get_store
 from langgraph.store.base import BaseStore
 
-from src.utils.logger import log_error, logger
+from src.utils.logger import log_error
 
 invoke_router = APIRouter()
 
@@ -27,9 +27,7 @@ async def invoke_tools(
         for tool in tools:
             result = None
             if tool.config:
-                result = await service.invoke_ephemeral_tool(
-                    tool.name, tool.config, tool.args
-                )
+                result = await service.invoke_ephemeral_tool(tool.name, tool.config, tool.args)
             else:
                 # Try default tools first
                 try:
@@ -38,20 +36,14 @@ async def invoke_tools(
                     # Try user tools
                     # We get all user tools and find exact match to avoid semantic search fuzziness
                     user_tools = await service.tool_repo.search()
-                    target_tool = next(
-                        (t for t in user_tools if t.name == tool.name), None
-                    )
+                    target_tool = next((t for t in user_tools if t.name == tool.name), None)
 
                     if target_tool:
-                        result = await service.invoke_structured_tool(
-                            target_tool, tool.args
-                        )
+                        result = await service.invoke_structured_tool(target_tool, tool.args)
                     else:
                         result = {"error": f"Tool {tool.name} not found"}
 
-            tool_result = InvokeTool(
-                name=tool.name, args=tool.args, result=result, config=tool.config
-            )
+            tool_result = InvokeTool(name=tool.name, args=tool.args, result=result, config=tool.config)
             tool_results.append(tool_result.model_dump())
         return {"tools": tool_results}
     except Exception as e:

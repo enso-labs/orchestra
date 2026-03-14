@@ -26,7 +26,11 @@ import { ScheduleCalendar } from "@/components/calendar/ScheduleCalendar";
 import { ScheduleTable } from "@/components/tables/ScheduleTable";
 import { ViewToggle } from "@/components/toggles/ViewToggle";
 import { getScheduleStatus } from "@/lib/utils/schedule";
-import { mapExecutionsToEvents } from "@/lib/utils/calendar";
+import {
+	mapExecutionsToEvents,
+	mapSchedulesToProjectedEvents,
+	mergeAndDeduplicateEvents,
+} from "@/lib/utils/calendar";
 import {
 	Search,
 	Calendar,
@@ -44,7 +48,11 @@ import HouseIcon from "@/components/icons/HouseIcon";
 import { useSchedules } from "@/hooks/useSchedules";
 import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
 import { useAgentContext } from "@/context/AgentContext";
-import { Schedule, ScheduleCreate, ScheduleEvent } from "@/lib/entities/schedule";
+import {
+	Schedule,
+	ScheduleCreate,
+	ScheduleEvent,
+} from "@/lib/entities/schedule";
 import { toast } from "sonner";
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
@@ -86,7 +94,15 @@ function SchedulesIndexPage() {
 
 	const handleEventClick = (event: ScheduleEvent) => {
 		if (event.resource.thread_id) {
-			window.open(`/?t=${event.resource.thread_id}`, "_blank", "noopener,noreferrer");
+			window.open(
+				`/?t=${event.resource.thread_id}`,
+				"_blank",
+				"noopener,noreferrer",
+			);
+		} else if (event.id.startsWith("projected-")) {
+			// Projected events have no thread — open the edit dialog instead
+			const scheduleId = event.resource.schedule_id;
+			handleEditSchedule(scheduleId);
 		}
 	};
 
@@ -102,7 +118,7 @@ function SchedulesIndexPage() {
 
 	const handleCreateSchedule = async (scheduleData: ScheduleCreate) => {
 		try {
-			const agent = agents.find((a: any) => a.id === selectedAgentId);
+			const agent = agents.find((a) => a.id === selectedAgentId);
 			if (!agent) {
 				toast.error("Agent not found");
 				return;
@@ -222,10 +238,18 @@ function SchedulesIndexPage() {
 	}, [executions, filteredScheduleIds]);
 
 	// Create filtered calendar events for calendar/table views
-	const filteredCalendarEvents = useMemo(
-		() => mapExecutionsToEvents(filteredExecutions, schedulesMap),
-		[filteredExecutions, schedulesMap],
-	);
+	// Merge execution-based events with projected events from schedule definitions
+	// so schedules always appear even when they have no executions yet
+	const filteredCalendarEvents = useMemo(() => {
+		const executionEvents = mapExecutionsToEvents(
+			filteredExecutions,
+			schedulesMap,
+		);
+		const projectedEvents = mapSchedulesToProjectedEvents(
+			filteredAndSortedSchedules,
+		);
+		return mergeAndDeduplicateEvents(executionEvents, projectedEvents);
+	}, [filteredExecutions, schedulesMap, filteredAndSortedSchedules]);
 
 	const getStatusCounts = () => {
 		const counts = {
@@ -295,7 +319,7 @@ function SchedulesIndexPage() {
 			</div>
 
 			{/* Main content */}
-			<div className="flex-1 flex flex-col min-h-0 pt-16">
+			<div className="flex-1 flex flex-col min-h-0 pt-14">
 				{/* Fixed header section */}
 				<div className="flex-shrink-0 px-4">
 					<div className="mx-auto">
@@ -449,21 +473,21 @@ function SchedulesIndexPage() {
 				</div>
 
 				{/* Scrollable content area */}
-				<div className="flex-1 min-h-0 px-4">
+				<div className="flex-1 min-h-0 px-4 overflow-auto">
 					<div className="mx-auto h-full">
-					{viewMode === "calendar" ? (
-						<ScheduleCalendar
-							events={filteredCalendarEvents}
-							onEventClick={handleEventClick}
-						/>
-					) : viewMode === "table" ? (
-						<ScheduleTable
-							events={filteredCalendarEvents}
-							onEdit={handleEditSchedule}
-							onDelete={handleDeleteSchedule}
-							onDuplicate={handleDuplicateSchedule}
-						/>
-					) : (
+						{viewMode === "calendar" ? (
+							<ScheduleCalendar
+								events={filteredCalendarEvents}
+								onEventClick={handleEventClick}
+							/>
+						) : viewMode === "table" ? (
+							<ScheduleTable
+								events={filteredCalendarEvents}
+								onEdit={handleEditSchedule}
+								onDelete={handleDeleteSchedule}
+								onDuplicate={handleDuplicateSchedule}
+							/>
+						) : (
 							<ScrollArea className="h-full">
 								<div className="pb-4">
 									{/* Schedules Grid */}
@@ -475,7 +499,15 @@ function SchedulesIndexPage() {
 													<AgentScheduleCard
 														key={schedule.id}
 														schedule={schedule}
-														agent={agent || { id: "", name: "Unknown Agent" }}
+														agent={
+															agent || {
+																id: "",
+																name: "Unknown Agent",
+																description: "",
+																model: "",
+																tools: [],
+															}
+														}
 														onEdit={handleEditSchedule}
 														onDelete={handleDeleteSchedule}
 														onDuplicate={handleDuplicateSchedule}
@@ -555,7 +587,7 @@ function SchedulesIndexPage() {
 						</div>
 					) : (
 						<AgentScheduleForm
-							agent={agents.find((a: any) => a.id === selectedAgentId)}
+							agent={agents.find((a) => a.id === selectedAgentId)!}
 							onSubmit={handleCreateSchedule}
 							onCancel={() => {
 								setShowCreateDialog(false);
@@ -579,6 +611,9 @@ function SchedulesIndexPage() {
 								getAgentForSchedule(editingSchedule) || {
 									id: "",
 									name: "Unknown Agent",
+									description: "",
+									model: "",
+									tools: [],
 								}
 							}
 							onSubmit={handleUpdateSchedule}
@@ -592,9 +627,10 @@ function SchedulesIndexPage() {
 									editingSchedule.task.metadata?.schedule_description || "",
 								enabled: editingSchedule.task.metadata?.enabled ?? true,
 								cronExpression: editingSchedule.trigger.expression,
-								message: editingSchedule.task.input?.messages?.[0]?.content || "",
+								message:
+									editingSchedule.task.input?.messages?.[0]?.content || "",
 								inheritFromAgent:
-									editingSchedule.task.metadata?.inherited_from_agent || true,
+									editingSchedule.task.metadata?.inherited_from_agent ?? true,
 								customModel: editingSchedule.task.model,
 								customSystem: editingSchedule.task.system_prompt,
 								customTools: editingSchedule.task.tools || [],

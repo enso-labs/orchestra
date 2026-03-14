@@ -12,7 +12,16 @@ import { useAgentContext } from "@/context/AgentContext";
 import { StreamMessageHandler } from "@/lib/utils/message";
 import type { Todo } from "@/components/lists/TodoList";
 import type { StreamEvent } from "@/lib/entities/stream";
-import type { StreamSource } from "@/lib/utils/streamSource";
+import {
+	DistributedStreamSource,
+	type StreamSource,
+} from "@/lib/utils/streamSource";
+import {
+	removeActiveStreamRecovery,
+	updateActiveStreamRecovery,
+	upsertActiveStreamRecovery,
+} from "@/lib/utils/activeStreamRecovery";
+import { toast } from "sonner";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -20,7 +29,7 @@ let in_mem_messages: any[] = [];
 
 export type ChatContextType = {
 	responseRef: React.RefObject<string>;
-	toolCallChunkRef: React.RefObject<string>;
+	toolCallMapRef: React.RefObject<Map<string, { name: string; args: string }>>;
 	query: string;
 	setQuery: (query: string) => void;
 	appendToQuery: (text: string) => void;
@@ -60,6 +69,8 @@ export type ChatContextType = {
 	} | null;
 	filesMap: Map<string, any>;
 	setFilesMap: (filesMap: Map<string, any>) => void;
+	submissionFiles: Record<string, any> | null;
+	setSubmissionFiles: (files: Record<string, any> | null) => void;
 	todos: Todo[];
 	setTodos: (todos: Todo[]) => void;
 	viewMode: "chat" | "editor";
@@ -72,6 +83,12 @@ export type ChatContextType = {
 	removeFile: (path: string) => void;
 	renameFile: (oldPath: string, newPath: string) => void;
 	getFilesForSubmission: () => Record<string, any>;
+	attachToDistributedStream: (options: {
+		threadId: string;
+		runId: string;
+		lastEventId?: string | null;
+		route?: string;
+	}) => Promise<void>;
 };
 
 export default function useChat(): ChatContextType {
@@ -79,7 +96,9 @@ export default function useChat(): ChatContextType {
 	const { agent } = useAgentContext();
 	const responseRef = useRef("");
 	const toolNameRef = useRef("");
-	const toolCallChunkRef = useRef("");
+	const toolCallMapRef = useRef(
+		new Map<string, { name: string; args: string }>(),
+	);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const [query, setQuery] = useState("");
 	const [messages, setMessagesState] = useState<any[]>([]);
@@ -113,11 +132,34 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [filesMap, setFilesMap] = useState<Map<string, any>>(new Map());
+	const [submissionFiles, setSubmissionFilesState] = useState<Record<
+		string,
+		any
+	> | null>(null);
 	const [todos, setTodos] = useState<Todo[]>([]);
 	const [viewMode, setViewMode] = useState<"chat" | "editor">("chat");
 	const [ttft, setTtft] = useState<number | null>(null);
 	const [submitStartTime, setSubmitStartTime] = useState<number | null>(null);
 	const submitStartTimeRef = useRef<number | null>(null);
+
+	const setSubmissionFiles = useCallback(
+		(files: Record<string, any> | null) => {
+			setSubmissionFilesState(files ? { ...files } : null);
+		},
+		[],
+	);
+
+	const collectFilesFromLegacyMap = useCallback((): Record<string, any> => {
+		const result: Record<string, any> = {};
+		filesMap.forEach((files) => {
+			Object.assign(result, files);
+		});
+		return result;
+	}, [filesMap]);
+
+	const getResolvedSubmissionFiles = useCallback((): Record<string, any> => {
+		return submissionFiles ?? collectFilesFromLegacyMap();
+	}, [collectFilesFromLegacyMap, submissionFiles]);
 
 	const abortQuery = async () => {
 		// Send abort signal to backend for distributed mode (fire-and-forget for responsive UX)
@@ -169,6 +211,147 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
+	const clearDistributedRecovery = (threadId?: string) => {
+		if (threadId) {
+			removeActiveStreamRecovery(threadId);
+		}
+	};
+
+	const persistDistributedRecovery = (
+		source: DistributedStreamSource,
+		route: string,
+	) => {
+		const now = new Date().toISOString();
+		upsertActiveStreamRecovery({
+			threadId: source.getThreadId(),
+			runId: source.getRunId(),
+			lastEventId: source.getLastEventId(),
+			startedAt: now,
+			updatedAt: now,
+			route,
+			status: "running",
+		});
+	};
+
+	const updateDistributedRecoveryCursor = (
+		source: DistributedStreamSource,
+		route: string,
+	) => {
+		updateActiveStreamRecovery(source.getThreadId(), {
+			runId: source.getRunId(),
+			lastEventId: source.getLastEventId(),
+			updatedAt: new Date().toISOString(),
+			route,
+		});
+	};
+
+	const getRoutePath = () =>
+		typeof window !== "undefined" ? window.location.pathname : "/chat";
+
+	const startManagedStream = async (
+		stream: StreamSource,
+		options: {
+			recoveryMode: boolean;
+			route: string;
+		},
+	): Promise<{ controller: AbortController; stream: StreamSource }> => {
+		const controller = new AbortController();
+		const distributedStream =
+			stream instanceof DistributedStreamSource ? stream : null;
+		const threadId = distributedStream?.getThreadId() ?? metadata?.thread_id;
+
+		stream.onEvent((event: StreamEvent) => {
+			// Bail out if the stream was aborted (prevents stale SSE events from
+			// re-populating messages/metadata after clearMessages)
+			if (controller.signal.aborted) return;
+
+			if (distributedStream) {
+				updateDistributedRecoveryCursor(distributedStream, options.route);
+			}
+
+			if (
+				event.type === "done" ||
+				event.type === "error" ||
+				event.type === "aborted"
+			) {
+				clearDistributedRecovery(threadId);
+			}
+
+			if (event.type === "done") {
+				setLoading(false);
+				setLoadingMessage("");
+				setController(null);
+				return;
+			}
+
+			if (options.recoveryMode && event.type === "error") {
+				setLoading(false);
+				setLoadingMessage("");
+				setController(null);
+				toast.error(event.data.error || "Lost connection to the live stream.");
+				return;
+			}
+
+			if (options.recoveryMode && event.type === "aborted") {
+				setLoading(false);
+				setLoadingMessage("");
+				setController(null);
+				return;
+			}
+
+			const legacyPayload = convertEventToLegacy(event);
+			if (legacyPayload) {
+				sseHandler(legacyPayload, in_mem_messages);
+			}
+		});
+
+		stream.onError((error: Error) => {
+			console.error("Stream error:", error);
+			const status = (error as Error & { status?: number }).status;
+			setLoading(false);
+			setLoadingMessage("");
+			setController(null);
+
+			if (options.recoveryMode) {
+				if (status === 404 || status === 409) {
+					clearDistributedRecovery(threadId);
+					toast(
+						"Stream ended while reconnecting. Loaded the latest saved thread state.",
+					);
+					return;
+				}
+
+				toast.error(
+					"Lost connection to the live stream. Refresh to retry reconnecting.",
+				);
+				return;
+			}
+
+			alert(error.message);
+
+			const lastMessageIndex =
+				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
+			if (lastMessageIndex >= 0) {
+				setQuery(in_mem_messages[lastMessageIndex].content);
+				clearMessages(lastMessageIndex);
+			}
+		});
+
+		stream.onClose(() => {
+			console.log("Stream connection closed");
+		});
+
+		controller.signal.addEventListener("abort", () => {
+			console.log("Aborting stream connection");
+			stream.close();
+			setLoading(false);
+			setLoadingMessage("");
+		});
+
+		void stream.start();
+		return { controller, stream };
+	};
+
 	/**
 	 * Handles SSE using the new unified stream abstraction.
 	 * Supports both sync mode (direct SSE) and distributed mode (polling).
@@ -193,11 +376,7 @@ export default function useChat(): ChatContextType {
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
 
-		// Collect files from filesMap for submission
-		const filesToSubmit: Record<string, any> = {};
-		filesMap.forEach((files) => {
-			Object.assign(filesToSubmit, files);
-		});
+		const filesToSubmit = getResolvedSubmissionFiles();
 
 		// Build payload based on agent type
 		const payload = agent.public
@@ -224,60 +403,46 @@ export default function useChat(): ChatContextType {
 					subagents: agent.subagents,
 				};
 
-		// Show processing state for distributed mode
-		setLoadingMessage("Processing request...");
-
-		// Get unified stream source (handles both sync and distributed)
+		const route = getRoutePath();
 		const stream = await initiateStream(payload);
+		if (stream instanceof DistributedStreamSource) {
+			persistDistributedRecovery(stream, route);
+		}
 
-		// Create abort controller for cleanup
-		const controller = new AbortController();
-
-		// Handle events from the stream
-		stream.onEvent((event: StreamEvent) => {
-			if (event.type === "done") {
-				setLoading(false);
-				setController(null);
-				return;
-			}
-
-			// Convert to legacy format and process
-			const legacyPayload = convertEventToLegacy(event);
-			if (legacyPayload) {
-				sseHandler(legacyPayload, in_mem_messages);
-			}
+		setLoadingMessage("Processing request...");
+		return startManagedStream(stream, {
+			recoveryMode: false,
+			route,
 		});
+	};
 
-		stream.onError((error: Error) => {
-			console.error("Stream error:", error);
-			alert(error.message);
-			setLoading(false);
-			setController(null);
+	const attachToDistributedStream = async ({
+		threadId,
+		runId,
+		lastEventId = null,
+		route = getRoutePath(),
+	}: {
+		threadId: string;
+		runId: string;
+		lastEventId?: string | null;
+		route?: string;
+	}) => {
+		if (controller) {
+			return;
+		}
 
-			// Restore last message for retry
-			const lastMessageIndex =
-				in_mem_messages.length > 0 ? in_mem_messages.length - 1 : -1;
-			if (lastMessageIndex >= 0) {
-				setQuery(in_mem_messages[lastMessageIndex].content);
-				clearMessages(lastMessageIndex);
-			}
+		setLoading(true);
+		setLoadingMessage("Reconnecting stream...");
+		const stream = new DistributedStreamSource(threadId, runId, {
+			skipInitialDelay: true,
+			lastEventId,
 		});
-
-		stream.onClose(() => {
-			console.log("Stream connection closed");
+		persistDistributedRecovery(stream, route);
+		const { controller: nextController } = await startManagedStream(stream, {
+			recoveryMode: true,
+			route,
 		});
-
-		// Handle abort
-		controller.signal.addEventListener("abort", () => {
-			console.log("Aborting stream connection");
-			stream.close();
-			setLoading(false);
-		});
-
-		// Start the stream
-		stream.start();
-
-		return { controller, stream };
+		setController(nextController);
 	};
 
 	const handleSSE = async (
@@ -301,11 +466,7 @@ export default function useChat(): ChatContextType {
 		const controller = abortController || new AbortController();
 		const formatedMessages = await formatMultimodalPayload(query, images);
 		const enrichedMetadata = getMetadata();
-		// Collect files from filesMap for submission
-		const filesToSubmit: Record<string, any> = {};
-		filesMap.forEach((files) => {
-			Object.assign(filesToSubmit, files);
-		});
+		const filesToSubmit = getResolvedSubmissionFiles();
 
 		// For public agents, only send input and metadata (settings are server-side)
 		const payload = agent.public
@@ -349,7 +510,7 @@ export default function useChat(): ChatContextType {
 			try {
 				const payload = JSON.parse(e.data);
 				sseHandler(payload, in_mem_messages);
-			} catch (parseError) {
+			} catch (_parseError) {
 				console.warn("Failed to parse SSE message:", e.data);
 			}
 		});
@@ -414,9 +575,7 @@ export default function useChat(): ChatContextType {
 		if (responseRef.current) {
 			responseRef.current = "";
 		}
-		if (toolCallChunkRef.current) {
-			toolCallChunkRef.current = "";
-		}
+		toolCallMapRef.current.clear();
 	};
 
 	const getMetadata = () => {
@@ -454,7 +613,31 @@ export default function useChat(): ChatContextType {
 	};
 
 	const handleMessages = (payload: any, history: any[]) => {
-		// console.log(payload);
+		/**
+		 * Tool Call Chunk Structure (US-001 findings):
+		 *
+		 * Each SSE payload for tool calls arrives as:
+		 *   ["messages", [AIMessageChunk_dict, metadata]]
+		 *
+		 * The AIMessageChunk_dict contains:
+		 *   - id: string (same id for all chunks of the same AI turn)
+		 *   - tool_call_chunks: Array<{ id: string, name: string, args: string, index: number, type: string }>
+		 *     - id: unique tool_call_id (e.g. "call_abc123") — same across all arg chunks for that call
+		 *     - name: tool name (only present on first chunk, empty string on subsequent)
+		 *     - args: partial JSON string (incrementally accumulated)
+		 *     - index: 0-based index of the tool call within the AI turn
+		 *   - tool_calls: Array<{ id, name, args }> — finalized tool calls (populated on completion)
+		 *
+		 * Arrival ordering:
+		 *   1. First chunk: tool_call_chunks[0] has { id, name, args: "" or partial }
+		 *   2. Subsequent chunks: same id, name="" (empty), args += next fragment
+		 *   3. When multiple tools are called, each gets its own tool_call_chunks entry
+		 *      with a distinct id and index
+		 *   4. Chunks for different tool calls may interleave
+		 *
+		 * Key insight: Backend already sends individual tool_call_chunks with unique ids.
+		 * The frontend currently only reads tool_call_chunks[0], losing multi-tool-call data.
+		 */
 		const streamMode = payload[0];
 
 		if (streamMode === "error") {
@@ -479,6 +662,7 @@ export default function useChat(): ChatContextType {
 			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: metadataPayload.thread_id,
+				run_id: metadataPayload.run_id ?? prev?.run_id,
 				assistant_id: metadataPayload.assistant_id,
 				project_id: metadataPayload.project_id,
 			}));
@@ -519,6 +703,12 @@ export default function useChat(): ChatContextType {
 		if (streamMode === "messages") {
 			const response = payload[1][0];
 			const responseMetadata = payload[1][1];
+
+			// Extract agent_name from subagent messages (promoted from lc_agent_name by backend)
+			// Ensure agent_name is explicitly on the response before passing to StreamMessageHandler
+			if (response.agent_name === undefined) {
+				response.agent_name = null;
+			}
 			setMetadata((prev: any) => ({
 				...prev,
 				thread_id: responseMetadata.thread_id,
@@ -566,7 +756,7 @@ export default function useChat(): ChatContextType {
 
 			const streamHandler = new StreamMessageHandler(
 				toolNameRef,
-				toolCallChunkRef,
+				toolCallMapRef,
 				history,
 			);
 
@@ -577,6 +767,10 @@ export default function useChat(): ChatContextType {
 			// CRITICAL FIX: Apply formatMessages() to normalize streaming data
 			// This ensures consistency with checkpoint reload behavior
 			const normalizedHistory = formatMessages(streamHandler.history);
+			// Sync in_mem_messages with normalized state so the next SSE event
+			// operates on the same data that React renders (prevents divergence).
+			// Spread into new array to avoid mutating React state directly.
+			in_mem_messages = [...normalizedHistory];
 			setMessagesState(normalizedHistory);
 			// NOTE: Stream stop is now handled by the [DONE] signal in the event handler
 			// The unified handler (handleSSEUnified) and legacy handler both check for [DONE]
@@ -682,7 +876,7 @@ export default function useChat(): ChatContextType {
 			const newMap = new Map(prev);
 			for (const [key, files] of newMap.entries()) {
 				if (files && files[path]) {
-					const { [path]: _, ...rest } = files;
+					const { [path]: _removed, ...rest } = files;
 					if (Object.keys(rest).length === 0) {
 						newMap.delete(key);
 					} else {
@@ -715,18 +909,13 @@ export default function useChat(): ChatContextType {
 		});
 	}, []);
 
-	// Convert filesMap to backend format for submission
 	const getFilesForSubmission = useCallback((): Record<string, any> => {
-		const result: Record<string, any> = {};
-		filesMap.forEach((files) => {
-			Object.assign(result, files);
-		});
-		return result;
-	}, [filesMap]);
+		return getResolvedSubmissionFiles();
+	}, [getResolvedSubmissionFiles]);
 
 	return {
 		responseRef,
-		toolCallChunkRef,
+		toolCallMapRef,
 		handleSubmit,
 		sseHandler,
 		clearContent,
@@ -740,12 +929,8 @@ export default function useChat(): ChatContextType {
 		setMetadata,
 		controller,
 		setController,
-		// model,
-		// setModel,
 		// state,
 		// setState,
-		// systemMessage,
-		// setSystemMessage,
 		// NEW
 		handleTextareaResize,
 		clearMessages,
@@ -759,6 +944,8 @@ export default function useChat(): ChatContextType {
 		streamingRate,
 		filesMap,
 		setFilesMap,
+		submissionFiles,
+		setSubmissionFiles,
 		todos,
 		setTodos,
 		viewMode,
@@ -771,5 +958,6 @@ export default function useChat(): ChatContextType {
 		removeFile,
 		renameFile,
 		getFilesForSubmission,
+		attachToDistributedStream,
 	};
 }

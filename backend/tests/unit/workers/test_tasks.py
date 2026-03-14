@@ -44,7 +44,8 @@ class TestRedisStreamOperations:
     async def test_task_writes_to_redis_stream(self, fake_redis):
         """Task writes chunks to Redis stream."""
         thread_id = str(uuid4())
-        stream_key = f"agent:stream:{thread_id}"
+        run_id = str(uuid4())
+        stream_key = f"agent:stream:{thread_id}:{run_id}"
 
         await fake_redis.xadd(stream_key, {"data": b"test chunk"})
         await fake_redis.xadd(stream_key, {"done": b"true"})
@@ -56,7 +57,8 @@ class TestRedisStreamOperations:
     async def test_task_sets_stream_ttl(self, fake_redis):
         """Task sets TTL on stream key."""
         thread_id = str(uuid4())
-        stream_key = f"agent:stream:{thread_id}"
+        run_id = str(uuid4())
+        stream_key = f"agent:stream:{thread_id}:{run_id}"
 
         await fake_redis.xadd(stream_key, {"data": b"test"})
         await fake_redis.expire(stream_key, 300)
@@ -68,7 +70,8 @@ class TestRedisStreamOperations:
     async def test_task_writes_error_on_failure(self, fake_redis):
         """Task writes error to stream on exception."""
         thread_id = str(uuid4())
-        stream_key = f"agent:stream:{thread_id}"
+        run_id = str(uuid4())
+        stream_key = f"agent:stream:{thread_id}:{run_id}"
 
         await fake_redis.xadd(stream_key, {"error": b"Test error", "done": b"true"})
 
@@ -80,7 +83,8 @@ class TestRedisStreamOperations:
     async def test_stream_key_format(self, fake_redis):
         """Stream key follows expected format."""
         thread_id = "test-thread-12345"
-        expected_key = f"agent:stream:{thread_id}"
+        run_id = "test-run-12345"
+        expected_key = f"agent:stream:{thread_id}:{run_id}"
 
         await fake_redis.xadd(expected_key, {"data": b"test"})
 
@@ -94,7 +98,8 @@ class TestRedisStreamOperations:
         import ujson
 
         thread_id = str(uuid4())
-        stream_key = f"agent:stream:{thread_id}"
+        run_id = str(uuid4())
+        stream_key = f"agent:stream:{thread_id}:{run_id}"
 
         # Add chunks in order
         chunks = [
