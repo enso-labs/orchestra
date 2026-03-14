@@ -45,3 +45,38 @@ ffmpeg -version
   > - **Windows**: Download from https://ffmpeg.org/download.html
   >
   > Then re-run this workflow.
+
+## Configuration
+
+Before starting a recording, configure the browser viewport and display settings. Users can override any default by specifying their preferred values.
+
+### Default Settings
+
+| Setting | Default | Range / Options | agent-browser Command |
+|---------|---------|-----------------|----------------------|
+| Viewport width | 1280 | 320–1920 px | `agent-browser set viewport <w> <h>` |
+| Viewport height | 720 | 240–1080 px | `agent-browser set viewport <w> <h>` |
+| Color scheme | light | `light` / `dark` | `agent-browser set media light` or `agent-browser set media dark` |
+| GIF FPS | 12 | 5–30 | Used in ffmpeg conversion (not an agent-browser setting) |
+| GIF max width | 800 | 320–1920 px | Used in ffmpeg scaling (not an agent-browser setting) |
+
+### Applying Configuration
+
+Run these commands via Bash **before** starting the recording:
+
+```bash
+# Set viewport (default 1280x720, or use user-provided dimensions)
+agent-browser set viewport 1280 720
+
+# Set color scheme (default light)
+agent-browser set media light
+```
+
+If the user requests different values (e.g., "record at 1920x1080 in dark mode"), substitute their values:
+
+```bash
+agent-browser set viewport 1920 1080
+agent-browser set media dark
+```
+
+GIF FPS and max width are applied later during the ffmpeg conversion step — store the user's requested values (or the defaults of 12 FPS and 800px max width) for use in that step.
