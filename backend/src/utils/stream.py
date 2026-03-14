@@ -249,6 +249,7 @@ async def stream_generator(
     instructions: str = None,
     api_key: str | None = None,
     sandbox_type: str | None = None,
+    stream_mode: list[str] | None = None,
 ):
     """Stream agent responses as Server-Sent Events.
 
@@ -316,7 +317,7 @@ async def stream_generator(
             )
             yield f"data: {metadata_event}\n\n"
             astream_kwargs = {
-                "stream_mode": ["messages", "values"],
+                "stream_mode": stream_mode or ["messages", "values"],
                 "config": config,
                 "context": ctx,
             }
