@@ -132,18 +132,21 @@ def handle_debug_mode(payload: dict):
             return payload
 
 
-def handle_updates_mode(payload: dict):
-    converted: List[dict] = []
+def handle_updates_mode(payload: dict) -> dict:
+    """Process updates-mode chunks from any graph node generically.
 
-    if payload.get("agent"):
-        messages = payload.get("agent", {}).get("messages", [])
-
-    if payload.get("tools"):
-        messages = payload.get("tools", {}).get("messages", [])
-
-    for message in messages:
-        converted.append(_to_dict(message))
-    return converted
+    Iterates all nodes in the payload. For nodes containing a 'messages' key,
+    converts each message via _to_dict(). Nodes without 'messages' are passed
+    through unchanged. Returns a dict preserving the node-name structure.
+    """
+    result: dict = {}
+    for node_name, node_data in payload.items():
+        if isinstance(node_data, dict) and "messages" in node_data:
+            converted = [_to_dict(msg) for msg in node_data["messages"]]
+            result[node_name] = {**node_data, "messages": converted}
+        else:
+            result[node_name] = node_data
+    return result
 
 
 def handle_values_mode(payload: dict):
