@@ -11,6 +11,7 @@ from apscheduler.triggers.cron import CronTrigger
 class JobTrigger(BaseModel):
     type: str = Field(..., json_schema_extra={"example": "cron"})
     expression: str = Field(..., json_schema_extra={"example": " 0 1 * * *"})
+    timezone: str = Field(default="UTC", json_schema_extra={"example": "UTC"})
 
     @field_validator("expression")
     def validate_expression(cls, v: str) -> str:
@@ -168,3 +169,21 @@ class Schedule(BaseModel):
     trigger: JobTrigger
     task: LLMRequest
     next_run_time: datetime = Field(..., json_schema_extra={"example": datetime.now()})
+
+
+class ScheduleExecutionResponse(BaseModel):
+    id: str
+    schedule_id: str
+    thread_id: str | None = None
+    status: str
+    scheduled_time: datetime
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    duration_ms: int | None = None
+    error_message: str | None = None
+    metadata: dict = {}
+
+
+class RunNowResponse(BaseModel):
+    execution_id: str
+    thread_id: str

@@ -57,6 +57,7 @@ def get_db_base():
 
 def load_models():
     """Import all models to ensure they are registered with SQLAlchemy"""
+    import src.schemas.models.schedule_execution  # noqa: F401
 
     return _Base
 
