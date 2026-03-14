@@ -139,6 +139,7 @@ export function BaseToolMenu() {
 			<DropdownMenu open={open}>
 				<DropdownMenuTrigger asChild>
 					<Button
+						data-tour="tools-menu-button"
 						onClick={() => setOpen(!open)}
 						size="icon"
 						variant="outline"

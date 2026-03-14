@@ -257,6 +257,7 @@ function AgentMenu() {
 			<PopoverTrigger asChild>
 				{agent.id ? (
 					<span
+						data-tour="agent-selector-button"
 						role="combobox"
 						aria-expanded={open}
 						className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium text-muted-foreground cursor-pointer hover:bg-accent transition-colors select-none"
@@ -281,6 +282,7 @@ function AgentMenu() {
 					</span>
 				) : (
 					<Button
+						data-tour="agent-selector-button"
 						role="combobox"
 						aria-expanded={open}
 						className="rounded-xl h-9 w-9 p-0 justify-center"

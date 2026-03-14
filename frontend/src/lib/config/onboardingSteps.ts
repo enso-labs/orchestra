@@ -34,6 +34,40 @@ export const onboardingSteps: Step[] = [
 		placement: "top",
 	},
 	{
+		target: '[data-tour="sandbox-selector"]',
+		content: "Choose where your code runs — local, cloud, or no sandbox.",
+		placement: "top",
+	},
+	{
+		target: '[data-tour="files-toggle-button"]',
+		content:
+			"Open the file editor to view and edit files alongside your conversation.",
+		placement: "top",
+	},
+	{
+		target: '[data-tour="tools-menu-button"]',
+		content:
+			"Attach images, toggle web search, and configure tools for your assistant.",
+		placement: "top",
+	},
+	{
+		target: '[data-tour="agent-selector-button"]',
+		content:
+			"Select a saved assistant to use its custom instructions and tool configuration.",
+		placement: "top",
+	},
+	{
+		target: '[data-tour="model-selector"]',
+		content: "Switch between AI models to balance speed, cost, and capability.",
+		placement: "top",
+	},
+	{
+		target: '[data-tour="chat-submit-button"]',
+		content:
+			"Send your message, or use the microphone for voice input when the field is empty.",
+		placement: "top",
+	},
+	{
 		target: '[data-tour="chat-nav-actions"]',
 		content:
 			"Save assistants, share threads, start new conversations, and toggle themes.",

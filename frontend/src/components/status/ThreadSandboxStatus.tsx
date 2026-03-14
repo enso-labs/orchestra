@@ -96,7 +96,10 @@ export default function ThreadSandboxStatus() {
 	};
 
 	return (
-		<div className="flex items-center justify-start">
+		<div
+			className="flex items-center justify-start"
+			data-tour="sandbox-selector"
+		>
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild>
 					<Button
