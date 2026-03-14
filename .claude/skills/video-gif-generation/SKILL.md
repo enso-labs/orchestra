@@ -145,6 +145,39 @@ ls -la <output-path>.webm
 - **If the file exists and has size > 0**: The recording succeeded. Proceed to GIF conversion (if requested) or report success.
 - **If the file is missing or 0 bytes**: The recording failed — report the issue to the user.
 
+## Output Paths & Naming
+
+Resolve the output file path before starting the recording workflow.
+
+### Path Resolution Rules
+
+1. **User provides a full path** (e.g., `/home/user/recordings/demo.gif` or `./output/demo.webm`): Use that path as-is.
+2. **User provides just a name** (e.g., "demo" or "login-flow"): Save to the current working directory with the appropriate extension.
+   - If GIF output is requested: `<cwd>/<name>.gif` (final) and `<cwd>/<name>.webm` (intermediate video).
+   - If video-only output is requested: `<cwd>/<name>.webm`.
+3. **User provides no name**: Generate a descriptive name based on the workflow (e.g., `login-flow.gif`, `dashboard-demo.webm`).
+
+### Intermediate Video File
+
+When converting to GIF, an intermediate `.webm` video is recorded first. Store it alongside the final output:
+
+- Final GIF: `<output-dir>/<name>.gif`
+- Intermediate video: `<output-dir>/<name>.webm`
+
+The intermediate `.webm` is deleted after successful GIF conversion (see the conversion section).
+
+### Overwrite Protection
+
+Before starting the recording, check if the output file(s) already exist:
+
+```bash
+ls <output-path>.gif 2>/dev/null
+ls <output-path>.webm 2>/dev/null
+```
+
+- **If either file exists**: Ask the user for confirmation before proceeding. Do NOT silently overwrite existing files.
+- **If neither file exists**: Proceed with the recording.
+
 ### Complete Recording Example
 
 ```bash
