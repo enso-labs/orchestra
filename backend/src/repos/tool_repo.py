@@ -1,6 +1,10 @@
 from typing import Literal, Optional
 from dataclasses import dataclass
-from fastapi.openapi.models import Example
+
+try:
+    from fastapi.openapi.models import Example
+except ImportError:
+    Example = dict
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore, SearchItem
 from langchain_core.tools import StructuredTool

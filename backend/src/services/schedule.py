@@ -1,5 +1,5 @@
 from uuid import uuid4
-from fastapi import HTTPException
+
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -205,6 +205,8 @@ class ScheduleService:
     def get_job(self, job_id: str) -> Schedule:
         job = self.scheduler.get_job(job_id)
         if job.kwargs.get("user_id") != self.user_id:
+            from fastapi import HTTPException
+
             raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
         schedule = Schedule(
@@ -248,9 +250,13 @@ class ScheduleService:
         # Get existing job and verify ownership
         existing_job = self.scheduler.get_job(job_id)
         if not existing_job:
+            from fastapi import HTTPException
+
             raise HTTPException(status_code=404, detail="Schedule not found")
 
         if existing_job.kwargs.get("user_id") != self.user_id:
+            from fastapi import HTTPException
+
             raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
         # Prepare update parameters
@@ -291,6 +297,8 @@ class ScheduleService:
         try:
             job = self.scheduler.get_job(job_id)
             if job.kwargs.get("user_id") != self.user_id:
+                from fastapi import HTTPException
+
                 raise HTTPException(status_code=403, detail="Not authorized to access this job")
             self.scheduler.remove_job(job_id)
 
@@ -298,6 +306,8 @@ class ScheduleService:
             print(f"   Job ID: {job_id}")
             return True
         except Exception as e:
+            from fastapi import HTTPException
+
             raise HTTPException(status_code=500, detail=f"Failed to delete job: {e}")
 
 

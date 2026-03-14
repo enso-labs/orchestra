@@ -4,7 +4,6 @@ import json
 from httpx_sse import connect_sse
 from typing import Any, AsyncIterable
 from src.utils.logger import logger
-from fastapi.responses import StreamingResponse, JSONResponse
 from src.common.types import (
     AgentCard,
     GetTaskRequest,
@@ -129,6 +128,8 @@ async def process_a2a_streaming(
             logger.exception("Stream generation failed")
             raise
 
+    from fastapi.responses import StreamingResponse
+
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
@@ -145,6 +146,8 @@ async def process_a2a(thread: dict, thread_id: str):
             },
         }
     )
+    from fastapi.responses import JSONResponse
+
     return JSONResponse(content={"answer": response.result.model_dump()})
 
 

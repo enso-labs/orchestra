@@ -2,7 +2,11 @@ import asyncio
 from typing import Any, Optional
 from pydantic import BaseModel, computed_field, field_serializer
 from datetime import datetime
-from fastapi.openapi.models import Example
+
+try:
+    from fastapi.openapi.models import Example
+except ImportError:
+    Example = dict
 from langgraph.store.base import SearchItem
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.base import BaseStore

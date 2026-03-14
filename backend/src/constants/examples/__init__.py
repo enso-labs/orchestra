@@ -1,7 +1,11 @@
 import httpx
 from uuid import uuid4
 from datetime import datetime, timezone
-from fastapi.openapi.models import Example
+
+try:
+    from fastapi.openapi.models import Example
+except ImportError:
+    Example = dict
 
 
 def get_arcade_response_example():
