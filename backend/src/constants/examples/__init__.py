@@ -840,6 +840,18 @@ class Examples:
                 "metadata": get_example_metadata(assistant_id=True, project_id=True),
             },
         ),
+        "stream_with_custom_modes": Example(
+            summary="stream_with_custom_modes",
+            description="LLM Stream with custom stream_mode",
+            value={
+                "model": "openai:gpt-5-nano",
+                "system": "You are a helpful assistant.",
+                "stream_mode": ["messages", "values", "updates"],
+                "input": {
+                    "messages": [{"role": "user", "content": "Weather in Dallas?"}],
+                },
+            },
+        ),
     }
 
     ASSISTANT_EXAMPLES = {
