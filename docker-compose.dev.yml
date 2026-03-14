@@ -41,7 +41,7 @@ services:
             [
                 "/bin/sh",
                 "-lc",
-                "uv sync --frozen --dev --extra api --extra docs --no-install-project && uv run alembic upgrade head && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug",
+                "uv sync --frozen --dev --extra api --no-install-project && uv run alembic upgrade head && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug",
             ]
         healthcheck:
             test:
@@ -67,7 +67,7 @@ services:
             [
                 "/bin/sh",
                 "-lc",
-                "uv sync --frozen --dev --extra api --extra docs --no-install-project && uv run taskiq worker src.workers.tasks:broker",
+                "uv sync --frozen --dev --extra api --no-install-project && uv run taskiq worker src.workers.tasks:broker",
             ]
         depends_on:
             backend:

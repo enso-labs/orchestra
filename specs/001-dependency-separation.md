@@ -22,12 +22,9 @@ api = [
     "fastmcp>=2.14.1",
     "python-multipart>=0.0.20",
 ]
-docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.6.18",
-    "mkdocstrings[python]>=0.30.0",
-]
 ```
+
+**Remove mkdocs entirely** — docs consolidated on Docusaurus wiki (`wiki/`), mkdocs has zero references in codebase.
 
 **Remove these packages from the core `dependencies` list.**
 
@@ -47,8 +44,7 @@ Run `uv lock` after modifying `pyproject.toml` to regenerate the lockfile.
 |---------|---------|
 | API     | `uv sync --frozen --no-cache --no-dev --extra api` |
 | Worker  | `uv sync --frozen --no-cache --no-dev` |
-| Docs    | `uv sync --frozen --no-cache --no-dev --extra docs` |
-| Dev     | `uv sync --frozen --dev --extra api --extra docs` |
+| Dev     | `uv sync --frozen --dev --extra api` |
 
 ## Files Modified
 
