@@ -6,7 +6,6 @@ import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import HelpfulIcons from "@/components/icons/HelpfulIcons";
 import { SiGoogle, SiGithub } from "react-icons/si";
 import { FaMicrosoft } from "react-icons/fa";
-import HouseIcon from "@/components/icons/HouseIcon";
 
 export default function Login() {
 	const [email, setEmail] = useState("");
@@ -68,16 +67,6 @@ export default function Login() {
 	return (
 		<NoAuthLayout>
 			<main className="mt-[10vh] flex flex-col items-center justify-center bg-background">
-				<div className="absolute top-4 left-4">
-					<button
-						onClick={() => navigate("/")}
-						className="flex items-center px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-md hover:bg-accent"
-						aria-label="Go to Home"
-					>
-						<HouseIcon />
-						<span className="ml-2">Home</span>
-					</button>
-				</div>
 				<div className="absolute top-4 right-4">
 					<ColorModeButton />
 				</div>
