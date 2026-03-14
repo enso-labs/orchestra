@@ -8,7 +8,6 @@ Environment Variables:
 """
 
 import asyncio
-import os
 from collections.abc import AsyncGenerator
 
 from redis.exceptions import ConnectionError
@@ -16,9 +15,7 @@ from taskiq.acks import AckableMessage
 from taskiq_redis import RedisStreamBroker, RedisAsyncResultBackend
 
 from src.utils.logger import logger
-
-# Redis connection URL from environment
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+from src.constants.redis import REDIS_URL
 
 # Result backend with 5-minute TTL for task results
 result_backend = RedisAsyncResultBackend(
