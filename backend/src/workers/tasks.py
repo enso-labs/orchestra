@@ -100,6 +100,7 @@ async def run_agent_stream(
     user_id: str,
     thread_id: str,
     run_id: str,
+    stream_mode: list[str] | None = None,
 ) -> dict:
     """
     Execute agent and stream results via Redis Streams.
@@ -203,6 +204,7 @@ async def run_agent_stream(
                 run_id=run_id,
                 stream_key=stream_key,
                 redis_client=redis_client,
+                stream_mode=stream_mode,
             )
         else:
             # Legacy mode: per-task checkpointer
@@ -228,6 +230,7 @@ async def run_agent_stream(
                     run_id=run_id,
                     stream_key=stream_key,
                     redis_client=redis_client,
+                    stream_mode=stream_mode,
                 )
 
     except CheckpointConnectionError as e:
@@ -297,6 +300,7 @@ async def _execute_agent_stream(
     run_id,
     stream_key,
     redis_client,
+    stream_mode: list[str] | None = None,
 ) -> dict:
     """Execute the agent stream logic with abort signal checking.
 
@@ -419,7 +423,7 @@ async def _execute_agent_stream(
     try:
         async for chunk in agent.astream(
             params.input,
-            stream_mode=["messages", "values"],
+            stream_mode=stream_mode or ["messages", "values"],
             config=config,
             context=ctx_schema,
         ):
@@ -511,7 +515,7 @@ async def _execute_agent_stream(
                 )
                 async for chunk in agent.astream(
                     params.input,
-                    stream_mode=["messages", "values"],
+                    stream_mode=stream_mode or ["messages", "values"],
                     config=config,
                     context=ctx_schema,
                 ):
