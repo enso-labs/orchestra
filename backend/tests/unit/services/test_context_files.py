@@ -1,9 +1,25 @@
+from unittest.mock import AsyncMock, patch
+
 from langgraph.store.memory import InMemoryStore
 
 import pytest
 
 from src.repos.user_settings_repo import UserSettingsRepo
 from src.services.context_files import resolve_context_files, select_memory_sources
+
+# Disable Redis cache for all tests in this module
+_fake_redis = AsyncMock()
+_fake_redis.get = AsyncMock(return_value=None)
+_fake_redis.set = AsyncMock(return_value=None)
+_fake_redis.delete = AsyncMock(return_value=None)
+
+pytestmark = pytest.mark.usefixtures("_disable_redis_cache")
+
+
+@pytest.fixture(autouse=True)
+def _disable_redis_cache():
+    with patch("src.common.utils.redis_cache.get_redis_client", return_value=_fake_redis):
+        yield
 
 
 @pytest.mark.asyncio

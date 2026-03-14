@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 import uuid
 from typing import Any, Optional
@@ -5,15 +6,65 @@ from typing import Any, Optional
 from src.repos.base_repo import BaseRepo
 from src.schemas.entities.settings import PersistedContextFile, ProviderKeyStatus, SandboxType, UserSettings
 from src.utils.security import encrypt_value, decrypt_value
+from src.utils.logger import logger
 from src.constants import UserTokenKey
 
 # Single well-known key for the one settings record per user
 _SETTINGS_KEY = "default"
 
+# Redis cache TTL in seconds (5 minutes safety net; active invalidation is primary)
+_CACHE_TTL = 300
+
 
 class UserSettingsRepo(BaseRepo):
     def __init__(self, user_id: str, store):
         super().__init__(user_id, store, "user_settings")
+
+    # ------------------------------------------------------------------
+    # Cache helpers
+    # ------------------------------------------------------------------
+
+    def _cache_key(self) -> str:
+        """Redis key for this user's cached settings."""
+        return f"user_settings:{self.user_id}"
+
+    async def _get_cached(self) -> UserSettings | None:
+        """Try to read settings from Redis cache. Returns None on miss or error."""
+        try:
+            from src.common.utils.redis_cache import get_redis_client
+
+            client = await get_redis_client()
+            raw = await client.get(self._cache_key())
+            if raw is not None:
+                logger.info("settings_cache_hit user_id=%s", self.user_id)
+                return UserSettings.model_validate(json.loads(raw))
+            logger.info("settings_cache_miss user_id=%s", self.user_id)
+        except Exception:
+            logger.warning("settings_cache_error op=get user_id=%s", self.user_id, exc_info=True)
+        return None
+
+    async def _set_cached(self, settings: UserSettings) -> None:
+        """Write settings to Redis cache with TTL."""
+        try:
+            from src.common.utils.redis_cache import get_redis_client
+
+            client = await get_redis_client()
+            data = json.dumps(settings.model_dump(exclude_none=True, mode="json"))
+            await client.set(self._cache_key(), data, ex=_CACHE_TTL)
+            logger.info("settings_cache_set user_id=%s ttl=%d", self.user_id, _CACHE_TTL)
+        except Exception:
+            logger.warning("settings_cache_error op=set user_id=%s", self.user_id, exc_info=True)
+
+    async def _invalidate_cache(self) -> None:
+        """Delete cached settings from Redis."""
+        try:
+            from src.common.utils.redis_cache import get_redis_client
+
+            client = await get_redis_client()
+            await client.delete(self._cache_key())
+            logger.info("settings_cache_invalidate user_id=%s", self.user_id)
+        except Exception:
+            logger.warning("settings_cache_error op=invalidate user_id=%s", self.user_id, exc_info=True)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -26,10 +77,20 @@ class UserSettingsRepo(BaseRepo):
             raise ValueError(f"Invalid provider '{provider}'. Must be one of: {valid}")
 
     async def _get_or_create(self) -> UserSettings:
-        """Return existing settings or create an empty record."""
+        """Return existing settings, checking Redis cache first."""
+        # Check cache
+        cached = await self._get_cached()
+        if cached is not None:
+            return cached
+
+        # Cache miss -- hit database
         item = await self._get(_SETTINGS_KEY)
         if item:
-            return UserSettings.model_validate(item.value)
+            settings = UserSettings.model_validate(item.value)
+            await self._set_cached(settings)
+            return settings
+
+        # First time -- create empty record
         settings = UserSettings(
             id=str(uuid.uuid4()),
             user_id=self.user_id,
@@ -37,6 +98,7 @@ class UserSettingsRepo(BaseRepo):
             updated_at=datetime.now(timezone.utc),
         )
         await self._set(_SETTINGS_KEY, settings)
+        await self._set_cached(settings)
         return settings
 
     def _decrypt_keys(self, settings: UserSettings) -> dict[str, str]:
@@ -107,6 +169,7 @@ class UserSettingsRepo(BaseRepo):
         settings.default_model = model
         settings.updated_at = datetime.now(timezone.utc)
         await self._set(_SETTINGS_KEY, settings)
+        await self._invalidate_cache()
         return settings
 
     async def set_default_sandbox(self, sandbox: Optional[str]) -> UserSettings:
@@ -118,6 +181,7 @@ class UserSettingsRepo(BaseRepo):
         settings.default_sandbox = sandbox
         settings.updated_at = datetime.now(timezone.utc)
         await self._set(_SETTINGS_KEY, settings)
+        await self._invalidate_cache()
         return settings
 
     # Mapping: PATCH request key -> entity field name
@@ -150,6 +214,7 @@ class UserSettingsRepo(BaseRepo):
                 setattr(settings, field, value)
         settings.updated_at = datetime.now(timezone.utc)
         await self._set(_SETTINGS_KEY, settings)
+        await self._invalidate_cache()
         return settings
 
     async def upsert_provider_key(self, provider: str, api_key: str) -> UserSettings:
@@ -160,6 +225,7 @@ class UserSettingsRepo(BaseRepo):
         settings.encrypted_keys = self._encrypt_keys(keys)
         settings.updated_at = datetime.now(timezone.utc)
         await self._set(_SETTINGS_KEY, settings)
+        await self._invalidate_cache()
         return settings
 
     async def delete_provider_key(self, provider: str) -> UserSettings:
@@ -170,6 +236,7 @@ class UserSettingsRepo(BaseRepo):
         settings.encrypted_keys = self._encrypt_keys(keys)
         settings.updated_at = datetime.now(timezone.utc)
         await self._set(_SETTINGS_KEY, settings)
+        await self._invalidate_cache()
         return settings
 
     async def get_all_decrypted_keys(self) -> dict[str, str]:
