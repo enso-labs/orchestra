@@ -8,6 +8,7 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ## 2026.3.6-2
 
 ### Changed
+  - feat/866-heartbeat (2026-03-14)
   - feat/840-disable-mcp-server-toggle
 
 ### Fixed
