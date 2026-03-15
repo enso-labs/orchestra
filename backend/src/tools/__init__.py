@@ -11,6 +11,7 @@ from src.tools.bash_tool import BASH_TOOLS
 from src.tools.memory import MEMORY_TOOLS
 from src.tools.thread_search import THREAD_SEARCH_TOOLS
 from src.tools.schedule import SCHEDULE_TOOLS
+from src.tools.heartbeat import HEARTBEAT_TOOLS
 
 
 def default_tools() -> list[BaseTool]:
@@ -21,6 +22,7 @@ def default_tools() -> list[BaseTool]:
         *MEMORY_TOOLS,
         *THREAD_SEARCH_TOOLS,
         *SCHEDULE_TOOLS,
+        *HEARTBEAT_TOOLS,
     ]
     if APP_ENV == "test":
         default_tools.extend(TEST_TOOLS)
