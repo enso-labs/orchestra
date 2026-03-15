@@ -103,6 +103,18 @@ Add an optional `stream_mode` parameter to the `/llm/stream` API endpoint, allow
 - [ ] Field description in schema explains valid values, default behavior, and that it's ignored by `/llm/invoke`
 - [ ] `make format` passes
 
+### US-008: Smoke test script with log output
+**Description:** As a developer, I want a shell script that exercises every `stream_mode` scenario against a running API and saves all request/response output to `./logs/` so I can inspect the raw SSE data.
+
+**Acceptance Criteria:**
+- [ ] Script at `backend/scripts/smoke-stream-mode.sh` accepts optional `API_KEY` arg
+- [ ] Creates `./logs/smoke-stream-mode-<timestamp>/` directory per run
+- [ ] Each test saves `<name>_request.json` and `<name>_response.txt` to logs dir
+- [ ] Test cases cover: default omitted, default explicit, messages-only, all-three-modes, updates-only, single-string coercion, invalid mode (422), empty list
+- [ ] Script prints pass/fail summary and exits non-zero on any failure
+- [ ] `logs/` directory is gitignored
+- [ ] Works in both sync mode (`make dev`) and distributed mode (`DISTRIBUTED_WORKERS=true`)
+
 ## Functional Requirements
 
 - FR-1: `LLMRequest` accepts optional `stream_mode: list[str]` with Pydantic validation against the set `{"messages", "values", "updates", "tasks", "debug", "custom", "checkpoints"}`

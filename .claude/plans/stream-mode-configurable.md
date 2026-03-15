@@ -302,6 +302,177 @@ Add example with `stream_mode: ["messages", "values", "updates"]`.
 | 5 | Frontend Types+Parsing | `stream.ts`, `fetchStreamReader.ts` | Low |
 | 6 | Frontend Handling | `useChat.ts`, `threadService.ts` | Low |
 | 7 | Tests | New test files | Low |
+| 8 | Smoke Tests | `scripts/smoke-stream-mode.sh` → `logs/` | Low |
+
+---
+
+### Phase 7: Smoke Testing (Manual API Validation)
+
+**Goal:** Validate the `stream_mode` parameter end-to-end against a running API instance, saving all request/response output to `./logs/smoke-stream-mode-<timestamp>/` for inspection.
+
+**Step 17** — Create smoke test script
+
+File: `backend/scripts/smoke-stream-mode.sh`
+
+The script runs against a live API (`API_URL` env var, default `http://localhost:8000`) and writes each test's raw output to the logs directory. Each test produces two files: `<test>_request.json` (the curl payload) and `<test>_response.txt` (raw response body including SSE lines).
+
+**Test cases:**
+
+| # | Test Name | Payload `stream_mode` | Expected Behavior | Output File Prefix |
+|---|-----------|----------------------|--------------------|--------------------|
+| 1 | `default_omitted` | *(field omitted)* | SSE events for `messages` and `values` only | `01_default_omitted` |
+| 2 | `default_explicit` | `["messages", "values"]` | Identical output to test 1 | `02_default_explicit` |
+| 3 | `messages_only` | `["messages"]` | Only `messages` event types in SSE stream | `03_messages_only` |
+| 4 | `all_three` | `["messages", "values", "updates"]` | SSE events for all three modes | `04_all_three` |
+| 5 | `updates_only` | `["updates"]` | Only `updates` event types (no `messages` tokens) | `05_updates_only` |
+| 6 | `single_string` | `"messages"` (string, not array) | Coerced to `["messages"]`, valid SSE stream | `06_single_string` |
+| 7 | `invalid_mode` | `["messages", "bogus"]` | HTTP 422 with validation error listing valid modes | `07_invalid_mode` |
+| 8 | `empty_list` | `[]` | Falls back to default `["messages", "values"]` | `08_empty_list` |
+
+**Script structure:**
+
+```bash
+#!/bin/bash
+# Smoke tests for stream_mode parameter
+# Usage: ./scripts/smoke-stream-mode.sh [API_KEY]
+#
+# Prerequisites: API running (make dev)
+# Outputs: ./logs/smoke-stream-mode-<timestamp>/
+
+set -euo pipefail
+
+API_URL="${API_URL:-http://localhost:8000}"
+API_KEY="${1:-}"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOG_DIR="./logs/smoke-stream-mode-${TIMESTAMP}"
+MODEL="${MODEL:-openai:gpt-4.1-mini}"
+PROMPT="Say exactly: hello world"
+PASS=0; FAIL=0; TOTAL=0
+
+mkdir -p "$LOG_DIR"
+
+# Helper: POST /llm/stream, save request + response, validate
+smoke_test() {
+    local name="$1"
+    local payload="$2"
+    local expect_status="${3:-200}"  # 200 for SSE, 422 for validation error
+    local grep_pattern="${4:-}"      # pattern to assert in response
+
+    TOTAL=$((TOTAL + 1))
+    echo "$payload" > "$LOG_DIR/${name}_request.json"
+
+    HTTP_CODE=$(curl -s -o "$LOG_DIR/${name}_response.txt" -w "%{http_code}" \
+        -X POST "$API_URL/api/llm/stream" \
+        -H "Content-Type: application/json" \
+        ${API_KEY:+-H "x-api-key: $API_KEY"} \
+        -N --max-time 30 \
+        -d "$payload")
+
+    echo "[$name] HTTP $HTTP_CODE (expected $expect_status)"
+
+    if [ "$HTTP_CODE" != "$expect_status" ]; then
+        echo "  FAIL: unexpected status code"
+        FAIL=$((FAIL + 1))
+        return
+    fi
+
+    if [ -n "$grep_pattern" ]; then
+        if grep -q "$grep_pattern" "$LOG_DIR/${name}_response.txt"; then
+            echo "  PASS: found expected pattern"
+            PASS=$((PASS + 1))
+        else
+            echo "  FAIL: pattern '$grep_pattern' not found in response"
+            FAIL=$((FAIL + 1))
+        fi
+    else
+        PASS=$((PASS + 1))
+    fi
+}
+
+echo "=============================================="
+echo "stream_mode Smoke Tests"
+echo "=============================================="
+echo "API: $API_URL | Model: $MODEL"
+echo "Logs: $LOG_DIR"
+echo ""
+
+# --- Tests ---
+
+# 1. Default (omitted)
+smoke_test "01_default_omitted" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\"}" \
+  200 "messages"
+
+# 2. Default (explicit)
+smoke_test "02_default_explicit" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\",\"stream_mode\":[\"messages\",\"values\"]}" \
+  200 "messages"
+
+# 3. Messages only
+smoke_test "03_messages_only" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\",\"stream_mode\":[\"messages\"]}" \
+  200 "messages"
+
+# 4. All three modes
+smoke_test "04_all_three" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\",\"stream_mode\":[\"messages\",\"values\",\"updates\"]}" \
+  200 "messages"
+
+# 5. Updates only
+smoke_test "05_updates_only" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\",\"stream_mode\":[\"updates\"]}" \
+  200 "updates"
+
+# 6. Single string coercion
+smoke_test "06_single_string" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\",\"stream_mode\":\"messages\"}" \
+  200 "messages"
+
+# 7. Invalid mode → 422
+smoke_test "07_invalid_mode" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\",\"stream_mode\":[\"messages\",\"bogus\"]}" \
+  422 "Invalid stream mode"
+
+# 8. Empty list → default
+smoke_test "08_empty_list" \
+  "{\"input\":{\"messages\":[{\"role\":\"user\",\"content\":\"$PROMPT\"}]},\"model\":\"$MODEL\",\"stream_mode\":[]}" \
+  200 "messages"
+
+# --- Summary ---
+echo ""
+echo "=============================================="
+echo "Results: $PASS passed, $FAIL failed, $TOTAL total"
+echo "Logs saved to: $LOG_DIR"
+echo "=============================================="
+
+[ $FAIL -eq 0 ] && exit 0 || exit 1
+```
+
+**Step 18** — Add `logs/` to `.gitignore`
+
+Ensure `logs/` is gitignored so smoke test output is never committed:
+
+```
+# Smoke test output
+logs/
+```
+
+**Step 19** — Run and inspect
+
+```bash
+# Sync mode (default)
+cd backend && ./scripts/smoke-stream-mode.sh
+
+# With API key
+cd backend && ./scripts/smoke-stream-mode.sh "otk_your_key_here"
+
+# Distributed mode (requires worker running)
+cd backend && API_URL=http://localhost:8000 ./scripts/smoke-stream-mode.sh
+
+# Inspect outputs
+ls -la ./logs/smoke-stream-mode-*/
+cat ./logs/smoke-stream-mode-*/01_default_omitted_response.txt
+```
 
 ---
 
