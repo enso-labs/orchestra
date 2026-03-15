@@ -48,6 +48,8 @@ import HouseIcon from "@/components/icons/HouseIcon";
 import { useSchedules } from "@/hooks/useSchedules";
 import { useScheduleExecutions } from "@/hooks/useScheduleExecutions";
 import { useAgentContext } from "@/context/AgentContext";
+import { useHeartbeat } from "@/hooks/useHeartbeat";
+import { HeartbeatSection } from "@/components/heartbeat/HeartbeatSection";
 import {
 	Schedule,
 	ScheduleCreate,
@@ -71,6 +73,7 @@ function SchedulesIndexPage() {
 		getSchedule,
 	} = useSchedules();
 	const { agents, useEffectGetAgents } = useAgentContext();
+	const heartbeat = useHeartbeat();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 	const [sortBy, setSortBy] = useState<SortBy>("next_run");
@@ -332,6 +335,21 @@ function SchedulesIndexPage() {
 								Manage all your automated agent schedules
 							</p>
 						</div>
+
+						{/* Heartbeat Monitor */}
+						<HeartbeatSection
+							config={heartbeat.config}
+							state={heartbeat.state}
+							history={heartbeat.history}
+							agents={agents.map((a: any) => ({
+								id: a.id || "",
+								name: a.name || "Unknown",
+							}))}
+							loading={heartbeat.loading}
+							onSave={heartbeat.saveConfig}
+							onDelete={heartbeat.deleteConfig}
+							onTriggerTick={heartbeat.triggerTick}
+						/>
 
 						{/* Stats Cards */}
 						<div className="grid grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-6">
