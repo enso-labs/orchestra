@@ -84,6 +84,22 @@ services:
                     cpus: "2"
                     memory: 2G
 
+    scheduler:
+        <<: *backend-common
+        command:
+            [
+                "/bin/sh",
+                "-lc",
+                "uv sync --frozen --dev --extra api --no-install-project && taskiq scheduler src.workers.scheduler:scheduler",
+            ]
+        depends_on:
+            backend:
+                condition: service_healthy
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+
     frontend:
         build:
             context: ./frontend
