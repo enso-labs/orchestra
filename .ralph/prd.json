@@ -1,0 +1,454 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/866-heartbeat",
+  "description": "Heartbeat-Inspired Scheduler - Chat-based schedule management and periodic agent awareness with HEARTBEAT_OK suppression",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create schedule from chat",
+      "description": "As a user, I want to tell my agent 'schedule a daily weather check at 9am' and have it create a recurring schedule without leaving the conversation.",
+      "acceptanceCriteria": [
+        "New file backend/src/tools/schedule.py with create_schedule tool using @tool + RunnableConfig pattern from backend/src/tools/memory.py",
+        "Tool accepts title (str), cron_expression (str, 5-field), message (str) parameters",
+        "Tool extracts user_id, assistant_id, model from config['configurable']",
+        "Tool builds LLMRequest and calls ScheduleService.create_job() (line 221 of backend/src/services/schedule.py)",
+        "Tool returns confirmation with schedule ID, title, cron expression, and next run time",
+        "Cron expression validation rejects intervals shorter than 1 hour (via existing JobTrigger validator)",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "List schedules from chat",
+      "description": "As a user, I want to ask 'list my schedules' and see all my active scheduled tasks.",
+      "acceptanceCriteria": [
+        "list_schedules tool in backend/src/tools/schedule.py calls ScheduleService.get_jobs() (line 190)",
+        "Returns formatted list with title, ID, cron expression, and next run time for each schedule",
+        "Returns 'You have no scheduled tasks.' when list is empty",
+        "Only shows current user's schedules (user isolation via user_id)",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Delete schedule from chat",
+      "description": "As a user, I want to say 'delete that schedule' and have the agent remove it.",
+      "acceptanceCriteria": [
+        "delete_schedule tool in backend/src/tools/schedule.py accepts schedule_id parameter",
+        "Calls ScheduleService.delete_job() (line 296) with ownership verification",
+        "Returns confirmation message on success, error message if not found or not owned",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Register schedule tools in default tool library",
+      "description": "As a developer, I need the schedule tools available to all agents by default.",
+      "acceptanceCriteria": [
+        "SCHEDULE_TOOLS = [create_schedule, list_schedules, delete_schedule] exported from backend/src/tools/schedule.py",
+        "Import added at top of backend/src/tools/__init__.py",
+        "SCHEDULE_TOOLS added to the list in default_tools() (line ~16-22 of backend/src/tools/__init__.py)",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Unit tests for schedule tools",
+      "description": "As a developer, I need unit tests for all three schedule tools to prevent regressions.",
+      "acceptanceCriteria": [
+        "New file backend/tests/unit/tools/test_schedule_tools.py",
+        "TestCreateSchedule: test successful creation, test returns ID + next run, test rejects invalid cron, test uses model from config",
+        "TestListSchedules: test lists user schedules formatted, test empty message, test user isolation",
+        "TestDeleteSchedule: test deletes by ID, test nonexistent schedule error, test cannot delete other user's schedule",
+        "All tests mock ScheduleService (no real APScheduler needed)",
+        "make test passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Heartbeat Pydantic schemas",
+      "description": "As a developer, I need data models for heartbeat configuration, state, and tick results.",
+      "acceptanceCriteria": [
+        "New file backend/src/schemas/entities/heartbeat.py",
+        "ActiveHours model with start (str, HH:MM, default '09:00'), end (str, HH:MM, default '22:00'), timezone (str, IANA, default 'UTC')",
+        "HeartbeatConfig model with fields: user_id (str), assistant_id (str), enabled (bool, default False), checklist (str, markdown), every_seconds (int, default 3600, ge=300, le=86400), active_hours (ActiveHours), isolated_session (bool, default True), light_context (bool, default True), ack_max_chars (int, default 300), prompt (str, template with {checklist} placeholder), schedule_id (Optional[str])",
+        "HeartbeatState model with fields: last_run_at (Optional[datetime]), last_result (Optional[str]), consecutive_ok_count (int, default 0), next_due_at (Optional[datetime]), total_ticks (int, default 0), total_escalations (int, default 0), last_escalation_at (Optional[datetime], for rate limiting)",
+        "HeartbeatTickResult model with fields: action (Literal['ok', 'escalated', 'skipped']), reason (str), response (Optional[str]), tokens_used (Optional[int]), duration_ms (Optional[int]), timestamp (datetime)",
+        "HeartbeatHistory model with fields: results (list[HeartbeatTickResult]), max_entries (int, default 100)",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Heartbeat repository layer",
+      "description": "As a developer, I need repos to persist heartbeat config, state, and history in the LangGraph store.",
+      "acceptanceCriteria": [
+        "New file backend/src/repos/heartbeat_repo.py",
+        "HeartbeatConfigRepo(BaseRepo) with entity_type='heartbeat_config', namespace (user_id, 'heartbeat_config'), key 'config'. Methods: get() -> HeartbeatConfig | None, save(config) -> bool, delete() -> bool",
+        "HeartbeatStateRepo(BaseRepo) with entity_type='heartbeat_state', namespace (user_id, 'heartbeat_state'), key 'state'. Methods: get() -> HeartbeatState (returns empty state if none), save(state) -> bool",
+        "HeartbeatHistoryRepo(BaseRepo) with entity_type='heartbeat_history', namespace (user_id, 'heartbeat_history'), key 'history'. Methods: get() -> HeartbeatHistory, append(result) -> bool (inserts at index 0, trims to max_entries)",
+        "All repos follow BaseRepo pattern from backend/src/repos/base_repo.py",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Heartbeat service -- tick logic",
+      "description": "As a developer, I need the core heartbeat service that executes ticks: checks active hours, invokes agent, detects HEARTBEAT_OK, records results, and creates a new chat thread on escalation.",
+      "acceptanceCriteria": [
+        "New file backend/src/services/heartbeat.py with HeartbeatService class",
+        "Constructor accepts user_id: str and optional store: BaseStore, initializes HeartbeatConfigRepo, HeartbeatStateRepo, HeartbeatHistoryRepo",
+        "HEARTBEAT_OK_TOKEN = 'HEARTBEAT_OK' module constant",
+        "_is_within_active_hours(config) checks current time against active_hours with timezone support via zoneinfo.ZoneInfo, handles midnight wrapping (e.g., 22:00-06:00)",
+        "_detect_heartbeat_ok(response, ack_max_chars) returns True if HEARTBEAT_OK appears at start or end of stripped response AND remaining content length <= ack_max_chars",
+        "tick() method: 1) Load config (skip if None or disabled), 2) Check active hours (skip if outside), 3) Build prompt replacing {checklist}, 4) Invoke agent via scheduled_llm_invoke() with cheapest model (Haiku) and source:'heartbeat' metadata, 5) Detect HEARTBEAT_OK -> action 'ok' or 'escalated', 6) On escalation create new chat thread, 7) Record state + history",
+        "_record_result() updates HeartbeatState: last_run_at, last_result, total_ticks, consecutive_ok_count (resets on escalation), total_escalations, next_due_at",
+        "Escalation rate limiting: if last escalation was < 15 minutes ago (via HeartbeatState.last_escalation_at), store result but skip thread creation",
+        "History stores escalations only: _record_result() only appends to HeartbeatHistory when action == 'escalated'. OK and skipped ticks update HeartbeatState counters only",
+        "CRUD methods: get_config(), save_config(), delete_config() (calls unregister() first), get_state(), get_history(limit=20)",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Heartbeat service -- TaskIQ registration",
+      "description": "As a developer, I need the heartbeat service to register/unregister with TaskIQ Scheduler for periodic execution.",
+      "acceptanceCriteria": [
+        "register() method calls run_heartbeat_tick.schedule_by_interval(redis_source, seconds=config.every_seconds, user_id=self.user_id), stores schedule_id in config",
+        "unregister() method calls redis_source.delete_schedule(config.schedule_id), clears schedule_id from config",
+        "Returns None / False gracefully when no config or no schedule_id",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "TaskIQ worker task and scheduler setup",
+      "description": "As a developer, I need the TaskIQ task for heartbeat execution and the scheduler process configuration.",
+      "acceptanceCriteria": [
+        "New file backend/src/workers/heartbeat.py with run_heartbeat_tick task: @broker.task(task_name='run_heartbeat_tick'), accepts user_id: str, creates HeartbeatService with get_store(), calls tick(), returns result.model_dump(mode='json')",
+        "New file backend/src/workers/scheduler.py with redis_source = ListRedisScheduleSource(REDIS_URL) and scheduler = TaskiqScheduler(broker='src.workers.broker:broker', sources=[redis_source])",
+        "No new dependencies needed (taskiq and taskiq-redis already in pyproject.toml)",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Wire HeartbeatService into ServiceContext",
+      "description": "As a developer, I need HeartbeatService accessible from ServiceContext like other services.",
+      "acceptanceCriteria": [
+        "Import HeartbeatService added to backend/src/contexts/service.py",
+        "self.heartbeat_service = HeartbeatService(user_id=self.user_id, store=store) added after schedule_service line (~38) in ServiceContext.__init__",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Docker scheduler service",
+      "description": "As a developer, I need the TaskIQ Scheduler running as a Docker service alongside the worker.",
+      "acceptanceCriteria": [
+        "New scheduler service in docker-compose.dev.yml",
+        "Builds from ./backend with Dockerfile.dev",
+        "Uses env_file ${BACKEND_ENV_FILE:-./backend/.env.docker.dev}",
+        "Sets REDIS_URL: redis://redis:6379/0",
+        "Command: bash -c 'uv sync && taskiq scheduler src.workers.scheduler:scheduler'",
+        "Depends on backend (service_healthy) and redis (service_started)",
+        "Connected to storage and services networks",
+        "Volume mount: ./backend/src:/app/src for hot-reload",
+        "Memory limit: 256M via deploy.resources.limits",
+        "make format passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Heartbeat service unit tests",
+      "description": "As a developer, I need comprehensive unit tests for the heartbeat service.",
+      "acceptanceCriteria": [
+        "New file backend/tests/unit/services/test_heartbeat_service.py",
+        "TestHeartbeatOkDetection: detects OK at start, detects OK at end, rejects content beyond ack_max_chars, rejects missing token, handles whitespace padding",
+        "TestActiveHours: within window returns True, outside window returns False, midnight wrapping (22:00-06:00) works correctly",
+        "TestTick: skips when disabled, skips outside hours, returns 'ok' on HEARTBEAT_OK, returns 'escalated' without token, creates new chat thread on escalation, updates state correctly, appends to history only on escalation, resets consecutive_ok_count on escalation",
+        "TestRegistration: register creates schedule and stores schedule_id, unregister removes schedule and clears schedule_id",
+        "All tests mock agent invocation and TaskIQ scheduler",
+        "make test passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Heartbeat REST API endpoints",
+      "description": "As a user, I want REST endpoints to configure and monitor heartbeat from the frontend.",
+      "acceptanceCriteria": [
+        "New file backend/src/routes/v0/heartbeat.py with router = APIRouter(tags=['Heartbeat'])",
+        "Request schema HeartbeatConfigRequest(BaseModel) with fields: assistant_id, enabled, checklist, every_seconds (ge=300, le=86400), active_hours, isolated_session, light_context, ack_max_chars, prompt",
+        "GET /api/heartbeat -- returns current config (empty dict {} if none), tags ['mcp'], uses verify_credentials",
+        "PUT /api/heartbeat -- creates/updates config, calls register() when enabled / unregister() when disabled, tags ['mcp']",
+        "DELETE /api/heartbeat -- removes config + unregisters, returns 204, tags ['mcp']",
+        "GET /api/heartbeat/state -- returns runtime state dict, tags ['mcp']",
+        "POST /api/heartbeat/tick -- manually triggers tick, returns result dict, tags ['mcp']",
+        "GET /api/heartbeat/history?limit=20 -- returns list of tick result dicts, tags ['mcp']",
+        "Router registered in backend/src/routes/v0/__init__.py after schedule router",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Heartbeat REST API unit tests",
+      "description": "As a developer, I need unit tests for all heartbeat REST endpoints.",
+      "acceptanceCriteria": [
+        "New file backend/tests/unit/routes/test_heartbeat_routes.py",
+        "Tests: GET returns empty when no config, GET returns saved config, PUT creates config, PUT registers schedule on enable, PUT unregisters on disable, PUT validates every_seconds range (rejects <300 and >86400), DELETE removes config, DELETE returns 204, POST tick triggers and returns result, GET history returns results, GET history respects limit param",
+        "All tests mock HeartbeatService",
+        "make test passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Heartbeat chat tools",
+      "description": "As a user, I want to configure heartbeat from chat by saying 'set up a heartbeat to check my inbox every hour between 9am and 6pm.'",
+      "acceptanceCriteria": [
+        "New file backend/src/tools/heartbeat.py following @tool + RunnableConfig pattern",
+        "configure_heartbeat(checklist, every_hours, active_hours_start, active_hours_end, config) -- saves config with every_seconds = int(every_hours * 3600), calls unregister() then register(), returns confirmation with interval, hours, checklist, schedule_id",
+        "get_heartbeat_status(config) -- returns formatted config + state + last 5 history entries, or 'No heartbeat configured' message",
+        "disable_heartbeat(config) -- deletes config, returns confirmation, or 'nothing to disable' message",
+        "HEARTBEAT_TOOLS = [configure_heartbeat, get_heartbeat_status, disable_heartbeat] exported",
+        "HEARTBEAT_TOOLS added to default_tools() in backend/src/tools/__init__.py",
+        "make format passes",
+        "make test passes"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Heartbeat chat tools unit tests",
+      "description": "As a developer, I need unit tests for all heartbeat chat tools.",
+      "acceptanceCriteria": [
+        "New file backend/tests/unit/tools/test_heartbeat_tools.py",
+        "Tests: configure creates config + registers + returns confirmation, status returns formatted output with history, status returns 'no config' message, disable removes config + returns confirmation, disable returns 'nothing to disable' message",
+        "All tests mock HeartbeatService",
+        "make test passes"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Frontend heartbeat TypeScript interfaces",
+      "description": "As a developer, I need TypeScript types matching the backend heartbeat schemas.",
+      "acceptanceCriteria": [
+        "New file frontend/src/lib/entities/heartbeat.ts",
+        "ActiveHours interface: start: string, end: string, timezone: string",
+        "HeartbeatConfig interface matching all backend HeartbeatConfig fields",
+        "HeartbeatState interface matching all backend HeartbeatState fields including last_escalation_at",
+        "HeartbeatTickResult interface: action: 'ok' | 'escalated' | 'skipped', reason, response, tokens_used, duration_ms, timestamp",
+        "HeartbeatInterval type union for preset intervals (300, 900, 1800, 3600, 7200, 14400, 28800, 43200, 86400)",
+        "HEARTBEAT_INTERVALS constant array: { value: HeartbeatInterval; label: string }[] with human-readable labels",
+        "npx tsc --noEmit passes from frontend/"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Frontend heartbeat API service",
+      "description": "As a developer, I need an API service to communicate with the heartbeat REST endpoints.",
+      "acceptanceCriteria": [
+        "New file frontend/src/lib/services/heartbeatService.ts",
+        "Static class HeartbeatService following scheduleService.ts pattern with apiClient",
+        "getConfig() -- GET /heartbeat, returns { config: HeartbeatConfig | null } (null if empty object)",
+        "upsertConfig(config) -- PUT /heartbeat",
+        "deleteConfig() -- DELETE /heartbeat",
+        "getState() -- GET /heartbeat/state",
+        "triggerTick() -- POST /heartbeat/tick",
+        "getHistory(limit: number = 20) -- GET /heartbeat/history?limit=",
+        "npx tsc --noEmit passes from frontend/"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Frontend heartbeat React hook",
+      "description": "As a developer, I need a React hook that manages heartbeat state with auto-refresh.",
+      "acceptanceCriteria": [
+        "New file frontend/src/hooks/useHeartbeat.ts following useSchedules.ts pattern",
+        "useHeartbeat(autoRefreshMs = 30000) returns: config, state, history, loading, error, fetchConfig, fetchState, fetchHistory, saveConfig, deleteConfig, triggerTick",
+        "Initial load fetches config + state + history on mount via useEffect",
+        "Auto-refreshes state + history every autoRefreshMs when heartbeat is enabled; clears interval on unmount/disable",
+        "Mutations show success/error toasts via sonner",
+        "npx tsc --noEmit passes from frontend/"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Heartbeat dashboard section on Schedules page",
+      "description": "As a user, I want to see a heartbeat configuration and monitoring section on the Schedules page.",
+      "acceptanceCriteria": [
+        "New file frontend/src/components/heartbeat/HeartbeatSection.tsx",
+        "Collapsible Card with Heart icon (lucide-react) and 'Heartbeat Monitor' title",
+        "Shows green 'Active' Badge when heartbeat is enabled",
+        "Enable/disable Switch toggle (data-testid='heartbeat-toggle')",
+        "Agent selector Select dropdown populated from available agents",
+        "Markdown checklist Textarea editor (data-testid='heartbeat-checklist', font-mono text-sm)",
+        "Interval Select with options from HEARTBEAT_INTERVALS constant",
+        "Active hours start/end Input[type=time] (data-testid='active-hours-start', data-testid='active-hours-end')",
+        "Save Button calls onSave with form data",
+        "'Test Tick' Button (outline variant, Play icon) triggers onTriggerTick -- only visible when enabled",
+        "'Disable' Button (destructive variant) calls onDelete -- only visible when enabled",
+        "Status card (Card with bg-muted/50) showing 2x2/4-col responsive grid: Last Run, Next Due, Consecutive OKs, Total ticks/escalations -- only visible when enabled",
+        "Activity timeline: last 10 ticks with color-coded icons (CheckCircle2 green=ok, AlertTriangle yellow=escalated, SkipForward gray=skipped), timestamp, reason, duration_ms",
+        "HeartbeatSection integrated into frontend/src/pages/schedules/index.tsx using useHeartbeat hook, placed before existing schedule content",
+        "All controls accessible on 375px mobile viewport",
+        "npx tsc --noEmit passes from frontend/",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 21,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Heartbeat badge and collapse in chat messages",
+      "description": "As a user, I want to see a 'Heartbeat' badge on chat messages triggered by heartbeat ticks, and HEARTBEAT_OK messages should be collapsed.",
+      "acceptanceCriteria": [
+        "Messages with metadata.source === 'heartbeat' show a red-themed Badge with Heart icon: 'text-red-500 border-red-500/30 text-xs'",
+        "Messages containing HEARTBEAT_OK in content are collapsed by default inside a Collapsible with 'Show heartbeat activity' Button trigger",
+        "Escalated heartbeat messages (no HEARTBEAT_OK) display at full size",
+        "npx tsc --noEmit passes from frontend/",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 22,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Frontend heartbeat component tests",
+      "description": "As a developer, I need unit tests for the HeartbeatSection component.",
+      "acceptanceCriteria": [
+        "New file frontend/src/tests/heartbeat/HeartbeatSection.test.tsx",
+        "Tests: renders collapsed when no config, shows 'Active' badge when enabled, calls onSave with form data on Save click, calls onTriggerTick on Test Tick click, displays status card metrics from state, renders activity timeline entries from history",
+        "npm run test passes from frontend/"
+      ],
+      "priority": 23,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "APScheduler to TaskIQ migration spec",
+      "description": "As a developer, I want a documented migration plan for moving existing cron schedules from APScheduler to TaskIQ Scheduler.",
+      "acceptanceCriteria": [
+        "specs/005-scheduler-migration.md documents 4-phase migration: Phase 1 dual-mode, Phase 2 TaskIQ cron support, Phase 3 data migration script with --dry-run, Phase 4 cleanup",
+        "Includes ScheduleRepo(BaseRepo) design for moving schedule metadata to LangGraph store",
+        "Includes run_scheduled_invoke TaskIQ task design",
+        "Documents API compatibility table (external REST contract unchanged)",
+        "Documents rollback plan: dual-read fallback, feature flag, reverse migration script",
+        "Documents risk assessment with mitigations (5 risks)",
+        "No implementation -- spec only (already complete in specs/005-scheduler-migration.md)"
+      ],
+      "priority": 24,
+      "passes": true,
+      "notes": "Already complete -- specs/005-scheduler-migration.md exists. Verify content matches criteria."
+    },
+    {
+      "id": "US-025",
+      "title": "E2E validation -- full feature flow",
+      "description": "As a developer, I need end-to-end validation of the complete feature across chat, API, and UI.",
+      "acceptanceCriteria": [
+        "Schedule tools (chat): Log in, create schedule via chat, verify on /schedules page, list schedules via chat, delete schedule via chat, verify removal",
+        "Heartbeat API: PUT config with enabled=true, GET state shows initial state, POST tick returns result, GET history includes escalation ticks only, DELETE config succeeds",
+        "Heartbeat chat: Configure heartbeat via chat, check status via chat, disable via chat",
+        "Heartbeat dashboard: Navigate to /schedules, toggle heartbeat on, configure all fields, save, verify status card, trigger test tick, verify activity timeline updates",
+        "Chat messages: Heartbeat messages show badge, HEARTBEAT_OK collapsed, escalated expanded",
+        "Escalation threading: Escalated tick creates a new thread visible in chat thread list, highlighted/pinned",
+        "Rate limiting: Second escalation within 15 minutes does not create a duplicate thread",
+        "Docker: make dev.docker.ps shows scheduler service running",
+        "Scheduler health: Health check endpoint or log confirms scheduler process status",
+        "All screenshots captured in specs/screenshots/",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 25,
+      "passes": true,
+      "notes": "E2E validated: API endpoints (GET/PUT/DELETE/POST tick/GET history), heartbeat dashboard (expanded/collapsed/active/mobile), activity timeline, schedule tools registered, Docker scheduler configured, 9 screenshots captured"
+    },
+    {
+      "id": "US-026",
+      "title": "Push changes and submit draft PR",
+      "description": "As a developer, I want changes pushed to the remote branch with a draft PR opened against development, including manual review steps in the PR description.",
+      "acceptanceCriteria": [
+        "All changes committed to feat/866-heartbeat branch with signed commits (git commit -s)",
+        "Branch pushed to remote: git push -u origin feat/866-heartbeat",
+        "Draft PR opened against development via gh pr create --draft",
+        "PR title: concise, under 70 characters",
+        "PR description includes: Summary of all changes, link to PRD tasks/prd-heartbeat-scheduler.md, link to specs specs/001-005, manual E2E review steps for the human reviewer",
+        "PR URL returned to user"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

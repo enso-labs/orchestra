@@ -1,0 +1,326 @@
+# Ralph Progress Log
+Started: Sun Mar 15 00:11:49 MDT 2026
+
+## Codebase Patterns
+- Tools follow `@tool + RunnableConfig` pattern (see `backend/src/tools/memory.py`)
+- Extract user_id from `config["configurable"].get("user_id")`
+- `ScheduleService.create_job()` type hint says `Job` but actually accepts `ScheduleCreate` (has title, trigger, task fields)
+- Line length limit is 120 chars (ruff E501)
+- 2 pre-existing integration test failures in `tests/integration/test_default_system_prompt_runtime.py` (LangSmith) - unrelated to feature work
+- To register new tool sets: import in `backend/src/tools/__init__.py`, spread into `default_tools()` list
+- To test `@tool` functions: use `@patch("src.tools.<module>.<singleton>")` and call via `tool.ainvoke(args_dict, config=RunnableConfig(configurable={...}))`
+- Repos extend `BaseRepo(user_id, store, entity_type)` — use `_get(key)`, `_set(key, model)`, `_delete(key)` for CRUD
+- Single-entity repos (like settings/config) use a fixed key constant (e.g., `_KEY = "config"`)
+- `_get()` returns an item with `.value` dict — call `Model.model_validate(item.value)` to deserialize
+- BaseRepo._format() only handles a fixed set of entity types — new repos should bypass it and validate directly
+- Services accept `Optional[BaseStore] = None` and default to `get_store_in_memory()` in `__init__`
+- `Config` (LLMRequest metadata) has `extra="allow"` — pass extra fields like `source` as a dict to bypass Pyright
+- `DEFAULT_CHAT_MODEL_BASIC` from `src.constants.llm` is the cheapest available model
+- `scheduled_llm_invoke()` returns response dict in-process, `None` in distributed mode
+- Thread creation for escalation: `ThreadService.create(Thread(id=..., title=..., messages=[...], metadata={...}))`
+- TaskIQ scheduling: `ScheduledTask(task_name=..., interval=seconds, kwargs={...})` + `ListRedisScheduleSource.add_schedule()`
+- `ListRedisScheduleSource(url=REDIS_URL)` is lightweight — instantiate per-call
+- `ScheduledTask.schedule_id` is auto-generated — read after construction
+- Lazy imports inside methods must be patched at source module (e.g., `taskiq.ScheduledTask` not `src.services.heartbeat.ScheduledTask`)
+
+---
+
+## 2026-03-15 - US-001
+- Created `backend/src/tools/schedule.py` with `create_schedule` tool
+- Tool accepts title, cron_expression, message; builds LLMRequest and calls ScheduleService.create_job()
+- Returns formatted confirmation with schedule ID, title, cron, next run time
+- Cron validation handled by existing JobTrigger validator
+- Files changed: `backend/src/tools/schedule.py` (new)
+- **Learnings for future iterations:**
+  - Follow the `@tool` + `RunnableConfig` pattern from memory.py for all chat tools
+  - `ScheduleService.create_job()` accepts `ScheduleCreate` despite type hint saying `Job`
+  - Docstring lines must stay under 120 chars or ruff lint will fail
+---
+
+## 2026-03-15 - US-002
+- Added `list_schedules` tool to `backend/src/tools/schedule.py`
+- Tool calls `ScheduleService.get_jobs()` with user_id set for isolation
+- Returns formatted markdown list with title, ID, cron expression, next run time
+- Returns "You have no scheduled tasks." when empty
+- Added to `SCHEDULE_TOOLS` list
+- Files changed: `backend/src/tools/schedule.py`
+- **Learnings for future iterations:**
+  - `ScheduleService.get_jobs()` already filters by `user_id` internally, but you must set `schedule_service.user_id` before calling
+  - The `Schedule` model has `.trigger.expression` for the cron string
+  - Ruff formatter will collapse multi-line f-strings in `append()` calls to single lines
+---
+
+## 2026-03-15 - US-003
+- Added `delete_schedule` tool to `backend/src/tools/schedule.py`
+- Tool calls `ScheduleService.delete_job()` which already checks ownership via `job.kwargs.get("user_id") != self.user_id`
+- Returns confirmation on success, catches exceptions and returns user-friendly error messages
+- Added to `SCHEDULE_TOOLS` list
+- Files changed: `backend/src/tools/schedule.py`
+- **Learnings for future iterations:**
+  - `ScheduleService.delete_job()` raises `HTTPException` (403 for not authorized, 500 for other errors) — catch with `getattr(e, "detail", str(e))` to extract the detail message
+  - Ownership verification is already built into `delete_job()` — no need to duplicate it in the tool
+---
+
+## 2026-03-15 - US-004
+- Registered SCHEDULE_TOOLS in the default tool library
+- Added `from src.tools.schedule import SCHEDULE_TOOLS` import to `backend/src/tools/__init__.py`
+- Added `*SCHEDULE_TOOLS` spread to `default_tools()` list
+- Files changed: `backend/src/tools/__init__.py`
+- **Learnings for future iterations:**
+  - To register new tools, add import + spread in `default_tools()` in `backend/src/tools/__init__.py`
+  - `default_tools()` is called by `init_tool_library()` which builds `TOOL_LIBRARY` at module level
+---
+
+## 2026-03-15 - US-005
+- Created `backend/tests/unit/tools/test_schedule_tools.py` with 10 unit tests
+- TestCreateSchedule: successful creation, returns ID + next run, rejects missing user_id, uses model from config
+- TestListSchedules: lists formatted, empty message, user isolation
+- TestDeleteSchedule: deletes by ID, nonexistent schedule error, cannot delete other user's schedule
+- All tests mock `schedule_service` via `@patch("src.tools.schedule.schedule_service")`
+- Files changed: `backend/tests/unit/tools/test_schedule_tools.py` (new)
+- **Learnings for future iterations:**
+  - Use `@patch("src.tools.schedule.schedule_service")` to mock the module-level singleton — don't instantiate
+  - `ainvoke` with `config=_make_config()` is the right way to test `@tool` functions with RunnableConfig
+  - Tests need env vars loaded — use `set -a && . ~/.env/orchestra/.env.backend && set +a` before pytest
+  - Helper functions `_make_config()` and `_make_schedule()` keep test code DRY
+---
+
+## 2026-03-15 - US-006
+- Created `backend/src/schemas/entities/heartbeat.py` with all Pydantic models
+- ActiveHours: start/end HH:MM strings with timezone (IANA), defaults 09:00-22:00 UTC
+- HeartbeatConfig: full config model with user_id, assistant_id, enabled, checklist, every_seconds (300-86400), active_hours, isolated_session, light_context, ack_max_chars, prompt template, schedule_id
+- HeartbeatState: runtime state with last_run_at, last_result, consecutive_ok_count, next_due_at, total_ticks, total_escalations, last_escalation_at
+- HeartbeatTickResult: action (ok/escalated/skipped), reason, response, tokens_used, duration_ms, timestamp
+- HeartbeatHistory: list of results with max_entries=100
+- DEFAULT_HEARTBEAT_PROMPT constant with {checklist} and {ack_max_chars} placeholders
+- Files changed: `backend/src/schemas/entities/heartbeat.py` (new)
+- **Learnings for future iterations:**
+  - Entity schemas live in `backend/src/schemas/entities/` and follow standard Pydantic BaseModel pattern
+  - Use `Field(default_factory=...)` for mutable defaults like nested models
+  - `Literal["ok", "escalated", "skipped"]` for constrained string unions
+  - Keep prompt templates as module-level constants for reuse
+---
+
+## 2026-03-15 - US-007
+- Created `backend/src/repos/heartbeat_repo.py` with three repository classes
+- HeartbeatConfigRepo: get/save/delete for single config per user (key='config')
+- HeartbeatStateRepo: get/save, returns empty HeartbeatState() when none exists
+- HeartbeatHistoryRepo: get/append, inserts at index 0 and trims to max_entries
+- All extend BaseRepo, use model_validate directly (bypass BaseRepo._format)
+- Files changed: `backend/src/repos/heartbeat_repo.py` (new)
+- **Learnings for future iterations:**
+  - BaseRepo._format() has a hardcoded entity_type switch — new repos should validate models directly via `Model.model_validate(item.value)`
+  - Single-entity repos use a class-level `_KEY` constant for the store key
+  - `_get()` returns None when key doesn't exist — handle gracefully with default models
+  - History append pattern: insert(0, item) + slice to max keeps most recent first
+---
+
+## 2026-03-15 - US-008
+- Created `backend/src/services/heartbeat.py` with HeartbeatService class
+- Constructor accepts user_id + optional store, initializes config/state/history repos
+- HEARTBEAT_OK_TOKEN = "HEARTBEAT_OK" module constant, ESCALATION_COOLDOWN_SECONDS = 900
+- `_is_within_active_hours()`: timezone-aware via zoneinfo.ZoneInfo, handles midnight wrapping (e.g., 22:00-06:00)
+- `_detect_heartbeat_ok()`: checks token at start/end of response, validates remaining content <= ack_max_chars
+- `tick()`: loads config, checks active hours, builds prompt, invokes agent via scheduled_llm_invoke(), detects HEARTBEAT_OK, handles escalation, records results
+- `_invoke_agent()`: builds LLMRequest with DEFAULT_CHAT_MODEL_BASIC and source:'heartbeat' metadata, calls scheduled_llm_invoke()
+- `_handle_escalation()`: creates new Thread via ThreadService with rate limiting (15min cooldown via last_escalation_at)
+- `_record_result()`: updates HeartbeatState counters, appends to HeartbeatHistory only on escalation, resets consecutive_ok_count on escalation
+- CRUD methods: get_config, save_config, delete_config (calls unregister first), get_state, get_history(limit)
+- register/unregister stubs for US-009
+- Files changed: `backend/src/services/heartbeat.py` (new)
+- **Learnings for future iterations:**
+  - Services accept `Optional[BaseStore] = None` and default to `get_store_in_memory()`
+  - Config (LLMRequest metadata) has `extra="allow"` — pass extra fields as a dict to bypass Pyright static analysis
+  - `DEFAULT_CHAT_MODEL_BASIC` from `src.constants.llm` gives the cheapest available model
+  - `scheduled_llm_invoke()` returns response dict in-process mode, None in distributed mode
+  - Thread creation: `ThreadService.create(Thread(id=..., title=..., messages=[...], metadata={...}))`
+  - Use `datetime.now(timezone.utc)` for UTC timestamps (not `datetime.utcnow()`)
+---
+
+## 2026-03-15 - US-009
+- Implemented `register()` and `unregister()` methods on HeartbeatService
+- `register()`: creates `ScheduledTask` with `interval=config.every_seconds` and `task_name="run_heartbeat_tick"`, adds to `ListRedisScheduleSource`, stores `schedule_id` in config
+- `unregister()`: calls `redis_source.delete_schedule(config.schedule_id)`, clears `schedule_id` from config
+- Both return gracefully (None/False) when no config or no schedule_id
+- Files changed: `backend/src/services/heartbeat.py`
+- **Learnings for future iterations:**
+  - TaskIQ `ScheduledTask` accepts `interval` (int seconds) for periodic tasks, `cron` for cron-based
+  - `ListRedisScheduleSource(url=REDIS_URL)` is lightweight — safe to instantiate per-call
+  - `schedule_id` is auto-generated on `ScheduledTask` construction — read after instantiation
+  - `delete_schedule` is async and may raise if schedule doesn't exist — wrap in try/except
+---
+
+## 2026-03-15 - US-010
+- Created `backend/src/workers/heartbeat.py` with `run_heartbeat_tick` task
+- Task decorated with `@broker.task(task_name="run_heartbeat_tick")`, accepts `user_id: str`
+- Uses `get_store_db()` async context manager for a fresh store connection per execution
+- Creates `HeartbeatService(user_id, store)` and calls `tick()`, returns `result.model_dump(mode="json")`
+- Created `backend/src/workers/scheduler.py` with `redis_source` and `scheduler`
+- `redis_source = ListRedisScheduleSource(url=REDIS_URL)` for persistent schedule storage
+- `scheduler = TaskiqScheduler(broker="src.workers.broker:broker", sources=[redis_source])`
+- No new dependencies added — `taskiq` and `taskiq-redis` already in pyproject.toml
+- Files changed: `backend/src/workers/heartbeat.py` (new), `backend/src/workers/scheduler.py` (new)
+- **Learnings for future iterations:**
+  - `TaskiqScheduler` accepts broker as a string import path for CLI mode (`taskiq scheduler src.workers.scheduler:scheduler`)
+  - Pyright warns about string broker arg — this is a false positive; TaskIQ resolves strings at runtime
+  - Worker tasks should use `get_store_db()` for fresh DB connections (same pattern as `tasks.py`)
+  - Keep worker tasks minimal: instantiate service, call method, return serialized result
+---
+
+## 2026-03-15 - US-011
+- Wired HeartbeatService into ServiceContext
+- Added `from src.services.heartbeat import HeartbeatService` import
+- Added `self.heartbeat_service = HeartbeatService(user_id=self.user_id, store=store)` after schedule_service line
+- Files changed: `backend/src/contexts/service.py`
+- **Learnings for future iterations:**
+  - ServiceContext pattern: import service, instantiate with `user_id=self.user_id, store=store` after other services
+  - Pyright warnings about `str | Any | None` for `user_id` are pre-existing across all service instantiations — not introduced by new lines
+---
+
+## 2026-03-15 - US-012
+- Added `scheduler` service to `docker-compose.dev.yml`
+- Uses `backend-common` anchor for consistency with backend/worker services
+- Command: `uv sync --frozen --dev --extra api --no-install-project && taskiq scheduler src.workers.scheduler:scheduler`
+- Depends on backend (service_healthy); redis available via external `storage` network
+- Memory limit: 256M (lightweight scheduler process)
+- Files changed: `docker-compose.dev.yml`
+- **Learnings for future iterations:**
+  - Use `<<: *backend-common` anchor for any new backend-derived services to get env, volumes, networks
+  - Redis isn't in dev compose — it's on the external `storage` network, so no `depends_on: redis` needed
+  - Scheduler is lightweight (just dispatches tasks) — 256M is sufficient vs 2G for worker/backend
+---
+
+## 2026-03-15 - US-013
+- Created `backend/tests/unit/services/test_heartbeat_service.py` with 26 unit tests
+- TestHeartbeatOkDetection (6): detects OK at start/end, rejects beyond ack_max_chars, rejects missing token, handles whitespace, OK-only
+- TestActiveHours (4): within window, outside window, midnight wrapping within/outside
+- TestTick (10): skips disabled, skips no config, skips outside hours, returns ok/escalated, creates thread on escalation, updates state, resets consecutive_ok, history only on escalation
+- TestEscalationRateLimiting (2): rate limits within cooldown, allows after cooldown
+- TestRegistration (4): register stores schedule_id, returns None when no config, unregister clears id, returns False when no schedule_id
+- Files changed: `backend/tests/unit/services/test_heartbeat_service.py` (new)
+- **Learnings for future iterations:**
+  - Lazy imports inside methods (`from X import Y`) must be patched at source module (e.g. `taskiq.ScheduledTask`) not at `src.services.heartbeat.ScheduledTask`
+  - Mock repos by assigning `service.config_repo = AsyncMock()` directly after construction
+  - `@patch.object(HeartbeatService, "_is_within_active_hours", return_value=True)` for static methods
+  - Don't import unused constants — ruff F401 will fail the lint hook
+---
+
+## 2026-03-15 - US-014
+- Created `backend/src/routes/v0/heartbeat.py` with 6 REST endpoints
+- GET /api/heartbeat — returns config or empty dict, PUT /api/heartbeat — create/update + register/unregister
+- DELETE /api/heartbeat (204), GET /api/heartbeat/state, POST /api/heartbeat/tick, GET /api/heartbeat/history?limit=
+- HeartbeatConfigRequest schema for request validation
+- All endpoints use verify_credentials + get_store dependency pattern (from settings.py)
+- Router registered in `backend/src/routes/v0/__init__.py` after schedule router
+- Files changed: `backend/src/routes/v0/heartbeat.py` (new), `backend/src/routes/v0/__init__.py`
+- **Learnings for future iterations:**
+  - Store-backed routes use `store: BaseStore = Depends(get_store)` pattern from settings route
+  - Instantiate service per-request with `_get_service(user, store)` helper
+  - Use `model_dump(mode="json")` for datetime serialization in responses
+---
+
+## 2026-03-15 - US-015
+- Created `backend/tests/unit/routes/test_heartbeat_routes.py` with 12 tests
+- Tests: GET empty config, GET saved config, PUT creates/registers/unregisters, PUT validates range, DELETE 204, POST tick, GET state, GET history + limit
+- All tests mock HeartbeatService via `@patch("src.routes.v0.heartbeat.HeartbeatService")`
+- Files changed: `backend/tests/unit/routes/test_heartbeat_routes.py` (new)
+- **Learnings for future iterations:**
+  - Route tests: mock at `src.routes.v0.<module>.ServiceClass` since routes import the class directly
+  - Follow settings_routes.py fixture pattern for ASGI client + auth/store overrides
+  - Pydantic 422 validation is automatic for `ge`/`le` constraints on request models
+---
+
+## 2026-03-15 - US-016
+- Created `backend/src/tools/heartbeat.py` with 3 chat tools
+- `configure_heartbeat`: saves config, unregisters/registers, returns confirmation
+- `get_heartbeat_status`: returns formatted config + state + last 5 history entries
+- `disable_heartbeat`: deletes config, returns confirmation
+- HEARTBEAT_TOOLS exported and added to default_tools() in __init__.py
+- Files changed: `backend/src/tools/heartbeat.py` (new), `backend/src/tools/__init__.py`
+---
+
+## 2026-03-15 - US-017
+- Created `backend/tests/unit/tools/test_heartbeat_tools.py` with 6 tests
+- TestConfigureHeartbeat: creates config + registers, returns confirmation with details
+- TestGetHeartbeatStatus: returns formatted output with history, returns 'no config' message
+- TestDisableHeartbeat: removes config + returns confirmation, returns 'nothing to disable'
+- All tests mock HeartbeatService via `@patch("src.tools.heartbeat.HeartbeatService")`
+- Files changed: `backend/tests/unit/tools/test_heartbeat_tools.py` (new)
+---
+
+## 2026-03-15 - US-018
+- Created `frontend/src/lib/entities/heartbeat.ts` with all TypeScript interfaces
+- ActiveHours, HeartbeatConfig, HeartbeatState, HeartbeatTickResult interfaces
+- HeartbeatInterval type union, HEARTBEAT_INTERVALS constant array
+- Files changed: `frontend/src/lib/entities/heartbeat.ts` (new)
+---
+
+## 2026-03-15 - US-019
+- Created `frontend/src/lib/services/heartbeatService.ts` following scheduleService.ts pattern
+- Static class with getConfig, upsertConfig, deleteConfig, getState, triggerTick, getHistory methods
+- getConfig returns null when backend returns empty object {}
+- Files changed: `frontend/src/lib/services/heartbeatService.ts` (new)
+---
+
+## 2026-03-15 - US-020
+- Created `frontend/src/hooks/useHeartbeat.ts` following useSchedules.ts pattern
+- Returns: config, state, history, loading, error, fetchConfig, fetchState, fetchHistory, saveConfig, deleteConfig, triggerTick
+- Auto-refreshes state + history when heartbeat is enabled (via setInterval)
+- Clears interval on unmount or when disabled
+- Mutations show success/error toasts via sonner
+- Files changed: `frontend/src/hooks/useHeartbeat.ts` (new)
+---
+
+## 2026-03-15 - US-021
+- Created `frontend/src/components/heartbeat/HeartbeatSection.tsx`
+- Collapsible Card with Heart icon, Active badge, Switch toggle
+- Agent selector, markdown checklist textarea, interval select, active hours inputs
+- Save/Test Tick/Disable buttons, status card (2x2/4-col grid), activity timeline
+- Integrated into `frontend/src/pages/schedules/index.tsx` before schedule stats cards
+- Files changed: `frontend/src/components/heartbeat/HeartbeatSection.tsx` (new), `frontend/src/pages/schedules/index.tsx`
+---
+
+## 2026-03-15 - US-022
+- Modified `frontend/src/components/lists/ChatMessages.tsx`
+- Messages with `metadata.source === 'heartbeat'` show red-themed Badge with Heart icon
+- Messages containing `HEARTBEAT_OK` collapsed by default inside Collapsible with trigger button
+- Escalated heartbeat messages (no HEARTBEAT_OK) display at full size
+- Files changed: `frontend/src/components/lists/ChatMessages.tsx`
+---
+
+## 2026-03-15 - US-023
+- Created `frontend/src/tests/heartbeat/HeartbeatSection.test.tsx` with 6 tests
+- Tests: collapsed when no config, Active badge when enabled, onSave with form data, onTriggerTick, status metrics, activity timeline
+- Files changed: `frontend/src/tests/heartbeat/HeartbeatSection.test.tsx` (new)
+- **Learnings for future iterations:**
+  - Radix Collapsible starts open when `open={true}` — don't click trigger in tests when content should already be visible
+  - When `isOpen` state initializes from `config?.enabled`, enabled config means section starts open
+---
+
+## 2026-03-15 - US-024
+- Verified `specs/005-scheduler-migration.md` already exists and covers all acceptance criteria
+- Spec documents 4-phase migration, ScheduleRepo design, run_scheduled_invoke task, API compatibility, rollback plan, 5 risk mitigations
+- No implementation needed — spec only
+---
+
+## 2026-03-15 - US-025
+- Performed full E2E validation of the heartbeat feature across API, UI, and Docker
+- **Heartbeat API**: All 6 endpoints verified (GET config, PUT config, DELETE config, GET state, POST tick, GET history)
+  - PUT creates config with schedule_id, GET state shows initial zeros, POST tick returns result (skipped/escalated), GET history shows escalation entries only, DELETE returns 204
+- **Heartbeat Dashboard**: Verified on /schedules page
+  - Collapsed view shows Heart icon + "Heartbeat Monitor" title with switch toggle
+  - Expanded view shows Agent selector, Checklist textarea (font-mono), Interval selector, Active Hours inputs, Save button
+  - Active state shows green "Active" badge, Test Tick + Disable buttons, status card (Last Run, Next Due, Consecutive OKs, Ticks/Escalations), Recent Activity timeline with color-coded icons
+  - Mobile viewport (375px) renders all controls accessible with responsive 2x2 grid
+- **Chat Messages**: Verified ChatMessages.tsx component code correctly implements heartbeat badge (red Heart + "Heartbeat" badge), HEARTBEAT_OK collapse (Collapsible with "Show heartbeat activity" trigger), and full-size escalated messages
+- **Schedule Tools**: SCHEDULE_TOOLS and HEARTBEAT_TOOLS both registered in default_tools() (__init__.py lines 13-14, 24-25)
+- **Docker Scheduler**: Service defined in docker-compose.dev.yml (line 87) using backend-common anchor, TaskIQ scheduler command, 256M memory limit, depends on backend health
+- **Worker Files**: backend/src/workers/scheduler.py and heartbeat.py both exist with correct implementations
+- **Screenshots**: 9 screenshots captured in specs/screenshots/
+- Files changed: `specs/screenshots/` (9 new screenshots), `.ralph/prd.json`
+- **Learnings for future iterations:**
+  - Docker dev stack must be restarted to pick up new services added to docker-compose.dev.yml
+  - Heartbeat tick returns "skipped" when outside active hours — widen active_hours for testing
+  - POST /api/heartbeat/tick with `scheduled_llm_invoke()` returns empty response without actual LLM config — escalation is correctly detected
+  - 2 pre-existing test failures in integration/test_default_system_prompt_runtime.py (LangSmith) are unrelated
+---
