@@ -54,4 +54,31 @@ async def create_schedule(title: str, cron_expression: str, message: str, config
     )
 
 
-SCHEDULE_TOOLS = [create_schedule]
+@tool
+async def list_schedules(config: RunnableConfig) -> str:
+    """
+    Toolkit: Schedule
+    Description: List all recurring schedules for the current user.
+    Args:
+        config: The runnable config (injected automatically).
+    Returns:
+        A formatted list of all active schedules, or a message if none exist.
+    """
+    user_id = config["configurable"].get("user_id")
+
+    if not user_id:
+        raise ValueError("User ID is required to list schedules.")
+
+    schedule_service.user_id = user_id
+    schedules = schedule_service.get_jobs()
+
+    if not schedules:
+        return "You have no scheduled tasks."
+
+    lines = ["**Your Scheduled Tasks:**\n"]
+    for s in schedules:
+        lines.append(f"- **{s.title}** (ID: `{s.id}`)\n  Cron: `{s.trigger.expression}` | Next Run: {s.next_run_time}")
+    return "\n".join(lines)
+
+
+SCHEDULE_TOOLS = [create_schedule, list_schedules]
