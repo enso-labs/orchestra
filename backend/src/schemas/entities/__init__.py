@@ -10,6 +10,8 @@ from src.schemas.entities.llm import (
     Assistant as Assistant,
     AssistantSearch as AssistantSearch,
     PublicAssistant as PublicAssistant,
+    VALID_STREAM_MODES as VALID_STREAM_MODES,
+    DEFAULT_STREAM_MODES as DEFAULT_STREAM_MODES,
 )
 from langchain_core.messages import BaseMessage
 from src.schemas.entities.auth import ApiToken as ApiToken

@@ -132,18 +132,21 @@ def handle_debug_mode(payload: dict):
             return payload
 
 
-def handle_updates_mode(payload: dict):
-    converted: List[dict] = []
+def handle_updates_mode(payload: dict) -> dict:
+    """Process updates-mode chunks from any graph node generically.
 
-    if payload.get("agent"):
-        messages = payload.get("agent", {}).get("messages", [])
-
-    if payload.get("tools"):
-        messages = payload.get("tools", {}).get("messages", [])
-
-    for message in messages:
-        converted.append(_to_dict(message))
-    return converted
+    Iterates all nodes in the payload. For nodes containing a 'messages' key,
+    converts each message via _to_dict(). Nodes without 'messages' are passed
+    through unchanged. Returns a dict preserving the node-name structure.
+    """
+    result: dict = {}
+    for node_name, node_data in payload.items():
+        if isinstance(node_data, dict) and "messages" in node_data:
+            converted = [_to_dict(msg) for msg in node_data["messages"]]
+            result[node_name] = {**node_data, "messages": converted}
+        else:
+            result[node_name] = node_data
+    return result
 
 
 def handle_values_mode(payload: dict):
@@ -177,40 +180,54 @@ def convert_messages(payload: dict, stream_mode: StreamMode):
     raise ValueError(f"Invalid stream mode: {stream_mode}")
 
 
-def handle_multi_mode(chunk: dict):
+def handle_multi_mode(chunk):
+    """Dispatch a multi-mode stream chunk to the appropriate handler.
+
+    Each chunk is a tuple of (mode_name, payload). Supported modes:
+    messages, values, updates, tasks, debug, custom.
+    """
     try:
-        if "values" in chunk:
-            chunk[1]["messages"] = from_message_to_dict(chunk[1]["messages"])
+        mode = chunk[0]
+        payload = chunk[1]
+
+        if mode == "values":
+            payload["messages"] = from_message_to_dict(payload["messages"])
             return chunk
 
-        if "messages" not in chunk:
+        if mode == "messages":
+            msg = payload[0]
+
+            if isinstance(msg, ToolMessage):
+                return (mode, (_to_dict(msg), payload[1] or None))
+
+            if isinstance(msg, AIMessageChunk):
+                stop = (
+                    msg.response_metadata.get("finish_reason")
+                    or msg.response_metadata.get("stop_reasoning")
+                    or msg.response_metadata.get("stop_reason")
+                )
+                content = msg.content or msg.additional_kwargs.get("reasoning_content")
+                if msg.tool_calls or msg.tool_call_chunks or stop or content:
+                    return (mode, (_to_dict(msg), payload[1] or None))
+                logger.warning(f"No content: {chunk}")
+                return None
+
             logger.error(f"Invalid chunk: {chunk}")
             return None
 
-        i0, i1 = chunk[0], chunk[1]
-        msg = i1[0]
+        if mode == "updates":
+            return (mode, handle_updates_mode(payload))
 
-        if agent_name := dict(msg).get("lc_agent_name"):
-            logger.warning(f"🤖 {agent_name}: ")
+        if mode == "tasks":
+            return (mode, handle_tasks_mode(payload))
 
-        if isinstance(msg, ToolMessage):
-            return (i0, (_to_dict(msg), i1[1] or None))
+        if mode == "debug":
+            return (mode, handle_debug_mode(payload))
 
-        if not isinstance(msg, AIMessageChunk):
-            logger.error(f"Invalid chunk: {chunk}")
-            return None
+        if mode == "custom":
+            return chunk
 
-        stop = (
-            msg.response_metadata.get("finish_reason")
-            or msg.response_metadata.get("stop_reasoning")
-            or msg.response_metadata.get("stop_reason")
-        )
-        content = msg.content or msg.additional_kwargs.get("reasoning_content")
-        if msg.tool_calls or msg.tool_call_chunks or stop or content:
-            return (i0, (_to_dict(msg), i1[1] or None))
-
-        logger.warning(f"No content: {chunk}")
-        return None
+        logger.warning(f"Unrecognized stream mode: {mode}")
     except Exception as e:
         logger.error(f"Error in handle_multi_mode: {e}")
     return None
@@ -243,10 +260,10 @@ def _process_and_format_chunk(chunk, agent_model, state: _StreamState) -> str | 
     return f"data: {data}\n\n"
 
 
-def _build_astream_kwargs(agent, config, ctx) -> dict:
+def _build_astream_kwargs(agent, config, ctx, stream_mode: list[str] | None = None) -> dict:
     """Build keyword arguments for agent.astream, optionally enabling subgraphs."""
     kwargs = {
-        "stream_mode": ["messages", "values"],
+        "stream_mode": stream_mode or ["messages", "values"],
         "config": config,
         "context": ctx,
     }
@@ -258,9 +275,7 @@ def _build_astream_kwargs(agent, config, ctx) -> dict:
     return kwargs
 
 
-async def _persist_final_state(
-    agent, config, service_context: ServiceContext, state: _StreamState
-) -> None:
+async def _persist_final_state(agent, config, service_context: ServiceContext, state: _StreamState) -> None:
     """Persist the final checkpoint state after streaming completes."""
     if not (service_context.user_id and agent):
         return
@@ -298,6 +313,7 @@ async def stream_generator(
     instructions: str = None,
     api_key: str | None = None,
     sandbox_type: str | None = None,
+    stream_mode: list[str] | None = None,
 ):
     """Stream agent responses as Server-Sent Events.
 
@@ -367,7 +383,7 @@ async def stream_generator(
                 )
             )
             yield f"data: {metadata_event}\n\n"
-            astream_kwargs = _build_astream_kwargs(agent, config, ctx)
+            astream_kwargs = _build_astream_kwargs(agent, config, ctx, stream_mode)
 
             async for chunk in agent.astream(input, **astream_kwargs):
                 sse_line = _process_and_format_chunk(chunk, agent.model, state)

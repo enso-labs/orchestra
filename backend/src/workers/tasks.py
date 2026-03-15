@@ -100,6 +100,7 @@ async def run_agent_stream(
     user_id: str,
     thread_id: str,
     run_id: str,
+    stream_mode: list[str] | None = None,
 ) -> dict:
     """
     Execute agent and stream results via Redis Streams.
@@ -203,6 +204,7 @@ async def run_agent_stream(
                 run_id=run_id,
                 stream_key=stream_key,
                 redis_client=redis_client,
+                stream_mode=stream_mode,
             )
         else:
             # Legacy mode: per-task checkpointer
@@ -228,6 +230,7 @@ async def run_agent_stream(
                     run_id=run_id,
                     stream_key=stream_key,
                     redis_client=redis_client,
+                    stream_mode=stream_mode,
                 )
 
     except CheckpointConnectionError as e:
@@ -289,6 +292,7 @@ async def _stream_chunks_to_redis(
     *,
     agent,
     input,
+    stream_mode: list[str] | None = None,
     config,
     ctx_schema,
     files_map: dict,
@@ -314,7 +318,7 @@ async def _stream_chunks_to_redis(
 
     async for chunk in agent.astream(
         input,
-        stream_mode=["messages", "values"],
+        stream_mode=stream_mode or ["messages", "values"],
         config=config,
         context=ctx_schema,
     ):
@@ -376,6 +380,7 @@ async def _execute_agent_stream(
     run_id,
     stream_key,
     redis_client,
+    stream_mode: list[str] | None = None,
 ) -> dict:
     """Execute the agent stream logic with abort signal checking.
 
@@ -396,11 +401,9 @@ async def _execute_agent_stream(
         is_daytona_error,
         _create_state_backend,
     )
-    from src.utils.stream import handle_multi_mode
     from src.utils.format import get_time
     from src.utils.logger import logger
     from src.services.errors import CheckpointConnectionError
-    from src.services.abort import AbortService
     from src.services.context_files import select_memory_sources
 
     started_at = get_time()
@@ -499,6 +502,7 @@ async def _execute_agent_stream(
         abort_result = await _stream_chunks_to_redis(
             agent=agent,
             input=params.input,
+            stream_mode=stream_mode,
             config=config,
             ctx_schema=ctx_schema,
             files_map=files_map,
@@ -554,6 +558,7 @@ async def _execute_agent_stream(
                 await _stream_chunks_to_redis(
                     agent=agent,
                     input=params.input,
+                    stream_mode=stream_mode,
                     config=config,
                     ctx_schema=ctx_schema,
                     files_map=files_map,
