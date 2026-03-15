@@ -324,3 +324,14 @@ Started: Sun Mar 15 00:11:49 MDT 2026
   - POST /api/heartbeat/tick with `scheduled_llm_invoke()` returns empty response without actual LLM config — escalation is correctly detected
   - 2 pre-existing test failures in integration/test_default_system_prompt_runtime.py (LangSmith) are unrelated
 ---
+
+## 2026-03-15 - US-026
+- Pushed 24 commits to origin/feat/866-heartbeat
+- Updated PR #884 title and body via `gh api` REST endpoint
+- PR URL: https://github.com/ruska-ai/orchestra/pull/884
+- PR includes: summary of all 26 user stories, manual E2E review steps, test results, screenshot references
+- Files changed: `.ralph/prd.json`, `.ralph/progress.txt`
+- **Learnings for future iterations:**
+  - `gh pr edit` fails with "Projects (classic) deprecation" GraphQL error — use `gh api repos/.../pulls/N -X PATCH -f field=value` instead
+  - `gh api` with `-f body=...` works for string fields; `--input` tries to parse JSON
+---

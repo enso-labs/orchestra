@@ -447,8 +447,8 @@
         "PR URL returned to user"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "PR #884 updated and pushed: https://github.com/ruska-ai/orchestra/pull/884"
     }
   ]
 }
