@@ -131,6 +131,7 @@ async def llm_stream(
                 user_id=str(user_id) if user_id else "",
                 thread_id=thread_id,
                 run_id=run_id,
+                stream_mode=params.stream_mode,
             )
 
             logger.info(f"Enqueued distributed task for thread: {thread_id}, run: {run_id}")

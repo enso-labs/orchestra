@@ -221,6 +221,7 @@ class LLMController:
             instructions=assistant.instructions,
             api_key=api_key,
             sandbox_type=default_sandbox,
+            stream_mode=assistant.resolved_stream_mode,
         )
 
     async def llm_task(self, job: ScheduleCreate):
