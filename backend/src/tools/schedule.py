@@ -81,4 +81,29 @@ async def list_schedules(config: RunnableConfig) -> str:
     return "\n".join(lines)
 
 
-SCHEDULE_TOOLS = [create_schedule, list_schedules]
+@tool
+async def delete_schedule(schedule_id: str, config: RunnableConfig) -> str:
+    """
+    Toolkit: Schedule
+    Description: Delete a recurring schedule by its ID.
+    Args:
+        schedule_id: The ID of the schedule to delete.
+        config: The runnable config (injected automatically).
+    Returns:
+        Confirmation message on success, or error message if not found or not owned.
+    """
+    user_id = config["configurable"].get("user_id")
+
+    if not user_id:
+        raise ValueError("User ID is required to delete a schedule.")
+
+    schedule_service.user_id = user_id
+    try:
+        schedule_service.delete_job(schedule_id)
+        return f"Schedule `{schedule_id}` has been deleted successfully."
+    except Exception as e:
+        detail = getattr(e, "detail", str(e))
+        return f"Could not delete schedule `{schedule_id}`: {detail}"
+
+
+SCHEDULE_TOOLS = [create_schedule, list_schedules, delete_schedule]
