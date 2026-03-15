@@ -230,12 +230,60 @@ class HeartbeatService:
         history = await self.history_repo.get()
         return history.results[:limit]
 
-    # --- Registration stubs (implemented in US-009) ---
+    # --- TaskIQ registration ---
 
     async def register(self) -> Optional[str]:
-        """Register heartbeat with TaskIQ scheduler. Implemented in US-009."""
-        return None
+        """Register heartbeat with TaskIQ scheduler for periodic execution.
+
+        Creates a ScheduledTask with interval=config.every_seconds and adds it to
+        the ListRedisScheduleSource. Stores the schedule_id in config.
+        """
+        config = await self.config_repo.get()
+        if config is None:
+            return None
+
+        from taskiq import ScheduledTask
+        from taskiq_redis import ListRedisScheduleSource
+        from src.constants.redis import REDIS_URL
+
+        redis_source = ListRedisScheduleSource(url=REDIS_URL)
+
+        scheduled_task = ScheduledTask(
+            task_name="run_heartbeat_tick",
+            labels={},
+            args=[],
+            kwargs={"user_id": self.user_id},
+            interval=config.every_seconds,
+        )
+
+        await redis_source.add_schedule(scheduled_task)
+
+        config.schedule_id = scheduled_task.schedule_id
+        await self.config_repo.save(config)
+
+        logger.info(f"Heartbeat registered: schedule_id={scheduled_task.schedule_id}, interval={config.every_seconds}s")
+        return scheduled_task.schedule_id
 
     async def unregister(self) -> bool:
-        """Unregister heartbeat from TaskIQ scheduler. Implemented in US-009."""
-        return False
+        """Unregister heartbeat from TaskIQ scheduler.
+
+        Removes the schedule from ListRedisScheduleSource and clears schedule_id from config.
+        """
+        config = await self.config_repo.get()
+        if config is None or not config.schedule_id:
+            return False
+
+        from taskiq_redis import ListRedisScheduleSource
+        from src.constants.redis import REDIS_URL
+
+        redis_source = ListRedisScheduleSource(url=REDIS_URL)
+
+        try:
+            await redis_source.delete_schedule(config.schedule_id)
+            logger.info(f"Heartbeat unregistered: schedule_id={config.schedule_id}")
+        except Exception as e:
+            logger.warning(f"Failed to delete heartbeat schedule {config.schedule_id}: {e}")
+
+        config.schedule_id = None
+        await self.config_repo.save(config)
+        return True
