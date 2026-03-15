@@ -138,6 +138,37 @@ async def get_public_servers(
     }
 
 
+async def _get_server_or_404(
+    db: AsyncSession,
+    *,
+    server_id: uuid.UUID | None = None,
+    slug: str | None = None,
+) -> Server:
+    """Fetch a server by id or slug, raising 404 if not found."""
+    if server_id is not None:
+        result = await db.execute(select(Server).filter(Server.id == server_id))
+    elif slug is not None:
+        result = await db.execute(select(Server).filter(Server.slug == slug))
+    else:
+        raise ValueError("Either server_id or slug must be provided")
+    server = result.scalar_one_or_none()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    return server
+
+
+def _authorize_server_access(server: Server, user: User) -> None:
+    """Raise 403 if the user cannot access a non-public server."""
+    if not server.public and str(server.user_id) != user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this server")
+
+
+def _authorize_server_owner(server: Server, user: User) -> None:
+    """Raise 403 if the user does not own the server."""
+    if str(server.user_id) != user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this server")
+
+
 @router.get("/{server_id}", response_model=ServerResponse)
 async def get_server(
     server_id: uuid.UUID,
@@ -145,15 +176,8 @@ async def get_server(
     user: User = Depends(verify_credentials),
 ):
     """Get details for a specific server by ID."""
-    result = await db.execute(select(Server).filter(Server.id == server_id))
-    server = result.scalar_one_or_none()
-
-    if not server:
-        raise HTTPException(status_code=404, detail="Server not found")
-
-    if not server.public and str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this server")
-
+    server = await _get_server_or_404(db, server_id=server_id)
+    _authorize_server_access(server, user)
     return ServerResponse(**server.to_dict())
 
 
@@ -164,15 +188,8 @@ async def get_server_by_slug(
     user: User = Depends(verify_credentials),
 ):
     """Get details for a specific server by slug."""
-    result = await db.execute(select(Server).filter(Server.slug == slug))
-    server = result.scalar_one_or_none()
-
-    if not server:
-        raise HTTPException(status_code=404, detail="Server not found")
-
-    if not server.public and str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this server")
-
+    server = await _get_server_or_404(db, slug=slug)
+    _authorize_server_access(server, user)
     return ServerResponse(**server.to_dict())
 
 
@@ -215,14 +232,8 @@ async def update_server(
     user: User = Depends(verify_credentials),
 ):
     """Update an existing server configuration."""
-    result = await db.execute(select(Server).filter(Server.id == server_id))
-    server = result.scalar_one_or_none()
-
-    if not server:
-        raise HTTPException(status_code=404, detail="Server not found")
-
-    if str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this server")
+    server = await _get_server_or_404(db, server_id=server_id)
+    _authorize_server_owner(server, user)
 
     # Validate server configuration
     validation = await validate_server_config(server_data)
@@ -253,14 +264,8 @@ async def partial_update_server(
     user: User = Depends(verify_credentials),
 ):
     """Partially update an existing server configuration."""
-    result = await db.execute(select(Server).filter(Server.id == server_id))
-    server = result.scalar_one_or_none()
-
-    if not server:
-        raise HTTPException(status_code=404, detail="Server not found")
-
-    if str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this server")
+    server = await _get_server_or_404(db, server_id=server_id)
+    _authorize_server_owner(server, user)
 
     # Update fields if provided
     if server_data.name is not None:
@@ -298,14 +303,8 @@ async def delete_server(
     user: User = Depends(verify_credentials),
 ):
     """Delete a server configuration."""
-    result = await db.execute(select(Server).filter(Server.id == server_id))
-    server = result.scalar_one_or_none()
-
-    if not server:
-        raise HTTPException(status_code=404, detail="Server not found")
-
-    if str(server.user_id) != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this server")
+    server = await _get_server_or_404(db, server_id=server_id)
+    _authorize_server_owner(server, user)
 
     await db.delete(server)
     await db.commit()
@@ -378,14 +377,8 @@ async def test_connection(
     user: User = Depends(verify_credentials),
 ):
     """Test the connection to a saved server configuration."""
-    result = await db.execute(select(Server).filter(Server.id == server_id))
-    server = result.scalar_one_or_none()
-
-    if not server:
-        raise HTTPException(status_code=404, detail="Server not found")
-
-    if str(server.user_id) != user.id and not server.public:
-        raise HTTPException(status_code=403, detail="Not authorized to test this server")
+    server = await _get_server_or_404(db, server_id=server_id)
+    _authorize_server_access(server, user)
 
     # Implementation will depend on the server type and how you want to test connections
     # This is a placeholder implementation
