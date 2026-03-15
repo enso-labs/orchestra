@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, memo, useState } from "react";
-import { Loader2, Edit, Check, X } from "lucide-react";
+import { Loader2, Edit, Check, X, Heart } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { useAppContext } from "@/context/AppContext";
@@ -12,6 +12,12 @@ import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
 import TextSelectionPopover from "../popovers/TextSelectionPopover";
 import { SubagentBadge } from "../badges/SubagentBadge";
+import { Badge } from "../ui/badge";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "../ui/collapsible";
 
 export const Message = memo(
 	function Message({
@@ -190,6 +196,15 @@ export const Message = memo(
 		}
 
 		const isSubagent = !!message.agent_name;
+		const isHeartbeat = message.metadata?.source === "heartbeat";
+		const contentStr = formatContent(message.content) || "";
+		const isHeartbeatOk = isHeartbeat && contentStr.includes("HEARTBEAT_OK");
+
+		const messageBody = (
+			<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
+				<MarkdownCard content={contentStr || "Invalid message"} />
+			</div>
+		);
 
 		return (
 			<div className="group px-3 md:px-5">
@@ -201,11 +216,29 @@ export const Message = memo(
 							<SubagentBadge name={message.agent_name} />
 						</div>
 					)}
-					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
-						<MarkdownCard
-							content={formatContent(message.content) || "Invalid message"}
-						/>
-					</div>
+					{isHeartbeat && (
+						<div className="mb-1 px-3">
+							<Badge
+								variant="outline"
+								className="text-red-500 border-red-500/30 text-xs"
+							>
+								<Heart className="h-3 w-3 mr-1" />
+								Heartbeat
+							</Badge>
+						</div>
+					)}
+					{isHeartbeatOk ? (
+						<Collapsible>
+							<CollapsibleTrigger asChild>
+								<button className="text-xs text-muted-foreground hover:text-foreground px-3 py-1">
+									Show heartbeat activity
+								</button>
+							</CollapsibleTrigger>
+							<CollapsibleContent>{messageBody}</CollapsibleContent>
+						</Collapsible>
+					) : (
+						messageBody
+					)}
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
 					<div className="flex gap-1">
