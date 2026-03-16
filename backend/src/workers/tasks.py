@@ -640,3 +640,146 @@ async def _execute_agent_stream(
     )
 
     return {"status": "complete", "stream_key": stream_key}
+
+
+def _extract_text_content(content) -> str:
+    """Extract plain text from message content (handles string and multimodal list formats)."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return " ".join(block.get("text", "") if isinstance(block, dict) else str(block) for block in content)
+    return str(content) if content else ""
+
+
+@broker.task(task_name="extract_trajectory")
+async def extract_trajectory(thread_id: str, user_id: str, assistant_id: str) -> dict:
+    """Extract AnnotatedTrajectory from a completed conversation and store it.
+
+    Loads the thread's messages, converts them to the langmem AnnotatedTrajectory
+    format, derives quality signals (conversation length, tool success rate, HITL
+    rejections), and stores the trajectory in the AsyncPostgresStore under the
+    ``(user_id, "trajectories", assistant_id)`` namespace.
+
+    All exceptions are caught and logged — extraction failures never propagate.
+
+    Args:
+        thread_id: Thread containing the conversation messages.
+        user_id: Owner of the thread / target namespace for trajectory storage.
+        assistant_id: Assistant whose conversation is being extracted.
+
+    Returns:
+        dict with ``status`` ("success", "skipped", or "error") and details.
+    """
+    import uuid
+
+    from langmem.prompts.types import AnnotatedTrajectory
+
+    from src.services.db import get_store_db
+    from src.services.thread import ThreadService
+    from src.utils.logger import logger
+
+    try:
+        async with get_store_db() as store:
+            # 1. Load conversation messages from thread
+            thread_service = ThreadService(user_id=user_id, store=store)
+            thread = await thread_service.get(thread_id)
+
+            if not thread or not getattr(thread, "messages", None):
+                logger.info(
+                    "trajectory_skip_no_messages",
+                    extra={"event": "trajectory_skip_no_messages", "thread_id": thread_id},
+                )
+                return {"status": "skipped", "reason": "no_messages"}
+
+            messages: list = thread.messages if isinstance(thread.messages, list) else []
+
+            # 2. Convert messages to AnnotatedTrajectory format and derive quality signals
+            trajectory_messages: list[dict] = []
+            tool_messages_total = 0
+            tool_messages_error = 0
+            hitl_rejections = 0
+
+            for msg in messages:
+                if isinstance(msg, dict):
+                    msg_type = msg.get("type", "")
+                    content = msg.get("content", "")
+                else:
+                    msg_type = getattr(msg, "type", "")
+                    content = getattr(msg, "content", "")
+
+                text = _extract_text_content(content)
+
+                if msg_type in ("human", "user"):
+                    trajectory_messages.append({"role": "user", "content": text})
+                    # Detect HITL rejection responses
+                    if "rejected this action" in text.lower():
+                        hitl_rejections += 1
+
+                elif msg_type in ("ai", "assistant"):
+                    trajectory_messages.append({"role": "assistant", "content": text})
+
+                elif msg_type == "tool":
+                    tool_messages_total += 1
+                    lower_text = text.lower()
+                    if any(indicator in lower_text for indicator in ("error", "exception", "traceback", "failed")):
+                        tool_messages_error += 1
+
+            if not trajectory_messages:
+                logger.info(
+                    "trajectory_skip_empty",
+                    extra={"event": "trajectory_skip_empty", "thread_id": thread_id},
+                )
+                return {"status": "skipped", "reason": "no_trajectory_messages"}
+
+            # 3. Build feedback dict with quality signals
+            conversation_length = len(trajectory_messages)
+            tool_success_rate = (
+                (tool_messages_total - tool_messages_error) / tool_messages_total if tool_messages_total > 0 else None
+            )
+
+            feedback: dict = {"conversation_length": conversation_length}
+            if tool_success_rate is not None:
+                feedback["tool_success_rate"] = round(tool_success_rate, 3)
+            if hitl_rejections > 0:
+                feedback["hitl_rejections"] = hitl_rejections
+
+            # 4. Format as AnnotatedTrajectory
+            trajectory = AnnotatedTrajectory(messages=trajectory_messages, feedback=feedback)
+
+            # 5. Store in (user_id, "trajectories", assistant_id) namespace
+            trajectory_id = str(uuid.uuid4())
+            namespace = (user_id, "trajectories", assistant_id)
+            await store.aput(namespace=namespace, key=trajectory_id, value=trajectory._asdict())
+
+            logger.info(
+                "trajectory_extracted",
+                extra={
+                    "event": "trajectory_extracted",
+                    "thread_id": thread_id,
+                    "user_id": user_id,
+                    "assistant_id": assistant_id,
+                    "trajectory_id": trajectory_id,
+                    "conversation_length": conversation_length,
+                    "tool_success_rate": tool_success_rate,
+                    "hitl_rejections": hitl_rejections,
+                },
+            )
+
+            return {
+                "status": "success",
+                "trajectory_id": trajectory_id,
+                "conversation_length": conversation_length,
+            }
+
+    except Exception as e:
+        logger.error(
+            "trajectory_extraction_failed",
+            extra={
+                "event": "trajectory_extraction_failed",
+                "thread_id": thread_id,
+                "user_id": user_id,
+                "assistant_id": assistant_id,
+                "error": str(e),
+            },
+        )
+        return {"status": "error", "error": str(e)}
