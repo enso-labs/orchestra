@@ -11,6 +11,8 @@ Started: Mon Mar 16 13:00:59 MDT 2026
 - For cross-namespace writes, construct namespace tuple directly: `(target_user_id, self._get_store_key())` — don't rely on `self._get_namespace()` which uses `self.user_id`
 - Frontend Agent type `metadata` is `Record<string, unknown>` — access `forked_from` via `(agent.metadata as Record<string, unknown>)?.forked_from`
 - 2 pre-existing test failures in `test_default_system_prompt_runtime.py` — ignore these, they're unrelated to marketplace work
+- Embed tokens use `type: "embed"` in JWT payload to distinguish from user auth tokens — validate this field when verifying embed JWTs
+- Embed token `jti` enables per-token rate limiting keyed by `embed:{agent_id}:{jti}` in Redis
 - Public assistant routes in `assistant.py` are grouped: GET /public, GET /public/{id}, POST /public/{id}/fork — then publish/unpublish section follows
 - For public endpoints that don't need user context, use `AssistantService(user_id=None, store=store)` directly (no ServiceContext)
 - Frontend: `getAuthToken()` checks auth without hooks; `apiClient` auto-attaches Bearer token via interceptor
@@ -132,4 +134,15 @@ Started: Mon Mar 16 13:00:59 MDT 2026
   - `handleTagKeyDown` prevents form submission on Enter by calling `e.preventDefault()` — important since the input is inside a `<form>`
   - The `onBlur` handler also calls `addTag` to capture partially-typed tags when the user clicks away
   - Tags are included directly in `configData` (not wrapped in metadata) since they're a top-level field on the Assistant model
+---
+
+## 2026-03-16 - US-011
+- What was implemented: Two embed endpoints added to assistant routes. GET `/assistants/public/{id}/embed` returns `{agent_id, name, description, model, theme}` without authentication (404 for non-public agents). POST `/assistants/public/{id}/embed-token` requires authentication, validates the caller is the `owner_id` of the agent (403 if not), and returns a signed JWT embed token containing `{agent_id, rate_limit, jti, exp, type: "embed"}`. Token utility created in `src/utils/embed.py` using python-jose with HS256 signing, 30-day expiry, and 100 messages/day default rate limit.
+- Files changed: `backend/src/routes/v0/assistant.py`, `backend/src/utils/embed.py`
+- **Learnings for future iterations:**
+  - Embed tokens use a different JWT payload structure from user auth tokens — `type: "embed"` field distinguishes them during validation
+  - `jti` (JWT Token ID) is included in embed tokens to enable per-token rate limiting (keyed by `embed:{agent_id}:{jti}`)
+  - `theme` is pulled from `assistant.metadata.get("theme", "default")` — allows future customization without schema changes
+  - Embed endpoints are grouped between fork routes and publish/unpublish routes in the route file — follows the public → embed → admin ordering pattern
+  - For ownership validation, compare `assistant.owner_id` against `user.id` from the auth dependency — same pattern as publish/unpublish but with explicit 403 instead of implicit 404
 ---

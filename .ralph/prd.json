@@ -183,8 +183,8 @@
         "Lint passes (make format && make lint)"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 06ede37d. GET /assistants/public/{id}/embed returns {agent_id, name, description, model, theme} without auth, 404 for non-public. POST /assistants/public/{id}/embed-token requires auth, validates owner_id (403 if not owner), returns signed JWT with {agent_id, rate_limit, jti, exp, type}. Embed token utility in src/utils/embed.py."
     },
     {
       "id": "US-012",
