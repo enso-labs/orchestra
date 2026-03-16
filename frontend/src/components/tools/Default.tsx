@@ -1,5 +1,9 @@
 import { useMemo } from "react";
-import Editor from "@monaco-editor/react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+	oneDark,
+	oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useTheme } from "@/hooks/useTheme";
 
 interface Props {
@@ -52,7 +56,7 @@ export default function DefaultTool({
 		}
 	}, [content]);
 
-	const height = useMemo(() => {
+	const maxHeight = useMemo(() => {
 		const lineCount = content.split("\n").length;
 		const raw = lineCount * 18 + 10;
 		if (collapsed) {
@@ -64,30 +68,19 @@ export default function DefaultTool({
 	if (!selectedToolMessage || !content) return null;
 
 	return (
-		<div style={{ height }}>
-			<Editor
-				value={content}
-				language={language}
-				height={height}
-				theme={theme === "light" ? "light" : "vs-dark"}
-				options={{
-					readOnly: true,
-					domReadOnly: true,
-					minimap: { enabled: false },
-					lineNumbers: "off",
-					wordWrap: "on",
-					fontSize: 11,
-					scrollBeyondLastLine: false,
-					renderLineHighlight: "none",
-					contextmenu: false,
-					folding: !collapsed,
-					scrollbar: {
-						vertical: "hidden",
-						horizontal: "hidden",
-						handleMouseWheel: true,
-					},
-				}}
-			/>
-		</div>
+		<SyntaxHighlighter
+			style={theme === "light" ? oneLight : oneDark}
+			language={language}
+			wrapLongLines={true}
+			customStyle={{
+				margin: 0,
+				fontSize: "11px",
+				maxHeight,
+				overflow: "auto",
+				borderRadius: "0.375rem",
+			}}
+		>
+			{content}
+		</SyntaxHighlighter>
 	);
 }

@@ -251,7 +251,7 @@ jobs:
                     echo '--- Worker deployment complete ---'
 
                     echo '--- Cleaning up old images ---'
-                    docker system prune -a --filter \"until=24h\" -f
+                    docker system prune -a --filter \"until=1h\" -f
 
                     echo '--- Deployment successful! ---'
                   "
