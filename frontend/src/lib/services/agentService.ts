@@ -25,7 +25,7 @@ export type Agent = {
 		};
 	};
 	files?: Record<string, string>; // Persisted files (path -> content)
-	metadata?: object;
+	metadata?: Record<string, unknown>;
 	schedules?: Schedule[]; // Agent's associated schedules
 	created_at?: string;
 	updated_at?: string;
@@ -33,6 +33,7 @@ export type Agent = {
 	public?: boolean;
 	owner_id?: string;
 	published_at?: string;
+	fork_count?: number;
 };
 
 export default class AgentService {

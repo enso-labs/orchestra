@@ -24,6 +24,7 @@ import {
 	Lock,
 	Share2,
 	Loader2,
+	GitFork,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
@@ -177,6 +178,15 @@ function AgentIndexPage() {
 									{agent.subagents.length === 1 ? "Subagent" : "Subagents"}
 								</Badge>
 							)}
+							{isPublicView &&
+								agent.fork_count != null &&
+								agent.fork_count > 0 && (
+									<Badge variant="secondary" className="text-xs gap-1">
+										<GitFork className="h-3 w-3" />
+										{agent.fork_count}{" "}
+										{agent.fork_count === 1 ? "remix" : "remixes"}
+									</Badge>
+								)}
 						</div>
 
 						{/* Categories */}

@@ -19,6 +19,7 @@ import {
 	Ban,
 	Globe,
 	Lock,
+	GitFork,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
@@ -48,8 +49,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import agentService, { Agent } from "@/lib/services/agentService";
+import AgentService from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Prompt } from "@/lib/entities/prompt";
 import { cn } from "@/lib/utils";
@@ -89,6 +91,7 @@ export function AgentCreateForm() {
 	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
 	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+	const [forkedFromName, setForkedFromName] = useState<string | null>(null);
 	const [promptMode, setPromptMode] = useState<
 		"instructions" | "system_prompt"
 	>("instructions");
@@ -293,6 +296,19 @@ export function AgentCreateForm() {
 		}
 	}, [agent]);
 
+	// Fetch original agent name for "Remixed from" attribution
+	const forkedFromId = (agent.metadata as Record<string, unknown>)
+		?.forked_from as string | undefined;
+	useEffect(() => {
+		if (!forkedFromId) {
+			setForkedFromName(null);
+			return;
+		}
+		AgentService.getPublic(forkedFromId)
+			.then((res) => setForkedFromName(res.data?.name ?? null))
+			.catch(() => setForkedFromName(null));
+	}, [forkedFromId]);
+
 	const filteredSubagents = agents.filter((a: Agent) => a.id !== agentId);
 
 	return (
@@ -309,6 +325,18 @@ export function AgentCreateForm() {
 								<p className="text-sm text-muted-foreground">
 									Configure the basic settings for your AI agent
 								</p>
+								{forkedFromId && (
+									<p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+										<GitFork className="h-3 w-3" />
+										Remixed from{" "}
+										<Link
+											to={`/a/${forkedFromId}`}
+											className="text-primary hover:underline"
+										>
+											{forkedFromName ?? forkedFromId}
+										</Link>
+									</p>
+								)}
 							</div>
 						</div>
 						{agent.id ? (
