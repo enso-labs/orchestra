@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/drawers/app-sidebar";
 import Joyride from "react-joyride";
 import { useOnboarding } from "@/context/OnboardingContext";
 import { onboardingSteps } from "@/lib/config/onboardingSteps";
+import { JoyrideTooltip } from "@/components/tooltips/JoyrideTooltip";
 
 export function ChatLayout({ children }: { children: React.ReactNode }) {
 	const defaultOpen = true;
@@ -18,21 +19,15 @@ export function ChatLayout({ children }: { children: React.ReactNode }) {
 				showSkipButton
 				showProgress
 				disableOverlayClose={false}
+				disableScrolling
 				spotlightClicks
 				callback={handleJoyrideCallback}
-				styles={{
-					options: {
-						zIndex: 10000,
-						primaryColor: "hsl(var(--primary))",
-						backgroundColor: "hsl(var(--card))",
-						textColor: "hsl(var(--card-foreground))",
-						arrowColor: "hsl(var(--card))",
-					},
-					tooltip: { borderRadius: "0.75rem" },
-					buttonNext: { borderRadius: "0.5rem" },
-					buttonBack: { color: "hsl(var(--muted-foreground))" },
-					buttonSkip: { color: "hsl(var(--muted-foreground))" },
+				tooltipComponent={JoyrideTooltip}
+				floaterProps={{
+					hideArrow: true,
+					styles: { floater: { maxWidth: "calc(100vw - 1rem)" } },
 				}}
+				styles={{ options: { zIndex: 10000 } }}
 			/>
 			<AppSidebar />
 			<main className="flex-1 flex flex-col max-h-screen overflow-hidden">

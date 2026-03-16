@@ -61,9 +61,7 @@ export function SubagentsPanel({
 				{filteredAgents.length > 0 ? (
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 						{filteredAgents.map((agent) => {
-							const selected = agent.id
-								? isAgentSelected(agent.id)
-								: false;
+							const selected = agent.id ? isAgentSelected(agent.id) : false;
 
 							return (
 								<button
@@ -128,8 +126,8 @@ export function SubagentsPanel({
 				<div className="text-sm text-muted-foreground">
 					{selectedSubagents.length > 0 ? (
 						<span>
-							Selected: <strong>{selectedSubagents.length}</strong>{" "}
-							subagent{selectedSubagents.length !== 1 ? "s" : ""}
+							Selected: <strong>{selectedSubagents.length}</strong> subagent
+							{selectedSubagents.length !== 1 ? "s" : ""}
 						</span>
 					) : (
 						<span>No subagents selected</span>
