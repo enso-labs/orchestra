@@ -157,6 +157,36 @@ async def get_public_assistant(
     return {"assistant": PublicAssistant.from_assistant(assistant).model_dump()}
 
 
+@router.post(
+    "/public/{assistant_id}/fork",
+    name="Fork Public Assistant",
+    operation_id="ruska_fork_public_assistant",
+    status_code=status.HTTP_201_CREATED,
+)
+async def fork_public_assistant(
+    assistant_id: str = Path(..., description="The ID of the public assistant to fork"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Fork a public assistant into the authenticated user's workspace."""
+    # Input validation
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service = AssistantService(user_id=None, store=store)
+    new_assistant_id = await service.fork(assistant_id, user.id)
+
+    if not new_assistant_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
+
+    return {"assistant_id": new_assistant_id}
+
+
 ################################################################################
 ### Publish/Unpublish Assistant
 ################################################################################
