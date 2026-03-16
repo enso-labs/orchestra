@@ -174,3 +174,17 @@ Started: Mon Mar 16 13:00:59 MDT 2026
   - Bundle is 46.87KB gzipped with React included — future optimization could use Preact alias to shrink further
   - `dist/embed/` is separate from `../backend/src/public` output — embed bundle is independently deployable
 ---
+
+## 2026-03-16 - US-013b
+- What was implemented: Full embed widget chat UI with SSE streaming and conversation persistence. EmbedWidget.tsx rewritten from placeholder scaffold to complete chat interface. Floating button (bottom-right, z-max) toggles a 380x520 chat panel with: dark header (Chat + close), scrollable message area with user (right/dark) and assistant (left/light) bubbles, text input with Send button, "Powered by Orchestra" footer linking to /a/{agentId}. Messages stream via native fetch + ReadableStream SSE parsing from POST /assistants/public/{id}/embed-chat. Thread ID stored in localStorage (key: orchestra_embed_thread_{agentId}) and sent with each request for conversation continuity. Handles metadata events for thread_id, messages events for text streaming, error events for error display, and network failures gracefully. main.tsx updated to mount React inside a shadow DOM for full CSS isolation from host page.
+- Files changed: `frontend/src/embed/EmbedWidget.tsx`, `frontend/src/embed/main.tsx`
+- **Learnings for future iterations:**
+  - Shadow DOM works well with React 18 — `createRoot(shadowRoot.child)` handles events correctly within the shadow boundary
+  - Host page CSS (even aggressive wildcard selectors) is fully blocked by shadow DOM — inline styles + shadow DOM provides bidirectional isolation
+  - For SSE parsing in embed widget, use native fetch + ReadableStream instead of importing `sse.js` or `FetchStreamReader` — keeps the bundle self-contained and small
+  - SSE "messages" events from LangGraph have format `["messages", [msgDict, metadata]]` — `msgDict.content` is either a string (text token) or array of content blocks (multimodal)
+  - `extractTextContent()` helper handles both string and content-block-array formats for `AIMessageChunk.content`
+  - localStorage key includes agentId (`orchestra_embed_thread_{agentId}`) to support multiple embedded agents on the same domain
+  - The embed widget doesn't need the full `StreamClient` or `FetchStreamReader` — a simple while/read loop with line splitting is sufficient for SSE parsing
+  - React 18's `createRoot` in shadow DOM still correctly handles `onKeyDown`, `onChange`, `onClick` events — no special event delegation workaround needed
+---

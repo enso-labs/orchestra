@@ -235,8 +235,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed c344c4f4. Full chat widget UI: floating button (bottom-right) expands to 380x520 chat panel. Messages stream via fetch + SSE parsing from POST /assistants/public/{id}/embed-chat. Thread ID persisted in localStorage (orchestra_embed_thread_{agentId}). User bubbles right-aligned dark, assistant bubbles left-aligned light. 'Powered by Orchestra' footer links to /a/{agentId}. Shadow DOM isolation prevents host page CSS leaks. Bundle 48.61KB gzipped."
     },
     {
       "id": "US-014",
