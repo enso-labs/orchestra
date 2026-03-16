@@ -99,10 +99,20 @@ export function useAgent() {
 		}
 	};
 
-	const handleGetPublicAgents = async (limit = 50, offset = 0) => {
+	const handleGetPublicAgents = async (
+		limit = 50,
+		offset = 0,
+		sortBy?: "fork_count" | "published_at" | "updated_at",
+		tags?: string[],
+	) => {
 		setIsLoadingPublicAgents(true);
 		try {
-			const response = await agentService.listPublic(limit, offset);
+			const response = await agentService.listPublic(
+				limit,
+				offset,
+				sortBy,
+				tags,
+			);
 			setPublicAgents(response.data.assistants);
 		} catch (error) {
 			console.error("Failed to fetch public agents:", error);

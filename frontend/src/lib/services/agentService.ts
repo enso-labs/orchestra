@@ -34,6 +34,7 @@ export type Agent = {
 	owner_id?: string;
 	published_at?: string;
 	fork_count?: number;
+	tags?: string[];
 };
 
 export default class AgentService {
@@ -186,10 +187,18 @@ export default class AgentService {
 	/**
 	 * List all public assistants (no auth required)
 	 */
-	static async listPublic(limit: number = 50, offset: number = 0) {
+	static async listPublic(
+		limit: number = 50,
+		offset: number = 0,
+		sortBy?: "fork_count" | "published_at" | "updated_at",
+		tags?: string[],
+	) {
 		try {
+			const params: Record<string, string | number> = { limit, offset };
+			if (sortBy) params.sort_by = sortBy;
+			if (tags && tags.length > 0) params.tags = tags.join(",");
 			const response = await apiClient.get(`${this.BASE_URL}/public`, {
-				params: { limit, offset },
+				params,
 			});
 			return response;
 		} catch (error) {
