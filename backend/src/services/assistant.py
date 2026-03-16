@@ -197,26 +197,39 @@ class AssistantService:
             logger.exception(f"Error forking assistant {public_assistant_id}: {e}")
             return None
 
-    async def search_public(self, limit: int = 100, offset: int = 0) -> list[Assistant]:
-        """Search all public assistants."""
+    async def search_public(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "published_at",
+        tags: Optional[list[str]] = None,
+    ) -> list[Assistant]:
+        """Search all public assistants with optional sorting and tag filtering."""
         try:
+            # Fetch a larger batch to allow for tag filtering before pagination
+            fetch_limit = 1000
+
             if isinstance(self.store, InMemoryStore):
-                items = await self.store.asearch(self._get_namespace(public=True), limit=limit + offset)
-                sorted_items = sorted(
-                    [item for item in items],
-                    key=lambda x: x.updated_at,
-                    reverse=True,
-                )
-                return self._format_assistant(sorted_items[offset : offset + limit])
+                items = await self.store.asearch(self._get_namespace(public=True), limit=fetch_limit)
             else:
                 async with self.store as store:
-                    items = await store.asearch(self._get_namespace(public=True), limit=limit + offset)
-                    sorted_items = sorted(
-                        [item for item in items],
-                        key=lambda x: x.updated_at,
-                        reverse=True,
-                    )
-                    return self._format_assistant(sorted_items[offset : offset + limit])
+                    items = await store.asearch(self._get_namespace(public=True), limit=fetch_limit)
+
+            assistants = self._format_assistant(list(items))
+
+            # Filter by tags (ANY match)
+            if tags:
+                assistants = [a for a in assistants if any(t in a.tags for t in tags)]
+
+            # Sort by requested field
+            if sort_by == "fork_count":
+                assistants.sort(key=lambda a: a.fork_count, reverse=True)
+            elif sort_by == "updated_at":
+                assistants.sort(key=lambda a: a.updated_at or datetime.min, reverse=True)
+            else:  # default: published_at
+                assistants.sort(key=lambda a: a.published_at or datetime.min, reverse=True)
+
+            return assistants[offset : offset + limit]
         except Exception as e:
             logger.error(f"Error searching public assistants: {e}")
             return []

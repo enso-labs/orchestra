@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal, Optional
 from fastapi import (
     APIRouter,
     Body,
@@ -116,11 +117,17 @@ async def delete_assistant(
 async def list_public_assistants(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    sort_by: Literal["fork_count", "updated_at", "published_at"] = Query(default="published_at"),
+    tags: Optional[str] = Query(default=None, description="Comma-separated tags to filter by (OR match)"),
     store: AsyncPostgresStore = Depends(get_store),
 ):
     """List all public assistants - no authentication required."""
     service = AssistantService(user_id=None, store=store)
-    assistants = await service.search_public(limit=limit, offset=offset)
+
+    # Parse comma-separated tags into a list
+    tags_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+
+    assistants = await service.search_public(limit=limit, offset=offset, sort_by=sort_by, tags=tags_list)
 
     return {
         "assistants": [PublicAssistant.from_assistant(a).model_dump() for a in assistants],

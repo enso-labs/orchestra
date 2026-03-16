@@ -119,6 +119,7 @@ class Assistant(BaseModel):
     owner_id: Optional[str] = Field(default=None, description="The user ID of the assistant owner")
     published_at: Optional[datetime] = Field(default=None, description="When the assistant was made public")
     fork_count: int = Field(default=0, description="Number of times this assistant has been forked/remixed")
+    tags: list[str] = Field(default_factory=list, description="Category tags for discovery and filtering")
 
     @computed_field
     @property
@@ -164,6 +165,7 @@ class PublicAssistant(BaseModel):
     owner_id: Optional[str] = None
     published_at: Optional[datetime] = None
     fork_count: int = 0
+    tags: list[str] = Field(default_factory=list, description="Category tags for discovery and filtering")
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     # NOTE: files is intentionally excluded - it's owner-only data
@@ -180,6 +182,7 @@ class PublicAssistant(BaseModel):
             owner_id=assistant.owner_id,
             published_at=assistant.published_at,
             fork_count=assistant.fork_count,
+            tags=assistant.tags,
             updated_at=assistant.updated_at,
             created_at=assistant.created_at,
         )
