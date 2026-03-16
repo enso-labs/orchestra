@@ -450,3 +450,51 @@ async def unpublish_assistant(
     except Exception as e:
         logger.exception(f"Error unpublishing assistant: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+################################################################################
+### Distillation Routes
+################################################################################
+@router.post(
+    "/{assistant_id}/distill",
+    name="Distill Assistant Prompt",
+    operation_id="ruska_distill_assistant",
+)
+async def distill_assistant(
+    assistant_id: str = Path(..., description="The ID of the assistant to distill"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Manually trigger prompt distillation for an assistant. Requires ownership."""
+    # Input validation
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    # Verify ownership
+    service_context = ServiceContext(user_id=user.id, store=store)
+    assistant = await service_context.assistant_service.get(assistant_id)
+
+    if not assistant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found")
+
+    if assistant.owner_id and assistant.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the assistant owner can trigger distillation",
+        )
+
+    # Run distillation
+    from src.services.prompt.optimize import PromptOptimizer
+
+    optimizer = PromptOptimizer(model=assistant.model)
+    revision_id = await optimizer.distill(user_id=user.id, assistant_id=assistant_id, store=store)
+
+    if revision_id is not None:
+        return {"revision_id": revision_id, "status": "completed"}
+    else:
+        return {"revision_id": None, "status": "no_improvement"}
