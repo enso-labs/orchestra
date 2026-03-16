@@ -20,6 +20,7 @@ import {
 	Globe,
 	Lock,
 	GitFork,
+	Tag,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
@@ -45,7 +46,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import agentService, { Agent } from "@/lib/services/agentService";
@@ -92,6 +93,9 @@ export function AgentCreateForm() {
 	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 	const [forkedFromName, setForkedFromName] = useState<string | null>(null);
+	const [tags, setTags] = useState<string[]>([]);
+	const [tagInput, setTagInput] = useState("");
+	const tagInputRef = useRef<HTMLInputElement>(null);
 	const [promptMode, setPromptMode] = useState<
 		"instructions" | "system_prompt"
 	>("instructions");
@@ -134,6 +138,7 @@ export function AgentCreateForm() {
 			a2a: agent.a2a,
 			tools: agent.tools,
 			subagents: agent.subagents,
+			tags,
 			// Include file_system only if there are files
 			...(Object.keys(fileSystemData).length > 0 && {
 				files: fileSystemData,
@@ -254,11 +259,39 @@ export function AgentCreateForm() {
 		}
 	};
 
+	const addTag = (value: string) => {
+		const trimmed = value.trim().toLowerCase();
+		if (trimmed && !tags.includes(trimmed)) {
+			const newTags = [...tags, trimmed];
+			setTags(newTags);
+			setAgent({ ...agent, tags: newTags });
+		}
+		setTagInput("");
+	};
+
+	const removeTag = (tagToRemove: string) => {
+		const newTags = tags.filter((t) => t !== tagToRemove);
+		setTags(newTags);
+		setAgent({ ...agent, tags: newTags });
+	};
+
+	const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter" || e.key === ",") {
+			e.preventDefault();
+			addTag(tagInput);
+		} else if (e.key === "Backspace" && !tagInput && tags.length > 0) {
+			removeTag(tags[tags.length - 1]);
+		}
+	};
+
 	useEffect(() => {
 		form.setValue("name", agent.name);
 		form.setValue("description", agent.description);
 		form.setValue("model", agent.model);
 		form.setValue("public", agent.public || false);
+
+		// Sync tags from agent state
+		setTags(agent.tags || []);
 
 		// Sync ChatContext model so SelectModel displays the agent's saved model
 		if (agent.model) {
@@ -463,6 +496,69 @@ export function AgentCreateForm() {
 								</FormItem>
 							)}
 						/>
+						{/* Tags Input */}
+						<div className="space-y-2">
+							<label
+								className={cn(
+									"text-sm font-medium leading-none",
+									!isEditing && "text-muted-foreground/70",
+								)}
+							>
+								<div className="flex items-center gap-1.5">
+									<Tag className="h-3.5 w-3.5" />
+									Tags
+								</div>
+							</label>
+							<div
+								className={cn(
+									"flex flex-wrap items-center gap-1.5 min-h-[40px] rounded-md border border-input bg-background px-3 py-2",
+									!isEditing && "opacity-60 bg-muted/50 cursor-not-allowed",
+								)}
+								onClick={() => isEditing && tagInputRef.current?.focus()}
+							>
+								{tags.map((tag) => (
+									<span
+										key={tag}
+										className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary"
+									>
+										{tag}
+										{isEditing && (
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													removeTag(tag);
+												}}
+												className="text-primary/60 hover:text-primary"
+												aria-label={`Remove ${tag}`}
+											>
+												<X className="h-3 w-3" />
+											</button>
+										)}
+									</span>
+								))}
+								{isEditing && (
+									<input
+										ref={tagInputRef}
+										type="text"
+										value={tagInput}
+										onChange={(e) => setTagInput(e.target.value)}
+										onKeyDown={handleTagKeyDown}
+										onBlur={() => {
+											if (tagInput.trim()) addTag(tagInput);
+										}}
+										placeholder={
+											tags.length === 0 ? "Add tags (press Enter or comma)" : ""
+										}
+										className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+									/>
+								)}
+							</div>
+							<p className="text-xs text-muted-foreground">
+								Categorize your agent with tags to help others discover it.
+								Press Enter or comma to add.
+							</p>
+						</div>
 						<Tabs
 							value={promptMode}
 							onValueChange={(v) => isEditing && setPromptMode(v as any)}
