@@ -345,5 +345,177 @@ class TestAssistantServiceFiles(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(public_assistant.files, files)
 
 
+class TestAssistantServiceFork(unittest.IsolatedAsyncioTestCase):
+    """Tests for assistant fork/remix functionality."""
+
+    async def asyncSetUp(self):
+        """Set up test fixtures."""
+        self.store = InMemoryStore()
+        self.owner_id = str(uuid4())
+        self.target_user_id = str(uuid4())
+        self.service = AssistantService(user_id=self.owner_id, store=self.store)
+        self.assistant_data = {
+            "name": "Forkable Agent",
+            "description": "An agent designed for forking tests",
+            "tools": ["web_search"],
+            "system_prompt": "You are a helpful assistant.",
+            "instructions": None,
+            "mcp": {"server": {"url": "https://example.com"}},
+            "a2a": {"agent": {"api_key": "secret-key"}},
+            "metadata": {"category": "test"},
+            "public": False,
+        }
+
+    async def _create_and_publish(self, assistant_id: str = None) -> str:
+        """Helper to create and publish an assistant."""
+        if assistant_id is None:
+            assistant_id = str(uuid4())
+        await self.service.update(assistant_id, self.assistant_data)
+        await self.service.publish(assistant_id)
+        return assistant_id
+
+    async def test_fork_creates_new_assistant_in_target_namespace(self):
+        """Test that fork creates a new assistant in the target user's namespace."""
+        source_id = await self._create_and_publish()
+
+        # Fork into target user's namespace
+        new_id = await self.service.fork(source_id, self.target_user_id)
+
+        self.assertIsNotNone(new_id)
+        self.assertNotEqual(new_id, source_id)
+
+        # Verify the forked assistant exists in the target user's namespace
+        target_service = AssistantService(user_id=self.target_user_id, store=self.store)
+        forked = await target_service.get(new_id)
+
+        self.assertIsNotNone(forked)
+        self.assertEqual(forked.name, "Forkable Agent")
+        self.assertEqual(forked.description, "An agent designed for forking tests")
+
+    async def test_fork_increments_fork_count_on_source(self):
+        """Test that forking increments fork_count on the source assistant."""
+        source_id = await self._create_and_publish()
+
+        # Verify initial fork_count is 0
+        source_before = await self.service.get_public(source_id)
+        self.assertEqual(source_before.fork_count, 0)
+
+        # Fork once
+        await self.service.fork(source_id, self.target_user_id)
+
+        # Verify fork_count incremented to 1
+        source_after = await self.service.get_public(source_id)
+        self.assertEqual(source_after.fork_count, 1)
+
+        # Fork again from a different user
+        another_user = str(uuid4())
+        await self.service.fork(source_id, another_user)
+
+        # Verify fork_count incremented to 2
+        source_after2 = await self.service.get_public(source_id)
+        self.assertEqual(source_after2.fork_count, 2)
+
+    async def test_fork_sets_forked_from_in_metadata(self):
+        """Test that the forked assistant has forked_from in its metadata."""
+        source_id = await self._create_and_publish()
+
+        new_id = await self.service.fork(source_id, self.target_user_id)
+
+        target_service = AssistantService(user_id=self.target_user_id, store=self.store)
+        forked = await target_service.get(new_id)
+
+        self.assertIn("forked_from", forked.metadata)
+        self.assertEqual(forked.metadata["forked_from"], source_id)
+
+    async def test_fork_preserves_original_metadata(self):
+        """Test that fork preserves existing metadata alongside forked_from."""
+        source_id = await self._create_and_publish()
+
+        new_id = await self.service.fork(source_id, self.target_user_id)
+
+        target_service = AssistantService(user_id=self.target_user_id, store=self.store)
+        forked = await target_service.get(new_id)
+
+        self.assertEqual(forked.metadata["category"], "test")
+        self.assertEqual(forked.metadata["forked_from"], source_id)
+
+    async def test_fork_returns_none_for_nonexistent_assistant(self):
+        """Test that fork returns None when the source assistant doesn't exist."""
+        fake_id = str(uuid4())
+        result = await self.service.fork(fake_id, self.target_user_id)
+        self.assertIsNone(result)
+
+    async def test_fork_returns_none_for_invalid_uuid(self):
+        """Test that fork returns None for an invalid UUID format."""
+        result = await self.service.fork("not-a-valid-uuid", self.target_user_id)
+        self.assertIsNone(result)
+
+    async def test_fork_returns_none_for_unpublished_assistant(self):
+        """Test that fork returns None when the assistant is not published (not in public namespace)."""
+        assistant_id = str(uuid4())
+        await self.service.update(assistant_id, self.assistant_data)
+
+        # Attempt to fork an unpublished assistant
+        result = await self.service.fork(assistant_id, self.target_user_id)
+        self.assertIsNone(result)
+
+    async def test_fork_strips_public_fields_on_copy(self):
+        """Test that the forked assistant has public=False, owner_id=None, published_at=None."""
+        source_id = await self._create_and_publish()
+
+        new_id = await self.service.fork(source_id, self.target_user_id)
+
+        target_service = AssistantService(user_id=self.target_user_id, store=self.store)
+        forked = await target_service.get(new_id)
+
+        self.assertFalse(forked.public)
+        self.assertIsNone(forked.owner_id)
+        self.assertIsNone(forked.published_at)
+
+    async def test_fork_resets_fork_count_on_copy(self):
+        """Test that the forked assistant starts with fork_count=0."""
+        source_id = await self._create_and_publish()
+
+        # Fork once to increment source fork_count
+        first_fork_id = await self.service.fork(source_id, self.target_user_id)
+
+        # Verify source has fork_count=1
+        source = await self.service.get_public(source_id)
+        self.assertEqual(source.fork_count, 1)
+
+        # Verify the forked copy has fork_count=0
+        target_service = AssistantService(user_id=self.target_user_id, store=self.store)
+        forked = await target_service.get(first_fork_id)
+        self.assertEqual(forked.fork_count, 0)
+
+    async def test_fork_copies_tools_and_config(self):
+        """Test that fork deep-copies tools, system_prompt, and other config."""
+        source_id = await self._create_and_publish()
+
+        new_id = await self.service.fork(source_id, self.target_user_id)
+
+        target_service = AssistantService(user_id=self.target_user_id, store=self.store)
+        forked = await target_service.get(new_id)
+
+        self.assertEqual(forked.tools, ["web_search"])
+        self.assertEqual(forked.system_prompt, "You are a helpful assistant.")
+
+    async def test_fork_does_not_modify_source_assistant(self):
+        """Test that forking does not change the source assistant's data (except fork_count)."""
+        source_id = await self._create_and_publish()
+
+        source_before = await self.service.get_public(source_id)
+        original_name = source_before.name
+        original_description = source_before.description
+
+        await self.service.fork(source_id, self.target_user_id)
+
+        source_after = await self.service.get_public(source_id)
+        self.assertEqual(source_after.name, original_name)
+        self.assertEqual(source_after.description, original_description)
+        self.assertTrue(source_after.public)
+        self.assertIsNotNone(source_after.owner_id)
+
+
 if __name__ == "__main__":
     unittest.main()
