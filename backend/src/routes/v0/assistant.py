@@ -195,6 +195,79 @@ async def fork_public_assistant(
 
 
 ################################################################################
+### Embed Routes
+################################################################################
+@router.get(
+    "/public/{assistant_id}/embed",
+    name="Get Embed Config",
+    operation_id="ruska_get_embed_config",
+)
+async def get_embed_config(
+    assistant_id: str = Path(..., description="The ID of the public assistant"),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Get embed configuration for a public assistant - no authentication required."""
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service = AssistantService(user_id=None, store=store)
+    assistant = await service.get_public(assistant_id)
+
+    if not assistant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
+
+    return {
+        "agent_id": assistant.id,
+        "name": assistant.name,
+        "description": assistant.description,
+        "model": assistant.model,
+        "theme": assistant.metadata.get("theme", "default"),
+    }
+
+
+@router.post(
+    "/public/{assistant_id}/embed-token",
+    name="Generate Embed Token",
+    operation_id="ruska_generate_embed_token",
+)
+async def generate_embed_token(
+    assistant_id: str = Path(..., description="The ID of the public assistant"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Generate an embed token for a public assistant - requires auth and ownership."""
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service = AssistantService(user_id=None, store=store)
+    assistant = await service.get_public(assistant_id)
+
+    if not assistant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
+
+    if assistant.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Only the agent owner can generate embed tokens"
+        )
+
+    from src.utils.embed import create_embed_token
+
+    token = create_embed_token(assistant_id)
+
+    return {"token": token}
+
+
+################################################################################
 ### Publish/Unpublish Assistant
 ################################################################################
 @router.post(
