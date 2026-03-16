@@ -21,6 +21,8 @@ import {
 	Lock,
 	GitFork,
 	Tag,
+	Code,
+	Copy,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
@@ -93,6 +95,7 @@ export function AgentCreateForm() {
 	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 	const [forkedFromName, setForkedFromName] = useState<string | null>(null);
+	const [embedCopied, setEmbedCopied] = useState(false);
 	const [tags, setTags] = useState<string[]>([]);
 	const [tagInput, setTagInput] = useState("");
 	const tagInputRef = useRef<HTMLInputElement>(null);
@@ -869,6 +872,51 @@ export function AgentCreateForm() {
 								</FormItem>
 							)}
 						/>
+					)}
+
+					{/* Embed Code - Only show for published agents */}
+					{agent.id && agent.public && (
+						<div className="rounded-lg border p-4 mt-4">
+							<div className="flex items-center justify-between mb-3">
+								<div className="flex items-center gap-2">
+									<Code className="h-4 w-4 text-foreground" />
+									<h3 className="text-base font-semibold text-foreground">
+										Embed
+									</h3>
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										const snippet = `<script src="${window.location.origin}/embed/embed.js" data-agent-id="${agent.id}"></script>`;
+										navigator.clipboard.writeText(snippet);
+										setEmbedCopied(true);
+										setTimeout(() => setEmbedCopied(false), 2000);
+									}}
+									className="h-7 px-2 text-xs"
+								>
+									{embedCopied ? (
+										<>
+											<Check className="h-3 w-3 mr-1" />
+											Copied
+										</>
+									) : (
+										<>
+											<Copy className="h-3 w-3 mr-1" />
+											Copy
+										</>
+									)}
+								</Button>
+							</div>
+							<pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">
+								<code>{`<script src="${window.location.origin}/embed/embed.js" data-agent-id="${agent.id}"></script>`}</code>
+							</pre>
+							<p className="text-xs text-muted-foreground mt-2">
+								Add this script tag to any website to embed a chat widget for
+								this agent.
+							</p>
+						</div>
 					)}
 				</div>
 
