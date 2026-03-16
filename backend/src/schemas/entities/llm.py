@@ -118,6 +118,7 @@ class Assistant(BaseModel):
     public: bool = Field(default=False, description="Whether the assistant is publicly accessible")
     owner_id: Optional[str] = Field(default=None, description="The user ID of the assistant owner")
     published_at: Optional[datetime] = Field(default=None, description="When the assistant was made public")
+    fork_count: int = Field(default=0, description="Number of times this assistant has been forked/remixed")
 
     @computed_field
     @property
@@ -162,6 +163,7 @@ class PublicAssistant(BaseModel):
     model: Optional[str] = None
     owner_id: Optional[str] = None
     published_at: Optional[datetime] = None
+    fork_count: int = 0
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     # NOTE: files is intentionally excluded - it's owner-only data
@@ -177,6 +179,7 @@ class PublicAssistant(BaseModel):
             model=assistant.model,
             owner_id=assistant.owner_id,
             published_at=assistant.published_at,
+            fork_count=assistant.fork_count,
             updated_at=assistant.updated_at,
             created_at=assistant.created_at,
         )
