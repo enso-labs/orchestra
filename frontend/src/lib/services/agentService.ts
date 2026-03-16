@@ -196,6 +196,21 @@ export default class AgentService {
 			throw error;
 		}
 	}
+
+	/**
+	 * Fork a public assistant into the current user's workspace (requires auth)
+	 */
+	static async fork(assistantId: string) {
+		try {
+			const response = await apiClient.post(
+				`${this.BASE_URL}/public/${assistantId}/fork`,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to fork assistant:", error);
+			throw error;
+		}
+	}
 }
 
 export const agentService = new AgentService();
