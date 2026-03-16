@@ -20,6 +20,7 @@ Started: Mon Mar 16 13:00:59 MDT 2026
 - `search_public()` fetches all public assistants then filters/sorts in Python — acceptable for current scale, may need DB-level filtering later
 - GET /assistants/public uses `Literal` type hint for `sort_by` enum validation in FastAPI (not `Query(enum=...)`)
 - Tags query param is comma-separated string parsed in the route, passed as `list[str]` to the service
+- Tag chip input pattern: local `tags` state + `tagInput` state + `ref`, synced from agent in useEffect, Enter/comma to add, Backspace to remove last, `e.preventDefault()` to avoid form submission
 - Discover tab cards navigate to `/a/{id}` (public page), My Agents cards navigate to `/assistant/{id}` (edit page)
 - Tag chips use `bg-primary/10 text-primary` styling; tool badges use `bg-secondary text-secondary-foreground`
 ---
@@ -119,4 +120,16 @@ Started: Mon Mar 16 13:00:59 MDT 2026
   - Discover cards navigate to `/a/{id}` (public agent page) not `/assistant/{id}` (edit page) — different user intent
   - `Select` component from shadcn uses `onValueChange` (not `onChange`) and accepts string values
   - Tag chips are rendered with `bg-primary/10 text-primary` to distinguish from tool badges which use `bg-secondary`
+---
+
+## 2026-03-16 - US-010
+- What was implemented: Chip-style tag input in the agent edit form. Added `tags` state, `tagInput` state, and `tagInputRef` for the input field. Tags are displayed as removable chips using `bg-primary/10 text-primary` styling (consistent with Discover tab). Enter or comma adds a tag, Backspace removes the last tag when input is empty. Tags are synced from `agent.tags` on load via the existing `useEffect`. Tags are included in the `configData` submit payload for both create and update operations. Tags are normalized to lowercase and deduplicated.
+- Files changed: `frontend/src/components/forms/agents/agent-create-form.tsx`
+- **Learnings for future iterations:**
+  - The tags input is placed between Description and Instructions/System Prompt tabs — logical grouping for metadata-like fields
+  - Tags local state is synced from `agent.tags` in the same useEffect that syncs name/description/model — avoids a separate effect
+  - `addTag` normalizes to lowercase and checks for duplicates before adding
+  - `handleTagKeyDown` prevents form submission on Enter by calling `e.preventDefault()` — important since the input is inside a `<form>`
+  - The `onBlur` handler also calls `addTag` to capture partially-typed tags when the user clicks away
+  - Tags are included directly in `configData` (not wrapped in metadata) since they're a top-level field on the Assistant model
 ---

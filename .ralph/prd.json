@@ -166,8 +166,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 51db5b81. Chip-style tag input added to agent edit form between Description and Instructions tabs. Tags sync from agent state on load, saved in submit payload. Enter/comma to add, Backspace/X to remove. Lowercase normalized, deduped."
     },
     {
       "id": "US-011",
