@@ -147,6 +147,56 @@ class AssistantService:
             logger.exception(f"Error unpublishing assistant {assistant_id}: {e}")
             return False
 
+    async def fork(self, public_assistant_id: str, target_user_id: str) -> Optional[str]:
+        """Fork a public assistant into a target user's workspace.
+
+        Reads from the public namespace, deep-copies the assistant with a new UUID,
+        strips public fields, sets forked_from metadata, writes to the target user's
+        namespace, and increments fork_count on the source.
+
+        Returns the new assistant_id string, or None if the source is not found/not public.
+        """
+        try:
+            if not self._is_valid_uuid(public_assistant_id):
+                return None
+
+            # Read from public namespace
+            assistant_raw = await self.store.aget(self._get_namespace(public=True), public_assistant_id)
+            if not assistant_raw:
+                return None
+
+            source = self._format_assistant([assistant_raw])[0]
+            if not source.public:
+                return None
+
+            # Deep-copy and modify for fork
+            fork_data = source.model_dump()
+            new_id = str(uuid.uuid4())
+            fork_data["public"] = False
+            fork_data["owner_id"] = None
+            fork_data["published_at"] = None
+            fork_data["fork_count"] = 0
+            fork_data["metadata"] = {**fork_data.get("metadata", {}), "forked_from": public_assistant_id}
+
+            # Write to target user's namespace
+            target_namespace = (target_user_id, self._get_store_key())
+            await self.store.aput(namespace=target_namespace, key=new_id, value=fork_data)
+
+            # Increment fork_count on source in public namespace
+            source_data = source.model_dump()
+            source_data["fork_count"] = source.fork_count + 1
+            await self.store.aput(
+                namespace=self._get_namespace(public=True),
+                key=public_assistant_id,
+                value=source_data,
+            )
+
+            logger.info(f"Forked assistant {public_assistant_id} -> {new_id} for user {target_user_id}")
+            return new_id
+        except Exception as e:
+            logger.exception(f"Error forking assistant {public_assistant_id}: {e}")
+            return None
+
     async def search_public(self, limit: int = 100, offset: int = 0) -> list[Assistant]:
         """Search all public assistants."""
         try:
