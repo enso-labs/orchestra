@@ -41,7 +41,12 @@ function init(config?: Partial<EmbedConfig>) {
 	container.id = "orchestra-embed-root";
 	document.body.appendChild(container);
 
-	const root = createRoot(container);
+	// Use shadow DOM for style isolation — host page CSS won't affect the widget
+	const shadow = container.attachShadow({ mode: "open" });
+	const mountPoint = document.createElement("div");
+	shadow.appendChild(mountPoint);
+
+	const root = createRoot(mountPoint);
 	root.render(
 		<React.StrictMode>
 			<EmbedWidget
