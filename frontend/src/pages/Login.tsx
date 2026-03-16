@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import NoAuthLayout from "../layouts/NoAuthLayout";
 import { TOKEN_NAME, VITE_API_URL } from "../lib/config";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import HelpfulIcons from "@/components/icons/HelpfulIcons";
 import { SiGoogle, SiGithub } from "react-icons/si";
 import { FaMicrosoft } from "react-icons/fa";
+import AgentService from "@/lib/services/agentService";
 
 export default function Login() {
 	const [email, setEmail] = useState("");
@@ -13,6 +14,8 @@ export default function Login() {
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const remixAgentId = searchParams.get("remix");
 
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -36,6 +39,17 @@ export default function Login() {
 				// Store JWT token in localStorage
 				localStorage.setItem(TOKEN_NAME, data.access_token);
 				localStorage.setItem("enso:auth:user", JSON.stringify(data.user));
+
+				// Auto-fork if remix param is present
+				if (remixAgentId) {
+					try {
+						const forkRes = await AgentService.fork(remixAgentId);
+						navigate(`/assistant/${forkRes.data.assistant_id}`);
+						return;
+					} catch {
+						// Fork failed — still proceed to chat
+					}
+				}
 				navigate("/chat");
 			} else {
 				const errorData = await response.json();
@@ -50,6 +64,10 @@ export default function Login() {
 
 	const handleOAuthLogin = async (provider: string) => {
 		try {
+			// Persist remix param across OAuth redirect
+			if (remixAgentId) {
+				localStorage.setItem("enso:remix_agent_id", remixAgentId);
+			}
 			const res = await fetch(`${VITE_API_URL}/auth/${provider}`, {
 				method: "GET",
 				headers: {
@@ -212,7 +230,11 @@ export default function Login() {
 							<span className="text-sm text-muted-foreground">
 								Don't have an account?{" "}
 								<a
-									href="/register"
+									href={
+										remixAgentId
+											? `/register?remix=${remixAgentId}`
+											: "/register"
+									}
 									className="font-medium text-primary hover:text-primary/90 transition-colors"
 								>
 									Register here
