@@ -1,0 +1,122 @@
+# Ralph Progress Log
+Started: Mon Mar 16 13:00:59 MDT 2026
+---
+
+## Codebase Patterns
+- PostgreSQL must be running for backend tests (even unit tests) — start with `docker compose up -d postgres`
+- Redis should also be running for tests — `docker compose up -d redis`
+- Pre-commit hooks run format, lint, AND tests — all must pass to commit
+- `fork_count` is stored directly on Assistant model, not in metadata dict — follows pattern of other public agent fields (public, owner_id, published_at)
+- `forked_from` is tracked via `metadata["forked_from"]` (not a top-level field) — keeps Assistant schema clean for less frequently accessed lineage data
+- For cross-namespace writes, construct namespace tuple directly: `(target_user_id, self._get_store_key())` — don't rely on `self._get_namespace()` which uses `self.user_id`
+- Frontend Agent type `metadata` is `Record<string, unknown>` — access `forked_from` via `(agent.metadata as Record<string, unknown>)?.forked_from`
+- 2 pre-existing test failures in `test_default_system_prompt_runtime.py` — ignore these, they're unrelated to marketplace work
+- Public assistant routes in `assistant.py` are grouped: GET /public, GET /public/{id}, POST /public/{id}/fork — then publish/unpublish section follows
+- For public endpoints that don't need user context, use `AssistantService(user_id=None, store=store)` directly (no ServiceContext)
+- Frontend: `getAuthToken()` checks auth without hooks; `apiClient` auto-attaches Bearer token via interceptor
+- Frontend: Edit page route is `/assistant/:agentId` (singular); public agent page is `/a/:agentId`
+- Assistant model validates only one of `system_prompt` or `instructions` may be set — test data must set the unused one to `None`
+- `tags` is a top-level `list[str]` field on Assistant (like `fork_count`), not in metadata — keeps discovery/filtering fast
+- `search_public()` fetches all public assistants then filters/sorts in Python — acceptable for current scale, may need DB-level filtering later
+- GET /assistants/public uses `Literal` type hint for `sort_by` enum validation in FastAPI (not `Query(enum=...)`)
+- Tags query param is comma-separated string parsed in the route, passed as `list[str]` to the service
+- Discover tab cards navigate to `/a/{id}` (public page), My Agents cards navigate to `/assistant/{id}` (edit page)
+- Tag chips use `bg-primary/10 text-primary` styling; tool badges use `bg-secondary text-secondary-foreground`
+---
+
+## 2026-03-16 - US-001
+- What was implemented: Added `fork_count: int = Field(default=0)` to Assistant model after `published_at`. Added `fork_count: int = 0` to PublicAssistant projection. Added `fork_count=assistant.fork_count` mapping in `PublicAssistant.from_assistant()`.
+- Files changed: `backend/src/schemas/entities/llm.py`
+- **Learnings for future iterations:**
+  - The `fork_count` field was placed after `published_at` to group all public agent fields together (public, owner_id, published_at, fork_count)
+  - PublicAssistant is a safe projection that excludes sensitive fields like system_prompt, tools, mcp, a2a — only include non-sensitive fields
+  - Default value of 0 ensures backward compatibility with existing assistants
+---
+
+## 2026-03-16 - US-002
+- What was implemented: Added `fork(public_assistant_id, target_user_id)` method to `AssistantService`. Reads source from public namespace, validates it exists and is public, deep-copies with new UUID, strips owner_id/published_at/public, resets fork_count to 0, sets `metadata["forked_from"]`, writes to target user namespace, increments fork_count on source in public namespace.
+- Files changed: `backend/src/services/assistant.py`
+- **Learnings for future iterations:**
+  - The store's `aput()` with a key will create or overwrite — no separate "create" method needed
+  - `model_dump()` includes computed fields like `slug`; Pydantic v2 silently ignores them on reconstruction
+  - For cross-namespace operations (fork writes to a different user's namespace), construct the namespace tuple directly: `(target_user_id, self._get_store_key())`
+  - `_format_assistant()` overrides id/updated_at/created_at from store metadata, so values in the stored dict for those fields don't matter
+  - 2 pre-existing test failures in `test_default_system_prompt_runtime.py` — unrelated to marketplace work
+---
+
+## 2026-03-16 - US-003
+- What was implemented: Added `POST /assistants/public/{assistant_id}/fork` endpoint in `backend/src/routes/v0/assistant.py`. Requires authentication, validates UUID format, calls `AssistantService.fork()`, returns 201 with `{"assistant_id": "<new_id>"}` or 404 for non-existent/non-public assistants.
+- Files changed: `backend/src/routes/v0/assistant.py`
+- **Learnings for future iterations:**
+  - Public fork endpoint uses `AssistantService(user_id=None, store=store)` (same pattern as other public endpoints) since `fork()` handles cross-namespace logic internally
+  - Endpoint placed between public GET routes and publish/unpublish section — keeps public-facing routes grouped together
+  - UUID validation pattern is consistent across all endpoints that take `assistant_id` as path param: `uuid.UUID(assistant_id, version=4)` in try/except
+  - `fork()` returns `None` for all failure cases (not found, not public, error) — route maps None to 404
+---
+
+## 2026-03-16 - US-004
+- What was implemented: Added `AgentService.fork(assistantId)` static method calling `POST /assistants/public/{id}/fork`. Added `onRemix`/`isForking` props to `AgentSection` component with a "Remix this Agent" button using `GitFork` icon. Wired up in `PublicAgentPage`: authenticated users call fork API and navigate to `/assistant/{newId}`, unauthenticated users redirect to `/login?remix={agentId}`.
+- Files changed: `frontend/src/lib/services/agentService.ts`, `frontend/src/components/sections/agent-section.tsx`, `frontend/src/pages/agents/public.tsx`
+- **Learnings for future iterations:**
+  - `AgentSection` is used by both public and authenticated pages — keep remix props optional to avoid breaking non-public usage
+  - `getAuthToken()` from `@/lib/utils/auth` is the standard way to check auth status without hooks
+  - `apiClient` auto-attaches auth Bearer token via interceptor — no need to manually pass tokens
+  - Edit page route is `/assistant/:agentId` (singular, not /agents/)
+  - Frontend pre-commit hooks run Prettier, ESLint, AND Vitest — all must pass
+  - For OAuth remix flow, store remix agent ID in localStorage (`enso:remix_agent_id`) before OAuth redirect, retrieve and clean up in OAuthCallback
+  - Login/Register cross-links should forward query params (e.g., remix) to preserve context across page switches
+---
+
+## 2026-03-16 - US-005
+- What was implemented: Post-login auto-fork flow. Login and Register pages read `remix` query param from URL. After successful email/password auth with remix param, calls `AgentService.fork()` and navigates to `/assistant/{newId}`. For OAuth flow, remix param is stored in localStorage before redirect and retrieved in OAuthCallback after successful auth. Cross-links between Login↔Register pages preserve the remix param.
+- Files changed: `frontend/src/pages/Login.tsx`, `frontend/src/pages/Register.tsx`, `frontend/src/pages/OAuthCallback.tsx`
+- **Learnings for future iterations:**
+  - OAuth redirects lose URL query params — use localStorage to persist state across the redirect cycle
+  - `useSearchParams` from react-router-dom is the clean way to read query params in functional components
+  - The fork API returns `{ assistant_id }` in `response.data` — access as `forkRes.data.assistant_id`
+  - Always clean up localStorage keys (`enso:remix_agent_id`) after consuming them to avoid stale state
+  - Cross-links between auth pages (Login→Register, Register→Login) should forward relevant query params
+---
+
+## 2026-03-16 - US-006
+- What was implemented: Fork count badge on public agent cards and "Remixed from" attribution in the agent edit form. Added `fork_count?: number` to the frontend Agent type (also refined `metadata` to `Record<string, unknown>`). Public agent cards in the agents index page show a secondary badge with GitFork icon and count (e.g., "12 remixes") when `fork_count > 0` and viewing the public tab. Agent edit form (AgentCreateForm) shows "Remixed from [Original Agent Name]" with a link to `/a/{originalId}` below the "Basic Configuration" header when `metadata.forked_from` exists. The original agent name is fetched asynchronously via `AgentService.getPublic()`, falling back to the ID if the fetch fails.
+- Files changed: `frontend/src/lib/services/agentService.ts`, `frontend/src/pages/agents/index.tsx`, `frontend/src/components/forms/agents/agent-create-form.tsx`
+- **Learnings for future iterations:**
+  - `metadata` on the frontend Agent type was `object` — changed to `Record<string, unknown>` for type-safe property access
+  - For async data in React components (like fetching original agent name), use a `useEffect` with state — keep it simple, no need for complex data fetching libraries
+  - The `forkedFromId` variable is derived outside the useEffect to serve as a dependency — avoids unnecessary re-renders
+  - `agentService` (lowercase) is the instance export, `AgentService` (uppercase) is the class export — both from the same file
+  - Browser testing requires the backend running on :8000 for API calls — without it, login fails and authenticated pages can't be verified
+---
+
+## 2026-03-16 - US-007
+- What was implemented: 11 unit tests for fork functionality in `TestAssistantServiceFork` class. Tests cover: creating new assistant in target namespace, incrementing fork_count on source (single + multiple forks), setting forked_from in metadata, preserving original metadata, returning None for non-existent/invalid UUID/unpublished assistants, stripping public fields on copy, resetting fork_count on copy, copying tools and config, and not modifying source assistant data.
+- Files changed: `backend/tests/unit/services/test_assistant_service.py`
+- **Learnings for future iterations:**
+  - Assistant model validates that only one of `system_prompt` or `instructions` may be set — test data must set `instructions: None` if `system_prompt` is provided
+  - All fork tests use `InMemoryStore` — no database required, runs in ~0.1s
+  - Helper method `_create_and_publish()` keeps tests DRY for common setup (create + publish)
+  - Fork returns `Optional[str]` — test error cases by asserting `assertIsNone(result)`, success cases by asserting `assertIsNotNone(new_id)` then reading from target namespace
+---
+
+## 2026-03-16 - US-008
+- What was implemented: Added `tags: list[str] = []` field to `Assistant` model (after `fork_count`). Added `tags` to `PublicAssistant` projection and `from_assistant()` mapping. Updated `GET /assistants/public` endpoint with `sort_by` (Literal["fork_count", "updated_at", "published_at"], default "published_at") and `tags` (comma-separated string, optional) query params. Updated `search_public()` to fetch all public assistants, filter by tags (ANY match), and sort by the requested field.
+- Files changed: `backend/src/schemas/entities/llm.py`, `backend/src/routes/v0/assistant.py`, `backend/src/services/assistant.py`
+- **Learnings for future iterations:**
+  - FastAPI uses `Literal` type hints for enum-style query params, not `Query(enum=...)` — Literal provides both validation and OpenAPI schema generation
+  - Tags are a top-level field on Assistant (not in metadata) for fast filtering/sorting at the model level
+  - `search_public()` fetches up to 1000 items then filters/sorts in Python — simpler than building dynamic SQL, acceptable at current scale
+  - `datetime.min` used as fallback for None datetime fields during sorting — avoids None comparison errors
+  - Comma-separated string is parsed in the route layer, service receives typed `list[str]` — keeps service layer clean
+---
+
+## 2026-03-16 - US-009
+- What was implemented: Discover tab with sorting, tag chips, and inline Remix button. Renamed "Public Agents" tab to "Discover". Added sort dropdown (Most Remixed / Newest / Recently Updated) that triggers server-side sorting via `sort_by` query param. Updated `AgentService.listPublic()` to accept `sortBy` and `tags` optional params. Added `tags?: string[]` to the `Agent` type. Agent cards display tag chips (up to 3 with overflow count). Each Discover card has an inline "Remix" button that checks auth state — authenticated users fork immediately, unauthenticated redirect to `/login?remix={id}`. Discover cards navigate to `/a/{id}` (public page) on click instead of `/assistant/{id}` (edit page). Updated `useAgent.handleGetPublicAgents()` to pass sort/filter params through. Fixed existing tests to match new function signature.
+- Files changed: `frontend/src/lib/services/agentService.ts`, `frontend/src/hooks/useAgent.ts`, `frontend/src/pages/agents/index.tsx`, `frontend/src/tests/hooks/useAgent.test.ts`
+- **Learnings for future iterations:**
+  - When adding optional params to a service method, existing tests using `toHaveBeenCalledWith` need to include `undefined` for the new params
+  - Discover tab uses `useEffect` with `[activeTab, discoverSort]` dependencies to refetch public agents when sort changes — avoids stale data
+  - Discover cards navigate to `/a/{id}` (public agent page) not `/assistant/{id}` (edit page) — different user intent
+  - `Select` component from shadcn uses `onValueChange` (not `onChange`) and accepts string values
+  - Tag chips are rendered with `bg-primary/10 text-primary` to distinguish from tool badges which use `bg-secondary`
+---
