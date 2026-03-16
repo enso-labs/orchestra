@@ -202,8 +202,8 @@
         "Lint passes (make format && make lint)"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 4e02fcf4. POST /assistants/public/{id}/embed-chat accepts optional embed JWT in Authorization header. Validates JWT signature, expiry, type=embed, and agent_id match. Streams SSE response using existing LLMController.llm_stream() infrastructure. Returns thread_id in X-Thread-Id header and metadata SSE event. Rate-limits via Redis INCR with 24h TTL: embed:{agent_id}:{jti} for token auth (100/day default), embed:{agent_id}:anon:{ip} for anonymous (10/day). Returns 429 when exceeded."
     },
     {
       "id": "US-013a",
