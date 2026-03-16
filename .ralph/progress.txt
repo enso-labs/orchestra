@@ -25,6 +25,8 @@ Started: Mon Mar 16 13:00:59 MDT 2026
 - Tag chip input pattern: local `tags` state + `tagInput` state + `ref`, synced from agent in useEffect, Enter/comma to add, Backspace to remove last, `e.preventDefault()` to avoid form submission
 - Discover tab cards navigate to `/a/{id}` (public page), My Agents cards navigate to `/assistant/{id}` (edit page)
 - Tag chips use `bg-primary/10 text-primary` styling; tool badges use `bg-secondary text-secondary-foreground`
+- Embed widget uses inline styles (no Tailwind/CSS) to avoid leaking styles to/from host page — keep this pattern for all embed components
+- `npm run build:embed` uses `vite.embed.config.ts` (separate from main `vite.config.ts`); output goes to `frontend/dist/embed/embed.js`
 - For embed chat, use `assistant.to_llm_request(input, metadata=config)` to construct LLMRequest from the Assistant model — avoids manually copying system_prompt, tools, etc.
 - Embed rate limiting uses Redis INCR + EXPIRE pattern: first INCR creates key with count=1, then set TTL 86400s; subsequent INCRs just increment
 - `HTTPBearer(auto_error=False)` allows optional Bearer token — returns None credentials instead of 401 when no token provided
@@ -159,4 +161,16 @@ Started: Mon Mar 16 13:00:59 MDT 2026
   - Redis INCR + EXPIRE pattern for rate limiting: first INCR on a non-existent key creates it with value 1, then EXPIRE sets the TTL; subsequent INCRs just increment without resetting TTL
   - `LLMController(user_id=None, ...)` works for unauthenticated streaming — `_resolve_user_settings` falls back to DEFAULT_CHAT_MODEL, `prepare_memory_files` is skipped when user_id is None
   - `request.client.host` gives the client IP for per-IP rate limiting — may be `None` behind some proxies, fallback to "unknown"
+---
+
+## 2026-03-16 - US-013a
+- What was implemented: Vite embed build config and entry point scaffold. `vite.embed.config.ts` produces `frontend/dist/embed/embed.js` in IIFE format using Vite's lib mode. Entry point `src/embed/main.tsx` reads `data-agent-id`, `data-api-base`, and `data-token` attributes from the script tag. Auto-initializes on DOMContentLoaded and exposes `window.OrchestraEmbed.init()` for programmatic use. Scaffold `EmbedWidget` component with floating button and expandable chat panel placeholder. `npm run build:embed` script added.
+- Files changed: `frontend/vite.embed.config.ts`, `frontend/src/embed/main.tsx`, `frontend/src/embed/EmbedWidget.tsx`, `frontend/package.json`, `frontend/tsconfig.node.json`
+- **Learnings for future iterations:**
+  - Vite lib mode with `formats: ["iife"]` produces a self-executing bundle — set `name` for the global variable, `fileName` returns static name (no hash needed for embed scripts)
+  - `document.currentScript` is null when script runs deferred/async after parsing — fallback to `document.querySelector('script[data-agent-id]')` for robustness
+  - Inline styles (not Tailwind/CSS classes) for embed widget to avoid CSS leaks and dependency on host page styles
+  - `window as any` is needed for global assignment in strict TypeScript — `Record<string, unknown>` fails because Window doesn't have string index signature
+  - Bundle is 46.87KB gzipped with React included — future optimization could use Preact alias to shrink further
+  - `dist/embed/` is separate from `../backend/src/public` output — embed bundle is independently deployable
 ---

@@ -217,8 +217,8 @@
         "Typecheck passes (npm run build)"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed. vite.embed.config.ts produces frontend/dist/embed/embed.js in IIFE format (46.87KB gzipped). Entry point src/embed/main.tsx reads data-agent-id from script tag, auto-inits on DOMContentLoaded, exposes window.OrchestraEmbed.init() for programmatic use. Scaffold EmbedWidget with floating button placeholder. npm run build:embed added to package.json."
     },
     {
       "id": "US-013b",
