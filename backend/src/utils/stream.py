@@ -301,6 +301,22 @@ async def _persist_final_state(agent, config, service_context: ServiceContext, s
     )
     logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
+    # Dispatch trajectory extraction (fire-and-forget)
+    try:
+        from src.workers.tasks import extract_trajectory
+
+        thread_id = configurable.get("thread_id")
+        assistant_id = configurable.get("assistant_id")
+        if thread_id and assistant_id:
+            await extract_trajectory.kiq(
+                thread_id=thread_id,
+                user_id=service_context.user_id,
+                assistant_id=assistant_id,
+            )
+            logger.info(f"trajectory extraction dispatched: thread={thread_id} assistant={assistant_id}")
+    except Exception as e:
+        logger.warning("Failed to dispatch trajectory extraction: %s", e)
+
 
 async def stream_generator(
     input: LLMInput,

@@ -30,6 +30,11 @@ Started: Mon Mar 16 13:00:59 MDT 2026
 - For embed chat, use `assistant.to_llm_request(input, metadata=config)` to construct LLMRequest from the Assistant model — avoids manually copying system_prompt, tools, etc.
 - Embed rate limiting uses Redis INCR + EXPIRE pattern: first INCR creates key with count=1, then set TTL 86400s; subsequent INCRs just increment
 - `HTTPBearer(auto_error=False)` allows optional Bearer token — returns None credentials instead of 401 when no token provided
+- Trajectory namespace uses 3-tuple `(user_id, "trajectories", assistant_id)` — deeper than typical 2-tuple to partition per-assistant
+- `AnnotatedTrajectory` uses `._asdict()` for serialization to store, and `{role, content}` format (not `{type, content}`)
+- `get_store_db()` as async context manager is the simplest store access in background tasks (works regardless of worker state mode)
+- `stream.py` ↔ `workers/tasks.py` circular import — use lazy import inside function body, not top-level
+- Two streaming paths: synchronous (`stream_generator` in stream.py) and distributed (`_execute_agent_stream` in tasks.py) — both must be updated for post-stream hooks
 ---
 
 ## 2026-03-16 - US-001
@@ -187,4 +192,41 @@ Started: Mon Mar 16 13:00:59 MDT 2026
   - localStorage key includes agentId (`orchestra_embed_thread_{agentId}`) to support multiple embedded agents on the same domain
   - The embed widget doesn't need the full `StreamClient` or `FetchStreamReader` — a simple while/read loop with line splitting is sufficient for SSE parsing
   - React 18's `createRoot` in shadow DOM still correctly handles `onKeyDown`, `onChange`, `onClick` events — no special event delegation workaround needed
+---
+
+## 2026-03-16 - US-014
+- What was implemented: Embed code snippet section in agent edit form. Shows only for published agents (`agent.id && agent.public`). Displays a `<script>` tag snippet with `window.location.origin` as the embed.js base URL and the agent's ID as `data-agent-id`. Copy-to-clipboard button with visual feedback (check icon + "Copied" text for 2 seconds). Section is completely hidden for unpublished agents.
+- Files changed: `frontend/src/components/forms/agents/agent-create-form.tsx`
+- **Learnings for future iterations:**
+  - The Embed section is placed after the Public Toggle section and before the Tools section — it's logically grouped with publishing/visibility controls
+  - `window.location.origin` is used for the embed script URL so it works in both dev and production environments without hardcoding
+  - `navigator.clipboard.writeText()` is the modern clipboard API — no need for `document.execCommand('copy')` fallback for current browser support
+  - The embed snippet only needs `data-agent-id` as a required attribute — `data-api-base` and `data-token` are optional and handled by the embed script defaults
+  - Conditional rendering uses `agent.id && agent.public` — both conditions needed since new agents have no ID and existing unpublished agents shouldn't show embed code
+---
+
+## 2026-03-16 - US-015a
+- What was implemented: `extract_trajectory` TaskIQ task in `backend/src/workers/tasks.py`. Accepts `thread_id`, `user_id`, `assistant_id`. Loads conversation messages via `ThreadService.get()`, converts to langmem `AnnotatedTrajectory` format with quality signals as feedback dict. Stores trajectory in `(user_id, "trajectories", assistant_id)` namespace in `AsyncPostgresStore`. All exceptions caught and logged without raising.
+- Files changed: `backend/src/workers/tasks.py`, `backend/src/workers/__init__.py`
+- **Learnings for future iterations:**
+  - `AnnotatedTrajectory` is a `NamedTuple` with `messages` (list of `{role, content}` dicts) and optional `feedback` (dict or string) — use `._asdict()` for serialization to store
+  - Thread messages use `type` field (human/ai/tool/system) while AnnotatedTrajectory uses `role` field (user/assistant) — need explicit mapping
+  - Message `content` can be string or list of content blocks (multimodal) — `_extract_text_content()` helper handles both
+  - `get_store_db()` as async context manager is the simplest way to get a store in background tasks — no dependency on worker state initialization mode
+  - Tool success/failure is derived from ToolMessage content (checking for error/exception/traceback/failed keywords) — not from AI message tool_calls array
+  - HITL rejections detected by "rejected this action" text pattern in human messages (matches `CheckpointService.resume_with_decision()` rejection response)
+  - Trajectory namespace is 3-tuple `(user_id, "trajectories", assistant_id)` — deeper than typical 2-tuple `(user_id, entity_type)` to partition per-assistant
+- `stream.py` and `workers/tasks.py` have a circular import — use lazy import (`from src.workers.tasks import extract_trajectory` inside the function body) to avoid it
+- Both synchronous (`_persist_final_state` in stream.py) and distributed (`_execute_agent_stream` in tasks.py) streaming paths should dispatch trajectory extraction
+---
+
+## 2026-03-16 - US-015b
+- What was implemented: Hooked `_persist_final_state()` in `stream.py` and `_execute_agent_stream()` in `tasks.py` to dispatch `extract_trajectory` TaskIQ task after persisting checkpoint state. Both dispatches are fire-and-forget via `.kiq()`, wrapped in try/except with `logger.warning` on failure. Used lazy import in `stream.py` to avoid circular dependency with `tasks.py`.
+- Files changed: `backend/src/utils/stream.py`, `backend/src/workers/tasks.py`
+- **Learnings for future iterations:**
+  - `stream.py` and `workers/tasks.py` have a circular import (`stream.py` → `tasks.py` → `stream.py`) — must use lazy import inside function body, not top-level
+  - Two streaming paths exist: synchronous (`stream_generator` → `_persist_final_state` in stream.py) and distributed (`_execute_agent_stream` in tasks.py) — both need the trajectory dispatch hook
+  - In `_persist_final_state`, `configurable` dict already has `thread_id` and `assistant_id`; `service_context.user_id` provides the user_id
+  - In `_execute_agent_stream`, `user_id` and `thread_id` are function params; `assistant_id` comes from `config["configurable"]["assistant_id"]`
+  - Guard with `if thread_id and assistant_id` to skip embed/anonymous chats that lack assistant_id
 ---

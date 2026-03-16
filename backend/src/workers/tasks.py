@@ -624,6 +624,19 @@ async def _execute_agent_stream(
                 },
             )
 
+    # Dispatch trajectory extraction (fire-and-forget)
+    try:
+        assistant_id = config.get("configurable", {}).get("assistant_id")
+        if service_context.user_id and thread_id and assistant_id:
+            await extract_trajectory.kiq(
+                thread_id=thread_id,
+                user_id=service_context.user_id,
+                assistant_id=assistant_id,
+            )
+            logger.info(f"trajectory extraction dispatched: thread={thread_id} assistant={assistant_id}")
+    except Exception as e:
+        logger.warning("Failed to dispatch trajectory extraction: %s", e)
+
     await _update_thread_stream_state(
         service_context=service_context,
         thread_id=thread_id,

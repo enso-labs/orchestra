@@ -250,8 +250,8 @@
         "Verify in browser using agent-browser skill"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed e51e15af. Agent edit page shows 'Embed' section with copy-to-clipboard script tag snippet only when agent.id && agent.public. Section hidden for unpublished agents. Uses window.location.origin for embed.js URL, data-agent-id for agent identification. Copy button with check feedback."
     },
     {
       "id": "US-015a",
@@ -268,8 +268,8 @@
         "Typecheck passes (make format && make lint)"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 49a85408. extract_trajectory TaskIQ task added to backend/src/workers/tasks.py. Loads thread messages via ThreadService, converts to AnnotatedTrajectory format with quality signals (conversation_length, tool_success_rate, hitl_rejections) as feedback dict. Stores in (user_id, 'trajectories', assistant_id) namespace. All failures caught and logged. Exported from workers __init__.py."
     },
     {
       "id": "US-015b",
@@ -284,8 +284,8 @@
         "Typecheck passes (make format && make lint)"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed. _persist_final_state() in stream.py dispatches extract_trajectory.kiq() after persisting checkpoint state. Also hooked in _execute_agent_stream() in tasks.py for distributed streaming path. Both dispatches are fire-and-forget, wrapped in try/except with logger.warning on failure. Lazy import avoids circular dependency (stream.py <-> tasks.py)."
     },
     {
       "id": "US-016",
