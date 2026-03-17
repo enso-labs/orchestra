@@ -182,7 +182,8 @@ class AssistantService:
             target_namespace = (target_user_id, self._get_store_key())
             await self.store.aput(namespace=target_namespace, key=new_id, value=fork_data)
 
-            # Increment fork_count on source in public namespace
+            # Increment fork_count on both the public and owner's private copies
+            # to prevent update/publish from reverting the count with stale data.
             source_data = source.model_dump()
             source_data["fork_count"] = source.fork_count + 1
             await self.store.aput(
@@ -190,6 +191,17 @@ class AssistantService:
                 key=public_assistant_id,
                 value=source_data,
             )
+            if source.owner_id:
+                owner_namespace = (source.owner_id, self._get_store_key())
+                owner_raw = await self.store.aget(owner_namespace, public_assistant_id)
+                if owner_raw:
+                    owner_data = self._format_assistant([owner_raw])[0].model_dump()
+                    owner_data["fork_count"] = source_data["fork_count"]
+                    await self.store.aput(
+                        namespace=owner_namespace,
+                        key=public_assistant_id,
+                        value=owner_data,
+                    )
 
             logger.info(f"Forked assistant {public_assistant_id} -> {new_id} for user {target_user_id}")
             return new_id

@@ -482,7 +482,7 @@ async def distill_assistant(
     if not assistant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found")
 
-    if assistant.owner_id and assistant.owner_id != user.id:
+    if assistant.owner_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the assistant owner can trigger distillation",

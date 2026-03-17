@@ -50,6 +50,13 @@ export function EmbedWidget({ agentId, apiBase, token }: EmbedWidgetProps) {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [messages]);
 
+	// Abort in-flight request on unmount
+	useEffect(() => {
+		return () => {
+			abortRef.current?.abort();
+		};
+	}, []);
+
 	// Focus input when panel opens
 	useEffect(() => {
 		if (open) {
@@ -266,7 +273,11 @@ export function EmbedWidget({ agentId, apiBase, token }: EmbedWidgetProps) {
 					>
 						<span>Chat</span>
 						<button
-							onClick={() => setOpen(false)}
+							onClick={() => {
+								abortRef.current?.abort();
+								setOpen(false);
+							}}
+							aria-label="Close chat"
 							style={{
 								background: "none",
 								border: "none",

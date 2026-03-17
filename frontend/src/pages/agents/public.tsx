@@ -19,6 +19,7 @@ export default function PublicAgentPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [publicAgent, setPublicAgent] = useState<Agent | null>(null);
 	const [isForking, setIsForking] = useState(false);
+	const [remixError, setRemixError] = useState<string | null>(null);
 
 	useModelsEffect();
 
@@ -32,12 +33,14 @@ export default function PublicAgentPage() {
 		}
 
 		setIsForking(true);
+		setRemixError(null);
 		try {
 			const response = await AgentService.fork(agentId);
 			const newAssistantId = response.data.assistant_id;
 			navigate(`/assistant/${newAssistantId}`);
 		} catch {
-			setError("Failed to remix agent");
+			setRemixError("Failed to remix agent");
+		} finally {
 			setIsForking(false);
 		}
 	}, [agentId, navigate]);
@@ -101,6 +104,11 @@ export default function PublicAgentPage() {
 					onRemix={handleRemix}
 					isForking={isForking}
 				/>
+				{remixError && (
+					<p className="text-center text-sm text-destructive mt-2">
+						{remixError}
+					</p>
+				)}
 			</NoAuthLayout>
 		);
 	}
