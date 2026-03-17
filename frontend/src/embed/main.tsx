@@ -20,7 +20,9 @@ function getScriptConfig(): EmbedConfig | null {
 	// Default apiBase to the origin of the embed script URL (not the host page)
 	let defaultBase = window.location.origin;
 	try {
-		defaultBase = new URL(script.src).origin;
+		if (script instanceof HTMLScriptElement && script.src) {
+			defaultBase = new URL(script.src).origin;
+		}
 	} catch {
 		// fall back to window.location.origin
 	}
