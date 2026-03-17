@@ -447,6 +447,27 @@ All artifacts have been committed and pushed incrementally in previous phases. T
 
 ---
 
+## Embed Build Awareness
+
+When the feature involves an embeddable widget, iframe component, or any asset served outside the main SPA:
+
+1. **The embed has its own build command**: `npm run build:embed` (runs `vite.embed.config.ts`)
+2. **The embed output must land in the backend**: `outDir` must be `../backend/src/public/embed/` — NOT `frontend/dist/embed/`
+3. **PRD stories for embed features must include**:
+   - A story to verify `vite.embed.config.ts` outDir is set to `../backend/src/public/embed/`
+   - A story to verify the backend mounts `/embed` via `StaticFiles` pointing at `src/public/embed/`
+   - A story to confirm the SPA catch-all has `os.path.isfile()` guard before serving `index.html`
+4. **Widget API origin**: The embed widget must derive its `apiBase` from `new URL(document.currentScript.src).origin`, NOT `window.location.origin`. Include this as an acceptance criterion for any embed widget story.
+5. **Post-Ralph gate**: After Ralph completes, invoke `integration-qa` agent to validate build ↔ serve alignment before marking the PR ready.
+
+**Known build targets:**
+| Command | Config | Output | Served at |
+|---------|--------|--------|-----------|
+| `npm run build` | `vite.config.ts` | `frontend/dist/` | SPA root `/` |
+| `npm run build:embed` | `vite.embed.config.ts` | `backend/src/public/embed/` | `/embed/` |
+
+---
+
 ## Warnings
 
 - **Always read the issue template first** (Pre-Phase) &mdash; conventions drive all downstream phases
@@ -460,6 +481,8 @@ All artifacts have been committed and pushed incrementally in previous phases. T
 - **Final story must include git status check** to catch uncommitted artifacts
 - **Do NOT implement** &mdash; Ralph handles implementation. This skill only sets up the pipeline.
 - **Commit messages must be signed** (`-s` flag) per repository guidelines
+- **Embed features require `npm run build:embed`** &mdash; the standard `npm run build` does NOT produce embed assets
+- **Integration QA is mandatory for cross-boundary features** &mdash; invoke the `integration-qa` agent after Ralph completes any feature touching build configs, API routes, or static file serving
 
 ---
 

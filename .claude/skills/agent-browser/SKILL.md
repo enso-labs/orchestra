@@ -123,6 +123,74 @@ If you run into issues with any command, run `agent-browser --help` to check ava
 - **Stale session**: Run `agent-browser close` and start fresh
 - **Check specific command help**: Most commands support `--json` for structured output to debug responses
 
+## Cross-Origin Embed Testing
+
+When testing an embedded widget served from a different origin than the host page, standard navigation patterns are insufficient. Use this checklist:
+
+### 1. Verify the embed asset is served correctly
+
+```bash
+# Must return application/javascript, NOT text/html
+curl -s -o /dev/null -w "%{content_type}" http://localhost:8000/embed/embed.js
+```
+
+If the response is `text/html`, the SPA catch-all is intercepting the file request. The backend must have `os.path.isfile()` guard before serving `index.html`.
+
+### 2. Load the widget from a host-page context
+
+The widget's `script.src` origin must differ from `window.location.origin` to test real cross-origin behavior. Create a minimal test page:
+
+```bash
+# Serve a minimal host page on a different port
+cat > /tmp/embed-test.html <<'EOF'
+<!DOCTYPE html>
+<html>
+<body>
+  <div id="chat-widget"></div>
+  <script src="http://localhost:8000/embed/embed.js"
+          data-assistant-id="<id>"
+          data-base-url="http://localhost:8000">
+  </script>
+</body>
+</html>
+EOF
+python3 -m http.server 9999 -d /tmp &
+agent-browser open http://localhost:9999/embed-test.html
+```
+
+### 3. Check browser console for cross-origin errors
+
+```bash
+agent-browser console
+agent-browser errors
+```
+
+Watch for:
+- `CORS` errors → backend CORS config does not include the host page origin
+- `net::ERR_FAILED` on API calls → widget is calling the wrong origin (host page instead of script origin)
+- `404` on API paths → widget uses wrong prefix (e.g., `/api/v0/` instead of `/api/`)
+
+### 4. Verify apiBase derivation
+
+The widget must derive its API base from the script tag's `src`, not from `window.location`:
+
+```bash
+# Confirm widget JS contains the correct origin logic
+grep "script.src\|new URL" frontend/src/embed/EmbedWidget.tsx
+# Should NOT contain window.location.origin as the apiBase default
+grep "location.origin" frontend/src/embed/EmbedWidget.tsx
+```
+
+### 5. CORS preflight check
+
+```bash
+curl -s -X OPTIONS http://localhost:8000/api/assistants/public/<id>/embed-chat \
+  -H "Origin: http://localhost:9999" \
+  -H "Access-Control-Request-Method: POST" -I | grep -i "access-control"
+```
+
+Expected: `access-control-allow-origin: *` or the specific host origin.
+
 ## Full Documentation
 
 See https://github.com/vercel-labs/agent-browser for complete docs, cloud provider setup, and WebSocket streaming.
