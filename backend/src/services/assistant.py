@@ -147,26 +147,101 @@ class AssistantService:
             logger.exception(f"Error unpublishing assistant {assistant_id}: {e}")
             return False
 
-    async def search_public(self, limit: int = 100, offset: int = 0) -> list[Assistant]:
-        """Search all public assistants."""
+    async def fork(self, public_assistant_id: str, target_user_id: str) -> Optional[str]:
+        """Fork a public assistant into a target user's workspace.
+
+        Reads from the public namespace, deep-copies the assistant with a new UUID,
+        strips public fields, sets forked_from metadata, writes to the target user's
+        namespace, and increments fork_count on the source.
+
+        Returns the new assistant_id string, or None if the source is not found/not public.
+        """
         try:
+            if not self._is_valid_uuid(public_assistant_id):
+                return None
+
+            # Read from public namespace
+            assistant_raw = await self.store.aget(self._get_namespace(public=True), public_assistant_id)
+            if not assistant_raw:
+                return None
+
+            source = self._format_assistant([assistant_raw])[0]
+            if not source.public:
+                return None
+
+            # Deep-copy and modify for fork
+            fork_data = source.model_dump()
+            new_id = str(uuid.uuid4())
+            fork_data["public"] = False
+            fork_data["owner_id"] = None
+            fork_data["published_at"] = None
+            fork_data["fork_count"] = 0
+            fork_data["metadata"] = {**fork_data.get("metadata", {}), "forked_from": public_assistant_id}
+
+            # Write to target user's namespace
+            target_namespace = (target_user_id, self._get_store_key())
+            await self.store.aput(namespace=target_namespace, key=new_id, value=fork_data)
+
+            # Increment fork_count on both the public and owner's private copies
+            # to prevent update/publish from reverting the count with stale data.
+            source_data = source.model_dump()
+            source_data["fork_count"] = source.fork_count + 1
+            await self.store.aput(
+                namespace=self._get_namespace(public=True),
+                key=public_assistant_id,
+                value=source_data,
+            )
+            if source.owner_id:
+                owner_namespace = (source.owner_id, self._get_store_key())
+                owner_raw = await self.store.aget(owner_namespace, public_assistant_id)
+                if owner_raw:
+                    owner_data = self._format_assistant([owner_raw])[0].model_dump()
+                    owner_data["fork_count"] = source_data["fork_count"]
+                    await self.store.aput(
+                        namespace=owner_namespace,
+                        key=public_assistant_id,
+                        value=owner_data,
+                    )
+
+            logger.info(f"Forked assistant {public_assistant_id} -> {new_id} for user {target_user_id}")
+            return new_id
+        except Exception as e:
+            logger.exception(f"Error forking assistant {public_assistant_id}: {e}")
+            return None
+
+    async def search_public(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "published_at",
+        tags: Optional[list[str]] = None,
+    ) -> list[Assistant]:
+        """Search all public assistants with optional sorting and tag filtering."""
+        try:
+            # Fetch a larger batch to allow for tag filtering before pagination
+            fetch_limit = 1000
+
             if isinstance(self.store, InMemoryStore):
-                items = await self.store.asearch(self._get_namespace(public=True), limit=limit + offset)
-                sorted_items = sorted(
-                    [item for item in items],
-                    key=lambda x: x.updated_at,
-                    reverse=True,
-                )
-                return self._format_assistant(sorted_items[offset : offset + limit])
+                items = await self.store.asearch(self._get_namespace(public=True), limit=fetch_limit)
             else:
                 async with self.store as store:
-                    items = await store.asearch(self._get_namespace(public=True), limit=limit + offset)
-                    sorted_items = sorted(
-                        [item for item in items],
-                        key=lambda x: x.updated_at,
-                        reverse=True,
-                    )
-                    return self._format_assistant(sorted_items[offset : offset + limit])
+                    items = await store.asearch(self._get_namespace(public=True), limit=fetch_limit)
+
+            assistants = self._format_assistant(list(items))
+
+            # Filter by tags (ANY match)
+            if tags:
+                assistants = [a for a in assistants if any(t in a.tags for t in tags)]
+
+            # Sort by requested field
+            if sort_by == "fork_count":
+                assistants.sort(key=lambda a: a.fork_count, reverse=True)
+            elif sort_by == "updated_at":
+                assistants.sort(key=lambda a: a.updated_at or datetime.min, reverse=True)
+            else:  # default: published_at
+                assistants.sort(key=lambda a: a.published_at or datetime.min, reverse=True)
+
+            return assistants[offset : offset + limit]
         except Exception as e:
             logger.error(f"Error searching public assistants: {e}")
             return []

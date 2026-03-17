@@ -69,6 +69,19 @@ async def lifespan(app: FastAPI):
 
     schedule_service.scheduler.start()
 
+    # Register daily prompt distillation job (runs at 03:00 UTC)
+    from apscheduler.triggers.cron import CronTrigger
+    from src.services.schedule import SCHEDULER, scheduled_prompt_distillation
+
+    SCHEDULER.add_job(
+        id="prompt_distillation_daily",
+        func=scheduled_prompt_distillation,
+        trigger=CronTrigger(hour=3),
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    logger.info("Registered daily prompt distillation job (03:00 UTC)")
+
     # Initialize cache
     init_cache()
 

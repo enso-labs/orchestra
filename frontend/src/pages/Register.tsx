@@ -1,10 +1,11 @@
 import type React from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import NoAuthLayout from "../layouts/NoAuthLayout";
 import { TOKEN_NAME, VITE_API_URL } from "../lib/config";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import HelpfulIcons from "@/components/icons/HelpfulIcons";
+import AgentService from "@/lib/services/agentService";
 
 export default function Register() {
 	const [username, setUsername] = useState("");
@@ -15,6 +16,8 @@ export default function Register() {
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const remixAgentId = searchParams.get("remix");
 
 	const handleRegister = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -46,6 +49,17 @@ export default function Register() {
 				const data = await response.json();
 				// Store JWT token in localStorage
 				localStorage.setItem(TOKEN_NAME, data.access_token);
+
+				// Auto-fork if remix param is present
+				if (remixAgentId) {
+					try {
+						const forkRes = await AgentService.fork(remixAgentId);
+						navigate(`/assistant/${forkRes.data.assistant_id}`);
+						return;
+					} catch {
+						// Fork failed — still proceed to chat
+					}
+				}
 				navigate("/chat");
 			} else {
 				const errorData = await response.json();
@@ -262,7 +276,9 @@ export default function Register() {
 							<span className="text-sm text-muted-foreground">
 								Already have an account?{" "}
 								<a
-									href="/login"
+									href={
+										remixAgentId ? `/login?remix=${remixAgentId}` : "/login"
+									}
 									className="font-medium text-primary hover:text-primary/90 transition-colors"
 								>
 									Sign in here

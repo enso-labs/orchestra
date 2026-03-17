@@ -25,7 +25,7 @@ export type Agent = {
 		};
 	};
 	files?: Record<string, string>; // Persisted files (path -> content)
-	metadata?: object;
+	metadata?: Record<string, unknown>;
 	schedules?: Schedule[]; // Agent's associated schedules
 	created_at?: string;
 	updated_at?: string;
@@ -33,6 +33,8 @@ export type Agent = {
 	public?: boolean;
 	owner_id?: string;
 	published_at?: string;
+	fork_count?: number;
+	tags?: string[];
 };
 
 export default class AgentService {
@@ -185,14 +187,37 @@ export default class AgentService {
 	/**
 	 * List all public assistants (no auth required)
 	 */
-	static async listPublic(limit: number = 50, offset: number = 0) {
+	static async listPublic(
+		limit: number = 50,
+		offset: number = 0,
+		sortBy?: "fork_count" | "published_at" | "updated_at",
+		tags?: string[],
+	) {
 		try {
+			const params: Record<string, string | number> = { limit, offset };
+			if (sortBy) params.sort_by = sortBy;
+			if (tags && tags.length > 0) params.tags = tags.join(",");
 			const response = await apiClient.get(`${this.BASE_URL}/public`, {
-				params: { limit, offset },
+				params,
 			});
 			return response;
 		} catch (error) {
 			console.error("Failed to list public assistants:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Fork a public assistant into the current user's workspace (requires auth)
+	 */
+	static async fork(assistantId: string) {
+		try {
+			const response = await apiClient.post(
+				`${this.BASE_URL}/public/${assistantId}/fork`,
+			);
+			return response;
+		} catch (error) {
+			console.error("Failed to fork assistant:", error);
 			throw error;
 		}
 	}

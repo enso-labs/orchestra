@@ -1,0 +1,100 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/885-p4-memory-distillation",
+  "description": "Self-improving memory distillation loop - auto-extract conversation trajectories and optimize agent prompts via langmem",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Backend: Trajectory extraction TaskIQ task",
+      "description": "As a system, I need to extract conversation trajectories after each session so they can be used for prompt optimization.",
+      "acceptanceCriteria": [
+        "extract_trajectory TaskIQ task accepts thread_id, user_id, assistant_id",
+        "Loads conversation messages from thread",
+        "Derives quality signals: conversation length, tool success rate, HITL rejections",
+        "Formats data as AnnotatedTrajectory (langmem.prompts.types)",
+        "Stores trajectory in (user_id, 'trajectories', assistant_id) namespace",
+        "Existing tests pass (make test)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "TaskIQ tasks at backend/src/workers/tasks.py. Use AsyncPostgresStore namespaces."
+    },
+    {
+      "id": "US-002",
+      "title": "Backend: Hook trajectory extraction into stream persistence",
+      "description": "As a system, I need trajectory extraction to run automatically after every conversation completes.",
+      "acceptanceCriteria": [
+        "_persist_final_state() dispatches extract_trajectory task after persisting state",
+        "Extraction is non-blocking (dispatched as background TaskIQ task)",
+        "Extraction failure does not affect conversation persistence",
+        "Existing tests pass (make test)"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "_persist_final_state() at backend/src/utils/stream.py:278"
+    },
+    {
+      "id": "US-003",
+      "title": "Backend: PromptOptimizer.distill() method",
+      "description": "As a system, I need to distill accumulated trajectories into improved prompts using langmem's optimization.",
+      "acceptanceCriteria": [
+        "distill(user_id, assistant_id) retrieves recent trajectories from store",
+        "Runs existing PromptOptimizer.optimize() with retrieved trajectories",
+        "Stores optimized prompt as new revision via PromptService.revision()",
+        "Returns revision_id or None if no improvement detected",
+        "Handles edge case: no trajectories available (returns None gracefully)",
+        "Existing tests pass (make test)"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "PromptOptimizer at backend/src/services/prompt/optimize.py:68. PromptService at backend/src/services/prompt/__init__.py."
+    },
+    {
+      "id": "US-004",
+      "title": "Backend: Scheduled daily distillation job",
+      "description": "As a system, I need prompt distillation to run on a daily schedule for active agents.",
+      "acceptanceCriteria": [
+        "Scheduled job type 'prompt_distillation' added to APScheduler infrastructure",
+        "Runs daily (CronTrigger) for agents with accumulated trajectories",
+        "Skips agents with no new trajectories since last distillation",
+        "Job errors are logged but don't crash the scheduler",
+        "Existing tests pass (make test)"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "APScheduler at backend/src/services/schedule.py. Follow existing scheduled_llm_invoke pattern."
+    },
+    {
+      "id": "US-005",
+      "title": "Backend: Manual distillation API endpoint",
+      "description": "As an agent creator, I want to manually trigger prompt distillation so I can optimize my agent's prompt on demand.",
+      "acceptanceCriteria": [
+        "POST /assistants/{id}/distill requires authentication",
+        "Validates caller owns the assistant",
+        "Triggers immediate distillation",
+        "Returns {revision_id, status} response",
+        "Returns 404 for non-existent assistant",
+        "Existing tests pass (make test)"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Route at backend/src/routes/v0/assistant.py"
+    },
+    {
+      "id": "US-006",
+      "title": "Tests for memory distillation pipeline",
+      "description": "As a developer, I need tests covering trajectory extraction and distillation to prevent regressions.",
+      "acceptanceCriteria": [
+        "Test: trajectory extraction formats messages correctly",
+        "Test: distill() creates new prompt revision when trajectories exist",
+        "Test: distill() returns None when no trajectories",
+        "Test: scheduled job skips agents without new trajectories",
+        "All tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

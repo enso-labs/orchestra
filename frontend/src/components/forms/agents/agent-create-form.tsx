@@ -19,6 +19,10 @@ import {
 	Ban,
 	Globe,
 	Lock,
+	GitFork,
+	Tag,
+	Code,
+	Copy,
 } from "lucide-react";
 import { ToolSelectionModal } from "@/components/modals/ToolSelectionModal";
 import { PromptSelectionModal } from "@/components/modals/PromptSelectionModal";
@@ -44,12 +48,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import agentService, { Agent } from "@/lib/services/agentService";
+import AgentService from "@/lib/services/agentService";
 import SelectModel from "@/components/lists/SelectModel";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import MonacoEditor from "@/components/inputs/MonacoEditor";
 import { Prompt } from "@/lib/entities/prompt";
 import { cn } from "@/lib/utils";
@@ -89,6 +94,11 @@ export function AgentCreateForm() {
 	const [isToolModalOpen, setIsToolModalOpen] = useState(false);
 	const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 	const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+	const [forkedFromName, setForkedFromName] = useState<string | null>(null);
+	const [embedCopied, setEmbedCopied] = useState(false);
+	const [tags, setTags] = useState<string[]>([]);
+	const [tagInput, setTagInput] = useState("");
+	const tagInputRef = useRef<HTMLInputElement>(null);
 	const [promptMode, setPromptMode] = useState<
 		"instructions" | "system_prompt"
 	>("instructions");
@@ -131,6 +141,7 @@ export function AgentCreateForm() {
 			a2a: agent.a2a,
 			tools: agent.tools,
 			subagents: agent.subagents,
+			tags,
 			// Include file_system only if there are files
 			...(Object.keys(fileSystemData).length > 0 && {
 				files: fileSystemData,
@@ -251,11 +262,39 @@ export function AgentCreateForm() {
 		}
 	};
 
+	const addTag = (value: string) => {
+		const trimmed = value.trim().toLowerCase();
+		if (trimmed && !tags.includes(trimmed)) {
+			const newTags = [...tags, trimmed];
+			setTags(newTags);
+			setAgent({ ...agent, tags: newTags });
+		}
+		setTagInput("");
+	};
+
+	const removeTag = (tagToRemove: string) => {
+		const newTags = tags.filter((t) => t !== tagToRemove);
+		setTags(newTags);
+		setAgent({ ...agent, tags: newTags });
+	};
+
+	const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter" || e.key === ",") {
+			e.preventDefault();
+			addTag(tagInput);
+		} else if (e.key === "Backspace" && !tagInput && tags.length > 0) {
+			removeTag(tags[tags.length - 1]);
+		}
+	};
+
 	useEffect(() => {
 		form.setValue("name", agent.name);
 		form.setValue("description", agent.description);
 		form.setValue("model", agent.model);
 		form.setValue("public", agent.public || false);
+
+		// Sync tags from agent state
+		setTags(agent.tags || []);
 
 		// Sync ChatContext model so SelectModel displays the agent's saved model
 		if (agent.model) {
@@ -293,6 +332,19 @@ export function AgentCreateForm() {
 		}
 	}, [agent]);
 
+	// Fetch original agent name for "Remixed from" attribution
+	const forkedFromId = (agent.metadata as Record<string, unknown>)
+		?.forked_from as string | undefined;
+	useEffect(() => {
+		if (!forkedFromId) {
+			setForkedFromName(null);
+			return;
+		}
+		AgentService.getPublic(forkedFromId)
+			.then((res) => setForkedFromName(res.data?.name ?? null))
+			.catch(() => setForkedFromName(null));
+	}, [forkedFromId]);
+
 	const filteredSubagents = agents.filter((a: Agent) => a.id !== agentId);
 
 	return (
@@ -309,6 +361,18 @@ export function AgentCreateForm() {
 								<p className="text-sm text-muted-foreground">
 									Configure the basic settings for your AI agent
 								</p>
+								{forkedFromId && (
+									<p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+										<GitFork className="h-3 w-3" />
+										Remixed from{" "}
+										<Link
+											to={`/a/${forkedFromId}`}
+											className="text-primary hover:underline"
+										>
+											{forkedFromName ?? forkedFromId}
+										</Link>
+									</p>
+								)}
 							</div>
 						</div>
 						{agent.id ? (
@@ -435,6 +499,69 @@ export function AgentCreateForm() {
 								</FormItem>
 							)}
 						/>
+						{/* Tags Input */}
+						<div className="space-y-2">
+							<label
+								className={cn(
+									"text-sm font-medium leading-none",
+									!isEditing && "text-muted-foreground/70",
+								)}
+							>
+								<div className="flex items-center gap-1.5">
+									<Tag className="h-3.5 w-3.5" />
+									Tags
+								</div>
+							</label>
+							<div
+								className={cn(
+									"flex flex-wrap items-center gap-1.5 min-h-[40px] rounded-md border border-input bg-background px-3 py-2",
+									!isEditing && "opacity-60 bg-muted/50 cursor-not-allowed",
+								)}
+								onClick={() => isEditing && tagInputRef.current?.focus()}
+							>
+								{tags.map((tag) => (
+									<span
+										key={tag}
+										className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary"
+									>
+										{tag}
+										{isEditing && (
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													removeTag(tag);
+												}}
+												className="text-primary/60 hover:text-primary"
+												aria-label={`Remove ${tag}`}
+											>
+												<X className="h-3 w-3" />
+											</button>
+										)}
+									</span>
+								))}
+								{isEditing && (
+									<input
+										ref={tagInputRef}
+										type="text"
+										value={tagInput}
+										onChange={(e) => setTagInput(e.target.value)}
+										onKeyDown={handleTagKeyDown}
+										onBlur={() => {
+											if (tagInput.trim()) addTag(tagInput);
+										}}
+										placeholder={
+											tags.length === 0 ? "Add tags (press Enter or comma)" : ""
+										}
+										className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+									/>
+								)}
+							</div>
+							<p className="text-xs text-muted-foreground">
+								Categorize your agent with tags to help others discover it.
+								Press Enter or comma to add.
+							</p>
+						</div>
 						<Tabs
 							value={promptMode}
 							onValueChange={(v) => isEditing && setPromptMode(v as any)}
@@ -745,6 +872,51 @@ export function AgentCreateForm() {
 								</FormItem>
 							)}
 						/>
+					)}
+
+					{/* Embed Code - Only show for published agents */}
+					{agent.id && agent.public && (
+						<div className="rounded-lg border p-4 mt-4">
+							<div className="flex items-center justify-between mb-3">
+								<div className="flex items-center gap-2">
+									<Code className="h-4 w-4 text-foreground" />
+									<h3 className="text-base font-semibold text-foreground">
+										Embed
+									</h3>
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										const snippet = `<script src="${window.location.origin}/embed/embed.js" data-agent-id="${agent.id}"></script>`;
+										navigator.clipboard.writeText(snippet);
+										setEmbedCopied(true);
+										setTimeout(() => setEmbedCopied(false), 2000);
+									}}
+									className="h-7 px-2 text-xs"
+								>
+									{embedCopied ? (
+										<>
+											<Check className="h-3 w-3 mr-1" />
+											Copied
+										</>
+									) : (
+										<>
+											<Copy className="h-3 w-3 mr-1" />
+											Copy
+										</>
+									)}
+								</Button>
+							</div>
+							<pre className="rounded-md bg-muted p-3 text-xs overflow-x-auto">
+								<code>{`<script src="${window.location.origin}/embed/embed.js" data-agent-id="${agent.id}"></script>`}</code>
+							</pre>
+							<p className="text-xs text-muted-foreground mt-2">
+								Add this script tag to any website to embed a chat widget for
+								this agent.
+							</p>
+						</div>
 					)}
 				</div>
 

@@ -166,13 +166,39 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
       - Exit 0: All stories completed
       - Exit 1: Max iterations reached (partial completion)
 
-12. _PUSH_ changes to remote branch:
-    - _REGARDLESS_ of Ralph exit status (COMPLETE or PARTIAL), push all committed work to remote
+12. _RUN_ integration QA gate (COMPLETE runs only):
+    - _IF_ Ralph exit status is COMPLETE:
+      - _DETERMINE_ QA scope from prd.json acceptance criteria:
+        - _IF_ any story mentions "embed", "StaticFiles", "outDir", "cross-origin": FULL_INTEGRATION scope
+        - _IF_ any story adds API endpoints alongside frontend service calls: FULL_INTEGRATION scope
+        - _ELSE_: STANDARD scope
+      - _INVOKE_ `ralph-auditor` agent with worktree `./.worktrees/<prefix>-<number>`:
+        - Validate prd.json structure and story completion
+        - Check dependency ordering violations
+        - Compare `TASKS.md` against implementation
+        - Extract learnings from `.ralph/progress.txt`
+      - _INVOKE_ `integration-qa` agent with worktree `./.worktrees/<prefix>-<number>`:
+        - Build ↔ Serve alignment check
+        - API prefix consistency check
+        - SPA catch-all guard verification
+        - _IF_ FULL_INTEGRATION scope: cross-origin, content-type, and live endpoint checks
+      - _IF_ either agent reports issues:
+        - _REPORT_ all [BOUNDARY] issues and audit findings
+        - _REPORT_ "QA gate FAILED. Fix issues before pushing. Resume with `/ralph:qa worktree=.worktrees/<prefix>-<number>`"
+        - _HALT_ — do NOT push until QA passes
+      - _IF_ both agents pass:
+        - _REPORT_ "QA gate PASSED"
+    - _IF_ Ralph exit status is PARTIAL:
+      - Skip QA gate — run QA after completing remaining stories
+      - _REPORT_ "Skipping QA gate (Ralph incomplete). Resume Ralph then run `/ralph:qa worktree=.worktrees/<prefix>-<number>`"
+
+13. _PUSH_ changes to remote branch:
+    - _ONLY PUSH_ if Ralph is COMPLETE and QA gate passed (or was skipped for PARTIAL runs)
     - RUN `cd ./.worktrees/<prefix>-<number> && git push -u origin <branch-name>` to push branch to remote
     - _IF_ push fails: _REPORT_ error and provide manual push command
     - _REPORT_ "Pushed <branch-name> to origin"
 
-13. _REPORT_ workflow completion:
+14. _REPORT_ workflow completion:
     - Issue processed: #<number> - <title>
     - Worktree location: `./.worktrees/<prefix>-<number>`
     - Spec folder: `.claude/plans/<prefix>-<number>-<short-name>/`
@@ -186,8 +212,11 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
     - Ralph config: `.ralph/prd.json`
     - Ralph progress: `.ralph/progress.txt`
     - Ralph status: <COMPLETE | PARTIAL>
-    - _IF_ COMPLETE:
+    - QA gate: <PASSED | FAILED | SKIPPED (partial run)>
+    - _IF_ COMPLETE and QA PASSED:
       - Next steps: Create PR: `cd ./.worktrees/<prefix>-<number> && gh pr create --base development --title "<issue-title>"`
+    - _IF_ COMPLETE and QA FAILED:
+      - Next steps: Fix QA issues, re-run `/ralph:qa worktree=.worktrees/<prefix>-<number>`, then push
     - _IF_ PARTIAL:
       - Stories completed: <N> of <M>
       - Next steps: Review `.ralph/progress.txt`, fix blockers, resume with `cd ./.worktrees/<prefix>-<number> && bash ../../.ralph/ralph.sh`
@@ -203,6 +232,7 @@ SUBAGENTS: $ARGUMENTS.subagents (default: 3)
 - **branchName mismatch**: _REPORT_ "prd.json branchName does not match worktree branch. Update .ralph/prd.json branchName to match <branch-name>."
 - **Ralph loop failure**: _REPORT_ "Ralph encountered an error. Check .ralph/progress.txt for status. Resume with `bash ../../.ralph/ralph.sh`"
 - **Ralph partial completion**: _REPORT_ "Ralph completed <N> of <M> stories. Resume with `bash ../../.ralph/ralph.sh` or complete remaining stories manually."
+- **QA gate failure**: _REPORT_ "Integration QA found issues. Do not push until resolved. Use `/ralph:qa worktree=.worktrees/<prefix>-<number>` to re-run gate after fixes."
 - **Push failure**: _REPORT_ "Failed to push branch. Try manually: `cd ./.worktrees/<prefix>-<number> && git push -u origin <branch-name>`"
 
 ## Example Invocations

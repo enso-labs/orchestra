@@ -11,6 +11,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
 	Plus,
 	Search,
 	Computer,
@@ -24,16 +31,21 @@ import {
 	Lock,
 	Share2,
 	Loader2,
+	GitFork,
+	ArrowDownWideNarrow,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAgentContext } from "@/context/AgentContext";
-import { Agent } from "@/lib/services/agentService";
+import AgentService, { Agent } from "@/lib/services/agentService";
 import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useChatContext } from "@/context/ChatContext";
+import { getAuthToken } from "@/lib/utils/auth";
+
+type SortOption = "fork_count" | "published_at" | "updated_at";
 
 function AgentIndexPage() {
 	const navigate = useNavigate();
@@ -43,17 +55,25 @@ function AgentIndexPage() {
 		isLoadingAgents,
 		isLoadingPublicAgents,
 		useEffectGetAgents,
-		useEffectGetPublicAgents,
+		handleGetPublicAgents,
 	} = useAgentContext();
 	const { clearMessages } = useChatContext();
 	const [, setSearchParams] = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState("");
-	const [activeTab, setActiveTab] = useState<"my-agents" | "public-agents">(
+	const [activeTab, setActiveTab] = useState<"my-agents" | "discover">(
 		"my-agents",
 	);
+	const [discoverSort, setDiscoverSort] = useState<SortOption>("published_at");
+	const [forkingId, setForkingId] = useState<string | null>(null);
 
 	useEffectGetAgents();
-	useEffectGetPublicAgents();
+
+	// Fetch public agents with sort param whenever tab or sort changes
+	useEffect(() => {
+		if (activeTab === "discover") {
+			handleGetPublicAgents(50, 0, discoverSort);
+		}
+	}, [activeTab, discoverSort]);
 
 	useEffect(() => {
 		clearMessages();
@@ -90,8 +110,34 @@ function AgentIndexPage() {
 		navigate(`/assistant/${agentId}`);
 	};
 
+	const handleRemix = useCallback(
+		async (agentId: string, e: React.MouseEvent) => {
+			e.stopPropagation();
+			const token = getAuthToken();
+			if (!token) {
+				navigate(`/login?remix=${agentId}`);
+				return;
+			}
+			setForkingId(agentId);
+			try {
+				const response = await AgentService.fork(agentId);
+				const newAssistantId = response.data.assistant_id;
+				navigate(`/assistant/${newAssistantId}`);
+			} catch {
+				console.error("Failed to remix agent");
+			} finally {
+				setForkingId(null);
+			}
+		},
+		[navigate],
+	);
+
 	// Helper to render agent card (reused for both tabs)
-	const renderAgentCard = (agent: Agent, isPublicView: boolean = false) => {
+	const renderAgentCard = (
+		agent: Agent,
+		isPublicView: boolean = false,
+		isDiscover: boolean = false,
+	) => {
 		const id = agent.id;
 		const clickable = Boolean(id);
 		return (
@@ -102,14 +148,20 @@ function AgentIndexPage() {
 					clickable ? "cursor-pointer" : "opacity-60 cursor-not-allowed",
 				].join(" ")}
 				onClick={() => {
-					if (id) handleAgentClick(id);
+					if (id) {
+						if (isDiscover) {
+							navigate(`/a/${id}`);
+						} else {
+							handleAgentClick(id);
+						}
+					}
 				}}
 			>
 				<CardHeader className="pb-3">
 					<div className="flex items-start justify-between">
 						<Computer className="h-5 w-5 text-primary flex-shrink-0" />
 						<div className="flex items-center gap-2">
-							{agent.public && !isPublicView && (
+							{agent.public && !isPublicView && !isDiscover && (
 								<Button
 									variant="ghost"
 									size="icon"
@@ -142,7 +194,7 @@ function AgentIndexPage() {
 					<div className="space-y-2">
 						{/* Public/Private & MCP, A2A & Subagents Indicators */}
 						<div className="flex flex-wrap gap-1">
-							{isPublicView ? (
+							{isPublicView || isDiscover ? (
 								<Badge variant="default" className="text-xs gap-1">
 									<Globe className="h-3 w-3" />
 									Public
@@ -177,7 +229,35 @@ function AgentIndexPage() {
 									{agent.subagents.length === 1 ? "Subagent" : "Subagents"}
 								</Badge>
 							)}
+							{(isPublicView || isDiscover) &&
+								agent.fork_count != null &&
+								agent.fork_count > 0 && (
+									<Badge variant="secondary" className="text-xs gap-1">
+										<GitFork className="h-3 w-3" />
+										{agent.fork_count}{" "}
+										{agent.fork_count === 1 ? "remix" : "remixes"}
+									</Badge>
+								)}
 						</div>
+
+						{/* Tag chips */}
+						{agent.tags && agent.tags.length > 0 && (
+							<div className="flex flex-wrap gap-1">
+								{agent.tags.slice(0, 3).map((tag) => (
+									<span
+										key={tag}
+										className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary"
+									>
+										{tag}
+									</span>
+								))}
+								{agent.tags.length > 3 && (
+									<span className="text-xs text-muted-foreground">
+										+{agent.tags.length - 3}
+									</span>
+								)}
+							</div>
+						)}
 
 						{/* Categories */}
 						{agent.tools && agent.tools.length > 0 && (
@@ -218,6 +298,24 @@ function AgentIndexPage() {
 							<div className="text-xs text-muted-foreground">
 								Model: {agent.model}
 							</div>
+						)}
+
+						{/* Inline Remix button for Discover tab */}
+						{isDiscover && id && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="w-full gap-1.5"
+								disabled={forkingId === id}
+								onClick={(e) => handleRemix(id, e)}
+							>
+								{forkingId === id ? (
+									<Loader2 className="h-3 w-3 animate-spin" />
+								) : (
+									<GitFork className="h-3 w-3" />
+								)}
+								Remix
+							</Button>
 						)}
 					</div>
 				</CardContent>
@@ -279,6 +377,17 @@ function AgentIndexPage() {
 		}
 	};
 
+	const sortLabel = (sort: SortOption) => {
+		switch (sort) {
+			case "fork_count":
+				return "Most Remixed";
+			case "published_at":
+				return "Newest";
+			case "updated_at":
+				return "Recently Updated";
+		}
+	};
+
 	return (
 		<ChatLayout>
 			<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -329,7 +438,7 @@ function AgentIndexPage() {
 							<Tabs
 								value={activeTab}
 								onValueChange={(v) =>
-									setActiveTab(v as "my-agents" | "public-agents")
+									setActiveTab(v as "my-agents" | "discover")
 								}
 								className="flex-1 flex flex-col min-h-0"
 							>
@@ -339,16 +448,44 @@ function AgentIndexPage() {
 											<Lock className="h-3 w-3" />
 											My Agents ({agents.length})
 										</TabsTrigger>
-										<TabsTrigger value="public-agents" className="gap-2">
+										<TabsTrigger value="discover" className="gap-2">
 											<Globe className="h-3 w-3" />
-											Public Agents ({publicAgents.length})
+											Discover ({publicAgents.length})
 										</TabsTrigger>
 									</TabsList>
 
-									{/* Results summary */}
-									<p className="text-sm text-muted-foreground">
-										{getResultsSummary()}
-									</p>
+									<div className="flex items-center gap-3">
+										{/* Sort dropdown — only show on Discover tab */}
+										{activeTab === "discover" && (
+											<div className="flex items-center gap-2">
+												<ArrowDownWideNarrow className="h-4 w-4 text-muted-foreground" />
+												<Select
+													value={discoverSort}
+													onValueChange={(v) =>
+														setDiscoverSort(v as SortOption)
+													}
+												>
+													<SelectTrigger className="w-[170px] h-8 text-xs">
+														<SelectValue>{sortLabel(discoverSort)}</SelectValue>
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value="published_at">Newest</SelectItem>
+														<SelectItem value="fork_count">
+															Most Remixed
+														</SelectItem>
+														<SelectItem value="updated_at">
+															Recently Updated
+														</SelectItem>
+													</SelectContent>
+												</Select>
+											</div>
+										)}
+
+										{/* Results summary */}
+										<p className="text-sm text-muted-foreground">
+											{getResultsSummary()}
+										</p>
+									</div>
 								</div>
 
 								{/* My Agents Tab */}
@@ -360,7 +497,7 @@ function AgentIndexPage() {
 											) : filteredAgents.length > 0 ? (
 												<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
 													{filteredAgents.map((agent: Agent) =>
-														renderAgentCard(agent, false),
+														renderAgentCard(agent, false, false),
 													)}
 												</div>
 											) : (
@@ -370,11 +507,8 @@ function AgentIndexPage() {
 									</ScrollArea>
 								</TabsContent>
 
-								{/* Public Agents Tab */}
-								<TabsContent
-									value="public-agents"
-									className="flex-1 min-h-0 mt-0"
-								>
+								{/* Discover Tab */}
+								<TabsContent value="discover" className="flex-1 min-h-0 mt-0">
 									<ScrollArea className="h-full">
 										<div className="pb-4">
 											{isLoadingPublicAgents ? (
@@ -382,7 +516,7 @@ function AgentIndexPage() {
 											) : filteredPublicAgents.length > 0 ? (
 												<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
 													{filteredPublicAgents.map((agent: Agent) =>
-														renderAgentCard(agent, true),
+														renderAgentCard(agent, false, true),
 													)}
 												</div>
 											) : (

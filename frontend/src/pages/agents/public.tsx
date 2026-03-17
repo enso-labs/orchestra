@@ -1,5 +1,5 @@
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
 import NoAuthLayout from "@/layouts/NoAuthLayout";
 import ChatPanel from "@/pages/chat/ChatPanel";
 import { ChatNav } from "@/components/nav/ChatNav";
@@ -8,16 +8,42 @@ import { useAgentContext } from "@/context/AgentContext";
 import { useChatContext } from "@/context/ChatContext";
 import { Computer } from "lucide-react";
 import AgentSection from "@/components/sections/agent-section";
+import { getAuthToken } from "@/lib/utils/auth";
 
 export default function PublicAgentPage() {
 	const { agentId } = useParams();
 	const { setAgent } = useAgentContext();
 	const { messages, useModelsEffect } = useChatContext();
+	const navigate = useNavigate();
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [publicAgent, setPublicAgent] = useState<Agent | null>(null);
+	const [isForking, setIsForking] = useState(false);
+	const [remixError, setRemixError] = useState<string | null>(null);
 
 	useModelsEffect();
+
+	const handleRemix = useCallback(async () => {
+		if (!agentId) return;
+
+		const token = getAuthToken();
+		if (!token) {
+			navigate(`/login?remix=${agentId}`);
+			return;
+		}
+
+		setIsForking(true);
+		setRemixError(null);
+		try {
+			const response = await AgentService.fork(agentId);
+			const newAssistantId = response.data.assistant_id;
+			navigate(`/assistant/${newAssistantId}`);
+		} catch {
+			setRemixError("Failed to remix agent");
+		} finally {
+			setIsForking(false);
+		}
+	}, [agentId, navigate]);
 
 	useEffect(() => {
 		async function fetchAgent() {
@@ -72,7 +98,17 @@ export default function PublicAgentPage() {
 	if (messages.length === 0) {
 		return (
 			<NoAuthLayout>
-				<AgentSection agent={publicAgent} showAgentMenu={false} />
+				<AgentSection
+					agent={publicAgent}
+					showAgentMenu={false}
+					onRemix={handleRemix}
+					isForking={isForking}
+				/>
+				{remixError && (
+					<p className="text-center text-sm text-destructive mt-2">
+						{remixError}
+					</p>
+				)}
 			</NoAuthLayout>
 		);
 	}

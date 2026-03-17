@@ -1,0 +1,374 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/885-agent-marketplace",
+  "description": "Agent Marketplace — Fork/Remix, Discovery, Embed Widget & Memory Distillation. Self-reinforcing flywheel where published agents drive user acquisition via fork/embed, forked agents accumulate usage data, and that data auto-improves agent prompts via background distillation.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Backend — Add fork_count and forked_from fields to Assistant schema",
+      "description": "As a developer, I need the Assistant model to track fork lineage so we can count remixes and trace origins.",
+      "acceptanceCriteria": [
+        "Assistant model has `fork_count: int = 0` field (after published_at in backend/src/schemas/entities/llm.py)",
+        "PublicAssistant projection includes fork_count",
+        "PublicAssistant.from_assistant() maps fork_count correctly",
+        "Existing tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Committed d081b4b0. fork_count field added to Assistant, PublicAssistant, and from_assistant()."
+    },
+    {
+      "id": "US-002",
+      "title": "Backend — Implement AssistantService.fork() method",
+      "description": "As a user, I want to fork a public agent into my workspace so I can customize it without affecting the original.",
+      "acceptanceCriteria": [
+        "fork(public_assistant_id, target_user_id) reads from (\"public\", \"assistants\") namespace",
+        "Validates source assistant exists and is public, raises 404 otherwise",
+        "Deep-copies assistant data, generates new UUID",
+        "Strips owner_id, published_at, sets public=False on the copy",
+        "Sets metadata[\"forked_from\"] = public_assistant_id",
+        "Writes new assistant to (target_user_id, \"assistants\") namespace",
+        "Increments fork_count on source assistant in public namespace",
+        "Returns new assistant_id string",
+        "Existing tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Committed 6c83d2f4. fork() method added to AssistantService — reads from public namespace, deep-copies with new UUID, strips public fields, sets metadata.forked_from, increments fork_count on source."
+    },
+    {
+      "id": "US-003",
+      "title": "Backend — Add POST /assistants/public/{assistant_id}/fork endpoint",
+      "description": "As a frontend developer, I need an API endpoint to trigger agent forking from the UI.",
+      "acceptanceCriteria": [
+        "POST /assistants/public/{assistant_id}/fork requires authentication",
+        "Calls AssistantService.fork() with current user_id",
+        "Returns {\"assistant_id\": \"<new_id>\"} with 201 status code",
+        "Returns 404 for non-existent or non-public assistants",
+        "Existing tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Committed 56eaceb8. POST /assistants/public/{assistant_id}/fork endpoint — requires auth, validates UUID, calls AssistantService.fork(), returns 201 with new assistant_id or 404."
+    },
+    {
+      "id": "US-004",
+      "title": "Frontend — Add fork() method to AgentService and Remix button",
+      "description": "As a user viewing a public agent, I want a \"Remix this Agent\" button so I can fork it into my workspace with one click.",
+      "acceptanceCriteria": [
+        "AgentService has static async fork(assistantId) method calling POST /assistants/public/{id}/fork",
+        "Public agent page (/a/{agentId}) shows \"Remix this Agent\" button in AgentSection",
+        "Authenticated click: calls fork API, redirects to edit page for the new agent",
+        "Unauthenticated click: redirects to /login?remix={agentId}",
+        "Typecheck passes (npm run build)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Committed 9e1586a9. AgentService.fork() calls POST /assistants/public/{id}/fork. AgentSection accepts onRemix/isForking props. PublicAgentPage wires up: authenticated click calls fork API and navigates to /assistant/{newId}, unauthenticated click redirects to /login?remix={agentId}."
+    },
+    {
+      "id": "US-005",
+      "title": "Frontend — Post-login auto-fork flow",
+      "description": "As an unauthenticated user who clicked Remix, I want to be auto-forked into the agent after I log in or register.",
+      "acceptanceCriteria": [
+        "Login page reads remix query param from URL",
+        "Register page reads remix query param from URL",
+        "After successful auth with remix param: calls fork API automatically",
+        "Redirects to edit page of the newly forked agent",
+        "Typecheck passes (npm run build)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Committed f0d69d68. Login and Register pages read remix query param from URL. After successful auth, auto-fork is called and user is redirected to /assistant/{newId}. OAuth flow persists remix param in localStorage across redirect. Cross-links between Login/Register preserve the remix param."
+    },
+    {
+      "id": "US-006",
+      "title": "Frontend — Show fork_count badge and \"Remixed from\" attribution",
+      "description": "As a user browsing public agents, I want to see remix counts for social proof, and as a user viewing a forked agent, I want to see where it originated.",
+      "acceptanceCriteria": [
+        "Public agent cards in /agents public tab show fork_count badge when > 0",
+        "Badge shows count (e.g., \"12 remixes\")",
+        "Forked agents display \"Remixed from [Original Agent Name]\" with link to /a/{originalId} in edit page header",
+        "Attribution link only appears when metadata.forked_from exists",
+        "Typecheck passes (npm run build)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Committed 84401e5c. Added fork_count field to Agent type. Public agent cards show fork_count badge (GitFork icon + count) when > 0. Agent edit form shows 'Remixed from [Original Agent Name]' with link to /a/{originalId} when metadata.forked_from exists. Fetches original agent name via AgentService.getPublic()."
+    },
+    {
+      "id": "US-007",
+      "title": "Backend — Unit tests for fork functionality",
+      "description": "As a developer, I need tests covering the fork flow to prevent regressions.",
+      "acceptanceCriteria": [
+        "Test: fork creates new assistant in target user namespace",
+        "Test: fork increments fork_count on source assistant",
+        "Test: forked assistant has forked_from in metadata",
+        "Test: fork of non-existent assistant raises appropriate error",
+        "All tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Committed 637e3ed2. 11 unit tests covering: fork creates new assistant in target namespace, fork increments fork_count on source (single and multiple forks), forked assistant has forked_from in metadata, preserves original metadata, returns None for non-existent/invalid UUID/unpublished assistants, strips public fields on copy, resets fork_count on copy, copies tools and config, does not modify source assistant."
+    },
+    {
+      "id": "US-008",
+      "title": "Backend — Add tags field and sort/filter params to public search",
+      "description": "As a user browsing public agents, I want to sort by popularity and filter by category tags so I can find relevant agents quickly.",
+      "acceptanceCriteria": [
+        "Assistant model has tags: list[str] = [] field",
+        "PublicAssistant projection includes tags",
+        "GET /assistants/public accepts sort_by query param (fork_count, updated_at, published_at)",
+        "Default sort_by is published_at (backwards compatible)",
+        "GET /assistants/public accepts tags query param (comma-separated)",
+        "Tags filter returns agents matching ANY of the provided tags",
+        "sort_by=fork_count returns agents ordered descending",
+        "Existing tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Committed 362ac863. Added tags: list[str] field to Assistant and PublicAssistant models. GET /assistants/public now accepts sort_by (fork_count, updated_at, published_at) and tags (comma-separated) query params. Default sort_by is published_at for backwards compatibility. Tags filter uses ANY match. search_public() fetches all items then filters/sorts in Python."
+    },
+    {
+      "id": "US-009",
+      "title": "Frontend — Discover tab with sorting, tags, and Remix button",
+      "description": "As a user, I want a Discover tab in the agents page with sorting and tag chips so I can browse and remix agents easily.",
+      "acceptanceCriteria": [
+        "\"Discover\" tab in /agents page shows public agents from all users",
+        "Sort dropdown: \"Most Remixed\" (fork_count), \"Newest\" (published_at), \"Recently Updated\" (updated_at)",
+        "Agent cards display tag chips below description",
+        "Each card has inline \"Remix\" button",
+        "AgentService.listPublic() accepts sortBy and tags parameters",
+        "Typecheck passes (npm run build)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Committed 5567e58e. Renamed Public Agents tab to Discover. Added sort dropdown (Most Remixed/Newest/Recently Updated) backed by sortBy param in AgentService.listPublic(). Agent cards display tag chips below description. Each Discover card has inline Remix button with auth check. Tags field added to Agent type."
+    },
+    {
+      "id": "US-010",
+      "title": "Frontend — Tag editing in assistant editor",
+      "description": "As an agent creator, I want to add tags when editing my agent so it appears in relevant searches after publishing.",
+      "acceptanceCriteria": [
+        "Agent edit form includes a tags input (comma-separated or chip input)",
+        "Tags are saved with the assistant on update",
+        "Tags display correctly when loading existing agents for editing",
+        "Typecheck passes (npm run build)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Committed 51db5b81. Chip-style tag input added to agent edit form between Description and Instructions tabs. Tags sync from agent state on load, saved in submit payload. Enter/comma to add, Backspace/X to remove. Lowercase normalized, deduped."
+    },
+    {
+      "id": "US-011",
+      "title": "Backend — Embed config and token endpoints",
+      "description": "As an agent creator, I need API endpoints to configure embedding and generate access tokens so my agent can be embedded on external sites.",
+      "acceptanceCriteria": [
+        "GET /assistants/public/{id}/embed returns {agent_id, name, description, model, theme} without auth",
+        "Returns 404 for non-public agents",
+        "POST /assistants/public/{id}/embed-token requires auth and validates caller is owner_id",
+        "Returns 403 if caller is not the agent owner",
+        "Embed token is a signed JWT containing {agent_id, rate_limit, exp}",
+        "Existing tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "Committed 06ede37d. GET /assistants/public/{id}/embed returns {agent_id, name, description, model, theme} without auth, 404 for non-public. POST /assistants/public/{id}/embed-token requires auth, validates owner_id (403 if not owner), returns signed JWT with {agent_id, rate_limit, jti, exp, type}. Embed token utility in src/utils/embed.py."
+    },
+    {
+      "id": "US-012",
+      "title": "Backend — Embed chat streaming endpoint with rate limiting",
+      "description": "As an embedded widget, I need a chat endpoint that accepts embed tokens and streams responses within rate limits.",
+      "acceptanceCriteria": [
+        "POST /assistants/public/{id}/embed-chat accepts embed JWT in Authorization header",
+        "Validates JWT signature and expiry",
+        "Streams response using existing streaming infrastructure",
+        "Returns thread_id for conversation continuity",
+        "Rate-limits per token via Redis counter keyed by embed:{agent_id}:{token_jti}",
+        "Returns 429 when rate limit exceeded",
+        "Anonymous chat allowed with aggressive rate limits (10 messages/day without token, 100/day with token)",
+        "Existing tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "Committed 4e02fcf4. POST /assistants/public/{id}/embed-chat accepts optional embed JWT in Authorization header. Validates JWT signature, expiry, type=embed, and agent_id match. Streams SSE response using existing LLMController.llm_stream() infrastructure. Returns thread_id in X-Thread-Id header and metadata SSE event. Rate-limits via Redis INCR with 24h TTL: embed:{agent_id}:{jti} for token auth (100/day default), embed:{agent_id}:anon:{ip} for anonymous (10/day). Returns 429 when exceeded."
+    },
+    {
+      "id": "US-013a",
+      "title": "Frontend — Vite embed build config and entry point scaffold",
+      "description": "As a developer, I need the build infrastructure for a standalone embed widget — a separate Vite config that produces an IIFE bundle from a dedicated entry point.",
+      "acceptanceCriteria": [
+        "vite.embed.config.ts exists and produces frontend/dist/embed/embed.js in IIFE format",
+        "Entry point frontend/src/embed/main.tsx exists and exports an init function that reads data-agent-id from its own script tag",
+        "npm run build:embed script added to package.json and produces the bundle successfully",
+        "Bundle is IIFE format and <50KB gzipped",
+        "Typecheck passes (npm run build)"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Committed. vite.embed.config.ts produces frontend/dist/embed/embed.js in IIFE format (46.87KB gzipped). Entry point src/embed/main.tsx reads data-agent-id from script tag, auto-inits on DOMContentLoaded, exposes window.OrchestraEmbed.init() for programmatic use. Scaffold EmbedWidget with floating button placeholder. npm run build:embed added to package.json."
+    },
+    {
+      "id": "US-013b",
+      "title": "Frontend — Embed widget UI — floating button, chat panel, streaming, footer",
+      "description": "As a website owner, I want a floating chat widget that renders in the bottom-right corner, expands to a chat panel, streams messages from the embed-chat endpoint, and persists conversation via localStorage.",
+      "acceptanceCriteria": [
+        "Floating button renders in bottom-right corner and expands to chat panel on click",
+        "Messages stream from the POST /assistants/public/{id}/embed-chat endpoint",
+        "Thread ID stored in localStorage for conversation continuity",
+        "\"Powered by Orchestra\" footer links to /a/{agentId}",
+        "Widget uses shadow DOM or scoped styles (no CSS leaks to host page)",
+        "npm run build:embed produces the bundle successfully",
+        "Typecheck passes (npm run build)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "Committed c344c4f4. Full chat widget UI: floating button (bottom-right) expands to 380x520 chat panel. Messages stream via fetch + SSE parsing from POST /assistants/public/{id}/embed-chat. Thread ID persisted in localStorage (orchestra_embed_thread_{agentId}). User bubbles right-aligned dark, assistant bubbles left-aligned light. 'Powered by Orchestra' footer links to /a/{agentId}. Shadow DOM isolation prevents host page CSS leaks. Bundle 48.61KB gzipped."
+    },
+    {
+      "id": "US-014",
+      "title": "Frontend — Embed code snippet in agent editor",
+      "description": "As an agent creator, I want to see copy-paste embed code in my agent editor so I can quickly add the widget to my website.",
+      "acceptanceCriteria": [
+        "Agent edit page shows \"Embed\" section for published agents only",
+        "Section contains copy-to-clipboard script tag snippet with correct agent ID",
+        "Section is hidden for unpublished agents",
+        "Typecheck passes (npm run build)",
+        "Verify in browser using agent-browser skill"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": "Committed e51e15af. Agent edit page shows 'Embed' section with copy-to-clipboard script tag snippet only when agent.id && agent.public. Section hidden for unpublished agents. Uses window.location.origin for embed.js URL, data-agent-id for agent identification. Copy button with check feedback."
+    },
+    {
+      "id": "US-015a",
+      "title": "Backend — Trajectory extraction TaskIQ task",
+      "description": "As a system, I need a TaskIQ task that extracts conversation trajectories and stores them so they feed into prompt optimization.",
+      "acceptanceCriteria": [
+        "extract_trajectory TaskIQ task accepts thread_id, user_id, assistant_id",
+        "Loads conversation messages from thread via existing thread/message services",
+        "Derives quality signals: conversation length, tool success/failure rate, HITL rejections",
+        "Formats data as AnnotatedTrajectory (langmem.prompts.types)",
+        "Stores trajectory in (user_id, \"trajectories\", assistant_id) namespace in AsyncPostgresStore",
+        "Extraction failure is caught and logged without raising",
+        "Existing tests pass (make test)",
+        "Typecheck passes (make format && make lint)"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": "Committed 49a85408. extract_trajectory TaskIQ task added to backend/src/workers/tasks.py. Loads thread messages via ThreadService, converts to AnnotatedTrajectory format with quality signals (conversation_length, tool_success_rate, hitl_rejections) as feedback dict. Stores in (user_id, 'trajectories', assistant_id) namespace. All failures caught and logged. Exported from workers __init__.py."
+    },
+    {
+      "id": "US-015b",
+      "title": "Backend — Hook _persist_final_state to dispatch trajectory extraction",
+      "description": "As a system, I need the stream persistence hook to dispatch the extract_trajectory task after each session so trajectories are collected automatically.",
+      "acceptanceCriteria": [
+        "_persist_final_state() dispatches extract_trajectory task after persisting state",
+        "Dispatch is non-blocking (fire-and-forget via TaskIQ kick)",
+        "Extraction failure does not affect conversation persistence — dispatch wrapped in try/except",
+        "Task is dispatched with correct thread_id, user_id, and assistant_id arguments",
+        "Existing tests pass (make test)",
+        "Typecheck passes (make format && make lint)"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": "Committed. _persist_final_state() in stream.py dispatches extract_trajectory.kiq() after persisting checkpoint state. Also hooked in _execute_agent_stream() in tasks.py for distributed streaming path. Both dispatches are fire-and-forget, wrapped in try/except with logger.warning on failure. Lazy import avoids circular dependency (stream.py <-> tasks.py)."
+    },
+    {
+      "id": "US-016",
+      "title": "Backend — PromptOptimizer.distill() and auto-apply",
+      "description": "As a system, I need to distill accumulated trajectories into improved prompts and auto-apply them so agents get better with usage.",
+      "acceptanceCriteria": [
+        "distill(user_id, assistant_id) retrieves recent trajectories from AsyncPostgresStore",
+        "Runs existing PromptOptimizer.optimize() with retrieved trajectories",
+        "Auto-applies: stores optimized prompt as new active revision via PromptService.revision()",
+        "Updates the assistant's system_prompt field with the distilled prompt",
+        "Returns revision_id or None if no improvement detected",
+        "Handles edge case: no trajectories available (returns None gracefully)",
+        "Existing tests pass (make test)",
+        "Typecheck passes (make format && make lint)"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": "Committed 20be9304. distill(user_id, assistant_id, store) added to PromptOptimizer. Retrieves up to 50 recent trajectories from (user_id, 'trajectories', assistant_id) namespace. Gets current assistant system_prompt/instructions. Constructs langmem Prompt and OptimizerInput, runs optimize(). Extracts optimized text, compares to current prompt (returns None if no improvement). Stores as new prompt revision via PromptService.revision(). Updates assistant system_prompt (sets instructions=None to satisfy validator). All failures caught and logged, returns None gracefully."
+    },
+    {
+      "id": "US-017a",
+      "title": "Backend — Scheduled daily distillation job",
+      "description": "As an agent creator, I want my agent to auto-improve daily via a scheduled distillation job that runs overnight.",
+      "acceptanceCriteria": [
+        "Scheduled job type prompt_distillation added to APScheduler infrastructure",
+        "Runs daily via CronTrigger(hour=3) for agents with accumulated trajectories",
+        "Skips agents with no new trajectories since last distillation",
+        "Job errors are logged but don't crash the scheduler",
+        "Existing tests pass (make test)",
+        "Typecheck passes (make format && make lint)"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": "Committed f62d0f47. scheduled_prompt_distillation() added to schedule.py — discovers trajectory namespaces via alist_namespaces(), skips agents with no new trajectories by comparing count against (system, distillation_meta) metadata, runs PromptOptimizer.distill() per eligible agent. Per-agent errors caught and logged. Registered in main.py lifespan via CronTrigger(hour=3) with replace_existing=True and 1hr misfire grace."
+    },
+    {
+      "id": "US-017b",
+      "title": "Backend — POST /assistants/{id}/distill manual trigger endpoint",
+      "description": "As an agent creator, I want to manually trigger prompt distillation for my agent so I can optimize on demand.",
+      "acceptanceCriteria": [
+        "POST /assistants/{id}/distill endpoint added to assistant routes",
+        "Requires auth and validates caller owns the assistant",
+        "Calls PromptOptimizer.distill() for the given assistant",
+        "Returns {revision_id, status: \"completed\" | \"no_improvement\"}",
+        "Returns 404 if assistant not found, 403 if not owner",
+        "Existing tests pass (make test)",
+        "Typecheck passes (make format && make lint)"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": "Committed 04592b57. POST /assistants/{id}/distill endpoint added after publish/unpublish section. Requires auth, validates UUID, verifies ownership via ServiceContext (404 if not found, 403 if not owner). Calls PromptOptimizer.distill() with user's model, returns {revision_id, status: 'completed'} on success or {revision_id: null, status: 'no_improvement'} when no improvement detected."
+    },
+    {
+      "id": "US-018a",
+      "title": "Tests — Embed endpoints (config, token, chat, rate limit)",
+      "description": "As a developer, I need tests covering embed token generation, config retrieval, chat, and rate limiting to prevent regressions.",
+      "acceptanceCriteria": [
+        "Test: embed config returns correct fields for public agent",
+        "Test: embed token generation validates ownership",
+        "Test: embed chat rejects expired/invalid tokens",
+        "Test: rate limiting returns 429 after threshold",
+        "All tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 21,
+      "passes": true,
+      "notes": "Committed 467e1ec2. 25 unit tests in backend/tests/unit/utils/test_embed.py covering: TestCreateEmbedToken (7 tests — valid JWT, required fields, default/custom rate limit, unique jti, default/custom expiry), TestVerifyEmbedToken (7 tests — valid token returns payload, expired/invalid-signature/wrong-type/agent-id-mismatch/malformed tokens raise 401, roundtrip with create_embed_token), TestCheckEmbedRateLimit (11 tests — under-limit allowed, 429 when exceeded for token and anon, IP-based key for anon, first-request TTL, no TTL reset on subsequent, unknown IP fallback, custom rate limit, exact-limit boundary, Redis connection cleanup on success and error)."
+    },
+    {
+      "id": "US-018b",
+      "title": "Tests — Distillation pipeline (trajectory extraction, distill)",
+      "description": "As a developer, I need tests covering trajectory extraction and distillation to prevent regressions in the memory distillation pipeline.",
+      "acceptanceCriteria": [
+        "Test: trajectory extraction formats messages correctly",
+        "Test: quality signals (length, tool success/failure, HITL rejections) are derived accurately",
+        "Test: distill() creates new prompt revision when trajectories exist",
+        "Test: distill() returns None when no trajectories",
+        "All tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 22,
+      "passes": true,
+      "notes": "Committed 68bf4f89. 27 unit tests in backend/tests/unit/services/prompt/test_distill.py. Three test classes: TestExtractTextContent (7 tests — string, empty, None, list of text blocks, missing text, non-dict elements, integer), TestExtractTrajectory (11 tests — message formatting, tool_success_rate, HITL rejections, skip edge cases, object-style messages, multimodal content, error handling), TestDistill (10 tests — no trajectories, not found, no prompt, no improvement, creates revision, string output, version increment, optimizer exception, revision failure, trajectory passthrough)."
+    }
+  ]
+}

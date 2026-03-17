@@ -1,15 +1,20 @@
 import uuid
+from typing import Literal, Optional
 from fastapi import (
     APIRouter,
     Body,
     Depends,
     HTTPException,
+    Request,
     status,
     Path,
     Response,
     Query,
 )
+from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi_cache.decorator import cache
+from pydantic import BaseModel, Field
 
 from langgraph.store.postgres import AsyncPostgresStore
 
@@ -26,6 +31,13 @@ from src.services.assistant import (
     ASSISTANT_EXAMPLES,
 )
 from src.schemas.entities.llm import PublicAssistant
+
+embed_security = HTTPBearer(auto_error=False)
+
+
+class EmbedChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=10000, description="The user message")
+    thread_id: Optional[str] = Field(default=None, description="Thread ID for conversation continuity")
 
 
 ################################################################################
@@ -116,11 +128,17 @@ async def delete_assistant(
 async def list_public_assistants(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    sort_by: Literal["fork_count", "updated_at", "published_at"] = Query(default="published_at"),
+    tags: Optional[str] = Query(default=None, description="Comma-separated tags to filter by (OR match)"),
     store: AsyncPostgresStore = Depends(get_store),
 ):
     """List all public assistants - no authentication required."""
     service = AssistantService(user_id=None, store=store)
-    assistants = await service.search_public(limit=limit, offset=offset)
+
+    # Parse comma-separated tags into a list
+    tags_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+
+    assistants = await service.search_public(limit=limit, offset=offset, sort_by=sort_by, tags=tags_list)
 
     return {
         "assistants": [PublicAssistant.from_assistant(a).model_dump() for a in assistants],
@@ -155,6 +173,196 @@ async def get_public_assistant(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
 
     return {"assistant": PublicAssistant.from_assistant(assistant).model_dump()}
+
+
+@router.post(
+    "/public/{assistant_id}/fork",
+    name="Fork Public Assistant",
+    operation_id="ruska_fork_public_assistant",
+    status_code=status.HTTP_201_CREATED,
+)
+async def fork_public_assistant(
+    assistant_id: str = Path(..., description="The ID of the public assistant to fork"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Fork a public assistant into the authenticated user's workspace."""
+    # Input validation
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service = AssistantService(user_id=None, store=store)
+    new_assistant_id = await service.fork(assistant_id, user.id)
+
+    if not new_assistant_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
+
+    return {"assistant_id": new_assistant_id}
+
+
+################################################################################
+### Embed Routes
+################################################################################
+@router.get(
+    "/public/{assistant_id}/embed",
+    name="Get Embed Config",
+    operation_id="ruska_get_embed_config",
+)
+async def get_embed_config(
+    assistant_id: str = Path(..., description="The ID of the public assistant"),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Get embed configuration for a public assistant - no authentication required."""
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service = AssistantService(user_id=None, store=store)
+    assistant = await service.get_public(assistant_id)
+
+    if not assistant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
+
+    return {
+        "agent_id": assistant.id,
+        "name": assistant.name,
+        "description": assistant.description,
+        "model": assistant.model,
+        "theme": assistant.metadata.get("theme", "default"),
+    }
+
+
+@router.post(
+    "/public/{assistant_id}/embed-token",
+    name="Generate Embed Token",
+    operation_id="ruska_generate_embed_token",
+)
+async def generate_embed_token(
+    assistant_id: str = Path(..., description="The ID of the public assistant"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Generate an embed token for a public assistant - requires auth and ownership."""
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    service = AssistantService(user_id=None, store=store)
+    assistant = await service.get_public(assistant_id)
+
+    if not assistant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
+
+    if assistant.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Only the agent owner can generate embed tokens"
+        )
+
+    from src.utils.embed import create_embed_token
+
+    token = create_embed_token(assistant_id)
+
+    return {"token": token}
+
+
+@router.post(
+    "/public/{assistant_id}/embed-chat",
+    name="Embed Chat",
+    operation_id="ruska_embed_chat",
+    response_model=None,
+)
+async def embed_chat(
+    request: Request,
+    assistant_id: str = Path(..., description="The ID of the public assistant"),
+    body: EmbedChatRequest = Body(...),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(embed_security),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Chat with a public assistant via embed widget. Accepts optional embed JWT for higher rate limits.
+
+    - Without token: 10 messages/day per IP
+    - With valid embed token: 100 messages/day (or token-specified limit)
+
+    Streams SSE response and returns thread_id for conversation continuity.
+    """
+    # Validate assistant ID format
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    # Verify assistant exists and is public
+    service = AssistantService(user_id=None, store=store)
+    assistant = await service.get_public(assistant_id)
+
+    if not assistant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Public assistant not found")
+
+    # Authenticate embed token if provided
+    from src.utils.embed import verify_embed_token, check_embed_rate_limit
+
+    token_payload = None
+    if credentials and credentials.credentials:
+        token_payload = verify_embed_token(credentials.credentials, assistant_id)
+
+    # Rate limit check
+    client_ip = request.client.host if request.client else None
+    await check_embed_rate_limit(
+        agent_id=assistant_id,
+        jti=token_payload.get("jti") if token_payload else None,
+        rate_limit=token_payload.get("rate_limit") if token_payload else None,
+        client_ip=client_ip,
+    )
+
+    # Build LLMRequest from the assistant config + user message
+    from src.schemas.entities.llm import LLMInput, Config
+
+    thread_id = body.thread_id or str(uuid.uuid4())
+
+    llm_input = LLMInput(
+        messages=[LLMInput.ChatMessage(role="user", content=body.message)],
+        files={},
+    )
+    metadata = Config(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+    )
+    llm_request = assistant.to_llm_request(input=llm_input, metadata=metadata)
+
+    # Use existing streaming infrastructure
+    from src.agents import init_config
+    from src.controllers.llm import LLMController
+
+    config = init_config(llm_request, user_id=None)
+    llm_controller = LLMController(user_id=None, store=store, config=config)
+    stream = await llm_controller.llm_stream(llm_request)
+
+    return StreamingResponse(
+        stream,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "X-Thread-Id": thread_id,
+        },
+    )
 
 
 ################################################################################
@@ -242,3 +450,51 @@ async def unpublish_assistant(
     except Exception as e:
         logger.exception(f"Error unpublishing assistant: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+################################################################################
+### Distillation Routes
+################################################################################
+@router.post(
+    "/{assistant_id}/distill",
+    name="Distill Assistant Prompt",
+    operation_id="ruska_distill_assistant",
+)
+async def distill_assistant(
+    assistant_id: str = Path(..., description="The ID of the assistant to distill"),
+    user: ProtectedUser = Depends(verify_credentials),
+    store: AsyncPostgresStore = Depends(get_store),
+):
+    """Manually trigger prompt distillation for an assistant. Requires ownership."""
+    # Input validation
+    try:
+        uuid.UUID(assistant_id, version=4)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid assistant ID format",
+        )
+
+    # Verify ownership
+    service_context = ServiceContext(user_id=user.id, store=store)
+    assistant = await service_context.assistant_service.get(assistant_id)
+
+    if not assistant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found")
+
+    if assistant.owner_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the assistant owner can trigger distillation",
+        )
+
+    # Run distillation
+    from src.services.prompt.optimize import PromptOptimizer
+
+    optimizer = PromptOptimizer(model=assistant.model)
+    revision_id = await optimizer.distill(user_id=user.id, assistant_id=assistant_id, store=store)
+
+    if revision_id is not None:
+        return {"revision_id": revision_id, "status": "completed"}
+    else:
+        return {"revision_id": None, "status": "no_improvement"}

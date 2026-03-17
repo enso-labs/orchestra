@@ -3,6 +3,7 @@ import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { FaGithub, FaGoogle } from "react-icons/fa";
 import { VITE_API_URL, TOKEN_NAME } from "@/lib/config";
 import { jwtDecode } from "jwt-decode";
+import AgentService from "@/lib/services/agentService";
 
 const OAuthCallback = () => {
 	const location = useLocation();
@@ -71,7 +72,18 @@ const OAuthCallback = () => {
 					console.error("Error fetching user data:", error);
 				}
 
-				// Navigate to dashboard
+				// Auto-fork if remix param was stored before OAuth redirect
+				const remixAgentId = localStorage.getItem("enso:remix_agent_id");
+				if (remixAgentId) {
+					localStorage.removeItem("enso:remix_agent_id");
+					try {
+						const forkRes = await AgentService.fork(remixAgentId);
+						navigate(`/assistant/${forkRes.data.assistant_id}`);
+						return;
+					} catch {
+						// Fork failed — still proceed to chat
+					}
+				}
 				navigate("/chat");
 			} catch (error) {
 				console.error("OAuth authentication failed:", error);

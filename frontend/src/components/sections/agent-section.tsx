@@ -2,18 +2,29 @@ import ChatInput from "@/components/inputs/ChatInput";
 import ChatUtilityRow from "@/components/chat/ChatUtilityRow";
 import { Agent } from "@/lib/services/agentService";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Newspaper, Share2, MessageCircle } from "lucide-react";
+import {
+	BookOpen,
+	Newspaper,
+	Share2,
+	MessageCircle,
+	GitFork,
+	Loader2,
+} from "lucide-react";
 
 interface AgentSectionProps {
 	agent: Agent;
 	showAgentMenu?: boolean;
 	showSandboxStatus?: boolean;
+	onRemix?: () => void;
+	isForking?: boolean;
 }
 
 export function AgentSection({
 	agent,
 	showAgentMenu = false,
 	showSandboxStatus = false,
+	onRemix,
+	isForking = false,
 }: AgentSectionProps) {
 	return (
 		<>
@@ -29,6 +40,26 @@ export function AgentSection({
 				{showSandboxStatus && <ChatUtilityRow />}
 				<ChatInput showAgentMenu={showAgentMenu} />
 			</div>
+
+			{/* Remix button */}
+			{onRemix && (
+				<div className="mt-3">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={onRemix}
+						disabled={isForking}
+						className="h-8"
+					>
+						{isForking ? (
+							<Loader2 className="w-4 h-4 mr-1 animate-spin" />
+						) : (
+							<GitFork className="w-4 h-4 mr-1" />
+						)}
+						{isForking ? "Remixing..." : "Remix this Agent"}
+					</Button>
+				</div>
+			)}
 
 			{/* Links below input */}
 			<div className="flex flex-row flex-wrap justify-center gap-1 mt-3">

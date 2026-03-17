@@ -74,7 +74,12 @@ describe("useAgent", () => {
 			// Should have updated publicAgents state
 			expect(result.current.publicAgents).toEqual(mockPublicAgents);
 			expect(result.current.isLoadingPublicAgents).toBe(false);
-			expect(agentService.listPublic).toHaveBeenCalledWith(50, 0);
+			expect(agentService.listPublic).toHaveBeenCalledWith(
+				50,
+				0,
+				undefined,
+				undefined,
+			);
 		});
 
 		it("should handle errors gracefully", async () => {
@@ -104,7 +109,12 @@ describe("useAgent", () => {
 				await result.current.handleGetPublicAgents(25, 10);
 			});
 
-			expect(agentService.listPublic).toHaveBeenCalledWith(25, 10);
+			expect(agentService.listPublic).toHaveBeenCalledWith(
+				25,
+				10,
+				undefined,
+				undefined,
+			);
 		});
 	});
 

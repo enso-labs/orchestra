@@ -244,6 +244,39 @@ Add ability to mark tasks with different statuses.
 
 ---
 
+## Post-Execution: Integration QA Gate
+
+**After Ralph completes all stories**, invoke the `integration-qa` agent before marking the feature done. Ralph validates stories in isolation; integration QA validates that stories work together.
+
+Trigger integration QA when any of the following are true:
+- The feature includes a Vite build config or changes to `outDir`
+- New API endpoints are added alongside frontend service calls
+- An embed widget or cross-origin asset is part of the feature
+- The feature touches both backend static file serving and frontend assets
+
+**Invoke the agent:**
+```
+Use the integration-qa agent to validate the completed feature.
+Worktree: $ORCHESTRA_PROJECT_ROOT/.worktrees/feat-<issue#>
+Feature: <feature-name>
+```
+
+**The agent checks** (in priority order):
+1. Build ↔ Serve alignment — every Vite `outDir` has a matching backend `StaticFiles` mount
+2. API prefix consistency — frontend service calls match backend route registration (`/api/` not `/api/v0/`)
+3. SPA catch-all — `os.path.isfile()` guard prevents index.html from being served for static assets
+4. Cross-origin correctness — embed widgets derive `apiBase` from `script.src`, not `window.location.origin`
+5. Content-type verification — `.js` files return `application/javascript`, not `text/html`
+
+**If issues are found**, create a follow-up story in prd.json and re-run Ralph for the fix before proceeding to PR review.
+
+**Known build patterns** for this codebase:
+- Main app: `npm run build` → `frontend/dist/` → served by backend SPA handler
+- Embed widget: `npm run build:embed` → `frontend/vite.embed.config.ts` → `outDir: ../backend/src/public/embed/`
+- Backend mounts embed dir at `/embed` via `StaticFiles`
+
+---
+
 ## Checklist Before Saving
 
 Before writing prd.json, verify:
@@ -255,3 +288,4 @@ Before writing prd.json, verify:
 - [ ] UI stories have "Verify in browser using agent-browser skill" as criterion
 - [ ] Acceptance criteria are verifiable (not vague)
 - [ ] No story depends on a later story
+- [ ] **Features with build configs or cross-boundary changes**: "Invoke integration-qa agent after all stories pass"

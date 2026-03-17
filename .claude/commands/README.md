@@ -4,17 +4,19 @@ Command files (.md) in this directory define reusable workflows that automate co
 
 ## Quick Reference
 
-| Command          | Invocation                | Purpose                               | Arguments                                  |
-| ---------------- | ------------------------- | ------------------------------------- | ------------------------------------------ |
-| **announce-pr**  | `/announce-pr [pr]`       | Generate social media posts for PRs   | PR number, URL, branch, or empty (current) |
-| **build**        | `/build [target]`         | Build backend, frontend, or all       | `backend`, `frontend`, `all` (default)     |
-| **plan**         | `/plan [task]`            | Create implementation plan in .plans/ | Task description                           |
-| **prime**        | `/prime`                  | Understand project structure          | None                                       |
-| **worktree**     | `/worktree [args]`        | Manage git worktrees                  | Worktree operations                        |
-| **reflection**   | `/reflection [topic]`     | Reflect on development process        | Topic to reflect on                        |
-| **team**         | `/team query="[feature]"` | Multi-agent code analysis             | Feature description + subagent count       |
-| **spec:feature** | `/spec:feature [args]`    | Generate feature spec template        | `ISSUE_NUMBER-SHORTDESC`                   |
-| **spec:bug**     | `/spec:bug [args]`        | Generate bug spec template            | `ISSUE_NUMBER-SHORTDESC`                   |
+| Command           | Invocation                               | Purpose                                     | Arguments                                       |
+| ----------------- | ---------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
+| **announce-pr**   | `/announce-pr [pr]`                      | Generate social media posts for PRs         | PR number, URL, branch, or empty (current)      |
+| **build**         | `/build [target]`                        | Build backend, frontend, or all             | `backend`, `frontend`, `all` (default)          |
+| **complexity-audit** | `/complexity-audit target=[path]`     | Run four-phase complexity audit pipeline    | `target` (path or glob), optional `url`         |
+| **doc-drift**     | `/doc-drift`                             | Detect drift between docs and app           | None                                            |
+| **ralph:plan**    | `/ralph:plan topic="[feature]"`          | Generate PRD via parallel expert subagents  | `topic`, optional `subagents` (default 3)       |
+| **ralph:qa**      | `/ralph:qa worktree=[path]`              | Post-Ralph integration QA gate             | `worktree` (path), optional `feature` (name)    |
+| **ralph:ticket**  | `/ralph:ticket url="[issue-url]"`        | Full issue-to-Ralph autonomous pipeline     | `url` (GitHub issue URL), optional `subagents`  |
+| **reflection**    | `/reflection`                            | META-improve agents, skills, commands       | None                                            |
+| **team**          | `/team query="[feature]"`                | Multi-agent code analysis and implementation| Feature description + subagent count            |
+| **spec:feature**  | `/spec:feature [args]`                   | Generate feature spec template              | `ISSUE_NUMBER-SHORTDESC`                        |
+| **spec:bug**      | `/spec:bug [args]`                       | Generate bug spec template                  | `ISSUE_NUMBER-SHORTDESC`                        |
 
 ## Command Structure
 

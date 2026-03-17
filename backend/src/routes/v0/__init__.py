@@ -55,6 +55,8 @@ def mount_static_router(app: FastAPI):
         app.mount("/assets", StaticFiles(directory="src/public/assets"), name="assets")
     if os.path.exists("src/public/icons"):
         app.mount("/icons", StaticFiles(directory="src/public/icons"), name="icons")
+    if os.path.exists("src/public/embed"):
+        app.mount("/embed", StaticFiles(directory="src/public/embed"), name="embed")
 
     # Only mount SPA catch-all if index.html exists
     if os.path.exists("src/public/index.html"):
@@ -74,9 +76,10 @@ def mount_static_router(app: FastAPI):
             if filename in static_files and os.path.exists(f"src/public/{filename}"):
                 return FileResponse(f"src/public/{filename}")
 
-            # For /icons/* paths, check if the file exists
-            if filename.startswith("icons/") and os.path.exists(f"src/public/{filename}"):
-                return FileResponse(f"src/public/{filename}")
+            # For any file that exists on disk (icons/, embed/, etc.), serve it directly
+            file_path = f"src/public/{filename}"
+            if filename and os.path.isfile(file_path):
+                return FileResponse(file_path)
 
             # For all other routes, serve the index.html for SPA routing
             return FileResponse("src/public/index.html")

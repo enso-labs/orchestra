@@ -170,6 +170,123 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
                 logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
 
+async def scheduled_prompt_distillation():
+    """Daily scheduled job that distills accumulated trajectories into improved prompts.
+
+    Iterates over all (user_id, assistant_id) pairs with stored trajectories,
+    skips those with no new trajectories since last distillation, and runs
+    PromptOptimizer.distill() for eligible agents.
+
+    This must be a module-level function (not a method) so APScheduler can pickle it.
+    All errors are caught per-agent so one failure does not crash the scheduler.
+    """
+    from src.services.db import get_store_db
+    from src.services.prompt.optimize import PromptOptimizer
+    from src.constants.llm import DEFAULT_CHAT_MODEL
+    from src.utils.format import get_time
+
+    logger.info("prompt_distillation_job_started")
+
+    processed = 0
+    skipped = 0
+    errors = 0
+
+    try:
+        async with get_store_db() as store:
+            # Discover trajectory namespaces: (user_id, "trajectories", assistant_id)
+            trajectory_namespaces: list[tuple[str, ...]] = []
+            offset = 0
+            while True:
+                batch = await store.alist_namespaces(max_depth=3, limit=100, offset=offset)
+                for ns in batch:
+                    if len(ns) == 3 and ns[1] == "trajectories":
+                        trajectory_namespaces.append(ns)
+                if len(batch) < 100:
+                    break
+                offset += 100
+
+            if not trajectory_namespaces:
+                logger.info("prompt_distillation_no_trajectories")
+                return
+
+            optimizer = PromptOptimizer(model=DEFAULT_CHAT_MODEL)
+
+            for ns in trajectory_namespaces:
+                user_id, _, assistant_id = ns
+                try:
+                    # Count current trajectories
+                    items = await store.asearch(ns, limit=100)
+                    current_count = len(items)
+                    if current_count == 0:
+                        skipped += 1
+                        continue
+
+                    # Check if trajectory count has changed since last distillation
+                    meta_ns = ("system", "distillation_meta")
+                    meta_key = f"{user_id}:{assistant_id}"
+                    meta_item = await store.aget(meta_ns, meta_key)
+                    last_count = 0
+                    if meta_item and meta_item.value:
+                        last_count = meta_item.value.get("last_count", 0)
+
+                    if current_count <= last_count:
+                        skipped += 1
+                        continue
+
+                    # Run distillation
+                    revision_id = await optimizer.distill(user_id, assistant_id, store)
+
+                    # Record distillation metadata
+                    await store.aput(
+                        namespace=meta_ns,
+                        key=meta_key,
+                        value={"last_count": current_count, "last_distilled_at": get_time()},
+                    )
+
+                    if revision_id:
+                        processed += 1
+                        logger.info(
+                            "prompt_distillation_agent_completed",
+                            extra={
+                                "event": "prompt_distillation_agent_completed",
+                                "user_id": user_id,
+                                "assistant_id": assistant_id,
+                                "revision_id": revision_id,
+                            },
+                        )
+                    else:
+                        skipped += 1
+
+                except Exception as e:
+                    errors += 1
+                    logger.error(
+                        "prompt_distillation_agent_error",
+                        extra={
+                            "event": "prompt_distillation_agent_error",
+                            "user_id": user_id,
+                            "assistant_id": assistant_id,
+                            "error": str(e),
+                        },
+                    )
+                    continue
+
+    except Exception as e:
+        logger.error(
+            "prompt_distillation_job_failed",
+            extra={"event": "prompt_distillation_job_failed", "error": str(e)},
+        )
+
+    logger.info(
+        "prompt_distillation_job_completed",
+        extra={
+            "event": "prompt_distillation_job_completed",
+            "processed": processed,
+            "skipped": skipped,
+            "errors": errors,
+        },
+    )
+
+
 def create_job(job: Job):
     trigger = create_trigger(job.trigger)
     return Job(

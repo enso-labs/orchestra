@@ -13,7 +13,7 @@ Usage:
 """
 
 from src.workers.broker import broker
-from src.workers.tasks import run_agent_stream
+from src.workers.tasks import run_agent_stream, extract_trajectory
 from src.constants.redis import REDIS_URL
 
-__all__ = ["broker", "run_agent_stream", "REDIS_URL"]
+__all__ = ["broker", "run_agent_stream", "extract_trajectory", "REDIS_URL"]

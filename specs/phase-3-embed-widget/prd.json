@@ -1,0 +1,103 @@
+{
+  "project": "Orchestra",
+  "branchName": "feat/885-p3-embed-widget",
+  "description": "Embeddable agent chat widget - allow agent creators to embed public agents on external websites via lightweight script tag",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Backend: Embed config and token endpoints",
+      "description": "As an agent creator, I need API endpoints that provide embed configuration and generate access tokens so my agent can be embedded on external sites.",
+      "acceptanceCriteria": [
+        "GET /assistants/public/{id}/embed returns {agent_id, name, description, theme} without auth",
+        "POST /assistants/public/{id}/embed-token requires auth and validates owner",
+        "Embed token is a signed JWT with {agent_id, rate_limit, exp}",
+        "Non-owner gets 403 on token generation",
+        "Non-public agent returns 404",
+        "Existing tests pass (make test)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Routes at backend/src/routes/v0/assistant.py. Use PyJWT for token signing."
+    },
+    {
+      "id": "US-002",
+      "title": "Backend: Embed chat streaming endpoint with rate limiting",
+      "description": "As an embedded widget, I need a chat endpoint that accepts embed tokens and streams responses within rate limits.",
+      "acceptanceCriteria": [
+        "POST /assistants/public/{id}/embed-chat accepts embed JWT in Authorization header",
+        "Validates JWT signature and expiry",
+        "Streams response using existing streaming infrastructure",
+        "Returns thread_id for conversation continuity",
+        "Rate-limits per token using Redis counter",
+        "Returns 429 when rate limit exceeded",
+        "Existing tests pass (make test)"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Reuse streaming patterns from backend/src/utils/stream.py. Rate limit via Redis."
+    },
+    {
+      "id": "US-003",
+      "title": "Frontend: Standalone embed widget build",
+      "description": "As a developer, I need a separate Vite build target that produces a lightweight embed.js bundle.",
+      "acceptanceCriteria": [
+        "Separate vite.embed.config.ts produces frontend/dist/embed/embed.js",
+        "Bundle is IIFE format (self-executing)",
+        "Bundle size is <50KB gzipped",
+        "Widget reads data-agent-id from its own script tag",
+        "npm run build:embed produces the bundle",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Create frontend/src/embed/index.tsx as entry point."
+    },
+    {
+      "id": "US-004",
+      "title": "Frontend: Embed chat widget UI",
+      "description": "As a website visitor, I want a floating chat button that expands into a chat panel so I can interact with the embedded agent.",
+      "acceptanceCriteria": [
+        "Floating button renders in bottom-right corner of host page",
+        "Clicking button expands to chat panel with message input",
+        "Messages stream from embed-chat endpoint",
+        "Thread ID stored in localStorage for continuity",
+        "'Powered by Orchestra' footer links to /a/{agentId}",
+        "Widget is visually self-contained (no CSS leaks to host page)"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Use shadow DOM or scoped styles to prevent CSS conflicts."
+    },
+    {
+      "id": "US-005",
+      "title": "Frontend: Embed code snippet in agent editor",
+      "description": "As an agent creator, I want to see embed code snippets in my agent editor so I can easily copy-paste the embed code for my website.",
+      "acceptanceCriteria": [
+        "Agent edit page shows 'Embed' section for published agents only",
+        "Section contains copy-to-clipboard script tag snippet",
+        "Snippet uses correct agent ID",
+        "Hidden for unpublished agents",
+        "Typecheck passes (npm run build)"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Agent edit page at frontend/src/pages/agents/edit.tsx"
+    },
+    {
+      "id": "US-006",
+      "title": "Tests for embed functionality",
+      "description": "As a developer, I need tests covering embed token generation, rate limiting, and widget loading.",
+      "acceptanceCriteria": [
+        "Test: embed config returns correct fields for public agent",
+        "Test: embed token generation validates ownership",
+        "Test: embed chat rejects expired/invalid tokens",
+        "Test: rate limiting returns 429 after threshold",
+        "All tests pass (make test)",
+        "Lint passes (make format && make lint)"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
