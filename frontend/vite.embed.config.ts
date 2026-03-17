@@ -7,8 +7,9 @@ export default defineConfig({
 	define: {
 		"process.env.NODE_ENV": JSON.stringify("production"),
 	},
+	publicDir: false,
 	build: {
-		outDir: "dist/embed",
+		outDir: "../backend/src/public/embed",
 		emptyOutDir: true,
 		lib: {
 			entry: path.resolve(__dirname, "src/embed/main.tsx"),

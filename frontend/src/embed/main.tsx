@@ -17,8 +17,14 @@ function getScriptConfig(): EmbedConfig | null {
 	const agentId = script.getAttribute("data-agent-id");
 	if (!agentId) return null;
 
-	const apiBase =
-		script.getAttribute("data-api-base") ?? window.location.origin;
+	// Default apiBase to the origin of the embed script URL (not the host page)
+	let defaultBase = window.location.origin;
+	try {
+		defaultBase = new URL(script.src).origin;
+	} catch {
+		// fall back to window.location.origin
+	}
+	const apiBase = script.getAttribute("data-api-base") ?? defaultBase;
 	const token = script.getAttribute("data-token") ?? undefined;
 
 	return { agentId, apiBase, token };

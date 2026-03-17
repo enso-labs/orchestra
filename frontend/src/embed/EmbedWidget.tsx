@@ -90,7 +90,7 @@ export function EmbedWidget({ agentId, apiBase, token }: EmbedWidgetProps) {
 			}
 
 			const response = await fetch(
-				`${apiBase}/api/v0/assistants/public/${agentId}/embed-chat`,
+				`${apiBase}/api/assistants/public/${agentId}/embed-chat`,
 				{
 					method: "POST",
 					headers,

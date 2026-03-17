@@ -6,6 +6,7 @@ Started: Mon Mar 16 13:00:59 MDT 2026
 - PostgreSQL must be running for backend tests (even unit tests) — start with `docker compose up -d postgres`
 - Redis should also be running for tests — `docker compose up -d redis`
 - Pre-commit hooks run format, lint, AND tests — all must pass to commit
+- For testing TaskIQ tasks with lazy imports, patch at the source module (e.g., `src.services.db.get_store_db`) not at the task module — lazy imports resolve at call time
 - `fork_count` is stored directly on Assistant model, not in metadata dict — follows pattern of other public agent fields (public, owner_id, published_at)
 - `forked_from` is tracked via `metadata["forked_from"]` (not a top-level field) — keeps Assistant schema clean for less frequently accessed lineage data
 - For cross-namespace writes, construct namespace tuple directly: `(target_user_id, self._get_store_key())` — don't rely on `self._get_namespace()` which uses `self.user_id`
@@ -35,6 +36,8 @@ Started: Mon Mar 16 13:00:59 MDT 2026
 - `get_store_db()` as async context manager is the simplest store access in background tasks (works regardless of worker state mode)
 - `stream.py` ↔ `workers/tasks.py` circular import — use lazy import inside function body, not top-level
 - Two streaming paths: synchronous (`stream_generator` in stream.py) and distributed (`_execute_agent_stream` in tasks.py) — both must be updated for post-stream hooks
+- `store.alist_namespaces(max_depth=N)` discovers all stored namespaces — filter by tuple structure to find specific types (e.g., `ns[1] == "trajectories"`)
+- APScheduler system jobs in lifespan use `replace_existing=True` + `misfire_grace_time` for robustness across restarts
 ---
 
 ## 2026-03-16 - US-001
@@ -229,4 +232,66 @@ Started: Mon Mar 16 13:00:59 MDT 2026
   - In `_persist_final_state`, `configurable` dict already has `thread_id` and `assistant_id`; `service_context.user_id` provides the user_id
   - In `_execute_agent_stream`, `user_id` and `thread_id` are function params; `assistant_id` comes from `config["configurable"]["assistant_id"]`
   - Guard with `if thread_id and assistant_id` to skip embed/anonymous chats that lack assistant_id
+- `PromptOptimizer.distill()` needs a `store` parameter (not self.store) since the optimizer is model-scoped, not user-scoped
+- `langmem.Prompt` is a TypedDict with required keys `name` and `prompt` — construct with `Prompt(name=..., prompt=...)`
+- `PromptService.revision()` returns `int` (version number) on success, `False` on failure — check with `if not revision_id`
+- `PromptService.list_revisions()` returns revisions newest-first — `revisions[0].v` gives the latest version number
+- Assistant model_validator enforces only one of `system_prompt` or `instructions` — when updating system_prompt, must set `instructions=None`
+---
+
+## 2026-03-16 - US-016
+- What was implemented: `distill(user_id, assistant_id, store)` method on `PromptOptimizer`. Retrieves up to 50 recent trajectories from `(user_id, "trajectories", assistant_id)` namespace. Gets the assistant's current `system_prompt` or `instructions`. Constructs a langmem `Prompt(name=assistant.name, prompt=current_prompt)` and `OptimizerInput(trajectories=..., prompt=...)`. Runs `self.optimize()` with default gradient config. Extracts optimized prompt text (handles dict and string return types). Compares to current prompt — returns `None` if identical (no improvement). Stores optimized prompt as new revision via `PromptService.revision()` (auto-increments version). Updates the assistant's `system_prompt` field (sets `instructions=None` to satisfy model validator). Returns the revision version number on success, `None` on any failure.
+- Files changed: `backend/src/services/prompt/optimize.py`
+- **Learnings for future iterations:**
+  - `PromptOptimizer.distill()` takes a `store` parameter rather than using `self.store` — the optimizer is constructed per-model, not per-user/store scope
+  - `langmem.Prompt` is a TypedDict (not a Pydantic model) — construct with `Prompt(name=..., prompt=...)`, required keys are `name` and `prompt`
+  - `langmem` optimizer may return either a dict with `prompt` key or a string — handle both cases when extracting optimized text
+  - `PromptService.list_revisions()` returns newest-first — `revisions[0].v` gives latest version for incrementing
+  - When updating `system_prompt` on an Assistant, must also set `instructions=None` — the model_validator rejects both being set
+  - Lazy imports inside `distill()` body (`from src.services.assistant import AssistantService`, `from src.services.prompt import ...`) avoid circular imports and keep the module lightweight
+---
+
+## 2026-03-16 - US-017a
+- What was implemented: `scheduled_prompt_distillation()` module-level async function in `schedule.py`. Discovers all trajectory namespaces via `store.alist_namespaces(max_depth=3)` with pagination, filtering for 3-tuples where `ns[1] == "trajectories"`. For each namespace, counts current trajectories and compares against `(system, distillation_meta)` store metadata to skip agents with no new trajectories since last run. Runs `PromptOptimizer.distill()` for eligible agents, updating the distillation metadata on completion. Per-agent errors are caught and logged without crashing the job. Registered in `main.py` lifespan via `SCHEDULER.add_job()` with `CronTrigger(hour=3)`, `replace_existing=True`, and `misfire_grace_time=3600`.
+- Files changed: `backend/src/services/schedule.py`, `backend/main.py`
+- **Learnings for future iterations:**
+  - `store.alist_namespaces(max_depth=3)` returns all namespaces where items are stored — filter by tuple structure and element values to find specific namespaces (e.g., trajectories)
+  - `store.aget(namespace, key)` returns a single `Item` or `None` — useful for lightweight metadata lookups without `asearch`
+  - APScheduler system jobs registered in lifespan use `replace_existing=True` to avoid duplication on restart — the SQLAlchemy job store persists jobs across restarts
+  - `misfire_grace_time=3600` (1 hour) for daily jobs ensures the job still runs if the scheduler was briefly down at 3 AM
+  - Module-level functions are required for APScheduler pickling — lazy imports inside the function body keep the module lightweight and avoid circular imports
+  - Distillation metadata stored in `("system", "distillation_meta")` namespace with key `{user_id}:{assistant_id}` tracks `last_count` and `last_distilled_at` — comparing counts is cheaper than time-based filtering since `asearch` doesn't support `created_after`
+---
+
+## 2026-03-16 - US-017b
+- What was implemented: POST `/assistants/{id}/distill` endpoint for manual prompt distillation trigger. Requires authentication, validates UUID format, verifies caller owns the assistant (404 if not found, 403 if not owner). Calls `PromptOptimizer(model=assistant.model).distill()` with user_id, assistant_id, and store. Returns `{revision_id, status: "completed"}` when distillation produces a new prompt revision, or `{revision_id: null, status: "no_improvement"}` when no improvement is detected or no trajectories exist.
+- Files changed: `backend/src/routes/v0/assistant.py`
+- **Learnings for future iterations:**
+  - Distill endpoint follows the same ownership pattern as publish/unpublish — ServiceContext verifies the assistant exists in the user's namespace, then additional `owner_id` check for 403
+  - `PromptOptimizer` is constructed with the assistant's model (not a default) so the optimizer uses the same LLM the assistant uses — `PromptOptimizer(model=assistant.model)`
+  - `distill()` returns `Optional[int]` — `None` covers all no-improvement cases (no trajectories, same prompt, optimizer failure), non-None is the revision version number
+  - Endpoint placed after publish/unpublish in its own "Distillation Routes" section — keeps route groups clean
+---
+
+## 2026-03-16 - US-018a
+- What was implemented: 25 unit tests for embed utility functions in `backend/tests/unit/utils/test_embed.py`. Three test classes: `TestCreateEmbedToken` (7 tests for JWT creation — valid JWT, required fields, default/custom rate limit, unique jti, default/custom expiry), `TestVerifyEmbedToken` (7 tests for JWT verification — valid token, expired token, invalid signature, wrong type, agent_id mismatch, malformed token, roundtrip with create_embed_token), `TestCheckEmbedRateLimit` (11 tests with mocked Redis — under-limit allowed, 429 when exceeded for token and anon, IP-based key for anon, first-request TTL set, no TTL reset on subsequent, unknown IP fallback, custom rate limit, exact-limit boundary, Redis connection cleanup on success and error).
+- Files changed: `backend/tests/unit/utils/test_embed.py`
+- **Learnings for future iterations:**
+  - `@patch("src.utils.embed.aioredis")` mocks the entire redis.asyncio module at import site — mock `from_url` to return an `AsyncMock` redis client
+  - Rate limit boundary: `count > limit` means the request AT the exact limit (count == limit) is still allowed — test this edge case
+  - `create_embed_token` and `verify_embed_token` are pure functions (no I/O) so they can be tested directly without mocking
+  - `check_embed_rate_limit` Redis `finally: await redis_client.aclose()` ensures cleanup even on HTTPException — verify with `assert_called_once()` in both success and error paths
+  - Use `self._make_token()` helper with `**overrides` for concise test setup when testing verify_embed_token edge cases
+---
+
+## 2026-03-16 - US-018b
+- What was implemented: 27 unit tests for the distillation pipeline in `backend/tests/unit/services/prompt/test_distill.py`. Three test classes: `TestExtractTextContent` (7 tests for the `_extract_text_content` helper — string, empty, None, list of text blocks, missing text fields, non-dict list elements, integer), `TestExtractTrajectory` (11 tests for the `extract_trajectory` TaskIQ task — human/AI message formatting to user/assistant roles, tool_success_rate all success (1.0), tool_success_rate with failures (error/traceback keywords), HITL rejections detected from "rejected this action" text, HITL rejections omitted when 0, skip when no messages, skip when only tool messages, object-style messages via getattr, multimodal content block extraction, extraction error returns error status without raising), `TestDistill` (10 tests for `PromptOptimizer.distill()` — returns None when no trajectories, assistant not found, no prompt, no improvement detected; creates revision and updates assistant when improved; handles string optimizer output; increments version from existing revisions; returns None on optimizer exception; returns None when revision fails; passes correct trajectories and prompt to optimizer).
+- Files changed: `backend/tests/unit/services/prompt/test_distill.py`
+- **Learnings for future iterations:**
+  - For TaskIQ tasks with lazy imports (`from src.services.db import get_store_db` inside function body), patch at source module (`src.services.db.get_store_db`) not at the task module
+  - `@asynccontextmanager` helper wrapping `InMemoryStore` is the cleanest way to mock `get_store_db()` — avoids `__aenter__`/`__aexit__` mock complexity
+  - TaskIQ decorated functions can be called directly as `await task(...)` without `.fn` — the broker decorator preserves callability
+  - `PromptService` lazy-imported inside `distill()` via `from src.services.prompt import PromptService` — patch at `src.services.prompt.PromptService` (not `src.services.prompt.optimize.PromptService`)
+  - `InMemoryStore` is sufficient for both trajectory extraction and distill tests — no database needed, runs in ~0.09s for all 27 tests
+  - `AnnotatedTrajectory._asdict()` converts NamedTuple to plain dict for storage, matching production code path
 ---

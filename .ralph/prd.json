@@ -302,8 +302,8 @@
         "Typecheck passes (make format && make lint)"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 20be9304. distill(user_id, assistant_id, store) added to PromptOptimizer. Retrieves up to 50 recent trajectories from (user_id, 'trajectories', assistant_id) namespace. Gets current assistant system_prompt/instructions. Constructs langmem Prompt and OptimizerInput, runs optimize(). Extracts optimized text, compares to current prompt (returns None if no improvement). Stores as new prompt revision via PromptService.revision(). Updates assistant system_prompt (sets instructions=None to satisfy validator). All failures caught and logged, returns None gracefully."
     },
     {
       "id": "US-017a",
@@ -318,8 +318,8 @@
         "Typecheck passes (make format && make lint)"
       ],
       "priority": 19,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed f62d0f47. scheduled_prompt_distillation() added to schedule.py — discovers trajectory namespaces via alist_namespaces(), skips agents with no new trajectories by comparing count against (system, distillation_meta) metadata, runs PromptOptimizer.distill() per eligible agent. Per-agent errors caught and logged. Registered in main.py lifespan via CronTrigger(hour=3) with replace_existing=True and 1hr misfire grace."
     },
     {
       "id": "US-017b",
@@ -335,8 +335,8 @@
         "Typecheck passes (make format && make lint)"
       ],
       "priority": 20,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 04592b57. POST /assistants/{id}/distill endpoint added after publish/unpublish section. Requires auth, validates UUID, verifies ownership via ServiceContext (404 if not found, 403 if not owner). Calls PromptOptimizer.distill() with user's model, returns {revision_id, status: 'completed'} on success or {revision_id: null, status: 'no_improvement'} when no improvement detected."
     },
     {
       "id": "US-018a",
@@ -351,8 +351,8 @@
         "Lint passes (make format && make lint)"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 467e1ec2. 25 unit tests in backend/tests/unit/utils/test_embed.py covering: TestCreateEmbedToken (7 tests — valid JWT, required fields, default/custom rate limit, unique jti, default/custom expiry), TestVerifyEmbedToken (7 tests — valid token returns payload, expired/invalid-signature/wrong-type/agent-id-mismatch/malformed tokens raise 401, roundtrip with create_embed_token), TestCheckEmbedRateLimit (11 tests — under-limit allowed, 429 when exceeded for token and anon, IP-based key for anon, first-request TTL, no TTL reset on subsequent, unknown IP fallback, custom rate limit, exact-limit boundary, Redis connection cleanup on success and error)."
     },
     {
       "id": "US-018b",
@@ -367,8 +367,8 @@
         "Lint passes (make format && make lint)"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Committed 68bf4f89. 27 unit tests in backend/tests/unit/services/prompt/test_distill.py. Three test classes: TestExtractTextContent (7 tests — string, empty, None, list of text blocks, missing text, non-dict elements, integer), TestExtractTrajectory (11 tests — message formatting, tool_success_rate, HITL rejections, skip edge cases, object-style messages, multimodal content, error handling), TestDistill (10 tests — no trajectories, not found, no prompt, no improvement, creates revision, string output, version increment, optimizer exception, revision failure, trajectory passthrough)."
     }
   ]
 }
