@@ -6,7 +6,7 @@ from deepagents.backends.utils import (
 from deepagents.graph import AgentMiddleware, BackendProtocol
 from deepagents.middleware.filesystem import (
     TOO_LARGE_TOOL_MSG,
-    TOOL_GENERATORS,
+    TOOLS_EXCLUDED_FROM_EVICTION,
     FileData,
 )
 from langchain.agents import AgentState
@@ -29,6 +29,8 @@ from langchain.agents.middleware import (
     ModelResponse,
     after_model,
 )
+from langchain_anthropic.middleware import AnthropicPromptCachingMiddleware
+from src.constants.llm import ANTHROPIC_PROMPT_CACHE_TTL
 from src.utils.logger import logger
 from src.utils.compacting import compaction_middleware
 from src.utils.format import format_content
@@ -72,6 +74,58 @@ def pii_middleware() -> dict | None:
         #     apply_to_input=True,
         # ),
     ]
+
+
+@wrap_model_call
+async def cache_metrics_middleware(
+    request: ModelRequest,
+    handler: Callable[[ModelRequest], ModelResponse],
+) -> ModelResponse:
+    """Log structured prompt-cache metrics after each model call."""
+    response = await handler(request)
+
+    # Extract the AIMessage from the response
+    ai_msg = None
+    messages = getattr(response, "messages", None)
+    if messages:
+        for msg in reversed(messages):
+            if isinstance(msg, AIMessage):
+                ai_msg = msg
+                break
+
+    if ai_msg is None:
+        return response
+
+    usage = getattr(ai_msg, "usage_metadata", None)
+    if usage is None:
+        return response
+
+    input_tokens = getattr(usage, "input_tokens", 0) or 0
+    output_tokens = getattr(usage, "output_tokens", 0) or 0
+    total_tokens = getattr(usage, "total_tokens", 0) or 0
+
+    # Extract cache-specific details
+    details = getattr(usage, "input_token_details", None)
+    cache_creation = 0
+    cache_read = 0
+    if details:
+        cache_creation = getattr(details, "cache_creation", 0) or 0
+        cache_read = getattr(details, "cache_read", 0) or 0
+
+    # Only log when there's meaningful cache data
+    if cache_creation > 0 or cache_read > 0:
+        cache_hit_ratio = (cache_read / input_tokens * 100) if input_tokens > 0 else 0.0
+        logger.info(
+            f"prompt_cache_metrics "
+            f"input_tokens={input_tokens} "
+            f"output_tokens={output_tokens} "
+            f"total_tokens={total_tokens} "
+            f"cache_creation_tokens={cache_creation} "
+            f"cache_read_tokens={cache_read} "
+            f"cache_hit_ratio={cache_hit_ratio:.1f}%"
+        )
+
+    return response
 
 
 @wrap_model_call
@@ -258,7 +312,7 @@ class AutoEvictMiddleware(AgentMiddleware):
         Returns:
             The raw ToolMessage, or a pseudo tool message with the ToolResult in state.
         """
-        if self.tool_token_limit_before_evict is None or request.tool_call["name"] in TOOL_GENERATORS:
+        if self.tool_token_limit_before_evict is None or request.tool_call["name"] in TOOLS_EXCLUDED_FROM_EVICTION:
             return await handler(request)
 
         tool_result = await handler(request)
@@ -276,10 +330,17 @@ def init_default_middleware(
     Returns:
         The default middleware.
     """
-    return [
+    stack = [
         compaction_middleware,
         add_ai_message_metadata,
+        cache_metrics_middleware,
         retry_model,
         *pii_middleware(),
         AutoEvictMiddleware(backend=backend),
     ]
+
+    # Override deepagents' default cache TTL when configured
+    if ANTHROPIC_PROMPT_CACHE_TTL != "5m":
+        stack.append(AnthropicPromptCachingMiddleware(ttl=ANTHROPIC_PROMPT_CACHE_TTL))
+
+    return stack

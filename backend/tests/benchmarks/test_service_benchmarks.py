@@ -24,6 +24,7 @@ from src.schemas.entities.store import Thread
 from src.services.assistant import AssistantService
 from src.services.llm import LLMService
 from src.services.tool import ToolService
+from langchain_core.messages import SystemMessage
 from src.utils.format import init_system_prompt
 
 # ---------------------------------------------------------------------------
@@ -209,6 +210,18 @@ def test_bench_tool_resolution_empty(benchmark, llm_svc):
 # ===========================================================================
 
 
+def _extract_text(result) -> str:
+    """Extract text from init_system_prompt result (str or SystemMessage)."""
+    if isinstance(result, str):
+        return result
+    if isinstance(result, SystemMessage):
+        blocks = result.content
+        if isinstance(blocks, str):
+            return blocks
+        return "\n".join(b.get("text", "") for b in blocks if isinstance(b, dict))
+    return str(result)
+
+
 def test_bench_prompt_assembly_basic(benchmark):
     """Benchmark init_system_prompt() with minimal config."""
     config = _make_runnable_config(with_timezone=False)
@@ -217,7 +230,8 @@ def test_bench_prompt_assembly_basic(benchmark):
         return init_system_prompt("You are a helpful assistant.", config)
 
     result = benchmark(_call)
-    assert "helpful assistant" in result
+    text = _extract_text(result)
+    assert "helpful assistant" in text
 
 
 def test_bench_prompt_assembly_full(benchmark):
@@ -232,8 +246,9 @@ def test_bench_prompt_assembly_full(benchmark):
         )
 
     result = benchmark(_call)
-    assert "INSTRUCTIONS" in result
-    assert "TIMEZONE" in result
+    text = _extract_text(result)
+    assert "INSTRUCTIONS" in text
+    assert "TIMEZONE" in text
 
 
 def test_bench_prompt_assembly_long_prompt(benchmark):
@@ -245,7 +260,8 @@ def test_bench_prompt_assembly_long_prompt(benchmark):
         return init_system_prompt(long_prompt, config, instructions="Be thorough." * 50)
 
     result = benchmark(_call)
-    assert len(result) > 5000
+    text = _extract_text(result)
+    assert len(text) > 5000
 
 
 # ===========================================================================

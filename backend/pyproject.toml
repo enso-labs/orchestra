@@ -13,7 +13,7 @@ dependencies = [
     "bs4>=0.0.2",
     "cryptography>=45.0.7",
     "daytona>=0.140.0",
-    "deepagents==0.3.8",
+    "deepagents>=0.4.11",
     "langchain-daytona>=0.0.2",
     "langchain-sandbox>=0.0.3", # TODO: Update to 0.0.6 when langchain-core>=1.0 is released
     "langchain[aws]>=1.2.0",
@@ -27,7 +27,7 @@ dependencies = [
     "langchain-openai>=1.1.6",
     "langchain-tavily>=0.2.16",
     "langchain-xai>=1.1.0",
-    "langgraph==1.0.7",
+    "langgraph>=1.0.7",
     "langgraph-checkpoint-postgres>=3.0.2",
     "langmem==0.0.30",
     "loguru>=0.7.3",

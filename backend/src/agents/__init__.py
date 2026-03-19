@@ -9,7 +9,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 from langchain_core.runnables.config import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -122,7 +122,7 @@ async def prepare_memory_files(
 def init_graph(
     tools: list[BaseTool] = [],
     subagents: list[SubAgent] = [],
-    system_prompt: str = None,
+    system_prompt: str | SystemMessage | None = None,
     model: str | None = None,
     context_schema: Type[ContextSchema] | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
@@ -402,7 +402,7 @@ class Orchestra:
         tools: list[BaseTool],
         subagents: Optional[list[SubAgent]] = None,
         model: str = DEFAULT_CHAT_MODEL,
-        system_prompt: str | None = None,
+        system_prompt: str | SystemMessage | None = None,
         context_schema: Type[Any] | None = None,
         checkpointer: BaseCheckpointSaver = None,
         store: BaseStore = None,

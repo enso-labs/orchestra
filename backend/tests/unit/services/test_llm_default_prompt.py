@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from langchain_core.messages import SystemMessage
 
 from src.agents import construct_agent
 from src.schemas.entities.llm import Assistant, LLMRequest
@@ -132,5 +133,13 @@ async def test_construct_agent_appends_instructions_after_selected_base_prompt()
             service_context=service_context,
         )
 
-    assert captured["system_prompt"].startswith("chosen base prompt")
-    assert "INSTRUCTIONS:\nFollow the repo rules." in captured["system_prompt"]
+    prompt = captured["system_prompt"]
+    # init_system_prompt now returns SystemMessage with content blocks
+    if isinstance(prompt, SystemMessage):
+        blocks = prompt.content
+        all_text = "\n".join(b.get("text", "") for b in blocks if isinstance(b, dict))
+        assert "chosen base prompt" in all_text
+        assert "INSTRUCTIONS:\nFollow the repo rules." in all_text
+    else:
+        assert prompt.startswith("chosen base prompt")
+        assert "INSTRUCTIONS:\nFollow the repo rules." in prompt

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, create_model
 from typing import Optional, Any, Dict, Type, List, Tuple
 from loguru import logger
 from datetime import datetime, timezone
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.prebuilt import ToolRuntime
 
 
@@ -78,18 +78,61 @@ def raw_html(content: str) -> str:
 </html>"""
 
 
-def init_system_prompt(system_prompt: str, config: RunnableConfig, instructions: str = None) -> str:
-    lines = [system_prompt]
+def init_system_prompt(system_prompt: str, config: RunnableConfig, instructions: str = None) -> str | SystemMessage:
+    """Build a system prompt with cache-optimal content blocks.
+
+    Returns a ``SystemMessage`` with static content in cacheable blocks
+    (marked with ``cache_control``) and dynamic metadata (time, timezone)
+    in an uncached trailing block.  This structure maximises Anthropic and
+    OpenAI prompt-cache hit rates by keeping the volatile parts separate
+    from the stable prompt prefix.
+
+    Falls back to a plain ``str`` when no metadata is present (subagent
+    prompts, etc.) so callers that only need a string still work.
+    """
+    # --- Build static blocks (cacheable) ---
+    static_blocks: list[dict] = [
+        {
+            "type": "text",
+            "text": system_prompt,
+            "cache_control": {"type": "ephemeral"},
+        }
+    ]
+
     if instructions:
-        lines.append("---")
-        lines.append(f"INSTRUCTIONS:\n{instructions}")
-    lines.append("---")
+        static_blocks.append(
+            {
+                "type": "text",
+                "text": f"---\nINSTRUCTIONS:\n{instructions}",
+                "cache_control": {"type": "ephemeral"},
+            }
+        )
+
+    # --- Separate time-varying metadata (dynamic) from stable metadata (static) ---
     metadata = config.get("metadata", {})
     current_utc = metadata.get("current_utc")
     timezone_val = metadata.get("timezone")
     lang = metadata.get("language", "en-US")
+
+    # Language and timezone are stable per-session — add to cached static block
+    stable_meta: list[str] = []
+    if timezone_val:
+        stable_meta.append(f"TIMEZONE: {timezone_val}")
+    if lang:
+        stable_meta.append(f"LANGUAGE: {lang}")
+
+    if stable_meta:
+        static_blocks.append(
+            {
+                "type": "text",
+                "text": "---\n" + "\n".join(stable_meta),
+                "cache_control": {"type": "ephemeral"},
+            }
+        )
+
+    # Time-varying metadata — changes every request, must NOT be cached
+    time_lines: list[str] = []
     if current_utc:
-        # Attempt to localize UTC datetime based on the provided timezone, if available
         try:
             import pytz
             from dateutil.parser import isoparse
@@ -98,20 +141,29 @@ def init_system_prompt(system_prompt: str, config: RunnableConfig, instructions:
             if timezone_val:
                 tz = pytz.timezone(timezone_val)
                 dt_local = dt_utc.astimezone(tz)
-                lines.append(f"LOCAL_TIME: {dt_local.isoformat()}")
-                lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
+                time_lines.append(f"LOCAL_TIME: {dt_local.isoformat()}")
+                time_lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
             else:
-                lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
+                time_lines.append(f"CURRENT_UTC: {dt_utc.isoformat()}")
         except Exception:
-            lines.append(f"CURRENT_UTC: {current_utc}")
+            time_lines.append(f"CURRENT_UTC: {current_utc}")
     elif timezone_val:
         now_iso = datetime.now(timezone.utc).isoformat()
-        lines.append(f"CURRENT_UTC: {now_iso}")
-    if timezone_val:
-        lines.append(f"TIMEZONE: {timezone_val}")
-    if lang:
-        lines.append(f"LANGUAGE: {lang}")
-    return "\n".join(lines) + "\n"
+        time_lines.append(f"CURRENT_UTC: {now_iso}")
+
+    # If no time-varying metadata, return plain string for simplicity (subagent prompts)
+    if not time_lines:
+        if len(static_blocks) == 1 and not stable_meta:
+            return system_prompt
+        return SystemMessage(content=static_blocks)
+
+    # Dynamic block — no cache_control so it won't pollute the cache
+    dynamic_block = {
+        "type": "text",
+        "text": "---\n" + "\n".join(time_lines) + "\n",
+    }
+
+    return SystemMessage(content=static_blocks + [dynamic_block])
 
 
 def format_content(content: str | list[Any]) -> str:

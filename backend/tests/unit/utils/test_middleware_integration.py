@@ -29,8 +29,8 @@ class TestCompactionInMiddlewareStack:
     def test_middleware_stack_length_unchanged(self) -> None:
         """Default middleware stack has expected number of items."""
         middleware_list = init_default_middleware(backend=None)
-        # compaction, add_ai_message_metadata, retry_model, 2x PII, AutoEvict = 6
-        assert len(middleware_list) == 6
+        # compaction, add_ai_message_metadata, cache_metrics, retry_model, 2x PII, AutoEvict = 7
+        assert len(middleware_list) == 7
 
 
 class TestCompactionMiddlewareNoOp:
