@@ -32,7 +32,7 @@ Ralph processes stories sequentially in isolated context windows. Each story pas
         ├── prd.json
         └── progress.txt
 
-specs/
+.claude/specs/
 └── {phase-name}/
     ├── SPEC.md       # Feature spec with success criteria
     └── prd.json      # Phase-specific Ralph stories
@@ -92,7 +92,7 @@ Compare spec requirements against actual implementation:
 
 ```bash
 # For each spec phase, check if key files exist
-for spec in specs/*/SPEC.md; do
+for spec in .claude/specs/*/SPEC.md; do
   echo "=== $spec ==="
   # Extract file paths mentioned in spec
   grep -oP '`[a-zA-Z/._-]+\.(py|tsx?|ts)`' "$spec" | sort -u

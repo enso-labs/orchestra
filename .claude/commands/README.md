@@ -17,6 +17,8 @@ Command files (.md) in this directory define reusable workflows that automate co
 | **team**          | `/team query="[feature]"`                | Multi-agent code analysis and implementation| Feature description + subagent count            |
 | **spec:feature**  | `/spec:feature [args]`                   | Generate feature spec template              | `ISSUE_NUMBER-SHORTDESC`                        |
 | **spec:bug**      | `/spec:bug [args]`                       | Generate bug spec template                  | `ISSUE_NUMBER-SHORTDESC`                        |
+| **spec:issue**    | `/spec:issue spec=".claude/specs/spec-a.md"` | Create GH issue from spec file         | `spec`, optional `title`, `labels`, `refs`      |
+| **spec:pr**       | `/spec:pr spec=".claude/specs/spec-a.md" issue=892` | Commit spec+plan, open draft PR | `spec`, `issue`, optional `plan`, `slug`, `refs` |
 
 ## Command Structure
 

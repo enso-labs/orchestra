@@ -6,12 +6,12 @@ reveal.js slide deck for [github.com/ruska-ai/orchestra](https://github.com/rusk
 
 - **Live URL:** <https://ruska-ai.github.io/orchestra/>
 - **Tech:** Static HTML with reveal.js via CDN - no build step required
-- **Edit:** `docs/slides/index.html` directly
+- **Edit:** `decks/slides/index.html` directly
 
 ## Directory Structure
 
 ```
-docs/
+decks/
   README.md            # This directory overview
   AGENTS.md            # Agent guidance (this file)
   CLAUDE.md            # Redirects to AGENTS.md
@@ -27,10 +27,10 @@ From the repository root:
 
 ```bash
 # Option 1 - npx serve (serves on port 3000 by default)
-npx serve docs
+npx serve decks
 
 # Option 2 - Python built-in server
-python -m http.server 8080 --directory docs
+python -m http.server 8080 --directory decks
 ```
 
 The root `index.html` redirects to `slides/`.
@@ -88,19 +88,19 @@ agent-browser open http://localhost:8080/slides/
 agent-browser press ArrowRight  # Navigate as needed
 
 # Capture current slide
-agent-browser screenshot docs/slides/screenshots/slide-title.png
+agent-browser screenshot decks/slides/screenshots/slide-title.png
 
 # Capture full-page overview (e.g., after pressing 'o' for overview mode)
 agent-browser press o
-agent-browser screenshot --full docs/slides/screenshots/overview.png
+agent-browser screenshot --full decks/slides/screenshots/overview.png
 ```
 
 ## Deployment
 
 Auto-deploys via `.github/workflows/slides.yml`:
 
-- **Trigger:** push to `development` when files in `docs/slides/**` change, or manual `workflow_dispatch`
-- **Action:** uploads the entire `docs/` directory as a GitHub Pages artifact
+- **Trigger:** push to `development` when files in `decks/slides/**` change, or manual `workflow_dispatch`
+- **Action:** uploads the entire `decks/` directory as a GitHub Pages artifact
 - **Concurrency:** only one deployment runs at a time
 
 ## Editing Slides

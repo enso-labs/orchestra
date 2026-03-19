@@ -230,23 +230,23 @@ Add priority levels to tasks so users can focus on what matters most. Tasks can 
 
 ## Multi-Phase Feature Pipeline
 
-For large features, the input to the PRD skill is often a `specs/` folder produced by the `system-architect` agent rather than a direct user request. Recognize this pipeline:
+For large features, the input to the PRD skill is often a `.claude/specs/` folder produced by the `system-architect` agent rather than a direct user request. Recognize this pipeline:
 
 ```
-specs/
+.claude/specs/
 └── {phase-name}/
     ├── SPEC.md      ← Architecture spec with success criteria (input to PRD)
     └── prd.json     ← Phase-specific Ralph stories (output of ralph skill)
 ```
 
-**When the user provides a `specs/` folder or a SPEC.md:**
+**When the user provides a `.claude/specs/` folder or a SPEC.md:**
 1. Read `SPEC.md` to extract the success criteria, affected files, and phase scope
 2. Use SPEC.md as the source of truth for functional requirements — do NOT invent requirements not in the spec
 3. Map each success criterion in SPEC.md to one or more user stories
 4. Derive acceptance criteria directly from the spec's success criteria (makes them verifiable by definition)
 5. Save the PRD to `tasks/prd-[phase-name].md` then pass it to the `ralph` skill for conversion
 
-**Multi-phase features produce one PRD per phase.** Each phase PRD feeds its own `specs/{phase-name}/prd.json` via the ralph skill. Phase N should NOT depend on stories from Phase N+1.
+**Multi-phase features produce one PRD per phase.** Each phase PRD feeds its own `.claude/specs/{phase-name}/prd.json` via the ralph skill. Phase N should NOT depend on stories from Phase N+1.
 
 **Cross-boundary stories require integration checkpoints.** When a phase spans both backend and frontend (e.g., new API endpoint + frontend widget that calls it), include an explicit integration story as the final story in the phase:
 

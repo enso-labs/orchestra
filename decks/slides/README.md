@@ -12,10 +12,10 @@ Once deployed, the slides are available at: **https://ruska-ai.github.io/orchest
 
 ```bash
 # From repository root
-npx serve docs/slides
+npx serve decks/slides
 
 # Or with live reload
-npx live-server docs/slides --port=8080
+npx live-server decks/slides --port=8080
 ```
 
 Then open http://localhost:8080 in your browser.
@@ -23,8 +23,8 @@ Then open http://localhost:8080 in your browser.
 ### Python Alternative
 
 ```bash
-# From docs/slides directory
-cd docs/slides
+# From decks/slides directory
+cd decks/slides
 python -m http.server 8080
 ```
 
@@ -108,9 +108,9 @@ The workflow `.github/workflows/slides.yml` handles automatic deployment.
 
 ## Adding New Slides
 
-1. Edit `docs/slides/index.html`
+1. Edit `decks/slides/index.html`
 2. Add new `<section>` elements where appropriate
-3. Preview locally with `npx serve docs/slides`
+3. Preview locally with `npx serve decks/slides`
 4. Commit and push to trigger deployment
 
 ## Resources

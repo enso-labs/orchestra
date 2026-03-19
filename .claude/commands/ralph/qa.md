@@ -28,7 +28,7 @@ FEATURE: $ARGUMENTS.feature
    - The agent will:
      - Validate prd.json structure and required fields
      - Detect dependency ordering violations (frontend before backend, etc.)
-     - Compare spec files in `WORKTREE/specs/*/SPEC.md` against implementation
+     - Compare spec files in `WORKTREE/.claude/specs/*/SPEC.md` against implementation
      - Identify integration coverage gaps across stories
      - Extract learnings from `WORKTREE/.ralph/progress.txt`
    - _CAPTURE_ audit report output
