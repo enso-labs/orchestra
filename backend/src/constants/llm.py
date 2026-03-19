@@ -189,6 +189,9 @@ def _safe_int_env(var_name: str, default: int) -> int:
         return default
 
 
+# Anthropic prompt cache TTL (valid: "5m" or "1h")
+ANTHROPIC_PROMPT_CACHE_TTL = os.getenv("ANTHROPIC_PROMPT_CACHE_TTL", "5m")
+
 # Compaction middleware constants
 DEFAULT_COMPACTION_TOKEN_THRESHOLD = _safe_int_env("COMPACTION_TOKEN_THRESHOLD", 170000)
 DEFAULT_COMPACTION_RECENT_MESSAGES = _safe_int_env("COMPACTION_RECENT_MESSAGES", 6)
