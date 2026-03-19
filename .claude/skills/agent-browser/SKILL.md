@@ -75,6 +75,7 @@ Three types:
 
 ## Defaults
 
+- **Default viewport**: 1920x1080 — run `agent-browser set viewport 1920 1080` after opening any page (matches video-gif-generation recording ratio)
 - **Default test URL**: `http://localhost:5173`
 - **Default login credentials**: `admin@example.com` / `test1234`
 - **Default screenshot mode**: Light mode (run `agent-browser set media light` before capturing) — required when creating docs for `@wiki`
@@ -96,11 +97,13 @@ If the running server's working directory does NOT match the current worktree, s
 ## Agent Workflow
 
 1. **Check dev server** (see above) — start one if needed
-2. **Navigate + snapshot**: `agent-browser open <url> && agent-browser snapshot --json`
-3. **Parse refs** from JSON output to identify interactive elements
-4. **Act** using refs: `agent-browser click @e2`, `agent-browser fill @e3 "hello"`
-5. **Re-snapshot** after each action to observe new state
-6. **Screenshot** when visual verification is needed (light mode for wiki docs)
+2. **Navigate**: `agent-browser open <url>`
+3. **Set viewport**: `agent-browser set viewport 1920 1080` (always, before any interaction)
+4. **Snapshot**: `agent-browser snapshot --json` to get element refs
+5. **Parse refs** from JSON output to identify interactive elements
+6. **Act** using refs: `agent-browser click @e2`, `agent-browser fill @e3 "hello"`
+7. **Re-snapshot** after each action to observe new state
+8. **Screenshot** when visual verification is needed (light mode for wiki docs)
 
 ## JSON Output
 
