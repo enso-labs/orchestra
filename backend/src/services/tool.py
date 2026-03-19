@@ -69,7 +69,14 @@ class ToolService:
             }
             if not enabled_mcp:
                 return []
-            mcp_client = MultiServerMCPClient(enabled_mcp)
+            # Strip non-connection keys (e.g. 'enabled') before passing to MultiServerMCPClient
+            cleaned_mcp = {}
+            for name, config in enabled_mcp.items():
+                if isinstance(config, dict):
+                    cleaned_mcp[name] = {k: v for k, v in config.items() if k != "enabled"}
+                else:
+                    cleaned_mcp[name] = config
+            mcp_client = MultiServerMCPClient(cleaned_mcp)
             mcp_tools = await mcp_client.get_tools()
             return mcp_tools
         except Exception as e:

@@ -1,10 +1,11 @@
-.PHONY: update-submodules ralph archive setup tag changelog dev.storage.up dev.storage.down dev.storage.ps dev.services.up dev.services.down dev.services.ps dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate benchmark.images test.images
+.PHONY: update-submodules ralph archive setup tag changelog dev.storage.up dev.storage.down dev.storage.ps dev.services.up dev.services.down dev.services.ps dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.debug benchmark.images test.images
 
 ENV ?= dev
 MAX_ITERATIONS ?= 200
 DOCKER_STORAGE_COMPOSE = docker compose -f docker-compose.storage.yml
 DOCKER_SERVICES_COMPOSE = docker compose -f docker-compose.services.yml
 DOCKER_DEV_COMPOSE = docker compose -f docker-compose.dev.yml
+DOCKER_DEBUG_COMPOSE = docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml
 DOCKER_DEV_LOG_SERVICES ?= backend worker frontend
 
 update-submodules:
@@ -87,6 +88,9 @@ dev.services.ps:
 
 dev.docker.up:
 	@$(DOCKER_DEV_COMPOSE) up --build -d
+
+dev.docker.debug:
+	@$(DOCKER_DEBUG_COMPOSE) up --build -d
 
 dev.docker.down:
 	@$(DOCKER_DEV_COMPOSE) down --remove-orphans
