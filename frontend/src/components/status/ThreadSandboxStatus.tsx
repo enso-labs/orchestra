@@ -26,23 +26,31 @@ import {
 	getSettings,
 	patchDefaults,
 } from "@/lib/services/userSettingsService";
+import { useSandboxHealth } from "@/hooks/useSandboxHealth";
 
 export default function ThreadSandboxStatus() {
 	const [open, setOpen] = useState(false);
 	const [sandbox, setSandbox] = useState<SandboxType>(DEFAULT_SANDBOX);
 	const [loading, setLoading] = useState(true);
 	const [providerKeys, setProviderKeys] = useState<ProviderKeyStatus[]>([]);
+	const [mcpSandboxUrl, setMcpSandboxUrl] = useState<string | null>(null);
 	const currentOption = getSandboxOption(sandbox);
+	const { isHealthy, refresh } = useSandboxHealth(mcpSandboxUrl);
 
 	const visibleOptions = useMemo(
 		() =>
 			SANDBOX_OPTIONS.filter((opt) => {
-				if (opt.value !== "daytona") return true;
-				return providerKeys.some(
-					(k) => k.provider === "DAYTONA_API_KEY" && k.is_set,
-				);
+				if (opt.value === "daytona") {
+					return providerKeys.some(
+						(k) => k.provider === "DAYTONA_API_KEY" && k.is_set,
+					);
+				}
+				if (opt.value === "mcp") {
+					return !!mcpSandboxUrl;
+				}
+				return true;
 			}),
-		[providerKeys],
+		[providerKeys, mcpSandboxUrl],
 	);
 
 	useEffect(() => {
@@ -56,6 +64,7 @@ export default function ThreadSandboxStatus() {
 
 				setSandbox(normalizeSandboxValue(res.defaults.sandbox));
 				setProviderKeys(res.provider_keys ?? []);
+				setMcpSandboxUrl(res.defaults.mcp_sandbox_url ?? null);
 			})
 			.catch(() => {
 				if (isActive) {
@@ -100,7 +109,13 @@ export default function ThreadSandboxStatus() {
 			className="flex items-center justify-start"
 			data-tour="sandbox-selector"
 		>
-			<Popover open={open} onOpenChange={setOpen}>
+			<Popover
+				open={open}
+				onOpenChange={(isOpen) => {
+					setOpen(isOpen);
+					if (isOpen) refresh();
+				}}
+			>
 				<PopoverTrigger asChild>
 					<Button
 						variant="ghost"
@@ -152,9 +167,14 @@ export default function ThreadSandboxStatus() {
 											selected ? "opacity-100" : "opacity-0",
 										)}
 									/>
-									<span className="min-w-0">
-										<span className="block text-sm font-medium">
+									<span className="min-w-0 flex-1">
+										<span className="flex items-center gap-2 text-sm font-medium">
 											{option.label}
+											{option.value === "mcp" && isHealthy !== null && (
+												<span
+													className={`h-2 w-2 rounded-full ${isHealthy ? "bg-green-500" : "bg-red-500"}`}
+												/>
+											)}
 										</span>
 										<span className="block text-xs text-muted-foreground">
 											{option.description}

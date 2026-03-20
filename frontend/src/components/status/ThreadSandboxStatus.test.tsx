@@ -20,6 +20,14 @@ vi.mock("sonner", () => ({
 	},
 }));
 
+vi.mock("@/hooks/useSandboxHealth", () => ({
+	useSandboxHealth: () => ({
+		isHealthy: null,
+		isLoading: false,
+		refresh: vi.fn(),
+	}),
+}));
+
 describe("ThreadSandboxStatus", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

@@ -22,12 +22,18 @@ export const SANDBOX_OPTIONS: readonly SandboxOption[] = [
 		shortLabel: "Daytona",
 		description: "Run agent code in the Daytona sandbox backend.",
 	},
+	{
+		value: "mcp",
+		label: "MCP Sandbox",
+		shortLabel: "MCP",
+		description: "Run agent code in an isolated MCP sandbox container.",
+	},
 ] as const;
 
 export function normalizeSandboxValue(
 	value: string | null | undefined,
 ): SandboxType {
-	if (value === "daytona") {
+	if (value === "daytona" || value === "mcp") {
 		return value;
 	}
 
