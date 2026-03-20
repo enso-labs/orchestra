@@ -12,6 +12,7 @@ from src.agents import (
     construct_agent,
     init_config,
     is_daytona_error,
+    is_mcp_sandbox_error,
     prepare_memory_files,
     resolve_sandbox_backend,
     _create_state_backend,
@@ -67,40 +68,33 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
-    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None, str | None]:
-        """Resolve user default model, API key, and sandbox preference.
+    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None, str | None, str | None]:
+        """Resolve user default model, API key, sandbox preference, and MCP URL.
 
-        Returns (model, api_key, default_sandbox) where model may be overridden
-        by user default, api_key is the resolved key for the provider, and
-        default_sandbox is the user's sandbox backend preference.
+        Returns (model, api_key, default_sandbox, mcp_sandbox_url).
         """
         if not self.user_id:
-            # Unauthenticated users: fall back to system default if no model
             if not model:
                 model = DEFAULT_CHAT_MODEL
-            return model, None, None
+            return model, None, None, None
 
         settings_repo = UserSettingsRepo(self.user_id, self.store)
         settings = await settings_repo._get_or_create()
         user_keys = settings_repo._decrypt_keys(settings)
 
-        # Apply user default model when request has no explicit model
         if not model and settings.default_model:
             model = settings.default_model
-
-        # Final fallback to system default
         if not model:
             model = DEFAULT_CHAT_MODEL
 
-        # Read sandbox preference from settings
         default_sandbox = getattr(settings, "default_sandbox", None)
+        mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
 
-        # Guard against None model before resolving API key
         if not model:
-            return model, None, default_sandbox
+            return model, None, default_sandbox, mcp_sandbox_url
 
         api_key = resolve_api_key(model, user_keys if user_keys else None)
-        return model, api_key, default_sandbox
+        return model, api_key, default_sandbox, mcp_sandbox_url
 
     async def llm_invoke(self, params: LLMRequest):
         """Invoke the agent synchronously and return the final response.
@@ -117,8 +111,8 @@ class LLMController:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
 
-            # Resolve user-configured API key, default model, and sandbox
-            params.model, api_key, default_sandbox = await self._resolve_user_settings(params.model)
+            # Resolve user-configured API key, default model, sandbox, and MCP URL
+            params.model, api_key, default_sandbox, mcp_sandbox_url = await self._resolve_user_settings(params.model)
 
             # Load user memories into files_map for MemoryMiddleware
             memory_files, _memory_sources = await prepare_memory_files(
@@ -139,7 +133,9 @@ class LLMController:
 
             async with get_checkpoint_db() as checkpointer:
                 runtime = self._init_runtime(params)
-                backend, _sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
+                backend, _sandbox, effective_type = resolve_sandbox_backend(
+                    runtime, sandbox_type=default_sandbox, mcp_sandbox_url=mcp_sandbox_url
+                )
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
                     system_prompt=params.system_prompt,
@@ -161,13 +157,11 @@ class LLMController:
         except Exception as e:
             if is_daytona_error(e):
                 if default_sandbox == "daytona":
-                    # Explicit daytona mode: surface the detailed error
                     logger.error(f"Daytona sandbox error (daytona mode): {e}")
                     if agent and config:
                         await self._update_store(agent, config)
                     raise
                 elif default_sandbox in (None, "auto") and effective_type == "daytona":
-                    # Auto mode: fallback to local StateBackend and retry
                     logger.warning(f"Daytona sandbox error in auto mode, falling back to local: {e}")
                     try:
                         fallback_backend, _ = _create_state_backend(runtime)
@@ -195,6 +189,40 @@ class LLMController:
                             await self._update_store(agent, config)
                         raise fallback_err
 
+            if is_mcp_sandbox_error(e):
+                if default_sandbox == "mcp":
+                    logger.error(f"MCP sandbox error (mcp mode): {e}")
+                    if agent and config:
+                        await self._update_store(agent, config)
+                    raise
+                elif default_sandbox in (None, "auto") and effective_type == "mcp":
+                    logger.warning(f"MCP sandbox error in auto mode, falling back to local: {e}")
+                    try:
+                        fallback_backend, _ = _create_state_backend(runtime)
+                        agent = await construct_agent(
+                            instructions=params.instructions,
+                            system_prompt=params.system_prompt,
+                            model=params.model,
+                            tools=params.tools,
+                            subagents=params.subagents,
+                            checkpointer=checkpointer,
+                            backend=fallback_backend,
+                            service_context=self.service_context,
+                            api_key=api_key,
+                            memory=memory_sources,
+                        )
+                        response = await agent.invoke(
+                            params.input,
+                            config=config,
+                            context=self._init_context(params),
+                        )
+                        return response
+                    except Exception as fallback_err:
+                        logger.exception(f"MCP fallback also failed in llm_invoke: {fallback_err}")
+                        if agent and config:
+                            await self._update_store(agent, config)
+                        raise fallback_err
+
             logger.exception(f"Error in llm_invoke: {e}")
             if agent and config:
                 await self._update_store(agent, config)
@@ -207,8 +235,8 @@ class LLMController:
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)
 
-        # Resolve user-configured API key, default model, and sandbox
-        assistant.model, api_key, default_sandbox = await self._resolve_user_settings(assistant.model)
+        # Resolve user-configured API key, default model, sandbox, and MCP URL
+        assistant.model, api_key, default_sandbox, mcp_sandbox_url = await self._resolve_user_settings(assistant.model)
 
         return stream_generator(
             input=assistant.input,
@@ -221,6 +249,7 @@ class LLMController:
             instructions=assistant.instructions,
             api_key=api_key,
             sandbox_type=default_sandbox,
+            mcp_sandbox_url=mcp_sandbox_url,
             stream_mode=assistant.resolved_stream_mode,
         )
 

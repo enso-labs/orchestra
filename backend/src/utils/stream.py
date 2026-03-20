@@ -20,6 +20,8 @@ from src.agents import (
     resolve_sandbox_backend,
     prepare_memory_files,
     is_daytona_error,
+    is_mcp_sandbox_error,
+    MCP_SANDBOX_UNREACHABLE,
     _create_state_backend,
 )
 from src.services.db import get_checkpoint_db
@@ -329,6 +331,7 @@ async def stream_generator(
     instructions: str = None,
     api_key: str | None = None,
     sandbox_type: str | None = None,
+    mcp_sandbox_url: str | None = None,
     stream_mode: list[str] | None = None,
 ):
     """Stream agent responses as Server-Sent Events.
@@ -373,7 +376,9 @@ async def stream_generator(
                 stream_writer=lambda _: None,
                 config=config,
             )
-            backend, _sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=sandbox_type)
+            backend, _sandbox, effective_type = resolve_sandbox_backend(
+                runtime, sandbox_type=sandbox_type, mcp_sandbox_url=mcp_sandbox_url
+            )
             agent = await construct_agent(
                 instructions=instructions,
                 system_prompt=system_prompt,
@@ -438,6 +443,39 @@ async def stream_generator(
                                 yield sse_line
                     except Exception as fallback_err:
                         logger.exception("Fallback also failed in stream_generator: %s", fallback_err)
+                        error_msg = ujson.dumps(("error", str(fallback_err)))
+                        yield f"data: {error_msg}\n\n"
+                else:
+                    logger.exception("Error in stream_generator: %s", e)
+                    error_msg = ujson.dumps(("error", str(e)))
+                    yield f"data: {error_msg}\n\n"
+            elif is_mcp_sandbox_error(e):
+                if sandbox_type == "mcp":
+                    logger.error(f"MCP sandbox error (mcp mode): {e}")
+                    error_msg = ujson.dumps((MCP_SANDBOX_UNREACHABLE, f"MCP sandbox unreachable: {e}"))
+                    yield f"data: {error_msg}\n\n"
+                elif sandbox_type in (None, "auto") and effective_type == "mcp":
+                    logger.warning(f"MCP sandbox error in auto mode, falling back to local: {e}")
+                    try:
+                        fallback_backend, _ = _create_state_backend(runtime)
+                        agent = await construct_agent(
+                            instructions=instructions,
+                            system_prompt=system_prompt,
+                            model=model,
+                            tools=tools,
+                            subagents=subagents,
+                            checkpointer=checkpointer,
+                            backend=fallback_backend,
+                            service_context=service_context,
+                            api_key=api_key,
+                            memory=memory_sources,
+                        )
+                        async for chunk in agent.astream(input, **astream_kwargs):
+                            sse_line = _process_and_format_chunk(chunk, agent.model, state)
+                            if sse_line:
+                                yield sse_line
+                    except Exception as fallback_err:
+                        logger.exception("MCP fallback also failed in stream_generator: %s", fallback_err)
                         error_msg = ujson.dumps(("error", str(fallback_err)))
                         yield f"data: {error_msg}\n\n"
                 else:
