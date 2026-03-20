@@ -399,6 +399,8 @@ async def _execute_agent_stream(
         resolve_sandbox_backend,
         prepare_memory_files,
         is_daytona_error,
+        is_mcp_sandbox_error,
+        MCP_SANDBOX_UNREACHABLE,
         _create_state_backend,
     )
     from src.utils.format import get_time
@@ -423,6 +425,7 @@ async def _execute_agent_stream(
         settings = await settings_repo._get_or_create()
         user_keys = settings_repo._decrypt_keys(settings)
         default_sandbox = getattr(settings, "default_sandbox", None)
+        mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
         if not params.model and settings.default_model:
             params.model = settings.default_model
         if not params.model:
@@ -430,6 +433,7 @@ async def _execute_agent_stream(
         if params.model:
             api_key = resolve_api_key(params.model, user_keys if user_keys else None)
     else:
+        mcp_sandbox_url = None
         if not params.model:
             params.model = DEFAULT_CHAT_MODEL
 
@@ -452,7 +456,9 @@ async def _execute_agent_stream(
         stream_writer=lambda _: None,
         config=config,
     )
-    backend, _sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=default_sandbox)
+    backend, _sandbox, effective_type = resolve_sandbox_backend(
+        runtime, sandbox_type=default_sandbox, mcp_sandbox_url=mcp_sandbox_url
+    )
 
     agent = await construct_agent(
         instructions=params.instructions,
@@ -542,6 +548,61 @@ async def _execute_agent_stream(
                 return {"status": "error", "stream_key": stream_key}
             elif default_sandbox in (None, "auto") and effective_type == "daytona":
                 logger.warning(f"Daytona sandbox error in auto mode worker, falling back to local: {e}")
+                fallback_backend, _ = _create_state_backend(runtime)
+                agent = await construct_agent(
+                    instructions=params.instructions,
+                    system_prompt=params.system_prompt,
+                    tools=params.tools,
+                    model=params.model,
+                    subagents=params.subagents,
+                    checkpointer=checkpointer,
+                    service_context=service_context,
+                    backend=fallback_backend,
+                    memory=memory_sources,
+                    api_key=api_key,
+                )
+                await _stream_chunks_to_redis(
+                    agent=agent,
+                    input=params.input,
+                    stream_mode=stream_mode,
+                    config=config,
+                    ctx_schema=ctx_schema,
+                    files_map=files_map,
+                    todos_list=todos_list,
+                    redis_client=redis_client,
+                    stream_key=stream_key,
+                    service_context=service_context,
+                    thread_id=thread_id,
+                    user_id=user_id,
+                    run_id=run_id,
+                    started_at=started_at,
+                )
+            else:
+                raise
+        elif is_mcp_sandbox_error(e):
+            if default_sandbox == "mcp":
+                logger.error(f"MCP sandbox error (mcp mode) in worker: {e}")
+                error_msg = ujson.dumps((MCP_SANDBOX_UNREACHABLE, f"MCP sandbox unreachable: {e}"))
+                await redis_client.xadd(stream_key, {"data": error_msg})
+                await redis_client.xadd(stream_key, {"done": "true"})
+                await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
+                await _update_thread_stream_state(
+                    service_context=service_context,
+                    thread_id=thread_id,
+                    config=config,
+                    files_map=files_map,
+                    todos_list=todos_list,
+                    metadata=_build_stream_metadata(
+                        run_id=run_id,
+                        status="error",
+                        started_at=started_at,
+                        finished_at=get_time(),
+                        error=f"MCP sandbox unreachable: {e}",
+                    ),
+                )
+                return {"status": "error", "stream_key": stream_key}
+            elif default_sandbox in (None, "auto") and effective_type == "mcp":
+                logger.warning(f"MCP sandbox error in auto mode worker, falling back to local: {e}")
                 fallback_backend, _ = _create_state_backend(runtime)
                 agent = await construct_agent(
                     instructions=params.instructions,
