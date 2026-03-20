@@ -161,7 +161,9 @@ class McpSandboxBackend(BaseSandbox):
             try:
                 resp = self.execute(f"base64 '{path}'")
                 if resp.exit_code == 0:
-                    decoded = base64.b64decode(resp.output.strip())
+                    # Strip the exit_code line from output before decoding
+                    clean = re.sub(r"\n?exit_code:\s*\d+\s*$", "", resp.output).strip()
+                    decoded = base64.b64decode(clean)
                     results.append(FileDownloadResponse(path=path, content=decoded, error=None))
                 else:
                     results.append(FileDownloadResponse(path=path, content=None, error="file_not_found"))
