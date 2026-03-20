@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import apiClient from "@/lib/utils/apiClient";
 
 interface SandboxHealthResult {
 	isHealthy: boolean | null;
@@ -9,14 +10,9 @@ interface SandboxHealthResult {
 const noop = () => {};
 
 /**
- * Pings the health endpoint derived from the user's MCP sandbox URL.
- * Health endpoint: strip trailing /mcp suffix, append /health.
+ * Checks MCP sandbox health via backend proxy endpoint.
+ * The backend makes the actual request to the sandbox (avoids CORS / Docker networking issues).
  */
-function deriveHealthUrl(mcpUrl: string): string {
-	const base = mcpUrl.replace(/\/mcp\/?$/, "");
-	return `${base}/health`;
-}
-
 export function useSandboxHealth(
 	mcpSandboxUrl: string | null,
 ): SandboxHealthResult {
@@ -36,12 +32,10 @@ export function useSandboxHealth(
 		abortRef.current = controller;
 
 		setIsLoading(true);
-		const healthUrl = deriveHealthUrl(mcpSandboxUrl);
 
-		fetch(healthUrl, { signal: controller.signal })
-			.then((res) => {
-				if (!res.ok) throw new Error("not ok");
-				return res.json();
+		apiClient
+			.get("/settings/mcp-sandbox-health", {
+				signal: controller.signal,
 			})
 			.then(() => {
 				if (!controller.signal.aborted) setIsHealthy(true);

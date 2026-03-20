@@ -19,9 +19,13 @@ from src.agents.mcp_sandbox import McpSandboxBackend, McpSandboxError, _parse_js
 
 def _mock_response(status_code: int = 200, json_data: dict | None = None, headers: dict | None = None):
     """Create a mock httpx.Response."""
+    import json
+
     resp = MagicMock(spec=httpx.Response)
     resp.status_code = status_code
-    resp.json.return_value = json_data or {}
+    data = json_data or {}
+    resp.json.return_value = data
+    resp.text = json.dumps(data)
     resp.headers = headers or {}
     resp.raise_for_status = MagicMock()
     if status_code >= 400:

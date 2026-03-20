@@ -332,6 +332,7 @@ async def stream_generator(
     api_key: str | None = None,
     sandbox_type: str | None = None,
     mcp_sandbox_url: str | None = None,
+    mcp_api_key: str | None = None,
     stream_mode: list[str] | None = None,
 ):
     """Stream agent responses as Server-Sent Events.
@@ -377,7 +378,7 @@ async def stream_generator(
                 config=config,
             )
             backend, _sandbox, effective_type = resolve_sandbox_backend(
-                runtime, sandbox_type=sandbox_type, mcp_sandbox_url=mcp_sandbox_url
+                runtime, sandbox_type=sandbox_type, mcp_sandbox_url=mcp_sandbox_url, mcp_api_key=mcp_api_key
             )
             agent = await construct_agent(
                 instructions=instructions,

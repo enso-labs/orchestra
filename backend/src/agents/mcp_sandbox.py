@@ -18,9 +18,14 @@ from deepagents.backends.protocol import (
     WriteResult,
 )
 
+from deepagents.backends.utils import create_file_data
+
 from src.utils.logger import logger
 
 EXIT_CODE_RE = re.compile(r"exit_code:\s*(\d+)")
+
+# SSE data line pattern: "data: {json}"
+_SSE_DATA_RE = re.compile(r"^data:\s*(.+)$", re.MULTILINE)
 
 
 class McpSandboxError(Exception):
@@ -58,6 +63,22 @@ class McpSandboxBackend(BaseSandbox):
         logger.debug(f"McpSandboxBackend created for {self._base_url}")
 
     # -- Private helpers --
+
+    @staticmethod
+    def _parse_sse_json(resp: httpx.Response) -> dict:
+        """Parse a JSON-RPC response that may be wrapped in SSE framing.
+
+        The MCP Streamable HTTP transport returns ``event: message\\ndata: {json}``
+        instead of raw JSON.  This helper handles both formats transparently.
+        """
+        text = resp.text.strip()
+        if text.startswith("{"):
+            return json.loads(text)
+        # SSE format — extract the first data line
+        match = _SSE_DATA_RE.search(text)
+        if match:
+            return json.loads(match.group(1))
+        raise ValueError(f"Unable to parse MCP response: {text[:200]}")
 
     def _build_headers(self, *, include_session: bool = False) -> dict[str, str]:
         """Build common request headers."""
@@ -137,7 +158,7 @@ class McpSandboxBackend(BaseSandbox):
             }
             tools_resp = self._client.post(url, json=tools_payload, headers=self._build_headers(include_session=True))
             tools_resp.raise_for_status()
-            tools_data = tools_resp.json()
+            tools_data = self._parse_sse_json(tools_resp)
             tool_list = tools_data.get("result", {}).get("tools", [])
             self._available_tools = {t["name"] for t in tool_list if isinstance(t, dict) and "name" in t}
             logger.debug(f"MCP tools discovered: {self._available_tools}")
@@ -162,7 +183,7 @@ class McpSandboxBackend(BaseSandbox):
             kwargs["timeout"] = timeout
         resp = self._client.post(url, **kwargs)
         resp.raise_for_status()
-        return resp.json()
+        return self._parse_sse_json(resp)
 
     def _get_text_and_meta(self, data: dict) -> tuple[str, int]:
         """Extract text content and exit code from a tool call response."""
@@ -227,7 +248,11 @@ class McpSandboxBackend(BaseSandbox):
             data = self._send_tool_call("write", {"path": file_path, "content": content})
             _, exit_code = self._get_text_and_meta(data)
             if exit_code == 0:
-                return WriteResult(error=None, path=file_path)
+                return WriteResult(
+                    error=None,
+                    path=file_path,
+                    files_update={file_path: create_file_data(content)},
+                )
             text = data.get("result", {}).get("content", [{}])[0].get("text", "write failed")
             return WriteResult(error=text, path=file_path)
         return super().write(file_path, content)
@@ -244,7 +269,16 @@ class McpSandboxBackend(BaseSandbox):
                 # Parse occurrence count from text like "Replaced 1 occurrence(s)"
                 occ_match = re.search(r"(\d+)\s+occurrence", text)
                 occurrences = int(occ_match.group(1)) if occ_match else 1
-                return EditResult(error=None, path=file_path, occurrences=occurrences)
+                # Read back the edited file to sync to frontend
+                files_update = None
+                try:
+                    content = self.read(file_path)
+                    # read() returns line-numbered text; strip line numbers
+                    lines = [line.split("\t", 1)[1] if "\t" in line else line for line in content.split("\n")]
+                    files_update = {file_path: create_file_data("\n".join(lines))}
+                except Exception:
+                    pass
+                return EditResult(error=None, path=file_path, occurrences=occurrences, files_update=files_update)
             error_msgs = {
                 1: "old_string not found in file",
                 2: "multiple matches found (use replace_all=true)",

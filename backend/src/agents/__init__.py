@@ -313,6 +313,7 @@ def _create_state_backend(
 def _create_mcp_backend_checked(
     runtime: ToolRuntime,
     mcp_sandbox_url: str | None = None,
+    mcp_api_key: str | None = None,
 ) -> tuple[CompositeBackend, None] | None:
     """Try to create an MCP-backed CompositeBackend.
 
@@ -324,7 +325,7 @@ def _create_mcp_backend_checked(
     try:
         from src.agents.mcp_sandbox import McpSandboxBackend
 
-        mcp_backend = McpSandboxBackend(base_url=mcp_sandbox_url)
+        mcp_backend = McpSandboxBackend(base_url=mcp_sandbox_url, api_key=mcp_api_key)
         backend = CompositeBackend(default=mcp_backend, routes={})
         return backend, None
     except Exception as exc:
@@ -358,6 +359,7 @@ def resolve_sandbox_backend(
     runtime: ToolRuntime,
     sandbox_type: str | None = None,
     mcp_sandbox_url: str | None = None,
+    mcp_api_key: str | None = None,
 ) -> tuple[CompositeBackend, Any, str]:
     """Resolve a sandbox backend based on *sandbox_type*.
 
@@ -378,7 +380,7 @@ def resolve_sandbox_backend(
         return backend, sandbox, "state"
 
     if effective == "mcp":
-        result = _create_mcp_backend_checked(runtime, mcp_sandbox_url)
+        result = _create_mcp_backend_checked(runtime, mcp_sandbox_url, mcp_api_key=mcp_api_key)
         if result is not None:
             return result[0], result[1], "mcp"
         backend, sandbox = _create_state_backend(runtime)
@@ -397,7 +399,7 @@ def resolve_sandbox_backend(
         return result[0], result[1], "daytona"
 
     if mcp_sandbox_url:
-        mcp_result = _create_mcp_backend_checked(runtime, mcp_sandbox_url)
+        mcp_result = _create_mcp_backend_checked(runtime, mcp_sandbox_url, mcp_api_key=mcp_api_key)
         if mcp_result is not None:
             return mcp_result[0], mcp_result[1], "mcp"
 

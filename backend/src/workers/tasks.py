@@ -420,12 +420,14 @@ async def _execute_agent_stream(
 
     api_key = None
     default_sandbox = None
+    mcp_api_key = None
     if user_id:
         settings_repo = UserSettingsRepo(user_id, service_context.store)
         settings = await settings_repo._get_or_create()
         user_keys = settings_repo._decrypt_keys(settings)
         default_sandbox = getattr(settings, "default_sandbox", None)
         mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
+        mcp_api_key = user_keys.get("MCP_SANDBOX_API_KEY") if user_keys else None
         if not params.model and settings.default_model:
             params.model = settings.default_model
         if not params.model:
@@ -457,7 +459,7 @@ async def _execute_agent_stream(
         config=config,
     )
     backend, _sandbox, effective_type = resolve_sandbox_backend(
-        runtime, sandbox_type=default_sandbox, mcp_sandbox_url=mcp_sandbox_url
+        runtime, sandbox_type=default_sandbox, mcp_sandbox_url=mcp_sandbox_url, mcp_api_key=mcp_api_key
     )
 
     agent = await construct_agent(

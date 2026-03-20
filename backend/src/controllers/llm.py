@@ -68,15 +68,15 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
-    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None, str | None, str | None]:
-        """Resolve user default model, API key, sandbox preference, and MCP URL.
+    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None, str | None, str | None, str | None]:
+        """Resolve user default model, API key, sandbox preference, MCP URL, and MCP API key.
 
-        Returns (model, api_key, default_sandbox, mcp_sandbox_url).
+        Returns (model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key).
         """
         if not self.user_id:
             if not model:
                 model = DEFAULT_CHAT_MODEL
-            return model, None, None, None
+            return model, None, None, None, None
 
         settings_repo = UserSettingsRepo(self.user_id, self.store)
         settings = await settings_repo._get_or_create()
@@ -89,12 +89,13 @@ class LLMController:
 
         default_sandbox = getattr(settings, "default_sandbox", None)
         mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
+        mcp_api_key = user_keys.get("MCP_SANDBOX_API_KEY") if user_keys else None
 
         if not model:
-            return model, None, default_sandbox, mcp_sandbox_url
+            return model, None, default_sandbox, mcp_sandbox_url, mcp_api_key
 
         api_key = resolve_api_key(model, user_keys if user_keys else None)
-        return model, api_key, default_sandbox, mcp_sandbox_url
+        return model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key
 
     async def llm_invoke(self, params: LLMRequest):
         """Invoke the agent synchronously and return the final response.
@@ -111,8 +112,10 @@ class LLMController:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
 
-            # Resolve user-configured API key, default model, sandbox, and MCP URL
-            params.model, api_key, default_sandbox, mcp_sandbox_url = await self._resolve_user_settings(params.model)
+            # Resolve user-configured API key, default model, sandbox, MCP URL, and MCP API key
+            params.model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await self._resolve_user_settings(
+                params.model
+            )
 
             # Load user memories into files_map for MemoryMiddleware
             memory_files, _memory_sources = await prepare_memory_files(
@@ -134,7 +137,7 @@ class LLMController:
             async with get_checkpoint_db() as checkpointer:
                 runtime = self._init_runtime(params)
                 backend, _sandbox, effective_type = resolve_sandbox_backend(
-                    runtime, sandbox_type=default_sandbox, mcp_sandbox_url=mcp_sandbox_url
+                    runtime, sandbox_type=default_sandbox, mcp_sandbox_url=mcp_sandbox_url, mcp_api_key=mcp_api_key
                 )
                 agent: Orchestra = await construct_agent(
                     instructions=params.instructions,
@@ -235,8 +238,10 @@ class LLMController:
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)
 
-        # Resolve user-configured API key, default model, sandbox, and MCP URL
-        assistant.model, api_key, default_sandbox, mcp_sandbox_url = await self._resolve_user_settings(assistant.model)
+        # Resolve user-configured API key, default model, sandbox, MCP URL, and MCP API key
+        assistant.model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await self._resolve_user_settings(
+            assistant.model
+        )
 
         return stream_generator(
             input=assistant.input,
@@ -250,6 +255,7 @@ class LLMController:
             api_key=api_key,
             sandbox_type=default_sandbox,
             mcp_sandbox_url=mcp_sandbox_url,
+            mcp_api_key=mcp_api_key,
             stream_mode=assistant.resolved_stream_mode,
         )
 

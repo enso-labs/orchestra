@@ -45,12 +45,9 @@ export default function ThreadSandboxStatus() {
 						(k) => k.provider === "DAYTONA_API_KEY" && k.is_set,
 					);
 				}
-				if (opt.value === "mcp") {
-					return !!mcpSandboxUrl;
-				}
 				return true;
 			}),
-		[providerKeys, mcpSandboxUrl],
+		[providerKeys],
 	);
 
 	useEffect(() => {
