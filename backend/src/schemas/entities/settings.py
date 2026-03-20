@@ -12,6 +12,7 @@ class SandboxType(str, Enum):
 
     DAYTONA = "daytona"
     STATE = "state"
+    MCP = "mcp"
 
 
 class ProviderKeyStatus(BaseModel):
@@ -59,6 +60,7 @@ class UserSettings(BaseEntity):
         default=None, description="Whether the user has completed the onboarding tour"
     )
     default_timezone: Optional[str] = Field(default=None, description="User's preferred IANA timezone identifier")
+    default_mcp_sandbox_url: Optional[str] = Field(default=None, description="User MCP sandbox server URL")
 
 
 class DefaultsResponse(BaseModel):
@@ -75,6 +77,7 @@ class DefaultsResponse(BaseModel):
     deleted_files: Optional[list[str]] = None
     onboarding_completed: Optional[bool] = None
     timezone: Optional[str] = None
+    mcp_sandbox_url: Optional[str] = None
 
 
 class UserSettingsResponse(BaseModel):
@@ -106,6 +109,7 @@ class PatchDefaultsRequest(BaseModel):
         default=None, description="Whether the user has completed the onboarding tour"
     )
     timezone: Optional[str] = Field(default=None, description="IANA timezone identifier, or null to clear")
+    mcp_sandbox_url: Optional[str] = Field(default=None, description="MCP sandbox server URL, or null to clear")
 
 
 class UpsertProviderKeyRequest(BaseModel):

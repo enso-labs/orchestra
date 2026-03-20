@@ -35,6 +35,7 @@ def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -
             deleted_files=settings.default_deleted_files,
             onboarding_completed=settings.onboarding_completed,
             timezone=settings.default_timezone,
+            mcp_sandbox_url=settings.default_mcp_sandbox_url,
         ),
         provider_keys=statuses,
     )
