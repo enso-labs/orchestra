@@ -1,6 +1,6 @@
 import apiClient from "@/lib/utils/apiClient";
 
-export type SandboxType = "daytona" | "state";
+export type SandboxType = "daytona" | "state" | "mcp";
 
 export interface ProviderKeyStatus {
 	provider: string;
@@ -25,6 +25,7 @@ export interface DefaultsResponse {
 	deleted_files: string[] | null;
 	onboarding_completed: boolean | null;
 	timezone: string | null;
+	mcp_sandbox_url: string | null;
 }
 
 export interface UserSettingsResponse {
@@ -50,6 +51,7 @@ export const patchDefaults = async (
 		deleted_files: string[] | null;
 		onboarding_completed: boolean | null;
 		timezone: string | null;
+		mcp_sandbox_url: string | null;
 	}>,
 ): Promise<UserSettingsResponse> => {
 	const response = await apiClient.patch("/settings/default", data);

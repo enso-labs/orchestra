@@ -310,8 +310,47 @@ def _create_state_backend(
     return backend, None
 
 
+def _create_mcp_backend_checked(
+    runtime: ToolRuntime,
+    mcp_sandbox_url: str | None = None,
+    mcp_api_key: str | None = None,
+) -> tuple[CompositeBackend, None] | None:
+    """Try to create an MCP-backed CompositeBackend.
+
+    Returns ``(backend, None)`` on success, or ``None`` if URL is missing.
+    """
+    if not mcp_sandbox_url or not mcp_sandbox_url.strip():
+        return None
+
+    try:
+        from src.agents.mcp_sandbox import McpSandboxBackend
+
+        mcp_backend = McpSandboxBackend(base_url=mcp_sandbox_url, api_key=mcp_api_key)
+        backend = CompositeBackend(default=mcp_backend, routes={})
+        return backend, None
+    except Exception as exc:
+        logger.error(f"Failed to create MCP sandbox backend: {exc}")
+        return None
+
+
+def is_mcp_sandbox_error(exc: Exception) -> bool:
+    """Check if an exception is an MCP sandbox communication error."""
+    try:
+        from src.agents.mcp_sandbox import McpSandboxError
+
+        if isinstance(exc, McpSandboxError):
+            return True
+    except ImportError:
+        pass
+    return isinstance(exc, (ConnectionError, TimeoutError, OSError))
+
+
+MCP_SANDBOX_UNREACHABLE = "mcp_sandbox_unreachable"
+
+
 _SANDBOX_FACTORIES: dict[str, Callable] = {
     "daytona": _create_daytona_backend_checked,
+    "mcp": _create_mcp_backend_checked,
     "state": _create_state_backend,
 }
 
@@ -319,17 +358,20 @@ _SANDBOX_FACTORIES: dict[str, Callable] = {
 def resolve_sandbox_backend(
     runtime: ToolRuntime,
     sandbox_type: str | None = None,
+    mcp_sandbox_url: str | None = None,
+    mcp_api_key: str | None = None,
 ) -> tuple[CompositeBackend, Any, str]:
     """Resolve a sandbox backend based on *sandbox_type*.
 
     Dispatch rules:
-    * ``None`` / ``"auto"`` — try Daytona first, fall back to State.
-    * ``"state"`` — use StateBackend directly (never attempts Daytona).
-    * ``"daytona"`` — try Daytona, fall back to State if unavailable.
+    * ``None`` / ``"auto"`` — try Daytona, then MCP (if URL), then State.
+    * ``"state"`` — use StateBackend directly.
+    * ``"daytona"`` — try Daytona, fall back to State.
+    * ``"mcp"`` — try MCP (if URL), fall back to State.
     * Any unknown value — treated as ``"auto"``.
 
-    Returns ``(backend, daytona_sandbox_or_None, effective_type)``
-    where effective_type is ``"daytona"`` or ``"state"``.
+    Returns ``(backend, sandbox_or_None, effective_type)``
+    where effective_type is ``"daytona"``, ``"mcp"``, or ``"state"``.
     """
     effective = sandbox_type if sandbox_type in _SANDBOX_FACTORIES else None
 
@@ -337,10 +379,29 @@ def resolve_sandbox_backend(
         backend, sandbox = _create_state_backend(runtime)
         return backend, sandbox, "state"
 
-    # "daytona" or auto (None) — try Daytona first
+    if effective == "mcp":
+        result = _create_mcp_backend_checked(runtime, mcp_sandbox_url, mcp_api_key=mcp_api_key)
+        if result is not None:
+            return result[0], result[1], "mcp"
+        backend, sandbox = _create_state_backend(runtime)
+        return backend, sandbox, "state"
+
+    if effective == "daytona":
+        result = _create_daytona_backend_checked(runtime)
+        if result is not None:
+            return result[0], result[1], "daytona"
+        backend, sandbox = _create_state_backend(runtime)
+        return backend, sandbox, "state"
+
+    # auto (None) — try Daytona, then MCP, then State
     result = _create_daytona_backend_checked(runtime)
     if result is not None:
         return result[0], result[1], "daytona"
+
+    if mcp_sandbox_url:
+        mcp_result = _create_mcp_backend_checked(runtime, mcp_sandbox_url, mcp_api_key=mcp_api_key)
+        if mcp_result is not None:
+            return mcp_result[0], mcp_result[1], "mcp"
 
     # Fallback: plain StateBackend (silent, no messages)
     backend, sandbox = _create_state_backend(runtime)

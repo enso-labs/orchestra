@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from langgraph.store.base import BaseStore
 
@@ -35,6 +36,7 @@ def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -
             deleted_files=settings.default_deleted_files,
             onboarding_completed=settings.onboarding_completed,
             timezone=settings.default_timezone,
+            mcp_sandbox_url=settings.default_mcp_sandbox_url,
         ),
         provider_keys=statuses,
     )
@@ -94,3 +96,34 @@ async def delete_provider_key(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     settings, statuses = await repo.get_settings()
     return _build_response(settings, statuses)
+
+
+@router.get("/settings/mcp-sandbox-health")
+async def mcp_sandbox_health(
+    user: User = Depends(verify_credentials),
+    store: BaseStore = Depends(get_store),
+):
+    """Proxy health check to the user's configured MCP sandbox URL.
+
+    The frontend can't reach the sandbox directly (CORS / Docker networking),
+    so the backend proxies the request.
+    """
+    repo = _get_repo(user, store)
+    settings = await repo._get_or_create()
+    mcp_url = getattr(settings, "default_mcp_sandbox_url", None)
+    if not mcp_url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No MCP sandbox URL configured")
+
+    # Derive health URL: strip trailing /mcp, append /health
+    base = mcp_url.rstrip("/")
+    if base.endswith("/mcp"):
+        base = base[: -len("/mcp")]
+    health_url = f"{base}/health"
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(health_url)
+            resp.raise_for_status()
+            return resp.json()
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="MCP sandbox unreachable")

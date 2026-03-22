@@ -197,6 +197,7 @@ class UserSettingsRepo(BaseRepo):
         "deleted_files": "default_deleted_files",
         "onboarding_completed": "onboarding_completed",
         "timezone": "default_timezone",
+        "mcp_sandbox_url": "default_mcp_sandbox_url",
     }
 
     async def patch_defaults(self, data: dict) -> UserSettings:

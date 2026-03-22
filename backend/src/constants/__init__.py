@@ -92,6 +92,7 @@ class UserTokenKey(Enum):
     ARCADE_API_KEY = "ARCADE_API_KEY"
     LANGCONNECT_SERVER_URL = "LANGCONNECT_SERVER_URL"
     DAYTONA_API_KEY = "DAYTONA_API_KEY"
+    MCP_SANDBOX_API_KEY = "MCP_SANDBOX_API_KEY"
 
     @classmethod
     def values(cls) -> list[str]:
@@ -115,6 +116,7 @@ TAVILY_API_KEY = os.getenv(UserTokenKey.TAVILY_API_KEY.value)
 EXA_API_KEY = os.getenv(UserTokenKey.EXA_API_KEY.value)
 LANGCONNECT_SERVER_URL = os.getenv(UserTokenKey.LANGCONNECT_SERVER_URL.value)
 DAYTONA_API_KEY = os.getenv(UserTokenKey.DAYTONA_API_KEY.value)
+MCP_SANDBOX_API_KEY = os.getenv(UserTokenKey.MCP_SANDBOX_API_KEY.value)
 
 # Storage
 MINIO_HOST = os.getenv("MINIO_HOST")

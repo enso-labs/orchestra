@@ -657,6 +657,20 @@ export default function useChat(): ChatContextType {
 			return;
 		}
 
+		// Handle MCP sandbox unreachable
+		if (streamMode === "mcp_sandbox_unreachable") {
+			setLoading(false);
+			setController(null);
+			toast.error("MCP sandbox unreachable", {
+				description:
+					typeof payload[1] === "string"
+						? payload[1]
+						: "The MCP sandbox server could not be reached.",
+				duration: Infinity,
+			});
+			return;
+		}
+
 		// Handle aborted events from distributed workers
 		if (streamMode === "aborted") {
 			console.log("Stream aborted by server:", payload[1]?.reason);

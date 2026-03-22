@@ -16,9 +16,10 @@ from src.constants.llm import DEFAULT_CHAT_MODEL
 class FakeSettings:
     """Minimal stand-in for user settings."""
 
-    def __init__(self, default_model=None, default_sandbox=None):
+    def __init__(self, default_model=None, default_sandbox=None, default_mcp_sandbox_url=None):
         self.default_model = default_model
         self.default_sandbox = default_sandbox
+        self.default_mcp_sandbox_url = default_mcp_sandbox_url
 
 
 @pytest.fixture
@@ -55,6 +56,8 @@ class TestResolveUserSettings:
                     model,
                     api_key,
                     default_sandbox,
+                    mcp_sandbox_url,
+                    mcp_api_key,
                 ) = await controller._resolve_user_settings("openai:gpt-4o")
 
         assert model == "openai:gpt-4o"
@@ -69,7 +72,7 @@ class TestResolveUserSettings:
             instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model="anthropic:claude-sonnet-4"))
             instance._decrypt_keys = MagicMock(return_value={})
 
-            model, _, _ = await controller._resolve_user_settings("")
+            model, _, _, _, _ = await controller._resolve_user_settings("")
 
         assert model == "anthropic:claude-sonnet-4"
 
@@ -83,7 +86,7 @@ class TestResolveUserSettings:
             instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model=None))
             instance._decrypt_keys = MagicMock(return_value={})
 
-            model, _, _ = await controller._resolve_user_settings("")
+            model, _, _, _, _ = await controller._resolve_user_settings("")
 
         assert model == DEFAULT_CHAT_MODEL
 
@@ -99,7 +102,7 @@ class TestResolveUserSettings:
             )
             instance._decrypt_keys = MagicMock(return_value={})
 
-            model, _, default_sandbox = await controller._resolve_user_settings("openai:gpt-4o")
+            model, _, default_sandbox, _, _ = await controller._resolve_user_settings("openai:gpt-4o")
 
         assert model == "openai:gpt-4o"
         assert default_sandbox == "daytona"
@@ -109,22 +112,28 @@ class TestResolveUserSettings:
         """Unauthenticated users (no user_id) should get DEFAULT_CHAT_MODEL."""
         controller = LLMController(user_id=None, store=mock_store, config=mock_config)
 
-        model, api_key, default_sandbox = await controller._resolve_user_settings("")
+        model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await controller._resolve_user_settings("")
 
         assert model == DEFAULT_CHAT_MODEL
         assert api_key is None
         assert default_sandbox is None
+        assert mcp_sandbox_url is None
+        assert mcp_api_key is None
 
     @pytest.mark.asyncio
     async def test_unauthenticated_user_explicit_model_preserved(self, mock_store, mock_config):
         """Unauthenticated users with explicit model should keep it."""
         controller = LLMController(user_id=None, store=mock_store, config=mock_config)
 
-        model, api_key, default_sandbox = await controller._resolve_user_settings("openai:gpt-4o")
+        model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await controller._resolve_user_settings(
+            "openai:gpt-4o"
+        )
 
         assert model == "openai:gpt-4o"
         assert api_key is None
         assert default_sandbox is None
+        assert mcp_sandbox_url is None
+        assert mcp_api_key is None
 
 
 class TestLLMRequestModelDefault:
