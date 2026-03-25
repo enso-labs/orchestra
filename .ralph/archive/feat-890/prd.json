@@ -1,0 +1,1151 @@
+{
+  "project": "Orchestra — MCP Sandbox (Feature #890)",
+  "branchName": "feat/890-mcp-sandbox",
+  "description": "End-to-end MCP Sandbox integration: backend class, dispatch wiring, exec_server structured tools, frontend UX with health indicator and fallback toast, and native MCP tool overrides with graceful degradation.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "[P1] McpSandboxBackend class skeleton and constructor",
+      "description": "As a developer, I need the McpSandboxBackend class created with a constructor that accepts the exec_server base URL and optional API key, storing them as instance attributes alongside an httpx.Client (sync) and session state.",
+      "acceptanceCriteria": [
+        "File backend/src/agents/mcp_sandbox.py is created",
+        "Class McpSandboxBackend extends BaseSandbox (imported from deepagents.backends.sandbox)",
+        "Constructor signature: __init__(self, *, base_url: str, api_key: str | None = None)",
+        "base_url is stored and has its trailing slash stripped",
+        "An httpx.Client (sync, matching DaytonaSandbox pattern) is created and stored as self._client with a default timeout of 120 seconds",
+        "api_key is stored as self._api_key for use in the x-api-key header",
+        "Session state attributes initialized: self._session_id: str | None = None and self._request_id: int = 0",
+        "self._initialized: bool = False flag to track whether the MCP initialize handshake has been completed",
+        "from src.utils.logger import logger is used for all logging",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "[P1] Custom McpSandboxError exception class",
+      "description": "As a developer, I need a custom McpSandboxError exception for MCP-specific failures, separate from generic HTTP errors.",
+      "acceptanceCriteria": [
+        "class McpSandboxError(Exception) is defined in backend/src/agents/mcp_sandbox.py",
+        "Accepts a message: str parameter",
+        "Used by _ensure_initialized() and execute() when MCP communication fails after retries",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented as part of US-001 in the same file."
+    },
+    {
+      "id": "US-003",
+      "title": "[P1] MCP session initialization (initialize handshake)",
+      "description": "As a developer, I need a private method _ensure_initialized() that performs the MCP initialize handshake if it has not been done yet, obtaining and storing the Mcp-Session-Id for subsequent requests.",
+      "acceptanceCriteria": [
+        "Private sync method _ensure_initialized(self) -> None is implemented (not async — matches DaytonaSandbox sync pattern)",
+        "If self._initialized is True, the method returns immediately (no-op)",
+        "Sends a POST to {base_url}/mcp with JSON-RPC 2.0 initialize payload including protocolVersion, capabilities, and clientInfo",
+        "Request includes headers: Content-Type: application/json, Accept: application/json, text/event-stream",
+        "If self._api_key is set, includes x-api-key header",
+        "On success (HTTP 200), extracts Mcp-Session-Id from response headers and stores it in self._session_id",
+        "Sets self._initialized = True and self._request_id = 1",
+        "After initialization, sends the notifications/initialized notification to the same endpoint with the Mcp-Session-Id header",
+        "On HTTP error, raises McpSandboxError with a descriptive message",
+        "Logs the session ID at debug level on success, errors at error level on failure",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "[P1] execute() method — MCP tools/call with exit code parsing",
+      "description": "As a developer, I need the execute() method to send shell commands to the exec_server via the MCP tools/call JSON-RPC method and parse the response into an ExecuteResponse.",
+      "acceptanceCriteria": [
+        "execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse is implemented",
+        "Calls _ensure_initialized() before sending the tool call",
+        "Increments self._request_id and uses it as the JSON-RPC id",
+        "Sends POST to {base_url}/mcp with tools/call JSON-RPC payload using exec_command tool name and {cmd: command}",
+        "Includes Mcp-Session-Id header on the request",
+        "If self._api_key is set, includes x-api-key header",
+        "Extracts text content from response['result']['content'][0]['text']",
+        "Parses exit code using regex r'exit_code:\\s*(\\d+)' on response text; defaults to 0 if pattern not found",
+        "Returns ExecuteResponse(output=text, exit_code=parsed_code, truncated=False)",
+        "On session-related error (HTTP 400), resets session state and retries once via _ensure_initialized() + re-send",
+        "If retry also fails, raises McpSandboxError",
+        "If timeout is provided, passes it to httpx as the request timeout",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "[P1] Sandbox id property",
+      "description": "As a developer, I need the id property to return a stable, descriptive identifier for this backend instance.",
+      "acceptanceCriteria": [
+        "@property method id(self) -> str is implemented",
+        "Returns f'mcp-sandbox:{self._base_url}' (e.g., 'mcp-sandbox:http://localhost:3005')",
+        "Does not trigger network calls or session initialization",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Implemented as part of US-001."
+    },
+    {
+      "id": "US-006",
+      "title": "[P1] upload_files() via base64 shell commands through execute()",
+      "description": "As a developer, I need upload_files() to write files to the exec_server filesystem by base64-encoding file content and piping it through shell commands via execute().",
+      "acceptanceCriteria": [
+        "upload_files(self, files: list[tuple[str, bytes]]) -> list[FileUploadResponse] is implemented",
+        "For each (path, content) tuple: base64-encodes content, constructs mkdir -p + base64 -d shell command, calls self.execute(cmd)",
+        "Returns FileUploadResponse(path=path, error=None) on success (exit_code == 0)",
+        "Returns FileUploadResponse(path=path, error='permission_denied') on non-zero exit code",
+        "Catches exceptions per-file and logs the error",
+        "Returns a list with one FileUploadResponse per input file in the same order",
+        "Partial success supported — one file failing does not prevent others from being uploaded",
+        "Paths not starting with '/' get FileUploadResponse(path=path, error='invalid_path') without calling execute (defense in depth)",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "[P1] download_files() via base64 shell commands through execute()",
+      "description": "As a developer, I need download_files() to read files from the exec_server filesystem by base64-encoding their content through shell commands via execute().",
+      "acceptanceCriteria": [
+        "download_files(self, paths: list[str]) -> list[FileDownloadResponse] is implemented",
+        "For each path: constructs base64 '{path}' command, calls self.execute(cmd)",
+        "On success (exit_code == 0), base64-decodes the output and returns FileDownloadResponse(path=path, content=decoded_bytes, error=None)",
+        "On non-zero exit code, returns FileDownloadResponse(path=path, content=None, error='file_not_found')",
+        "Catches exceptions per-file and logs the error",
+        "Strips trailing whitespace from base64 output before decoding",
+        "Partial success supported",
+        "Paths not starting with '/' get FileDownloadResponse(path=path, content=None, error='invalid_path') without calling execute (defense in depth)",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "[P1] health() async method",
+      "description": "As a developer, I need an async health() method that checks whether the exec_server is reachable and responding.",
+      "acceptanceCriteria": [
+        "def health(self) -> bool is implemented (sync, not async)",
+        "Sends GET to {base_url}/health",
+        "If self._api_key is set, includes x-api-key header",
+        "Returns True if response is HTTP 200 and JSON body contains 'status': 'ok'",
+        "Returns False on any exception (httpx.HTTPError, httpx.TimeoutException, KeyError, etc.)",
+        "Uses a short timeout (5 seconds) separate from the default client timeout",
+        "Does not modify session state",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "[P1] Client cleanup — close() and async context manager",
+      "description": "As a developer, I need a way to cleanly close the HTTP client and MCP session when the backend is no longer needed.",
+      "acceptanceCriteria": [
+        "def close(self) -> None is implemented (sync, not async)",
+        "If self._session_id is set, sends DELETE to {base_url}/mcp with Mcp-Session-Id header (best-effort, exceptions caught and logged)",
+        "Calls self._client.close() to release HTTP connections",
+        "Resets self._session_id = None, self._initialized = False",
+        "Safe to call multiple times (idempotent)",
+        "Implements __enter__ and __exit__ for use as a sync context manager (matching sync httpx.Client pattern)",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "[P1] Unit tests — constructor and id property",
+      "description": "As a developer, I need unit tests verifying the constructor stores arguments correctly and the id property returns the expected format.",
+      "acceptanceCriteria": [
+        "File backend/tests/unit/agents/test_mcp_sandbox.py is created",
+        "Test: constructor stores base_url with trailing slash stripped",
+        "Test: constructor stores api_key as None when not provided",
+        "Test: constructor stores api_key when provided",
+        "Test: id property returns 'mcp-sandbox:http://localhost:3005' for base_url 'http://localhost:3005'",
+        "Test: initial state has _initialized == False and _session_id is None",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "[P1] Unit tests — MCP initialize handshake",
+      "description": "As a developer, I need unit tests verifying the _ensure_initialized() method performs the correct HTTP calls and stores the session ID.",
+      "acceptanceCriteria": [
+        "Test: _ensure_initialized() sends correct JSON-RPC initialize payload to {base_url}/mcp",
+        "Test: _ensure_initialized() extracts and stores Mcp-Session-Id from response headers",
+        "Test: _ensure_initialized() sets _initialized = True after success",
+        "Test: calling _ensure_initialized() a second time is a no-op (no HTTP request)",
+        "Test: _ensure_initialized() sends notifications/initialized after successful init",
+        "Test: _ensure_initialized() raises McpSandboxError on HTTP error",
+        "Test: _ensure_initialized() includes x-api-key header when api_key is set",
+        "All HTTP calls are mocked using unittest.mock.MagicMock (sync client, not AsyncMock)",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "[P1] Unit tests — execute method",
+      "description": "As a developer, I need unit tests verifying execute() sends correct tool call payloads, parses exit codes from response text, and handles session reconnection.",
+      "acceptanceCriteria": [
+        "Test: execute('echo hello') sends correct tools/call JSON-RPC payload with exec_command tool name",
+        "Test: execute() includes Mcp-Session-Id header",
+        "Test: exit code parsed from response text containing 'exit_code: 1' -> ExecuteResponse.exit_code == 1",
+        "Test: exit code defaults to 0 when response text does not contain exit_code pattern",
+        "Test: execute() returns ExecuteResponse with correct output field",
+        "Test: on HTTP 400 session error, execute() resets session and retries once",
+        "Test: when retry also fails, execute() raises McpSandboxError",
+        "Test: execute() passes timeout to httpx when provided",
+        "All HTTP calls are mocked",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "[P1] Unit tests — upload and download files",
+      "description": "As a developer, I need unit tests verifying upload_files() and download_files() correctly encode/decode content and handle errors per-file.",
+      "acceptanceCriteria": [
+        "Test: upload_files() calls execute() with correct base64-encoding shell command",
+        "Test: upload_files() returns FileUploadResponse(error=None) on success",
+        "Test: upload_files() returns FileUploadResponse(error='permission_denied') on non-zero exit",
+        "Test: upload_files() handles partial success (first file succeeds, second fails)",
+        "Test: download_files() calls execute() with base64 '/path' command",
+        "Test: download_files() base64-decodes the output and returns correct content bytes",
+        "Test: download_files() returns FileDownloadResponse(error='file_not_found') on non-zero exit",
+        "Test: download_files() strips trailing whitespace before decoding",
+        "execute() is mocked (no real HTTP calls)",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "[P1] Unit tests — health check and cleanup + commit & push P1",
+      "description": "As a developer, I need unit tests verifying the health() method and close() cleanup behavior. Then commit and push all Phase 1 changes so the branch is up to date before Phase 2 begins.",
+      "acceptanceCriteria": [
+        "Test: health() returns True when GET /health returns {'status': 'ok'}",
+        "Test: health() returns False when server is unreachable",
+        "Test: health() returns False when response does not contain 'status': 'ok'",
+        "Test: health() uses a 5-second timeout",
+        "Test: close() sends DELETE to /mcp with session ID header when session is active",
+        "Test: close() calls _client.close()",
+        "Test: close() resets _session_id and _initialized",
+        "Test: close() is safe to call when no session exists",
+        "Test: sync context manager (__enter__/__exit__) calls close() on exit",
+        "All HTTP calls are mocked",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "make lint passes",
+        "Typecheck passes",
+        "All Phase 1 changes committed with descriptive message (signed with -s flag)",
+        "Branch pushed to origin"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "END OF PHASE 1. Commit and push before moving to Phase 2 — keeps the diff tight and saves progress."
+    },
+    {
+      "id": "US-015",
+      "title": "[P2] Add MCP to SandboxType enum and UserSettings schema",
+      "description": "As a developer, I need the SandboxType enum extended with MCP = 'mcp' and a new default_mcp_sandbox_url field on UserSettings so the system has typed, validated representation of MCP sandbox configuration.",
+      "acceptanceCriteria": [
+        "MCP = 'mcp' added to SandboxType enum in backend/src/schemas/entities/settings.py",
+        "default_mcp_sandbox_url: Optional[str] = Field(default=None, description='User MCP sandbox server URL') added to UserSettings",
+        "Existing SandboxType.DAYTONA and SandboxType.STATE values are unchanged",
+        "make format passes",
+        "make lint passes",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "[P2] Add mcp_sandbox_url to API schemas and settings routes",
+      "description": "As an API consumer, I need mcp_sandbox_url exposed in the settings response and patchable via the defaults endpoint so the frontend or API clients can read and write the URL.",
+      "acceptanceCriteria": [
+        "mcp_sandbox_url: Optional[str] = None added to DefaultsResponse in backend/src/schemas/entities/settings.py",
+        "mcp_sandbox_url: Optional[str] = Field(default=None) added to PatchDefaultsRequest",
+        "mcp_sandbox_url field included in _build_response() mapping in backend/src/routes/v0/settings.py",
+        "'mcp_sandbox_url': 'default_mcp_sandbox_url' added to _DEFAULTS_FIELD_MAP in UserSettingsRepo",
+        "PATCH /settings/default with {'mcp_sandbox_url': 'http://localhost:3005'} stores the value",
+        "PATCH /settings/default with {'mcp_sandbox_url': null} clears the value",
+        "GET /settings includes mcp_sandbox_url in the defaults object",
+        "make format passes",
+        "make lint passes",
+        "make test passes",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "[P2] Add MCP sandbox factory and register in _SANDBOX_FACTORIES",
+      "description": "As a developer, I need a _create_mcp_backend_checked() factory function and its registration in the sandbox factory registry so that resolve_sandbox_backend() can create MCP-backed CompositeBackend instances.",
+      "acceptanceCriteria": [
+        "_create_mcp_backend_checked(runtime, mcp_sandbox_url) factory added to backend/src/agents/__init__.py",
+        "Factory returns (CompositeBackend, None) on success, None when URL is missing or McpSandboxBackend cannot be instantiated",
+        "Factory imports McpSandboxBackend from src.agents.mcp_sandbox (conditional import, safe when not installed)",
+        "'mcp' key added to _SANDBOX_FACTORIES dict",
+        "Factory validates that mcp_sandbox_url is a non-empty string before attempting instantiation",
+        "make format passes",
+        "make lint passes",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "[P2] Update resolve_sandbox_backend() with MCP dispatch rules",
+      "description": "As a developer, I need resolve_sandbox_backend() to accept an mcp_sandbox_url parameter and implement the updated fallback chain so MCP is tried between Daytona and State when the URL is configured.",
+      "acceptanceCriteria": [
+        "resolve_sandbox_backend() signature updated: resolve_sandbox_backend(runtime, sandbox_type=None, mcp_sandbox_url=None)",
+        "Dispatch: None/'auto' -> try Daytona, then MCP (if URL), then State",
+        "Dispatch: 'state' -> StateBackend directly",
+        "Dispatch: 'daytona' -> try Daytona, fallback State (unchanged)",
+        "Dispatch: 'mcp' -> try MCP (if URL), fallback State",
+        "Return type remains tuple[CompositeBackend, Any, str] where third element is 'daytona', 'mcp', or 'state'",
+        "When sandbox_type='mcp' but mcp_sandbox_url is None/empty, falls back to State silently",
+        "Existing Daytona and State dispatch paths are completely unmodified for non-MCP types",
+        "make format passes",
+        "make lint passes",
+        "make test passes",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "[P2] Add is_mcp_sandbox_error() helper and error constant",
+      "description": "As a developer, I need an is_mcp_sandbox_error() helper function and an mcp_sandbox_unreachable SSE error type so MCP failures are identifiable and can trigger appropriate fallback or user-facing error messages.",
+      "acceptanceCriteria": [
+        "is_mcp_sandbox_error(exc: Exception) -> bool added to backend/src/agents/__init__.py",
+        "Helper checks for ConnectionError, TimeoutError, OSError, and McpSandboxError",
+        "Helper returns False when MCP is not involved (safe no-op)",
+        "mcp_sandbox_unreachable error type defined as a constant string",
+        "make format passes",
+        "make lint passes",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "[P2] Wire mcp_sandbox_url through LLMController",
+      "description": "As a user, I want my MCP sandbox URL applied when I invoke or stream an agent, so my configured MCP sandbox is used in all execution paths.",
+      "acceptanceCriteria": [
+        "_resolve_user_settings() returns 4-tuple (model, api_key, default_sandbox, mcp_sandbox_url) instead of current 3-tuple",
+        "mcp_sandbox_url read from settings.default_mcp_sandbox_url",
+        "mcp_sandbox_url passed to resolve_sandbox_backend() in llm_invoke()",
+        "mcp_sandbox_url passed through to stream_generator() in llm_stream()",
+        "MCP error handling added to llm_invoke() exception handler mirroring Daytona error pattern",
+        "make format passes",
+        "make lint passes",
+        "make test passes",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "[P2] Wire mcp_sandbox_url through stream_generator",
+      "description": "As a developer, I need stream_generator() to accept and forward the MCP sandbox URL so streaming execution uses the correct backend.",
+      "acceptanceCriteria": [
+        "mcp_sandbox_url: str | None = None parameter added to stream_generator() signature",
+        "Parameter passed to resolve_sandbox_backend(runtime, sandbox_type=sandbox_type, mcp_sandbox_url=mcp_sandbox_url)",
+        "MCP error handling: sandbox_type='mcp' -> emit mcp_sandbox_unreachable SSE error event",
+        "MCP error handling: sandbox_type=None/'auto' with effective_type='mcp' -> fallback to State and retry stream",
+        "make format passes",
+        "make lint passes",
+        "make test passes",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "[P2] Wire mcp_sandbox_url through worker tasks",
+      "description": "As a developer, I need _execute_agent_stream() in the distributed worker to read and forward the MCP sandbox URL from user settings.",
+      "acceptanceCriteria": [
+        "settings.default_mcp_sandbox_url read from settings object in _execute_agent_stream()",
+        "Value passed to resolve_sandbox_backend(runtime, sandbox_type=default_sandbox, mcp_sandbox_url=mcp_sandbox_url)",
+        "MCP error handling: sandbox_type='mcp' -> write mcp_sandbox_unreachable error to Redis stream",
+        "MCP error handling: sandbox_type=None/'auto' with effective_type='mcp' -> fallback to State and retry",
+        "make format passes",
+        "make lint passes",
+        "make test passes",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "[P2] Integration validation — dispatch pipeline end-to-end + commit & push P2",
+      "description": "As a developer, I need to verify that the full MCP sandbox dispatch pipeline works end-to-end. Then commit and push all Phase 2 changes so the branch is up to date before Phase 3 begins.",
+      "acceptanceCriteria": [
+        "make format passes",
+        "make lint passes",
+        "make test passes (all existing tests green, no regressions)",
+        "GET /settings returns mcp_sandbox_url: null for a user with no URL configured",
+        "PATCH /settings/default with {'mcp_sandbox_url': 'http://localhost:3005'} stores the URL",
+        "PATCH /settings/default with {'sandbox': 'mcp'} sets the sandbox type to 'mcp'",
+        "PATCH /settings/default with {'mcp_sandbox_url': null} clears the URL",
+        "When sandbox='mcp' but no URL configured, agent execution falls back to State without error",
+        "When sandbox='auto' or null, existing Daytona/State behavior is unchanged",
+        "Typecheck passes",
+        "All Phase 2 changes committed with descriptive message (signed with -s flag)",
+        "Branch pushed to origin"
+      ],
+      "priority": 23,
+      "passes": true,
+      "notes": "END OF PHASE 2. Commit and push before moving to next phase — keeps the diff tight and saves progress. INTEGRATION GATE: curl-based ACs may need manual validation."
+    },
+    {
+      "id": "US-024",
+      "title": "[P4] Rename exec_command to execute in exec_server",
+      "description": "As a sandbox consumer, I need the shell execution tool renamed from exec_command to execute so it aligns with the BaseSandbox protocol naming convention.",
+      "acceptanceCriteria": [
+        "exec_command tool registration replaced with execute in registerTools() in sandboxes/ubuntu/index.js",
+        "Tool accepts {cmd: string, timeout?: number} via Zod schema",
+        "timeout parameter is optional; defaults to 120s, capped at 120s max",
+        "Text-embedded exit_code: N preserved in output text for backward compat",
+        "Tool handler runs commands as executor user",
+        "tools/list MCP response shows execute (not exec_command)",
+        "exec_command kept as backward-compat alias (same handler) to prevent breakage between Phase 4 and Phase 5 deploys",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": true,
+      "notes": "This is in the sandboxes/ submodule (separate ruska-ai/sandboxes repo). Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-025",
+      "title": "[P4] Add _meta structure to all tool responses",
+      "description": "As a sandbox consumer, I need every tool response to include a structured _meta object containing exit_code (integer) and sandbox_id (UUID) so I can programmatically inspect tool outcomes.",
+      "acceptanceCriteria": [
+        "SANDBOX_ID constant generated once at module load via crypto.randomUUID()",
+        "Helper function makeResult(text, exitCode) returns {content: [{type: 'text', text}], _meta: {exit_code: exitCode, sandbox_id: SANDBOX_ID}}",
+        "_meta.exit_code is always an integer (not a string)",
+        "_meta.sandbox_id is the same UUID for every response within a server process lifetime",
+        "All tool handlers use makeResult() for their return value",
+        "execute tool includes both text-embedded exit_code: N and _meta.exit_code as structured integer",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-026",
+      "title": "[P4] Implement read MCP tool",
+      "description": "As a sandbox consumer, I need a read tool to retrieve file contents with line numbers (cat -n format), supporting offset and line-limit pagination.",
+      "acceptanceCriteria": [
+        "Tool registered as read with description 'Read file with line numbers'",
+        "Params: {path: z.string(), offset: z.number().optional(), limit: z.number().optional()}",
+        "Returns file content in cat -n format: right-justified line numbers + tab + content per line",
+        "offset: 0-based line offset, defaults to 0",
+        "limit: maximum lines to return, defaults to 2000",
+        "_meta.exit_code: 0 on success, 1 if file not found or unreadable",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 26,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-027",
+      "title": "[P4] Implement write MCP tool",
+      "description": "As a sandbox consumer, I need a write tool that creates or overwrites files, automatically creating parent directories.",
+      "acceptanceCriteria": [
+        "Tool registered as write with description 'Write content to file'",
+        "Params: {path: z.string(), content: z.string()}",
+        "Creates parent directories with mkdir -p before writing",
+        "Overwrites file if it already exists",
+        "_meta.exit_code: 0 on success, 1 on error",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 27,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-028",
+      "title": "[P4] Implement edit MCP tool with 4-level exit codes",
+      "description": "As a sandbox consumer, I need an edit tool that performs string replacement in files with exit-code semantics matching the BaseSandbox _EDIT_COMMAND_TEMPLATE.",
+      "acceptanceCriteria": [
+        "Tool registered as edit with description 'Replace string in file'",
+        "Params: {path: z.string(), old_string: z.string(), new_string: z.string(), replace_all: z.boolean().optional()}",
+        "Exit code 0: replacement made successfully",
+        "Exit code 1: old_string not found in file",
+        "Exit code 2: old_string found multiple times and replace_all is false",
+        "Exit code 3: file not found at path",
+        "When replace_all is true, replaces all occurrences (exit code 0, never 2)",
+        "Returns occurrence count as text content",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 28,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-029",
+      "title": "[P4] Implement grep MCP tool",
+      "description": "As a sandbox consumer, I need a grep tool that searches files for a fixed-string pattern and returns structured JSON lines output.",
+      "acceptanceCriteria": [
+        "Tool registered as grep with description 'Search for pattern in files'",
+        "Params: {pattern: z.string(), path: z.string().optional(), glob: z.string().optional()}",
+        "Uses fixed-string search (grep -rHnF or equivalent)",
+        "Default search path: /workspace",
+        "Returns newline-delimited JSON objects: {path, line, text}",
+        "_meta.exit_code: 0 when matches found, 1 when no matches",
+        "glob parameter filters files by pattern",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 29,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-030",
+      "title": "[P4] Implement glob MCP tool",
+      "description": "As a sandbox consumer, I need a glob tool that finds files matching a glob pattern and returns file metadata as structured JSON lines.",
+      "acceptanceCriteria": [
+        "Tool registered as glob with description 'Find files by glob pattern'",
+        "Params: {pattern: z.string(), path: z.string().optional()}",
+        "Default search path: /workspace",
+        "Returns newline-delimited JSON objects: {path, is_dir, size, mtime} where mtime is ISO 8601",
+        "_meta.exit_code: 0 on success",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 30,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-031",
+      "title": "[P4] Implement ls MCP tool",
+      "description": "As a sandbox consumer, I need an ls tool that lists directory contents as structured JSON lines.",
+      "acceptanceCriteria": [
+        "Tool registered as ls with description 'List directory contents'",
+        "Params: {path: z.string()}",
+        "Returns newline-delimited JSON objects: {path, is_dir}",
+        "_meta.exit_code: 0 on success, 1 if path not found",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 31,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-032",
+      "title": "[P4] Implement upload_file MCP tool",
+      "description": "As a sandbox consumer, I need an upload_file tool that decodes base64-encoded content and writes it as a binary file.",
+      "acceptanceCriteria": [
+        "Tool registered as upload_file with description 'Upload base64 file'",
+        "Params: {path: z.string(), content_base64: z.string()}",
+        "Decodes base64 content and writes binary file",
+        "Creates parent directories with mkdir -p",
+        "Returns text: 'Written N bytes to <path>'",
+        "_meta.exit_code: 0 on success, 1 on error",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 32,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-033",
+      "title": "[P4] Implement download_file MCP tool",
+      "description": "As a sandbox consumer, I need a download_file tool that reads a file and returns its content as base64-encoded text.",
+      "acceptanceCriteria": [
+        "Tool registered as download_file with description 'Download file as base64'",
+        "Params: {path: z.string()}",
+        "Returns base64-encoded file content as text",
+        "_meta.exit_code: 0 on success, 1 if file not found",
+        "Runs as executor user",
+        "Typecheck passes"
+      ],
+      "priority": 33,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory."
+    },
+    {
+      "id": "US-034",
+      "title": "[P4] Infrastructure — sandbox_id, python3, /workspace OpenClaw layout",
+      "description": "As a sandbox operator, I need the container to have a stable sandbox identity, Python3 runtime, and an OpenClaw-structured /workspace directory.",
+      "acceptanceCriteria": [
+        "SANDBOX_ID generated via crypto.randomUUID() once at server startup",
+        "/health endpoint returns {status: 'ok', sessions: N, sandbox_id: '<uuid>'}",
+        "python3 is available in the container (Dockerfile installs python3 if not present in debian:bookworm-slim)",
+        "/workspace directory created and owned by executor user",
+        "OpenClaw layout created on startup in entrypoint.sh: AGENTS.md, SOUL.md, USER.md, IDENTITY.md, TOOLS.md, MEMORY.md (empty), plus memory/, skills/, canvas/ dirs",
+        "Default cwd in all exec() calls changed from /home/executor to /workspace",
+        "WORKDIR in Dockerfile updated to /workspace",
+        "All /workspace contents are writable by executor user",
+        "Typecheck passes"
+      ],
+      "priority": 34,
+      "passes": true,
+      "notes": "Commit inside sandboxes/ directory. Update Dockerfile and entrypoint.sh."
+    },
+    {
+      "id": "US-035",
+      "title": "[P4] Conformance test suite for all 9 MCP tools + commit & push P4",
+      "description": "As a developer, I need a conformance test suite that validates the full MCP tool contract. Then commit and push all Phase 4 changes inside the sandboxes/ submodule.",
+      "acceptanceCriteria": [
+        "sandboxes/tests/conformance.sh created",
+        "Accepts server URL as first argument: bash tests/conformance.sh http://localhost:3005",
+        "Tests health check returns status: ok and sandbox_id",
+        "Tests session initialization returns Mcp-Session-Id header",
+        "Tests tools/list returns exactly 9 tools with correct names",
+        "Tests execute tool: success case (exit_code=0) and failure case (non-zero exit_code)",
+        "Tests read tool: success (cat -n format) and file not found (exit_code=1)",
+        "Tests write tool: creates file (exit_code=0) with parent dir creation",
+        "Tests edit tool: all 4 exit codes (0, 1, 2, 3)",
+        "Tests grep tool: matches found (exit_code=0) and no matches (exit_code=1)",
+        "Tests glob tool: returns JSON lines with metadata",
+        "Tests ls tool: returns JSON lines, path not found (exit_code=1)",
+        "Tests upload_file and download_file: binary round-trip preserves content",
+        "Tests python3 --version succeeds via execute tool",
+        "Tests pwd returns /workspace via execute tool",
+        "Tests OpenClaw layout files exist",
+        "Tests session reuse and session cleanup (DELETE /mcp)",
+        "Output: PASS/FAIL per test with summary at end",
+        "Exit code 0 if all pass, 1 if any fail",
+        "Typecheck passes",
+        "All Phase 4 changes committed inside sandboxes/ directory with descriptive message (signed with -s flag)",
+        "sandboxes/ submodule pushed to origin"
+      ],
+      "priority": 35,
+      "passes": true,
+      "notes": "END OF PHASE 4. Commit and push inside sandboxes/ directory (separate ruska-ai/sandboxes repo) — keeps the diff tight. Depends on curl and jq."
+    },
+    {
+      "id": "US-036",
+      "title": "[P3] Extend SandboxType union and normalizeSandboxValue",
+      "description": "As a developer, I need the SandboxType union extended with 'mcp' and normalizeSandboxValue() updated to recognize it.",
+      "acceptanceCriteria": [
+        "SandboxType in frontend/src/lib/services/userSettingsService.ts changed to include 'mcp'",
+        "normalizeSandboxValue() in frontend/src/lib/config/sandbox.ts returns 'mcp' when passed 'mcp'",
+        "Existing normalization for 'daytona', 'state', null, undefined, and unknown values is unchanged",
+        "npm run test passes",
+        "Typecheck passes"
+      ],
+      "priority": 36,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-037",
+      "title": "[P3] Add mcp_sandbox_url to API type interfaces",
+      "description": "As a developer, I need mcp_sandbox_url on the DefaultsResponse interface and the patchDefaults data type so the frontend can read and write the MCP sandbox URL.",
+      "acceptanceCriteria": [
+        "mcp_sandbox_url: string | null added to DefaultsResponse in frontend/src/lib/services/userSettingsService.ts",
+        "mcp_sandbox_url: string | null added to the patchDefaults data parameter type",
+        "No runtime behavior changes — types only",
+        "npm run test passes",
+        "Typecheck passes"
+      ],
+      "priority": 37,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-038",
+      "title": "[P3] Add MCP entry to SANDBOX_OPTIONS",
+      "description": "As a developer, I need an MCP entry in the SANDBOX_OPTIONS array so the sandbox selector dropdown can render an MCP choice.",
+      "acceptanceCriteria": [
+        "MCP entry added to SANDBOX_OPTIONS in frontend/src/lib/config/sandbox.ts with value: 'mcp', label: 'MCP Sandbox', shortLabel: 'MCP', description: 'Run agent code in an isolated MCP sandbox container.'",
+        "getSandboxOption('mcp') returns the MCP option",
+        "Existing State and Daytona entries are unchanged",
+        "npm run test passes",
+        "Typecheck passes"
+      ],
+      "priority": 38,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-039",
+      "title": "[P3] Add MCP Sandbox URL input field in SandboxSettings",
+      "description": "As a user, I want a text input field in the Sandbox Settings card where I can enter and persist my MCP sandbox URL.",
+      "acceptanceCriteria": [
+        "A labeled 'MCP Sandbox URL' text input is rendered below the sandbox selector dropdown in SandboxSettings.tsx",
+        "Input has placeholder text http://localhost:3005/mcp",
+        "On page load, the input displays the current saved URL from settings.defaults.mcp_sandbox_url",
+        "On blur or Enter key press, the URL is persisted via patchDefaults({ mcp_sandbox_url: value })",
+        "A success toast is shown on save; an error toast on failure",
+        "An empty input clears the URL by sending patchDefaults({ mcp_sandbox_url: null })",
+        "npm run test passes",
+        "Verify in browser using agent-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 39,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-040",
+      "title": "[P3] MCP option visibility gating",
+      "description": "As a user, I only want to see the MCP Sandbox option in the sandbox dropdown when I have configured a non-empty mcp_sandbox_url.",
+      "acceptanceCriteria": [
+        "In SandboxSettings.tsx, the visibleOptions memo filters out MCP when mcp_sandbox_url is empty or null",
+        "In ThreadSandboxStatus.tsx, the visibleOptions memo applies the same MCP filtering logic",
+        "When a user enters and saves a non-empty MCP URL, the MCP option immediately appears without page reload",
+        "When a user clears the MCP URL, the MCP option disappears and sandbox reverts to State if MCP was selected",
+        "Daytona visibility gating (provider key check) is unaffected",
+        "npm run test passes",
+        "Verify in browser using agent-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 40,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-041",
+      "title": "[P3] Create useSandboxHealth hook",
+      "description": "As a developer, I need a useSandboxHealth hook that pings the health endpoint derived from the user's mcp_sandbox_url.",
+      "acceptanceCriteria": [
+        "New file frontend/src/hooks/useSandboxHealth.ts created",
+        "Hook signature: useSandboxHealth(mcpSandboxUrl: string | null) returning { isHealthy: boolean | null, isLoading: boolean, refresh: () => void }",
+        "Health endpoint derivation: strip trailing /mcp suffix from URL, append /health (e.g., http://localhost:3005/mcp -> http://localhost:3005/health)",
+        "Pings on initial mount when mcpSandboxUrl is non-null",
+        "refresh() triggers a new ping (used when dropdown opens)",
+        "isHealthy is null before first check, true on 2xx, false on any error",
+        "When mcpSandboxUrl is null/empty, returns { isHealthy: null, isLoading: false, refresh: noop }",
+        "No background polling — on-demand only",
+        "Aborts in-flight request on unmount via AbortController",
+        "npm run test passes",
+        "Typecheck passes"
+      ],
+      "priority": 41,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-042",
+      "title": "[P3] Health dot in SandboxSettings dropdown",
+      "description": "As a user, I want to see a green or red dot next to the MCP Sandbox option in the settings dropdown so I know whether my sandbox server is reachable.",
+      "acceptanceCriteria": [
+        "useSandboxHealth is called in SandboxSettings.tsx with the current mcp_sandbox_url",
+        "Green dot (bg-green-500, h-2 w-2 rounded-full) rendered next to MCP option label when isHealthy === true",
+        "Red dot (bg-red-500, h-2 w-2 rounded-full) rendered when isHealthy === false",
+        "No dot rendered when isHealthy === null",
+        "Health refreshed when sandbox selector dropdown opens",
+        "Health dot only on MCP row — State and Daytona rows unaffected",
+        "npm run test passes",
+        "Verify in browser using agent-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 42,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-043",
+      "title": "[P3] Health dot in ThreadSandboxStatus popover",
+      "description": "As a user, I want to see the same green/red health dot in the thread-level sandbox selector popover.",
+      "acceptanceCriteria": [
+        "useSandboxHealth is called in ThreadSandboxStatus.tsx with the current mcp_sandbox_url",
+        "mcp_sandbox_url read from getSettings() response",
+        "Green/red dot displayed next to MCP option row using same visual pattern as SandboxSettings",
+        "refresh() called when popover opens (onOpenChange handler)",
+        "Health dot only on MCP row",
+        "npm run test passes",
+        "Verify in browser using agent-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 43,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-044",
+      "title": "[P3] Handle mcp_sandbox_unreachable SSE event with fallback toast",
+      "description": "As a user, when my MCP sandbox is unreachable during a message I want to see a toast notification with the option to retry using the State backend for just that one message.",
+      "acceptanceCriteria": [
+        "mcp_sandbox_unreachable event type recognized in the stream event handler",
+        "Toast displayed with message 'MCP sandbox unreachable' and error detail from SSE payload",
+        "Action button labeled 'Use State for this message'",
+        "Toast is persistent until dismissed or action taken",
+        "Clicking 'Use State' retries the same user message with a one-time sandbox_type=state override (NOT persisted to settings)",
+        "After retry, MCP remains the user's selected default sandbox",
+        "Loading state cleared when mcp_sandbox_unreachable event received",
+        "npm run test passes",
+        "Typecheck passes"
+      ],
+      "priority": 44,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-045",
+      "title": "[P3] Frontend integration validation with agent-browser + commit & push P3",
+      "description": "As a developer, I need to verify the full frontend MCP sandbox UX end-to-end in a browser. Then commit and push all Phase 3 changes.",
+      "acceptanceCriteria": [
+        "npm run test passes (all existing tests green, no regressions)",
+        "npm run lint passes",
+        "npm run format produces no changes",
+        "Verify in browser using agent-browser skill: navigate to Settings, verify MCP option NOT visible (no URL), enter URL, verify toast, open dropdown verify MCP appears with health dot, select MCP, refresh verify persistence, navigate to Chat verify MCP in thread selector with health dot, clear URL verify MCP disappears",
+        "Typecheck passes",
+        "All Phase 3 changes committed with descriptive message (signed with -s flag)",
+        "Branch pushed to origin"
+      ],
+      "priority": 45,
+      "passes": true,
+      "notes": "END OF PHASE 3. Commit and push before moving to Phase 5 — keeps the diff tight and saves progress. INTEGRATION GATE: health dot verification needs running frontend + exec_server."
+    },
+    {
+      "id": "US-046",
+      "title": "[P5] Tool discovery on session init — tools/list caching",
+      "description": "As the system, I need McpSandboxBackend to discover which MCP tools the connected exec_server supports so each method can decide native vs. fallback.",
+      "acceptanceCriteria": [
+        "_ensure_initialized() calls tools/list JSON-RPC method after the initialize handshake",
+        "Response tools cached in self._available_tools: set[str] (set of tool name strings)",
+        "Helper _has_tool(name: str) -> bool checks the cached set",
+        "When tools/list returns empty list or fails, _available_tools is an empty set (fallback-safe)",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 46,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-047",
+      "title": "[P5] Dual-mode exit code extraction (_parse_meta helper)",
+      "description": "As the system, I need to extract exit_code from MCP tool responses using structured _meta.exit_code when present, falling back to text-regex parsing for older servers.",
+      "acceptanceCriteria": [
+        "Helper _parse_meta(result: dict) -> tuple[int | None, str | None] extracts exit_code and sandbox_id from result.get('_meta', {})",
+        "When _meta.exit_code is present (integer), it is used directly — no text parsing needed",
+        "When _meta.exit_code is absent, text content searched with EXIT_CODE_RE regex",
+        "When neither _meta nor regex match found, exit code defaults to 0",
+        "Unit tests cover: _meta present, _meta absent with text fallback, both absent (default 0)",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 47,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-048",
+      "title": "[P5] Sandbox ID from _meta.sandbox_id",
+      "description": "As the system, I need the id property to use _meta.sandbox_id from the exec_server when available, falling back to the locally generated identifier.",
+      "acceptanceCriteria": [
+        "On first tool call response containing _meta.sandbox_id, the value is cached in self._sandbox_id",
+        "The id property returns _meta.sandbox_id if cached, otherwise the Phase 1 fallback value",
+        "_parse_meta() updates the cached _sandbox_id when it encounters a new sandbox_id value",
+        "Unit test: id returns fallback before tool calls, returns _meta.sandbox_id after a tool call",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 48,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-049",
+      "title": "[P5] Override execute() — dual tool name support (execute vs exec_command)",
+      "description": "As the system, I need execute() to call the execute MCP tool on new exec_servers and fall back to exec_command on old servers.",
+      "acceptanceCriteria": [
+        "execute() checks _has_tool('execute') first; if present, calls execute tool with {cmd: command}",
+        "If 'execute' not available, checks _has_tool('exec_command') and calls exec_command",
+        "If neither available, raises a clear error",
+        "Exit code extracted via _parse_meta() (prefers _meta.exit_code, falls back to text regex)",
+        "timeout parameter forwarded to the tool call",
+        "Returns ExecuteResponse(output=text, exit_code=int, truncated=False)",
+        "Unit tests: new server (execute), old server (exec_command), _meta.exit_code preferred",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 49,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-050",
+      "title": "[P5] Override read() — native MCP tool with fallback",
+      "description": "As the system, I need read() to call the native read MCP tool when available, with fallback to the inherited python3 heredoc implementation.",
+      "acceptanceCriteria": [
+        "When _has_tool('read') is true: calls read MCP tool with {path, offset, limit}",
+        "Extracts text content from response (already in cat -n format from server)",
+        "When _has_tool('read') is false: calls super().read(file_path, offset, limit)",
+        "Return type is str (cat -n formatted text), matching inherited implementation",
+        "Unit tests: native path returns text, fallback path calls super",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 50,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-051",
+      "title": "[P5] Override write() — native MCP tool with fallback",
+      "description": "As the system, I need write() to call the native write MCP tool when available, returning a WriteResult.",
+      "acceptanceCriteria": [
+        "When _has_tool('write') is true: calls write MCP tool with {path, content}",
+        "Parses _meta.exit_code — 0 means success, non-zero means error",
+        "Returns WriteResult(error=None, path=file_path) on success",
+        "Returns WriteResult(error='<text>', path=file_path) on error",
+        "When _has_tool('write') is false: calls super().write(file_path, content)",
+        "Return type is WriteResult, matching inherited implementation",
+        "Unit tests: native success, native error, fallback path",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 51,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-052",
+      "title": "[P5] Override edit() — native MCP tool with 4-level exit codes",
+      "description": "As the system, I need edit() to call the native edit MCP tool when available, parsing 4-level exit code semantics.",
+      "acceptanceCriteria": [
+        "When _has_tool('edit') is true: calls edit MCP tool with {path, old_string, new_string, replace_all}",
+        "Parses _meta.exit_code: 0=success, 1=old_string not found, 2=multiple matches, 3=file not found",
+        "On exit_code 0: returns EditResult(error=None, path=file_path, occurrences=N)",
+        "On exit_code 1-3: returns EditResult(error='<message>', path=file_path, occurrences=None)",
+        "When _has_tool('edit') is false: calls super().edit()",
+        "Return type is EditResult, matching inherited implementation",
+        "Unit tests: exit codes 0, 1, 2, 3, fallback path",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 52,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-053",
+      "title": "[P5] Override grep_raw() — native MCP tool with JSON lines parsing",
+      "description": "As the system, I need grep_raw() to call the native grep MCP tool when available, parsing JSON lines into GrepMatch objects.",
+      "acceptanceCriteria": [
+        "When _has_tool('grep') is true: calls grep MCP tool with {pattern, path, glob}",
+        "Parses newline-delimited JSON: each line is {path, line, text}",
+        "Helper _parse_json_lines(text: str) -> list[dict] added for parsing",
+        "Returns list[GrepMatch] with each match converted from JSON",
+        "When _meta.exit_code is 1 (no matches), returns empty list",
+        "When _has_tool('grep') is false: calls super().grep_raw()",
+        "Return type is list[GrepMatch], matching inherited implementation",
+        "Unit tests: matches found, no matches, fallback path",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 53,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-054",
+      "title": "[P5] Override glob_info() — native MCP tool with JSON lines parsing",
+      "description": "As the system, I need glob_info() to call the native glob MCP tool when available, parsing JSON lines into FileInfo objects.",
+      "acceptanceCriteria": [
+        "When _has_tool('glob') is true: calls glob MCP tool with {pattern, path}",
+        "Parses newline-delimited JSON: each line is {path, is_dir, size, mtime}",
+        "Returns list[FileInfo] with each entry converted from JSON",
+        "When _has_tool('glob') is false: calls super().glob_info()",
+        "Return type is list[FileInfo], matching inherited implementation",
+        "Unit tests: results found, empty results, fallback path",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 54,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-055",
+      "title": "[P5] Override ls_info() — native MCP tool with JSON lines parsing",
+      "description": "As the system, I need ls_info() to call the native ls MCP tool when available, parsing JSON lines into FileInfo objects.",
+      "acceptanceCriteria": [
+        "When _has_tool('ls') is true: calls ls MCP tool with {path}",
+        "Parses newline-delimited JSON: each line is {path, is_dir}",
+        "Returns list[FileInfo] with size=None and mtime=None",
+        "When _meta.exit_code is 1 (path not found), returns empty list",
+        "When _has_tool('ls') is false: calls super().ls_info()",
+        "Return type is list[FileInfo], matching inherited implementation",
+        "Unit tests: results found, path not found, fallback path",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 55,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-056",
+      "title": "[P5] Override upload_files() — native upload_file MCP tool per file",
+      "description": "As the system, I need upload_files() to call the native upload_file MCP tool per file when available, with fallback to shell-based base64.",
+      "acceptanceCriteria": [
+        "When _has_tool('upload_file') is true: for each (path, content_bytes), calls upload_file MCP tool with {path, content_base64: base64.b64encode(content).decode()}",
+        "Parses _meta.exit_code — 0 success, non-zero error",
+        "Returns FileUploadResponse(path=path, error=None) on success per file",
+        "Returns FileUploadResponse(path=path, error='<text>') on error per file",
+        "Individual file errors do not abort the batch",
+        "When _has_tool('upload_file') is false: calls super().upload_files(files)",
+        "Return type is list[FileUploadResponse], matching inherited implementation",
+        "Unit tests: all succeed, partial failure, fallback path",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 56,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-057",
+      "title": "[P5] Override download_files() — native download_file MCP tool per file",
+      "description": "As the system, I need download_files() to call the native download_file MCP tool per file when available, with fallback to shell-based base64.",
+      "acceptanceCriteria": [
+        "When _has_tool('download_file') is true: for each path, calls download_file MCP tool with {path}",
+        "Decodes base64 text content to bytes on success (_meta.exit_code == 0)",
+        "Returns FileDownloadResponse(path=path, content=decoded_bytes, error=None) on success",
+        "Returns FileDownloadResponse(path=path, content=None, error='file_not_found') when _meta.exit_code == 1",
+        "Individual file errors do not abort the batch",
+        "When _has_tool('download_file') is false: calls super().download_files(paths)",
+        "Return type is list[FileDownloadResponse], matching inherited implementation",
+        "Unit tests: all succeed, file not found, fallback path",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 57,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-058",
+      "title": "[P5] Graceful degradation — old exec_server compatibility",
+      "description": "As the system, I need McpSandboxBackend to work identically to Phase 1 behavior when connected to an old exec_server that only exposes exec_command.",
+      "acceptanceCriteria": [
+        "When tools/list returns only exec_command: _available_tools is {'exec_command'}",
+        "execute() correctly uses exec_command tool with text-regex exit code parsing",
+        "read(), write(), edit(), grep_raw(), glob_info(), ls_info() all fall back to super() (inherited shell delegation)",
+        "upload_files() and download_files() fall back to super() (inherited base64 shell implementation)",
+        "id property returns the Phase 1 fallback value (no _meta.sandbox_id available)",
+        "No exceptions raised, no behavioral differences from Phase 1",
+        "Unit test: mock old exec_server (only exec_command in tools list), verify all 9 methods produce correct results via fallback",
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes",
+        "make format passes",
+        "Typecheck passes"
+      ],
+      "priority": 58,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-059",
+      "title": "[P5] Integration validation — all tests pass, code clean",
+      "description": "As a developer, I need to verify that McpSandboxBackend works correctly with both new and old exec_servers, with all tests passing and code clean.",
+      "acceptanceCriteria": [
+        "cd backend && uv run pytest tests/unit/agents/test_mcp_sandbox.py -v passes with all tests green",
+        "make format passes",
+        "make lint passes",
+        "make test passes (no regressions in any test suite)",
+        "Unit tests cover: native tool paths (9 methods), fallback paths (9 methods), mixed availability, _meta parsing, JSON lines parsing, dual tool name for execute",
+        "Minimum 25 new test cases in this phase covering the full method x path x edge-case matrix",
+        "Invoke integration-qa agent to validate cross-boundary alignment",
+        "Typecheck passes"
+      ],
+      "priority": 59,
+      "passes": true,
+      "notes": "INTEGRATION GATE: Requires running exec_server for full validation. Unit tests with mocks can verify logic; live integration needs manual exec_server setup."
+    },
+    {
+      "id": "US-060",
+      "title": "[FINAL] Push all changes and create draft PR",
+      "description": "As a developer, I need all implementation changes committed, pushed to origin, and a draft pull request created targeting the development branch so the work is ready for code review.",
+      "acceptanceCriteria": [
+        "All changes are committed with descriptive commit messages (signed with -s flag)",
+        "Branch feat/890-mcp-sandbox is pushed to origin",
+        "A draft pull request is created targeting the development branch using gh pr create --draft",
+        "PR title: 'feat: MCP Sandbox backend, dispatch, frontend UX, and native tool overrides (#890)'",
+        "PR body includes: Summary section listing phases completed (P1-P5), test plan checklist, link to Feature #890",
+        "PR body notes Phase 4 (exec_server tools) requires separate PR in ruska-ai/sandboxes repo",
+        "All CI checks are monitored — if any fail, fix the issue and push again before marking complete",
+        "make format passes",
+        "make lint passes",
+        "make test passes"
+      ],
+      "priority": 60,
+      "passes": true,
+      "notes": "Phase 4 (US-024 through US-035) lives in the sandboxes/ submodule and needs a separate PR in ruska-ai/sandboxes. This PR covers P1, P2, P3, and P5 only."
+    }
+  ]
+}
