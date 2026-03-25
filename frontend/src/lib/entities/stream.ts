@@ -36,7 +36,8 @@ export type SSEEventType =
 	| "messages"
 	| "values"
 	| "error"
-	| "aborted";
+	| "aborted"
+	| "custom";
 
 export interface MetadataEvent {
 	type: "metadata";
@@ -72,12 +73,32 @@ export interface AbortedEvent {
 	data: { reason: string };
 }
 
+export interface CustomEvent {
+	type: "custom";
+	data: {
+		type: string;
+		[key: string]: unknown;
+	};
+}
+
+export interface CostUpdateEvent {
+	type: "cost_update";
+	model: string;
+	input_tokens: number;
+	output_tokens: number;
+	cost_usd: number;
+	duration_seconds: number;
+	running_total_usd: number;
+	phase: string;
+}
+
 export type SSEEvent =
 	| MetadataEvent
 	| MessagesEvent
 	| ValuesEvent
 	| ErrorEvent
-	| AbortedEvent;
+	| AbortedEvent
+	| CustomEvent;
 
 export interface DoneSignal {
 	type: "done";
