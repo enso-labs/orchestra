@@ -727,9 +727,11 @@ export default function useChat(): ChatContextType {
 		}
 
 		if (streamMode === "custom") {
-			// Custom events dispatched by feature-specific handlers
+			// Custom events dispatched by Phase 1+ feature handlers
 			// Sub-types: cost_update, plan_status, eval_progress, context_reset, span
-			console.debug("[custom event]", payload[1]);
+			if (import.meta.env.DEV) {
+				console.debug("[custom event]", payload[1]);
+			}
 			return;
 		}
 

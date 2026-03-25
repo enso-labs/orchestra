@@ -233,6 +233,16 @@ MODEL_CONTEXT_WINDOWS: dict[str, int] = {
     # Groq
     "groq:openai/gpt-oss-120b": 128_000,
     "groq:llama-3.3-70b-versatile": 128_000,
+    # Bedrock
+    "bedrock_converse:us.anthropic.claude-sonnet-4-5-20250929-v1:0": 200_000,
+    "bedrock_converse:us.anthropic.claude-haiku-4-5-20251001-v1:0": 200_000,
+    "bedrock_converse:us.anthropic.claude-opus-4-5-20251101-v1:0": 200_000,
+    "bedrock_converse:us.moonshot.kimi-k2-thinking": 131_072,
+    "bedrock_converse:us.anthropic.claude-3-5-sonnet-20241022-v2:0": 200_000,
+    "bedrock_converse:us.anthropic.claude-3-5-haiku-20241022-v1:0": 200_000,
+    "bedrock_converse:amazon.titan-text-premier-v1:0": 32_768,
+    "bedrock_converse:us.meta.llama3-2-90b-instruct-v1:0": 128_000,
+    "bedrock_converse:us.mistral.mistral-large-2407-v1:0": 128_000,
 }
 
 DEFAULT_CONTEXT_WINDOW = 200_000  # Fallback for unknown models
@@ -240,4 +250,8 @@ DEFAULT_CONTEXT_WINDOW = 200_000  # Fallback for unknown models
 
 def get_context_window(model: str) -> int:
     """Get context window size for a model, with fallback."""
-    return MODEL_CONTEXT_WINDOWS.get(model, DEFAULT_CONTEXT_WINDOW)
+    size = MODEL_CONTEXT_WINDOWS.get(model)
+    if size is None:
+        logger.debug(f"context_window_fallback model={model} using default={DEFAULT_CONTEXT_WINDOW}")
+        return DEFAULT_CONTEXT_WINDOW
+    return size

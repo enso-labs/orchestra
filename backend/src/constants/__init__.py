@@ -135,3 +135,6 @@ DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true
 # Thread Search
 # Number of recent messages to store per thread snapshot for semantic search
 THREAD_SNAPSHOT_MESSAGE_COUNT = 20
+
+# Phase enum
+from src.constants.phases import AgentPhase  # noqa: E402, F401
