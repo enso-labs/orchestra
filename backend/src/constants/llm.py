@@ -196,3 +196,48 @@ ANTHROPIC_PROMPT_CACHE_TTL = os.getenv("ANTHROPIC_PROMPT_CACHE_TTL", "5m")
 DEFAULT_COMPACTION_TOKEN_THRESHOLD = _safe_int_env("COMPACTION_TOKEN_THRESHOLD", 170000)
 DEFAULT_COMPACTION_RECENT_MESSAGES = _safe_int_env("COMPACTION_RECENT_MESSAGES", 6)
 DEFAULT_COMPACTION_MODEL = DEFAULT_CHAT_MODEL_BASIC or DEFAULT_CHAT_MODEL
+
+# Model context window sizes (tokens) — used by context reset middleware
+MODEL_CONTEXT_WINDOWS: dict[str, int] = {
+    # OpenAI
+    "openai:o3": 200_000,
+    "openai:o4-mini": 200_000,
+    "openai:gpt-4.1-nano": 1_000_000,
+    "openai:gpt-4.1-mini": 1_000_000,
+    "openai:gpt-5-nano": 1_000_000,
+    "openai:gpt-5-mini": 1_000_000,
+    "openai:gpt-5": 1_000_000,
+    "openai:gpt-5.1": 1_000_000,
+    "openai:gpt-5.2": 1_000_000,
+    "openai:gpt-5.2-chat-latest": 1_000_000,
+    "openai:gpt-5.2-pro": 1_000_000,
+    # Anthropic
+    "anthropic:claude-3-7-sonnet-latest": 200_000,
+    "anthropic:claude-sonnet-4": 200_000,
+    "anthropic:claude-opus-4-1": 200_000,
+    "anthropic:claude-haiku-4-5": 200_000,
+    "anthropic:claude-sonnet-4-5": 200_000,
+    # xAI
+    "xai:grok-4-1-fast": 1_000_000,
+    "xai:grok-4-1-fast-non-reasoning": 1_000_000,
+    "xai:grok-4": 256_000,
+    "xai:grok-4-fast": 256_000,
+    "xai:grok-4-fast-non-reasoning": 256_000,
+    "xai:grok-code-fast-1": 256_000,
+    # Google
+    "google_genai:gemini-2.5-flash-lite": 1_000_000,
+    "google_genai:gemini-2.5-flash": 1_000_000,
+    "google_genai:gemini-2.5-pro": 1_000_000,
+    "google_genai:gemini-flash-lite-latest": 1_000_000,
+    "google_genai:gemini-3-flash-preview": 1_000_000,
+    # Groq
+    "groq:openai/gpt-oss-120b": 128_000,
+    "groq:llama-3.3-70b-versatile": 128_000,
+}
+
+DEFAULT_CONTEXT_WINDOW = 200_000  # Fallback for unknown models
+
+
+def get_context_window(model: str) -> int:
+    """Get context window size for a model, with fallback."""
+    return MODEL_CONTEXT_WINDOWS.get(model, DEFAULT_CONTEXT_WINDOW)

@@ -183,6 +183,8 @@ export class FetchStreamReader {
 				};
 			case "aborted":
 				return { type: "aborted", data: payload };
+			case "custom":
+				return { type: "custom", data: payload };
 			default:
 				return null;
 		}
@@ -329,6 +331,8 @@ export class ResponseBodyReader {
 				};
 			case "aborted":
 				return { type: "aborted", data: payload };
+			case "custom":
+				return { type: "custom", data: payload };
 			default:
 				return null;
 		}

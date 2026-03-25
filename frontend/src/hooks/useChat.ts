@@ -213,6 +213,8 @@ export default function useChat(): ChatContextType {
 				return ["error", event.data.error];
 			case "aborted":
 				return ["aborted", event.data];
+			case "custom":
+				return ["custom", event.data];
 			case "done":
 				return null; // Handled separately
 			default:
@@ -721,6 +723,13 @@ export default function useChat(): ChatContextType {
 				setTodos(valuesData.todos);
 			}
 
+			return;
+		}
+
+		if (streamMode === "custom") {
+			// Custom events dispatched by feature-specific handlers
+			// Sub-types: cost_update, plan_status, eval_progress, context_reset, span
+			console.debug("[custom event]", payload[1]);
 			return;
 		}
 

@@ -30,14 +30,6 @@ export function isDistributedResponse(
 	);
 }
 
-// SSE Event types
-export type SSEEventType =
-	| "metadata"
-	| "messages"
-	| "values"
-	| "error"
-	| "aborted";
-
 export interface MetadataEvent {
 	type: "metadata";
 	data: {
@@ -72,12 +64,29 @@ export interface AbortedEvent {
 	data: { reason: string };
 }
 
+export interface CustomEvent {
+	type: "custom";
+	data: {
+		type: string; // Sub-type: "cost_update", "plan_status", "eval_progress", etc.
+		[key: string]: unknown;
+	};
+}
+
+export type SSEEventType =
+	| "metadata"
+	| "messages"
+	| "values"
+	| "error"
+	| "aborted"
+	| "custom";
+
 export type SSEEvent =
 	| MetadataEvent
 	| MessagesEvent
 	| ValuesEvent
 	| ErrorEvent
-	| AbortedEvent;
+	| AbortedEvent
+	| CustomEvent;
 
 export interface DoneSignal {
 	type: "done";
