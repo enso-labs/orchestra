@@ -1,4 +1,6 @@
+import time
 from typing import Awaitable, Callable
+
 from deepagents.backends.utils import (
     format_content_with_line_numbers,
     sanitize_tool_call_id,
@@ -31,6 +33,7 @@ from langchain.agents.middleware import (
 )
 from langchain_anthropic.middleware import AnthropicPromptCachingMiddleware
 from src.constants.llm import ANTHROPIC_PROMPT_CACHE_TTL
+from src.constants.pricing import estimate_cost
 from src.utils.logger import logger
 from src.utils.compacting import compaction_middleware
 from src.utils.format import format_content
@@ -124,6 +127,50 @@ async def cache_metrics_middleware(
             f"cache_read_tokens={cache_read} "
             f"cache_hit_ratio={cache_hit_ratio:.1f}%"
         )
+
+    return response
+
+
+@wrap_model_call
+async def cost_tracking_middleware(
+    request: ModelRequest,
+    handler: Callable[[ModelRequest], ModelResponse],
+) -> ModelResponse:
+    """Track per-call cost metrics and emit to stream."""
+    start = time.monotonic()
+    response = await handler(request)
+    duration = time.monotonic() - start
+
+    # Extract AI message and usage (same pattern as cache_metrics_middleware)
+    ai_msg = None
+    messages = getattr(response, "messages", None)
+    if messages:
+        for msg in reversed(messages):
+            if isinstance(msg, AIMessage):
+                ai_msg = msg
+                break
+
+    if ai_msg is None:
+        return response
+
+    usage = getattr(ai_msg, "usage_metadata", None)
+    if usage is None:
+        return response
+
+    input_tokens = getattr(usage, "input_tokens", 0) or 0
+    output_tokens = getattr(usage, "output_tokens", 0) or 0
+
+    # Get model from request state or runtime context
+    model = getattr(request, "model", "unknown")
+    if hasattr(request, "state") and "model" in request.state:
+        model = request.state["model"]
+
+    cost = estimate_cost(model, input_tokens, output_tokens)
+
+    logger.info(
+        f"cost_metrics model={model} input={input_tokens} output={output_tokens} "
+        f"cost=${cost:.6f} duration={duration:.2f}s"
+    )
 
     return response
 
@@ -334,6 +381,7 @@ def init_default_middleware(
         compaction_middleware,
         add_ai_message_metadata,
         cache_metrics_middleware,
+        cost_tracking_middleware,
         retry_model,
         *pii_middleware(),
         AutoEvictMiddleware(backend=backend),
