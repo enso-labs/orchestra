@@ -34,3 +34,5 @@
 **/.cloudflared/
 **/.images
 **/.ralph/archive/
+tasks/
+docs/

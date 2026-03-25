@@ -1,13 +1,13 @@
-# Orchestra Docs
+# Orchestra Decks
 
-GitHub Pages site for Orchestra documentation and presentations.
+GitHub Pages site for Orchestra presentations and slide decks.
 
 **Live:** <https://ruska-ai.github.io/orchestra/>
 
 ## Directory Structure
 
 ```
-docs/
+decks/
   index.html          # Redirects to slides/
   slides/             # reveal.js presentation deck
     index.html
@@ -19,9 +19,9 @@ docs/
 From the repository root:
 
 ```bash
-npx serve docs
+npx serve decks
 # or
-python -m http.server 8080 --directory docs
+python -m http.server 8080 --directory decks
 ```
 
 Then open <http://localhost:8080>. The root `index.html` redirects to `slides/`.
@@ -30,8 +30,8 @@ Then open <http://localhost:8080>. The root `index.html` redirects to `slides/`.
 
 Automatic via `.github/workflows/slides.yml`:
 
-- **Trigger:** push to `development` when files in `docs/slides/**` change (or manual `workflow_dispatch`)
-- **Action:** uploads the entire `docs/` directory as a GitHub Pages artifact
+- **Trigger:** push to `development` when files in `decks/slides/**` change (or manual `workflow_dispatch`)
+- **Action:** uploads the entire `decks/` directory as a GitHub Pages artifact
 - **Concurrency:** only one deployment runs at a time
 
 ## Adding Content
@@ -42,7 +42,7 @@ See [`slides/README.md`](slides/README.md) for the full editing and animation gu
 
 ### Adding new top-level sections
 
-1. Create a new directory under `docs/` (e.g., `docs/guides/`)
+1. Create a new directory under `decks/` (e.g., `decks/guides/`)
 2. Add an `index.html` (or other static files) inside it
-3. Update `docs/index.html` if the default landing page should change
+3. Update `decks/index.html` if the default landing page should change
 4. Add the new path pattern to `.github/workflows/slides.yml` under `paths:` so changes trigger deployment
