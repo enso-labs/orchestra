@@ -1,5 +1,11 @@
 import { useState, useCallback } from "react";
 
+/**
+ * Internal state for cost tracking.
+ *
+ * `totalInputTokens` and `totalOutputTokens` are tracked here and returned
+ * from the hook for use by the cost breakdown panel in a future iteration.
+ */
 interface CostState {
 	totalCost: number;
 	turnCount: number;

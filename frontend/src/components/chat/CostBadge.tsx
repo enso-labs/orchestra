@@ -5,10 +5,16 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 
+function formatCost(cost: number): string {
+	if (cost < 0.01) return `$${cost.toFixed(4)}`;
+	if (cost < 1) return `$${cost.toFixed(3)}`;
+	return `$${cost.toFixed(2)}`;
+}
+
 interface CostBadgeProps {
 	totalCost: number;
 	turnCount: number;
-	costByPhase?: Record<string, number>;
+	costByPhase: Record<string, number>;
 }
 
 export function CostBadge({
@@ -18,16 +24,13 @@ export function CostBadge({
 }: CostBadgeProps) {
 	if (totalCost === 0) return null;
 
-	const formatCost = (cost: number) => {
-		if (cost < 0.01) return `$${cost.toFixed(4)}`;
-		if (cost < 1) return `$${cost.toFixed(3)}`;
-		return `$${cost.toFixed(2)}`;
-	};
-
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
-				<button className="flex h-8 items-center gap-1.5 rounded-full border border-border/60 px-3 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
+				<button
+					aria-label={`Cost: ${formatCost(totalCost)}, ${turnCount} API calls`}
+					className="flex h-8 items-center gap-1.5 rounded-full border border-border/60 px-3 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+				>
 					<DollarSign className="h-3.5 w-3.5" />
 					<span>{formatCost(totalCost)}</span>
 					<span className="text-muted-foreground/60">&middot;</span>
@@ -45,7 +48,7 @@ export function CostBadge({
 						<span className="text-muted-foreground">LLM Calls</span>
 						<span className="font-mono">{turnCount}</span>
 					</div>
-					{costByPhase && Object.keys(costByPhase).length > 0 && (
+					{Object.keys(costByPhase).length > 0 && (
 						<>
 							<div className="border-t border-border pt-2 text-xs font-medium">
 								By Phase

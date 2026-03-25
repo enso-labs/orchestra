@@ -73,7 +73,7 @@ export interface AbortedEvent {
 	data: { reason: string };
 }
 
-export interface CustomEvent {
+export interface CustomSSEEvent {
 	type: "custom";
 	data: {
 		type: string;
@@ -98,7 +98,7 @@ export type SSEEvent =
 	| ValuesEvent
 	| ErrorEvent
 	| AbortedEvent
-	| CustomEvent;
+	| CustomSSEEvent;
 
 export interface DoneSignal {
 	type: "done";
