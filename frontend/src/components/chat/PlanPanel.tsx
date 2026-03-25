@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, FileText, Check, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +16,20 @@ interface PlanPanelProps {
 	onReject?: () => void;
 }
 
+const statusColors = {
+	planning: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
+	awaiting_approval: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+	approved: "bg-green-500/10 text-green-600 border-green-500/30",
+	generating: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+};
+
+const statusLabels = {
+	planning: "Planning...",
+	awaiting_approval: "Awaiting Approval",
+	approved: "Approved",
+	generating: "Generating...",
+};
+
 export function PlanPanel({
 	plan,
 	status,
@@ -23,19 +38,11 @@ export function PlanPanel({
 }: PlanPanelProps) {
 	const [isOpen, setIsOpen] = useState(status === "awaiting_approval");
 
-	const statusColors = {
-		planning: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-		awaiting_approval: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-		approved: "bg-green-500/10 text-green-600 border-green-500/30",
-		generating: "bg-purple-500/10 text-purple-600 border-purple-500/30",
-	};
-
-	const statusLabels = {
-		planning: "Planning...",
-		awaiting_approval: "Awaiting Approval",
-		approved: "Approved",
-		generating: "Generating...",
-	};
+	useEffect(() => {
+		if (status === "awaiting_approval") {
+			setIsOpen(true);
+		}
+	}, [status]);
 
 	return (
 		<div className="my-2 rounded-lg border border-border bg-card">
@@ -59,15 +66,15 @@ export function PlanPanel({
 				</CollapsibleTrigger>
 				<CollapsibleContent>
 					<div className="border-t border-border px-4 py-3">
-						<div className="prose prose-sm dark:prose-invert max-w-none">
-							<div dangerouslySetInnerHTML={{ __html: plan }} />
-						</div>
+						<ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
+							{plan}
+						</ReactMarkdown>
 						{status === "awaiting_approval" && (
 							<div className="mt-4 flex gap-2 border-t border-border pt-3">
 								<Button
 									size="sm"
 									variant="default"
-									onClick={onApprove}
+									onClick={() => onApprove?.()}
 									className="gap-1.5"
 								>
 									<Check className="h-3.5 w-3.5" />
@@ -76,7 +83,7 @@ export function PlanPanel({
 								<Button
 									size="sm"
 									variant="outline"
-									onClick={onReject}
+									onClick={() => onReject?.()}
 									className="gap-1.5"
 								>
 									<X className="h-3.5 w-3.5" />

@@ -73,15 +73,9 @@ export interface AbortedEvent {
 	data: { reason: string };
 }
 
-export interface CustomEvent {
+export interface CustomSSEEvent {
 	type: "custom";
 	data: Record<string, unknown>;
-}
-
-export interface PlanStatusEvent {
-	type: "plan_status";
-	status: "planning" | "awaiting_approval" | "approved" | "generating";
-	plan?: string; // Markdown plan content (when status is "awaiting_approval")
 }
 
 export type SSEEvent =
@@ -90,7 +84,7 @@ export type SSEEvent =
 	| ValuesEvent
 	| ErrorEvent
 	| AbortedEvent
-	| CustomEvent;
+	| CustomSSEEvent;
 
 export interface DoneSignal {
 	type: "done";

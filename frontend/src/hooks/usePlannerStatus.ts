@@ -1,7 +1,16 @@
 import { useState, useCallback } from "react";
 
+const VALID_STATUSES = [
+	"idle",
+	"planning",
+	"awaiting_approval",
+	"approved",
+	"generating",
+] as const;
+type PlannerStatus = (typeof VALID_STATUSES)[number];
+
 interface PlannerState {
-	status: "idle" | "planning" | "awaiting_approval" | "approved" | "generating";
+	status: PlannerStatus;
 	plan: string | null;
 }
 
@@ -13,8 +22,11 @@ export function usePlannerStatus() {
 
 	const handlePlanStatus = useCallback(
 		(data: { status: string; plan?: string }) => {
+			const status = VALID_STATUSES.includes(data.status as PlannerStatus)
+				? (data.status as PlannerStatus)
+				: "idle";
 			setPlannerState({
-				status: data.status as PlannerState["status"],
+				status,
 				plan: data.plan || null,
 			});
 		},
