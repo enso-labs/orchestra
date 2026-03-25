@@ -18,6 +18,7 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from src.schemas.entities.planner import PlannerConfig
 from src.services.prompt.defaults import get_default_system_prompt
 from src.utils.format import slugify
 
@@ -110,6 +111,7 @@ class Assistant(BaseModel):
         default_factory=dict,
         description="File system storage for the assistant. Key is the file path, value is the file content.",
     )
+    planner: Optional[PlannerConfig] = Field(default=None, description="Planner agent configuration")
     metadata: dict = {}
     updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
