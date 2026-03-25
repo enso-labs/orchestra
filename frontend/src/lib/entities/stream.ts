@@ -36,7 +36,8 @@ export type SSEEventType =
 	| "messages"
 	| "values"
 	| "error"
-	| "aborted";
+	| "aborted"
+	| "custom";
 
 export interface MetadataEvent {
 	type: "metadata";
@@ -72,12 +73,24 @@ export interface AbortedEvent {
 	data: { reason: string };
 }
 
+export interface CustomEvent {
+	type: "custom";
+	data: Record<string, unknown>;
+}
+
+export interface PlanStatusEvent {
+	type: "plan_status";
+	status: "planning" | "awaiting_approval" | "approved" | "generating";
+	plan?: string; // Markdown plan content (when status is "awaiting_approval")
+}
+
 export type SSEEvent =
 	| MetadataEvent
 	| MessagesEvent
 	| ValuesEvent
 	| ErrorEvent
-	| AbortedEvent;
+	| AbortedEvent
+	| CustomEvent;
 
 export interface DoneSignal {
 	type: "done";
