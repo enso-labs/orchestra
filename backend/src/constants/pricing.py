@@ -2,6 +2,8 @@
 
 from typing import TypedDict
 
+from src.utils.logger import logger
+
 
 class ModelPricing(TypedDict):
     input: float  # USD per 1M input tokens
@@ -30,14 +32,20 @@ PRICING_TABLE: dict[str, ModelPricing] = {
     "anthropic:claude-sonnet-4-5": {"input": 3.00, "output": 15.00},
     # xAI
     "xai:grok-4-1-fast": {"input": 3.00, "output": 12.00},
+    "xai:grok-4-1-fast-non-reasoning": {"input": 3.00, "output": 12.00},
     "xai:grok-4": {"input": 3.00, "output": 15.00},
     "xai:grok-4-fast": {"input": 5.00, "output": 25.00},
+    "xai:grok-4-fast-non-reasoning": {"input": 5.00, "output": 25.00},
+    "xai:grok-code-fast-1": {"input": 3.00, "output": 12.00},
     # Google
     "google_genai:gemini-2.5-flash-lite": {"input": 0.02, "output": 0.10},
     "google_genai:gemini-2.5-flash": {"input": 0.15, "output": 0.60},
     "google_genai:gemini-2.5-pro": {"input": 1.25, "output": 10.00},
+    "google_genai:gemini-flash-lite-latest": {"input": 0.02, "output": 0.10},
+    "google_genai:gemini-3-flash-preview": {"input": 0.15, "output": 0.60},
     # Groq
     "groq:llama-3.3-70b-versatile": {"input": 0.59, "output": 0.79},
+    "groq:openai/gpt-oss-120b": {"input": 0.59, "output": 0.79},
 }
 
 
@@ -45,6 +53,7 @@ def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     """Calculate estimated cost in USD for a model call."""
     pricing = PRICING_TABLE.get(model)
     if pricing is None:
+        logger.debug(f"pricing_fallback model={model} — not in pricing table, cost=$0.00")
         return 0.0
     input_cost = (input_tokens / 1_000_000) * pricing["input"]
     output_cost = (output_tokens / 1_000_000) * pricing["output"]

@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
+from src.constants.phases import AgentPhase
 
 
 class TurnMetrics(BaseModel):
@@ -9,7 +10,7 @@ class TurnMetrics(BaseModel):
 
     turn_id: str
     thread_id: str
-    agent_phase: str = "solo"
+    agent_phase: str = AgentPhase.SOLO
     model: str
     input_tokens: int = 0
     output_tokens: int = 0
@@ -17,7 +18,7 @@ class TurnMetrics(BaseModel):
     cache_creation_tokens: int = 0
     estimated_cost_usd: float = 0.0
     duration_seconds: float = 0.0
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ThreadCostSummary(BaseModel):

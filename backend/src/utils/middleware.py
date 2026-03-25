@@ -160,10 +160,10 @@ async def cost_tracking_middleware(
     input_tokens = getattr(usage, "input_tokens", 0) or 0
     output_tokens = getattr(usage, "output_tokens", 0) or 0
 
-    # Get model from request state or runtime context
-    model = getattr(request, "model", "unknown")
-    if hasattr(request, "state") and "model" in request.state:
-        model = request.state["model"]
+    # Extract model name from response metadata (reliable source)
+    model = "unknown"
+    response_meta = getattr(ai_msg, "response_metadata", {}) or {}
+    model = response_meta.get("model_name") or response_meta.get("model", "unknown")
 
     cost = estimate_cost(model, input_tokens, output_tokens)
 
@@ -381,8 +381,8 @@ def init_default_middleware(
         compaction_middleware,
         add_ai_message_metadata,
         cache_metrics_middleware,
-        cost_tracking_middleware,
         retry_model,
+        cost_tracking_middleware,
         *pii_middleware(),
         AutoEvictMiddleware(backend=backend),
     ]
