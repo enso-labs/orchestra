@@ -33,6 +33,6 @@
 **/.last-branch
 **/.cloudflared/
 **/.images
-**/.ralph/archive/
+.ralph/archive/
 tasks/
 docs/
