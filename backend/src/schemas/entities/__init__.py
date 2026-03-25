@@ -24,6 +24,7 @@ from src.schemas.entities.settings import (
     PatchDefaultsRequest as PatchDefaultsRequest,
     UpsertProviderKeyRequest as UpsertProviderKeyRequest,
 )
+from src.schemas.entities.planner import PlannerConfig as PlannerConfig
 from src.schemas.entities.hitl import (
     DecisionType as DecisionType,
     HumanDecision as HumanDecision,

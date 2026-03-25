@@ -11,9 +11,9 @@ from src.utils.logger import logger
 
 # Load the planner system prompt
 _PLANNER_PROMPT_PATH = Path(__file__).parent.parent / "static" / "prompts" / "md" / "planner.md"
-_PLANNER_PROMPT = ""
-if _PLANNER_PROMPT_PATH.exists():
-    _PLANNER_PROMPT = _PLANNER_PROMPT_PATH.read_text()
+if not _PLANNER_PROMPT_PATH.exists():
+    raise RuntimeError(f"Planner prompt file not found: {_PLANNER_PROMPT_PATH}")
+_PLANNER_PROMPT = _PLANNER_PROMPT_PATH.read_text()
 
 
 async def run_planner(
@@ -44,11 +44,19 @@ async def run_planner(
             "\n\nIMPORTANT: Keep the scope conservative. "
             "Only include features explicitly requested by the user. Do not add extras."
         )
-    else:
+    elif planner_config.scope_level == "ambitious":
         scope_instruction = (
             "\n\nBe ambitious about scope. Include features that would make this product impressive, "
             "even if the user didn't explicitly request them."
         )
+    else:
+        scope_instruction = ""
+        logger.warning(f"planner_unknown_scope scope_level={planner_config.scope_level}")
+
+    MAX_PLANNER_INPUT = 10_000  # characters
+    if len(user_message) > MAX_PLANNER_INPUT:
+        logger.warning(f"planner_input_truncated original_length={len(user_message)}")
+        user_message = user_message[:MAX_PLANNER_INPUT]
 
     system_prompt = _PLANNER_PROMPT + scope_instruction
 
@@ -59,7 +67,12 @@ async def run_planner(
 
     logger.info(f"planner_phase model={model_name} scope={planner_config.scope_level}")
 
-    response = await llm.ainvoke(messages)
+    try:
+        response = await llm.ainvoke(messages)
+    except Exception as e:
+        logger.error(f"planner_phase_failed model={model_name} error={e}")
+        raise RuntimeError(f"Planner failed to generate plan: {e}") from e
+
     plan_text = response.content if isinstance(response.content, str) else str(response.content)
 
     logger.info(f"planner_phase_complete plan_length={len(plan_text)}")
