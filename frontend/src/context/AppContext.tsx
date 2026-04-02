@@ -1,6 +1,7 @@
-import { useContext, createContext, useEffect } from "react";
+import { useContext, createContext } from "react";
 import useAppHook from "@/hooks/useAppHook";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useMountEffect } from "@/hooks/useMountEffect";
 
 export const AppContext = createContext({});
 
@@ -17,9 +18,9 @@ export default function AppProvider({
 }) {
 	const appHooks = useAppHook();
 
-	useEffect(() => {
+	useMountEffect(() => {
 		appHooks.fetchAppVersion();
-	}, []);
+	});
 
 	return (
 		<AppContext.Provider

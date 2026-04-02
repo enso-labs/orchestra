@@ -152,17 +152,9 @@ export default function FileEditorPanel() {
 
 	// Tree sidebar state - auto-collapse on mobile
 	const isMobile = useIsMobile();
-	const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
+	const [isTreeCollapsed, setIsTreeCollapsed] = useState(isMobile);
 
-	// Auto-collapse tree sidebar on mobile
-	useEffect(() => {
-		if (isMobile) {
-			setIsTreeCollapsed(true);
-		}
-	}, [isMobile]);
-
-	// Voice recording state
-	const [isRecording, setIsRecording] = useState(false);
+	// Voice recording state (derived from recorderControls below)
 	const recorderControls = useVoiceVisualizer();
 	const { startRecording, stopRecording, isRecordingInProgress, recordedBlob } =
 		recorderControls;
@@ -222,14 +214,10 @@ export default function FileEditorPanel() {
 	// Use activeFile from context (no local selectedFile state needed)
 	const selectedFile = activeFile;
 
-	useEffect(() => {
-		if (!selectedFile) {
-			latestEditorValueRef.current = "";
-			return;
-		}
-
-		latestEditorValueRef.current = getFileContent(selectedFile);
-	}, [getFileContent, selectedFile]);
+	// Keep editor value ref in sync (ref assignment, not state)
+	latestEditorValueRef.current = selectedFile
+		? getFileContent(selectedFile)
+		: "";
 
 	// Parse selected file path into breadcrumb segments
 	const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
@@ -244,22 +232,10 @@ export default function FileEditorPanel() {
 		}));
 	}, [selectedFile]);
 
-	// Reset preview when switching to non-previewable file
-	useEffect(() => {
-		if (
-			selectedFile &&
-			!isMarkdownFile(selectedFile) &&
-			!isHtmlFile(selectedFile) &&
-			!isMermaidFile(selectedFile)
-		) {
-			setShowPreview(false);
-		}
-	}, [selectedFile]);
+	// effectiveShowPreview is computed below, after helper function definitions
 
-	// Track recording state changes
-	useEffect(() => {
-		setIsRecording(isRecordingInProgress);
-	}, [isRecordingInProgress]);
+	// Use isRecordingInProgress directly instead of syncing to local state
+	const isRecording = isRecordingInProgress;
 
 	// Handle recorded blob - transcribe and optionally send to LLM for inference
 	useEffect(() => {
@@ -486,6 +462,14 @@ export default function FileEditorPanel() {
 	const isMermaidFile = (filename: string): boolean => {
 		return filename.toLowerCase().endsWith(".mmd");
 	};
+
+	// Derive effective preview state — disable for non-previewable files
+	const canPreview =
+		!!selectedFile &&
+		(isMarkdownFile(selectedFile) ||
+			isHtmlFile(selectedFile) ||
+			isMermaidFile(selectedFile));
+	const effectiveShowPreview = showPreview && canPreview;
 
 	// Validate file path
 	const validatePath = (path: string, excludePath?: string): string => {
@@ -1114,17 +1098,17 @@ export default function FileEditorPanel() {
 										isHtmlFile(selectedFile) ||
 										isMermaidFile(selectedFile)) && (
 										<Button
-											variant={showPreview ? "secondary" : "ghost"}
+											variant={effectiveShowPreview ? "secondary" : "ghost"}
 											size="sm"
 											onClick={() => setShowPreview(!showPreview)}
 											className="h-8 gap-2"
 											title={
-												showPreview
+												effectiveShowPreview
 													? "Show code"
 													: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
 											}
 											aria-label={
-												showPreview
+												effectiveShowPreview
 													? "Show code"
 													: `Preview ${isHtmlFile(selectedFile) ? "HTML" : isMermaidFile(selectedFile) ? "Mermaid diagram" : "markdown"}`
 											}
@@ -1208,20 +1192,20 @@ export default function FileEditorPanel() {
 						<div className="flex-1 overflow-hidden">
 							{selectedFile && fileSystem.has(selectedFile) ? (
 								<>
-									{showPreview && isMarkdownFile(selectedFile) ? (
+									{effectiveShowPreview && isMarkdownFile(selectedFile) ? (
 										<ScrollArea className="h-full">
 											<div className="p-6 max-w-4xl mx-auto">
 												<MarkdownCard content={getFileContent(selectedFile)} />
 											</div>
 										</ScrollArea>
-									) : showPreview && isHtmlFile(selectedFile) ? (
+									) : effectiveShowPreview && isHtmlFile(selectedFile) ? (
 										<iframe
 											srcDoc={getFileContent(selectedFile)}
 											sandbox="allow-same-origin"
 											className="w-full h-full border-0 bg-white"
 											title={`Preview of ${selectedFile}`}
 										/>
-									) : showPreview && isMermaidFile(selectedFile) ? (
+									) : effectiveShowPreview && isMermaidFile(selectedFile) ? (
 										<ScrollArea className="h-full">
 											<div className="p-6 max-w-4xl mx-auto">
 												<MarkdownCard
