@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	Dialog,
 	DialogContent,
@@ -21,6 +22,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { queryKeys } from "@/lib/queryKeys";
 
 export interface ApiToken {
 	id: string;
@@ -31,41 +33,25 @@ export interface ApiToken {
 }
 
 export function ApiTokensSettings() {
-	const [tokens, setTokens] = useState<ApiToken[]>([]);
-	const [loading, setLoading] = useState(true);
 	const [newTokenName, setNewTokenName] = useState("");
 	const [createdToken, setCreatedToken] = useState<string | null>(null);
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
+	const queryClient = useQueryClient();
 
-	React.useEffect(() => {
-		fetchTokens();
-	}, []);
-
-	const fetchTokens = async () => {
-		try {
-			setLoading(true);
+	const { data: tokens = [], isLoading: loading } = useQuery({
+		queryKey: queryKeys.tokens(),
+		queryFn: async () => {
 			const res = await apiClient.get<ApiToken[]>("/tokens");
-			if (Array.isArray(res.data)) {
-				setTokens(res.data);
-			} else {
-				console.error("API returned non-array tokens:", res.data);
-				setTokens([]);
-			}
-		} catch (err) {
-			console.error("Failed to fetch tokens", err);
-			toast.error("Failed to load API tokens");
-			setTokens([]);
-		} finally {
-			setLoading(false);
-		}
-	};
+			return Array.isArray(res.data) ? res.data : [];
+		},
+	});
 
 	const createToken = async () => {
 		if (!newTokenName.trim()) return;
 		try {
 			const res = await apiClient.post("/tokens", { name: newTokenName });
 			setCreatedToken(res.data.token);
-			setTokens([...tokens, res.data.api_token]);
+			queryClient.invalidateQueries({ queryKey: queryKeys.tokens() });
 			setNewTokenName("");
 			toast.success("API Token created");
 		} catch (err) {
@@ -84,7 +70,7 @@ export function ApiTokensSettings() {
 		}
 		try {
 			await apiClient.delete(`/tokens/${id}`);
-			setTokens(tokens.filter((t) => t.id !== id));
+			queryClient.invalidateQueries({ queryKey: queryKeys.tokens() });
 			toast.success("API Token revoked");
 		} catch (err) {
 			console.error("Failed to delete token", err);

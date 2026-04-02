@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Key, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import {
 	upsertProviderKey,
 	deleteProviderKey,
 } from "@/lib/services/userSettingsService";
+import { queryKeys } from "@/lib/queryKeys";
 
 /** Human-friendly labels for provider keys */
 const PROVIDER_LABELS: Record<string, string> = {
@@ -50,35 +52,24 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 export function UserApiKeysSettings() {
-	const [providers, setProviders] = useState<ProviderKeyStatus[]>([]);
-	const [loading, setLoading] = useState(true);
 	const [isAddOpen, setIsAddOpen] = useState(false);
 	const [selectedProvider, setSelectedProvider] = useState("");
 	const [apiKeyValue, setApiKeyValue] = useState("");
 	const [saving, setSaving] = useState(false);
+	const queryClient = useQueryClient();
 
-	useEffect(() => {
-		fetchProviders();
-	}, []);
-
-	const fetchProviders = async () => {
-		try {
-			setLoading(true);
-			const res = await getSettings();
-			setProviders(res.provider_keys);
-		} catch {
-			toast.error("Failed to load provider keys");
-		} finally {
-			setLoading(false);
-		}
-	};
+	const { data: settings, isLoading: loading } = useQuery({
+		queryKey: queryKeys.settings(),
+		queryFn: getSettings,
+	});
+	const providers: ProviderKeyStatus[] = settings?.provider_keys ?? [];
 
 	const handleUpsert = async () => {
 		if (!selectedProvider || !apiKeyValue.trim()) return;
 		setSaving(true);
 		try {
-			const res = await upsertProviderKey(selectedProvider, apiKeyValue);
-			setProviders(res.provider_keys);
+			await upsertProviderKey(selectedProvider, apiKeyValue);
+			queryClient.invalidateQueries({ queryKey: queryKeys.settings() });
 			toast.success("Provider key saved");
 			handleCloseDialog();
 		} catch {
@@ -97,8 +88,8 @@ export function UserApiKeysSettings() {
 			return;
 		}
 		try {
-			const res = await deleteProviderKey(provider);
-			setProviders(res.provider_keys);
+			await deleteProviderKey(provider);
+			queryClient.invalidateQueries({ queryKey: queryKeys.settings() });
 			toast.success("Provider key deleted");
 		} catch {
 			toast.error("Failed to delete provider key");

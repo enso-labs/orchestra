@@ -23,6 +23,7 @@ import {
 } from "@/lib/utils/activeStreamRecovery";
 import { toast } from "sonner";
 import { getSettings } from "@/lib/services/userSettingsService";
+import { useMountEffect } from "@/hooks/useMountEffect";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -129,11 +130,11 @@ export default function useChat(): ChatContextType {
 
 	const [savedTimezone, setSavedTimezone] = useState<string | null>(null);
 
-	useEffect(() => {
+	useMountEffect(() => {
 		getSettings()
 			.then((res) => setSavedTimezone(res.defaults.timezone))
 			.catch(() => {});
-	}, []);
+	});
 
 	const [arcade, setArcade] = useState({
 		tools: [] as string[],
@@ -843,20 +844,8 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
-	const useEffectUpdateAssistantId = () => {
-		useEffect(() => {
-			setMetadata((prev: any) => ({
-				...prev,
-				assistant_id: agent.id,
-			}));
-			return () => {
-				setMetadata((prev: any) => ({
-					...prev,
-					assistant_id: undefined,
-				}));
-			};
-		}, [agent.id]);
-	};
+	// No-op: assistant_id is set at submission time in getMetadata()
+	const useEffectUpdateAssistantId = () => {};
 
 	// File CRUD operations (wrapped in useCallback for stable references)
 	const addFile = useCallback((path: string, content: string = "") => {

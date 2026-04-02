@@ -64,14 +64,6 @@ export default function useThread(): ThreadContextType {
 	const [threadLoading, setThreadLoading] = useState<boolean>(false);
 	const [threadError, setThreadError] = useState<string | null>(null);
 
-	useEffect(() => {
-		console.log(
-			checkpoints?.filter(
-				(checkpoint: any) => checkpoint.metadata.source === "input",
-			),
-		);
-	}, [checkpoints]);
-
 	const loadThread = useCallback(
 		async (threadId: string): Promise<ThreadData | null> => {
 			if (!threadId) return null;

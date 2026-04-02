@@ -1,25 +1,22 @@
+import { useQuery } from "@tanstack/react-query";
 import { listModels, ModelsResponse } from "@/lib/services/modelService";
 import { getAuthToken } from "@/lib/utils/auth";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { queryKeys } from "@/lib/queryKeys";
+
+const EMPTY_MODELS: ModelsResponse = { default: "", free: [], models: [] };
 
 export function useModel() {
 	const [model, setModelState] = useState<string | null>(null);
-	const [models, setModels] = useState<ModelsResponse>({
-		default: "",
-		free: [],
-		models: [],
+
+	const { data: models = EMPTY_MODELS } = useQuery({
+		queryKey: queryKeys.models(),
+		queryFn: () => listModels().then((r) => r.data),
+		enabled: !!getAuthToken(),
 	});
 
-	const useModelsEffect = () => {
-		useEffect(() => {
-			if (!getAuthToken()) return;
-			const fetchModels = async () => {
-				const response = await listModels();
-				setModels(response.data);
-			};
-			fetchModels();
-		}, []);
-	};
+	// Kept for backwards compatibility — consumers that called useModelsEffect() can safely remove the call
+	const useModelsEffect = () => {};
 
 	// Internal setter used for thread/agent loading (not for user-facing model switching)
 	const setModel = useCallback((value: string | null) => {

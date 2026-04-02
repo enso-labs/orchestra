@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import {
 	Card,
@@ -33,18 +34,38 @@ import {
 	deleteProviderKey,
 } from "@/lib/services/userSettingsService";
 import { useSandboxHealth } from "@/hooks/useSandboxHealth";
+import { queryKeys } from "@/lib/queryKeys";
 
 export function SandboxSettings() {
-	const [sandbox, setSandbox] = useState<SandboxType>(DEFAULT_SANDBOX);
 	const [loading, setLoading] = useState(false);
-	const [providerKeys, setProviderKeys] = useState<ProviderKeyStatus[]>([]);
+	const queryClient = useQueryClient();
 
-	// MCP config local state
+	// MCP config local state (user edits before saving)
 	const [mcpUrl, setMcpUrl] = useState("");
 	const [mcpApiKey, setMcpApiKey] = useState("");
-	const [savedMcpUrl, setSavedMcpUrl] = useState<string | null>(null);
-	const [mcpApiKeyIsSet, setMcpApiKeyIsSet] = useState(false);
+	const [mcpUrlInitialized, setMcpUrlInitialized] = useState(false);
 	const [saving, setSaving] = useState(false);
+
+	const { data: settingsData } = useQuery({
+		queryKey: queryKeys.settings(),
+		queryFn: getSettings,
+	});
+
+	// Derive state from query data
+	const sandbox: SandboxType = normalizeSandboxValue(
+		settingsData?.defaults.sandbox ?? null,
+	);
+	const providerKeys: ProviderKeyStatus[] = settingsData?.provider_keys ?? [];
+	const savedMcpUrl = settingsData?.defaults.mcp_sandbox_url ?? null;
+	const mcpApiKeyIsSet = providerKeys.some(
+		(k) => k.provider === "MCP_SANDBOX_API_KEY" && k.is_set,
+	);
+
+	// Initialize local mcpUrl from server data (once)
+	if (settingsData && !mcpUrlInitialized) {
+		setMcpUrl(settingsData.defaults.mcp_sandbox_url ?? "");
+		setMcpUrlInitialized(true);
+	}
 
 	const {
 		isHealthy,
@@ -65,31 +86,17 @@ export function SandboxSettings() {
 		[providerKeys],
 	);
 
-	useEffect(() => {
-		getSettings()
-			.then((res) => {
-				setSandbox(normalizeSandboxValue(res.defaults.sandbox));
-				setProviderKeys(res.provider_keys ?? []);
-				const url = res.defaults.mcp_sandbox_url ?? "";
-				setMcpUrl(url);
-				setSavedMcpUrl(url || null);
-				setMcpApiKeyIsSet(
-					res.provider_keys?.some(
-						(k) => k.provider === "MCP_SANDBOX_API_KEY" && k.is_set,
-					) ?? false,
-				);
-			})
-			.catch(() => {});
-	}, []);
+	const invalidateSettings = () =>
+		queryClient.invalidateQueries({ queryKey: queryKeys.settings() });
 
 	const handleChange = async (value: string) => {
 		const nextSandbox = normalizeSandboxValue(value);
 		setLoading(true);
 		try {
-			const res = await patchDefaults({
+			await patchDefaults({
 				sandbox: toSandboxPatchValue(nextSandbox),
 			});
-			setSandbox(normalizeSandboxValue(res.defaults.sandbox));
+			invalidateSettings();
 			toast.success("Default sandbox updated");
 		} catch {
 			toast.error("Failed to update default sandbox");
@@ -104,16 +111,10 @@ export function SandboxSettings() {
 		try {
 			// Save URL
 			await patchDefaults({ mcp_sandbox_url: url });
-			setSavedMcpUrl(url);
 
 			// Save or clear API key
 			if (mcpApiKey.trim()) {
-				const res = await upsertProviderKey(
-					"MCP_SANDBOX_API_KEY",
-					mcpApiKey.trim(),
-				);
-				setMcpApiKeyIsSet(true);
-				setProviderKeys(res.provider_keys);
+				await upsertProviderKey("MCP_SANDBOX_API_KEY", mcpApiKey.trim());
 				setMcpApiKey("");
 			}
 
@@ -121,9 +122,10 @@ export function SandboxSettings() {
 
 			// If URL was cleared while MCP is selected, revert to state
 			if (!url && sandbox === "mcp") {
-				const res = await patchDefaults({ sandbox: "state" });
-				setSandbox(normalizeSandboxValue(res.defaults.sandbox));
+				await patchDefaults({ sandbox: "state" });
 			}
+
+			invalidateSettings();
 
 			// Trigger health check after save
 			if (url) {
@@ -138,9 +140,8 @@ export function SandboxSettings() {
 
 	const handleClearApiKey = async () => {
 		try {
-			const res = await deleteProviderKey("MCP_SANDBOX_API_KEY");
-			setMcpApiKeyIsSet(false);
-			setProviderKeys(res.provider_keys);
+			await deleteProviderKey("MCP_SANDBOX_API_KEY");
+			invalidateSettings();
 			toast.success("MCP API key removed");
 		} catch {
 			toast.error("Failed to remove MCP API key");

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Memory } from "@/lib/entities/memory";
 import MemoryService from "@/lib/services/memoryService";
+import { useMountEffect } from "@/hooks/useMountEffect";
 
 const PAGE_SIZE = 10;
 
@@ -67,7 +68,7 @@ export function MemorySettings() {
 		[],
 	);
 
-	useEffect(() => {
+	useMountEffect(() => {
 		fetchMemories();
 		return () => {
 			if (debounceRef.current) {
@@ -75,7 +76,7 @@ export function MemorySettings() {
 				debounceRef.current = null;
 			}
 		};
-	}, [fetchMemories]);
+	});
 
 	const handleSearchChange = (value: string) => {
 		setQuery(value);
