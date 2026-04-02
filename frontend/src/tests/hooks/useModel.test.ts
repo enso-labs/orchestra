@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useModel } from "@/hooks/useModel";
+import { createQueryWrapper } from "@/tests/test-utils";
 
 // Mock dependencies
 vi.mock("@/lib/services/modelService", () => ({
@@ -23,16 +24,21 @@ describe("useModel", () => {
 	});
 
 	it("initializes with null model (server resolves default)", () => {
-		const { result } = renderHook(() => useModel());
+		const { result } = renderHook(() => useModel(), {
+			wrapper: createQueryWrapper(),
+		});
 		expect(result.current.model).toBeNull();
 	});
 
 	it("model stays null for new conversations (no auto-resolution)", async () => {
-		const { result } = renderHook(() => {
-			const hook = useModel();
-			hook.useModelsEffect();
-			return hook;
-		});
+		const { result } = renderHook(
+			() => {
+				const hook = useModel();
+				hook.useModelsEffect();
+				return hook;
+			},
+			{ wrapper: createQueryWrapper() },
+		);
 
 		// Wait for models to load
 		await waitFor(() => {
@@ -44,11 +50,14 @@ describe("useModel", () => {
 	});
 
 	it("displayModel returns models.default when model is null", async () => {
-		const { result } = renderHook(() => {
-			const hook = useModel();
-			hook.useModelsEffect();
-			return hook;
-		});
+		const { result } = renderHook(
+			() => {
+				const hook = useModel();
+				hook.useModelsEffect();
+				return hook;
+			},
+			{ wrapper: createQueryWrapper() },
+		);
 
 		await waitFor(() => {
 			expect(result.current.displayModel).toBe("openai:gpt-4o");
@@ -60,7 +69,9 @@ describe("useModel", () => {
 	});
 
 	it("displayModel returns explicit model when set", () => {
-		const { result } = renderHook(() => useModel());
+		const { result } = renderHook(() => useModel(), {
+			wrapper: createQueryWrapper(),
+		});
 
 		act(() => {
 			result.current.setModel("anthropic:claude-sonnet-4-20250514");
@@ -73,7 +84,9 @@ describe("useModel", () => {
 	});
 
 	it("setModel updates model value (for thread loading)", () => {
-		const { result } = renderHook(() => useModel());
+		const { result } = renderHook(() => useModel(), {
+			wrapper: createQueryWrapper(),
+		});
 
 		act(() => {
 			result.current.setModel("openai:gpt-4o-mini");
@@ -83,7 +96,9 @@ describe("useModel", () => {
 	});
 
 	it("resetToDefault clears model to null", () => {
-		const { result } = renderHook(() => useModel());
+		const { result } = renderHook(() => useModel(), {
+			wrapper: createQueryWrapper(),
+		});
 
 		// Set a specific model first
 		act(() => {
@@ -100,7 +115,9 @@ describe("useModel", () => {
 	});
 
 	it("updateQueryStateModel updates model value", () => {
-		const { result } = renderHook(() => useModel());
+		const { result } = renderHook(() => useModel(), {
+			wrapper: createQueryWrapper(),
+		});
 
 		act(() => {
 			result.current.updateQueryStateModel("openai:gpt-4o");
@@ -110,7 +127,9 @@ describe("useModel", () => {
 	});
 
 	it("does not use URL query params", () => {
-		const { result } = renderHook(() => useModel());
+		const { result } = renderHook(() => useModel(), {
+			wrapper: createQueryWrapper(),
+		});
 
 		// Model should not appear in URL
 		expect(window.location.search).not.toContain("model=");
@@ -124,7 +143,9 @@ describe("useModel", () => {
 	});
 
 	it("exports expected interface", () => {
-		const { result } = renderHook(() => useModel());
+		const { result } = renderHook(() => useModel(), {
+			wrapper: createQueryWrapper(),
+		});
 
 		expect(result.current).toHaveProperty("model");
 		expect(result.current).toHaveProperty("setModel");

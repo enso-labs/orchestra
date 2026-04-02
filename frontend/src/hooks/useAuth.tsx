@@ -1,5 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { getUser } from "@/lib/services/authService";
-import { useEffect, useState } from "react";
+import { queryKeys } from "@/lib/queryKeys";
 
 export type User = {
 	id: string;
@@ -10,21 +11,11 @@ export type User = {
 };
 
 export function useAuth() {
-	const [user, setUser] = useState<User | null>(null);
-
-	const useEffectGetUser = () => {
-		useEffect(() => {
-			async function fetchUser() {
-				const res = await getUser();
-				setUser(res.data.user);
-			}
-			if (!user) {
-				fetchUser();
-			}
-		}, []);
-	};
-
-	useEffectGetUser();
+	const { data: user = null } = useQuery({
+		queryKey: queryKeys.user(),
+		queryFn: () => getUser().then((res) => res.data.user as User),
+		staleTime: Infinity, // user data rarely changes within a session
+	});
 
 	return { user };
 }

@@ -41,7 +41,6 @@ export default function ThreadPage() {
 		setMetadata,
 		setFilesMap,
 		setCheckpoints,
-		useEffectUpdateAssistantId,
 		useListThreadsEffect,
 		useListCheckpointsEffect,
 		useModelsEffect,
@@ -71,7 +70,6 @@ export default function ThreadPage() {
 
 	useModelsEffect();
 	useEffectGetAgents();
-	useEffectUpdateAssistantId();
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);
 

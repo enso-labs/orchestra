@@ -14,6 +14,7 @@ import useThread from "@/hooks/useThread";
 import useModel from "@/hooks/useModel";
 import useFileSystem, { type FileData } from "@/hooks/useFileSystem";
 import useMessageQueue from "@/hooks/useMessageQueue";
+import { useMountEffect } from "@/hooks/useMountEffect";
 import MemoryService from "@/lib/services/memoryService";
 import {
 	getSettings,
@@ -531,9 +532,9 @@ export default function ChatProvider({
 		}
 	}, [isAuthenticated]);
 
-	useEffect(() => {
+	useMountEffect(() => {
 		void loadPersistentContextFiles();
-	}, [loadPersistentContextFiles]);
+	});
 
 	useEffect(() => {
 		const nextVisibleFiles = buildVisibleWorkspaceFiles({

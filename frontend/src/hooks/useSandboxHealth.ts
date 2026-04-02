@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/utils/apiClient";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface SandboxHealthResult {
 	isHealthy: boolean | null;
@@ -16,54 +17,32 @@ const noop = () => {};
 export function useSandboxHealth(
 	mcpSandboxUrl: string | null,
 ): SandboxHealthResult {
-	const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
-	const abortRef = useRef<AbortController | null>(null);
+	const queryClient = useQueryClient();
 
-	const check = useCallback(() => {
-		if (!mcpSandboxUrl) {
-			setIsHealthy(null);
-			return;
-		}
+	const { data, isLoading, isError, isFetched } = useQuery({
+		queryKey: queryKeys.sandboxHealth(mcpSandboxUrl),
+		queryFn: async (): Promise<boolean> => {
+			await apiClient.get("/settings/mcp-sandbox-health");
+			return true;
+		},
+		enabled: !!mcpSandboxUrl,
+		retry: false,
+		staleTime: 30 * 1000, // 30 seconds
+	});
 
-		// Abort any in-flight request
-		abortRef.current?.abort();
-		const controller = new AbortController();
-		abortRef.current = controller;
-
-		setIsLoading(true);
-
-		apiClient
-			.get("/settings/mcp-sandbox-health", {
-				signal: controller.signal,
-			})
-			.then(() => {
-				if (!controller.signal.aborted) setIsHealthy(true);
-			})
-			.catch(() => {
-				if (!controller.signal.aborted) setIsHealthy(false);
-			})
-			.finally(() => {
-				if (!controller.signal.aborted) setIsLoading(false);
-			});
-	}, [mcpSandboxUrl]);
-
-	// Check on mount when URL is present
-	useEffect(() => {
+	const refresh = () => {
 		if (mcpSandboxUrl) {
-			check();
-		} else {
-			setIsHealthy(null);
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.sandboxHealth(mcpSandboxUrl),
+			});
 		}
-
-		return () => {
-			abortRef.current?.abort();
-		};
-	}, [mcpSandboxUrl, check]);
+	};
 
 	if (!mcpSandboxUrl) {
 		return { isHealthy: null, isLoading: false, refresh: noop };
 	}
 
-	return { isHealthy, isLoading, refresh: check };
+	const isHealthy = !isFetched ? null : isError ? false : (data ?? null);
+
+	return { isHealthy, isLoading, refresh };
 }

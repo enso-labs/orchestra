@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,27 +25,34 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { getSettings, patchDefaults } from "@/lib/services/userSettingsService";
+import { queryKeys } from "@/lib/queryKeys";
 
 const TIMEZONES = Intl.supportedValuesOf("timeZone");
 const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export function TimezoneSettings() {
 	const [open, setOpen] = useState(false);
-	const [timezone, setTimezone] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	const queryClient = useQueryClient();
 
-	useEffect(() => {
-		getSettings()
-			.then((res) => setTimezone(res.defaults.timezone))
-			.catch(() => {});
-	}, []);
+	const { data: settings } = useQuery({
+		queryKey: queryKeys.settings(),
+		queryFn: getSettings,
+	});
+	const timezone = settings?.defaults.timezone ?? null;
+
+	const patchMutation = useMutation({
+		mutationFn: (timezone: string | null) => patchDefaults({ timezone }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.settings() });
+		},
+	});
 
 	const handleSelect = async (tz: string) => {
 		setOpen(false);
 		setLoading(true);
 		try {
-			const res = await patchDefaults({ timezone: tz });
-			setTimezone(res.defaults.timezone);
+			await patchMutation.mutateAsync(tz);
 			toast.success("Timezone updated");
 		} catch {
 			toast.error("Failed to update timezone");
@@ -56,8 +64,7 @@ export function TimezoneSettings() {
 	const handleClear = async () => {
 		setLoading(true);
 		try {
-			const res = await patchDefaults({ timezone: null });
-			setTimezone(res.defaults.timezone);
+			await patchMutation.mutateAsync(null);
 			toast.success("Timezone reset to auto-detect");
 		} catch {
 			toast.error("Failed to clear timezone");

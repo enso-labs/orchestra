@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,21 +27,22 @@ import { toast } from "sonner";
 import { useChatContext } from "@/context/ChatContext";
 import { useModelVisibility } from "@/hooks/useModelVisibility";
 import { getSettings, patchDefaults } from "@/lib/services/userSettingsService";
+import { queryKeys } from "@/lib/queryKeys";
 
 export function DefaultModelSettings() {
 	const { models, useModelsEffect } = useChatContext();
 	const { isModelVisible } = useModelVisibility();
 	const [open, setOpen] = useState(false);
-	const [defaultModel, setDefaultModel] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	const queryClient = useQueryClient();
 
 	useModelsEffect?.();
 
-	useEffect(() => {
-		getSettings()
-			.then((res) => setDefaultModel(res.defaults.model))
-			.catch(() => {});
-	}, []);
+	const { data: settings } = useQuery({
+		queryKey: queryKeys.settings(),
+		queryFn: getSettings,
+	});
+	const defaultModel = settings?.defaults.model ?? null;
 
 	const allModels: string[] = models?.models || [];
 	const visibleModels = allModels.filter((m) => isModelVisible(m));
@@ -48,12 +50,18 @@ export function DefaultModelSettings() {
 	const getModelLabel = (modelValue: string) =>
 		modelValue.split(":")[1] || modelValue;
 
+	const patchMutation = useMutation({
+		mutationFn: (model: string | null) => patchDefaults({ model }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.settings() });
+		},
+	});
+
 	const handleSelect = async (model: string) => {
 		setOpen(false);
 		setLoading(true);
 		try {
-			const res = await patchDefaults({ model });
-			setDefaultModel(res.defaults.model);
+			await patchMutation.mutateAsync(model);
 			toast.success("Default model updated");
 		} catch {
 			toast.error("Failed to update default model");
@@ -65,8 +73,7 @@ export function DefaultModelSettings() {
 	const handleClear = async () => {
 		setLoading(true);
 		try {
-			const res = await patchDefaults({ model: null });
-			setDefaultModel(res.defaults.model);
+			await patchMutation.mutateAsync(null);
 			toast.success("Default model cleared");
 		} catch {
 			toast.error("Failed to clear default model");

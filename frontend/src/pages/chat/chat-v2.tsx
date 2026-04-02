@@ -14,7 +14,6 @@ export function ChatV2Page() {
 	const { loading } = useAppContext();
 	const { useEffectGetAgents } = useAgentContext();
 	const {
-		useEffectUpdateAssistantId,
 		useListThreadsEffect,
 		useListCheckpointsEffect,
 		metadata,
@@ -39,7 +38,6 @@ export function ChatV2Page() {
 
 	useModelsEffect();
 	useEffectGetAgents();
-	useEffectUpdateAssistantId();
 
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);

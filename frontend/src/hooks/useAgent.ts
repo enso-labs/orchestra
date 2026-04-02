@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import ToolConfig from "@/lib/config/tool";
 import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu";
 import useModel from "./useModel";
+import { useMountEffect } from "./useMountEffect";
 
 type Checked = DropdownMenuCheckboxItemProps["checked"];
 
@@ -28,8 +29,7 @@ export const INIT_AGENT_STATE: AgentState = {
 };
 
 export function useAgent() {
-	const { model, useModelsEffect, updateQueryStateModel } = useModel();
-	useModelsEffect();
+	const { updateQueryStateModel } = useModel();
 
 	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
 	const [agents, setAgents] = useState<Agent[]>([]);
@@ -40,12 +40,6 @@ export function useAgent() {
 		const saved = localStorage.getItem("enso:tool:search");
 		return saved !== null ? JSON.parse(saved) : true;
 	});
-
-	useEffect(() => {
-		if (model && agent.model !== model) {
-			setAgent({ ...agent, model: model });
-		}
-	}, [model]);
 
 	const setAgentSystemMessage = (system: string) => {
 		setAgent({ ...agent, prompt: system });
@@ -161,27 +155,29 @@ export function useAgent() {
 	};
 
 	const useEffectGetAgent = (id: string) => {
+		// Must react to id changes — agent pages may stay mounted while id changes
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 		useEffect(() => {
 			handleGetAgent(id);
 		}, [id]);
 	};
 
 	const useEffectGetAgents = () => {
-		useEffect(() => {
+		useMountEffect(() => {
 			handleGetAgents();
 			return () => {
 				setAgents([]);
 			};
-		}, []);
+		});
 	};
 
 	const useEffectGetPublicAgents = () => {
-		useEffect(() => {
+		useMountEffect(() => {
 			handleGetPublicAgents();
 			return () => {
 				setPublicAgents([]);
 			};
-		}, []);
+		});
 	};
 
 	const clearMcp = () => {

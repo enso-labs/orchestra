@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import {
 	formatContent,
@@ -23,6 +23,7 @@ import {
 } from "@/lib/utils/activeStreamRecovery";
 import { toast } from "sonner";
 import { getSettings } from "@/lib/services/userSettingsService";
+import { useMountEffect } from "@/hooks/useMountEffect";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
@@ -56,7 +57,6 @@ export type ChatContextType = {
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
 	resetMetadata: () => void;
-	useEffectUpdateAssistantId: () => void;
 	// tools
 	arcade: {
 		tools: string[];
@@ -129,11 +129,11 @@ export default function useChat(): ChatContextType {
 
 	const [savedTimezone, setSavedTimezone] = useState<string | null>(null);
 
-	useEffect(() => {
+	useMountEffect(() => {
 		getSettings()
 			.then((res) => setSavedTimezone(res.defaults.timezone))
 			.catch(() => {});
-	}, []);
+	});
 
 	const [arcade, setArcade] = useState({
 		tools: [] as string[],
@@ -843,20 +843,7 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
-	const useEffectUpdateAssistantId = () => {
-		useEffect(() => {
-			setMetadata((prev: any) => ({
-				...prev,
-				assistant_id: agent.id,
-			}));
-			return () => {
-				setMetadata((prev: any) => ({
-					...prev,
-					assistant_id: undefined,
-				}));
-			};
-		}, [agent.id]);
-	};
+	// assistant_id is set at submission time in getMetadata() — no effect needed
 
 	// File CRUD operations (wrapped in useCallback for stable references)
 	const addFile = useCallback((path: string, content: string = "") => {
@@ -964,7 +951,6 @@ export default function useChat(): ChatContextType {
 		// tools
 		arcade,
 		setArcade,
-		useEffectUpdateAssistantId,
 		streamingRate,
 		filesMap,
 		setFilesMap,

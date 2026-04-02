@@ -39,7 +39,6 @@ export default function ProjectPage() {
 		setViewMode,
 		metadata,
 		setMetadata,
-		useEffectUpdateAssistantId,
 		useListThreadsEffect,
 		useListCheckpointsEffect,
 		useModelsEffect,
@@ -53,7 +52,6 @@ export default function ProjectPage() {
 
 	useModelsEffect();
 	useEffectGetAgents();
-	useEffectUpdateAssistantId();
 	useListThreadsEffect(!loading);
 	useListCheckpointsEffect(!loading, metadata);
 

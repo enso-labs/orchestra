@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense, useEffect } from "react";
+import { useState, lazy, Suspense } from "react";
 import { ChevronDown, ChevronUp, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { truncateFrom } from "@/lib/utils/format";
@@ -104,7 +104,7 @@ export default function ToolTimelineItem({
 	message,
 	maxPreviewLength = 100,
 }: ToolTimelineItemProps) {
-	const [isExpanded, setIsExpanded] = useState(false);
+	const [isExpanded, setIsExpanded] = useState(!!message.artifact);
 
 	// Get preview text from content
 	const getPreviewText = () => {
@@ -119,12 +119,6 @@ export default function ToolTimelineItem({
 	};
 
 	const isSuccess = message.status === "success";
-
-	useEffect(() => {
-		if (message.artifact) {
-			setIsExpanded(true);
-		}
-	}, [message.artifact]);
 
 	return (
 		<div className="bg-muted/50 rounded-lg border border-border/50 overflow-hidden">

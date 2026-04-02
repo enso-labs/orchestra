@@ -10,6 +10,7 @@ import AppProvider from "./context/AppContext";
 import { PromptProvider } from "./context/PromptContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
 import { NuqsAdapter } from "nuqs/adapters/react";
+import { QueryProvider } from "./providers/QueryProvider";
 
 // Register service worker
 if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
@@ -29,21 +30,23 @@ if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-			<NuqsAdapter>
-				<AppProvider>
-					<AgentProvider>
-						<ProjectProvider>
-							<PromptProvider>
-								<ChatProvider>
-									<OnboardingProvider>
-										<AppRoutes />
-									</OnboardingProvider>
-								</ChatProvider>
-							</PromptProvider>
-						</ProjectProvider>
-					</AgentProvider>
-				</AppProvider>
-			</NuqsAdapter>
+			<QueryProvider>
+				<NuqsAdapter>
+					<AppProvider>
+						<AgentProvider>
+							<ProjectProvider>
+								<PromptProvider>
+									<ChatProvider>
+										<OnboardingProvider>
+											<AppRoutes />
+										</OnboardingProvider>
+									</ChatProvider>
+								</PromptProvider>
+							</ProjectProvider>
+						</AgentProvider>
+					</AppProvider>
+				</NuqsAdapter>
+			</QueryProvider>
 		</ThemeProvider>
 	</StrictMode>,
 );

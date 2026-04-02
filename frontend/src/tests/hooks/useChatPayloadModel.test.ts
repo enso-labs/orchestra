@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import { useAgent, INIT_AGENT_STATE } from "@/hooks/useAgent";
 
 // Mock useModel to return null model for default conversations (server resolves)
@@ -46,15 +46,13 @@ describe("Chat payload model consistency via useAgent", () => {
 		expect(result.current.agent.model).toBe("");
 	});
 
-	it("agent.model syncs when useModel returns explicit model (thread loading)", async () => {
+	it("agent.model stays empty even when useModel returns explicit model (model applied at submission)", async () => {
 		mockModel.mockReturnValue("anthropic:claude-sonnet-4-20250514");
 		const { result } = renderHook(() => useAgent());
 
-		await waitFor(() => {
-			expect(result.current.agent.model).toBe(
-				"anthropic:claude-sonnet-4-20250514",
-			);
-		});
+		// agent.model no longer syncs from useModel — model is applied
+		// at submission time in getMetadata() via agent.id lookup
+		expect(result.current.agent.model).toBe("");
 	});
 
 	it("payload sends empty model for default chat (server resolves)", async () => {
