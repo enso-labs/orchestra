@@ -32,12 +32,12 @@ export function SidePanel({
 	onCreateProject,
 	renderProjectItem,
 }: SidePanelProps) {
-	// Route-only panels (assistants, memories) don't show a side panel
-	if (
-		!activePanel ||
-		activePanel === "assistants" ||
-		activePanel === "memories"
-	) {
+	if (!activePanel) {
+		return null;
+	}
+
+	// Route-only panels (assistants, memories) navigate to full pages — no sidebar content
+	if (activePanel === "assistants" || activePanel === "memories") {
 		return null;
 	}
 

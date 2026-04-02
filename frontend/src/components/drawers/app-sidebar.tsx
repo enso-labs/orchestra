@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import {
 	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarHeader,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
@@ -36,9 +39,10 @@ import { AddSourceModal } from "@/components/modals/AddSourceModal";
 import { ThreadSearchModal } from "@/components/modals/ThreadSearchModal";
 import { formatDistanceToNow } from "date-fns";
 import { deleteThread, updateThreadProject } from "@/lib/services";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import useLinkClick from "@/hooks/useLinkClick";
 import { AxiosResponse } from "axios";
+import { SettingsPopover } from "@/components/popovers/SettingsPopover";
 import { ActivityBar, type PanelId } from "@/components/sidebar/ActivityBar";
 import { SidePanel } from "@/components/sidebar/SidePanel";
 
@@ -390,7 +394,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		clearMessages,
 	} = useChatContext();
 	const { projects, useEffectGetProjects } = useProjectContext();
-	const { open, setOpen } = useSidebar();
 	const navigate = useNavigate();
 	const { pathname } = useLocation();
 	const onLogoLinkClick = useLinkClick("/");
@@ -424,26 +427,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			const route = ROUTE_PANELS[panelId];
 
 			if (route) {
-				// Route-based panels: navigate and highlight
+				// Route-based panels: navigate to full page
 				navigate(route);
-				setActivePanel(panelId);
-				// Collapse the panel since these are full-page routes
-				if (open) setOpen(false);
-				return;
 			}
 
-			// Content panels: toggle open/close
-			if (activePanel === panelId) {
-				// Clicking active panel: collapse
-				setOpen(false);
-				setActivePanel(null);
-			} else {
-				// Clicking different panel: switch and expand
-				setActivePanel(panelId);
-				if (!open) setOpen(true);
-			}
+			// Switch the active tab
+			setActivePanel(panelId);
 		},
-		[activePanel, open, setOpen, navigate],
+		[navigate],
 	);
 
 	// Auto-highlight based on route
@@ -454,11 +445,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			setActivePanel("memories");
 		}
 	}, [pathname]);
-
-	const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-		clearMessages();
-		onLogoLinkClick(e);
-	};
 
 	const renderThreadItem = useCallback(
 		(thread: any, projectsList: Project[]) => (
@@ -476,28 +462,52 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	return (
 		<>
-			<Sidebar {...props} autoFocus={false} collapsible="icon">
-				<div className="flex flex-row h-full w-full">
+			<Sidebar {...props} autoFocus={false} data-tour="sidebar">
+				<SidebarHeader>
+					<Link
+						to="/"
+						onClick={(e) => {
+							clearMessages();
+							onLogoLinkClick(e);
+						}}
+						className="flex items-center gap-2 m-2"
+					>
+						<span className="flex items-center gap-0.5">
+							<img
+								src="https://avatars.githubusercontent.com/u/139279732?s=200&v=4"
+								alt="Logo"
+								className="w-10 h-10 rounded-full pl-0"
+							/>
+							<h1 className="text-3xl font-bold text-foreground italic">
+								RCHESTRA
+							</h1>
+						</span>
+					</Link>
+					{/* Icon tabs row */}
 					<ActivityBar
 						activePanel={activePanel}
 						onPanelToggle={handlePanelToggle}
-						onLogoClick={handleLogoClick}
 					/>
-					<div className="flex-1 min-w-0 overflow-hidden group-data-[collapsible=icon]:hidden">
-						<SidePanel
-							activePanel={activePanel}
-							threads={unassociatedThreads}
-							projects={projects}
-							loadMoreThreads={loadMoreThreads}
-							hasMoreThreads={hasMoreThreads}
-							isLoadingMoreThreads={isLoadingMoreThreads}
-							onSearchClick={() => setIsThreadSearchOpen(true)}
-							renderThreadItem={renderThreadItem}
-							onCreateProject={() => setIsCreateProjectModalOpen(true)}
-							renderProjectItem={renderProjectItem}
-						/>
+				</SidebarHeader>
+				<SidebarContent className="gap-0">
+					<SidePanel
+						activePanel={activePanel}
+						threads={unassociatedThreads}
+						projects={projects}
+						loadMoreThreads={loadMoreThreads}
+						hasMoreThreads={hasMoreThreads}
+						isLoadingMoreThreads={isLoadingMoreThreads}
+						onSearchClick={() => setIsThreadSearchOpen(true)}
+						renderThreadItem={renderThreadItem}
+						onCreateProject={() => setIsCreateProjectModalOpen(true)}
+						renderProjectItem={renderProjectItem}
+					/>
+				</SidebarContent>
+				<SidebarFooter>
+					<div data-tour="settings-popover">
+						<SettingsPopover />
 					</div>
-				</div>
+				</SidebarFooter>
 				<SidebarRail />
 			</Sidebar>
 

@@ -28,18 +28,20 @@ export function ActivityBarItem({
 					onClick={onClick}
 					data-tour={props["data-tour"]}
 					className={cn(
-						"relative flex items-center justify-center w-full h-12 transition-colors",
-						"hover:text-sidebar-foreground",
-						isActive ? "text-sidebar-foreground" : "text-sidebar-foreground/50",
+						"relative flex items-center justify-center w-9 h-9 rounded-md transition-colors",
+						"hover:bg-sidebar-accent hover:text-sidebar-foreground",
+						isActive
+							? "text-sidebar-foreground bg-sidebar-accent"
+							: "text-sidebar-foreground/50",
 					)}
 				>
 					{isActive && (
-						<div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-foreground rounded-r" />
+						<div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-5 bg-foreground rounded-t" />
 					)}
-					<Icon className="w-5 h-5" />
+					<Icon className="w-4.5 h-4.5" />
 				</button>
 			</TooltipTrigger>
-			<TooltipContent side="right" sideOffset={8}>
+			<TooltipContent side="bottom" sideOffset={4}>
 				{label}
 			</TooltipContent>
 		</Tooltip>
