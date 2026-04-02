@@ -39,25 +39,27 @@ export function useProjectThreads() {
 	const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
 		getInitialExpandedProjects,
 	);
-	// Track in-flight fetches to prevent duplicate requests
+	// Refs for synchronous guards — setState updaters may be deferred in React 18
 	const inflightRef = useRef<Set<string>>(new Set());
+	const loadedRef = useRef<Set<string>>(new Set());
 
-	// Persist expanded state via useEffect (not inside setState updater)
+	// Persist expanded state via useEffect
 	useEffect(() => {
 		persistExpandedProjects(expandedProjects);
 	}, [expandedProjects]);
 
 	const fetchProjectThreads = useCallback(
 		async (projectId: string, reset = false) => {
-			// Prevent duplicate in-flight requests
+			// Synchronous guards using refs (not setState side-effects)
 			if (inflightRef.current.has(projectId) && !reset) return;
+			if (loadedRef.current.has(projectId) && !reset) return;
 
-			let shouldFetch = false;
+			inflightRef.current.add(projectId);
+
+			// Set loading state
 			setProjectThreadsMap((prev) => {
-				const current = prev.get(projectId);
-				if (current?.loaded && !reset) return prev;
-				shouldFetch = true;
 				const next = new Map(prev);
+				const current = prev.get(projectId);
 				next.set(projectId, {
 					threads: current?.threads || [],
 					loading: true,
@@ -68,15 +70,13 @@ export function useProjectThreads() {
 				return next;
 			});
 
-			if (!shouldFetch) return;
-			inflightRef.current.add(projectId);
-
 			try {
 				const threads = await searchThreadsByProject(
 					projectId,
 					THREADS_PER_PAGE,
 					0,
 				);
+				loadedRef.current.add(projectId);
 				setProjectThreadsMap((prev) => {
 					const next = new Map(prev);
 					next.set(projectId, {
@@ -89,6 +89,7 @@ export function useProjectThreads() {
 					return next;
 				});
 			} catch {
+				loadedRef.current.add(projectId);
 				setProjectThreadsMap((prev) => {
 					const next = new Map(prev);
 					next.set(projectId, {
@@ -108,24 +109,28 @@ export function useProjectThreads() {
 	);
 
 	const loadMoreProjectThreads = useCallback(async (projectId: string) => {
-		// Prevent duplicate in-flight requests
 		if (inflightRef.current.has(`more:${projectId}`)) return;
+		inflightRef.current.add(`more:${projectId}`);
 
-		// Read offset from current state via ref-safe pattern
+		// Read current offset from state synchronously via a snapshot ref
 		let currentOffset = 0;
-		let shouldLoad = false;
+		let canLoad = false;
 		setProjectThreadsMap((prev) => {
 			const state = prev.get(projectId);
 			if (!state || state.loading || !state.hasMore) return prev;
-			shouldLoad = true;
+			canLoad = true;
 			currentOffset = state.offset;
 			const next = new Map(prev);
 			next.set(projectId, { ...state, loading: true });
 			return next;
 		});
 
-		if (!shouldLoad) return;
-		inflightRef.current.add(`more:${projectId}`);
+		// For loadMore, the updater runs during setState, but if it doesn't,
+		// we fall back to reading from the map directly
+		if (!canLoad) {
+			inflightRef.current.delete(`more:${projectId}`);
+			return;
+		}
 
 		try {
 			const newThreads = await searchThreadsByProject(
@@ -217,6 +222,7 @@ export function useProjectThreads() {
 
 	const invalidateProject = useCallback(
 		(projectId: string) => {
+			loadedRef.current.delete(projectId);
 			fetchProjectThreads(projectId, true);
 		},
 		[fetchProjectThreads],

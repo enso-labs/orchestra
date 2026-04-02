@@ -182,7 +182,7 @@ function CompactThreadItem({
 					<Button
 						variant="ghost"
 						size="icon"
-						className="absolute right-0 top-0 opacity-0 group-hover/thread:opacity-100 transition-opacity h-5 w-5"
+						className="absolute right-0 top-0 opacity-0 group-hover/thread:opacity-100 focus:opacity-100 transition-opacity h-5 w-5 z-10"
 						onClick={(e) => e.stopPropagation()}
 					>
 						<MoreHorizontal className="h-3 w-3 text-sidebar-foreground/60" />
@@ -429,6 +429,10 @@ export function ProjectTreeGroup({
 			...prev,
 			project_id: projectId,
 		}));
+		// Auto-expand the project so threads are visible
+		if (!isProjectExpanded(projectId)) {
+			toggleProjectExpanded(projectId);
+		}
 		navigate(`/p/${projectId}`);
 		if (isMobile) {
 			setOpenMobile(false);
