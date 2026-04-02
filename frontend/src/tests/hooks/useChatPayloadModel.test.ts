@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import { useAgent, INIT_AGENT_STATE } from "@/hooks/useAgent";
 
 // Mock useModel to return null model for default conversations (server resolves)

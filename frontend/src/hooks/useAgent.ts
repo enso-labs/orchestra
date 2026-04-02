@@ -29,7 +29,7 @@ export const INIT_AGENT_STATE: AgentState = {
 };
 
 export function useAgent() {
-	const { model, updateQueryStateModel } = useModel();
+	const { updateQueryStateModel } = useModel();
 
 	const [agent, setAgent] = useState<Agent>(INIT_AGENT_STATE.agent);
 	const [agents, setAgents] = useState<Agent[]>([]);
