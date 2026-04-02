@@ -46,7 +46,7 @@ const NAV_ITEMS: {
 export function ActivityBar({ activePanel, onPanelToggle }: ActivityBarProps) {
 	return (
 		<TooltipProvider delayDuration={200}>
-			<div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-sidebar-border">
+			<div className="flex items-center gap-1 px-2 py-2 border-b border-sidebar-border">
 				{NAV_ITEMS.map((item) => (
 					<ActivityBarItem
 						key={item.id}
