@@ -948,11 +948,20 @@ export default function FileEditorPanel() {
 									{openTabs.map((filename: string) => (
 										<ContextMenu key={filename}>
 											<ContextMenuTrigger asChild>
-												<button
+												<div
+													role="tab"
+													tabIndex={0}
+													aria-selected={selectedFile === filename}
 													onClick={() => handleFileSelect(filename)}
 													onDoubleClick={() => handleDoubleClick(filename)}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															e.preventDefault();
+															handleFileSelect(filename);
+														}
+													}}
 													className={`
-														px-3 py-2 text-sm border-r border-border
+														px-3 py-2 text-sm border-r border-border cursor-pointer
 														flex items-center gap-1.5 min-w-fit whitespace-nowrap
 														hover:bg-accent transition-colors group relative
 														${
@@ -995,7 +1004,7 @@ export default function FileEditorPanel() {
 													>
 														<X className="h-4 w-4 md:h-3 md:w-3" />
 													</button>
-												</button>
+												</div>
 											</ContextMenuTrigger>
 											<ContextMenuContent>
 												<ContextMenuItem
