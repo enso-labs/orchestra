@@ -244,7 +244,7 @@ interface ProjectTreeItemProps {
 	isExpanded: boolean;
 	threadState: any;
 	onToggle: () => void;
-	onFetch: () => void;
+	onFetchProjectThreads: (projectId: string) => Promise<void>;
 	onLoadMore: () => void;
 	onAddSource: (project: Project) => void;
 	onCreateThread: (projectId: string) => void;
@@ -261,7 +261,7 @@ function ProjectTreeItem({
 	isExpanded,
 	threadState,
 	onToggle,
-	onFetch,
+	onFetchProjectThreads,
 	onLoadMore,
 	onAddSource,
 	onCreateThread,
@@ -269,13 +269,14 @@ function ProjectTreeItem({
 }: ProjectTreeItemProps) {
 	const { handleDeleteProject } = useProjectContext();
 	const { setMetadata } = useChatContext();
+	const projectId = project.id!;
 
-	// Fetch threads on first expand
+	// Fetch threads on first expand — uses stable fetchProjectThreads reference
 	useEffect(() => {
 		if (isExpanded && !threadState?.loaded) {
-			onFetch();
+			onFetchProjectThreads(projectId);
 		}
-	}, [isExpanded, threadState?.loaded, onFetch]);
+	}, [isExpanded, threadState?.loaded, onFetchProjectThreads, projectId]);
 
 	const handleDeleteClick = async () => {
 		if (window.confirm("Are you sure you want to delete this project?")) {
@@ -298,6 +299,7 @@ function ProjectTreeItem({
 			<div className="flex items-center gap-0.5">
 				<SidebarMenuButton
 					onClick={onToggle}
+					aria-expanded={isExpanded}
 					className="flex-1 h-auto py-1.5 text-sm font-medium"
 				>
 					<ChevronRight
@@ -498,7 +500,7 @@ export function ProjectTreeGroup({
 										isExpanded={isProjectExpanded(project.id!)}
 										threadState={projectThreadsMap.get(project.id!)}
 										onToggle={() => toggleProjectExpanded(project.id!)}
-										onFetch={() => fetchProjectThreads(project.id!)}
+										onFetchProjectThreads={fetchProjectThreads}
 										onLoadMore={() => loadMoreProjectThreads(project.id!)}
 										onAddSource={onAddSource}
 										onCreateThread={handleCreateThread}

@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { searchThreadsByProject } from "@/lib/services/threadService";
 
 const THREADS_PER_PAGE = 5;
-const STORAGE_KEY = "sidebar_expanded_projects";
+const STORAGE_KEY = "orchestra:sidebar:expanded_projects";
 
 interface ProjectThreadsState {
 	threads: any[];
@@ -39,12 +39,24 @@ export function useProjectThreads() {
 	const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
 		getInitialExpandedProjects,
 	);
+	// Track in-flight fetches to prevent duplicate requests
+	const inflightRef = useRef<Set<string>>(new Set());
+
+	// Persist expanded state via useEffect (not inside setState updater)
+	useEffect(() => {
+		persistExpandedProjects(expandedProjects);
+	}, [expandedProjects]);
 
 	const fetchProjectThreads = useCallback(
 		async (projectId: string, reset = false) => {
+			// Prevent duplicate in-flight requests
+			if (inflightRef.current.has(projectId) && !reset) return;
+
+			let shouldFetch = false;
 			setProjectThreadsMap((prev) => {
 				const current = prev.get(projectId);
 				if (current?.loaded && !reset) return prev;
+				shouldFetch = true;
 				const next = new Map(prev);
 				next.set(projectId, {
 					threads: current?.threads || [],
@@ -55,6 +67,9 @@ export function useProjectThreads() {
 				});
 				return next;
 			});
+
+			if (!shouldFetch) return;
+			inflightRef.current.add(projectId);
 
 			try {
 				const threads = await searchThreadsByProject(
@@ -85,53 +100,63 @@ export function useProjectThreads() {
 					});
 					return next;
 				});
+			} finally {
+				inflightRef.current.delete(projectId);
 			}
 		},
 		[],
 	);
 
-	const loadMoreProjectThreads = useCallback(
-		async (projectId: string) => {
-			const current = projectThreadsMap.get(projectId);
-			if (!current || current.loading || !current.hasMore) return;
+	const loadMoreProjectThreads = useCallback(async (projectId: string) => {
+		// Prevent duplicate in-flight requests
+		if (inflightRef.current.has(`more:${projectId}`)) return;
 
+		// Read offset from current state via ref-safe pattern
+		let currentOffset = 0;
+		let shouldLoad = false;
+		setProjectThreadsMap((prev) => {
+			const state = prev.get(projectId);
+			if (!state || state.loading || !state.hasMore) return prev;
+			shouldLoad = true;
+			currentOffset = state.offset;
+			const next = new Map(prev);
+			next.set(projectId, { ...state, loading: true });
+			return next;
+		});
+
+		if (!shouldLoad) return;
+		inflightRef.current.add(`more:${projectId}`);
+
+		try {
+			const newThreads = await searchThreadsByProject(
+				projectId,
+				THREADS_PER_PAGE,
+				currentOffset,
+			);
 			setProjectThreadsMap((prev) => {
 				const next = new Map(prev);
 				const state = prev.get(projectId)!;
-				next.set(projectId, { ...state, loading: true });
+				const merged = [...state.threads, ...newThreads];
+				next.set(projectId, {
+					threads: merged,
+					loading: false,
+					hasMore: newThreads.length >= THREADS_PER_PAGE,
+					offset: merged.length,
+					loaded: true,
+				});
 				return next;
 			});
-
-			try {
-				const newThreads = await searchThreadsByProject(
-					projectId,
-					THREADS_PER_PAGE,
-					current.offset,
-				);
-				setProjectThreadsMap((prev) => {
-					const next = new Map(prev);
-					const state = prev.get(projectId)!;
-					const merged = [...state.threads, ...newThreads];
-					next.set(projectId, {
-						threads: merged,
-						loading: false,
-						hasMore: newThreads.length >= THREADS_PER_PAGE,
-						offset: merged.length,
-						loaded: true,
-					});
-					return next;
-				});
-			} catch {
-				setProjectThreadsMap((prev) => {
-					const next = new Map(prev);
-					const state = prev.get(projectId)!;
-					next.set(projectId, { ...state, loading: false });
-					return next;
-				});
-			}
-		},
-		[projectThreadsMap],
-	);
+		} catch {
+			setProjectThreadsMap((prev) => {
+				const next = new Map(prev);
+				const state = prev.get(projectId)!;
+				next.set(projectId, { ...state, loading: false });
+				return next;
+			});
+		} finally {
+			inflightRef.current.delete(`more:${projectId}`);
+		}
+	}, []);
 
 	const addThreadToProject = useCallback((thread: any, projectId: string) => {
 		setProjectThreadsMap((prev) => {
@@ -141,6 +166,15 @@ export function useProjectThreads() {
 				next.set(projectId, {
 					...state,
 					threads: [thread, ...state.threads],
+				});
+			} else {
+				// Project not yet loaded — seed it so the thread appears immediately
+				next.set(projectId, {
+					threads: [thread],
+					loading: false,
+					hasMore: false,
+					offset: 1,
+					loaded: true,
 				});
 			}
 			return next;
@@ -172,7 +206,6 @@ export function useProjectThreads() {
 			} else {
 				next.add(projectId);
 			}
-			persistExpandedProjects(next);
 			return next;
 		});
 	}, []);
