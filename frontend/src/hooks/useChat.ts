@@ -57,7 +57,6 @@ export type ChatContextType = {
 	handleTextareaResize: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 	clearMessages: () => void;
 	resetMetadata: () => void;
-	useEffectUpdateAssistantId: () => void;
 	// tools
 	arcade: {
 		tools: string[];
@@ -844,8 +843,7 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
-	// No-op: assistant_id is set at submission time in getMetadata()
-	const useEffectUpdateAssistantId = () => {};
+	// assistant_id is set at submission time in getMetadata() — no effect needed
 
 	// File CRUD operations (wrapped in useCallback for stable references)
 	const addFile = useCallback((path: string, content: string = "") => {
@@ -953,7 +951,6 @@ export default function useChat(): ChatContextType {
 		// tools
 		arcade,
 		setArcade,
-		useEffectUpdateAssistantId,
 		streamingRate,
 		filesMap,
 		setFilesMap,

@@ -126,7 +126,6 @@ describe("ThreadPage", () => {
 		setMetadata: vi.fn(),
 		setFilesMap: vi.fn(),
 		setCheckpoints: vi.fn(),
-		useEffectUpdateAssistantId: vi.fn(),
 		useListThreadsEffect: vi.fn(),
 		useListCheckpointsEffect: vi.fn(),
 		useModelsEffect: vi.fn(),

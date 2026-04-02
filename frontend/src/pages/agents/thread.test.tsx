@@ -130,7 +130,6 @@ describe("AgentThreadPage", () => {
 		mockUseChatContext.mockReturnValue({
 			useListThreadsEffect: vi.fn(),
 			messages: [],
-			useEffectUpdateAssistantId: vi.fn(),
 			useLoadThreadEffect: vi.fn(),
 			setCheckpoints: vi.fn(),
 			setMessages: vi.fn(),

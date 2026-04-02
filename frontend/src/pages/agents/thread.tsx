@@ -25,7 +25,6 @@ function AgentThreadPage() {
 	const {
 		useListThreadsEffect,
 		messages,
-		useEffectUpdateAssistantId,
 		useLoadThreadEffect,
 		setCheckpoints,
 		setMessages,
@@ -54,8 +53,6 @@ function AgentThreadPage() {
 
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
-
-	useEffectUpdateAssistantId();
 
 	const handleTabChange = (value: string) => {
 		setActiveTab(value);

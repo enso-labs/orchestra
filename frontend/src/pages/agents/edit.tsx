@@ -23,7 +23,6 @@ function AgentEditPage() {
 	const {
 		useListThreadsEffect,
 		messages,
-		useEffectUpdateAssistantId,
 		useModelsEffect,
 		fromBackendFormat,
 		clearBackendSyncFiles,
@@ -33,8 +32,6 @@ function AgentEditPage() {
 	useModelsEffect();
 	const [activeTab, setActiveTab] = useQueryState("tab");
 	const [, setSearchParams] = useSearchParams();
-
-	useEffectUpdateAssistantId();
 
 	const handleTabChange = (value: string) => {
 		setActiveTab(value);

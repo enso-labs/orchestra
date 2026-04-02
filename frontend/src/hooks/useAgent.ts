@@ -1,5 +1,5 @@
 import agentService, { Agent } from "@/lib/services/agentService";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ToolConfig from "@/lib/config/tool";
 import { DropdownMenuCheckboxItemProps } from "@radix-ui/react-dropdown-menu";
 import useModel from "./useModel";
@@ -155,10 +155,11 @@ export function useAgent() {
 	};
 
 	const useEffectGetAgent = (id: string) => {
+		// Must react to id changes — agent pages may stay mounted while id changes
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		useMountEffect(() => {
+		useEffect(() => {
 			handleGetAgent(id);
-		});
+		}, [id]);
 	};
 
 	const useEffectGetAgents = () => {

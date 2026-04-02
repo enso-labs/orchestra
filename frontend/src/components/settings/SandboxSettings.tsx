@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import {
@@ -43,7 +43,7 @@ export function SandboxSettings() {
 	// MCP config local state (user edits before saving)
 	const [mcpUrl, setMcpUrl] = useState("");
 	const [mcpApiKey, setMcpApiKey] = useState("");
-	const [mcpUrlInitialized, setMcpUrlInitialized] = useState(false);
+	const mcpUrlInitializedRef = useRef(false);
 	const [saving, setSaving] = useState(false);
 
 	const { data: settingsData } = useQuery({
@@ -61,11 +61,13 @@ export function SandboxSettings() {
 		(k) => k.provider === "MCP_SANDBOX_API_KEY" && k.is_set,
 	);
 
-	// Initialize local mcpUrl from server data (once)
-	if (settingsData && !mcpUrlInitialized) {
-		setMcpUrl(settingsData.defaults.mcp_sandbox_url ?? "");
-		setMcpUrlInitialized(true);
-	}
+	// Initialize local mcpUrl from server data (once, via effect)
+	useEffect(() => {
+		if (settingsData && !mcpUrlInitializedRef.current) {
+			setMcpUrl(settingsData.defaults.mcp_sandbox_url ?? "");
+			mcpUrlInitializedRef.current = true;
+		}
+	}, [settingsData]);
 
 	const {
 		isHealthy,
