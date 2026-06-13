@@ -10,6 +10,9 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ### Changed
   - feat/infra-consolidation — consolidate all Docker/build artifacts into a single `infra/` directory (one `docker-compose.yml` + thin `docker-compose.test.yml`); move `backend/Dockerfile` to `infra/backend.Dockerfile`; drop the dev/storage/services/debug overlays and the `dozzle` service; update Makefile, CI (`build.yml`/`test.yml`), and docs.
 
+### Fixed
+  - fix/onboarding-tour-persist-on-close — persist onboarding completion when the welcome tour is dismissed via the X button or overlay click (`ACTIONS.CLOSE`), so it no longer re-fires on every login. Previously only Skip/Done persisted; closing hid the tour for the session but left `onboarding_completed` unset.
+
 ## 2026.3.6-2
 
 ### Changed

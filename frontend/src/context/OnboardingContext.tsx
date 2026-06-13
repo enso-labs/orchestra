@@ -102,7 +102,15 @@ export function OnboardingProvider({
 		(data: CallBackProps) => {
 			const { action, index, status, type } = data;
 
-			if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+			// Any terminal dismissal — finished, skipped, or closed via the X
+			// button / overlay click (ACTIONS.CLOSE) — must persist completion so
+			// the tour does not re-fire on the next login. Closing previously only
+			// hid the tour for the session, leaving onboarding_completed unset.
+			if (
+				status === STATUS.FINISHED ||
+				status === STATUS.SKIPPED ||
+				action === ACTIONS.CLOSE
+			) {
 				setRun(false);
 				setStepIndex(0);
 				markComplete();
