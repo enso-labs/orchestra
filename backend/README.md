@@ -89,11 +89,11 @@ docker pull ghcr.io/ruska-ai/orchestra:latest
 
 2. **Start Docker Services**
 
-    Below will start the database, and the GUI for viewing the Postgres DB.
+    Below will start the Postgres database from the consolidated stack.
 
     ```bash
     cd <project-root>
-    docker compose up postgres pgadmin
+    docker compose -f infra/docker-compose.yml up postgres
     ```
 
 3. **Setup Server Environment**
@@ -251,7 +251,6 @@ POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@postgres:5432/orchestra?
 
 # Tools - use container names for internal services
 SEARX_SEARCH_HOST_URL="http://search_engine:8080"
-SHELL_EXEC_SERVER_URL="http://exec_server:3005/exec"
 ```
 
 #### 2. Start Services
@@ -279,10 +278,8 @@ The API will be available at `http://localhost:8000`
 | --------------- | --------- | ---------------------------------- |
 | `orchestra`     | 8000      | Backend API                        |
 | `postgres`      | 5432      | PostgreSQL with pgvector           |
-| `pgadmin`       | 4040      | Database admin UI                  |
 | `minio`         | 9000/9001 | S3-compatible file storage         |
 | `search_engine` | 8080      | SearXNG search engine              |
-| `exec_server`   | 3005      | Shell execution server             |
 | `ollama`        | 11434     | Local LLM inference (requires GPU) |
 
 ### 🧱 Docker Compose Example
@@ -334,10 +331,9 @@ docker compose build orchestra
 #### Manual Build
 
 ```bash
-# Copy README first, then build
-cp docker/README.md backend/README.md
-cd backend
-docker build -t orchestra:local .
+# Copy README first, then build (Dockerfile lives in infra/)
+cp infra/README.md backend/README.md
+docker build -t orchestra:local -f infra/backend.Dockerfile backend
 ```
 
 ### ⚙️ Environment Variables
@@ -383,7 +379,6 @@ The middleware automatically summarizes older messages when context exceeds the 
 | Variable                | Description              | Default                      |
 | ----------------------- | ------------------------ | ---------------------------- |
 | `SEARX_SEARCH_HOST_URL` | SearXNG search endpoint  | `http://localhost:8080`      |
-| `SHELL_EXEC_SERVER_URL` | Shell execution endpoint | `http://localhost:3005/exec` |
 | `TAVILY_API_KEY`        | Tavily search API key    | -                            |
 
 #### Services (Alpha)

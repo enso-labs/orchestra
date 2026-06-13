@@ -18,32 +18,28 @@ This guide covers deploying the Orchestra backend using Docker. For local develo
 
 ## Dockerized Development
 
-For hot-reload local development, use the dedicated dev stack instead of the production-oriented compose flow.
+The entire stack lives in a single compose file, `infra/docker-compose.yml`. For
+hot-reload local development, bring it up from the project root:
 
 ```bash
 cd ..
-BACKEND_ENV_FILE=$HOME/.env/orchestra/.env.backend \
-make dev.docker.up
+make dev.docker.up        # docker compose -f infra/docker-compose.yml up --build -d
 ```
 
-This starts:
+This starts (all from the one file):
 
--   FastAPI backend with reload on `http://localhost:8000`
--   TaskIQ worker, PostgreSQL, Redis, SearXNG
--   Dozzle log viewer on `http://localhost:8088`
+-   `app` — FastAPI backend with reload on `http://localhost:8000`
+-   `worker` — TaskIQ worker (auto-reloads on code changes)
+-   `postgres` (pgvector) :5432, `redis` :6379
+-   `minio` :9000/:9001, `ollama` :11434, `search_engine` (SearXNG) :8080
 
 Useful commands:
 
 ```bash
-make dev.docker.logs
+make dev.docker.logs       # tail app + worker (override DOCKER_DEV_LOG_SERVICES)
 make dev.docker.ps
 make dev.docker.down
-```
-
-If you need the sandbox exec server in the same network, enable the optional profile:
-
-```bash
-COMPOSE_PROFILES=tools make dev.docker.up
+make dev.docker.test.up    # default + infra/docker-compose.test.yml (test database)
 ```
 
 ## 📖 Table of Contents
@@ -91,7 +87,6 @@ POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@postgres:5432/orchestra?
 
 # Tools - use container names for internal services
 SEARX_SEARCH_HOST_URL="http://search_engine:8080"
-SHELL_EXEC_SERVER_URL="http://exec_server:3005/exec"
 ```
 
 ### 2. Start Services
@@ -121,7 +116,6 @@ The API will be available at `http://localhost:8000`
 | `postgres`      | 5432      | PostgreSQL with pgvector           |
 | `minio`         | 9000/9001 | S3-compatible file storage         |
 | `search_engine` | 8080      | SearXNG search engine              |
-| `exec_server`   | 3005      | Shell execution server             |
 | `ollama`        | 11434     | Local LLM inference (requires GPU) |
 | `redis`         | 6379      | Redis message broker (for workers) |
 | `worker`        | -         | TaskIQ worker (no exposed port)    |
@@ -175,10 +169,9 @@ docker compose build orchestra
 ### Manual Build
 
 ```bash
-# Copy README first, then build
-cp docker/README.md backend/README.md
-cd backend
-docker build -t orchestra:local .
+# Copy README first, then build (Dockerfile lives in infra/)
+cp infra/README.md backend/README.md
+docker build -t orchestra:local -f infra/backend.Dockerfile backend
 ```
 
 ## ⚙️ Environment Variables
@@ -215,7 +208,6 @@ docker build -t orchestra:local .
 | Variable                | Description              | Default                      |
 | ----------------------- | ------------------------ | ---------------------------- |
 | `SEARX_SEARCH_HOST_URL` | SearXNG search endpoint  | `http://localhost:8080`      |
-| `SHELL_EXEC_SERVER_URL` | Shell execution endpoint | `http://localhost:3005/exec` |
 | `TAVILY_API_KEY`        | Tavily search API key    | -                            |
 
 ### Distributed Workers (Optional)

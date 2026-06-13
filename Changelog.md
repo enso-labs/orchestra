@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.6.13
+
+### Changed
+  - feat/infra-consolidation — consolidate all Docker/build artifacts into a single `infra/` directory (one `docker-compose.yml` + thin `docker-compose.test.yml`); move `backend/Dockerfile` to `infra/backend.Dockerfile`; drop the dev/storage/services/debug overlays and the `dozzle` service; update Makefile, CI (`build.yml`/`test.yml`), and docs.
+
 ## 2026.3.6-2
 
 ### Changed

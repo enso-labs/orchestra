@@ -1,11 +1,9 @@
-.PHONY: setup tag changelog dev.storage.up dev.storage.down dev.storage.ps dev.services.up dev.services.down dev.services.ps dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.debug benchmark.images test.images
+.PHONY: setup tag changelog dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.test.up dev.docker.test.down benchmark.images test.images
 
 ENV ?= dev
-DOCKER_STORAGE_COMPOSE = docker compose -f docker-compose.storage.yml
-DOCKER_SERVICES_COMPOSE = docker compose -f docker-compose.services.yml
-DOCKER_DEV_COMPOSE = docker compose -f docker-compose.dev.yml
-DOCKER_DEBUG_COMPOSE = docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml
-DOCKER_DEV_LOG_SERVICES ?= backend worker
+COMPOSE = docker compose -f infra/docker-compose.yml
+COMPOSE_TEST = docker compose -f infra/docker-compose.yml -f infra/docker-compose.test.yml
+DOCKER_DEV_LOG_SERVICES ?= app worker
 
 # Install pre-commit hooks
 setup:
@@ -36,41 +34,27 @@ changelog:
 tag:
 	@bash backend/scripts/tag.sh $(TAG)
 
-dev.storage.up:
-	@$(DOCKER_STORAGE_COMPOSE) up -d
-
-dev.storage.down:
-	@$(DOCKER_STORAGE_COMPOSE) down --remove-orphans
-
-dev.storage.ps:
-	@$(DOCKER_STORAGE_COMPOSE) ps
-
-dev.services.up:
-	@$(DOCKER_SERVICES_COMPOSE) up --build -d
-
-dev.services.down:
-	@$(DOCKER_SERVICES_COMPOSE) down --remove-orphans
-
-dev.services.ps:
-	@$(DOCKER_SERVICES_COMPOSE) ps
-
 dev.docker.up:
-	@$(DOCKER_DEV_COMPOSE) up --build -d
-
-dev.docker.debug:
-	@$(DOCKER_DEBUG_COMPOSE) up --build -d
+	@$(COMPOSE) up --build -d
 
 dev.docker.down:
-	@$(DOCKER_DEV_COMPOSE) down --remove-orphans
+	@$(COMPOSE) down --remove-orphans
 
 dev.docker.logs:
-	@$(DOCKER_DEV_COMPOSE) logs -f --tail=200 $(DOCKER_DEV_LOG_SERVICES)
+	@$(COMPOSE) logs -f --tail=200 $(DOCKER_DEV_LOG_SERVICES)
 
 dev.docker.ps:
-	@$(DOCKER_DEV_COMPOSE) ps
+	@$(COMPOSE) ps
 
 dev.docker.migrate:
-	@$(DOCKER_DEV_COMPOSE) run --rm backend uv run alembic upgrade head
+	@$(COMPOSE) run --rm app uv run alembic upgrade head
+
+# Local end-to-end test stack (default + test overlay). CI uses pytest + GH services.
+dev.docker.test.up:
+	@$(COMPOSE_TEST) up --build -d
+
+dev.docker.test.down:
+	@$(COMPOSE_TEST) down --remove-orphans
 
 # Image benchmarks — build both targets and report sizes
 benchmark.images:

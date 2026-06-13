@@ -91,7 +91,7 @@ jobs:
             ###############################################################
             - name: Copy Docker README and LICENSE to backend
               run: |
-                  cp docker/README.md backend/README.md
+                  cp infra/README.md backend/README.md
                   cp LICENSE backend/LICENSE
 
             - name: Set up Docker Buildx
@@ -108,7 +108,7 @@ jobs:
               working-directory: ./backend
               run: |
                   TAG=${GITHUB_REF#refs/tags/}
-                  docker build --target api \
+                  docker build --target api -f ../infra/backend.Dockerfile \
                     -t ghcr.io/ruska-ai/orchestra-api:$TAG \
                     -t ghcr.io/ruska-ai/orchestra-api:latest \
                     -t ghcr.io/ruska-ai/orchestra:$TAG \
@@ -123,7 +123,7 @@ jobs:
               working-directory: ./backend
               run: |
                   TAG=${GITHUB_REF#refs/tags/}
-                  docker build --target worker \
+                  docker build --target worker -f ../infra/backend.Dockerfile \
                     -t ghcr.io/ruska-ai/orchestra-worker:$TAG \
                     -t ghcr.io/ruska-ai/orchestra-worker:latest \
                     .

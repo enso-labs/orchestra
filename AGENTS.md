@@ -55,34 +55,33 @@ The main way external AI Agents find out information about RUSKA will be from th
 ## Project Structure & Module Organization
 - `backend/src` contains the FastAPI stack, with domain logic split into `controllers`, `routes`, `services`, and `repos`, plus shared helpers in `common` and `utils`.
 - Database assets live in `backend/migrations` and `backend/seeds`; reusable automation sits under `backend/scripts`.
-- `frontend/src` hosts the Vite/React client (`components`, `pages`, `routes`, `tests`), while `decks/`, `deployment/`, and `docker/` hold reference material and ops tooling.
+- `frontend/src` hosts the Vite/React client (`components`, `pages`, `routes`, `tests`), while `decks/`, `deployment/`, and `infra/` hold reference material and ops tooling.
 
 ## Build, Test, and Development Commands
 - **Setup**: Run `make setup` from the repo root to install pre-commit hooks.
 - Backend: `cd backend && uv venv && source .venv/bin/activate && uv sync` installs dependencies, `make dev` runs the API with reload, and `make test` executes the suite. Use `ENV_FILE=~/.env/orchestra/.env.backend.test` for the test environment.
 - Frontend: `cd frontend && npm install`, `npm run dev` for local dev, `npm run build` for production bundles, and `npm run docs` regenerates MkDocs API docs.
-- Infrastructure: `docker compose up postgres pgadmin` provisions Postgres + PgAdmin; stop with `docker compose down`.
+- Infrastructure: the full stack lives in `infra/docker-compose.yml`; `make dev.docker.up` builds and starts it, `make dev.docker.down` stops it.
 
 ## Docker Development Environment
-- **When to use**: Backend development requiring all API services (backend, worker, postgres, redis, search) running together via `docker-compose.dev.yml`.
-- **Start the stack**: `make dev.docker.up` — builds and starts all services in detached mode.
-  - Override env files: `make dev.docker.up BACKEND_ENV_FILE=/path/to/.env`
-  - Default: `./backend/.env.docker.dev`
+- **When to use**: Backend development requiring all services (app, worker, postgres, redis, search_engine, minio, ollama) running together. The entire stack is one file: `infra/docker-compose.yml`.
+- **Start the stack**: `make dev.docker.up` — builds and starts all services in detached mode (`docker compose -f infra/docker-compose.yml up --build -d`).
 - **Services and ports**:
-  - `backend` — :8000 (FastAPI with hot-reload)
+  - `app` — :8000 (FastAPI with hot-reload)
   - `worker` — TaskIQ worker (auto-reloads on code changes)
   - `postgres` — :5432 (pgvector/pg16)
   - `redis` — :6379
+  - `minio` — :9000/:9001 (S3-compatible storage)
+  - `ollama` — :11434 (local LLM inference; requires GPU)
   - `search_engine` — :8080 (SearXNG)
-  - `dozzle` — :8088 (container log viewer)
 - **Frontend**: Run from the host (`cd frontend && npm run dev`) and connect to the backend API on :8000. Use the `agent-browser` skill for browser-based testing.
 - **Management commands**:
-  - `make dev.docker.logs` — tail logs for all services (override with `DOCKER_DEV_LOG_SERVICES="backend worker"`)
+  - `make dev.docker.logs` — tail app + worker logs (override with `DOCKER_DEV_LOG_SERVICES="app worker"`)
   - `make dev.docker.ps` — show running containers
   - `make dev.docker.down` — stop and clean up
-  - `make dev.docker.migrate` — run Alembic migrations inside the backend container
-- **Optional sandbox**: `COMPOSE_PROFILES=tools make dev.docker.up` starts `exec_server` on :3005 for sandboxed code execution.
-- **Key details**: Source directories are volume-mounted for hot-reload. Backend runs `uv sync` and `alembic upgrade head` on startup automatically.
+  - `make dev.docker.migrate` — run Alembic migrations inside the app container
+  - `make dev.docker.test.up` — run the stack against the test database (adds `infra/docker-compose.test.yml`)
+- **Key details**: Source directories are volume-mounted for hot-reload. The app runs `uv sync` and `alembic upgrade head` on startup automatically. Backend env is loaded from `~/.env/orchestra/.env.backend` via the compose `env_file`.
 
 ## Coding Style & Naming Conventions
 - Run `pre-commit run --all-files`; hooks run backend format/lint/test and frontend prettier/lint/test.
