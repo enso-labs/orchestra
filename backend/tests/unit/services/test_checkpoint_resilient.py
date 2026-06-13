@@ -267,3 +267,47 @@ class TestRetryDecorator:
         # Should have 1 failure call
         assert len(failure_calls) == 1
         assert failure_calls[0] == 2  # Total attempts
+
+
+class TestResilientAdeleteThread:
+    """adelete_thread must forward to the underlying saver (or fallback) rather
+    than inherit BaseCheckpointSaver's NotImplementedError default, which
+    previously caused thread deletion to silently fail under resilient
+    checkpointing (CHECKPOINT_USE_RESILIENT=true)."""
+
+    def test_adelete_thread_is_overridden(self):
+        """Guard against regressing to BaseCheckpointSaver's NotImplementedError."""
+        from langgraph.checkpoint.base import BaseCheckpointSaver
+        from src.services.checkpoint_resilient import ResilientAsyncPostgresSaver
+
+        assert ResilientAsyncPostgresSaver.adelete_thread is not BaseCheckpointSaver.adelete_thread
+
+    @pytest.mark.asyncio
+    async def test_adelete_thread_forwards_to_underlying_saver(self):
+        from src.services.checkpoint_resilient import ResilientAsyncPostgresSaver
+
+        saver = ResilientAsyncPostgresSaver(connection_string="postgresql://test")
+        saver._saver = AsyncMock()
+        saver._saver.adelete_thread = AsyncMock(return_value=None)
+        saver._using_fallback = False
+        saver._fallback_saver = None
+        # Bypass the health-check / reconnect machinery for this unit test.
+        saver._check_connection_health = AsyncMock(return_value=True)
+        saver._reconnect = AsyncMock()
+
+        await saver.adelete_thread("thread-123")
+
+        saver._saver.adelete_thread.assert_awaited_once_with("thread-123")
+
+    @pytest.mark.asyncio
+    async def test_adelete_thread_uses_fallback_when_active(self):
+        from src.services.checkpoint_resilient import ResilientAsyncPostgresSaver
+
+        saver = ResilientAsyncPostgresSaver(connection_string="postgresql://test")
+        saver._using_fallback = True
+        saver._fallback_saver = AsyncMock()
+        saver._fallback_saver.adelete_thread = AsyncMock(return_value=None)
+
+        await saver.adelete_thread("thread-123")
+
+        saver._fallback_saver.adelete_thread.assert_awaited_once_with("thread-123")

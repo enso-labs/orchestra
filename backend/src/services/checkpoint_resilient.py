@@ -456,6 +456,29 @@ class ResilientAsyncPostgresSaver(BaseCheckpointSaver):
         if result is None and self._using_fallback and self._fallback_saver:
             self._fallback_saver.put_writes(config, writes, task_id)
 
+    async def adelete_thread(self, thread_id: str) -> None:
+        """Delete all checkpoints and writes associated with a thread.
+
+        BaseCheckpointSaver.adelete_thread raises NotImplementedError by
+        default, so this wrapper must forward to the underlying
+        AsyncPostgresSaver (or the fallback) explicitly — otherwise thread
+        deletion silently fails when resilient checkpointing is enabled.
+        """
+        if self._using_fallback and self._fallback_saver:
+            await self._fallback_saver.adelete_thread(thread_id)
+            return
+
+        async def _op():
+            if self._saver:
+                return await self._saver.adelete_thread(thread_id)
+
+        await self._execute_with_retry("adelete_thread", _op)
+
+        # If retry activated the fallback, delete there too so a later
+        # reconnect to Postgres doesn't surface the thread's checkpoints again.
+        if self._using_fallback and self._fallback_saver:
+            await self._fallback_saver.adelete_thread(thread_id)
+
     async def alist(
         self,
         config: Optional[RunnableConfig],

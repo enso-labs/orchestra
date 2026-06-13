@@ -48,14 +48,29 @@ class ServiceContext:
             self.checkpoint_service = CheckpointService(user_id=self.user_id, checkpointer=checkpointer)
 
     async def delete_thread(self, thread_id: str):
-        try:
-            deleted_checkpoints = await self.checkpoint_service.delete_checkpoints_for_thread(thread_id)
-            if not deleted_checkpoints:
-                raise ValueError(f"Failed to delete checkpoints for thread {thread_id}")
-            deleted_thread = await self.thread_service.delete(thread_id)
-            if not deleted_thread:
-                raise ValueError(f"Failed to delete thread {thread_id}")
-            return True
-        except Exception as e:
-            logger.error(e)
-            return e
+        # Delete the thread record first. The user's thread list is read from
+        # the thread store, so removing this record is what makes the delete
+        # visible — it must succeed and must not be gated behind checkpoint
+        # cleanup. (Previously checkpoint deletion ran first and, when it
+        # failed, aborted the whole operation; the failure was then swallowed
+        # and the route still returned 204, so the thread reappeared on the
+        # next list fetch.)
+        deleted_thread = await self.thread_service.delete(thread_id)
+        if not deleted_thread:
+            raise ValueError(f"Failed to delete thread {thread_id}")
+
+        # Best-effort checkpoint cleanup. Orphaned checkpoints are invisible to
+        # the user and can be reclaimed separately, so a failure here is logged
+        # but must not resurrect the thread or fail the request. Notably, the
+        # resilient checkpointer historically did not implement adelete_thread
+        # (raising NotImplementedError); that must not break thread deletion.
+        checkpoint_service = getattr(self, "checkpoint_service", None)
+        if checkpoint_service is not None:
+            try:
+                deleted_checkpoints = await checkpoint_service.delete_checkpoints_for_thread(thread_id)
+                if not deleted_checkpoints:
+                    logger.warning(f"Thread {thread_id} deleted but checkpoint cleanup did not complete")
+            except Exception as e:
+                logger.warning(f"Thread {thread_id} deleted but checkpoint cleanup raised: {e}")
+
+        return True
