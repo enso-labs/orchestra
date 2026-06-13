@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useBranding } from "@/context/BrandingContext";
 
 function HomeIcon({ onClick }: { onClick?: () => void }) {
+	const branding = useBranding();
 	return (
 		<Link
 			to={onClick ? "/" : ""}
@@ -12,7 +14,9 @@ function HomeIcon({ onClick }: { onClick?: () => void }) {
 				alt="Logo"
 				className="w-8 h-8 rounded-full"
 			/>
-			<h1 className="text-2xl font-bold text-foreground">RUSKA</h1>
+			<h1 className="text-2xl font-bold text-foreground">
+				{branding.brand.short_name}
+			</h1>
 		</Link>
 	);
 }

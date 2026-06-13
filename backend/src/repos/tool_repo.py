@@ -12,6 +12,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from pydantic import BaseModel, Field
 from datetime import datetime
 
+from src.config.branding import BRANDING
 from src.schemas.entities.a2a import A2AServers
 from src.services.db import get_store_in_memory
 from src.utils.logger import logger
@@ -40,7 +41,7 @@ class ToolExamples:
             description="Use this to get the health of the server and app version.",
             config={
                 "api_tool": {
-                    "base_url": "https://chat.ruska.ai/api",
+                    "base_url": BRANDING.urls.api_base,
                     "method": "GET",
                     "endpoint": "/info/health",
                 }

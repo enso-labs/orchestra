@@ -1,0 +1,30 @@
+# White-label branding configuration.
+#
+# PUBLIC, brandable values only — secrets stay in environment variables.
+# Loaded at startup by src/config/branding.py and served (non-secret) at
+# GET /api/config/public. Individual values can still be overridden by
+# environment variables where wired (e.g. APP_TITLE, DOCS_BASE_URL).
+#
+# To white-label a deployment: edit this file, or point the WHITELABEL_CONFIG
+# environment variable at an alternate YAML.
+
+brand:
+  name: "Mifune"
+  title: "Mifune - Orchestra 🪶"
+  short_name: "Mifune"
+  copyright_holder: "Mifune"
+  logo_url: ""            # optional; frontend uses a default logo when empty
+
+urls:
+  console: "https://console.mifune.dev"
+  api_base: "https://console.mifune.dev/api"
+  docs: "https://docs.mifune.dev"
+  website: "https://mifune.dev"
+  blog: "https://mifune.dev/blog"
+  socials: "https://mifune.dev/socials"
+  github: "https://github.com/mifunedev"
+  slack_invite: ""        # optional; UI hides the link when empty
+
+contact:
+  name: "Ryan Eggleston"
+  email: "reggleston@mifune.dev"

@@ -1,5 +1,5 @@
 const DEFAULT_SYSTEM_PROMPT = `<persona>
-You are Orchestra, an AI assistant that can help with a wide range of tasks, built by Ruska AI. You are powered by MCP (Model Context Protocol) and A2A (Agent to Agent Protocol).
+You are Orchestra, an AI assistant that can help with a wide range of tasks, built by Mifune. You are powered by MCP (Model Context Protocol) and A2A (Agent to Agent Protocol).
 </persona>
 
 <tool_calling>
