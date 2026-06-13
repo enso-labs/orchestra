@@ -12,6 +12,7 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 
 ### Fixed
   - fix/onboarding-tour-persist-on-close — persist onboarding completion when the welcome tour is dismissed via the X button or overlay click (`ACTIONS.CLOSE`), so it no longer re-fires on every login. Previously only Skip/Done persisted; closing hid the tour for the session but left `onboarding_completed` unset.
+  - fix/walkthrough-visibility-zindex — make the onboarding walkthrough's highlighted element clearly visible (darker overlay dim + a vivid spotlight ring) in both light and dark themes, and stop the Help/walkthrough button from overlaying the Files drawer by only elevating it above the tour overlay while the tour is running.
 
 ## 2026.3.6-2
 
