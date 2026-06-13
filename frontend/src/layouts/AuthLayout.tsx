@@ -4,6 +4,7 @@ import { MobileNav } from "@/components/nav/MobileNav";
 import { TOKEN_NAME } from "@/lib/config";
 import HomeIcon from "@/components/icons/HomeIcon";
 import { useAppContext } from "@/context/AppContext";
+import { useBranding } from "@/context/BrandingContext";
 
 export default function AuthLayout({
 	children,
@@ -12,6 +13,7 @@ export default function AuthLayout({
 }) {
 	const navigate = useNavigate();
 	const { appVersion } = useAppContext();
+	const branding = useBranding();
 
 	const handleLogout = () => {
 		localStorage.removeItem(TOKEN_NAME);
@@ -68,7 +70,8 @@ export default function AuthLayout({
 			<footer className="mt-auto bg-card border-t border-border">
 				<div className="px-4 sm:px-6 lg:px-8 py-4">
 					<p className="text-center text-muted-foreground text-xs">
-						&copy; 2025 Ensō. All rights reserved. v{appVersion}
+						&copy; {new Date().getFullYear()} {branding.brand.copyright_holder}.
+						All rights reserved. v{appVersion}
 					</p>
 				</div>
 			</footer>

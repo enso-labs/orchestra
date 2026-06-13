@@ -23,11 +23,13 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import FileEditorPanel from "@/components/panels/FileEditorPanel";
 import { ArrowLeft } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useBranding } from "@/context/BrandingContext";
 
 export default function ProjectPage() {
 	const { projectId } = useParams<{ projectId: string }>();
 	const navigate = useNavigate();
 	const { loading, appVersion } = useAppContext();
+	const branding = useBranding();
 	const { useEffectGetAgents } = useAgentContext();
 	const {
 		selectProject,
@@ -164,7 +166,9 @@ export default function ProjectPage() {
 				<footer className="flex-shrink-0 bg-card">
 					<div className="px-4 sm:px-6 lg:px-8 py-4">
 						<p className="text-center text-muted-foreground text-xs">
-							&copy; 2025 Ensō Labs. All rights reserved. v{appVersion}
+							&copy; {new Date().getFullYear()}{" "}
+							{branding.brand.copyright_holder}. All rights reserved. v
+							{appVersion}
 						</p>
 					</div>
 				</footer>

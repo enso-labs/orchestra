@@ -36,8 +36,8 @@ export default function NoAuthLayout({
 			<footer className="mt-auto bg-card border-t border-border">
 				<div className="px-4 sm:px-6 lg:px-8 py-4">
 					<p className="text-center text-muted-foreground text-xs">
-						&copy; 2025 {branding.brand.copyright_holder}. All rights reserved.
-						v{appVersion}
+						&copy; {new Date().getFullYear()} {branding.brand.copyright_holder}.
+						All rights reserved. v{appVersion}
 					</p>
 				</div>
 			</footer>
