@@ -23,14 +23,12 @@ For hot-reload local development, use the dedicated dev stack instead of the pro
 ```bash
 cd ..
 BACKEND_ENV_FILE=$HOME/.env/orchestra/.env.backend \
-FRONTEND_ENV_FILE=$HOME/.env/orchestra/.env.frontend \
 make dev.docker.up
 ```
 
 This starts:
 
 -   FastAPI backend with reload on `http://localhost:8000`
--   Vite frontend with reload on `http://localhost:5173`
 -   TaskIQ worker, PostgreSQL, Redis, SearXNG
 -   Dozzle log viewer on `http://localhost:8088`
 

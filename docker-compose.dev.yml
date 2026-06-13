@@ -84,40 +84,6 @@ services:
                     cpus: "2"
                     memory: 2G
 
-    frontend:
-        build:
-            context: ./frontend
-            dockerfile: Dockerfile.dev
-        working_dir: /app
-        init: true
-        ports:
-            - "5173:5173"
-        environment:
-            VITE_PROXY_TARGET: http://backend:8000
-            CHOKIDAR_USEPOLLING: "true"
-            WATCHPACK_POLLING: "true"
-        volumes:
-            - ./frontend:/app
-            - frontend_node_modules:/app/node_modules
-        user: "0:0"
-        command:
-            [
-                "/bin/sh",
-                "-c",
-                "npm install && npm run dev -- --host 0.0.0.0 --port 5173",
-            ]
-        depends_on:
-            backend:
-                condition: service_healthy
-        networks:
-            - default
-        deploy:
-            resources:
-                limits:
-                    cpus: "1"
-                    memory: 1G
-
 volumes:
     backend_uv_cache:
     backend_venv:
-    frontend_node_modules:
