@@ -36,22 +36,3 @@ services:
                 limits:
                     cpus: "0.25"
                     memory: 256M
-
-    exec_server:
-        profiles: ["tools"]
-        build:
-            context: ./sandboxes/ubuntu
-            dockerfile: Dockerfile
-        env_file:
-            - ./sandboxes/ubuntu/.env
-        ports:
-            - "3005:3005"
-        volumes:
-            - ${HOME}/.ssh:/root/.ssh:ro
-        networks:
-            - services
-        deploy:
-            resources:
-                limits:
-                    cpus: "1"
-                    memory: 1G

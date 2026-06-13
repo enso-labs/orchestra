@@ -1,48 +1,15 @@
-.PHONY: update-submodules ralph archive setup tag changelog dev.storage.up dev.storage.down dev.storage.ps dev.services.up dev.services.down dev.services.ps dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.debug benchmark.images test.images
+.PHONY: setup tag changelog dev.storage.up dev.storage.down dev.storage.ps dev.services.up dev.services.down dev.services.ps dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.debug benchmark.images test.images
 
 ENV ?= dev
-MAX_ITERATIONS ?= 200
 DOCKER_STORAGE_COMPOSE = docker compose -f docker-compose.storage.yml
 DOCKER_SERVICES_COMPOSE = docker compose -f docker-compose.services.yml
 DOCKER_DEV_COMPOSE = docker compose -f docker-compose.dev.yml
 DOCKER_DEBUG_COMPOSE = docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml
 DOCKER_DEV_LOG_SERVICES ?= backend worker frontend
 
-update-submodules:
-	@echo "🔍 Initializing submodules..."
-	git submodule init
-
-	@echo "⬇️  Updating all submodules to their latest remote commits..."
-	git submodule update --remote --merge
-
-	@echo "📝 Staging changes..."
-	git add .
-
-	@echo "✅ Committing updated submodules..."
-	git commit -m "Update all submodules to latest remote commits" || echo "No changes to commit."
-
-	@echo "🏁 Done."
-
 # Install pre-commit hooks
 setup:
 	pre-commit install
-
-# Run the Ralph autonomous agent loop using Claude Code
-ralph:
-	@unset CLAUDECODE; bash .ralph/ralph.sh $(MAX_ITERATIONS)
-
-# Archive current prd.json and progress.txt into [feat|bug]-<issue#> directory
-archive:
-	@BRANCH=$$(jq -r '.branchName' .ralph/prd.json 2>/dev/null) && \
-	if [ -z "$$BRANCH" ] || [ "$$BRANCH" = "null" ]; then echo "No .ralph/prd.json or branchName found"; exit 1; fi && \
-	ARCHIVE_DIR=".ralph/archive/$$(echo $$BRANCH | sed 's|/\([0-9]*\).*|-\1|')" && \
-	mkdir -p "$$ARCHIVE_DIR" && \
-	cp .ralph/prd.json "$$ARCHIVE_DIR/prd.json" && \
-	[ -f .ralph/progress.txt ] && cp .ralph/progress.txt "$$ARCHIVE_DIR/progress.txt" || true && \
-	[ -f .ralph/.last-branch ] && cp .ralph/.last-branch "$$ARCHIVE_DIR/.last-branch" || true && \
-	if ls specs/*.md >/dev/null 2>&1; then mkdir -p "$$ARCHIVE_DIR/specs" && cp specs/*.md "$$ARCHIVE_DIR/specs/"; fi && \
-	rm -f .ralph/prd.json .ralph/progress.txt .ralph/.last-branch && \
-	echo "Archived to $$ARCHIVE_DIR"
 
 # Add a changelog entry for the current branch (YYYY.M.D[-N] format)
 changelog:

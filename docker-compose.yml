@@ -132,21 +132,6 @@ services:
         #   "
 
     ##############################################
-    ## Exec Server
-    ##############################################
-    exec_server:
-        build:
-            context: ./sandboxes/ubuntu
-            dockerfile: Dockerfile
-        container_name: exec_server
-        ports:
-            - "3005:3005"
-        env_file:
-            - ./sandboxes/ubuntu/.env
-        volumes:
-            - ${HOME}/.ssh:/root/.ssh:ro
-
-    ##############################################
     ## Search Engine
     ##############################################
     search_engine:
