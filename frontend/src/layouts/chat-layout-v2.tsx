@@ -27,7 +27,16 @@ export function ChatLayout({ children }: { children: React.ReactNode }) {
 					hideArrow: true,
 					styles: { floater: { maxWidth: "calc(100vw - 1rem)" } },
 				}}
-				styles={{ options: { zIndex: 10000 } }}
+				styles={{
+					// Darker dim + a vivid spotlight ring so the highlighted target
+					// is clearly distinguishable in both light and dark themes — a
+					// 0.5 dim over the dark UI left the highlighted element invisible.
+					options: { zIndex: 10000, overlayColor: "rgba(0, 0, 0, 0.7)" },
+					spotlight: {
+						border: "3px solid #38bdf8",
+						borderRadius: "10px",
+					},
+				}}
 			/>
 			<AppSidebar />
 			<main className="flex-1 flex flex-col max-h-screen overflow-hidden">
