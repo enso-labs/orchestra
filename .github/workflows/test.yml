@@ -7,8 +7,7 @@ on:
             - "**"
         paths-ignore:
             - "Changelog.md"
-            - "docker/**"
-            - "docker-compose.yml"
+            - "infra/**"
             - "decks/**"
             - ".dockerignore"
             - "README.md"
@@ -154,7 +153,7 @@ jobs:
               env:
                   PYTHONPATH: ./src:.
               run: |
-                  # Create the database directory
-                  mkdir -p ./docker/postgres/data
+                  # Create a scratch database directory (tests run against the CI postgres service)
+                  mkdir -p ./.test-data/postgres
                   # Run your tests
                   uv run pytest -rs
