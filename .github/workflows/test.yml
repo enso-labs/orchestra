@@ -17,8 +17,6 @@ on:
             - "openspec/**"
             - "cli/**"
             - "website/**"
-            - "sandboxes/**"
-            - "wiki/**"
 jobs:
     ###############################################################
     ## Test Frontend

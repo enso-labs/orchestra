@@ -1,1 +1,0 @@
-What's the single smartest and most radically innovative, accretive, useful, and compelling addition you could make to the project at this point? Use parallel specialized expert subagents to each devise their own plans, then review all of the blast and come up with a final plan based on review results.
