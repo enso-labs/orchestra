@@ -5,7 +5,7 @@ DOCKER_STORAGE_COMPOSE = docker compose -f docker-compose.storage.yml
 DOCKER_SERVICES_COMPOSE = docker compose -f docker-compose.services.yml
 DOCKER_DEV_COMPOSE = docker compose -f docker-compose.dev.yml
 DOCKER_DEBUG_COMPOSE = docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml
-DOCKER_DEV_LOG_SERVICES ?= backend worker frontend
+DOCKER_DEV_LOG_SERVICES ?= backend worker
 
 # Install pre-commit hooks
 setup:
