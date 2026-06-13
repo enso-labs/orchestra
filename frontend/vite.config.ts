@@ -33,9 +33,9 @@ const MANIFEST: Partial<VitePWAOptions> = {
 		],
 	},
 	manifest: {
-		name: "Ruska AI",
-		short_name: "Ruska AI",
-		description: "Ruska AI",
+		name: "Mifune",
+		short_name: "Mifune",
+		description: "Mifune",
 		theme_color: "#000000",
 		background_color: "#000000",
 		display: "standalone",

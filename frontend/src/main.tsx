@@ -7,6 +7,7 @@ import AgentProvider from "./context/AgentContext";
 import ProjectProvider from "./context/ProjectContext";
 import ThemeProvider from "./context/ThemeContext";
 import AppProvider from "./context/AppContext";
+import BrandingProvider from "./context/BrandingContext";
 import { PromptProvider } from "./context/PromptContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
 import { NuqsAdapter } from "nuqs/adapters/react";
@@ -32,19 +33,21 @@ createRoot(document.getElementById("root")!).render(
 		<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
 			<QueryProvider>
 				<NuqsAdapter>
-					<AppProvider>
-						<AgentProvider>
-							<ProjectProvider>
-								<PromptProvider>
-									<ChatProvider>
-										<OnboardingProvider>
-											<AppRoutes />
-										</OnboardingProvider>
-									</ChatProvider>
-								</PromptProvider>
-							</ProjectProvider>
-						</AgentProvider>
-					</AppProvider>
+					<BrandingProvider>
+						<AppProvider>
+							<AgentProvider>
+								<ProjectProvider>
+									<PromptProvider>
+										<ChatProvider>
+											<OnboardingProvider>
+												<AppRoutes />
+											</OnboardingProvider>
+										</ChatProvider>
+									</PromptProvider>
+								</ProjectProvider>
+							</AgentProvider>
+						</AppProvider>
+					</BrandingProvider>
 				</NuqsAdapter>
 			</QueryProvider>
 		</ThemeProvider>

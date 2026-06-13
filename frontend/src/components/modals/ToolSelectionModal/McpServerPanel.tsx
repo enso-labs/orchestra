@@ -34,10 +34,10 @@ const MCP_TEMPLATES = {
 		url: "",
 		headers: {},
 	},
-	ruska: {
-		name: "Ruska MCP",
+	mifune: {
+		name: "Mifune MCP",
 		transport: "sse" as const,
-		url: "https://chat.ruska.ai/mcp",
+		url: "https://console.mifune.dev/mcp",
 		headers: { "x-api-key": "" },
 	},
 	github: {

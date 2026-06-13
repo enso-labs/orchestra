@@ -2,6 +2,7 @@ import ChatInput from "@/components/inputs/ChatInput";
 import ChatUtilityRow from "@/components/chat/ChatUtilityRow";
 import { Agent } from "@/lib/services/agentService";
 import { Button } from "@/components/ui/button";
+import { useBranding } from "@/context/BrandingContext";
 import {
 	BookOpen,
 	Newspaper,
@@ -26,6 +27,7 @@ export function AgentSection({
 	onRemix,
 	isForking = false,
 }: AgentSectionProps) {
+	const branding = useBranding();
 	return (
 		<>
 			<img
@@ -70,7 +72,7 @@ export function AgentSection({
 					asChild
 				>
 					<a
-						href="https://docs.ruska.ai"
+						href={branding.urls.docs}
 						target="_blank"
 						rel="noopener noreferrer"
 					>
@@ -85,7 +87,7 @@ export function AgentSection({
 					asChild
 				>
 					<a
-						href="https://ruska.ai/blog"
+						href={branding.urls.blog}
 						target="_blank"
 						rel="noopener noreferrer"
 					>
@@ -100,7 +102,7 @@ export function AgentSection({
 					asChild
 				>
 					<a
-						href="https://ruska.ai/socials"
+						href={branding.urls.socials}
 						target="_blank"
 						rel="noopener noreferrer"
 					>
@@ -108,21 +110,23 @@ export function AgentSection({
 						Social
 					</a>
 				</Button>
-				<Button
-					variant="ghost"
-					size="sm"
-					className="text-muted-foreground hover:text-foreground h-8"
-					asChild
-				>
-					<a
-						href="https://join.slack.com/t/ruska-ai/shared_invite/zt-3l2lnevo6-hOe5ZeoAz~xj7CFAJk2bzg"
-						target="_blank"
-						rel="noopener noreferrer"
+				{branding.urls.slack_invite && (
+					<Button
+						variant="ghost"
+						size="sm"
+						className="text-muted-foreground hover:text-foreground h-8"
+						asChild
 					>
-						<MessageCircle className="w-4 h-4 mr-1" />
-						Slack
-					</a>
-				</Button>
+						<a
+							href={branding.urls.slack_invite}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<MessageCircle className="w-4 h-4 mr-1" />
+							Slack
+						</a>
+					</Button>
+				)}
 			</div>
 		</>
 	);

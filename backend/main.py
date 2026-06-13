@@ -25,6 +25,7 @@ from src.constants import (
     APP_ENV,
     APP_TITLE,
 )
+from src.config.branding import BRANDING
 from src.utils.migrations import run_migrations
 from src.utils.rate_limit import limiter
 from src.services.schedule import schedule_service
@@ -113,9 +114,9 @@ app = FastAPI(
         "This is a simple API for building chatbots with LangGraph. "
         "It allows you to create new threads, query existing threads, "
         "and get the history of a thread.\n Check out the repo on "
-        "<a href='https://github.com/ruska-ai/orchestra'>Github</a>"
+        f"<a href='{BRANDING.urls.github}/orchestra'>Github</a>"
     ),
-    contact={"name": "Ryan Eggleston", "email": "reggleston@ruska.ai"},
+    contact={"name": BRANDING.contact.name, "email": BRANDING.contact.email},
     debug=True,
     docs_url="/api",
     lifespan=lifespan,

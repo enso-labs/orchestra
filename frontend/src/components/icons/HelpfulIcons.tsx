@@ -1,8 +1,11 @@
+import { useBranding } from "@/context/BrandingContext";
+
 export default function HelpfulIcons() {
+	const branding = useBranding();
 	return (
 		<div className="text-center flex justify-center gap-2 my-3">
 			<a
-				href="https://docs.ruska.ai"
+				href={branding.urls.docs}
 				target="_blank"
 				className="hover:opacity-80 transition-opacity"
 				rel="noreferrer"
@@ -13,7 +16,7 @@ export default function HelpfulIcons() {
 				/>
 			</a>
 			<a
-				href="https://github.com/ruska-ai/cloud"
+				href={`${branding.urls.github}/cloud`}
 				target="_blank"
 				className="hover:opacity-80 transition-opacity"
 				rel="noreferrer"

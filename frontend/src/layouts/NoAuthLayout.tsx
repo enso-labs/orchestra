@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import { useAppContext } from "@/context/AppContext";
+import { useBranding } from "@/context/BrandingContext";
 
 export default function NoAuthLayout({
 	children,
@@ -8,6 +9,7 @@ export default function NoAuthLayout({
 	children: React.ReactNode;
 }) {
 	const { appVersion } = useAppContext();
+	const branding = useBranding();
 	const location = useLocation();
 
 	return (
@@ -34,7 +36,8 @@ export default function NoAuthLayout({
 			<footer className="mt-auto bg-card border-t border-border">
 				<div className="px-4 sm:px-6 lg:px-8 py-4">
 					<p className="text-center text-muted-foreground text-xs">
-						&copy; 2025 Ruska Labs. All rights reserved. v{appVersion}
+						&copy; 2025 {branding.brand.copyright_holder}. All rights reserved.
+						v{appVersion}
 					</p>
 				</div>
 			</footer>

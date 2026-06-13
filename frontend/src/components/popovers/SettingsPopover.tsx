@@ -10,11 +10,13 @@ import { SiGithub } from "react-icons/si";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "@/context/ChatContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranding } from "@/context/BrandingContext";
 
 export function SettingsPopover() {
 	const { user } = useAuth();
 	const navigate = useNavigate();
 	const { clearMessages } = useChatContext();
+	const branding = useBranding();
 	return (
 		<Popover>
 			<PopoverTrigger asChild>
@@ -58,11 +60,7 @@ export function SettingsPopover() {
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
 						onClick={() =>
-							window.open(
-								"https://docs.ruska.ai",
-								"_blank",
-								"noopener,noreferrer",
-							)
+							window.open(branding.urls.docs, "_blank", "noopener,noreferrer")
 						}
 					>
 						<Book className="h-4 w-4" />
@@ -71,7 +69,7 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => window.open("https://enso.sh", "_blank")}
+						onClick={() => window.open(branding.urls.website, "_blank")}
 					>
 						<Globe className="h-4 w-4" />
 						Website
@@ -79,7 +77,7 @@ export function SettingsPopover() {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-sm font-normal"
-						onClick={() => window.open("https://github.com/ruska-ai", "_blank")}
+						onClick={() => window.open(branding.urls.github, "_blank")}
 					>
 						<SiGithub className="h-4 w-4" />
 						Github
