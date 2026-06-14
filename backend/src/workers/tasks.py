@@ -21,6 +21,7 @@ from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
 from src.workers.broker import broker
 from src.constants.redis import REDIS_URL
+from src.services.idempotency import claim_run
 from src.utils.stream import get_distributed_stream_key, STREAM_KEY_TTL_SECONDS
 
 
@@ -141,6 +142,23 @@ async def run_agent_stream(
     service_context = None
 
     try:
+        # Idempotency guard: claim this run_id atomically before any work.
+        # A duplicate dispatch (at-least-once redelivery, double-click, etc.)
+        # will find the key already set and short-circuit here.
+        if not await claim_run(run_id, redis_client=redis_client):
+            from src.utils.logger import logger
+
+            logger.info(
+                "run_agent_stream_duplicate_skipped",
+                extra={
+                    "event": "run_agent_stream_duplicate_skipped",
+                    "run_id": run_id,
+                    "thread_id": thread_id,
+                    "user_id": user_id,
+                },
+            )
+            return {"status": "duplicate", "stream_key": stream_key}
+
         # Write initializing event immediately so clients waiting for the stream
         # see activity before the heavy init work (model loading, DB connections, etc.)
         await redis_client.xadd(stream_key, {"data": ujson.dumps(("initializing", {"run_id": run_id}))})
