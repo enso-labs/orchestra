@@ -4,7 +4,8 @@ from typing import Optional
 
 import redis.asyncio as aioredis
 from fastapi import HTTPException, status
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM
 from src.constants.redis import REDIS_URL
@@ -45,7 +46,7 @@ def verify_embed_token(token: str, expected_agent_id: str) -> dict:
     """Verify an embed JWT and return the decoded payload.
 
     Validates:
-    - JWT signature and expiry (handled by jose)
+    - JWT signature and expiry (handled by PyJWT)
     - Token type is "embed"
     - agent_id matches the expected assistant
 
@@ -54,7 +55,7 @@ def verify_embed_token(token: str, expected_agent_id: str) -> dict:
     """
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-    except JWTError:
+    except PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired embed token",

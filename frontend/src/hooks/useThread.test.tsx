@@ -23,12 +23,12 @@ type HookState = {
 };
 
 type ThreadCallbacks = {
-	setCheckpoints: ReturnType<typeof vi.fn>;
-	setMessages: ReturnType<typeof vi.fn>;
-	setMetadata: ReturnType<typeof vi.fn>;
-	setFilesMap: ReturnType<typeof vi.fn>;
-	setTodos: ReturnType<typeof vi.fn>;
-	setModel: ReturnType<typeof vi.fn>;
+	setCheckpoints: (checkpoints: any[]) => void;
+	setMessages: (messages: any[]) => void;
+	setMetadata: (metadata: any) => void;
+	setFilesMap: (filesMap: Map<string, any>) => void;
+	setTodos: (todos: any[]) => void;
+	setModel: (model: string) => void;
 };
 
 function UseLoadThreadEffectHarness({
