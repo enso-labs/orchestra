@@ -258,7 +258,7 @@ jobs:
               env:
                   PYTHONPATH: ./src:.
               run: |
-                  uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+                  uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
                   echo "API_PID=$!" >> "$GITHUB_ENV"
                   # Wait for the API to be ready
                   timeout 60 bash -c 'until curl -sf http://localhost:8000/health; do sleep 2; done' \
@@ -269,7 +269,7 @@ jobs:
               env:
                   PYTHONPATH: ./src:.
               run: |
-                  uv run taskiq worker src.worker:broker --workers 1 &
+                  uv run taskiq worker src.workers.tasks:broker --workers 1 &
                   echo "WORKER_PID=$!" >> "$GITHUB_ENV"
 
             - name: Start frontend dev server
