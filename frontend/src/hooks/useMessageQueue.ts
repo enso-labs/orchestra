@@ -13,6 +13,12 @@ const MAX_RETRIES = 3;
 const MAX_QUEUE_SIZE = 10;
 
 /**
+ * Time window (ms) within which an identical, non-empty enqueue is treated as
+ * an accidental double-submit (double-click / double-Enter) and rejected.
+ */
+const DEDUP_WINDOW_MS = 1500;
+
+/**
  * Custom hook for managing a frontend message queue.
  *
  * Allows users to submit multiple messages while a stream is in progress.
@@ -62,6 +68,10 @@ export function useMessageQueue(
 
 	// Guard to prevent concurrent processNext calls
 	const processingRef = useRef(false);
+
+	// Tracks the last accepted enqueue so an identical-content message arriving
+	// within DEDUP_WINDOW_MS (a double-click / double-Enter) can be rejected.
+	const lastEnqueueRef = useRef<{ query: string; at: number } | null>(null);
 
 	// Ref to track editingId for use in processNext callback
 	const editingIdRef = useRef<string | null>(null);
@@ -167,6 +177,25 @@ export function useMessageQueue(
 	 */
 	const enqueue = useCallback(
 		(query: string, images: File[] = []): boolean => {
+			// Content dedup: reject an identical, non-empty message submitted
+			// within DEDUP_WINDOW_MS (accidental double-click / double-Enter)
+			// without appending or dispatching. Empty queries are already a
+			// no-op downstream, so only the identical-non-empty case is blocked.
+			const trimmedQuery = query.trim();
+			const last = lastEnqueueRef.current;
+			if (
+				trimmedQuery.length > 0 &&
+				last !== null &&
+				last.query === trimmedQuery &&
+				Date.now() - last.at < DEDUP_WINDOW_MS
+			) {
+				console.debug(
+					"[MessageQueue] Dropped duplicate submit within dedup window:",
+					trimmedQuery.slice(0, 50),
+				);
+				return false;
+			}
+
 			// Enforce MAX_QUEUE_SIZE: drop oldest messages to make room
 			if (queueRef.current.length >= MAX_QUEUE_SIZE) {
 				const droppedCount = queueRef.current.length - MAX_QUEUE_SIZE + 1;
@@ -192,6 +221,13 @@ export function useMessageQueue(
 
 			queueRef.current = [...queueRef.current, newMessage];
 			syncQueueState();
+
+			// Record this accepted enqueue for short-window dedup. Empty
+			// queries are not tracked so a real message after a blank send is
+			// never mistaken for a duplicate.
+			if (trimmedQuery.length > 0) {
+				lastEnqueueRef.current = { query: trimmedQuery, at: Date.now() };
+			}
 
 			// If not streaming, process immediately
 			if (!isStreaming && !processingRef.current) {
