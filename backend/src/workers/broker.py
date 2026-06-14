@@ -78,5 +78,10 @@ async def on_shutdown():
     from src.workers.state import WorkerState
     from src.constants import CHECKPOINT_USE_RESILIENT
 
+    # Signal graceful drain BEFORE tearing down resources so any task that is
+    # dispatched during shutdown is refused (returns status="draining") rather
+    # than silently lost or half-processed.
+    WorkerState.mark_draining()
+
     if CHECKPOINT_USE_RESILIENT:
         await WorkerState.shutdown()

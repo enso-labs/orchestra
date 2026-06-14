@@ -15,11 +15,16 @@ Design Rationale:
 
 import asyncio
 import contextlib
+import os
+import socket
 from typing import Optional
+from uuid import uuid4
 
+import redis.asyncio as redis
 from langgraph.store.postgres import AsyncPostgresStore
 
 from src.services.checkpoint_resilient import ResilientAsyncPostgresSaver
+from src.services.db import get_store_db
 from src.constants import (
     CHECKPOINT_ENABLE_FALLBACK,
     CHECKPOINT_HEALTH_CHECK_INTERVAL,
@@ -32,7 +37,19 @@ from src.constants import (
     DB_KEEPALIVE_INTERVAL,
     DB_URI_SESSION,
 )
+from src.constants.redis import REDIS_URL
+from src.utils.format import get_time
 from src.utils.logger import logger
+
+# Heartbeat key TTL (seconds). A worker refreshes its key well within this
+# window; if the worker dies, the key expires and external health-checkers can
+# detect the stale/absent worker automatically.
+HEARTBEAT_TTL = 30
+
+# Stable per-process worker identity, generated once at import time. Used as the
+# heartbeat key suffix (``worker:heartbeat:<worker_id>``) so each live worker
+# owns exactly one heartbeat key.
+WORKER_ID = f"{socket.gethostname()}:{os.getpid()}:{uuid4().hex[:8]}"
 
 
 class WorkerState:
@@ -66,6 +83,14 @@ class WorkerState:
     _initialized: bool = False
     _init_lock: asyncio.Lock = asyncio.Lock()
 
+    # Graceful-drain flag. Set True on shutdown so the worker refuses NEW tasks
+    # while letting in-flight runs complete. Draining is terminal — drain leads
+    # to shutdown — so there is intentionally no method to clear it.
+    _draining: bool = False
+
+    # Stable identity for this worker process; the heartbeat key suffix.
+    worker_id: str = WORKER_ID
+
     @classmethod
     def get_instance(cls) -> "WorkerState":
         """Get or create the singleton instance."""
@@ -96,6 +121,11 @@ class WorkerState:
                 },
             )
 
+            # Write the liveness heartbeat key early so it lands even if the
+            # checkpointer/store setup below is slow or stubbed. A heartbeat
+            # failure must never abort worker startup — log and continue.
+            await cls._write_heartbeat()
+
             try:
                 # Create and connect checkpointer
                 instance._checkpointer = ResilientAsyncPostgresSaver(
@@ -117,8 +147,6 @@ class WorkerState:
                 await instance._checkpointer.setup()
 
                 # Create singleton store via AsyncExitStack to manage the context manager
-                from src.services.db import get_store_db
-
                 instance._store_exit_stack = contextlib.AsyncExitStack()
                 instance._store = await instance._store_exit_stack.enter_async_context(get_store_db())
 
@@ -260,6 +288,65 @@ class WorkerState:
         if instance._checkpointer:
             metrics["checkpointer_metrics"] = instance._checkpointer.metrics
         return metrics
+
+    # --- Graceful drain -----------------------------------------------------
+
+    @classmethod
+    def mark_draining(cls) -> None:
+        """Signal that this worker is draining and must refuse NEW tasks.
+
+        Called from the broker shutdown hook before resource teardown so that
+        in-flight runs can finish while ``run_agent_stream`` short-circuits any
+        newly-dispatched work. Draining is terminal: there is intentionally no
+        method to clear the flag — a drained worker proceeds to shutdown.
+        """
+        cls._draining = True
+        logger.info(
+            "worker_state_draining",
+            extra={
+                "event": "worker_state_draining",
+                "worker_id": cls.worker_id,
+            },
+        )
+
+    @classmethod
+    def is_draining(cls) -> bool:
+        """Return whether this worker is draining (refusing new tasks)."""
+        return cls._draining
+
+    # --- Liveness heartbeat -------------------------------------------------
+
+    @classmethod
+    async def _write_heartbeat(cls) -> None:
+        """Write/refresh the ``worker:heartbeat:<worker_id>`` key with a TTL.
+
+        Defensive by design: a Redis failure here is logged and swallowed so a
+        heartbeat hiccup never aborts worker startup or task processing.
+        """
+        try:
+            client = redis.from_url(REDIS_URL)
+            try:
+                await client.set(
+                    f"worker:heartbeat:{cls.worker_id}",
+                    get_time(),
+                    ex=HEARTBEAT_TTL,
+                )
+            finally:
+                close = getattr(client, "aclose", None)
+                if close is not None:
+                    await close()
+        except Exception as e:  # pragma: no cover - defensive
+            logger.warning("Failed to write worker heartbeat: %s", e)
+
+    @classmethod
+    async def heartbeat(cls) -> None:
+        """Refresh the liveness heartbeat key.
+
+        Intended to be called periodically by a background refresher so the key
+        TTL is renewed while the worker is alive. Shares the same defensive
+        write path as the initial heartbeat written during ``initialize()``.
+        """
+        await cls._write_heartbeat()
 
 
 async def get_worker_checkpointer() -> ResilientAsyncPostgresSaver:
