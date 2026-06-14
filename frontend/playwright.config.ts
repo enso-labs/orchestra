@@ -14,6 +14,16 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
 
+  /* CI runs the full stack (postgres + redis + api + worker + vite) on a single
+   * runner. Unbounded parallel Playwright workers starve the Vite dev server and
+   * the React app misses its 30s mount window (the chat input/submit never
+   * appears in time). Serialize in CI and retry to absorb cold-start/contention;
+   * locally (no CI env) keep the default parallelism. */
+  fullyParallel: false,
+  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 0,
+  timeout: process.env.CI ? 60_000 : 30_000,
+
   /* Artifacts on failure (screenshots, traces, videos) */
   outputDir: "./e2e/.artifacts/results/",
   reporter: [
