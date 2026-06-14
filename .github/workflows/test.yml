@@ -157,3 +157,153 @@ jobs:
                   mkdir -p ./.test-data/postgres
                   # Run your tests
                   uv run pytest -rs
+
+    ###############################################################
+    ## E2E Tests (Playwright) — non-blocking
+    ## Specs are authored with test.fail() at baseline so they
+    ## pass today even though the resilient behaviours are not yet
+    ## implemented.  Once a resiliency fix lands, remove the
+    ## corresponding test.fail() annotation to flip the spec to a
+    ## hard failure (the GREEN signal).
+    # TODO: make blocking (remove continue-on-error) once full
+    #       stack bring-up in CI is reliable and all specs pass.
+    ###############################################################
+    test-e2e:
+        runs-on: ubuntu-latest
+        environment: Test
+        # Non-blocking: failures here do not fail required checks.
+        continue-on-error: true
+        env:
+            APP_ENV: test
+            APP_LOG_LEVEL: debug
+            APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+            POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@localhost:5432/lg_template_test
+            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+            REDIS_URL: redis://localhost:6379/0
+            # The resiliency features (idempotency dedup, DLQ + replay,
+            # correlation-id bind, drain) live in the worker's run_agent_stream,
+            # and the frontend uses the distributed POST /llm/stream + SSE-poll
+            # flow. Both are gated on DISTRIBUTED_WORKERS; without it the API
+            # streams in-process, the worker stays idle, and every e2e spec fails.
+            DISTRIBUTED_WORKERS: "true"
+        services:
+            postgres:
+                image: pgvector/pgvector:pg16
+                env:
+                    POSTGRES_USER: admin
+                    POSTGRES_PASSWORD: test1234
+                    POSTGRES_DB: lg_template_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+            redis:
+                image: redis:alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+
+            - name: Install Python dependencies
+              working-directory: ./backend
+              run: |
+                  mkdir -p src/public/docs
+                  mkdir -p src/public/assets
+                  pip install --upgrade pip
+                  pip install uv
+                  uv sync --frozen --no-cache --dev --extra api
+
+            - name: Wait for PostgreSQL
+              run: |
+                  timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U admin; do sleep 1; done'
+
+            - name: Run database migrations
+              working-directory: ./backend
+              env:
+                  PYTHONPATH: ./src:.
+              run: |
+                  uv run alembic upgrade head
+
+            - name: Seed default user
+              working-directory: ./backend
+              env:
+                  PYTHONPATH: ./src:.
+              run: |
+                  uv run python -m seeds.user_seeder || echo "Seeder not found or failed — skipping"
+
+            - name: Install frontend dependencies
+              working-directory: ./frontend
+              run: npm ci
+
+            - name: Install Playwright browsers
+              working-directory: ./frontend
+              run: npx playwright install --with-deps chromium
+
+            - name: Start backend API
+              working-directory: ./backend
+              env:
+                  PYTHONPATH: ./src:.
+              run: |
+                  uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
+                  echo "API_PID=$!" >> "$GITHUB_ENV"
+                  # Wait for the API to be ready
+                  timeout 60 bash -c 'until curl -sf http://localhost:8000/health; do sleep 2; done' \
+                    || echo "Warning: API health check timed out"
+
+            - name: Start background worker
+              working-directory: ./backend
+              env:
+                  PYTHONPATH: ./src:.
+              run: |
+                  uv run taskiq worker src.workers.tasks:broker --workers 1 &
+                  echo "WORKER_PID=$!" >> "$GITHUB_ENV"
+
+            - name: Start frontend dev server
+              working-directory: ./frontend
+              run: |
+                  # Pre-bundle deps so the first spec doesn't pay Vite's cold optimize cost.
+                  npx vite optimize --force >/dev/null 2>&1 || true
+                  VITE_API_URL=http://localhost:8000/api npx vite --port 5173 --host 0.0.0.0 &
+                  echo "VITE_PID=$!" >> "$GITHUB_ENV"
+                  # Wait for Vite to be ready
+                  timeout 60 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 2; done' \
+                    || echo "Warning: Vite health check timed out"
+                  # Warm the full module graph in a real browser so the first Playwright spec
+                  # finds a hot dev server. The first on-demand compile of the /chat route
+                  # under single-runner CPU contention can exceed the per-test timeout; a
+                  # timeout escapes test.fail() and becomes a hard failure, so the RED
+                  # baseline probes must fail by assertion, not by cold-compile timeout.
+                  node -e "const {chromium}=require('@playwright/test');(async()=>{const b=await chromium.launch();const p=await b.newPage();await p.goto('http://localhost:5173/chat',{waitUntil:'networkidle',timeout:90000}).catch(()=>{});await b.close();})().catch(()=>{})" \
+                    || echo "Warning: frontend warm-up navigation failed (non-fatal)"
+
+            - name: Run Playwright E2E specs
+              working-directory: ./frontend
+              run: npx playwright test
+
+            - name: Upload Playwright artifacts
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: playwright-artifacts
+                  path: frontend/e2e/.artifacts/**
+                  retention-days: 7
