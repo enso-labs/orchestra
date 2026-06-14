@@ -170,6 +170,7 @@ async def run_agent_stream(
     )
     from src.services.abort import AbortService
     from src.workers.dlq import write_dlq
+    from src.utils.correlation import set_correlation_id, reset_correlation_id
 
     stream_key = get_distributed_stream_key(thread_id, run_id)
     redis_client = redis.from_url(REDIS_URL)
@@ -178,6 +179,11 @@ async def run_agent_stream(
     files_map = {}
     todos_list = []
     service_context = None
+
+    # Bind the run_id as the correlation ID for this task so every structured log
+    # line emitted during the run can be traced back to the originating request.
+    # Reset in the finally below to avoid leaking the value across worker tasks.
+    _correlation_token = set_correlation_id(run_id)
 
     try:
         # Idempotency guard: claim this run_id atomically before any work.
@@ -404,6 +410,7 @@ async def run_agent_stream(
             )
         return {"status": "error", "stream_key": stream_key, "dead_lettered": True}
     finally:
+        reset_correlation_id(_correlation_token)
         await redis_client.aclose()
 
 
