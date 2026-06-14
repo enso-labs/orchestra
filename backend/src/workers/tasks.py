@@ -157,6 +157,26 @@ async def run_agent_stream(
     Returns:
         dict with status and stream_key
     """
+    # Graceful drain: if this worker is draining (shutting down), refuse NEW
+    # work immediately — before the idempotency claim or any side effect — so a
+    # mid-flight restart never silently swallows a freshly-dispatched run. The
+    # task stays on the queue (no claim, no DLQ) for another worker to pick up.
+    from src.workers.state import WorkerState
+
+    if WorkerState.is_draining():
+        from src.utils.logger import logger
+
+        logger.info(
+            "run_agent_stream_draining_refused",
+            extra={
+                "event": "run_agent_stream_draining_refused",
+                "run_id": run_id,
+                "thread_id": thread_id,
+                "user_id": user_id,
+            },
+        )
+        return {"status": "draining", "run_id": run_id}
+
     from src.schemas.entities import LLMRequest
     from src.agents import init_config
     from src.services.db import get_checkpoint_db, get_store_db
