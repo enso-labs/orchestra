@@ -1,12 +1,13 @@
-# AGENTS.md - Decks / Slide Deck
+# AGENTS.md - Mifune Decks / Slide Deck
 
 ## Project Overview
 
-reveal.js slide deck for [github.com/mifunedev/orchestra](https://github.com/mifunedev/orchestra).
+Mifune-branded reveal.js slide deck for [github.com/mifunedev/orchestra](https://github.com/mifunedev/orchestra).
 
 - **Live URL:** <https://mifunedev.github.io/orchestra/>
 - **Tech:** Static HTML with reveal.js via CDN - no build step required
 - **Edit:** `decks/slides/index.html` directly
+- **Brand:** dark background, Montserrat + Space Grotesk typography, green-only accents (`#22c55e` / `#4ade80`), public email `support@mifune.dev`
 
 ## Directory Structure
 
@@ -94,6 +95,10 @@ agent-browser screenshot decks/slides/screenshots/slide-title.png
 agent-browser press o
 agent-browser screenshot --full decks/slides/screenshots/overview.png
 ```
+
+## Brand Guardrails
+
+Keep user-facing deck copy aligned to Mifune/mifune.dev. Do not reintroduce Ruska/RUSKA branding, `ruska.ai`, `cal.com/ruska-ai`, purple/blue/gold accent systems, or Cormorant typography.
 
 ## Deployment
 

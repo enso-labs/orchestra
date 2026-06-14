@@ -1,10 +1,14 @@
-# Orchestra Slide Deck
+# Mifune Slide Deck
 
-Static HTML presentation built with [reveal.js](https://revealjs.com/) for showcasing Orchestra - the Open-Source AI Agent Orchestration Platform.
+Mifune-branded static HTML presentation built with [reveal.js](https://revealjs.com/) for showcasing managed AI workers and the Orchestra platform.
 
 ## Live URL
 
 Once deployed, the slides are available at: **https://mifunedev.github.io/orchestra/slides/**
+
+## Brand Standard
+
+Follow the current mifune.dev brand: dark background, Montserrat + Space Grotesk typography, green-only accents (`#22c55e` / `#4ade80`), and public contact `support@mifune.dev`. Do not reintroduce Ruska branding, `ruska.ai`, `cal.com/ruska-ai`, purple/blue/gold accents, or Cormorant typography.
 
 ## Local Development
 
