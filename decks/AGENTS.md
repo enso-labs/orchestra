@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-reveal.js slide deck for [github.com/ruska-ai/orchestra](https://github.com/ruska-ai/orchestra).
+reveal.js slide deck for [github.com/mifunedev/orchestra](https://github.com/mifunedev/orchestra).
 
-- **Live URL:** <https://ruska-ai.github.io/orchestra/>
+- **Live URL:** <https://mifunedev.github.io/orchestra/>
 - **Tech:** Static HTML with reveal.js via CDN - no build step required
 - **Edit:** `decks/slides/index.html` directly
 
@@ -43,7 +43,7 @@ Use the `agent-browser` CLI to verify the slide deck loads and navigates correct
 
 ```bash
 # 1. Start a local server in the background
-python -m http.server 8080 --directory docs &
+python -m http.server 8080 --directory decks &
 
 # 2. Open the slide deck
 agent-browser open http://localhost:8080/slides/
@@ -88,11 +88,11 @@ agent-browser open http://localhost:8080/slides/
 agent-browser press ArrowRight  # Navigate as needed
 
 # Capture current slide
-agent-browser screenshot docs/slides/screenshots/slide-title.png
+agent-browser screenshot decks/slides/screenshots/slide-title.png
 
 # Capture full-page overview (e.g., after pressing 'o' for overview mode)
 agent-browser press o
-agent-browser screenshot --full docs/slides/screenshots/overview.png
+agent-browser screenshot --full decks/slides/screenshots/overview.png
 ```
 
 ## Deployment
@@ -101,6 +101,7 @@ Auto-deploys via `.github/workflows/slides.yml`:
 
 - **Trigger:** push to `development` when files in `decks/slides/**` change, or manual `workflow_dispatch`
 - **Action:** uploads the entire `decks/` directory as a GitHub Pages artifact
+- **Pages source:** GitHub Actions. Do not configure the legacy branch source (`development` + `/docs`); the repository has no root `docs/` directory.
 - **Concurrency:** only one deployment runs at a time
 
 ## Editing Slides
