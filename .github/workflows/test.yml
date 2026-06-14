@@ -181,6 +181,12 @@ jobs:
             OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
             REDIS_URL: redis://localhost:6379/0
+            # The resiliency features (idempotency dedup, DLQ + replay,
+            # correlation-id bind, drain) live in the worker's run_agent_stream,
+            # and the frontend uses the distributed POST /llm/stream + SSE-poll
+            # flow. Both are gated on DISTRIBUTED_WORKERS; without it the API
+            # streams in-process, the worker stays idle, and every e2e spec fails.
+            DISTRIBUTED_WORKERS: "true"
         services:
             postgres:
                 image: pgvector/pgvector:pg16
