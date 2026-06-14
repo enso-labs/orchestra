@@ -4,7 +4,8 @@ import secrets
 import hashlib
 from fastapi import Request, status, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.constants.llm import get_free_models
 from src.repos.user_repo import UserRepo
@@ -230,7 +231,7 @@ async def verify_credentials(
         request.state.user_repo = user_repo
         return user.protected()
 
-    except JWTError:
+    except PyJWTError:
         logger.exception(f"Could not validate credentials: {credentials.credentials}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

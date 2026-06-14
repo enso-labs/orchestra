@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 from fastapi import HTTPException
-from jose import jwt
+import jwt
 
 from src.constants import JWT_SECRET_KEY, JWT_ALGORITHM
 from src.utils.embed import (
