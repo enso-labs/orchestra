@@ -1,5 +1,12 @@
 import { useEffect, useRef, useCallback, memo, useState } from "react";
-import { Loader2, Edit, Check, X } from "lucide-react";
+import {
+	Loader2,
+	Edit,
+	Check,
+	X,
+	AlertTriangle,
+	RotateCcw,
+} from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { useAppContext } from "@/context/AppContext";
@@ -247,6 +254,69 @@ export const Message = memo(
 	},
 );
 
+type RunError = {
+	runId: string;
+	message: string;
+	recoverable: boolean;
+};
+
+// Persistent error surface for permanently-failed runs. Rendered inline in the
+// chat message area (not a toast) so it survives until the user replays or
+// submits a fresh request. Drives the DLQ replay affordance.
+function RunErrorBanner({
+	runError,
+	onReplay,
+}: {
+	runError: RunError;
+	onReplay: (runId: string) => void | Promise<void>;
+}) {
+	const [isReplaying, setIsReplaying] = useState(false);
+
+	const handleReplay = async () => {
+		if (isReplaying) return;
+		setIsReplaying(true);
+		try {
+			await onReplay(runError.runId);
+		} finally {
+			setIsReplaying(false);
+		}
+	};
+
+	return (
+		<div className="flex justify-start p-3 max-w-4xl mx-auto px-5 w-full">
+			<div
+				data-testid="message-error"
+				role="alert"
+				className="flex w-full max-w-[90vw] md:max-w-[80%] flex-col gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+			>
+				<div className="flex items-start gap-2">
+					<AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+					<div className="flex-1">
+						<p className="font-medium">The request failed.</p>
+						<p className="text-destructive/90 break-words">
+							{runError.message || "An unexpected error occurred."}
+						</p>
+					</div>
+				</div>
+				<div className="flex justify-end">
+					<button
+						type="button"
+						data-testid="replay-button"
+						onClick={handleReplay}
+						disabled={isReplaying}
+						className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60"
+					>
+						<RotateCcw
+							className={`h-3.5 w-3.5 ${isReplaying ? "animate-spin" : ""}`}
+						/>
+						{isReplaying ? "Replaying…" : "Replay"}
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 	const { loading, loadingMessage } = useAppContext();
 	const {
@@ -256,6 +326,8 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 		submitStartTime,
 		appendToQuery,
 		displayModel,
+		runError,
+		replayRun,
 	} = useChatContext();
 	const [elapsedTime, setElapsedTime] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -366,8 +438,14 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 
 	if (messages.length === 0) {
 		return (
-			<div className="flex justify-center items-center h-full">
-				<p className="text-muted-foreground">No messages yet</p>
+			<div className="flex flex-col justify-center items-center h-full">
+				{runError ? (
+					<div className="w-full">
+						<RunErrorBanner runError={runError} onReplay={replayRun} />
+					</div>
+				) : (
+					<p className="text-muted-foreground">No messages yet</p>
+				)}
 			</div>
 		);
 	}
@@ -433,6 +511,9 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 							</span>
 						)}
 					</div>
+				)}
+				{runError && !loading && (
+					<RunErrorBanner runError={runError} onReplay={replayRun} />
 				)}
 			</div>
 		</div>

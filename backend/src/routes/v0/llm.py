@@ -160,6 +160,33 @@ async def llm_stream(
 
 
 ################################################################################
+### Replay Dead-Lettered Run
+################################################################################
+@llm_router.post(
+    "/dlq/{run_id}/replay",
+    name="Replay DLQ Run",
+    operation_id="ruska_replay_dlq_run",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(get_optional_user_from_token)],
+)
+async def replay_dlq_run(
+    run_id: str,
+    user: ProtectedUser = Depends(get_optional_user_from_token),
+) -> JSONResponse:
+    """Replay a permanently-failed (dead-lettered) agent run.
+
+    Reads the stored DLQ payload for ``run_id`` and re-enqueues it under a fresh
+    run_id so the idempotency guard does not short-circuit the replay. Returns
+    202 with ``{"status": "replayed", "new_run_id": ...}`` on success, or
+    ``{"status": "not_found"}`` when no DLQ entry exists for the run.
+    """
+    from src.workers import dlq
+
+    result = await dlq.replay(run_id)
+    return JSONResponse(content=result, status_code=status.HTTP_202_ACCEPTED)
+
+
+################################################################################
 ### Transcribe
 ################################################################################
 @llm_router.post("/transcribe")
