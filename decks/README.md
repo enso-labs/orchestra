@@ -1,6 +1,6 @@
-# Orchestra Decks
+# Mifune Decks
 
-GitHub Pages site for Orchestra presentations and slide decks.
+GitHub Pages site for Mifune-branded Orchestra presentations and slide decks.
 
 **Live:** <https://mifunedev.github.io/orchestra/>
 
@@ -11,7 +11,7 @@ decks/
   index.html          # Redirects to slides/
   slides/             # reveal.js presentation deck
     index.html
-    README.md          # Slide editing guide
+    README.md          # Mifune-branded slide editing guide
 ```
 
 ## Local Preview
@@ -25,6 +25,10 @@ python -m http.server 8080 --directory decks
 ```
 
 Then open <http://localhost:8080>. The root `index.html` redirects to `slides/`.
+
+## Brand Standard
+
+These decks follow the current mifune.dev visual standard: dark background, Montserrat + Space Grotesk typography, green-only accents (`#22c55e` / `#4ade80`), and public contact `support@mifune.dev`.
 
 ## Deployment
 
