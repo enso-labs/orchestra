@@ -281,11 +281,20 @@ jobs:
             - name: Start frontend dev server
               working-directory: ./frontend
               run: |
-                  VITE_API_URL=http://localhost:8000/api npx vite --port 5173 &
+                  # Pre-bundle deps so the first spec doesn't pay Vite's cold optimize cost.
+                  npx vite optimize --force >/dev/null 2>&1 || true
+                  VITE_API_URL=http://localhost:8000/api npx vite --port 5173 --host 0.0.0.0 &
                   echo "VITE_PID=$!" >> "$GITHUB_ENV"
                   # Wait for Vite to be ready
-                  timeout 60 bash -c 'until curl -sf http://localhost:5173; do sleep 2; done' \
+                  timeout 60 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 2; done' \
                     || echo "Warning: Vite health check timed out"
+                  # Warm the full module graph in a real browser so the first Playwright spec
+                  # finds a hot dev server. The first on-demand compile of the /chat route
+                  # under single-runner CPU contention can exceed the per-test timeout; a
+                  # timeout escapes test.fail() and becomes a hard failure, so the RED
+                  # baseline probes must fail by assertion, not by cold-compile timeout.
+                  node -e "const {chromium}=require('@playwright/test');(async()=>{const b=await chromium.launch();const p=await b.newPage();await p.goto('http://localhost:5173/chat',{waitUntil:'networkidle',timeout:90000}).catch(()=>{});await b.close();})().catch(()=>{})" \
+                    || echo "Warning: frontend warm-up navigation failed (non-fatal)"
 
             - name: Run Playwright E2E specs
               working-directory: ./frontend
