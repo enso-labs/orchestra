@@ -11,7 +11,7 @@ const TOKEN_KEY = "enso:auth:token";
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
   // Obtain a token from the backend
-  const response = await page.request.post(`${API_URL}/auth/login`, {
+  const response = await page.request.post(`${API_URL}/api/auth/login`, {
     data: { email: "admin@example.com", password: "test1234" },
   });
 
