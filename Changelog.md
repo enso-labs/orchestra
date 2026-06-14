@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.6.14
+
+### Fixed
+  - task/936-pages-workflow-source — deprecate the legacy GitHub Pages branch source in favor of the `slides.yml` GitHub Actions deployment and correct stale deck deployment documentation.
+
 ## 2026.6.13
 
 ### Changed

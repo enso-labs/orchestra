@@ -4,7 +4,7 @@ Static HTML presentation built with [reveal.js](https://revealjs.com/) for showc
 
 ## Live URL
 
-Once deployed, the slides are available at: **https://ruska-ai.github.io/orchestra/slides/**
+Once deployed, the slides are available at: **https://mifunedev.github.io/orchestra/slides/**
 
 ## Local Development
 
@@ -12,10 +12,10 @@ Once deployed, the slides are available at: **https://ruska-ai.github.io/orchest
 
 ```bash
 # From repository root
-npx serve docs/slides
+npx serve decks/slides
 
 # Or with live reload
-npx live-server docs/slides --port=8080
+npx live-server decks/slides --port=8080
 ```
 
 Then open http://localhost:8080 in your browser.
@@ -23,8 +23,8 @@ Then open http://localhost:8080 in your browser.
 ### Python Alternative
 
 ```bash
-# From docs/slides directory
-cd docs/slides
+# From decks/slides directory
+cd decks/slides
 python -m http.server 8080
 ```
 
@@ -94,23 +94,17 @@ Edit `index.html` directly. The presentation uses reveal.js via CDN, so no build
 
 ## Deployment
 
-Slides are automatically deployed to GitHub Pages when changes are merged to the `development` branch.
+Slides are automatically deployed by `.github/workflows/slides.yml` when changes under `decks/slides/` are merged to the `development` branch. GitHub Pages must use **Build and deployment → Source: GitHub Actions**; the legacy branch source (`development` + `/docs`) is deprecated because the repository no longer has a root `docs/` directory.
 
 ### Manual Deployment
 
-If you need to deploy manually:
-
-1. Go to GitHub repository **Settings** → **Pages**
-2. Under "Source", select branch `development` and folder `/docs`
-3. Save
-
-The workflow `.github/workflows/slides.yml` handles automatic deployment.
+If you need to deploy manually, run the **Deploy Slides to GitHub Pages** workflow from the Actions tab. Do not switch Pages back to a branch source.
 
 ## Adding New Slides
 
-1. Edit `docs/slides/index.html`
+1. Edit `decks/slides/index.html`
 2. Add new `<section>` elements where appropriate
-3. Preview locally with `npx serve docs/slides`
+3. Preview locally with `npx serve decks/slides`
 4. Commit and push to trigger deployment
 
 ## Resources
