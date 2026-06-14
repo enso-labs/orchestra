@@ -8,6 +8,7 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ## 2026.6.14
 
 ### Fixed
+  - fix/940-mermaid-navigation — preserve Mermaid diagram source before rendering so slide diagrams stay visible after navigating between nested slides.
   - task/938-mifune-slide-brand — align the GitHub Pages slide deck and one-page handout with Mifune branding, green-only accents, mifune.dev links, and support@mifune.dev contact details.
   - task/936-pages-workflow-source — deprecate the legacy GitHub Pages branch source in favor of the `slides.yml` GitHub Actions deployment and correct stale deck deployment documentation.
 

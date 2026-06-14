@@ -426,17 +426,22 @@ graph LR
   </script>
   <script>
     async function renderVisibleMermaid() {
-      const visibleSlides = document.querySelectorAll('.reveal .slides section.present');
-      const nodes = [];
-      visibleSlides.forEach(slide => {
-        slide.querySelectorAll('.mermaid-src').forEach(el => {
-          const src = el.textContent.trim();
-          // Create a fresh .mermaid div each time
-          el.innerHTML = src;
-          el.classList.add('mermaid');
-          nodes.push(el);
-        });
+      const currentSlide = Reveal.getCurrentSlide();
+      if (!currentSlide) return;
+
+      const nodes = Array.from(currentSlide.querySelectorAll('.mermaid-src'));
+      nodes.forEach(el => {
+        if (!el.dataset.mermaidSource) {
+          el.dataset.mermaidSource = el.textContent.trim();
+        }
+
+        // Mermaid replaces the source with generated SVG. Restore the original
+        // source before each render so diagrams survive slide navigation.
+        el.textContent = el.dataset.mermaidSource;
+        el.removeAttribute('data-processed');
+        el.classList.add('mermaid');
       });
+
       if (nodes.length > 0) {
         await mermaid.run({ nodes });
       }
