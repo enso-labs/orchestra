@@ -24,6 +24,39 @@ from src.constants.redis import REDIS_URL
 from src.services.idempotency import claim_run
 from src.utils.stream import get_distributed_stream_key, STREAM_KEY_TTL_SECONDS
 
+# Sentinel embedded in a user message to deterministically force a permanent
+# failure, exercising the DLQ record+surface+replay path end-to-end without a
+# real provider/auth fault. Used by the resiliency DLQ probe and the frontend
+# replay e2e — never emitted by normal traffic.
+_DLQ_TRIGGER_SENTINEL = "__DLQ_TRIGGER__"
+
+
+def _extract_user_message_text(task_dict: dict) -> str:
+    """Concatenate the text of all user messages in a serialized LLMRequest dict.
+
+    Mirrors the ``input.messages[*].content`` shape (string or multimodal list)
+    without reconstructing the full ``LLMRequest`` model, so the DLQ fault
+    injection can run before any heavyweight init work.
+    """
+    try:
+        messages = (task_dict or {}).get("input", {}).get("messages", []) or []
+    except AttributeError:
+        return ""
+    parts: list[str] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        content = message.get("content", "")
+        if isinstance(content, str):
+            parts.append(content)
+        elif isinstance(content, list):
+            for block in content:
+                if isinstance(block, dict):
+                    parts.append(str(block.get("text", "")))
+                else:
+                    parts.append(str(block))
+    return " ".join(parts)
+
 
 class _RunScopedStore:
     """Thin proxy around a shared store that isolates mutable attributes per-run.
@@ -130,8 +163,13 @@ async def run_agent_stream(
     from src.contexts.service import ServiceContext
     from src.utils.logger import logger
     from src.constants import CHECKPOINT_USE_RESILIENT
-    from src.services.errors import CheckpointConnectionError
+    from src.services.errors import (
+        CheckpointConnectionError,
+        PermanentCheckpointError,
+        is_retryable_error,
+    )
     from src.services.abort import AbortService
+    from src.workers.dlq import write_dlq
 
     stream_key = get_distributed_stream_key(thread_id, run_id)
     redis_client = redis.from_url(REDIS_URL)
@@ -158,6 +196,13 @@ async def run_agent_stream(
                 },
             )
             return {"status": "duplicate", "stream_key": stream_key}
+
+        # Deterministic fault injection (e2e DLQ trigger): if the user message
+        # carries the sentinel, raise a PERMANENT error so the DLQ path below
+        # records + surfaces + makes the run replayable. Kept inside the try so
+        # the permanent-error handler dead-letters it like any real failure.
+        if _DLQ_TRIGGER_SENTINEL in _extract_user_message_text(task_dict):
+            raise PermanentCheckpointError("forced permanent failure (e2e DLQ trigger)")
 
         # Write initializing event immediately so clients waiting for the stream
         # see activity before the heavy init work (model loading, DB connections, etc.)
@@ -277,15 +322,71 @@ async def run_agent_stream(
                     error=f"Checkpoint error: {e}",
                 ),
             )
-        raise
+        # CheckpointConnectionError means retries are exhausted with no fallback.
+        # Classify it: a retryable underlying cause is re-raised for the broker;
+        # a permanent one is dead-lettered (recorded + replayable) instead.
+        if is_retryable_error(e):
+            raise
+        await write_dlq(
+            redis_client,
+            run_id,
+            task_dict=task_dict,
+            user_id=user_id,
+            thread_id=thread_id,
+            error=e,
+        )
+        return {"status": "error", "stream_key": stream_key, "dead_lettered": True}
 
     except Exception as e:
         logger.exception(f"Task failed for thread {thread_id}: {e}")
+        # Classify the failure. Retryable errors are re-raised so the TaskIQ
+        # broker retries them. Permanent errors are dead-lettered: recorded to
+        # the DLQ, surfaced to SSE clients, and made replayable — NOT re-raised
+        # (re-raising would trigger broker retries that defeat the DLQ).
+        retryable = is_retryable_error(e)
+        if retryable:
+            try:
+                await redis_client.xadd(stream_key, {"error": str(e), "done": "true"})
+                await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
+            except Exception as redis_err:
+                logger.error(f"Failed to send error to Redis for thread {thread_id}: {redis_err}")
+            if service_context and config:
+                await _update_thread_stream_state(
+                    service_context=service_context,
+                    thread_id=thread_id,
+                    config=config,
+                    files_map=files_map,
+                    todos_list=todos_list,
+                    metadata=_build_stream_metadata(
+                        run_id=run_id,
+                        status="error",
+                        started_at=None,
+                        finished_at=None,
+                        error=str(e),
+                    ),
+                )
+            raise
+
+        # Permanent failure → dead-letter it.
+        await write_dlq(
+            redis_client,
+            run_id,
+            task_dict=task_dict,
+            user_id=user_id,
+            thread_id=thread_id,
+            error=e,
+        )
         try:
-            await redis_client.xadd(stream_key, {"error": str(e), "done": "true"})
+            # Surface to SSE clients: recoverable=True signals the UI can offer a
+            # replay action for this dead-lettered run.
+            await redis_client.xadd(
+                stream_key,
+                {"data": ujson.dumps(("error", {"run_id": run_id, "error": str(e), "recoverable": True}))},
+            )
+            await redis_client.xadd(stream_key, {"done": "true"})
             await redis_client.expire(stream_key, STREAM_KEY_TTL_SECONDS)
         except Exception as redis_err:
-            logger.error(f"Failed to send error to Redis for thread {thread_id}: {redis_err}")
+            logger.error(f"Failed to send DLQ error to Redis for thread {thread_id}: {redis_err}")
         if service_context and config:
             await _update_thread_stream_state(
                 service_context=service_context,
@@ -301,7 +402,7 @@ async def run_agent_stream(
                     error=str(e),
                 ),
             )
-        raise
+        return {"status": "error", "stream_key": stream_key, "dead_lettered": True}
     finally:
         await redis_client.aclose()
 

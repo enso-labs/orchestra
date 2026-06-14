@@ -7,20 +7,22 @@
  *   2. Offer a replay / retry affordance (button, link, or actionable text) so
  *      the user can recover without refreshing.
  *
- * Today, failed runs may leave the UI in a loading/hanging state with no replay
- * option, so this test is annotated test.fail().
- *
- * FLIP: remove test.fail() once DLQ replay affordance lands.
+ * A permanently-failing run now surfaces a persistent error banner with an
+ * enabled Replay affordance (wired to the DLQ replay endpoint), so the UI
+ * settles instead of hanging.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, Page, Locator } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/auth";
 
 const CHAT_INPUT = 'textarea[placeholder="How can I help you be more productive?"]';
 const SUBMIT_BUTTON = '[data-tour="chat-submit-button"]';
 
-// Selectors for expected error / replay UI (to be confirmed once feature lands)
+// Selectors for expected error / replay UI.
 // These are intentionally flexible — match any visible error region or retry CTA.
+// NOTE: these mix CSS and Playwright text engines (text=, :has-text), which
+// cannot be comma-joined into a single page.locator() CSS string. They are
+// OR-composed via Locator.or() below instead.
 const ERROR_STATE_SELECTORS = [
   "[data-testid='message-error']",
   "[data-testid='replay-button']",
@@ -31,17 +33,25 @@ const ERROR_STATE_SELECTORS = [
   "text=error",
 ];
 
+const REPLAY_AFFORDANCE_SELECTORS = [
+  "button:has-text('Retry')",
+  "button:has-text('Replay')",
+  "[data-testid='replay-button']",
+];
+
+// Compose a set of selectors (which may mix CSS and Playwright text engines)
+// into a single OR'd locator via Locator.or(), the supported cross-engine union.
+function anyOf(page: Page, selectors: string[]): Locator {
+  return selectors
+    .map((selector) => page.locator(selector))
+    .reduce((acc, locator) => acc.or(locator));
+}
+
 test.describe("DLQ replay affordance", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto("/", { waitUntil: "networkidle" });
   });
-
-  // FLIP: remove test.fail() once DLQ replay affordance lands.
-  test.fail(
-    true,
-    "Permanent failure currently leaves UI in a hanging/loading state with no replay affordance (not yet implemented)",
-  );
 
   test("a permanently-failing message surfaces an error state and a replay affordance", async ({
     page,
@@ -56,7 +66,7 @@ test.describe("DLQ replay affordance", () => {
     await page.locator(SUBMIT_BUTTON).click();
 
     // Wait up to 30 s for ANY error/replay signal to appear
-    const errorLocators = page.locator(ERROR_STATE_SELECTORS.join(", "));
+    const errorLocators = anyOf(page, ERROR_STATE_SELECTORS);
     await expect(errorLocators.first()).toBeVisible({ timeout: 30_000 });
 
     // Additional assertion: the loading spinner must NOT still be visible after
@@ -64,9 +74,7 @@ test.describe("DLQ replay affordance", () => {
     await expect(page.locator(".animate-spin")).toBeHidden({ timeout: 5_000 });
 
     // The replay affordance must be interactive
-    const replayAffordance = page.locator(
-      "button:has-text('Retry'), button:has-text('Replay'), [data-testid='replay-button']",
-    );
+    const replayAffordance = anyOf(page, REPLAY_AFFORDANCE_SELECTORS);
     await expect(replayAffordance.first()).toBeEnabled();
   });
 });

@@ -27,6 +27,12 @@ import { useMountEffect } from "@/hooks/useMountEffect";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
+export type RunError = {
+	runId: string;
+	message: string;
+	recoverable: boolean;
+};
+
 let in_mem_messages: any[] = [];
 
 export type ChatContextType = {
@@ -90,6 +96,10 @@ export type ChatContextType = {
 		lastEventId?: string | null;
 		route?: string;
 	}) => Promise<void>;
+	// Persistent error surface for permanently-failed runs (DLQ replay)
+	runError: RunError | null;
+	setRunError: (error: RunError | null) => void;
+	replayRun: (runId: string) => Promise<void>;
 };
 
 export default function useChat(): ChatContextType {
@@ -120,6 +130,11 @@ export default function useChat(): ChatContextType {
 	});
 
 	const [controller, setController] = useState<AbortController | null>(null);
+
+	// Persistent error state for permanently-failed runs (DLQ replay affordance).
+	// Set by the distributed "error" stream event; cleared on a fresh submit or
+	// once a replay is issued.
+	const [runError, setRunError] = useState<RunError | null>(null);
 
 	const [streamingRate, setStreamingRate] = useState<{
 		count: number;
@@ -210,7 +225,11 @@ export default function useChat(): ChatContextType {
 			case "values":
 				return ["values", event.data];
 			case "error":
-				return ["error", event.data.error];
+				// Forward the full error payload ({ run_id, error, recoverable })
+				// so handleMessages can surface a persistent, replayable error
+				// state. recoveryMode errors are handled upstream in
+				// startManagedStream and never reach this converter.
+				return ["error", event.data];
 			case "aborted":
 				return ["aborted", event.data];
 			case "done":
@@ -559,6 +578,9 @@ export default function useChat(): ChatContextType {
 	const handleSubmit = async (argQuery?: string, images: File[] = []) => {
 		setLoadingMessage("Request submitted...");
 		setLoading(true);
+		// Clear any stale error surface from a previous failed run so it does
+		// not persist into the new run.
+		setRunError(null);
 		setTtft(null);
 		const now = Date.now();
 		submitStartTimeRef.current = now;
@@ -651,7 +673,24 @@ export default function useChat(): ChatContextType {
 		const streamMode = payload[0];
 
 		if (streamMode === "error") {
-			alert("Error on stream: " + payload[1]);
+			// Distributed permanent failure. payload[1] is the error object
+			// ({ run_id, error, recoverable }) forwarded by convertEventToLegacy.
+			// Surface a persistent, replayable error state instead of a transient
+			// alert() so the user can recover without refreshing.
+			const errorPayload = payload[1];
+			const isErrorObject =
+				typeof errorPayload === "object" && errorPayload !== null;
+			const runId = isErrorObject
+				? (errorPayload.run_id ?? metadata?.run_id ?? "")
+				: (metadata?.run_id ?? "");
+			const message = isErrorObject
+				? (errorPayload.error ?? "The request failed permanently.")
+				: String(errorPayload);
+			const recoverable = isErrorObject
+				? errorPayload.recoverable !== false
+				: true;
+
+			setRunError({ runId, message, recoverable });
 			setLoading(false);
 			setController(null);
 			return;
@@ -843,6 +882,50 @@ export default function useChat(): ChatContextType {
 		}
 	};
 
+	/**
+	 * Replays a permanently-failed run via the backend DLQ replay endpoint.
+	 * On success the failed run is re-enqueued under a new run_id; we clear the
+	 * error surface and attach to the new distributed stream so its output
+	 * renders live.
+	 */
+	const replayRun = async (runId: string) => {
+		if (!runId) {
+			toast.error("Cannot replay: missing run id.");
+			return;
+		}
+
+		const threadId = metadata?.thread_id;
+
+		try {
+			const response = await apiClient.post(`/llm/dlq/${runId}/replay`);
+			const data = response?.data ?? {};
+
+			if (data.status === "not_found") {
+				toast.error("Replay failed: run no longer available.");
+				return;
+			}
+
+			// Clear the error surface now that a replay has been accepted.
+			setRunError(null);
+			toast("Replaying…");
+
+			const newRunId = data.new_run_id;
+			if (threadId && newRunId) {
+				setLoading(true);
+				setLoadingMessage("Replaying request...");
+				await attachToDistributedStream({
+					threadId,
+					runId: newRunId,
+				});
+			}
+		} catch (error: any) {
+			console.error("Failed to replay run:", error);
+			toast.error(
+				error?.response?.data?.detail || "Failed to replay the request.",
+			);
+		}
+	};
+
 	// assistant_id is set at submission time in getMetadata() — no effect needed
 
 	// File CRUD operations (wrapped in useCallback for stable references)
@@ -969,5 +1052,8 @@ export default function useChat(): ChatContextType {
 		renameFile,
 		getFilesForSubmission,
 		attachToDistributedStream,
+		runError,
+		setRunError,
+		replayRun,
 	};
 }

@@ -147,6 +147,14 @@ def classify_checkpoint_error(error: Exception) -> Type[CheckpointError]:
         >>> classify_checkpoint_error(psycopg.OperationalError("authentication failed"))
         <class 'PermanentCheckpointError'>
     """
+    # Honor already-classified errors: a RetryableCheckpointError /
+    # PermanentCheckpointError carries its verdict in its type. Re-deriving it
+    # from the (sanitized) message would misclassify it as retryable by default.
+    if isinstance(error, RetryableCheckpointError):
+        return RetryableCheckpointError
+    if isinstance(error, PermanentCheckpointError):
+        return PermanentCheckpointError
+
     # Handle psycopg OperationalError (most connection errors)
     if isinstance(error, psycopg.OperationalError):
         error_msg = str(error).lower()
