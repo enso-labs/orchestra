@@ -296,6 +296,15 @@ function RunErrorBanner({
 						<p className="text-destructive/90 break-words">
 							{runError.message || "An unexpected error occurred."}
 						</p>
+						{runError.runId ? (
+							<p
+								data-testid="correlation-id"
+								data-correlation-id={runError.runId}
+								className="mt-1 font-mono text-xs text-destructive/70 break-all"
+							>
+								Request ID: {runError.runId}
+							</p>
+						) : null}
 					</div>
 				</div>
 				<div className="flex justify-end">

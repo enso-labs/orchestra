@@ -6,9 +6,9 @@ in [`evals/README.md`](README.md). `SKIPPED` does not count toward pass-rate.
 
 | probe | tier | last-run (UTC) | status | source |
 |-------|------|----------------|--------|--------|
-| resiliency-correlation-id | resiliency | 2026-06-13 23:49 | REGRESSION | resiliency track — correlation-id plan (backend/tests/resiliency/test_correlation_id.py) |
-| resiliency-dlq | resiliency | 2026-06-14 04:27 | PASS | resiliency track — DLQ replay plan (backend/tests/resiliency/test_dlq_replay.py) |
+| resiliency-correlation-id | resiliency | 2026-06-14 04:42 | PASS | resiliency track — correlation-id plan (backend/tests/resiliency/test_correlation_id.py) |
+| resiliency-dlq | resiliency | 2026-06-14 04:42 | PASS | resiliency track — DLQ replay plan (backend/tests/resiliency/test_dlq_replay.py) |
 | resiliency-heartbeat-drain | resiliency | 2026-06-13 23:49 | REGRESSION | resiliency track — heartbeat-drain plan (backend/tests/resiliency/test_heartbeat_drain.py) |
-| resiliency-idempotency | resiliency | 2026-06-14 04:27 | PASS | resiliency track — idempotency plan (backend/tests/resiliency/test_idempotency.py) |
+| resiliency-idempotency | resiliency | 2026-06-14 04:41 | PASS | resiliency track — idempotency plan (backend/tests/resiliency/test_idempotency.py) |
 
 <!-- benchmark: pass-rate = PASS / (PASS + REGRESSION + TIMEOUT); SKIPPED excluded -->
