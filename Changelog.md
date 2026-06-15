@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.6.15
+
+### Changed
+  - feat/mermaid-zoom-support — add zoom in/out/reset controls to rendered Mermaid diagrams in markdown and Mermaid file previews.
+
 ## 2026.6.14
 
 ### Fixed

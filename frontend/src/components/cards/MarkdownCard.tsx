@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Check, Copy, ChevronDown, ChevronUp } from "lucide-react";
+import {
+	Check,
+	Copy,
+	ChevronDown,
+	ChevronUp,
+	RotateCcw,
+	ZoomIn,
+	ZoomOut,
+} from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
 	oneDark,
@@ -23,6 +31,13 @@ interface CodeBlockProps {
 	children: React.ReactNode;
 }
 
+const MERMAID_ZOOM_MIN = 0.5;
+const MERMAID_ZOOM_MAX = 2;
+const MERMAID_ZOOM_STEP = 0.25;
+
+const clampMermaidZoom = (zoom: number) =>
+	Math.min(MERMAID_ZOOM_MAX, Math.max(MERMAID_ZOOM_MIN, zoom));
+
 const CodeBlock: React.FC<CodeBlockProps> = ({
 	inline,
 	className,
@@ -32,6 +47,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 	const [copied, setCopied] = useState(false);
 	const [mermaidSvg, setMermaidSvg] = useState<string>("");
 	const [mermaidError, setMermaidError] = useState<string>("");
+	const [mermaidZoom, setMermaidZoom] = useState(1);
 	const mermaidRef = useRef<HTMLDivElement>(null);
 	const { theme } = useTheme();
 	const match = /language-(\w+)/.exec(className || "");
@@ -57,6 +73,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 		}
 	};
 
+	const zoomMermaid = (delta: number) => {
+		setMermaidZoom((currentZoom) => clampMermaidZoom(currentZoom + delta));
+	};
+
 	// Initialize mermaid with theme
 	useEffect(() => {
 		const mermaidTheme = theme === "light" ? "default" : "dark";
@@ -72,7 +92,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 		if (language === "mermaid" && code) {
 			const renderDiagram = async () => {
 				try {
+					setMermaidSvg("");
 					setMermaidError("");
+					setMermaidZoom(1);
 					const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
 					const { svg } = await mermaid.render(id, code);
 					setMermaidSvg(svg);
@@ -86,6 +108,16 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 			renderDiagram();
 		}
 	}, [language, code, theme]);
+
+	useEffect(() => {
+		const svg = mermaidRef.current?.querySelector("svg");
+		if (!svg) return;
+
+		svg.style.width = `${mermaidZoom * 100}%`;
+		svg.style.maxWidth = "none";
+		svg.style.height = "auto";
+		svg.style.flexShrink = "0";
+	}, [mermaidSvg, mermaidZoom]);
 
 	// Check if this is inline code (no newlines) or a code block (has newlines)
 	const isInlineCode = inline || !code.includes("\n");
@@ -121,22 +153,64 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 	if (language === "mermaid") {
 		return (
 			<div className="relative group my-2">
-				<div className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded-t-lg border-b border-border">
+				<div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-1.5 rounded-t-lg border-b border-border">
 					<span className="text-xs text-muted-foreground font-medium">
 						mermaid diagram
 					</span>
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={handleCopy}
-						className="h-6 w-6 p-0 hover:bg-muted"
-					>
-						{copied ? (
-							<Check className="h-3 w-3 text-green-500" />
-						) : (
-							<Copy className="h-3 w-3" />
-						)}
-					</Button>
+					<div className="flex items-center gap-1">
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => zoomMermaid(-MERMAID_ZOOM_STEP)}
+							disabled={!mermaidSvg || mermaidZoom <= MERMAID_ZOOM_MIN}
+							aria-label="Zoom Mermaid diagram out"
+							title="Zoom out"
+							className="h-6 w-6 p-0 hover:bg-muted disabled:opacity-40"
+						>
+							<ZoomOut className="h-3 w-3" />
+						</Button>
+						<span
+							className="min-w-10 text-center text-[10px] tabular-nums text-muted-foreground"
+							aria-label="Mermaid diagram zoom level"
+						>
+							{Math.round(mermaidZoom * 100)}%
+						</span>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => zoomMermaid(MERMAID_ZOOM_STEP)}
+							disabled={!mermaidSvg || mermaidZoom >= MERMAID_ZOOM_MAX}
+							aria-label="Zoom Mermaid diagram in"
+							title="Zoom in"
+							className="h-6 w-6 p-0 hover:bg-muted disabled:opacity-40"
+						>
+							<ZoomIn className="h-3 w-3" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => setMermaidZoom(1)}
+							disabled={!mermaidSvg || mermaidZoom === 1}
+							aria-label="Reset Mermaid diagram zoom"
+							title="Reset zoom"
+							className="h-6 w-6 p-0 hover:bg-muted disabled:opacity-40"
+						>
+							<RotateCcw className="h-3 w-3" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={handleCopy}
+							aria-label="Copy Mermaid source"
+							className="h-6 w-6 p-0 hover:bg-muted"
+						>
+							{copied ? (
+								<Check className="h-3 w-3 text-green-500" />
+							) : (
+								<Copy className="h-3 w-3" />
+							)}
+						</Button>
+					</div>
 				</div>
 				{mermaidError ? (
 					<div className="bg-red-500/10 border border-red-500/20 rounded-b-lg p-4">
@@ -150,7 +224,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 				) : mermaidSvg ? (
 					<div
 						ref={mermaidRef}
-						className="bg-muted/50 rounded-b-lg p-4 flex justify-center items-center overflow-x-auto"
+						className="bg-muted/50 rounded-b-lg p-4 flex justify-center items-start overflow-auto"
+						data-testid="mermaid-diagram"
 						dangerouslySetInnerHTML={{ __html: mermaidSvg }}
 					/>
 				) : (
