@@ -9,6 +9,7 @@ on:
             - "Changelog.md"
             - "infra/**"
             - "decks/**"
+            - "docs/**"
             - ".dockerignore"
             - "README.md"
             - "deployment/**"
