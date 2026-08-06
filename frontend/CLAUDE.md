@@ -15,14 +15,14 @@ npm install
 
 ### 2. Environment Configuration
 
-The frontend uses environment files stored at `~/.env/orchestra/.env.frontend`.
+The frontend uses environment files stored at `~/.config/orchestra/.env.frontend`.
 
 ```bash
 # Ensure the env directory exists
-mkdir -p ~/.env/orchestra
+mkdir -p ~/.config/orchestra
 
 # Copy example env if setting up for first time
-cp .example.env ~/.env/orchestra/.env.frontend
+cp .example.env ~/.config/orchestra/.env.frontend
 ```
 
 ### 3. Start the Application

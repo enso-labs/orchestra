@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.8.6
+
+### Changed
+  - task/950-config-env-path — move the environment file location from `~/.env/orchestra/` to `~/.config/orchestra/`. The primary backend env is now `~/.config/orchestra/.env` (was `.env.backend`); the test and frontend envs move to the same directory but keep distinct names (`.env.test`, `.env.frontend`) so `make test` and the pre-commit hook keep running against the test database rather than the development one. Updates `backend/Makefile`, `frontend/package.json`, `infra/docker-compose.yml`, `.pre-commit-config.yaml`, `backend/.vscode/launch.json`, the four `evals/probes/resiliency-*.sh`, the example notebooks, and the agent docs. Existing checkouts need `mkdir -p ~/.config/orchestra` and to move their env files across.
+
 ## 2026.6.15
 
 ### Changed
