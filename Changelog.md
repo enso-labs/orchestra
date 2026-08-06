@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.8.6
+
+### Fixed
+  - task/953-consolidate-api-deps — fold the optional `api` extra into the backend's default dependencies so a plain `uv sync` produces a runnable API. `fastapi`, `uvicorn`, `slowapi`, `fastapi-cache2`, `fastmcp`, and `python-multipart` move from `[project.optional-dependencies]` into `[project] dependencies`, and `--extra api` is dropped from all six call sites that passed it (`test.yml` x2, `build.yml`, `backend.Dockerfile`, and both `docker-compose.yml` services). This repairs `.github/actions/backend-install.yml` and `.github/workflows/deploy-vm.yml`, which ran `uv sync --frozen --no-cache --no-dev` without the extra and so started `python main.py` against an install with no web framework in it. No documentation changed — plain `uv sync` is what `README.md`, `AGENTS.md`, `backend/README.md`, and `backend/CLAUDE.md` already documented. Trade-off: `infra/backend.Dockerfile`'s `worker-builder` stage deliberately installed without the extra and ran fine that way, so the worker image grows by the 35 packages the extra pulls in (+28 MB, 771 MB → 799 MB measured `--no-dev`).
+
 ## 2026.6.15
 
 ### Changed
