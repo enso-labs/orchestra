@@ -334,12 +334,32 @@ export async function formatMultimodalPayload(
 	return [{ role: "user", content: content }];
 }
 
-export function formatContent(content: any) {
+/**
+ * Extract renderable text from message content.
+ *
+ * Content arrives in two shapes: a plain string (Chat Completions, and the
+ * flattened form the streaming handler stores), or a list of content blocks
+ * (OpenAI Responses API, Anthropic extended thinking). Block lists may lead
+ * with a non-text block — `reasoning`, `thinking`, `tool_use` — and may split
+ * a single answer across several text blocks, so join every text block rather
+ * than reading only the first one.
+ */
+export function formatContent(content: any): string {
 	if (typeof content === "string") {
 		return content;
 	}
 	if (!content) return "";
-	return content[0]?.text;
+	if (Array.isArray(content)) {
+		return content
+			.filter(
+				(block: any) =>
+					(block?.type === "text" || block?.type == null) &&
+					typeof block?.text === "string",
+			)
+			.map((block: any) => block.text)
+			.join("");
+	}
+	return "";
 }
 
 export function isEmpty(str: string) {

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { formatContent } from "@/lib/utils/format";
 
 interface Message {
 	role: "user" | "assistant";
@@ -12,21 +13,6 @@ interface EmbedWidgetProps {
 }
 
 const STORAGE_KEY_PREFIX = "orchestra_embed_thread_";
-
-/** Extract text from AIMessageChunk content (string or content-block array). */
-function extractTextContent(content: unknown): string {
-	if (typeof content === "string") return content;
-	if (Array.isArray(content)) {
-		return content
-			.filter(
-				(b: Record<string, unknown>) =>
-					b?.type === "text" && typeof b?.text === "string",
-			)
-			.map((b: Record<string, unknown>) => b.text)
-			.join("");
-	}
-	return "";
-}
 
 export function EmbedWidget({ agentId, apiBase, token }: EmbedWidgetProps) {
 	const [open, setOpen] = useState(false);
@@ -166,7 +152,7 @@ export function EmbedWidget({ agentId, apiBase, token }: EmbedWidgetProps) {
 						if (eventType === "messages" && Array.isArray(payload)) {
 							const msgDict = payload[0];
 							if (msgDict && msgDict.content !== undefined) {
-								const text = extractTextContent(msgDict.content);
+								const text = formatContent(msgDict.content);
 								if (text) {
 									setMessages((prev) => {
 										const copy = [...prev];

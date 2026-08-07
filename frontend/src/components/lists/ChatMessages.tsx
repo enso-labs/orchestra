@@ -197,6 +197,11 @@ export const Message = memo(
 		}
 
 		const isSubagent = !!message.agent_name;
+		const content = formatContent(message.content);
+
+		// Nothing renderable — e.g. a reasoning-only block list, or an assistant
+		// turn that carried only tool calls. Skip the bubble entirely.
+		if (!content) return null;
 
 		return (
 			<div className="group px-3 md:px-5">
@@ -209,14 +214,12 @@ export const Message = memo(
 						</div>
 					)}
 					<div className="bg-transparent text-foreground-500 px-3 rounded-lg rounded-bl-sm">
-						<MarkdownCard
-							content={formatContent(message.content) || "Invalid message"}
-						/>
+						<MarkdownCard content={content} />
 					</div>
 				</div>
 				<div className="flex justify-start opacity-100 transition-opacity duration-200 mt-1 px-3">
 					<div className="flex gap-1">
-						<CopyTextButton text={formatContent(message.content)} />
+						<CopyTextButton text={content} />
 
 						<div className="flex items-center gap-2">
 							<button className="text-sm text-muted-foreground">
