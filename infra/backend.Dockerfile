@@ -9,19 +9,16 @@ WORKDIR /app
 # Copy only dep files first for caching
 COPY pyproject.toml uv.lock* /app/
 
-# Install core deps (no extras, no dev)
+# Install runtime deps (no dev). Since #953 the API packages are part of the
+# default dependency set, so this single sync serves both the API and worker.
 RUN python -m venv /app/.venv && \
     . /app/.venv/bin/activate && \
     uv sync --frozen --no-cache --no-dev
 
 # =============================================================================
-# Stage 2: API builder — adds api extra + frontend assets
+# Stage 2: API builder — adds frontend assets
 # =============================================================================
 FROM base-builder AS api-builder
-
-# Install API-specific deps
-RUN . /app/.venv/bin/activate && \
-    uv sync --frozen --no-cache --no-dev --extra api
 
 # Copy app code (includes src/public/ with frontend build)
 COPY . /app
@@ -34,7 +31,7 @@ RUN python -m compileall -b -f -q /app && \
       -delete
 
 # =============================================================================
-# Stage 3: Worker builder — core deps only, no API files
+# Stage 3: Worker builder — same deps as the API, no API files
 # =============================================================================
 FROM base-builder AS worker-builder
 

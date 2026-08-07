@@ -14,6 +14,9 @@ dependencies = [
     "cryptography>=46.0.7",
     "daytona>=0.140.0",
     "deepagents>=0.4.11",
+    "fastapi>=0.116.1",
+    "fastapi-cache2>=0.2.2",
+    "fastmcp>=3.2.0",
     "langchain-daytona>=0.0.2",
     "langchain-sandbox>=0.0.3", # TODO: Update to 0.0.6 when langchain-core>=1.0 is released
     "langchain[aws]>=1.2.0",
@@ -42,6 +45,8 @@ dependencies = [
     "psycopg[binary,pool]>=3.2.9",
     "pydantic[email]>=2.11.7",
     "pypdf>=6.12.0",
+    "python-multipart>=0.0.27",
+    "slowapi>=0.1.9",
     "sqlalchemy>=2.0.43",
     "tabulate>=0.9.0",
     "ujson>=5.12.1",
@@ -54,16 +59,7 @@ dependencies = [
     "langgraph-checkpoint>=4.0.0",
     "jinja2>=3.1.6",
     "pyjwt>=2.12.0",
-]
-
-[project.optional-dependencies]
-api = [
-    "fastapi>=0.116.1",
     "uvicorn>=0.35.0",
-    "slowapi>=0.1.9",
-    "fastapi-cache2>=0.2.2",
-    "fastmcp>=3.2.0",
-    "python-multipart>=0.0.27",
 ]
 
 [dependency-groups]
