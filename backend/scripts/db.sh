@@ -17,4 +17,4 @@ else
 fi
 
 # Run the command
-$COMPOSE_COMMAND up postgres pgadmin --remove-orphans --build -d
+$COMPOSE_COMMAND up postgres --remove-orphans --build -d
