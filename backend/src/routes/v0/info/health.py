@@ -1,6 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException
-from src.constants import APP_VERSION
-from src.services.db import get_store, get_checkpoint_db
+from src.constants import (
+    APP_VERSION,
+    DB_SQLA_POOL_MAX_OVERFLOW,
+    DB_SQLA_POOL_SIZE,
+    DB_SQLA_POOL_TIMEOUT,
+)
+from src.services.db import async_engine, get_store, get_checkpoint_db
 from langgraph.store.postgres import AsyncPostgresStore
 from src.utils.logger import logger
 import asyncio
@@ -15,6 +20,31 @@ async def health_check():
         "status": "healthy",
         "message": "Service is running",
         "version": APP_VERSION,
+    }
+
+
+@router.get("/db", name="Database Pool Health Check")
+async def check_db_pool_health():
+    """Report SQLAlchemy connection pool utilisation.
+
+    Pure introspection of the pool object — issues no query, so it still answers
+    when the pool is exhausted. That is the point: pool exhaustion surfaces as a
+    500 on every authenticated route, and this makes it one curl to confirm.
+    """
+    pool = async_engine.pool
+    checked_out = pool.checkedout()
+    capacity = DB_SQLA_POOL_SIZE + DB_SQLA_POOL_MAX_OVERFLOW
+
+    return {
+        "status": "healthy" if checked_out < capacity else "exhausted",
+        "size": pool.size(),
+        "checked_in": pool.checkedin(),
+        "checked_out": checked_out,
+        "overflow": pool.overflow(),
+        "max_size": DB_SQLA_POOL_SIZE,
+        "max_overflow": DB_SQLA_POOL_MAX_OVERFLOW,
+        "capacity": capacity,
+        "timeout": DB_SQLA_POOL_TIMEOUT,
     }
 
 

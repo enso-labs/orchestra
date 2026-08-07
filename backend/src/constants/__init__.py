@@ -39,10 +39,23 @@ def get_db_uri():
 DB_URI = get_db_uri()
 
 # Database Connection Pool Settings
+# NOTE: these configure the psycopg pool used by the LangGraph store (see
+# services/db.py get_store_db). The SQLAlchemy engine has its own DB_SQLA_*
+# settings below — the two pools have different min/max semantics, so keep
+# the names distinct or tuning one will silently retune the other.
 DB_POOL_MIN_SIZE = int(os.getenv("DB_POOL_MIN_SIZE", "5"))
 DB_POOL_MAX_SIZE = int(os.getenv("DB_POOL_MAX_SIZE", "20"))
 DB_POOL_MAX_IDLE_TIME = int(os.getenv("DB_POOL_MAX_IDLE_TIME", "300"))  # 5 minutes
 DB_POOL_MAX_LIFETIME = int(os.getenv("DB_POOL_MAX_LIFETIME", "3600"))  # 1 hour
+
+# SQLAlchemy async engine pool settings (per process — dev runs one uvicorn plus
+# two taskiq workers, each with its own pool, against a single Postgres).
+# pool_timeout is deliberately short: queueing silently for 30s is what turns a
+# burst into a cascade of 500s, because callers keep piling up behind the queue.
+DB_SQLA_POOL_SIZE = int(os.getenv("DB_SQLA_POOL_SIZE", "10"))
+DB_SQLA_POOL_MAX_OVERFLOW = int(os.getenv("DB_SQLA_POOL_MAX_OVERFLOW", "10"))
+DB_SQLA_POOL_TIMEOUT = int(os.getenv("DB_SQLA_POOL_TIMEOUT", "5"))  # seconds
+DB_SQLA_POOL_RECYCLE = int(os.getenv("DB_SQLA_POOL_RECYCLE", "1800"))  # 30 minutes
 
 
 # Checkpoint Database Configuration
