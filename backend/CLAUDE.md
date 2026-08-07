@@ -21,14 +21,14 @@ uv sync
 
 ### 2. Environment Configuration
 
-The backend uses environment files stored at `~/.env/orchestra/.env.backend`.
+The backend uses environment files stored at `~/.config/orchestra/.env`.
 
 ```bash
 # Ensure the env directory exists
-mkdir -p ~/.env/orchestra
+mkdir -p ~/.config/orchestra
 
 # Copy example env if setting up for first time
-cp .example.env ~/.env/orchestra/.env.backend
+cp .example.env ~/.config/orchestra/.env
 ```
 
 ### 3. Start the Application
@@ -41,10 +41,10 @@ make dev
 **With explicit port (use if default port is taken):**
 ```bash
 # Port 8001
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8001 --log-level debug --env-file ~/.env/orchestra/.env.backend
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8001 --log-level debug --env-file ~/.config/orchestra/.env
 
 # Port 8002
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8002 --log-level debug --env-file ~/.env/orchestra/.env.backend
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8002 --log-level debug --env-file ~/.config/orchestra/.env
 ```
 
 **Auto-increment port if default is taken:**
@@ -54,7 +54,7 @@ PORT=8000
 while lsof -i :$PORT >/dev/null 2>&1; do
   PORT=$((PORT + 1))
 done
-uv run uvicorn main:app --reload --host 0.0.0.0 --port $PORT --log-level debug --env-file ~/.env/orchestra/.env.backend
+uv run uvicorn main:app --reload --host 0.0.0.0 --port $PORT --log-level debug --env-file ~/.config/orchestra/.env
 ```
 
 ## Common Commands
@@ -71,7 +71,7 @@ uv run uvicorn main:app --reload --host 0.0.0.0 --port $PORT --log-level debug -
 
 ## Database Migrations
 
-All migration commands use the env file at `~/.env/orchestra/.env.backend`:
+All migration commands use the env file at `~/.config/orchestra/.env`:
 
 ```bash
 # Apply all migrations
