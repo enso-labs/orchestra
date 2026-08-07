@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatMessages } from "./format";
+import { formatContent, formatMessages } from "./format";
 
 describe("formatMessages", () => {
 	describe("Tool Call Normalization", () => {
@@ -847,5 +847,134 @@ describe("formatMessages", () => {
 			expect(result).toHaveLength(1);
 			expect(result[0]).toEqual(messages[0]);
 		});
+	});
+});
+
+describe("formatContent", () => {
+	it("passes plain strings through", () => {
+		expect(formatContent("Hello world")).toBe("Hello world");
+	});
+
+	it("returns an empty string for empty content", () => {
+		expect(formatContent("")).toBe("");
+		expect(formatContent(null)).toBe("");
+		expect(formatContent(undefined)).toBe("");
+	});
+
+	it("never returns undefined for a non-array object", () => {
+		expect(formatContent({ text: "nope" })).toBe("");
+	});
+
+	describe("content-block arrays", () => {
+		// Regression: OpenAI reasoning models route through the Responses API,
+		// which persists a reasoning block ahead of the answer. Reading only
+		// content[0].text yielded undefined and rendered "Invalid message"
+		// whenever a thread was re-hydrated from the sidebar.
+		it("extracts text when a reasoning block comes first", () => {
+			const content = [
+				{ type: "reasoning", id: "rs_123", summary: [] },
+				{ type: "text", text: "The real answer", annotations: [] },
+			];
+
+			expect(formatContent(content)).toBe("The real answer");
+		});
+
+		it("extracts text when an Anthropic thinking block comes first", () => {
+			const content = [
+				{ type: "thinking", thinking: "hmm...", signature: "sig" },
+				{ type: "text", text: "Hi" },
+			];
+
+			expect(formatContent(content)).toBe("Hi");
+		});
+
+		it("joins every text block rather than only the first", () => {
+			const content = [
+				{ type: "text", text: "a" },
+				{ type: "text", text: "b" },
+			];
+
+			expect(formatContent(content)).toBe("ab");
+		});
+
+		it("returns an empty string for reasoning-only content", () => {
+			const content = [{ type: "reasoning", id: "rs_123", summary: [] }];
+
+			expect(formatContent(content)).toBe("");
+		});
+
+		it("returns an empty string for tool_use-only content", () => {
+			const content = [
+				{ type: "tool_use", id: "call_1", name: "search", input: {} },
+			];
+
+			expect(formatContent(content)).toBe("");
+		});
+
+		it("still accepts untyped blocks for backwards compatibility", () => {
+			expect(formatContent([{ text: "legacy" }])).toBe("legacy");
+		});
+
+		it("ignores blocks whose text is not a string", () => {
+			const content = [
+				{ type: "text", text: null },
+				{ type: "text", text: "ok" },
+			];
+
+			expect(formatContent(content)).toBe("ok");
+		});
+	});
+});
+
+describe("formatMessages with Responses API content blocks", () => {
+	it("emits the assistant text message alongside its tool calls", () => {
+		const messages = [
+			{
+				id: "msg-blocks",
+				type: "ai",
+				content: [
+					{ type: "reasoning", id: "rs_1", summary: [] },
+					{ type: "text", text: "Let me look that up.", annotations: [] },
+				],
+				tool_calls: [
+					{ id: "call_1", name: "web_search", args: { query: "aegra" } },
+				],
+			},
+		];
+
+		const result = formatMessages(messages);
+
+		expect(result).toHaveLength(2);
+		expect(result[0].role).toBe("assistant");
+		expect(result[0].type).toBe("assistant");
+		expect(formatContent(result[0].content)).toBe("Let me look that up.");
+		expect(result[1].type).toBe("tool_input");
+		expect(result[1].tool_call_id).toBe("call_1");
+	});
+
+	it("keeps block content on a hydrated assistant message without tool calls", () => {
+		const messages = [
+			{
+				id: "msg-final",
+				type: "ai",
+				content: [
+					{ type: "reasoning", id: "rs_2", summary: [] },
+					{
+						type: "text",
+						text: "Here are the streaming examples.",
+						annotations: [],
+					},
+				],
+				tool_calls: [],
+			},
+		];
+
+		const result = formatMessages(messages);
+
+		expect(result).toHaveLength(1);
+		expect(result[0].role).toBe("assistant");
+		expect(formatContent(result[0].content)).toBe(
+			"Here are the streaming examples.",
+		);
 	});
 });

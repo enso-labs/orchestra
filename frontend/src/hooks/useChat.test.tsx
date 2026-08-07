@@ -38,7 +38,21 @@ vi.mock("@/context/AgentContext", () => ({
 }));
 
 vi.mock("@/lib/utils/format", () => ({
-	formatContent: (content: unknown) => content ?? "",
+	formatContent: (content: unknown) => {
+		if (typeof content === "string") return content;
+		if (!content) return "";
+		if (Array.isArray(content)) {
+			return content
+				.filter(
+					(b: any) =>
+						(b?.type === "text" || b?.type == null) &&
+						typeof b?.text === "string",
+				)
+				.map((b: any) => b.text)
+				.join("");
+		}
+		return "";
+	},
 	formatMessages: (messages: unknown[]) => messages,
 	formatMultimodalPayload: (...args: unknown[]) =>
 		mockFormatMultimodalPayload(...args),
