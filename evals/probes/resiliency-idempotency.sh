@@ -30,7 +30,7 @@ if ! command -v uv &>/dev/null; then
 fi
 
 # --- load backend test env (optional: absent file is silently skipped for CI) ---
-ENV_FILE="${ORCHESTRA_ENV_FILE:-$HOME/.env/orchestra/.env.backend.test}"
+ENV_FILE="${ORCHESTRA_ENV_FILE:-$HOME/.config/orchestra/.env.test}"
 # shellcheck source=/dev/null
 [ -f "$ENV_FILE" ] && { set -a; . "$ENV_FILE"; set +a; }
 
