@@ -54,6 +54,10 @@ import {
 	ScheduleEvent,
 } from "@/lib/entities/schedule";
 import { toast } from "sonner";
+import {
+	isNetworkError,
+	notifyConnectionLost,
+} from "@/lib/utils/connectionToast";
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
 type SortBy = "next_run" | "created" | "name";
@@ -159,7 +163,8 @@ function SchedulesIndexPage() {
 			setShowEditDialog(true);
 		} catch (error) {
 			console.error("Failed to fetch schedule for editing:", error);
-			toast.error("Failed to load schedule for editing");
+			if (isNetworkError(error)) notifyConnectionLost();
+			else toast.error("Failed to load schedule for editing");
 		}
 	};
 
