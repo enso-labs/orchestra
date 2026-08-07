@@ -12,8 +12,8 @@ backend:
     description: This is the REST API for the ./frontend and ./cli clients.
     deployment: https://chat.ruska.ai/docs
     commands:
-        - `make test` Run ALL test cases (uses ENV_FILE=~/.env/orchestra/.env.backend).
-        - `make test ENV_FILE=~/.env/orchestra/.env.backend.test` Run tests with test env.
+        - `make test` Run ALL test cases (uses ENV_FILE=~/.config/orchestra/.env).
+        - `make test ENV_FILE=~/.config/orchestra/.env.test` Run tests with test env.
         - `make format` Format project files with ruff. Use after making changes.
         - `make lint` Lint check with ruff (no auto-fix).
         - `make dev` Run dev server.
@@ -59,7 +59,7 @@ The main way external AI Agents find out information about RUSKA will be from th
 
 ## Build, Test, and Development Commands
 - **Setup**: Run `make setup` from the repo root to install pre-commit hooks.
-- Backend: `cd backend && uv venv && source .venv/bin/activate && uv sync` installs dependencies, `make dev` runs the API with reload, and `make test` executes the suite. Use `ENV_FILE=~/.env/orchestra/.env.backend.test` for the test environment.
+- Backend: `cd backend && uv venv && source .venv/bin/activate && uv sync` installs dependencies, `make dev` runs the API with reload, and `make test` executes the suite. Use `ENV_FILE=~/.config/orchestra/.env.test` for the test environment.
 - Frontend: `cd frontend && npm install`, `npm run dev` for local dev, `npm run build` for production bundles, and `npm run docs` regenerates MkDocs API docs.
 - Infrastructure: the full stack lives in `infra/docker-compose.yml`; `make dev.docker.up` builds and starts it, `make dev.docker.down` stops it.
 
@@ -81,7 +81,7 @@ The main way external AI Agents find out information about RUSKA will be from th
   - `make dev.docker.down` — stop and clean up
   - `make dev.docker.migrate` — run Alembic migrations inside the app container
   - `make dev.docker.test.up` — run the stack against the test database (adds `infra/docker-compose.test.yml`)
-- **Key details**: Source directories are volume-mounted for hot-reload. The app runs `uv sync` and `alembic upgrade head` on startup automatically. Backend env is loaded from `~/.env/orchestra/.env.backend` via the compose `env_file`.
+- **Key details**: Source directories are volume-mounted for hot-reload. The app runs `uv sync` and `alembic upgrade head` on startup automatically. Backend env is loaded from `~/.config/orchestra/.env` via the compose `env_file`.
 
 ## Coding Style & Naming Conventions
 - Run `pre-commit run --all-files`; hooks run backend format/lint/test and frontend prettier/lint/test.
