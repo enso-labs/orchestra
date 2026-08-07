@@ -26,6 +26,7 @@ import {
 	CommandList,
 } from "@/components/ui/command";
 import { useModelVisibility } from "@/hooks/useModelVisibility";
+import SelectReasoningEffort from "@/components/lists/SelectReasoningEffort";
 import { patchDefaults } from "@/lib/services/userSettingsService";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -180,6 +181,7 @@ export default function ChatInput({
 					)}
 				</div>
 				<div className="flex items-center gap-2">
+					<SelectReasoningEffort model={displayModel} models={models} />
 					{displayModel && (
 						<Popover open={modelOpen} onOpenChange={setModelOpen}>
 							<PopoverTrigger asChild>

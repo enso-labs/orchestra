@@ -145,6 +145,7 @@ class LLMService:
                     input=params.input,
                     model=params.model,
                     metadata=params.metadata,
+                    reasoning_effort=params.reasoning_effort,
                 )
                 # Preserve user's stream_mode from the original request
                 assistant_request.stream_mode = params.stream_mode

@@ -34,6 +34,7 @@ from src.constants.llm import ANTHROPIC_PROMPT_CACHE_TTL
 from src.utils.logger import logger
 from src.utils.compacting import compaction_middleware
 from src.utils.format import format_content
+from src.utils.reasoning import reasoning_kwargs
 
 
 @after_model
@@ -185,7 +186,10 @@ async def dynamic_model_selection(request: ModelRequest, handler) -> ModelRespon
 
     logger.info(f"Using {model} due to {reason}(messages={message_count})")
 
-    request.model = init_chat_model(model)
+    # The routed model is re-bound to the agent's tools, so it needs the same
+    # reasoning transport init_graph applies -- otherwise routing to a reasoning
+    # model 400s on the tool bind.
+    request.model = init_chat_model(model, **reasoning_kwargs(model))
     return await handler(request)
 
 

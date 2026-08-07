@@ -135,6 +135,7 @@ class Assistant(BaseModel):
         input: LLMInput,
         model: str = None,
         metadata: "Config" = None,
+        reasoning_effort: str = None,
     ) -> "LLMRequest":
         from src.schemas.entities import Config
         from src.schemas.entities import LLMRequest
@@ -143,6 +144,7 @@ class Assistant(BaseModel):
             metadata = metadata.model_dump()
         return LLMRequest(
             model=model or self.model,
+            reasoning_effort=reasoning_effort,
             tools=self.tools,
             a2a=self.a2a,
             mcp=self.mcp,
@@ -199,6 +201,38 @@ DEFAULT_STREAM_MODES: list[str] = ["messages", "values"]
 class LLMRequest(BaseModel):
     input: LLMInput
     model: Optional[str] = Field(default=None)
+    reasoning_effort: Optional[str] = Field(
+        default=None,
+        description=(
+            "How much internal reasoning the model should spend. Accepted values differ per model -- read them "
+            "from the `reasoning` map on GET /llm/models. Omit to fall back to the caller's saved default, then "
+            "to the provider's own default."
+        ),
+        examples=["low"],
+    )
+
+    @model_validator(mode="after")
+    def validate_reasoning_effort(self):
+        """Reject an effort the selected model cannot honour.
+
+        Only checked when the request names a model: when ``model`` is omitted
+        the server resolves it later from user settings, and an effort that does
+        not survive that resolution is dropped rather than rejected.
+        """
+        if not self.reasoning_effort or not self.model:
+            return self
+
+        from src.utils.reasoning import get_reasoning_options
+
+        options = get_reasoning_options(self.model)
+        if self.reasoning_effort not in options:
+            supported = ", ".join(options) if options else "none"
+            raise ValueError(
+                f"Model '{self.model}' does not support reasoning_effort "
+                f"'{self.reasoning_effort}'. Supported values: {supported}."
+            )
+        return self
+
     system_prompt: Optional[str] = Field(default_factory=get_default_system_prompt, exclude=True)
     instructions: Optional[str] = Field(default="", exclude=True)
     tools: Optional[List[Any]] = Field(default_factory=list)

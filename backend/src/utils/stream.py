@@ -334,6 +334,7 @@ async def stream_generator(
     mcp_sandbox_url: str | None = None,
     mcp_api_key: str | None = None,
     stream_mode: list[str] | None = None,
+    reasoning_effort: str | None = None,
 ):
     """Stream agent responses as Server-Sent Events.
 
@@ -391,6 +392,7 @@ async def stream_generator(
                 service_context=service_context,
                 api_key=api_key,
                 memory=memory_sources,
+                reasoning_effort=reasoning_effort,
             )
             input.messages[-1].model = agent.model
             # Send metadata event with thread_id at the start of the stream
@@ -437,6 +439,7 @@ async def stream_generator(
                             service_context=service_context,
                             api_key=api_key,
                             memory=memory_sources,
+                            reasoning_effort=reasoning_effort,
                         )
                         async for chunk in agent.astream(input, **astream_kwargs):
                             sse_line = _process_and_format_chunk(chunk, agent.model, state)
@@ -470,6 +473,7 @@ async def stream_generator(
                             service_context=service_context,
                             api_key=api_key,
                             memory=memory_sources,
+                            reasoning_effort=reasoning_effort,
                         )
                         async for chunk in agent.astream(input, **astream_kwargs):
                             sse_line = _process_and_format_chunk(chunk, agent.model, state)

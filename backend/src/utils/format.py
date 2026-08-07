@@ -167,9 +167,23 @@ def init_system_prompt(system_prompt: str, config: RunnableConfig, instructions:
 
 
 def format_content(content: str | list[Any]) -> str:
+    """Flatten message content to plain text.
+
+    Block lists are searched for the first block that actually carries text
+    rather than assuming block 0 does: reasoning models on the Responses API
+    emit reasoning/tool blocks that can precede the answer, and taking block 0
+    blindly would yield "" for them (a blank thread title, for instance).
+    """
     if isinstance(content, str):
         return content
-    return content[0].get("text", "")
+    if not isinstance(content, list):
+        return ""
+    for block in content:
+        if isinstance(block, str) and block:
+            return block
+        if isinstance(block, dict) and block.get("text"):
+            return block["text"]
+    return ""
 
 
 def get_tool_call_from_runtime_state(runtime: ToolRuntime) -> dict:

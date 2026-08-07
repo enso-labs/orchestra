@@ -15,6 +15,7 @@ export interface PersistedContextFile {
 
 export interface DefaultsResponse {
 	model: string | null;
+	reasoning_effort: string | null;
 	sandbox: string | null;
 	tools: string[] | null;
 	mcp: Record<string, any> | null;
@@ -41,6 +42,7 @@ export const getSettings = async (): Promise<UserSettingsResponse> => {
 export const patchDefaults = async (
 	data: Partial<{
 		model: string | null;
+		reasoning_effort: string | null;
 		sandbox: string | null;
 		tools: string[] | null;
 		mcp: Record<string, any> | null;

@@ -41,6 +41,9 @@ class UserSettings(BaseEntity):
 
     user_id: str = Field(..., description="ID of the user who owns these settings")
     default_model: Optional[str] = Field(default=None, description="User's default AI model identifier")
+    default_reasoning_effort: Optional[str] = Field(
+        default=None, description="User's default reasoning effort, applied when the model supports one"
+    )
     encrypted_keys: Optional[str] = Field(default=None, description="Fernet-encrypted JSON blob of provider API keys")
     default_sandbox: Optional[str] = Field(default=None, description="User's default sandbox backend type")
     default_tools: Optional[list[str]] = Field(default=None, description="User's default tool selection")
@@ -67,6 +70,7 @@ class DefaultsResponse(BaseModel):
     """Nested defaults sub-object in the API response."""
 
     model: Optional[str] = None
+    reasoning_effort: Optional[str] = None
     sandbox: Optional[str] = None
     tools: Optional[list[str]] = None
     mcp: Optional[dict] = None
@@ -91,6 +95,9 @@ class PatchDefaultsRequest(BaseModel):
     """Request to partially update user default settings."""
 
     model: Optional[str] = Field(default=None, description="Model identifier to set as default, or null to clear")
+    reasoning_effort: Optional[str] = Field(
+        default=None, description="Default reasoning effort to apply, or null to clear"
+    )
     sandbox: Optional[str] = Field(default=None, description="Sandbox type to set as default, or null to clear")
     tools: Optional[list[str]] = Field(default=None, description="Default tool selection, or null to clear")
     mcp: Optional[dict] = Field(default=None, description="Default MCP server config, or null to clear")

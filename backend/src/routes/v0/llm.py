@@ -27,6 +27,7 @@ from src.constants.mock import MockResponse
 from src.constants.examples import Examples
 from src.schemas.entities import LLMRequest
 from src.utils.llm import audio_to_text
+from src.utils.reasoning import get_reasoning_options
 from src.agents import init_config
 from src.services.db import get_store
 from src.contexts.service import ServiceContext
@@ -257,6 +258,7 @@ async def list_models(
 ):
     # Default to system-wide default
     default_model = DEFAULT_CHAT_MODEL
+    default_reasoning_effort = None
 
     # If user is authenticated, check for their preferred default model
     if user:
@@ -265,16 +267,26 @@ async def list_models(
             settings, _ = await settings_repo.get_settings()
             if settings.default_model:
                 default_model = settings.default_model
+            default_reasoning_effort = settings.default_reasoning_effort
         except Exception:
             # Fall back to system default on any error
             pass
+
+    models = get_all_models()
+
+    # Effort values per model, so the client can offer a picker without
+    # hard-coding a matrix that differs for every model. Models Orchestra cannot
+    # pass an effort to are omitted rather than listed with an empty array.
+    reasoning = {model: options for model in models if (options := get_reasoning_options(model))}
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
             "default": default_model,
+            "default_reasoning_effort": default_reasoning_effort,
             "free": get_free_models(),
-            "models": get_all_models(),
+            "models": models,
+            "reasoning": reasoning,
         },
     )
 

@@ -43,6 +43,7 @@ from src.utils.format import init_system_prompt
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities.a2a import A2AServers
 from src.utils.middleware import init_default_middleware
+from src.utils.reasoning import reasoning_kwargs
 from src.tools import default_tools
 
 
@@ -131,6 +132,7 @@ def init_graph(
     backend: CompositeBackend = None,
     api_key: str | None = None,
     memory: list[str] | None = None,
+    reasoning_effort: str | None = None,
 ) -> CompiledStateGraph:
     from langchain.chat_models import init_chat_model
 
@@ -140,6 +142,9 @@ def init_graph(
     kwargs: dict[str, Any] = {"model": model}
     if api_key:
         kwargs["api_key"] = api_key
+    # Reasoning models need transport/effort configuration before tools are
+    # bound -- see src/utils/reasoning.py for why.
+    kwargs.update(reasoning_kwargs(model, reasoning_effort))
     llm = init_chat_model(**kwargs)
 
     deep_agent = create_deep_agent(
@@ -423,6 +428,7 @@ async def construct_agent(
     service_context: ServiceContext = None,
     api_key: str | None = None,
     memory: list[str] | None = None,
+    reasoning_effort: str | None = None,
 ):
     """Build and return an Orchestra agent instance.
 
@@ -431,6 +437,8 @@ async def construct_agent(
             reference files in the StateBackend. When provided, MemoryMiddleware
             is added to the agent's middleware stack so the agent can access
             user memories during execution.
+        reasoning_effort: Optional reasoning effort to request from the model.
+            Silently ignored by models that do not support one.
     """
     try:
         if subagents:
@@ -450,6 +458,7 @@ async def construct_agent(
             backend=backend,
             api_key=api_key,
             memory=memory,
+            reasoning_effort=reasoning_effort,
         )
         return agent
     except Exception as e:
@@ -472,9 +481,11 @@ class Orchestra:
         backend: CompositeBackend = None,
         api_key: str | None = None,
         memory: list[str] | None = None,
+        reasoning_effort: str | None = None,
     ):
         self.tools = tools
         self.model = model
+        self.reasoning_effort = reasoning_effort
         self.system_prompt = system_prompt
         self.context_schema = context_schema
         self.store = store
@@ -492,6 +503,7 @@ class Orchestra:
             backend=backend,
             api_key=api_key,
             memory=memory,
+            reasoning_effort=reasoning_effort,
         )
 
     async def invoke(

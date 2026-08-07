@@ -187,6 +187,7 @@ class UserSettingsRepo(BaseRepo):
     # Mapping: PATCH request key -> entity field name
     _DEFAULTS_FIELD_MAP = {
         "model": "default_model",
+        "reasoning_effort": "default_reasoning_effort",
         "sandbox": "default_sandbox",
         "tools": "default_tools",
         "mcp": "default_mcp",
