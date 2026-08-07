@@ -10,6 +10,12 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ### Changed
   - task/948-consolidate-docs — retire the `wiki` git submodule and consolidate documentation into a plain `docs/` folder. The submodule was never initialized by CI, so every clone left an empty `wiki/` directory that tooling flagged as missing. Vendors the documentation markdown (27 pages) and the 49 screenshots it references into `docs/`, rewriting root-absolute `/img/...` links to page-relative paths so they render on GitHub. Drops the `docs/` entry from `.gitignore` (added by `de842557` in March, when `docs/` was a stale duplicate of `decks/`) so the path can serve as the documentation home. Updates the dangling `README.md` link, the `AGENTS.md` component list, and both issue templates, and adds `docs/**` to `test.yml`'s `paths-ignore` so documentation edits no longer trigger the backend and frontend suites, plus a `workflow_dispatch` trigger so the suite can be re-run manually. The Docusaurus app stays in `mifunedev/wiki`, so the docs.ruska.ai deploy is unchanged.
 
+### Fixed
+  - task/955-db-pool-exhaustion — stop the SQLAlchemy connection pool from exhausting and returning 500 for every authenticated request. `verify_credentials` and the two `get_optional_user*` wrappers took the session as a FastAPI dependency, and dependency teardown runs *after* the path operation function returns — so one pooled connection stayed checked out for the whole request, which for `/llm/invoke` is an entire agent turn and for the SSE path the whole stream. Auth now opens its own short-lived session around the user lookup only. The engine was also created with no pool arguments at all, silently running on SQLAlchemy's defaults (size 5, overflow 10, timeout 30s); it is now configured explicitly via `DB_SQLA_POOL_SIZE`/`DB_SQLA_POOL_MAX_OVERFLOW`/`DB_SQLA_POOL_TIMEOUT`/`DB_SQLA_POOL_RECYCLE` with `pool_pre_ping`. `pool_timeout` drops to 5s deliberately: queueing silently for 30s is what turned one burst into a cascade of 500s. Symptom was an empty model picker — `GET /llm/models` 500s for a signed-in user while the same endpoint returns 200 unauthenticated, because the anonymous path never touches the pool.
+
+### Added
+  - task/955-db-pool-exhaustion — `GET /api/info/health/db` reports SQLAlchemy pool size, checked-in/checked-out counts, overflow, and configured limits. Pure introspection of the pool object, so it still answers while the pool is exhausted.
+
 ## 2026.6.15
 
 ### Changed
