@@ -28,11 +28,11 @@ website:
     description: Our main landing page
     url: https://ruska.ai
     commands: See package.json
-wiki:
-    stack: typescript, react, docusaurus
-    description: Documentation for how to use the application interface of frontend and api of backend.
+docs:
+    stack: markdown
+    description: User and API documentation for the frontend interface and backend API. Plain markdown in this repo — edit it in the same PR as the change it documents.
     url: https://docs.ruska.ai
-    commands: See package.json
+    note: The published site is built by the Docusaurus app in the separate `mifunedev/wiki` repo, which keeps its own copy of this markdown. Until that repo is retired, docs changes that must reach docs.ruska.ai have to be applied there too.
 cli:
     stack: typescript, react-ink
     description: New server-side client we are working on for perform actions against the API
@@ -56,6 +56,7 @@ The main way external AI Agents find out information about RUSKA will be from th
 - `backend/src` contains the FastAPI stack, with domain logic split into `controllers`, `routes`, `services`, and `repos`, plus shared helpers in `common` and `utils`.
 - Database assets live in `backend/migrations` and `backend/seeds`; reusable automation sits under `backend/scripts`.
 - `frontend/src` hosts the Vite/React client (`components`, `pages`, `routes`, `tests`), while `decks/`, `deployment/`, and `infra/` hold reference material and ops tooling.
+- `docs/` holds the user and API documentation as plain Markdown, with screenshots under `docs/img/`. See `docs/README.md` for the index and its relationship to the published docs.ruska.ai site.
 
 ## Build, Test, and Development Commands
 - **Setup**: Run `make setup` from the repo root to install pre-commit hooks.

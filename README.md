@@ -52,7 +52,8 @@ Self-host for free or let us deploy it for you. Your agents, your data, your inf
 
 This project includes tools for running shell commands and Docker container operations. For detailed information, please refer to the following documentation:
 
--   [Tools Documentation](./wiki/docs/tools/tools.md)
+-   [Documentation](./docs/README.md) — full user docs, also published at [docs.ruska.ai](https://docs.ruska.ai)
+-   [Tools Documentation](./docs/tools/tools.md)
 -   [Docker Deployment (GHCR / Docker Compose)](#-docker-deployment-ghcr--docker-compose)
 
 ## 🐳 Docker Deployment (GHCR)

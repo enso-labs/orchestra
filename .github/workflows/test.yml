@@ -9,6 +9,7 @@ on:
             - "Changelog.md"
             - "infra/**"
             - "decks/**"
+            - "docs/**"
             - ".dockerignore"
             - "README.md"
             - "deployment/**"
@@ -16,6 +17,10 @@ on:
             - "openspec/**"
             - "cli/**"
             - "website/**"
+    # Allow a manual re-run. Without this the workflow can only be started by a
+    # push that touches a non-ignored path, so a run that fails to acquire a
+    # runner cannot be retried without inventing a code change.
+    workflow_dispatch:
 jobs:
     ###############################################################
     ## Test Frontend
@@ -169,6 +174,12 @@ jobs:
     #       stack bring-up in CI is reliable and all specs pass.
     ###############################################################
     test-e2e:
+        # Manual-only. This job is the workflow's critical path (~8m50s versus
+        # ~2m for test-backend and test-frontend combined), and it was already
+        # non-blocking, so running it on every push cost wall-clock without
+        # gating anything. Trigger it from the Actions tab ("Run workflow")
+        # when a change warrants full-stack coverage.
+        if: github.event_name == 'workflow_dispatch'
         runs-on: ubuntu-latest
         environment: Test
         # Non-blocking: failures here do not fail required checks.
