@@ -30,6 +30,10 @@ from src.constants import (
     DB_POOL_MAX_LIFETIME,
     DB_POOL_MAX_SIZE,
     DB_POOL_MIN_SIZE,
+    DB_SQLA_POOL_MAX_OVERFLOW,
+    DB_SQLA_POOL_RECYCLE,
+    DB_SQLA_POOL_SIZE,
+    DB_SQLA_POOL_TIMEOUT,
     DB_URI,
     DB_URI_SESSION,
 )
@@ -45,6 +49,11 @@ ASYNC_DB_URI = get_asyncpg_url(DB_URI)
 async_engine = create_async_engine(
     ASYNC_DB_URI,
     connect_args=get_asyncpg_connect_args(DB_URI),
+    pool_size=DB_SQLA_POOL_SIZE,
+    max_overflow=DB_SQLA_POOL_MAX_OVERFLOW,
+    pool_timeout=DB_SQLA_POOL_TIMEOUT,
+    pool_recycle=DB_SQLA_POOL_RECYCLE,
+    pool_pre_ping=True,
 )
 AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=async_engine)
 

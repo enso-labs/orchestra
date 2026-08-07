@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.8.6
+
+### Fixed
+  - task/955-db-pool-exhaustion — stop the SQLAlchemy connection pool from exhausting and returning 500 for every authenticated request. `verify_credentials` and the two `get_optional_user*` wrappers took the session as a FastAPI dependency, and dependency teardown runs *after* the path operation function returns — so one pooled connection stayed checked out for the whole request, which for `/llm/invoke` is an entire agent turn and for the SSE path the whole stream. Auth now opens its own short-lived session around the user lookup only. The engine was also created with no pool arguments at all, silently running on SQLAlchemy's defaults (size 5, overflow 10, timeout 30s); it is now configured explicitly via `DB_SQLA_POOL_SIZE`/`DB_SQLA_POOL_MAX_OVERFLOW`/`DB_SQLA_POOL_TIMEOUT`/`DB_SQLA_POOL_RECYCLE` with `pool_pre_ping`. `pool_timeout` drops to 5s deliberately: queueing silently for 30s is what turned one burst into a cascade of 500s. Symptom was an empty model picker — `GET /llm/models` 500s for a signed-in user while the same endpoint returns 200 unauthenticated, because the anonymous path never touches the pool.
+
+### Added
+  - task/955-db-pool-exhaustion — `GET /api/info/health/db` reports SQLAlchemy pool size, checked-in/checked-out counts, overflow, and configured limits. Pure introspection of the pool object, so it still answers while the pool is exhausted.
+
 ## 2026.6.15
 
 ### Changed
