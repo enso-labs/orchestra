@@ -27,7 +27,7 @@ async def test_llm_invoke_uses_resolved_context_files():
         patch("src.controllers.llm.init_config", return_value={"configurable": {}, "metadata": {}}),
         patch.object(controller.service_context.llm_service, "assistant", AsyncMock(return_value=params)),
         patch.object(
-            controller, "_resolve_user_settings", AsyncMock(return_value=("openai:gpt-4o", None, None, None, None))
+            controller, "_resolve_user_settings", AsyncMock(return_value=("openai:gpt-4o", None, None, None, None, None))
         ),
         patch(
             "src.controllers.llm.prepare_memory_files",

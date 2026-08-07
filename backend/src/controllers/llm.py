@@ -68,15 +68,20 @@ class LLMController:
         )
         logger.info(f"checkpoint: {ujson.dumps(configurable)}")
 
-    async def _resolve_user_settings(self, model: str) -> tuple[str, str | None, str | None, str | None, str | None]:
-        """Resolve user default model, API key, sandbox preference, MCP URL, and MCP API key.
+    async def _resolve_user_settings(
+        self, model: str, reasoning_effort: str | None = None
+    ) -> tuple[str, str | None, str | None, str | None, str | None, str | None]:
+        """Resolve user defaults for the run.
 
-        Returns (model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key).
+        Returns (model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key,
+        reasoning_effort). An explicit per-request ``reasoning_effort`` wins over
+        the saved default; both are validated against the resolved model further
+        down in ``reasoning_kwargs()``.
         """
         if not self.user_id:
             if not model:
                 model = DEFAULT_CHAT_MODEL
-            return model, None, None, None, None
+            return model, None, None, None, None, reasoning_effort
 
         settings_repo = UserSettingsRepo(self.user_id, self.store)
         settings = await settings_repo._get_or_create()
@@ -87,15 +92,18 @@ class LLMController:
         if not model:
             model = DEFAULT_CHAT_MODEL
 
+        if not reasoning_effort:
+            reasoning_effort = getattr(settings, "default_reasoning_effort", None)
+
         default_sandbox = getattr(settings, "default_sandbox", None)
         mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
         mcp_api_key = user_keys.get("MCP_SANDBOX_API_KEY") if user_keys else None
 
         if not model:
-            return model, None, default_sandbox, mcp_sandbox_url, mcp_api_key
+            return model, None, default_sandbox, mcp_sandbox_url, mcp_api_key, reasoning_effort
 
         api_key = resolve_api_key(model, user_keys if user_keys else None)
-        return model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key
+        return model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key, reasoning_effort
 
     async def llm_invoke(self, params: LLMRequest):
         """Invoke the agent synchronously and return the final response.
@@ -112,10 +120,15 @@ class LLMController:
             config = init_config(params, user_id=self.user_id)
             params = await self.service_context.llm_service.assistant(params)
 
-            # Resolve user-configured API key, default model, sandbox, MCP URL, and MCP API key
-            params.model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await self._resolve_user_settings(
-                params.model
-            )
+            # Resolve user-configured API key, default model, sandbox, MCP URL, MCP API key, reasoning effort
+            (
+                params.model,
+                api_key,
+                default_sandbox,
+                mcp_sandbox_url,
+                mcp_api_key,
+                reasoning_effort,
+            ) = await self._resolve_user_settings(params.model, params.reasoning_effort)
 
             # Load user memories into files_map for MemoryMiddleware
             memory_files, _memory_sources = await prepare_memory_files(
@@ -150,6 +163,7 @@ class LLMController:
                     service_context=self.service_context,
                     api_key=api_key,
                     memory=memory_sources,
+                    reasoning_effort=reasoning_effort,
                 )
                 response = await agent.invoke(
                     params.input,
@@ -179,6 +193,7 @@ class LLMController:
                             service_context=self.service_context,
                             api_key=api_key,
                             memory=memory_sources,
+                            reasoning_effort=reasoning_effort,
                         )
                         response = await agent.invoke(
                             params.input,
@@ -213,6 +228,7 @@ class LLMController:
                             service_context=self.service_context,
                             api_key=api_key,
                             memory=memory_sources,
+                            reasoning_effort=reasoning_effort,
                         )
                         response = await agent.invoke(
                             params.input,
@@ -238,10 +254,15 @@ class LLMController:
     async def llm_stream(self, params: LLMRequest):
         assistant = await self.service_context.llm_service.assistant(params)
 
-        # Resolve user-configured API key, default model, sandbox, MCP URL, and MCP API key
-        assistant.model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await self._resolve_user_settings(
-            assistant.model
-        )
+        # Resolve user-configured API key, default model, sandbox, MCP URL, MCP API key, reasoning effort
+        (
+            assistant.model,
+            api_key,
+            default_sandbox,
+            mcp_sandbox_url,
+            mcp_api_key,
+            reasoning_effort,
+        ) = await self._resolve_user_settings(assistant.model, assistant.reasoning_effort)
 
         return stream_generator(
             input=assistant.input,
@@ -257,6 +278,7 @@ class LLMController:
             mcp_sandbox_url=mcp_sandbox_url,
             mcp_api_key=mcp_api_key,
             stream_mode=assistant.resolved_stream_mode,
+            reasoning_effort=reasoning_effort,
         )
 
     async def llm_task(self, job: ScheduleCreate):

@@ -19,6 +19,14 @@ export interface ModelsResponse {
 	default: string;
 	free: string[];
 	models: string[];
+	/**
+	 * Reasoning effort values keyed by model id, for the models that accept one.
+	 * Values differ per model, so never hard-code them — a model absent from
+	 * this map takes no effort and must not be offered a picker.
+	 */
+	reasoning?: Record<string, string[]>;
+	/** The caller's saved default effort, applied when a request omits one. */
+	default_reasoning_effort?: string | null;
 }
 
 export const listModels = async () => {

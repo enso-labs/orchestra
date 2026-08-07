@@ -16,10 +16,17 @@ from src.constants.llm import DEFAULT_CHAT_MODEL
 class FakeSettings:
     """Minimal stand-in for user settings."""
 
-    def __init__(self, default_model=None, default_sandbox=None, default_mcp_sandbox_url=None):
+    def __init__(
+        self,
+        default_model=None,
+        default_sandbox=None,
+        default_mcp_sandbox_url=None,
+        default_reasoning_effort=None,
+    ):
         self.default_model = default_model
         self.default_sandbox = default_sandbox
         self.default_mcp_sandbox_url = default_mcp_sandbox_url
+        self.default_reasoning_effort = default_reasoning_effort
 
 
 @pytest.fixture
@@ -58,6 +65,7 @@ class TestResolveUserSettings:
                     default_sandbox,
                     mcp_sandbox_url,
                     mcp_api_key,
+                    reasoning_effort,
                 ) = await controller._resolve_user_settings("openai:gpt-4o")
 
         assert model == "openai:gpt-4o"
@@ -72,7 +80,7 @@ class TestResolveUserSettings:
             instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model="anthropic:claude-sonnet-4"))
             instance._decrypt_keys = MagicMock(return_value={})
 
-            model, _, _, _, _ = await controller._resolve_user_settings("")
+            model, *_ = await controller._resolve_user_settings("")
 
         assert model == "anthropic:claude-sonnet-4"
 
@@ -86,7 +94,7 @@ class TestResolveUserSettings:
             instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model=None))
             instance._decrypt_keys = MagicMock(return_value={})
 
-            model, _, _, _, _ = await controller._resolve_user_settings("")
+            model, *_ = await controller._resolve_user_settings("")
 
         assert model == DEFAULT_CHAT_MODEL
 
@@ -102,7 +110,7 @@ class TestResolveUserSettings:
             )
             instance._decrypt_keys = MagicMock(return_value={})
 
-            model, _, default_sandbox, _, _ = await controller._resolve_user_settings("openai:gpt-4o")
+            model, _, default_sandbox, *_ = await controller._resolve_user_settings("openai:gpt-4o")
 
         assert model == "openai:gpt-4o"
         assert default_sandbox == "daytona"
@@ -112,7 +120,14 @@ class TestResolveUserSettings:
         """Unauthenticated users (no user_id) should get DEFAULT_CHAT_MODEL."""
         controller = LLMController(user_id=None, store=mock_store, config=mock_config)
 
-        model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await controller._resolve_user_settings("")
+        (
+            model,
+            api_key,
+            default_sandbox,
+            mcp_sandbox_url,
+            mcp_api_key,
+            reasoning_effort,
+        ) = await controller._resolve_user_settings("")
 
         assert model == DEFAULT_CHAT_MODEL
         assert api_key is None
@@ -125,9 +140,14 @@ class TestResolveUserSettings:
         """Unauthenticated users with explicit model should keep it."""
         controller = LLMController(user_id=None, store=mock_store, config=mock_config)
 
-        model, api_key, default_sandbox, mcp_sandbox_url, mcp_api_key = await controller._resolve_user_settings(
-            "openai:gpt-4o"
-        )
+        (
+            model,
+            api_key,
+            default_sandbox,
+            mcp_sandbox_url,
+            mcp_api_key,
+            reasoning_effort,
+        ) = await controller._resolve_user_settings("openai:gpt-4o")
 
         assert model == "openai:gpt-4o"
         assert api_key is None
@@ -170,3 +190,59 @@ class TestLLMRequestModelDefault:
         }
         request = LLMRequest(**payload)
         assert request.model == ""
+
+
+class TestResolveReasoningEffort:
+    """Reasoning-effort precedence: explicit request > saved default > none (#961)."""
+
+    @pytest.mark.asyncio
+    async def test_saved_default_is_applied_when_request_omits_one(self, mock_store, mock_config):
+        controller = LLMController(user_id="user-1", store=mock_store, config=mock_config)
+
+        with patch("src.controllers.llm.UserSettingsRepo") as MockRepo:
+            instance = MockRepo.return_value
+            instance._get_or_create = AsyncMock(
+                return_value=FakeSettings(default_model="openai:gpt-5.6-luna", default_reasoning_effort="high")
+            )
+            instance._decrypt_keys = MagicMock(return_value={})
+
+            *_, reasoning_effort = await controller._resolve_user_settings("openai:gpt-5.6-luna")
+
+        assert reasoning_effort == "high"
+
+    @pytest.mark.asyncio
+    async def test_explicit_request_effort_beats_saved_default(self, mock_store, mock_config):
+        controller = LLMController(user_id="user-1", store=mock_store, config=mock_config)
+
+        with patch("src.controllers.llm.UserSettingsRepo") as MockRepo:
+            instance = MockRepo.return_value
+            instance._get_or_create = AsyncMock(
+                return_value=FakeSettings(default_model="openai:gpt-5.6-luna", default_reasoning_effort="high")
+            )
+            instance._decrypt_keys = MagicMock(return_value={})
+
+            *_, reasoning_effort = await controller._resolve_user_settings("openai:gpt-5.6-luna", "low")
+
+        assert reasoning_effort == "low"
+
+    @pytest.mark.asyncio
+    async def test_no_saved_default_leaves_effort_unset(self, mock_store, mock_config):
+        controller = LLMController(user_id="user-1", store=mock_store, config=mock_config)
+
+        with patch("src.controllers.llm.UserSettingsRepo") as MockRepo:
+            instance = MockRepo.return_value
+            instance._get_or_create = AsyncMock(return_value=FakeSettings(default_model="openai:gpt-5.6-luna"))
+            instance._decrypt_keys = MagicMock(return_value={})
+
+            *_, reasoning_effort = await controller._resolve_user_settings("openai:gpt-5.6-luna")
+
+        assert reasoning_effort is None
+
+    @pytest.mark.asyncio
+    async def test_unauthenticated_request_effort_is_preserved(self, mock_store, mock_config):
+        """No settings to read, but an explicit effort must still reach the model."""
+        controller = LLMController(user_id=None, store=mock_store, config=mock_config)
+
+        *_, reasoning_effort = await controller._resolve_user_settings("openai:gpt-5.6-luna", "max")
+
+        assert reasoning_effort == "max"

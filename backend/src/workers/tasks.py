@@ -567,11 +567,14 @@ async def _execute_agent_stream(
     api_key = None
     default_sandbox = None
     mcp_api_key = None
+    reasoning_effort = params.reasoning_effort
     if user_id:
         settings_repo = UserSettingsRepo(user_id, service_context.store)
         settings = await settings_repo._get_or_create()
         user_keys = settings_repo._decrypt_keys(settings)
         default_sandbox = getattr(settings, "default_sandbox", None)
+        if not reasoning_effort:
+            reasoning_effort = getattr(settings, "default_reasoning_effort", None)
         mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
         mcp_api_key = user_keys.get("MCP_SANDBOX_API_KEY") if user_keys else None
         if not params.model and settings.default_model:
@@ -619,6 +622,7 @@ async def _execute_agent_stream(
         backend=backend,
         memory=memory_sources,
         api_key=api_key,
+        reasoning_effort=reasoning_effort,
     )
     params.input.messages[-1].model = agent.model
 
@@ -708,6 +712,7 @@ async def _execute_agent_stream(
                     backend=fallback_backend,
                     memory=memory_sources,
                     api_key=api_key,
+                    reasoning_effort=reasoning_effort,
                 )
                 await _stream_chunks_to_redis(
                     agent=agent,
@@ -763,6 +768,7 @@ async def _execute_agent_stream(
                     backend=fallback_backend,
                     memory=memory_sources,
                     api_key=api_key,
+                    reasoning_effort=reasoning_effort,
                 )
                 await _stream_chunks_to_redis(
                     agent=agent,

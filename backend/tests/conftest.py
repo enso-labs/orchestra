@@ -222,6 +222,35 @@ async def mock_external_services():
             )
         )
 
+        # Mock the OpenAI Responses API. Reasoning models are routed here rather
+        # than to chat/completions -- see src/utils/reasoning.py.
+        respx.post(url__regex=r"^https://api\.openai\.com/v1/responses.*").mock(
+            return_value=respx.MockResponse(
+                status_code=200,
+                json={
+                    "id": "resp-mock",
+                    "object": "response",
+                    "created_at": 1234567890,
+                    "model": "gpt-5-mock",
+                    "status": "completed",
+                    "output": [
+                        {
+                            "id": "msg-mock",
+                            "type": "message",
+                            "role": "assistant",
+                            "status": "completed",
+                            "content": [{"type": "output_text", "text": "Mock response", "annotations": []}],
+                        }
+                    ],
+                    "usage": {
+                        "input_tokens": 10,
+                        "output_tokens": 20,
+                        "total_tokens": 30,
+                    },
+                },
+            )
+        )
+
         # Mock OpenAI Embeddings API endpoints
         respx.post(url__regex=r"^https://api\.openai\.com/v1/embeddings.*").mock(
             return_value=respx.MockResponse(

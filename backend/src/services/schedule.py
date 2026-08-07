@@ -123,6 +123,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
                 checkpointer=checkpointer,
                 service_context=service_context,
                 memory=memory_sources,
+                reasoning_effort=params.reasoning_effort,
             )
             params.input.messages[-1].model = agent.model
             # Avoid isinstance checks with subscripted generics—use duck typing or explicit conversion

@@ -12,8 +12,9 @@ and Azure.
 
 ## Overview
 
--   **Defaults**: pick the model, sandbox, tools, MCP servers, A2A agents, sub-agents,
-    model visibility, timezone, and MCP sandbox URL applied to new conversations
+-   **Defaults**: pick the model, reasoning effort, sandbox, tools, MCP servers, A2A
+    agents, sub-agents, model visibility, timezone, and MCP sandbox URL applied to new
+    conversations
 -   **Provider keys**: store your own API keys (OpenAI, Anthropic, Groq, xAI, …) so
     requests use your quota; keys are write-only — only their presence/status is returned
 -   **OAuth sign-in**: authenticate with GitHub, Google, or Azure in addition to
@@ -37,8 +38,48 @@ curl -X 'PATCH' 'https://chat.ruska.ai/api/settings/default' \
   -d '{ "model": "claude-opus-4-8", "timezone": "America/Denver" }'
 ```
 
-Configurable defaults include `model`, `sandbox`, `tools`, `mcp`, `a2a`, `subagents`,
-`model_visibility`, `files`, `timezone`, `mcp_sandbox_url`, and `onboarding_completed`.
+Configurable defaults include `model`, `reasoning_effort`, `sandbox`, `tools`, `mcp`,
+`a2a`, `subagents`, `model_visibility`, `files`, `timezone`, `mcp_sandbox_url`, and
+`onboarding_completed`.
+
+### Reasoning effort
+
+Reasoning models let you trade latency and cost against how much the model thinks before
+answering. The accepted values are **model-specific**, so read them from the `reasoning`
+map on `GET /api/llm/models` rather than assuming a fixed list:
+
+```bash
+curl -X 'GET' 'https://chat.ruska.ai/api/llm/models' \
+  -H 'Authorization: Bearer <token>'
+```
+
+```json
+{
+  "default": "openai:gpt-5.6-luna",
+  "default_reasoning_effort": null,
+  "reasoning": {
+    "openai:gpt-5.6-luna": ["none", "low", "medium", "high", "xhigh", "max"],
+    "openai:o3": ["low", "medium", "high"]
+  }
+}
+```
+
+A model absent from `reasoning` does not take an effort. Set a default that applies to
+every new conversation:
+
+```bash
+curl -X 'PATCH' 'https://chat.ruska.ai/api/settings/default' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{ "reasoning_effort": "high" }'
+```
+
+Or override it for a single call — `POST /api/llm/invoke` and `POST /api/llm/stream`
+both accept `reasoning_effort`, which takes precedence over the saved default. An effort
+the named model does not support is rejected with `422`. A *saved* default that a later
+model does not support is dropped rather than rejected, so switching models never breaks
+your chats. In the chat input, the effort picker appears beside the model badge only for
+models that accept one.
 
 ## Provider Keys
 

@@ -26,6 +26,7 @@ def _build_response(settings: UserSettings, statuses: list[ProviderKeyStatus]) -
     return UserSettingsResponse(
         defaults=DefaultsResponse(
             model=settings.default_model,
+            reasoning_effort=settings.default_reasoning_effort,
             sandbox=settings.default_sandbox,
             tools=settings.default_tools,
             mcp=settings.default_mcp,
