@@ -112,7 +112,7 @@ function QueueItem({
 				<Button
 					variant="ghost"
 					size="icon"
-					className="h-8 w-8 text-destructive hover:text-destructive"
+					className="h-8 w-8 text-destructive-accent hover:text-destructive-accent"
 					onClick={() => onRemove(item.id)}
 					title="Remove"
 				>

@@ -97,7 +97,7 @@ export function ToolTestPanel({
 									>
 										{name}
 										{field.required && (
-											<span className="text-destructive ml-0.5">*</span>
+											<span className="text-destructive-accent ml-0.5">*</span>
 										)}
 									</Label>
 									<span className="text-[10px] text-muted-foreground font-mono opacity-70">
@@ -125,12 +125,15 @@ export function ToolTestPanel({
 					<div
 						className={`
 						rounded-md border font-mono text-xs overflow-auto max-h-[400px] shadow-sm
-						${error ? "bg-destructive/5 border-destructive/20 text-destructive p-3" : "bg-card text-foreground"}
+						${error ? "bg-destructive/5 border-destructive-accent/70 text-foreground p-3" : "bg-card text-foreground"}
 					`}
 					>
 						{error ? (
 							<div className="flex items-start gap-2">
-								<AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+								<AlertTriangle
+									aria-hidden="true"
+									className="h-4 w-4 flex-shrink-0 mt-0.5 text-destructive-accent"
+								/>
 								<pre className="whitespace-pre-wrap">{error}</pre>
 							</div>
 						) : typeof result === "object" && result !== null ? (

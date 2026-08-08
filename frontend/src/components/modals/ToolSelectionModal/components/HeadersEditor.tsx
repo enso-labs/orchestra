@@ -95,7 +95,7 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
 							variant="ghost"
 							size="icon"
 							onClick={() => removeHeader(key)}
-							className="h-9 w-9 text-muted-foreground hover:text-destructive"
+							className="h-9 w-9 text-muted-foreground hover:text-destructive-accent"
 						>
 							<X className="h-4 w-4" />
 						</Button>

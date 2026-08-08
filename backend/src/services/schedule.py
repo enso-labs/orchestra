@@ -73,7 +73,7 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     # In-process mode: execute directly
     from src.schemas.entities import LLMRequest
     from src.agents import construct_agent, Orchestra, init_config
-    from src.services.db import get_checkpoint_db, get_store_db
+    from src.services.db import RunScopedStore, get_checkpoint_db, get_shared_store
     from src.services.context_files import resolve_context_files, select_memory_sources
     from src.contexts.service import ServiceContext
     from src.agents import prepare_memory_files
@@ -91,10 +91,12 @@ async def scheduled_llm_invoke(task_dict: dict, user_id: str, title: str = None)
     files_map = config["metadata"].get("files", {})
     todos_list = config["metadata"].get("todos", [])
 
-    async with (
-        get_store_db() as store,
-        get_checkpoint_db() as checkpointer,
-    ):
+    # Process-level singleton (#957). This job runs on the API's event loop -- the
+    # scheduler is an AsyncIOScheduler started in the FastAPI lifespan -- so it shares
+    # the store the app already holds instead of opening a second pool. Wrapped so
+    # this run's `fields` assignment below stays local to it. Never `async with` it.
+    store = RunScopedStore(await get_shared_store())
+    async with get_checkpoint_db() as checkpointer:
         try:
             service_context = ServiceContext(user_id=user_id, store=store, config=config, checkpointer=checkpointer)
             params = await service_context.llm_service.assistant(params)
@@ -181,7 +183,7 @@ async def scheduled_prompt_distillation():
     This must be a module-level function (not a method) so APScheduler can pickle it.
     All errors are caught per-agent so one failure does not crash the scheduler.
     """
-    from src.services.db import get_store_db
+    from src.services.db import RunScopedStore, get_shared_store
     from src.services.prompt.optimize import PromptOptimizer
     from src.constants.llm import DEFAULT_CHAT_MODEL
     from src.utils.format import get_time
@@ -193,83 +195,86 @@ async def scheduled_prompt_distillation():
     errors = 0
 
     try:
-        async with get_store_db() as store:
-            # Discover trajectory namespaces: (user_id, "trajectories", assistant_id)
-            trajectory_namespaces: list[tuple[str, ...]] = []
-            offset = 0
-            while True:
-                batch = await store.alist_namespaces(max_depth=3, limit=100, offset=offset)
-                for ns in batch:
-                    if len(ns) == 3 and ns[1] == "trajectories":
-                        trajectory_namespaces.append(ns)
-                if len(batch) < 100:
-                    break
-                offset += 100
+        # Process-level singleton (#957) -- this job runs on the API's event loop, so
+        # it shares the app's store rather than opening a second pool. Wrapped for
+        # `fields` isolation; never `async with` it, we do not own its lifecycle.
+        store = RunScopedStore(await get_shared_store())
+        # Discover trajectory namespaces: (user_id, "trajectories", assistant_id)
+        trajectory_namespaces: list[tuple[str, ...]] = []
+        offset = 0
+        while True:
+            batch = await store.alist_namespaces(max_depth=3, limit=100, offset=offset)
+            for ns in batch:
+                if len(ns) == 3 and ns[1] == "trajectories":
+                    trajectory_namespaces.append(ns)
+            if len(batch) < 100:
+                break
+            offset += 100
 
-            if not trajectory_namespaces:
-                logger.info("prompt_distillation_no_trajectories")
-                return
+        if not trajectory_namespaces:
+            logger.info("prompt_distillation_no_trajectories")
+            return
 
-            optimizer = PromptOptimizer(model=DEFAULT_CHAT_MODEL)
+        optimizer = PromptOptimizer(model=DEFAULT_CHAT_MODEL)
 
-            for ns in trajectory_namespaces:
-                user_id, _, assistant_id = ns
-                try:
-                    # Count current trajectories
-                    items = await store.asearch(ns, limit=100)
-                    current_count = len(items)
-                    if current_count == 0:
-                        skipped += 1
-                        continue
+        for ns in trajectory_namespaces:
+            user_id, _, assistant_id = ns
+            try:
+                # Count current trajectories
+                items = await store.asearch(ns, limit=100)
+                current_count = len(items)
+                if current_count == 0:
+                    skipped += 1
+                    continue
 
-                    # Check if trajectory count has changed since last distillation
-                    meta_ns = ("system", "distillation_meta")
-                    meta_key = f"{user_id}:{assistant_id}"
-                    meta_item = await store.aget(meta_ns, meta_key)
-                    last_count = 0
-                    if meta_item and meta_item.value:
-                        last_count = meta_item.value.get("last_count", 0)
+                # Check if trajectory count has changed since last distillation
+                meta_ns = ("system", "distillation_meta")
+                meta_key = f"{user_id}:{assistant_id}"
+                meta_item = await store.aget(meta_ns, meta_key)
+                last_count = 0
+                if meta_item and meta_item.value:
+                    last_count = meta_item.value.get("last_count", 0)
 
-                    if current_count <= last_count:
-                        skipped += 1
-                        continue
+                if current_count <= last_count:
+                    skipped += 1
+                    continue
 
-                    # Run distillation
-                    revision_id = await optimizer.distill(user_id, assistant_id, store)
+                # Run distillation
+                revision_id = await optimizer.distill(user_id, assistant_id, store)
 
-                    # Record distillation metadata
-                    await store.aput(
-                        namespace=meta_ns,
-                        key=meta_key,
-                        value={"last_count": current_count, "last_distilled_at": get_time()},
-                    )
+                # Record distillation metadata
+                await store.aput(
+                    namespace=meta_ns,
+                    key=meta_key,
+                    value={"last_count": current_count, "last_distilled_at": get_time()},
+                )
 
-                    if revision_id:
-                        processed += 1
-                        logger.info(
-                            "prompt_distillation_agent_completed",
-                            extra={
-                                "event": "prompt_distillation_agent_completed",
-                                "user_id": user_id,
-                                "assistant_id": assistant_id,
-                                "revision_id": revision_id,
-                            },
-                        )
-                    else:
-                        skipped += 1
-
-                except Exception as e:
-                    errors += 1
-                    logger.error(
-                        "prompt_distillation_agent_error",
+                if revision_id:
+                    processed += 1
+                    logger.info(
+                        "prompt_distillation_agent_completed",
                         extra={
-                            "event": "prompt_distillation_agent_error",
+                            "event": "prompt_distillation_agent_completed",
                             "user_id": user_id,
                             "assistant_id": assistant_id,
-                            "error": str(e),
+                            "revision_id": revision_id,
                         },
                     )
-                    continue
+                else:
+                    skipped += 1
+
+            except Exception as e:
+                errors += 1
+                logger.error(
+                    "prompt_distillation_agent_error",
+                    extra={
+                        "event": "prompt_distillation_agent_error",
+                        "user_id": user_id,
+                        "assistant_id": assistant_id,
+                        "error": str(e),
+                    },
+                )
+                continue
 
     except Exception as e:
         logger.error(

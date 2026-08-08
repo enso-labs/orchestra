@@ -181,10 +181,12 @@ export function ApiToolForm({
 									onChange={(e) => setName(e.target.value)}
 									placeholder="my_api_tool"
 									disabled={mode === "edit"}
-									className={errors.name ? "border-destructive" : ""}
+									className={errors.name ? "border-destructive-accent" : ""}
 								/>
 								{errors.name && (
-									<p className="text-xs text-destructive">{errors.name}</p>
+									<p className="text-xs text-destructive-accent">
+										{errors.name}
+									</p>
 								)}
 								{mode !== "edit" && (
 									<p className="text-xs text-muted-foreground">
@@ -232,11 +234,13 @@ export function ApiToolForm({
 									value={baseUrl}
 									onChange={(e) => setBaseUrl(e.target.value)}
 									placeholder="https://api.example.com"
-									className={`rounded-l-none flex-1 ${errors.baseUrl ? "border-destructive" : ""}`}
+									className={`rounded-l-none flex-1 ${errors.baseUrl ? "border-destructive-accent" : ""}`}
 								/>
 							</div>
 							{errors.baseUrl && (
-								<p className="text-xs text-destructive">{errors.baseUrl}</p>
+								<p className="text-xs text-destructive-accent">
+									{errors.baseUrl}
+								</p>
 							)}
 						</div>
 

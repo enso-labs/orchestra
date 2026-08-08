@@ -141,7 +141,7 @@ export function ApiTokensSettings() {
 											<Copy className="h-4 w-4" />
 										</Button>
 									</div>
-									<p className="text-sm text-destructive">
+									<p className="text-sm text-destructive-accent">
 										Make sure to copy your token now. You won't be able to see
 										it again!
 									</p>
@@ -189,7 +189,7 @@ export function ApiTokensSettings() {
 								<Button
 									variant="ghost"
 									size="icon"
-									className="text-destructive hover:text-destructive/90"
+									className="text-destructive-accent hover:text-destructive-accent"
 									onClick={() => deleteToken(token.id)}
 								>
 									<Trash2 className="h-4 w-4" />
