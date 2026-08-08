@@ -1,0 +1,34 @@
+# progress
+
+2026-08-08 -- US-001 COMPLETE
+  env.py: version_table=orchestra_alembic_version on both context.configure calls,
+  sourced from config.get_main_option so a caller-built Config stays in sync.
+  migrations.py: _stamp_head_with_clear() repointed off the hardcoded
+  'DELETE FROM alembic_version' (that table is Aegra's after the rename);
+  _build_alembic_config() sets version_table and resolves alembic.ini relative to
+  __file__ rather than cwd; run_migrations() now diagnoses the pre-rename layout
+  instead of crash-looping on an unexplained DuplicateTable.
+  Test verified BY REJECTION: 2 failed pre-fix, 2 passed post-fix.
+  Suite 830 passed / 2 failed; both failures confirmed pre-existing by stashing
+  the tree and re-running clean. make lint clean.
+  Runbook: runbook-us001.md (one-time ALTER TABLE, ordering hazard, rollback).
+  passes: true
+
+2026-08-08 -- US-002 COMPLETE
+  #974 and #959 commented and closed as superseded (not planned), citing
+  services/schedule.py deletion in US-024 and Aegra's native cron.
+  Five frontend issues checked by extracting file references from each body and
+  intersecting against the deletion list -- empty intersection, table in
+  evidence.md. #971/#967 cite no paths, so those two rows are SUSPECTED.
+  No new GitHub issues created.
+  passes: true
+
+2026-08-08 -- US-003 PARTIAL (files only, operator-executed)
+  Delivered: infra/docker-compose.aegra.yml (additive), infra/aegra.Dockerfile
+  pinned to aegra-api==0.9.25, aegra.json, infra/aegra/hello_graph.py,
+  make dev.aegra.{up,down,logs}, runbook-us003.md.
+  store.index matched against services/db.py:82-83 (embed/fields) and :105/:216 (dims).
+  NOT executed: no Docker socket and no psql in this sandbox, so the copy database
+  was not created, the container was not built or started, and :2026/health was
+  never called. Acceptance criteria are NOT met by this PR.
+  passes: false

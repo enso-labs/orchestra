@@ -77,6 +77,13 @@ if config.config_file_name is not None:
 
 target_metadata = get_db_base().metadata
 
+# Orchestra owns its own alembic version table. Aegra's migration chain runs
+# against the same database and defaults to `alembic_version`; if Orchestra used
+# that default too, the two chains would fight over one table and boot would
+# fail. Overridable via `config.set_main_option("version_table", ...)` so callers
+# that build their own `Config` (see src/utils/migrations.py) stay consistent.
+VERSION_TABLE = config.get_main_option("version_table", "orchestra_alembic_version")
+
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -85,6 +92,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table=VERSION_TABLE,
     )
 
     with context.begin_transaction():
@@ -99,7 +107,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            version_table=VERSION_TABLE,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

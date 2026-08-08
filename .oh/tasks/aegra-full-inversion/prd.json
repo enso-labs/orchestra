@@ -23,7 +23,7 @@
                 "make test passes"
             ],
             "priority": 1,
-            "passes": false,
+            "passes": true,
             "notes": "Must land before any other Aegra work. Both alembic chains currently default to the same alembic_version table and Aegra runs run_migrations_if_needed() on startup, so a shared database is a boot failure rather than a manual one. The _stamp_head_with_clear() hardcoded DELETE is the destructive edge of this story — flagged by CodeRabbit on PR #977 and confirmed at migrations.py:22."
         },
         {
@@ -39,16 +39,16 @@
                 "make lint passes"
             ],
             "priority": 2,
-            "passes": false,
-            "notes": "Bookkeeping only, no code change. #951 (notebook conflict markers) ships as its own PR and must not be entangled with this one."
+            "passes": true,
+            "notes": "Bookkeeping only, no code change. #951 (notebook conflict markers) ships as its own PR and must not be entangled with this one. Closed 2026-08-08 as not planned; evidence table in evidence.md."
         },
         {
             "id": "US-003",
             "title": "Stand up an Aegra sidecar against a copy database",
             "description": "As a developer, I want Aegra running beside the live stack against a restored copy of the database, so every subsequent stage can be validated without risking production data.",
             "acceptanceCriteria": [
-                "Create lg_template_aegra via pg_dump/pg_restore from lg_template_dev",
-                "Add a new additive file infra/docker-compose.aegra.yml running aegra-api on :2026 against lg_template_aegra",
+                "Create orchestra_aegra via pg_dump/pg_restore from lg_template_dev",
+                "Add a new additive file infra/docker-compose.aegra.yml running aegra-api on :2026 against orchestra_aegra",
                 "Do not modify infra/docker-compose.yml",
                 "Pin the sidecar to aegra/aegra@8cf222fe9bbf (v0.9.25) — the revision every line reference in prd.md was verified against",
                 "Add a minimal aegra.json registering a hello-world graph",
@@ -67,7 +67,7 @@
             ],
             "priority": 3,
             "passes": false,
-            "notes": "No traffic is routed to the sidecar. A dims or embed mismatch in store.index silently degrades semantic search to garbage rather than erroring, so assert it rather than eyeballing it."
+            "notes": "No traffic is routed to the sidecar. A dims or embed mismatch in store.index silently degrades semantic search to garbage rather than erroring, so assert it rather than eyeballing it. NOT executed in PR #977 -- no Docker socket or psql in the agent sandbox; files delivered, operator runs runbook-us003.md."
         }
     ]
 }

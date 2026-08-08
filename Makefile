@@ -1,8 +1,10 @@
-.PHONY: setup tag changelog dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.test.up dev.docker.test.down benchmark.images test.images
+.PHONY: setup tag changelog dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.test.up dev.docker.test.down dev.aegra.up dev.aegra.down dev.aegra.logs benchmark.images test.images
 
 ENV ?= dev
 COMPOSE = docker compose -f infra/docker-compose.yml
 COMPOSE_TEST = docker compose -f infra/docker-compose.yml -f infra/docker-compose.test.yml
+# Stage-1 Aegra sidecar (US-003). Additive overlay; serves no traffic.
+COMPOSE_AEGRA = docker compose -f infra/docker-compose.yml -f infra/docker-compose.aegra.yml
 DOCKER_DEV_LOG_SERVICES ?= app worker
 
 # Install pre-commit hooks
@@ -48,6 +50,18 @@ dev.docker.ps:
 
 dev.docker.migrate:
 	@$(COMPOSE) run --rm app uv run alembic upgrade head
+
+# Aegra sidecar (stage 1 of the Aegra migration, US-003). Runs on :2026 against
+# the `orchestra_aegra` COPY database. Starts only the `aegra` service, so the
+# operator's live stack is never rebuilt or restarted by these targets.
+dev.aegra.up:
+	@$(COMPOSE_AEGRA) up --build -d aegra
+
+dev.aegra.down:
+	@$(COMPOSE_AEGRA) stop aegra && $(COMPOSE_AEGRA) rm -f aegra
+
+dev.aegra.logs:
+	@$(COMPOSE_AEGRA) logs -f --tail=200 aegra
 
 # Local end-to-end test stack (default + test overlay). CI uses pytest + GH services.
 dev.docker.test.up:

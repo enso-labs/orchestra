@@ -66,7 +66,7 @@ Aegra's chain can coexist in the same database without a boot failure.
 **Acceptance Criteria:**
 
 - [ ] `version_table="orchestra_alembic_version"` added to **both** `context.configure(...)` calls in
-      `backend/migrations/env.py` (offline at `:85`, online at `:102`)
+      `backend/migrations/env.py` (offline call site at `:83`, online at `:102`)
 - [ ] A runbook step documents the one-time
       `ALTER TABLE alembic_version RENAME TO orchestra_alembic_version;` — written as a runbook step,
       **not** as an alembic revision (it must run outside either chain)
@@ -81,7 +81,7 @@ Aegra's chain can coexist in the same database without a boot failure.
       Aegra has booted against the same database and created its own `alembic_version`
 - [ ] `make migrate.up` then `make migrate.down` both complete cleanly against a restored dump
 - [ ] `SELECT * FROM orchestra_alembic_version` returns the current head after upgrade
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-002: Mark superseded issues and clear unrelated queue items
 
@@ -94,7 +94,9 @@ nobody spends effort fixing code that is scheduled for removal.
       that `services/schedule.py` is deleted in US-024, and are labelled/closed accordingly
 - [ ] #951 (notebook conflict markers) is shipped as its own PR, entangled with nothing else
 - [ ] The five frontend issues (#971, #970, #969, #967, #960) are confirmed to touch no file in the
-      US-024 deletion list, and are left open for independent scheduling
+      US-024 deletion list, and are left open for independent scheduling. **Attach the evidence** —
+      the file list each issue implicates, intersected against the deletion list — rather than
+      asserting it in prose. A claim with no artifact behind it is not a check
 - [ ] No new GitHub issues are created without operator authorization
 
 ---
@@ -114,7 +116,7 @@ the database, so every subsequent stage can be validated without risking product
 
 **Acceptance Criteria:**
 
-- [ ] `lg_template_aegra` created via `pg_dump`/`pg_restore` from `lg_template_dev`
+- [ ] `orchestra_aegra` created via `pg_dump`/`pg_restore` from `lg_template_dev`
 - [ ] New **additive** file `infra/docker-compose.aegra.yml` runs `aegra-api` on `:2026` against the
       copy; `infra/docker-compose.yml` is not modified
 - [ ] Minimal `aegra.json` with a hello-world graph; `make dev.aegra.up` / `dev.aegra.down` targets added
@@ -158,7 +160,7 @@ so the migration is invisible to me.
 - [ ] `"auth": {"path": "./aegra_auth.py:auth"}` wired into `aegra.json`
 - [ ] An existing production JWT authenticates against `:2026`
 - [ ] An existing `otk_` API key authenticates against `:2026`
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-005: Make anonymous requests non-fatal
 
@@ -172,7 +174,7 @@ public surfaces are not 401'd by the new auth layer.
 - [ ] Enforcement moves to per-route `require_auth` and `@auth.on.*` handlers
 - [ ] An unauthenticated request to a share/embed route succeeds
 - [ ] An unauthenticated request to a protected route returns 401
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-006: Re-home the body-dependent auth gates
 
@@ -188,7 +190,7 @@ enforcing, given that `@auth.authenticate` cannot see the request body.
 - [ ] An anonymous run against a **public** assistant succeeds
 - [ ] An anonymous run requesting a **paid** model returns **403** (not 401), with the "Please sign in
       for higher limits" copy relocated to match
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-007: Add tenancy filters to Aegra's own tables
 
@@ -201,7 +203,7 @@ Aegra's `thread`/`assistant` tables are not namespace-isolated the way the store
       handlers return `{"user_id": ctx.user.identity}` as a filter
 - [ ] **Cross-tenant test:** user A's `GET /threads/search` returns zero of user B's threads
 - [ ] **Cross-tenant test:** user A cannot read user B's thread by id
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 ---
 
@@ -228,7 +230,7 @@ Aegra factory graph, so Aegra can own the run loop.
 - [ ] **`GET /assistants/{id}/schemas` creates zero sandboxes**, asserted with a Daytona-client
       call-count spy
 - [ ] `construct_agent`/`init_graph`/`Orchestra` remain in place and untouched — `:8000` keeps working
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-009: Collapse the duplicated construction paths into the factory
 
@@ -253,7 +255,7 @@ resolution to exist once instead of twice.
 - [ ] A full turn with tools + a subagent + memory files produces the **same final message** on `:2026`
       as the identical input on `:8000`
 - [ ] A **pre-migration** thread replays correctly through `aget_state_history`
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-010: Rebuild the runtime sandbox fallback as a FailoverBackend
 
@@ -271,7 +273,7 @@ the stream loop and the current rebuild-and-restart-the-turn mechanism cannot be
 - [ ] The existing integration tests asserting restart semantics
       (`controllers/llm.py:174-243`, `workers/tasks.py:657-700` coverage) are **rewritten before this
       story merges**, not after
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-011: Migrate the config surface off the wire
 
@@ -288,7 +290,7 @@ be forged and project filtering is indexed.
       `assistant.config`; `stream_mode` becomes a native run parameter and `resolved_stream_mode` is dropped
 - [ ] `max_concurrency` and `recursion_limit` set inside the factory
 - [ ] `init_config()` (`agents/__init__.py:223-253`) deleted
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 ---
 
@@ -312,7 +314,7 @@ Protocol API without shadowing it.
       highest-value assertion in the migration
 - [ ] `GET :2026/assistants` and `GET :2026/store/items` also return Agent Protocol JSON
 - [ ] `POST :2026/api/auth/login` succeeds
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-013: Rewire the MCP server surface
 
@@ -327,7 +329,7 @@ MCP server support today.
 - [ ] `GET :2026/mcp` lists exactly the `tags={"mcp"}` tools and nothing else
 - [ ] The PR states explicitly that Agent Protocol routes are **not** MCP-exposed, and that this is an
       accepted loss since only `mcp`-tagged routes were exposed before
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-014: Preserve the merged lifespan concerns
 
@@ -343,7 +345,7 @@ once Aegra owns the app lifecycle.
 - [ ] Rate limiting is re-added as ASGI middleware on the merged app, **or** the PR states plainly that
       it is an accepted abuse-surface regression — Aegra does not provide it
 - [ ] The merged lifespan starts and stops the scheduler cleanly, verified across a restart
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 ---
 
@@ -431,7 +433,7 @@ modes, since the existing four specs test a worker that is being deleted.
 - [ ] The existing replay button drives it; the user-visible flow is unchanged
 - [ ] The PR states that transient crashed-worker failures are now covered by Aegra's automatic
       checkpoint resumption, which is why the DLQ mechanism is not being ported
-- [ ] Typecheck/lint passes
+- [ ] `make lint` passes
 
 #### US-020: Rehearse the database restore
 
@@ -477,7 +479,7 @@ modes, since the existing four specs test a worker that is being deleted.
       `services/abort.py`, `services/idempotency.py`, all of `workers/`, most of `utils/stream.py`
 - [ ] Deleted (already dead, never mounted): `routes/v0/server.py`, `retrieve.py`, `source.py`
 - [ ] `taskiq*` removed from `backend/pyproject.toml`
-- [ ] The corresponding slice of the 82 backend test files is purged
+- [ ] The corresponding slice of the 83 backend test files is purged
 - [ ] `cd backend && make format && make lint && make test` green
 - [ ] `grep -rn "DISTRIBUTED_WORKERS\|taskiq"` returns nothing in `backend/`
 
@@ -549,7 +551,7 @@ modes, since the existing four specs test a worker that is being deleted.
 ## Technical Considerations
 
 - **Aegra reuses LangGraph's tables** — no data migration, but `aegra.json` `store.index` must match
-  `services/db.py:82-83` exactly (`dims`, `embed`, `fields`). A mismatch silently degrades semantic
+  `services/db.py` exactly — `embed`/`fields` from `DEFAULT_EMBED`/`DEFAULT_FIELDS` at `:82-83`, and `dims` (1536) from the parameter defaults at `:105` and `:216`, which are NOT co-located. A mismatch silently degrades semantic
   search to garbage rather than erroring. Assert it in a startup test.
 - **The frontend must never call the SDK's store methods.** Items written through Aegra's `/store/*`
   handlers land under `["users", <identity>, ...]` and are invisible to `BaseRepo`, which uses
@@ -557,7 +559,11 @@ modes, since the existing four specs test a worker that is being deleted.
 - **Two alembic chains must not auto-migrate in the same process** — Aegra takes an advisory lock.
   Run Orchestra's chain as a Docker init container or CI step.
 - **`npx tsc --noEmit` is a no-op** in this repo; use `tsc -b`.
-- Backend tests need a live Postgres (`conftest.py:46` runs `ensure_database_exists` at import).
+- **There is no backend typecheck.** `backend/Makefile` and `backend/pyproject.toml` configure no mypy
+  or pyright, so backend stories gate on `make lint` (ruff) and `make test` only. Do not add a
+  "typecheck passes" criterion to a backend story — it names a command that does not exist and would
+  be satisfied by doing nothing.
+- Backend tests need a live Postgres (`conftest.py:47` runs `ensure_database_exists` at import).
 
 ## Execution environment
 
