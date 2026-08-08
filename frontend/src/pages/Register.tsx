@@ -6,6 +6,7 @@ import { TOKEN_NAME, VITE_API_URL } from "../lib/config";
 import { ColorModeButton } from "@/components/buttons/ColorModeButton";
 import HelpfulIcons from "@/components/icons/HelpfulIcons";
 import AgentService from "@/lib/services/agentService";
+import { AlertTriangle } from "lucide-react";
 
 export default function Register() {
 	const [username, setUsername] = useState("");
@@ -94,8 +95,12 @@ export default function Register() {
 
 					<form onSubmit={handleRegister} className="mt-8 space-y-6">
 						{error && (
-							<div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm text-center">
-								{error}
+							<div className="flex items-start gap-2 border border-destructive-accent/70 bg-destructive/10 text-foreground p-3 rounded-md text-sm">
+								<AlertTriangle
+									aria-hidden="true"
+									className="h-4 w-4 mt-0.5 shrink-0 text-destructive-accent"
+								/>
+								<span className="flex-1">{error}</span>
 							</div>
 						)}
 

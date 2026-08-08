@@ -104,7 +104,7 @@ export const AgentScheduleCard: React.FC<AgentScheduleCardProps> = ({
 							{onDelete && (
 								<DropdownMenuItem
 									onClick={() => onDelete(schedule.id)}
-									className="text-destructive focus:text-destructive"
+									className="text-destructive-accent focus:text-destructive-accent"
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
 									Delete

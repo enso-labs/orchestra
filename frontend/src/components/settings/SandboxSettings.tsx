@@ -238,7 +238,7 @@ export function SandboxSettings() {
 									<button
 										type="button"
 										onClick={handleClearApiKey}
-										className="text-xs text-destructive hover:underline"
+										className="text-xs text-destructive-accent hover:underline"
 									>
 										Remove
 									</button>

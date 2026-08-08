@@ -230,7 +230,7 @@ export function MemorySettings() {
 												<Button
 													variant="ghost"
 													size="icon"
-													className="h-7 w-7 text-destructive"
+													className="h-7 w-7 text-destructive-accent"
 													aria-label="Delete memory"
 													onClick={() => setDeleteTarget(memory)}
 												>

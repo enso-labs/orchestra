@@ -277,7 +277,7 @@ export const CronBuilder: React.FC<CronBuilderProps> = ({
 			)}
 
 			{error && (
-				<div className="flex items-center gap-2 text-sm text-destructive">
+				<div className="flex items-center gap-2 text-sm text-destructive-accent">
 					<AlertCircle className="w-4 h-4" />
 					{error}
 				</div>

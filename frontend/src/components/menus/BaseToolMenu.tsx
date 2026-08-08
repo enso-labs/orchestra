@@ -228,7 +228,9 @@ export function BaseToolMenu() {
 							autoFocus
 						/>
 						{pathError && (
-							<p className="text-sm text-destructive mt-2">{pathError}</p>
+							<p className="text-sm text-destructive-accent mt-2">
+								{pathError}
+							</p>
 						)}
 						<p className="text-xs text-muted-foreground mt-2">
 							Example: /src/main.py, /data/config.json

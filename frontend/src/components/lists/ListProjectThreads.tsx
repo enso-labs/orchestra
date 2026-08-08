@@ -117,7 +117,7 @@ function ListProjectThreads({ projectId }: ListProjectThreadsProps) {
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
-								className="h-4 w-4 text-muted-foreground hover:text-destructive"
+								className="h-4 w-4 text-muted-foreground hover:text-destructive-accent"
 								fill="none"
 								viewBox="0 0 24 24"
 								stroke="currentColor"

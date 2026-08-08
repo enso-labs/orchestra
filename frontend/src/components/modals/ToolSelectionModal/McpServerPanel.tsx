@@ -354,7 +354,7 @@ export function McpServerPanel({
 													variant="ghost"
 													onClick={() => onRemoveServer(name)}
 												>
-													<Trash2 className="h-4 w-4 text-destructive" />
+													<Trash2 className="h-4 w-4 text-destructive-accent" />
 												</Button>
 											</div>
 										</div>

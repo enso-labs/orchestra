@@ -152,7 +152,7 @@ export const FileTreeNode = memo(function FileTreeNode({
 						<ContextMenuItem onSelect={handleNewFile}>New File</ContextMenuItem>
 						<ContextMenuItem
 							onSelect={handleDelete}
-							className="text-destructive"
+							className="text-destructive-accent"
 						>
 							Delete
 						</ContextMenuItem>
@@ -164,7 +164,7 @@ export const FileTreeNode = memo(function FileTreeNode({
 						</ContextMenuItem>
 						<ContextMenuItem
 							onSelect={handleDelete}
-							className="text-destructive"
+							className="text-destructive-accent"
 						>
 							Delete
 						</ContextMenuItem>

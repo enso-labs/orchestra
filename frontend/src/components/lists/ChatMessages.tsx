@@ -290,20 +290,23 @@ function RunErrorBanner({
 			<div
 				data-testid="message-error"
 				role="alert"
-				className="flex w-full max-w-[90vw] md:max-w-[80%] flex-col gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+				className="flex w-full max-w-[90vw] md:max-w-[80%] flex-col gap-2 rounded-lg border border-destructive-accent/70 bg-destructive/10 px-4 py-3 text-sm text-foreground"
 			>
 				<div className="flex items-start gap-2">
-					<AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+					<AlertTriangle
+						aria-hidden="true"
+						className="h-4 w-4 mt-0.5 shrink-0 text-destructive-accent"
+					/>
 					<div className="flex-1">
 						<p className="font-medium">The request failed.</p>
-						<p className="text-destructive/90 break-words">
+						<p className="break-words">
 							{runError.message || "An unexpected error occurred."}
 						</p>
 						{runError.runId ? (
 							<p
 								data-testid="correlation-id"
 								data-correlation-id={runError.runId}
-								className="mt-1 font-mono text-xs text-destructive/70 break-all"
+								className="mt-1 font-mono text-xs text-foreground break-all"
 							>
 								Request ID: {runError.runId}
 							</p>
@@ -316,7 +319,7 @@ function RunErrorBanner({
 						data-testid="replay-button"
 						onClick={handleReplay}
 						disabled={isReplaying}
-						className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60"
+						className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
 					>
 						<RotateCcw
 							className={`h-3.5 w-3.5 ${isReplaying ? "animate-spin" : ""}`}
