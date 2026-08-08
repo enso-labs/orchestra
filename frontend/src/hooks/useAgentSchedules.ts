@@ -2,6 +2,10 @@ import { useState, useCallback } from "react";
 import { Schedule, ScheduleCreate } from "@/lib/entities/schedule";
 import ScheduleService from "@/lib/services/scheduleService";
 import { toast } from "sonner";
+import {
+	isNetworkError,
+	notifyConnectionLost,
+} from "@/lib/utils/connectionToast";
 
 export const useAgentSchedules = (agentId?: string) => {
 	const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -20,7 +24,9 @@ export const useAgentSchedules = (agentId?: string) => {
 			const errorMessage =
 				err instanceof Error ? err.message : "Failed to fetch schedules";
 			setError(errorMessage);
-			toast.error("Failed to load schedules");
+			// See useSchedules — outage toasts share one id and collapse.
+			if (isNetworkError(err)) notifyConnectionLost();
+			else toast.error("Failed to load schedules");
 		} finally {
 			setLoading(false);
 		}
@@ -103,7 +109,8 @@ export const useAgentSchedules = (agentId?: string) => {
 			const errorMessage =
 				err instanceof Error ? err.message : "Failed to fetch schedule";
 			setError(errorMessage);
-			toast.error("Failed to load schedule");
+			if (isNetworkError(err)) notifyConnectionLost();
+			else toast.error("Failed to load schedule");
 			throw err;
 		} finally {
 			setLoading(false);

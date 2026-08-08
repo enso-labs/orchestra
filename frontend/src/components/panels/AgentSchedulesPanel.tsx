@@ -37,6 +37,10 @@ import {
 	Bot,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+	isNetworkError,
+	notifyConnectionLost,
+} from "@/lib/utils/connectionToast";
 import { Badge } from "@/components/ui/badge";
 import { DialogDescription } from "@/components/ui/dialog";
 
@@ -90,7 +94,8 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			setShowEditDialog(true);
 		} catch (error) {
 			console.error("Failed to fetch schedule for editing:", error);
-			toast.error("Failed to load schedule for editing");
+			if (isNetworkError(error)) notifyConnectionLost();
+			else toast.error("Failed to load schedule for editing");
 		}
 	};
 

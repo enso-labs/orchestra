@@ -12,6 +12,7 @@ import { PromptProvider } from "./context/PromptContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import { QueryProvider } from "./providers/QueryProvider";
+import { Toaster } from "./components/ui/sonner";
 
 // Register service worker
 if ("serviceWorker" in navigator && import.meta.env.MODE === "production") {
@@ -50,6 +51,21 @@ createRoot(document.getElementById("root")!).render(
 					</BrandingProvider>
 				</NuqsAdapter>
 			</QueryProvider>
+			{/*
+			  Mounted here rather than in App.tsx: App is the element for
+			  <Route path="/">, so toast coverage would depend on route nesting.
+			  Toaster only needs ThemeProvider. top-center because every bottom
+			  position collides with the bottom-anchored chat composer.
+			  The embed root (embed/main.tsx) is deliberately excluded — it is a
+			  shadow-DOM root and sonner portals to document.body.
+			*/}
+			<Toaster
+				position="top-center"
+				offset="16px"
+				visibleToasts={3}
+				closeButton
+				containerAriaLabel="Notifications"
+			/>
 		</ThemeProvider>
 	</StrictMode>,
 );

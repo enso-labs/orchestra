@@ -2,6 +2,10 @@ import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
+	isNetworkError,
+	notifyConnectionLost,
+} from "@/lib/utils/connectionToast";
+import {
 	Brain,
 	ChevronLeft,
 	ChevronRight,
@@ -59,8 +63,9 @@ export function MemorySettings() {
 				});
 				setMemories(res.memories ?? []);
 				setTotal(res.total ?? 0);
-			} catch {
-				toast.error("Failed to load memories");
+			} catch (err) {
+				if (isNetworkError(err)) notifyConnectionLost();
+				else toast.error("Failed to load memories");
 			} finally {
 				setLoading(false);
 			}

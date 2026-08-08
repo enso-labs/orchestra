@@ -28,14 +28,22 @@ describe("ChatNav model display integration", () => {
 		expect(source).not.toContain("ModelBadge");
 	});
 
-	it("ChatInput source imports ModelBadge", async () => {
+	it("the composer still renders ModelBadge, via ModelPicker", async () => {
 		const fs = await import("node:fs");
 		const path = await import("node:path");
-		const source = fs.readFileSync(
+		// The five-way state branch (#960) was extracted out of ChatInput into
+		// ModelPicker, so the badge now reaches the composer one level down.
+		const chatInput = fs.readFileSync(
 			path.resolve(process.cwd(), "src/components/inputs/ChatInput.tsx"),
 			"utf-8",
 		);
-		expect(source).toContain("ModelBadge");
+		expect(chatInput).toContain("ModelPicker");
+
+		const modelPicker = fs.readFileSync(
+			path.resolve(process.cwd(), "src/components/inputs/ModelPicker.tsx"),
+			"utf-8",
+		);
+		expect(modelPicker).toContain("ModelBadge");
 	});
 
 	it("ModelBadge renders correctly as a standalone component", async () => {

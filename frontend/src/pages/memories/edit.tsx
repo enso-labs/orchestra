@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import {
+	isNetworkError,
+	notifyConnectionLost,
+} from "@/lib/utils/connectionToast";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -44,8 +48,9 @@ export default function MemoryEditPage() {
 				setMemory(mem);
 				setContent(mem.content);
 				setEnabled(mem.enabled);
-			} catch {
-				toast.error("Failed to load memory");
+			} catch (err) {
+				if (isNetworkError(err)) notifyConnectionLost();
+				else toast.error("Failed to load memory");
 				navigate("/memories");
 			} finally {
 				setLoading(false);
