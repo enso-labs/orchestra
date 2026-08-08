@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.8.7
+
+### Fixed
+  - fix/958-store-health-reentry — stop `GET /api/info/health/store` from entering the application-wide store as an async context manager. `get_store` returns `req.app.state.store`, the single `AsyncPostgresStore` created once in the lifespan, so the handler's `async with store as s:` ran `__aenter__`/`__aexit__` on a singleton whose lifecycle it does not own — a diagnostic endpoint manipulating the resource it measures. The handler now awaits `store.asearch(...)` on the injected instance directly, inside the same 5s `asyncio.timeout`; the response body, the timeout→503 branch, and the `"connection"`/`"closed"`→503 mapping are all unchanged. Correcting the issue as filed: this was **latent, not an active outage**. On the pinned `langgraph-checkpoint-postgres` 3.1.0, `AsyncPostgresStore.__aenter__` is a bare `return self` and `__aexit__` only stops a TTL sweeper task that is never started (the store-level `ttl=` is never configured, so `_ttl_sweeper_task` is always `None`); the pool is closed solely by `from_conn_string`'s own `async with`, which unwinds at lifespan exit. The reported pool exhaustion therefore does not reproduce today — but a future `ttl=` config, or a langgraph version whose `__aexit__` releases resources, would have degraded the process-wide store silently. The endpoint had **zero tests**, which is how the pattern survived; `backend/tests/integration/test_health_store.py` adds five, covering the happy path, both 503 branches, the 500 fallback, and — the one that pins the fix — a store double that is a perfectly valid context manager and simply *counts* entries, so the pre-fix handler fails on `aenter_calls == 1` rather than on an incidental error. All five fail against the pre-fix handler. Scoped deliberately to the health probe: `services/assistant.py:227,294` and `services/prompt/__init__.py:168` re-enter the same singleton and are left for a follow-up.
+
 ## 2026.8.6
 
 ### Changed
