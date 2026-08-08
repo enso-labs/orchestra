@@ -165,13 +165,16 @@ class PromptService:
 
         for attempt in range(max_retries):
             try:
-                async with self.store as store:
-                    items = await store.asearch(namespace, limit=params.limit)
-                    return sorted(
-                        [item for item in items],
-                        key=lambda x: (x.updated_at, getattr(x, "v", 1)),
-                        reverse=True,
-                    )
+                # Await the injected store directly. `self.store` is the process-wide
+                # singleton; re-entering it here would tear down a pool shared with every
+                # other caller, and retrying that re-entry made attempts 2 and 3
+                # destructive rather than corrective (#957).
+                items = await self.store.asearch(namespace, limit=params.limit)
+                return sorted(
+                    [item for item in items],
+                    key=lambda x: (x.updated_at, getattr(x, "v", 1)),
+                    reverse=True,
+                )
             except Exception as e:
                 error_msg = str(e).lower()
                 if "connection" in error_msg and "closed" in error_msg:

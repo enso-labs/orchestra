@@ -221,11 +221,13 @@ class AssistantService:
             # Fetch a larger batch to allow for tag filtering before pagination
             fetch_limit = 1000
 
-            if isinstance(self.store, InMemoryStore):
-                items = await self.store.asearch(self._get_namespace(public=True), limit=fetch_limit)
-            else:
-                async with self.store as store:
-                    items = await store.asearch(self._get_namespace(public=True), limit=fetch_limit)
+            # `self.store` is the process-wide singleton handed out by `get_store`
+            # (`req.app.state.store`); `async with` here would run its
+            # `__aenter__`/`__aexit__` on a lifecycle this service does not own (#957).
+            # With the context manager gone both former branches are identical, so the
+            # `isinstance(..., InMemoryStore)` guard -- which existed only because
+            # `InMemoryStore` has no `__aenter__` -- collapses.
+            items = await self.store.asearch(self._get_namespace(public=True), limit=fetch_limit)
 
             assistants = self._format_assistant(list(items))
 
@@ -291,13 +293,16 @@ class AssistantService:
 
         for attempt in range(max_retries):
             try:
-                async with self.store as store:
-                    items = await store.asearch(self._get_namespace(), limit=limit)
-                    return sorted(
-                        [item for item in items],
-                        key=lambda x: x.updated_at,
-                        reverse=True,
-                    )
+                # Await the injected store directly. `self.store` is the process-wide
+                # singleton; re-entering it here would tear down a pool shared with every
+                # other caller, and retrying that re-entry made attempts 2 and 3
+                # destructive rather than corrective (#957).
+                items = await self.store.asearch(self._get_namespace(), limit=limit)
+                return sorted(
+                    [item for item in items],
+                    key=lambda x: x.updated_at,
+                    reverse=True,
+                )
             except Exception as e:
                 error_msg = str(e).lower()
                 if "connection" in error_msg and "closed" in error_msg:
