@@ -32,6 +32,25 @@ body {
 }
 
 @layer base {
+	/* Destructive colour contract — measured, not eyeballed. See #968.
+	 * --destructive        FILL ONLY: sits behind --destructive-foreground on a
+	 *                      button/badge. NEVER as text/border/icon — as ink it
+	 *                      measures 3.30 / 1.93 / 1.08 (light/dark/gray).
+	 * --destructive-accent INK on --background / --card / --popover and the
+	 *                      bg-destructive/5..10 tints over them: >=4.5:1 text,
+	 *                      >=3:1 border/icon. NOT verified on --muted /
+	 *                      --secondary / --accent (gray = 3.93 there: icon-safe,
+	 *                      not text-safe) — see #970, the gray-ramp deferral.
+	 *                      The light fill's own label pairing is #969 (3.60:1).
+	 *
+	 * Which token: if there is a tinted error container, THE CONTAINER is the
+	 * signal — prose is text-foreground, and the accent goes on the icon+border
+	 * only (an icon is required: WCAG 1.4.1, meaning must not be colour-alone).
+	 * If there is no container (inline form/field errors), THE TEXT is the
+	 * signal — use text-destructive-accent.
+	 * Never put an opacity modifier on either token as text: alpha composites
+	 * toward the surface and always lowers the ratio.
+	 */
 	:root {
 		--background: 0 0% 100%;
 		--foreground: 240 10% 3.9%;
@@ -49,6 +68,7 @@ body {
 		--accent-foreground: 240 5.9% 10%;
 		--destructive: 0 84.2% 60.2%;
 		--destructive-foreground: 0 0% 98%;
+		--destructive-accent: 0 74% 42%;
 		--border: 240 5.9% 90%;
 		--input: 240 5.9% 90%;
 		--ring: 240 10% 3.9%;
@@ -84,6 +104,7 @@ body {
 		--accent-foreground: 0 0% 98%;
 		--destructive: 0 62.8% 30.6%;
 		--destructive-foreground: 0 0% 98%;
+		--destructive-accent: 0 91% 71%;
 		--border: 240 3.7% 15.9%;
 		--input: 240 3.7% 15.9%;
 		--ring: 240 4.9% 83.9%;
@@ -119,6 +140,7 @@ body {
 		--accent-foreground: 220 9% 90%;
 		--destructive: 0 62.8% 40%;
 		--destructive-foreground: 220 9% 90%;
+		--destructive-accent: 0 100% 92%;
 		--border: 220 15% 45%;
 		--input: 220 15% 45%;
 		--ring: 220 9% 80%;

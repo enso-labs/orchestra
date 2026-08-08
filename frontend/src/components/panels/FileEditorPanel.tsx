@@ -207,8 +207,8 @@ export default function FileEditorPanel() {
 	}, [activeDialog, allFilePaths, dialogPath]);
 	const isFolderDelete = Boolean(
 		dialogPath &&
-		!fileSystem.has(dialogPath) &&
-		deleteTargetMatches.some((path) => path.startsWith(`${dialogPath}/`)),
+			!fileSystem.has(dialogPath) &&
+			deleteTargetMatches.some((path) => path.startsWith(`${dialogPath}/`)),
 	);
 
 	// Use activeFile from context (no local selectedFile state needed)
@@ -1014,7 +1014,7 @@ export default function FileEditorPanel() {
 												</ContextMenuItem>
 												<ContextMenuItem
 													onSelect={() => initiateDelete(filename)}
-													className="text-destructive"
+													className="text-destructive-accent"
 												>
 													Delete
 												</ContextMenuItem>
@@ -1277,7 +1277,9 @@ export default function FileEditorPanel() {
 							autoFocus
 						/>
 						{pathError && (
-							<p className="text-sm text-destructive mt-2">{pathError}</p>
+							<p className="text-sm text-destructive-accent mt-2">
+								{pathError}
+							</p>
 						)}
 					</div>
 					<DialogFooter>
@@ -1359,7 +1361,9 @@ export default function FileEditorPanel() {
 							autoFocus
 						/>
 						{pathError && (
-							<p className="text-sm text-destructive mt-2">{pathError}</p>
+							<p className="text-sm text-destructive-accent mt-2">
+								{pathError}
+							</p>
 						)}
 					</div>
 					<DialogFooter>

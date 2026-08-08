@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiToolForm } from "./ApiToolForm";
@@ -149,8 +149,12 @@ export function CustomToolsPanel({
 						<span className="animate-spin">Loading...</span>
 					</div>
 				) : error ? (
-					<div className="bg-destructive/10 text-destructive p-4 rounded-md">
-						{error}
+					<div className="flex items-start gap-2 border border-destructive-accent/70 bg-destructive/10 text-foreground p-4 rounded-md">
+						<AlertTriangle
+							aria-hidden="true"
+							className="h-4 w-4 mt-0.5 shrink-0 text-destructive-accent"
+						/>
+						<span className="flex-1">{error}</span>
 					</div>
 				) : filteredTools.length === 0 ? (
 					<div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
@@ -227,7 +231,7 @@ export function CustomToolsPanel({
 										<Button
 											variant="ghost"
 											size="icon"
-											className="h-8 w-8 text-destructive hover:text-destructive"
+											className="h-8 w-8 text-destructive-accent hover:text-destructive-accent"
 											onClick={(e) => handleDeleteClick(tool.name, e)}
 											title="Delete"
 										>

@@ -124,7 +124,9 @@ function ShareButton() {
 							/>
 						</div>
 
-						{error && <p className="text-sm text-destructive">{error}</p>}
+						{error && (
+							<p className="text-sm text-destructive-accent">{error}</p>
+						)}
 
 						<Button
 							onClick={handleCreateShare}

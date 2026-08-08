@@ -142,7 +142,7 @@ export function ScheduleTable({
 													Duplicate
 												</DropdownMenuItem>
 												<DropdownMenuItem
-													className="text-destructive"
+													className="text-destructive-accent"
 													onClick={() => onDelete?.(event.resource.schedule_id)}
 												>
 													<Trash2 className="h-4 w-4 mr-2" />

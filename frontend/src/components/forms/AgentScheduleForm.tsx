@@ -248,10 +248,10 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 								id="name"
 								{...register("name")}
 								placeholder="Daily weather check"
-								className={errors.name ? "border-destructive" : ""}
+								className={errors.name ? "border-destructive-accent" : ""}
 							/>
 							{errors.name && (
-								<p className="text-sm text-destructive mt-1">
+								<p className="text-sm text-destructive-accent mt-1">
 									{errors.name.message}
 								</p>
 							)}
@@ -546,10 +546,10 @@ export const AgentScheduleForm: React.FC<AgentScheduleFormProps> = ({
 							{...register("message")}
 							placeholder="What should the agent do? e.g., 'Check the weather in Dallas and send a summary'"
 							rows={3}
-							className={errors.message ? "border-destructive" : ""}
+							className={errors.message ? "border-destructive-accent" : ""}
 						/>
 						{errors.message && (
-							<p className="text-sm text-destructive mt-1">
+							<p className="text-sm text-destructive-accent mt-1">
 								{errors.message.message}
 							</p>
 						)}

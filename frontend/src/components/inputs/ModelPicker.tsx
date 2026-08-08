@@ -141,13 +141,15 @@ export function ModelPicker({
 					className={cn(
 						CHIP,
 						// The destructive tint is the shipped run-error triple from
-						// lists/ChatMessages.tsx, but its `text-destructive` was measured
-						// at 1.93:1 (dark), 3.30:1 (light) and 1.08:1 (gray) here — the
-						// palette's --destructive is a dark red meant to sit *behind*
-						// destructive-foreground, not to be read as text. `text-foreground`
-						// measures 18.5 / 17.5 / 6.1, so the label stays legible and the
-						// WifiOff icon carries the meaning without relying on color.
-						"border-destructive/40 bg-destructive/10 text-foreground",
+						// lists/ChatMessages.tsx. Per the two-token contract in
+						// styles/globals.css (#968): --destructive is FILL ONLY, so the
+						// tint keeps it while the ink comes from --destructive-accent —
+						// >=3:1 on the border and the WifiOff icon. The label stays
+						// `text-foreground` (17.5 / 18.5 / 6.1), which carries an
+						// arbitrary failure state and needs maximum legibility; the icon
+						// plus the accent border carry the meaning without relying on
+						// colour alone.
+						"border-destructive-accent/70 bg-destructive/10 text-foreground",
 						"cursor-pointer hover:opacity-80 transition-opacity",
 						isFetching && "opacity-60 cursor-not-allowed",
 					)}
@@ -155,7 +157,7 @@ export function ModelPicker({
 					{isFetching ? (
 						<LoaderCircle className="h-3 w-3 animate-spin" />
 					) : (
-						<WifiOff className="h-3 w-3" />
+						<WifiOff className="h-3 w-3 text-destructive-accent" />
 					)}
 					<span>{isFetching ? "Retrying…" : "Models unavailable"}</span>
 				</button>

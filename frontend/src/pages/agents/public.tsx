@@ -105,7 +105,7 @@ export default function PublicAgentPage() {
 					isForking={isForking}
 				/>
 				{remixError && (
-					<p className="text-center text-sm text-destructive mt-2">
+					<p className="text-center text-sm text-destructive-accent mt-2">
 						{remixError}
 					</p>
 				)}

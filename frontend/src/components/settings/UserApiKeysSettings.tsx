@@ -201,7 +201,7 @@ export function UserApiKeysSettings() {
 									<Button
 										variant="ghost"
 										size="icon"
-										className="text-destructive hover:text-destructive/90"
+										className="text-destructive-accent hover:text-destructive-accent"
 										onClick={() => handleDelete(p.provider)}
 									>
 										<Trash2 className="h-4 w-4" />
