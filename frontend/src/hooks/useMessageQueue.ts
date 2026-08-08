@@ -19,6 +19,29 @@ const MAX_QUEUE_SIZE = 10;
 const DEDUP_WINDOW_MS = 1500;
 
 /**
+ * Quiet period (ms) after the last drop before the drop counter resets. Drops
+ * arriving closer together than this are treated as one outage cascade and
+ * accumulate into a single toast rather than starting a new one.
+ */
+const DROP_WINDOW_MS = 5000;
+
+/**
+ * One fixed id for every "gave up on this message" notification.
+ *
+ * Sonner keyed by `id` replaces in place rather than stacking, so an outage
+ * that exhausts every queued message renders exactly one toast. This is the
+ * load-bearing dedupe mechanism — do not vary it per call site.
+ */
+const MESSAGE_QUEUE_DROP_TOAST_ID = "message-queue-dropped";
+
+/**
+ * One fixed id for every "still trying" notification. Deliberately DISTINCT
+ * from the drop id: "will retry" and "gave up" are different states, and
+ * sharing an id would let one clobber the other.
+ */
+const MESSAGE_QUEUE_RETRY_TOAST_ID = "message-queue-retry";
+
+/**
  * Custom hook for managing a frontend message queue.
  *
  * Allows users to submit multiple messages while a stream is in progress.
@@ -73,6 +96,12 @@ export function useMessageQueue(
 	// within DEDUP_WINDOW_MS (a double-click / double-Enter) can be rejected.
 	const lastEnqueueRef = useRef<{ query: string; at: number } | null>(null);
 
+	// Windowed drop counter: how many messages the current cascade has dropped,
+	// and when the last drop happened. Together they collapse an outage that
+	// exhausts the whole queue into one accumulating toast.
+	const droppedCountRef = useRef(0);
+	const lastDropAtRef = useRef<number | null>(null);
+
 	// Ref to track editingId for use in processNext callback
 	const editingIdRef = useRef<string | null>(null);
 	editingIdRef.current = editingId;
@@ -112,9 +141,32 @@ export function useMessageQueue(
 			setQueueLength(rest.length);
 			setQueuedItems([...rest]);
 
-			toast.error("Message dropped after max retries", {
-				description: `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`,
-			});
+			// Accumulate drops that land inside one quiet window into a single
+			// toast keyed by a fixed id, so an outage that exhausts the whole
+			// queue cannot emit one toast per message.
+			const now = Date.now();
+			const lastDropAt = lastDropAtRef.current;
+			droppedCountRef.current =
+				lastDropAt !== null && now - lastDropAt < DROP_WINDOW_MS
+					? droppedCountRef.current + 1
+					: 1;
+			lastDropAtRef.current = now;
+
+			const droppedCount = droppedCountRef.current;
+			toast.error(
+				droppedCount === 1
+					? "Message dropped after max retries"
+					: `${droppedCount} messages dropped after max retries`,
+				{
+					id: MESSAGE_QUEUE_DROP_TOAST_ID,
+					// A single message's preview would describe only one of N, so
+					// the aggregate case says how it failed instead of which one.
+					description:
+						droppedCount === 1
+							? `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`
+							: `Each message failed to send after ${MAX_RETRIES} attempts.`,
+				},
+			);
 
 			// Continue processing next message if any
 			if (rest.length > 0) {
@@ -150,6 +202,7 @@ export function useMessageQueue(
 				toast.warning(
 					`Message will retry (${updatedMessage.retryCount}/${MAX_RETRIES})`,
 					{
+						id: MESSAGE_QUEUE_RETRY_TOAST_ID,
 						description: `Failed to send: "${firstMessage.query.slice(0, 50)}${firstMessage.query.length > 50 ? "..." : ""}"`,
 					},
 				);

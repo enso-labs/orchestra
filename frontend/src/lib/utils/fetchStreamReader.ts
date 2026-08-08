@@ -181,6 +181,8 @@ export class FetchStreamReader {
 										typeof payload === "string" ? payload : String(payload),
 								},
 				};
+			case "mcp_sandbox_unreachable":
+				return { type: "mcp_sandbox_unreachable", data: payload };
 			case "aborted":
 				return { type: "aborted", data: payload };
 			default:
@@ -327,6 +329,8 @@ export class ResponseBodyReader {
 										typeof payload === "string" ? payload : String(payload),
 								},
 				};
+			case "mcp_sandbox_unreachable":
+				return { type: "mcp_sandbox_unreachable", data: payload };
 			case "aborted":
 				return { type: "aborted", data: payload };
 			default:

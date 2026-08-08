@@ -19,6 +19,7 @@ import { latestHumanMessage } from "@/lib/utils/message";
 import ToolTimeline from "../timeline/ToolTimeline";
 import TextSelectionPopover from "../popovers/TextSelectionPopover";
 import { SubagentBadge } from "../badges/SubagentBadge";
+import type { RunError } from "@/hooks/useChat";
 
 export const Message = memo(
 	function Message({
@@ -257,12 +258,6 @@ export const Message = memo(
 	},
 );
 
-type RunError = {
-	runId: string;
-	message: string;
-	recoverable: boolean;
-};
-
 // Persistent error surface for permanently-failed runs. Rendered inline in the
 // chat message area (not a toast) so it survives until the user replays or
 // submits a fresh request. Drives the DLQ replay affordance.
@@ -274,6 +269,10 @@ function RunErrorBanner({
 	onReplay: (runId: string) => void | Promise<void>;
 }) {
 	const [isReplaying, setIsReplaying] = useState(false);
+	// Replay POSTs /llm/dlq/<runId>/replay. Only offer it for runs that actually
+	// have a DLQ entry: explicitly non-recoverable failures (e.g. an unreachable
+	// MCP sandbox) have nothing to replay, and a run with no id has no target.
+	const canReplay = runError.recoverable !== false && Boolean(runError.runId);
 
 	const handleReplay = async () => {
 		if (isReplaying) return;
@@ -295,7 +294,9 @@ function RunErrorBanner({
 				<div className="flex items-start gap-2">
 					<AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
 					<div className="flex-1">
-						<p className="font-medium">The request failed.</p>
+						<p className="font-medium">
+							{runError.title ?? "The request failed."}
+						</p>
 						<p className="text-destructive/90 break-words">
 							{runError.message || "An unexpected error occurred."}
 						</p>
@@ -310,20 +311,22 @@ function RunErrorBanner({
 						) : null}
 					</div>
 				</div>
-				<div className="flex justify-end">
-					<button
-						type="button"
-						data-testid="replay-button"
-						onClick={handleReplay}
-						disabled={isReplaying}
-						className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60"
-					>
-						<RotateCcw
-							className={`h-3.5 w-3.5 ${isReplaying ? "animate-spin" : ""}`}
-						/>
-						{isReplaying ? "Replaying…" : "Replay"}
-					</button>
-				</div>
+				{canReplay && (
+					<div className="flex justify-end">
+						<button
+							type="button"
+							data-testid="replay-button"
+							onClick={handleReplay}
+							disabled={isReplaying}
+							className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-60"
+						>
+							<RotateCcw
+								className={`h-3.5 w-3.5 ${isReplaying ? "animate-spin" : ""}`}
+							/>
+							{isReplaying ? "Replaying…" : "Replay"}
+						</button>
+					</div>
+				)}
 			</div>
 		</div>
 	);

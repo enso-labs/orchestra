@@ -27,10 +27,19 @@ import { useMountEffect } from "@/hooks/useMountEffect";
 
 type StreamMode = "messages" | "values" | "updates" | "debug" | "tasks";
 
+/**
+ * Stable sonner id for stream-recovery failures. Sonner dedupes by id, so
+ * reusing it collapses repeated recovery errors into a single toast. Kept
+ * colocated with its call sites (see `lib/utils/connectionToast.ts`) rather
+ * than in a shared barrel.
+ */
+export const STREAM_RECOVERY_TOAST_ID = "stream-recovery";
+
 export type RunError = {
 	runId: string;
 	message: string;
 	recoverable: boolean;
+	title?: string;
 };
 
 let in_mem_messages: any[] = [];
@@ -128,6 +137,13 @@ export default function useChat(): ChatContextType {
 			...(storedProjectId ? { project_id: storedProjectId } : {}),
 		};
 	});
+
+	// `metadata` is captured by closure at render time, but stream callbacks
+	// (startManagedStream -> handleMessages) can outlive that render and need the
+	// *latest* run_id, which is written by a later "metadata" event. Mirror the
+	// state into a ref so those callbacks read fresh values.
+	const metadataRef = useRef<any>(metadata);
+	metadataRef.current = metadata;
 
 	const [controller, setController] = useState<AbortController | null>(null);
 
@@ -230,6 +246,11 @@ export default function useChat(): ChatContextType {
 				// state. recoveryMode errors are handled upstream in
 				// startManagedStream and never reach this converter.
 				return ["error", event.data];
+			case "mcp_sandbox_unreachable":
+				// Surfaced as a persistent, non-recoverable run error banner.
+				// Without this case the event was silently dropped on the unified
+				// stream path and the run stopped with no explanation.
+				return ["mcp_sandbox_unreachable", event.data];
 			case "aborted":
 				return ["aborted", event.data];
 			case "done":
@@ -284,6 +305,15 @@ export default function useChat(): ChatContextType {
 		},
 	): Promise<{ controller: AbortController; stream: StreamSource }> => {
 		const controller = new AbortController();
+		// Per-stream latch: a failing recovery stream can emit many `error`
+		// events, each of which previously produced its own toast. Notify once
+		// per stream (a *new* stream still gets its own notification).
+		let recoveryFailureNotified = false;
+		const notifyRecoveryFailure = (message: string) => {
+			if (recoveryFailureNotified) return;
+			recoveryFailureNotified = true;
+			toast.error(message, { id: STREAM_RECOVERY_TOAST_ID });
+		};
 		const distributedStream =
 			stream instanceof DistributedStreamSource ? stream : null;
 		const threadId = distributedStream?.getThreadId() ?? metadata?.thread_id;
@@ -316,7 +346,13 @@ export default function useChat(): ChatContextType {
 				setLoading(false);
 				setLoadingMessage("");
 				setController(null);
-				toast.error(event.data.error || "Lost connection to the live stream.");
+				// Stop the stream: without this the source keeps polling and keeps
+				// emitting error events.
+				controller.abort();
+				stream.close();
+				notifyRecoveryFailure(
+					event.data.error || "Lost connection to the live stream.",
+				);
 				return;
 			}
 
@@ -349,7 +385,7 @@ export default function useChat(): ChatContextType {
 					return;
 				}
 
-				toast.error(
+				notifyRecoveryFailure(
 					"Lost connection to the live stream. Refresh to retry reconnecting.",
 				);
 				return;
@@ -681,8 +717,8 @@ export default function useChat(): ChatContextType {
 			const isErrorObject =
 				typeof errorPayload === "object" && errorPayload !== null;
 			const runId = isErrorObject
-				? (errorPayload.run_id ?? metadata?.run_id ?? "")
-				: (metadata?.run_id ?? "");
+				? (errorPayload.run_id ?? metadataRef.current?.run_id ?? "")
+				: (metadataRef.current?.run_id ?? "");
 			const message = isErrorObject
 				? (errorPayload.error ?? "The request failed permanently.")
 				: String(errorPayload);
@@ -696,16 +732,21 @@ export default function useChat(): ChatContextType {
 			return;
 		}
 
-		// Handle MCP sandbox unreachable
+		// Handle MCP sandbox unreachable. This is a terminal, non-recoverable
+		// failure: there is no DLQ entry to replay, so the banner hides Replay and
+		// the copy has to tell the user what to do instead. The backend message
+		// already reads "MCP sandbox unreachable: <detail>", so no title is set —
+		// a title would repeat the phrase.
 		if (streamMode === "mcp_sandbox_unreachable") {
 			setLoading(false);
 			setController(null);
-			toast.error("MCP sandbox unreachable", {
-				description:
+			setRunError({
+				runId: metadataRef.current?.run_id ?? "",
+				message:
 					typeof payload[1] === "string"
 						? payload[1]
-						: "The MCP sandbox server could not be reached.",
-				duration: Infinity,
+						: "The MCP sandbox server could not be reached. Send your message again to retry.",
+				recoverable: false,
 			});
 			return;
 		}

@@ -38,6 +38,28 @@ export const BACKEND_SYNC_SOURCE = "__backend_sync__";
 
 const logger = debug("hooks:chat-context");
 
+/**
+ * One fixed id for the persistent-context autosave failure toast.
+ *
+ * Sonner keyed by `id` replaces in place rather than stacking, so a run of
+ * failing autosaves renders exactly one toast instead of one per keystroke.
+ *
+ * Deliberately applied to autosave failures ONLY. `savePersistentContextFiles`
+ * is shared with the manual Save button, and a user-initiated toast must never
+ * be deduped away by an unrelated background save.
+ */
+export const PERSISTENT_CONTEXT_SAVE_TOAST_ID = "context-files-save";
+
+/** Backoff schedule for retrying a failed autosave: 2s, 4s, 8s, ... capped at 30s. */
+const PERSISTENT_SAVE_BACKOFF_BASE_MS = 2_000;
+const PERSISTENT_SAVE_BACKOFF_MAX_MS = 30_000;
+
+const persistentSaveCooldownMs = (failureCount: number): number =>
+	Math.min(
+		PERSISTENT_SAVE_BACKOFF_MAX_MS,
+		PERSISTENT_SAVE_BACKOFF_BASE_MS * 2 ** (failureCount - 1),
+	);
+
 const DURABLE_SOURCES = new Set<string>([
 	PERSISTENT_SETTINGS_SOURCE,
 	USER_FILES_SOURCE,
@@ -267,6 +289,10 @@ export default function ChatProvider({
 	const persistentContextLoadedRef = useRef(false);
 	const persistentSaveTimerRef = useRef<number | null>(null);
 	const persistentSaveInFlightRef = useRef(false);
+	const persistentSaveFailureRef = useRef<{ count: number; at: number }>({
+		count: 0,
+		at: 0,
+	});
 	const isAuthenticated = Boolean(getAuthToken());
 
 	const { filesMap } = chatHooks;
@@ -697,10 +723,28 @@ export default function ChatProvider({
 		persistentPayloadSignature !== lastSavedPersistentSignatureRef.current;
 
 	const savePersistentContextFiles = useCallback(
-		async (
+		async function savePersistentContextFiles(
 			options: SavePersistentContextFilesOptions = {},
-		): Promise<boolean> => {
+		): Promise<boolean> {
 			const { reason = "autosave", showSuccessToast = false } = options;
+
+			// Re-arm a real autosave attempt `delayMs` from now. Used whenever a
+			// non-manual save is declined or fails: the only other autosave trigger
+			// is a payload-signature change, so a user who types, sees the failure,
+			// and then stops typing would otherwise be stranded with unsaved edits
+			// and no pending timer.
+			const rearmAutosave = (delayMs: number) => {
+				if (persistentSaveTimerRef.current) {
+					window.clearTimeout(persistentSaveTimerRef.current);
+				}
+				persistentSaveTimerRef.current = window.setTimeout(() => {
+					persistentSaveTimerRef.current = null;
+					void savePersistentContextFiles({
+						reason: "autosave",
+						showSuccessToast: false,
+					});
+				}, delayMs);
+			};
 
 			if (!isAuthenticated || !persistentContextLoadedRef.current) {
 				return false;
@@ -718,6 +762,24 @@ export default function ChatProvider({
 					logger("autosave suppressed reason=%s cause=in_flight", reason);
 				}
 				return false;
+			}
+
+			// Backoff guard. Must sit before the timer clear below: clearing first
+			// would cancel the very autosave we are declining to run.
+			if (reason !== "manual" && persistentSaveFailureRef.current.count > 0) {
+				const { count, at } = persistentSaveFailureRef.current;
+				const remainingMs = at + persistentSaveCooldownMs(count) - Date.now();
+				if (remainingMs > 0) {
+					pendingPersistentFlushRef.current = true;
+					rearmAutosave(remainingMs);
+					logger(
+						"autosave suppressed reason=%s cause=backoff failures=%d retry_in_ms=%d",
+						reason,
+						count,
+						remainingMs,
+					);
+					return false;
+				}
 			}
 
 			if (persistentSaveTimerRef.current) {
@@ -756,6 +818,7 @@ export default function ChatProvider({
 				setPersistentDeletedPaths(new Set(payload.deleted_files));
 				lastSavedPersistentSignatureRef.current = signature;
 				pendingPersistentFlushRef.current = false;
+				persistentSaveFailureRef.current = { count: 0, at: 0 };
 				dirtyPaths.forEach((path) => {
 					markClean(path);
 				});
@@ -773,8 +836,33 @@ export default function ChatProvider({
 				return true;
 			} catch (error) {
 				console.error("Failed to persist context files:", error);
-				logger("persistent save failure reason=%s", reason);
-				toast.error("Failed to save context files");
+
+				// NOTE: `lastSavedPersistentSignatureRef` is deliberately NOT advanced
+				// here. It doubles as the dirty indicator and the autosave-skip guard,
+				// so advancing it would mark still-unsaved text as saved and silently
+				// drop the user's edits. The backoff ref below is what stops the loop.
+				const failureCount = persistentSaveFailureRef.current.count + 1;
+				persistentSaveFailureRef.current = {
+					count: failureCount,
+					at: Date.now(),
+				};
+				logger(
+					"persistent save failure reason=%s failures=%d",
+					reason,
+					failureCount,
+				);
+
+				if (reason === "manual") {
+					// User-initiated: never deduped, never suppressed.
+					toast.error("Failed to save context files");
+				} else {
+					toast.error("Failed to save context files", {
+						id: PERSISTENT_CONTEXT_SAVE_TOAST_ID,
+						description: "Your edits are still here — retrying automatically.",
+					});
+					pendingPersistentFlushRef.current = true;
+					rearmAutosave(persistentSaveCooldownMs(failureCount));
+				}
 				return false;
 			} finally {
 				persistentSaveInFlightRef.current = false;

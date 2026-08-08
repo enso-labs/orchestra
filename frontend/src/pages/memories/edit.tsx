@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -29,6 +29,15 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { Memory } from "@/lib/entities/memory";
 import MemoryService from "@/lib/services/memoryService";
 
+/**
+ * One fixed id for the mount-load failure toast.
+ *
+ * Sonner keyed by `id` replaces in place rather than stacking, so a repeated
+ * load failure renders exactly one toast. Colocated rather than hoisted into a
+ * shared barrel: this id belongs to this page's load effect only.
+ */
+export const MEMORY_LOAD_TOAST_ID = "memory-load";
+
 export default function MemoryEditPage() {
 	const navigate = useNavigate();
 	const { memoryId } = useParams<{ memoryId: string }>();
@@ -39,6 +48,10 @@ export default function MemoryEditPage() {
 	const [saving, setSaving] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState("preview");
+	// StrictMode double-invokes mount effects, and `navigate` is a dependency,
+	// so the failure path can run more than once per mount. Announce and
+	// redirect exactly once.
+	const loadFailureHandledRef = useRef(false);
 
 	useEffect(() => {
 		const load = async () => {
@@ -49,8 +62,10 @@ export default function MemoryEditPage() {
 				setContent(mem.content);
 				setEnabled(mem.enabled);
 			} catch (err) {
+				if (loadFailureHandledRef.current) return;
+				loadFailureHandledRef.current = true;
 				if (isNetworkError(err)) notifyConnectionLost();
-				else toast.error("Failed to load memory");
+				else toast.error("Failed to load memory", { id: MEMORY_LOAD_TOAST_ID });
 				navigate("/memories");
 			} finally {
 				setLoading(false);

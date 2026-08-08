@@ -54,10 +54,6 @@ import {
 	ScheduleEvent,
 } from "@/lib/entities/schedule";
 import { toast } from "sonner";
-import {
-	isNetworkError,
-	notifyConnectionLost,
-} from "@/lib/utils/connectionToast";
 
 type FilterStatus = "all" | "active" | "upcoming" | "overdue";
 type SortBy = "next_run" | "created" | "name";
@@ -143,16 +139,21 @@ function SchedulesIndexPage() {
 			await createSchedule(enhancedSchedule);
 			setShowCreateDialog(false);
 			setSelectedAgentId("");
-			toast.success("Schedule created successfully!");
 		} catch (error) {
+			// useSchedules owns the toast for this failure; only log here.
 			console.error("Failed to create schedule:", error);
-			toast.error("Failed to create schedule");
 		}
 	};
 
 	const handleDeleteSchedule = async (scheduleId: string) => {
 		if (window.confirm("Are you sure you want to delete this schedule?")) {
-			await deleteSchedule(scheduleId);
+			try {
+				await deleteSchedule(scheduleId);
+			} catch (error) {
+				// deleteSchedule toasts and rethrows; swallow to avoid an
+				// unhandled rejection.
+				console.error("Failed to delete schedule:", error);
+			}
 		}
 	};
 
@@ -163,8 +164,6 @@ function SchedulesIndexPage() {
 			setShowEditDialog(true);
 		} catch (error) {
 			console.error("Failed to fetch schedule for editing:", error);
-			if (isNetworkError(error)) notifyConnectionLost();
-			else toast.error("Failed to load schedule for editing");
 		}
 	};
 
@@ -175,10 +174,8 @@ function SchedulesIndexPage() {
 			await updateSchedule(editingSchedule.id, scheduleData);
 			setShowEditDialog(false);
 			setEditingSchedule(null);
-			toast.success("Schedule updated successfully!");
 		} catch (error) {
 			console.error("Failed to update schedule:", error);
-			toast.error("Failed to update schedule");
 		}
 	};
 

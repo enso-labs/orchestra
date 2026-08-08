@@ -2,7 +2,10 @@ import * as React from "react";
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 
-import ChatProvider, { useChatContext } from "@/context/ChatContext";
+import ChatProvider, {
+	PERSISTENT_CONTEXT_SAVE_TOAST_ID,
+	useChatContext,
+} from "@/context/ChatContext";
 
 const {
 	getSettingsMock,
@@ -10,6 +13,8 @@ const {
 	getMemoryFilesMock,
 	toastErrorMock,
 	toastSuccessMock,
+	toastWarningMock,
+	toastInfoMock,
 	clearQueueMock,
 	consoleErrorMock,
 } = vi.hoisted(() => ({
@@ -18,6 +23,8 @@ const {
 	getMemoryFilesMock: vi.fn(),
 	toastErrorMock: vi.fn(),
 	toastSuccessMock: vi.fn(),
+	toastWarningMock: vi.fn(),
+	toastInfoMock: vi.fn(),
 	clearQueueMock: vi.fn(),
 	consoleErrorMock: vi.fn(),
 }));
@@ -99,6 +106,9 @@ vi.mock("sonner", () => ({
 	toast: {
 		error: toastErrorMock,
 		success: toastSuccessMock,
+		// `ChatProvider` mounts `useMessageQueue`, which calls `toast.warning`.
+		warning: toastWarningMock,
+		info: toastInfoMock,
 	},
 }));
 
@@ -650,7 +660,10 @@ describe("ChatContext persistent files", () => {
 		});
 
 		expect(saved).toBe(false);
+		expect(toastErrorMock).toHaveBeenCalledTimes(1);
 		expect(toastErrorMock).toHaveBeenCalledWith("Failed to save context files");
+		// A user-initiated toast must never carry a dedupe id: no second argument.
+		expect(toastErrorMock.mock.calls[0]).toHaveLength(1);
 		expect(toastSuccessMock).not.toHaveBeenCalled();
 		expect(result.current.dirtyFiles.has("/memory/notes.md")).toBe(true);
 		expect(result.current.hasUnsavedPersistentChanges).toBe(true);
@@ -719,5 +732,106 @@ describe("ChatContext persistent files", () => {
 
 		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
 		expect(toastSuccessMock).toHaveBeenCalledWith("Changes saved");
+	});
+
+	it("stops the autosave retry loop after a failure instead of re-firing on every edit", async () => {
+		patchDefaultsMock.mockRejectedValue(new Error("save failed"));
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		// Four distinct payload signatures, each one an autosave trigger.
+		for (const text of ["edit one", "edit two", "edit three", "edit four"]) {
+			act(() => {
+				result.current.markDirty("/memory/notes.md");
+				result.current.updateFile("/memory/notes.md", text);
+			});
+			await flushAutosave();
+		}
+
+		// The real defect: pre-fix every keystroke issued another failing PATCH.
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+		expect(toastErrorMock).toHaveBeenCalledTimes(1);
+		expect(toastErrorMock).toHaveBeenCalledWith(
+			"Failed to save context files",
+			expect.objectContaining({ id: PERSISTENT_CONTEXT_SAVE_TOAST_ID }),
+		);
+
+		// The forbidden "fix" (advancing the saved-signature ref in the catch)
+		// would report the still-unsaved edits as clean.
+		expect(result.current.hasUnsavedPersistentChanges).toBe(true);
+		expect(result.current.dirtyFiles.has("/memory/notes.md")).toBe(true);
+		expect(result.current.fileSystem.get("/memory/notes.md")?.content).toEqual([
+			"edit four",
+		]);
+	});
+
+	it("retries once the backoff window elapses so a user who stops typing is not stranded", async () => {
+		patchDefaultsMock.mockRejectedValueOnce(new Error("save failed"));
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		act(() => {
+			result.current.markDirty("/memory/notes.md");
+			result.current.updateFile("/memory/notes.md", "updated");
+		});
+
+		await flushAutosave();
+
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+		expect(result.current.hasUnsavedPersistentChanges).toBe(true);
+
+		// Inside the 2s cooldown: autosave cycles issue no further requests.
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1_000);
+		});
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+
+		// Past the deadline the re-armed retry fires on its own — the user never
+		// typed again, so nothing else could have triggered it.
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1_500);
+		});
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(2);
+		expect(toastErrorMock).toHaveBeenCalledTimes(1);
+		expect(result.current.hasUnsavedPersistentChanges).toBe(false);
+		expect(result.current.dirtyFiles.has("/memory/notes.md")).toBe(false);
+	});
+
+	it("lets a manual save through while autosave is backing off", async () => {
+		patchDefaultsMock.mockRejectedValueOnce(new Error("save failed"));
+		const { result } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		act(() => {
+			result.current.markDirty("/memory/notes.md");
+			result.current.updateFile("/memory/notes.md", "first");
+		});
+		await flushAutosave();
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+
+		act(() => {
+			result.current.updateFile("/memory/notes.md", "second");
+		});
+		await flushAutosave();
+
+		// Still inside the cooldown — autosave declined.
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+
+		let saved = false;
+		await act(async () => {
+			saved = await result.current.savePersistentContextFiles({
+				reason: "manual",
+				showSuccessToast: true,
+			});
+		});
+
+		// The Save button stays a live escape hatch.
+		expect(saved).toBe(true);
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(2);
+		expect(toastSuccessMock).toHaveBeenCalledWith("Changes saved");
+		expect(result.current.hasUnsavedPersistentChanges).toBe(false);
 	});
 });
