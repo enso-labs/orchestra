@@ -138,8 +138,11 @@ export const useSchedules = () => {
 				err instanceof Error ? err.message : "Failed to fetch schedule";
 			setError(errorMessage);
 			if (isNetworkError(err)) notifyConnectionLost();
+			// Deliberately not "Failed to load schedule": the list-load failure
+			// above says "Failed to load schedules" and fires from the same
+			// screen, so a one-character difference tells the user nothing.
 			else
-				toast.error("Failed to load schedule", { id: SCHEDULE_LOAD_TOAST_ID });
+				toast.error("Failed to open schedule", { id: SCHEDULE_LOAD_TOAST_ID });
 			throw err;
 		} finally {
 			setLoading(false);

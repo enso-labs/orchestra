@@ -186,6 +186,14 @@ export function useMessageQueue(
 			queueRef.current = rest;
 			setQueueLength(rest.length);
 			setQueuedItems([...rest]);
+
+			// A success proves the backend is reachable, which ends the outage
+			// the drop counter is summarizing. Without this reset the count is
+			// cumulative rather than per-outage, and a degraded backend that
+			// drops one message every few seconds while others succeed would
+			// eventually report a mass failure that never happened.
+			droppedCountRef.current = 0;
+			lastDropAtRef.current = null;
 		} catch (error) {
 			console.error("Error processing queued message:", error);
 

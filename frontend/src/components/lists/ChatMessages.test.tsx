@@ -71,19 +71,7 @@ describe("ChatMessages run error banner", () => {
 		expect(screen.queryByTestId("replay-button")).not.toBeInTheDocument();
 	});
 
-	it("uses the run error title when one is supplied", () => {
-		renderWithRunError({
-			runId: "",
-			message: "Something broke.",
-			recoverable: false,
-			title: "Sandbox offline",
-		});
-
-		expect(screen.getByText("Sandbox offline")).toBeInTheDocument();
-		expect(screen.queryByText("The request failed.")).not.toBeInTheDocument();
-	});
-
-	it("falls back to the default heading when no title is supplied", () => {
+	it("renders the failure heading above the backend message", () => {
 		renderWithRunError({
 			runId: "run-1",
 			message: "Something broke.",

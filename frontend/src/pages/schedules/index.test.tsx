@@ -240,6 +240,11 @@ describe("SchedulesIndexPage — one toast per operation", () => {
 		expect(toast.error).not.toHaveBeenCalledWith(
 			"Failed to load schedule for editing",
 		);
+		// The one surviving message must name the operation that failed — not a
+		// near-copy of the list-load message that fires from the same screen.
+		const [message] = vi.mocked(toast.error).mock.calls[0];
+		expect(message).toBe("Failed to open schedule");
+		expect(message).not.toBe("Failed to load schedules");
 	});
 
 	it("does not toast the refetch failure when the create itself succeeded", async () => {

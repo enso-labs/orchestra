@@ -39,7 +39,6 @@ export type RunError = {
 	runId: string;
 	message: string;
 	recoverable: boolean;
-	title?: string;
 };
 
 let in_mem_messages: any[] = [];
@@ -330,6 +329,7 @@ export default function useChat(): ChatContextType {
 			if (
 				event.type === "done" ||
 				event.type === "error" ||
+				event.type === "mcp_sandbox_unreachable" ||
 				event.type === "aborted"
 			) {
 				clearDistributedRecovery(threadId);

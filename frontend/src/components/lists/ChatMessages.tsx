@@ -294,9 +294,7 @@ function RunErrorBanner({
 				<div className="flex items-start gap-2">
 					<AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
 					<div className="flex-1">
-						<p className="font-medium">
-							{runError.title ?? "The request failed."}
-						</p>
+						<p className="font-medium">The request failed.</p>
 						<p className="text-destructive/90 break-words">
 							{runError.message || "An unexpected error occurred."}
 						</p>

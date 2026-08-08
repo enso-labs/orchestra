@@ -193,8 +193,15 @@ describe("useMessageQueue drop/retry toast storm", () => {
 	 * until the queue drains. Returns the observed ids seen in `queuedItems`
 	 * after every pump so loss/duplication can be checked.
 	 */
-	async function drainAgainstFailure(queries: string[]) {
-		const executeSubmit = vi.fn().mockRejectedValue(new Error("network down"));
+	async function drainAgainstFailure(
+		queries: string[],
+		submitImpl?: (query: string) => Promise<void>,
+	) {
+		const executeSubmit = vi
+			.fn()
+			.mockImplementation(
+				submitImpl ?? (() => Promise.reject(new Error("network down"))),
+			);
 		const { result, rerender } = renderHook(
 			({ isStreaming }: { isStreaming: boolean }) =>
 				useMessageQueue({ isStreaming, executeSubmit }),
@@ -257,6 +264,32 @@ describe("useMessageQueue drop/retry toast storm", () => {
 		// described all of them.
 		const lastCall = toastMock.error.mock.calls[titles.length - 1];
 		expect(lastCall[1].description).not.toContain("charlie msg");
+	});
+
+	it("restarts the drop count after a success instead of accumulating forever", async () => {
+		// A degraded (not down) backend: some sends fail their whole retry
+		// budget, others succeed. The counter summarizes ONE outage, so a
+		// success must end it — otherwise the toast eventually reports a mass
+		// failure that never happened.
+		const queries = ["drop one", "drop two", "ok three", "drop four"];
+		await drainAgainstFailure(queries, (query: string) =>
+			query.startsWith("ok")
+				? Promise.resolve()
+				: Promise.reject(new Error("network down")),
+		);
+
+		const titles = toastMock.error.mock.calls.map((call) => call[0] as string);
+		expect(titles).toHaveLength(3);
+		expect(titles[0]).toBe("Message dropped after max retries");
+		expect(titles[1]).toBe("2 messages dropped after max retries");
+		// The success between drop two and drop four resets the window. Without
+		// the reset this reads "3 messages dropped after max retries".
+		expect(titles[2]).toBe("Message dropped after max retries");
+		expect(titles[2]).not.toMatch(/^\d+ messages dropped/);
+		// Singular form keeps the preview, which now genuinely describes the
+		// one message it is about.
+		const lastCall = toastMock.error.mock.calls[2];
+		expect(lastCall[1].description).toContain("drop four");
 	});
 
 	it("keeps every retry toast under its own literal id, distinct from the drop id", async () => {

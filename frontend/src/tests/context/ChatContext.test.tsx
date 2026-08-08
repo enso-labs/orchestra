@@ -799,6 +799,61 @@ describe("ChatContext persistent files", () => {
 		expect(result.current.dirtyFiles.has("/memory/notes.md")).toBe(false);
 	});
 
+	it("clears a re-armed retry when the provider unmounts mid-backoff", async () => {
+		let rejectSave: ((error: Error) => void) | undefined;
+		patchDefaultsMock.mockImplementationOnce(
+			() =>
+				new Promise((_resolve, reject) => {
+					rejectSave = reject;
+				}),
+		);
+
+		const { result, unmount } = renderHook(() => useChatContext(), { wrapper });
+
+		await waitForHydration();
+
+		act(() => {
+			result.current.markDirty("/memory/notes.md");
+			result.current.updateFile("/memory/notes.md", "updated");
+		});
+
+		// Fire the debounced autosave. The PATCH is now in flight and the effect
+		// has already nulled its timer ref.
+		act(() => {
+			vi.advanceTimersByTime(500);
+		});
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+
+		// Re-run the autosave effect down a branch that registers NO cleanup (the
+		// skip counter), so from here only a mount-scoped teardown can clear a
+		// timer armed later.
+		act(() => {
+			result.current.runWithPersistentSyncSuspended(() => {});
+			result.current.runWithPersistentSyncSuspended(() => {
+				result.current.updateFile("/memory/notes.md", "updated again");
+			});
+		});
+
+		// Let the in-flight PATCH reject: the catch arms the backoff retry.
+		await act(async () => {
+			rejectSave?.(new Error("save failed"));
+			await Promise.resolve();
+			await Promise.resolve();
+		});
+		expect(toastErrorMock).toHaveBeenCalledTimes(1);
+
+		unmount();
+
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(60_000);
+		});
+
+		// No PATCH, no toast, no state write on an unmounted tree.
+		expect(patchDefaultsMock).toHaveBeenCalledTimes(1);
+		expect(toastErrorMock).toHaveBeenCalledTimes(1);
+		expect(consoleErrorMock).toHaveBeenCalledTimes(1);
+	});
+
 	it("lets a manual save through while autosave is backing off", async () => {
 		patchDefaultsMock.mockRejectedValueOnce(new Error("save failed"));
 		const { result } = renderHook(() => useChatContext(), { wrapper });

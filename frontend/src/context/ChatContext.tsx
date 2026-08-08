@@ -293,6 +293,7 @@ export default function ChatProvider({
 		count: 0,
 		at: 0,
 	});
+	const providerUnmountedRef = useRef(false);
 	const isAuthenticated = Boolean(getAuthToken());
 
 	const { filesMap } = chatHooks;
@@ -729,16 +730,31 @@ export default function ChatProvider({
 			const { reason = "autosave", showSuccessToast = false } = options;
 
 			// Re-arm a real autosave attempt `delayMs` from now. Used whenever a
-			// non-manual save is declined or fails: the only other autosave trigger
-			// is a payload-signature change, so a user who types, sees the failure,
-			// and then stops typing would otherwise be stranded with unsaved edits
-			// and no pending timer.
+			// save is declined or fails: the only other autosave trigger is a
+			// payload-signature change, so a user who edits, sees the failure, and
+			// then stops typing would otherwise be stranded with unsaved edits and
+			// no pending timer.
+			//
+			// This arms the timer ref asynchronously (from the promise `catch`),
+			// outside the render that scheduled it, so it cannot rely on the
+			// autosave effect's cleanup — several of that effect's branches return
+			// early and register no cleanup at all. The mount-scoped teardown effect
+			// below owns the unconditional clear; the guard here is the second line
+			// of defence for a timer that already escaped.
 			const rearmAutosave = (delayMs: number) => {
+				if (providerUnmountedRef.current) {
+					return;
+				}
 				if (persistentSaveTimerRef.current) {
 					window.clearTimeout(persistentSaveTimerRef.current);
 				}
 				persistentSaveTimerRef.current = window.setTimeout(() => {
 					persistentSaveTimerRef.current = null;
+					// `isAuthenticated` in this closure is stale by the time the timer
+					// fires; re-read the live token so a logged-out user stops PATCHing.
+					if (providerUnmountedRef.current || !getAuthToken()) {
+						return;
+					}
 					void savePersistentContextFiles({
 						reason: "autosave",
 						showSuccessToast: false,
@@ -860,9 +876,17 @@ export default function ChatProvider({
 						id: PERSISTENT_CONTEXT_SAVE_TOAST_ID,
 						description: "Your edits are still here — retrying automatically.",
 					});
-					pendingPersistentFlushRef.current = true;
-					rearmAutosave(persistentSaveCooldownMs(failureCount));
 				}
+
+				// Re-armed for BOTH reasons. A failed manual save leaves exactly the
+				// stranded state the backoff exists to prevent: the click consumed the
+				// dirty signature, so nothing else will retry until the user types
+				// again. One shared counter is deliberate — it tracks the health of the
+				// PATCH endpoint, not which trigger issued it, and manual saves bypass
+				// the cooldown anyway, so escalation never blocks the escape hatch.
+				pendingPersistentFlushRef.current = true;
+				rearmAutosave(persistentSaveCooldownMs(failureCount));
+
 				return false;
 			} finally {
 				persistentSaveInFlightRef.current = false;
@@ -870,6 +894,23 @@ export default function ChatProvider({
 		},
 		[getPersistentPayloadSnapshot, isAuthenticated, markClean],
 	);
+
+	// Mount-scoped teardown. The autosave effect below cannot own this: React
+	// only runs the cleanup that the MOST RECENT run of an effect returned, and
+	// that effect returns early — with no cleanup — when unauthenticated, when
+	// the skip counter fires, when the signature is unchanged, and while
+	// streaming. A retry armed from the promise `catch` after one of those runs
+	// would survive unmount and keep PATCHing an unmounted tree forever.
+	useEffect(() => {
+		providerUnmountedRef.current = false;
+		return () => {
+			providerUnmountedRef.current = true;
+			if (persistentSaveTimerRef.current) {
+				window.clearTimeout(persistentSaveTimerRef.current);
+				persistentSaveTimerRef.current = null;
+			}
+		};
+	}, []);
 
 	useEffect(() => {
 		if (!isAuthenticated || !persistentContextLoadedRef.current) {

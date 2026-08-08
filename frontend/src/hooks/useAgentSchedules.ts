@@ -157,8 +157,10 @@ export const useAgentSchedules = (agentId?: string) => {
 				err instanceof Error ? err.message : "Failed to fetch schedule";
 			setError(errorMessage);
 			if (isNetworkError(err)) notifyConnectionLost();
+			// See useSchedules — "Failed to load schedule" is one character from
+			// the list-load failure that fires from the same screen.
 			else
-				toast.error("Failed to load schedule", {
+				toast.error("Failed to open schedule", {
 					id: AGENT_SCHEDULE_LOAD_TOAST_ID,
 				});
 			throw err;

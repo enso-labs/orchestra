@@ -393,7 +393,10 @@ describe("useChat recovery-mode stream errors (anti-storm)", () => {
 			}
 		});
 
-		// ANTI-STORM: 4 error events -> exactly 1 toast.
+		// This pins the *teardown*, not the latch: the first error aborts the
+		// controller and closes the stream, so events 2-4 bail at the
+		// `signal.aborted` guard and never reach the toast. (The latch itself is
+		// load-bearing on the onError path — see the transport-errors test.)
 		expect(toast.error).toHaveBeenCalledTimes(1);
 		expect(toast.error).toHaveBeenCalledWith("Lost the worker", {
 			id: STREAM_RECOVERY_TOAST_ID,

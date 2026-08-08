@@ -218,8 +218,14 @@ export class DistributedStreamSource implements StreamSource {
 			if (
 				event.type === "done" ||
 				event.type === "error" ||
+				event.type === "mcp_sandbox_unreachable" ||
 				event.type === "aborted"
 			) {
+				// `mcp_sandbox_unreachable` ends the run. The distributed emitter
+				// happens to xadd a trailing `done`, but the sync emitter does not,
+				// so without listing it here the reader would treat the close as
+				// non-terminal, retry, and finally fall into the non-recovery
+				// onError branch (blocking alert + clearMessages).
 				this.hasTerminalEvent = true;
 			}
 			this.eventHandler?.(event);
