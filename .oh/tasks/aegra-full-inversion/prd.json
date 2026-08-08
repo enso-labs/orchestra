@@ -12,6 +12,10 @@
                 "Add version_table=\"orchestra_alembic_version\" to the offline context.configure(...) call in backend/migrations/env.py:85",
                 "Add version_table=\"orchestra_alembic_version\" to the online context.configure(...) call in backend/migrations/env.py:102",
                 "Document the one-time 'ALTER TABLE alembic_version RENAME TO orchestra_alembic_version;' as a runbook step in the PR body, NOT as an alembic revision (it must run outside either chain)",
+                "Change _stamp_head_with_clear() in backend/src/utils/migrations.py:22 to stop hardcoding 'DELETE FROM alembic_version' — after the rename that table belongs to Aegra's chain, so the current code would wipe Aegra's migration state and then stamp Orchestra's head",
+                "Give the Config inside _stamp_head_with_clear() the same version_table=\"orchestra_alembic_version\" setting used in env.py",
+                "Add a test proving _stamp_head_with_clear() clears orchestra_alembic_version while leaving a row in alembic_version untouched — verify by rejection, not by exit code",
+                "Document the inverse rollback 'ALTER TABLE orchestra_alembic_version RENAME TO alembic_version;' and note it is only valid before Aegra has booted against the same database",
                 "make migrate.up followed by make migrate.down both complete cleanly against a restored dump",
                 "SELECT * FROM orchestra_alembic_version returns the current head after upgrade",
                 "backend/src/utils/migrations.py run_migrations() is not left auto-migrating in the same process Aegra will migrate in; state the chosen approach in the PR",
@@ -20,7 +24,7 @@
             ],
             "priority": 1,
             "passes": false,
-            "notes": "Must land before any other Aegra work. Both alembic chains currently default to the same alembic_version table and Aegra runs run_migrations_if_needed() on startup, so a shared database is a boot failure rather than a manual one."
+            "notes": "Must land before any other Aegra work. Both alembic chains currently default to the same alembic_version table and Aegra runs run_migrations_if_needed() on startup, so a shared database is a boot failure rather than a manual one. The _stamp_head_with_clear() hardcoded DELETE is the destructive edge of this story — flagged by CodeRabbit on PR #977 and confirmed at migrations.py:22."
         },
         {
             "id": "US-002",
@@ -46,13 +50,15 @@
                 "Create lg_template_aegra via pg_dump/pg_restore from lg_template_dev",
                 "Add a new additive file infra/docker-compose.aegra.yml running aegra-api on :2026 against lg_template_aegra",
                 "Do not modify infra/docker-compose.yml",
+                "Pin the sidecar to aegra/aegra@8cf222fe9bbf (v0.9.25) — the revision every line reference in prd.md was verified against",
                 "Add a minimal aegra.json registering a hello-world graph",
                 "aegra.json store.index matches backend/src/services/db.py:82-83 exactly for dims, embed, and fields",
                 "Add make dev.aegra.up and make dev.aegra.down targets",
                 "GET localhost:2026/health returns {\"status\": \"healthy\"}",
                 "Aegra's alembic chain applies cleanly to the copy database",
-                "SELECT count(*) FROM checkpoints on the copy is unchanged from the dump",
-                "Pre-existing Orchestra store rows are readable through the sidecar's store",
+                "For checkpoints, store, AND store_vectors: capture stable keys plus a content digest before and after Aegra's first boot and diff them — a matching count(*) proves nothing, since a rewrite preserving cardinality would pass it",
+                "An authenticated read through the sidecar returns a specific pre-existing store item by its exact (user_id, entity) namespace and key, with its value intact",
+                "Write down the Aegra/Orchestra namespace mapping: Orchestra's repos use (user_id, entity) in-process while Aegra's /store/* HTTP handlers auto-prefix [\"users\", <identity>]",
                 "Run the sidecar in a named tmux window, not in an agent foreground session",
                 "Do not bind :5173 or :8000 — the primary checkout runs the operator's dev stack on those ports",
                 "make lint passes"

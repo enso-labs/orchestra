@@ -36,6 +36,11 @@ custom routes, and the frontend adopts `@langchain/langgraph-sdk`.
 Read from Aegra's source via `gh api repos/aegra/aegra`, not from its docs. Three assumptions were
 wrong and one was missing entirely.
 
+**Pinned revision for every line reference below: `aegra/aegra@8cf222fe9bbf` (`main`, 2026-08-07),
+released as `v0.9.25`.** Route registration order, the auth hook signature, namespace scoping, and
+migration behaviour are all things that can change between revisions — so the sidecar in US-003 must
+run this pinned revision, and any finding re-verified against a later one must be re-cited here.
+
 | Finding | Consequence |
 |---|---|
 | `core/database.py:60-88` uses LangGraph's own `AsyncPostgresSaver` + `AsyncPostgresStore` | **No data migration.** Existing `store`, `store_vectors`, `checkpoints*` rows survive first boot. |
@@ -65,6 +70,15 @@ Aegra's chain can coexist in the same database without a boot failure.
 - [ ] A runbook step documents the one-time
       `ALTER TABLE alembic_version RENAME TO orchestra_alembic_version;` — written as a runbook step,
       **not** as an alembic revision (it must run outside either chain)
+- [ ] **`_stamp_head_with_clear()` (`backend/src/utils/migrations.py:22`) must stop hardcoding
+      `DELETE FROM alembic_version`.** After the rename that table name belongs to **Aegra's** chain,
+      so the existing code would wipe Aegra's migration state and then stamp Orchestra's head. Point it
+      at `orchestra_alembic_version`, and have its `Config` carry the same `version_table`
+- [ ] A test proves `_stamp_head_with_clear()` leaves a row in `alembic_version` untouched while
+      clearing `orchestra_alembic_version` — verify by rejection, not by exit code
+- [ ] A rollback path is documented for the rename itself: the inverse
+      `ALTER TABLE orchestra_alembic_version RENAME TO alembic_version;`, and it is only valid **before**
+      Aegra has booted against the same database and created its own `alembic_version`
 - [ ] `make migrate.up` then `make migrate.down` both complete cleanly against a restored dump
 - [ ] `SELECT * FROM orchestra_alembic_version` returns the current head after upgrade
 - [ ] Typecheck/lint passes
@@ -99,9 +113,16 @@ the database, so every subsequent stage can be validated without risking product
       copy; `infra/docker-compose.yml` is not modified
 - [ ] Minimal `aegra.json` with a hello-world graph; `make dev.aegra.up` / `dev.aegra.down` targets added
 - [ ] `GET :2026/health` returns `{"status": "healthy"}`
-- [ ] Aegra's alembic chain applies cleanly; `SELECT count(*) FROM checkpoints` on the copy is
-      **unchanged** from the dump
-- [ ] Pre-existing Orchestra store rows are readable through the sidecar's store
+- [ ] Aegra's alembic chain applies cleanly against the copy
+- [ ] **Content preservation, not row counts.** For `checkpoints`, `store`, **and `store_vectors`**,
+      capture stable keys plus a content digest before and after Aegra's first boot, and diff them.
+      A matching `count(*)` proves nothing — a rewrite that preserves cardinality passes it
+- [ ] An **authenticated read through the sidecar** returns a specific pre-existing store item by its
+      exact `(user_id, entity)` namespace and key, with its value intact — not merely "some rows are
+      readable"
+- [ ] The Aegra ↔ Orchestra namespace mapping is written down: Orchestra's repos use
+      `(user_id, entity)` in-process, while Aegra's `/store/*` HTTP handlers auto-prefix
+      `["users", <identity>]`. Record which surface owns which shape so later stages do not conflate them
 - [ ] The sidecar runs in a named tmux window, not in the foreground of an agent session
 
 ---
