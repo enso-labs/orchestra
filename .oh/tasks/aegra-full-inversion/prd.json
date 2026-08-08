@@ -1,0 +1,65 @@
+{
+    "schemaVersion": 1,
+    "project": "Orchestra",
+    "branchName": "task/976-aegra-full-inversion",
+    "description": "Aegra migration stages 0-1: isolate Orchestra's alembic version table so Aegra's chain can share the database, triage issues that the migration supersedes, and stand up a no-traffic Aegra sidecar on :2026 against a restored copy database. Full spec in prd.md; stages 2-7 get their own issues.",
+    "userStories": [
+        {
+            "id": "US-001",
+            "title": "Isolate Orchestra's alembic version table",
+            "description": "As an operator, I want Orchestra's migration chain to use its own version table so Aegra's chain can coexist in the same database without a boot failure.",
+            "acceptanceCriteria": [
+                "Add version_table=\"orchestra_alembic_version\" to the offline context.configure(...) call in backend/migrations/env.py:85",
+                "Add version_table=\"orchestra_alembic_version\" to the online context.configure(...) call in backend/migrations/env.py:102",
+                "Document the one-time 'ALTER TABLE alembic_version RENAME TO orchestra_alembic_version;' as a runbook step in the PR body, NOT as an alembic revision (it must run outside either chain)",
+                "make migrate.up followed by make migrate.down both complete cleanly against a restored dump",
+                "SELECT * FROM orchestra_alembic_version returns the current head after upgrade",
+                "backend/src/utils/migrations.py run_migrations() is not left auto-migrating in the same process Aegra will migrate in; state the chosen approach in the PR",
+                "make lint passes",
+                "make test passes"
+            ],
+            "priority": 1,
+            "passes": false,
+            "notes": "Must land before any other Aegra work. Both alembic chains currently default to the same alembic_version table and Aegra runs run_migrations_if_needed() on startup, so a shared database is a boot failure rather than a manual one."
+        },
+        {
+            "id": "US-002",
+            "title": "Triage issues the migration supersedes",
+            "description": "As a maintainer, I want the issue queue to reflect what this migration deletes, so nobody spends effort fixing code that is scheduled for removal.",
+            "acceptanceCriteria": [
+                "Comment on #974 stating it is superseded by the Aegra migration because services/schedule.py is deleted in a later stage; link this PR",
+                "Comment on #959 with the same rationale and link",
+                "Label or close #974 and #959 per the comment",
+                "Confirm the five frontend issues (#971, #970, #969, #967, #960) touch no file in the migration's deletion list, and leave them open",
+                "Do not create any new GitHub issue without explicit operator authorization",
+                "make lint passes"
+            ],
+            "priority": 2,
+            "passes": false,
+            "notes": "Bookkeeping only, no code change. #951 (notebook conflict markers) ships as its own PR and must not be entangled with this one."
+        },
+        {
+            "id": "US-003",
+            "title": "Stand up an Aegra sidecar against a copy database",
+            "description": "As a developer, I want Aegra running beside the live stack against a restored copy of the database, so every subsequent stage can be validated without risking production data.",
+            "acceptanceCriteria": [
+                "Create lg_template_aegra via pg_dump/pg_restore from lg_template_dev",
+                "Add a new additive file infra/docker-compose.aegra.yml running aegra-api on :2026 against lg_template_aegra",
+                "Do not modify infra/docker-compose.yml",
+                "Add a minimal aegra.json registering a hello-world graph",
+                "aegra.json store.index matches backend/src/services/db.py:82-83 exactly for dims, embed, and fields",
+                "Add make dev.aegra.up and make dev.aegra.down targets",
+                "GET localhost:2026/health returns {\"status\": \"healthy\"}",
+                "Aegra's alembic chain applies cleanly to the copy database",
+                "SELECT count(*) FROM checkpoints on the copy is unchanged from the dump",
+                "Pre-existing Orchestra store rows are readable through the sidecar's store",
+                "Run the sidecar in a named tmux window, not in an agent foreground session",
+                "Do not bind :5173 or :8000 — the primary checkout runs the operator's dev stack on those ports",
+                "make lint passes"
+            ],
+            "priority": 3,
+            "passes": false,
+            "notes": "No traffic is routed to the sidecar. A dims or embed mismatch in store.index silently degrades semantic search to garbage rather than erroring, so assert it rather than eyeballing it."
+        }
+    ]
+}
