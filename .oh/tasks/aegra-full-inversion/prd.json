@@ -60,6 +60,8 @@
                 "An authenticated read through the sidecar returns a specific pre-existing store item by its exact (user_id, entity) namespace and key, with its value intact",
                 "Write down the Aegra/Orchestra namespace mapping: Orchestra's repos use (user_id, entity) in-process while Aegra's /store/* HTTP handlers auto-prefix [\"users\", <identity>]",
                 "Run the sidecar in a named tmux window, not in an agent foreground session",
+                "Document operator switch-over: the env var to change (POSTGRES_CONNECTION_STRING), the exact copy DB name, and that DISTRIBUTED_WORKERS=false must be set for that session (or the worker repointed) so the app and worker never straddle two databases",
+                "Warn in the same doc that exercising the copy makes it drift from production, so the US-020 restore drill must re-restore from a fresh dump rather than reuse a worn copy",
                 "Do not bind :5173 or :8000 — the primary checkout runs the operator's dev stack on those ports",
                 "make lint passes"
             ],

@@ -101,6 +101,12 @@ nobody spends effort fixing code that is scheduled for removal.
 
 ### Stage 1 — Sidecar
 
+> **What "sidecar" means here.** Temporary scaffolding, not an architecture. It is **not** the
+> "sidecar service" adoption shape that was considered and rejected — Aegra as a *permanent* service
+> behind Orchestra's API, adding a network hop to every token. This instance serves no traffic; it
+> exists only so Stages 2–5 have something real to validate against, and it is deleted at Stage 6
+> when Aegra takes over `:8000` directly. Two stacks, **two** databases — never two stacks sharing one.
+
 #### US-003: Stand up an Aegra sidecar against a copy database
 
 **Description:** As a developer, I want Aegra running beside the live stack against a restored copy of
@@ -124,6 +130,14 @@ the database, so every subsequent stage can be validated without risking product
       `(user_id, entity)` in-process, while Aegra's `/store/*` HTTP handlers auto-prefix
       `["users", <identity>]`. Record which surface owns which shape so later stages do not conflate them
 - [ ] The sidecar runs in a named tmux window, not in the foreground of an agent session
+- [ ] **Operator switch-over is documented**, since the operator will point their own stack at the copy
+      to exercise it:
+      - the env var to change (`POSTGRES_CONNECTION_STRING`) and the exact copy DB name
+      - **set `DISTRIBUTED_WORKERS=false` for that session, or repoint the worker too** — an app on the
+        copy with a worker still on `lg_template_dev` enqueues against one database and executes against
+        the other
+      - a warning that using the copy makes it **drift** from production, so the Stage 6 restore drill
+        (US-020) must re-restore from a fresh dump rather than reuse a worn copy
 
 ---
 
