@@ -36,6 +36,7 @@ export type SSEEventType =
 	| "messages"
 	| "values"
 	| "error"
+	| "mcp_sandbox_unreachable"
 	| "aborted";
 
 export interface MetadataEvent {
@@ -67,6 +68,17 @@ export interface ErrorEvent {
 	data: { error: string };
 }
 
+/**
+ * Emitted by the backend when the MCP sandbox server cannot be reached
+ * (`backend/src/utils/stream.py`, `backend/src/workers/tasks.py`). The payload
+ * is a human-readable string ("MCP sandbox unreachable: <detail>"), but it is
+ * typed as `unknown` so consumers must narrow before rendering it.
+ */
+export interface McpSandboxUnreachableEvent {
+	type: "mcp_sandbox_unreachable";
+	data: unknown;
+}
+
 export interface AbortedEvent {
 	type: "aborted";
 	data: { reason: string };
@@ -77,6 +89,7 @@ export type SSEEvent =
 	| MessagesEvent
 	| ValuesEvent
 	| ErrorEvent
+	| McpSandboxUnreachableEvent
 	| AbortedEvent;
 
 export interface DoneSignal {

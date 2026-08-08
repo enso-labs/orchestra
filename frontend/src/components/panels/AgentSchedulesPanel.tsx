@@ -37,10 +37,6 @@ import {
 	Bot,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-	isNetworkError,
-	notifyConnectionLost,
-} from "@/lib/utils/connectionToast";
 import { Badge } from "@/components/ui/badge";
 import { DialogDescription } from "@/components/ui/dialog";
 
@@ -80,10 +76,9 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 		try {
 			await createSchedule(scheduleData);
 			setShowCreateDialog(false);
-			toast.success("Schedule created successfully!");
 		} catch (error) {
+			// useAgentSchedules owns the toast for this failure; only log here.
 			console.error("Failed to create schedule:", error);
-			toast.error("Failed to create schedule");
 		}
 	};
 
@@ -94,8 +89,6 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			setShowEditDialog(true);
 		} catch (error) {
 			console.error("Failed to fetch schedule for editing:", error);
-			if (isNetworkError(error)) notifyConnectionLost();
-			else toast.error("Failed to load schedule for editing");
 		}
 	};
 
@@ -106,10 +99,8 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 			await updateSchedule(editingSchedule.id, scheduleData);
 			setShowEditDialog(false);
 			setEditingSchedule(null);
-			toast.success("Schedule updated successfully!");
 		} catch (error) {
 			console.error("Failed to update schedule:", error);
-			toast.error("Failed to update schedule");
 		}
 	};
 
@@ -117,10 +108,8 @@ export const AgentSchedulesPanel: React.FC<AgentSchedulesPanelProps> = ({
 		if (window.confirm("Are you sure you want to delete this schedule?")) {
 			try {
 				await deleteSchedule(scheduleId);
-				toast.success("Schedule deleted successfully!");
 			} catch (error) {
 				console.error("Failed to delete schedule:", error);
-				toast.error("Failed to delete schedule");
 			}
 		}
 	};
