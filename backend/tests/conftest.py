@@ -55,6 +55,30 @@ class TestInMemoryStore(InMemoryStore):
         self.fields = ["page_content", "metadata"]
 
 
+@pytest.fixture(autouse=True)
+def reset_store_singleton():
+    """Clear the process store singleton around every test.
+
+    `get_shared_store()` caches in a module global that outlives any
+    `with patch("src.services.db.get_store_db", ...)` block. Without this, the
+    first test to construct the singleton pins its double for the whole session:
+    every later patch is silently ignored, and the suite becomes
+    collection-order-dependent.
+
+    Deliberately **synchronous**. pytest does not apply async autouse fixtures to
+    `unittest.IsolatedAsyncioTestCase` classes (`tests/unit/services/prompt/
+    test_distill.py` has two), and those build a fresh event loop per test
+    method — exactly the case where a cached, loop-bound store does the most
+    damage. Dropping the references is enough here; tests that create a *real*
+    store are responsible for awaiting `close_shared_store()` themselves.
+    """
+    from src.services import db as db_module
+
+    db_module._reset_shared_store_state()
+    yield
+    db_module._reset_shared_store_state()
+
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create a single event loop for the entire test session."""
