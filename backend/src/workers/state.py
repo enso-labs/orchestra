@@ -4,8 +4,11 @@ This module provides singleton instances that persist across task executions
 within a single worker process. This pattern avoids the overhead of creating
 new database connections for every task.
 
-The checkpointer and store instances are created once when the worker starts
-and reused for all tasks processed by that worker.
+The checkpointer is created once when the worker starts and reused for all tasks
+processed by that worker. The store is the *process*-level singleton owned by
+``services/db.py`` (see :func:`src.services.db.get_shared_store`); this class holds
+a reference to it rather than its own instance, so the worker, the API, and the
+scheduler jobs each open exactly one store pool per process (#957).
 
 Design Rationale:
 - TaskIQ workers are single-threaded by default
@@ -14,7 +17,6 @@ Design Rationale:
 """
 
 import asyncio
-import contextlib
 import os
 import socket
 from typing import Optional
@@ -24,7 +26,7 @@ import redis.asyncio as redis
 from langgraph.store.postgres import AsyncPostgresStore
 
 from src.services.checkpoint_resilient import ResilientAsyncPostgresSaver
-from src.services.db import get_store_db
+from src.services.db import close_shared_store, get_shared_store
 from src.constants import (
     CHECKPOINT_ENABLE_FALLBACK,
     CHECKPOINT_HEALTH_CHECK_INTERVAL,
@@ -79,7 +81,6 @@ class WorkerState:
     _instance: Optional["WorkerState"] = None
     _checkpointer: Optional[ResilientAsyncPostgresSaver] = None
     _store: Optional[AsyncPostgresStore] = None
-    _store_exit_stack: Optional[contextlib.AsyncExitStack] = None
     _initialized: bool = False
     _init_lock: asyncio.Lock = asyncio.Lock()
 
@@ -146,9 +147,10 @@ class WorkerState:
                 # Ensure checkpoint tables exist
                 await instance._checkpointer.setup()
 
-                # Create singleton store via AsyncExitStack to manage the context manager
-                instance._store_exit_stack = contextlib.AsyncExitStack()
-                instance._store = await instance._store_exit_stack.enter_async_context(get_store_db())
+                # Store lifecycle now lives in services/db.py, so the worker process
+                # and anything else importing it share one instance (#957). Holding a
+                # second exit stack here would mean two owners of one resource.
+                instance._store = await get_shared_store()
 
                 instance._initialized = True
                 logger.info(
@@ -167,22 +169,14 @@ class WorkerState:
     @classmethod
     async def _cleanup_resources(cls, instance: "WorkerState") -> None:
         """Release any resources on the instance, regardless of _initialized state."""
-        if instance._store_exit_stack:
+        # The store is owned by services/db.py; closing it also cancels its internal
+        # batch loop task. Idempotent, so the double call from initialize()'s failure
+        # branch and from shutdown() is safe.
+        if instance._store is not None:
             try:
-                await instance._store_exit_stack.aclose()
+                await close_shared_store()
             except Exception as e:
-                logger.warning("Error closing store exit stack during cleanup: %s", e)
-            instance._store_exit_stack = None
-
-        # Defense-in-depth: cancel store's internal batch loop task
-        if instance._store and hasattr(instance._store, "_task"):
-            task = instance._store._task
-            if task and not task.done():
-                task.cancel()
-                try:
-                    await asyncio.wait_for(task, timeout=5.0)
-                except (asyncio.CancelledError, asyncio.TimeoutError):
-                    pass
+                logger.warning("Error closing shared store during cleanup: %s", e)
         instance._store = None
 
         if instance._checkpointer:
@@ -204,12 +198,7 @@ class WorkerState:
         """
         instance = cls.get_instance()
 
-        has_resources = (
-            instance._initialized
-            or instance._checkpointer is not None
-            or instance._store is not None
-            or instance._store_exit_stack is not None
-        )
+        has_resources = instance._initialized or instance._checkpointer is not None or instance._store is not None
         if not has_resources:
             logger.debug("Worker state has no resources, nothing to shutdown")
             return

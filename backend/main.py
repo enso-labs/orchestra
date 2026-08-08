@@ -14,8 +14,9 @@ load_dotenv()
 from src.routes.v0 import create_api_router, mount_static_router
 from src.utils.logger import logger
 from src.services.db import (
+    close_shared_store,
     get_checkpoint_db,
-    get_store_db,
+    get_shared_store,
 )
 from src.constants import (
     HOST,
@@ -68,6 +69,12 @@ async def lifespan(app: FastAPI):
     if APP_ENV == "production" or APP_ENV == "staging":
         run_migrations()
 
+    # Build the process store BEFORE starting the scheduler. Its jobs now consume
+    # the same singleton, and a restored job that misfires on startup can fire as
+    # soon as the scheduler starts -- so the store must already exist rather than
+    # being lazily created by whichever caller happens to arrive first.
+    store = await get_shared_store()
+
     schedule_service.scheduler.start()
 
     # Register daily prompt distillation job (runs at 03:00 UTC)
@@ -86,11 +93,10 @@ async def lifespan(app: FastAPI):
     # Initialize cache
     init_cache()
 
-    # Enter the async context managers to get live instances
-    async with (
-        get_checkpoint_db() as saver,
-        get_store_db() as store,
-    ):
+    # The checkpointer is still per-lifespan; only the store is a process singleton
+    # (owned by `services/db.py`, so workers and the pickled scheduler jobs reach the
+    # same instance without an app in scope).
+    async with get_checkpoint_db() as saver:
         # optional: create tables/indexes
         await saver.setup()
         await store.setup()
@@ -100,10 +106,23 @@ async def lifespan(app: FastAPI):
         # Also set on api_app for MCP internal calls (ASGITransport uses api_app)
         api_app.state.store = store
 
-        # Run MCP lifespan within our lifespan
-        async with mcp_app.lifespan(app):
-            # serve requests
-            yield
+        try:
+            # Run MCP lifespan within our lifespan
+            async with mcp_app.lifespan(app):
+                # serve requests
+                yield
+        finally:
+            # Shut the scheduler down FIRST. Its jobs consume the same store, and
+            # `misfire_grace_time=3600` on the distillation job means one can fire
+            # during teardown -- onto a pool we are about to close.
+            try:
+                schedule_service.scheduler.shutdown(wait=True)
+            except Exception as e:
+                logger.warning(f"Error shutting down scheduler: {e}")
+            try:
+                await close_shared_store()
+            except Exception as e:
+                logger.warning(f"Error closing shared store: {e}")
 
 
 # Create combined app with both REST and MCP routes

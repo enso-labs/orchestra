@@ -121,23 +121,21 @@ async def test_heartbeat_key_written_to_redis(fake_redis):
 
     with (
         patch("src.workers.state.ResilientAsyncPostgresSaver") as mock_saver_cls,
-        patch("src.workers.state.get_store_db") as mock_store_db,
+        # Must be patched where `state.py` binds the name, not in `services.db`:
+        # the module does `from src.services.db import ... get_shared_store`, so a
+        # patch on the source module would be inert -- and this test swallows the
+        # exception from initialize(), so an unpatched call would silently open a
+        # real pool and cache it as this process's store singleton.
+        patch("src.workers.state.get_shared_store") as mock_shared_store,
         patch("src.workers.state.redis", create=True) as mock_redis_mod,
     ):
         # Stub out saver
         mock_saver = AsyncMock()
         mock_saver_cls.return_value = mock_saver
 
-        # Stub out store context manager
-        import contextlib
-
-        mock_store = AsyncMock()
-
-        @contextlib.asynccontextmanager
-        async def _fake_store_db():
-            yield mock_store
-
-        mock_store_db.return_value = _fake_store_db()
+        # `get_shared_store()` is an awaitable returning the store, not a context
+        # manager -- that is the shape change #957 made.
+        mock_shared_store.return_value = AsyncMock()
 
         # Point any redis.from_url call inside state.py to our fake_redis
         mock_redis_mod.from_url = lambda *a, **kw: fake_redis

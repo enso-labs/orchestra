@@ -21,6 +21,7 @@ from src.contexts.service import ServiceContext
 from src.schemas.entities import LLMRequest
 from src.workers.broker import broker
 from src.constants.redis import REDIS_URL
+from src.services.db import RunScopedStore
 from src.services.idempotency import claim_run
 from src.utils.stream import get_distributed_stream_key, STREAM_KEY_TTL_SECONDS
 
@@ -58,32 +59,11 @@ def _extract_user_message_text(task_dict: dict) -> str:
     return " ".join(parts)
 
 
-class _RunScopedStore:
-    """Thin proxy around a shared store that isolates mutable attributes per-run.
-
-    The singleton ``AsyncPostgresStore`` in ``WorkerState`` is shared across
-    concurrent task executions.  Downstream code (``ThreadRepo``, ``LLMController``)
-    mutates ``store.fields`` to control which columns are returned.  Without
-    isolation those mutations leak across tasks.
-
-    This proxy captures ``fields`` on a per-run basis while delegating every
-    other attribute access to the underlying store.
-    """
-
-    __slots__ = ("_store", "fields")
-
-    def __init__(self, store):
-        object.__setattr__(self, "_store", store)
-        object.__setattr__(self, "fields", getattr(store, "fields", []))
-
-    def __getattr__(self, name):
-        return getattr(object.__getattribute__(self, "_store"), name)
-
-    def __setattr__(self, name, value):
-        if name in ("fields",):
-            object.__setattr__(self, name, value)
-        else:
-            setattr(object.__getattribute__(self, "_store"), name, value)
+# The proxy moved to services/db.py when the store became a process-level singleton
+# (#957) -- the scheduler jobs in services/schedule.py need it too, and importing it
+# from workers/ would drag the taskiq module graph into the API process. Aliased here
+# so existing references keep working.
+_RunScopedStore = RunScopedStore
 
 
 def _build_stream_metadata(
@@ -179,7 +159,7 @@ async def run_agent_stream(
 
     from src.schemas.entities import LLMRequest
     from src.agents import init_config
-    from src.services.db import get_checkpoint_db, get_store_db
+    from src.services.db import get_checkpoint_db, get_shared_store
     from src.contexts.service import ServiceContext
     from src.utils.logger import logger
     from src.constants import CHECKPOINT_USE_RESILIENT
@@ -296,11 +276,10 @@ async def run_agent_stream(
                 stream_mode=stream_mode,
             )
         else:
-            # Legacy mode: per-task checkpointer
-            async with (
-                get_store_db() as store,
-                get_checkpoint_db() as checkpointer,
-            ):
+            # Legacy mode: per-task checkpointer. The store is the process singleton
+            # even here -- only the checkpointer is per-task (#957).
+            store = RunScopedStore(await get_shared_store())
+            async with get_checkpoint_db() as checkpointer:
                 service_context = ServiceContext(
                     user_id=user_id,
                     store=store,
@@ -902,102 +881,104 @@ async def extract_trajectory(thread_id: str, user_id: str, assistant_id: str) ->
 
     from langmem.prompts.types import AnnotatedTrajectory
 
-    from src.services.db import get_store_db
+    from src.services.db import get_shared_store
     from src.services.thread import ThreadService
     from src.utils.logger import logger
 
     try:
-        async with get_store_db() as store:
-            # 1. Load conversation messages from thread
-            thread_service = ThreadService(user_id=user_id, store=store)
-            thread = await thread_service.get(thread_id)
+        # Process-level singleton, wrapped so this run's `fields` assignments stay
+        # local to it (#957). Never `async with` it -- we do not own its lifecycle.
+        store = RunScopedStore(await get_shared_store())
+        # 1. Load conversation messages from thread
+        thread_service = ThreadService(user_id=user_id, store=store)
+        thread = await thread_service.get(thread_id)
 
-            if not thread or not getattr(thread, "messages", None):
-                logger.info(
-                    "trajectory_skip_no_messages",
-                    extra={"event": "trajectory_skip_no_messages", "thread_id": thread_id},
-                )
-                return {"status": "skipped", "reason": "no_messages"}
-
-            messages: list = thread.messages if isinstance(thread.messages, list) else []
-
-            # 2. Convert messages to AnnotatedTrajectory format and derive quality signals
-            trajectory_messages: list[dict] = []
-            tool_messages_total = 0
-            tool_messages_error = 0
-            hitl_rejections = 0
-
-            for msg in messages:
-                if isinstance(msg, dict):
-                    msg_type = msg.get("type", "")
-                    content = msg.get("content", "")
-                else:
-                    msg_type = getattr(msg, "type", "")
-                    content = getattr(msg, "content", "")
-
-                text = _extract_text_content(content)
-
-                if msg_type in ("human", "user"):
-                    trajectory_messages.append({"role": "user", "content": text})
-                    # Detect HITL rejection responses
-                    if "rejected this action" in text.lower():
-                        hitl_rejections += 1
-
-                elif msg_type in ("ai", "assistant"):
-                    trajectory_messages.append({"role": "assistant", "content": text})
-
-                elif msg_type == "tool":
-                    tool_messages_total += 1
-                    lower_text = text.lower()
-                    if any(indicator in lower_text for indicator in ("error", "exception", "traceback", "failed")):
-                        tool_messages_error += 1
-
-            if not trajectory_messages:
-                logger.info(
-                    "trajectory_skip_empty",
-                    extra={"event": "trajectory_skip_empty", "thread_id": thread_id},
-                )
-                return {"status": "skipped", "reason": "no_trajectory_messages"}
-
-            # 3. Build feedback dict with quality signals
-            conversation_length = len(trajectory_messages)
-            tool_success_rate = (
-                (tool_messages_total - tool_messages_error) / tool_messages_total if tool_messages_total > 0 else None
-            )
-
-            feedback: dict = {"conversation_length": conversation_length}
-            if tool_success_rate is not None:
-                feedback["tool_success_rate"] = round(tool_success_rate, 3)
-            if hitl_rejections > 0:
-                feedback["hitl_rejections"] = hitl_rejections
-
-            # 4. Format as AnnotatedTrajectory
-            trajectory = AnnotatedTrajectory(messages=trajectory_messages, feedback=feedback)
-
-            # 5. Store in (user_id, "trajectories", assistant_id) namespace
-            trajectory_id = str(uuid.uuid4())
-            namespace = (user_id, "trajectories", assistant_id)
-            await store.aput(namespace=namespace, key=trajectory_id, value=trajectory._asdict())
-
+        if not thread or not getattr(thread, "messages", None):
             logger.info(
-                "trajectory_extracted",
-                extra={
-                    "event": "trajectory_extracted",
-                    "thread_id": thread_id,
-                    "user_id": user_id,
-                    "assistant_id": assistant_id,
-                    "trajectory_id": trajectory_id,
-                    "conversation_length": conversation_length,
-                    "tool_success_rate": tool_success_rate,
-                    "hitl_rejections": hitl_rejections,
-                },
+                "trajectory_skip_no_messages",
+                extra={"event": "trajectory_skip_no_messages", "thread_id": thread_id},
             )
+            return {"status": "skipped", "reason": "no_messages"}
 
-            return {
-                "status": "success",
+        messages: list = thread.messages if isinstance(thread.messages, list) else []
+
+        # 2. Convert messages to AnnotatedTrajectory format and derive quality signals
+        trajectory_messages: list[dict] = []
+        tool_messages_total = 0
+        tool_messages_error = 0
+        hitl_rejections = 0
+
+        for msg in messages:
+            if isinstance(msg, dict):
+                msg_type = msg.get("type", "")
+                content = msg.get("content", "")
+            else:
+                msg_type = getattr(msg, "type", "")
+                content = getattr(msg, "content", "")
+
+            text = _extract_text_content(content)
+
+            if msg_type in ("human", "user"):
+                trajectory_messages.append({"role": "user", "content": text})
+                # Detect HITL rejection responses
+                if "rejected this action" in text.lower():
+                    hitl_rejections += 1
+
+            elif msg_type in ("ai", "assistant"):
+                trajectory_messages.append({"role": "assistant", "content": text})
+
+            elif msg_type == "tool":
+                tool_messages_total += 1
+                lower_text = text.lower()
+                if any(indicator in lower_text for indicator in ("error", "exception", "traceback", "failed")):
+                    tool_messages_error += 1
+
+        if not trajectory_messages:
+            logger.info(
+                "trajectory_skip_empty",
+                extra={"event": "trajectory_skip_empty", "thread_id": thread_id},
+            )
+            return {"status": "skipped", "reason": "no_trajectory_messages"}
+
+        # 3. Build feedback dict with quality signals
+        conversation_length = len(trajectory_messages)
+        tool_success_rate = (
+            (tool_messages_total - tool_messages_error) / tool_messages_total if tool_messages_total > 0 else None
+        )
+
+        feedback: dict = {"conversation_length": conversation_length}
+        if tool_success_rate is not None:
+            feedback["tool_success_rate"] = round(tool_success_rate, 3)
+        if hitl_rejections > 0:
+            feedback["hitl_rejections"] = hitl_rejections
+
+        # 4. Format as AnnotatedTrajectory
+        trajectory = AnnotatedTrajectory(messages=trajectory_messages, feedback=feedback)
+
+        # 5. Store in (user_id, "trajectories", assistant_id) namespace
+        trajectory_id = str(uuid.uuid4())
+        namespace = (user_id, "trajectories", assistant_id)
+        await store.aput(namespace=namespace, key=trajectory_id, value=trajectory._asdict())
+
+        logger.info(
+            "trajectory_extracted",
+            extra={
+                "event": "trajectory_extracted",
+                "thread_id": thread_id,
+                "user_id": user_id,
+                "assistant_id": assistant_id,
                 "trajectory_id": trajectory_id,
                 "conversation_length": conversation_length,
-            }
+                "tool_success_rate": tool_success_rate,
+                "hitl_rejections": hitl_rejections,
+            },
+        )
+
+        return {
+            "status": "success",
+            "trajectory_id": trajectory_id,
+            "conversation_length": conversation_length,
+        }
 
     except Exception as e:
         logger.error(
