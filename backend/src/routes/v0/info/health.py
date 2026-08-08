@@ -52,19 +52,25 @@ async def check_db_pool_health():
 async def check_store_health(
     store: AsyncPostgresStore = Depends(get_store),
 ):
-    """Check if the AsyncPostgresStore connection is healthy"""
+    """Check if the AsyncPostgresStore connection is healthy.
+
+    Reads the injected store without entering it as a context manager. The store
+    is the application-wide singleton created once in the lifespan
+    (`main.py`) and handed out by `get_store`, so this probe does not own its
+    lifecycle -- `async with store` here would run the singleton's
+    `__aenter__`/`__aexit__` on every poll of a diagnostic endpoint.
+    """
     try:
         # Test basic store operation with timeout
         async with asyncio.timeout(5.0):  # 5 second timeout
-            async with store as s:
-                # Try a simple search operation
-                await s.asearch(("health_check",), limit=1)
-                return {
-                    "status": "healthy",
-                    "store_type": type(store).__name__,
-                    "test_operation": "search",
-                    "message": "Store connection is working",
-                }
+            # Try a simple search operation
+            await store.asearch(("health_check",), limit=1)
+            return {
+                "status": "healthy",
+                "store_type": type(store).__name__,
+                "test_operation": "search",
+                "message": "Store connection is working",
+            }
     except asyncio.TimeoutError:
         logger.error("Store health check timed out")
         raise HTTPException(status_code=503, detail="Store connection timeout - service unavailable")
