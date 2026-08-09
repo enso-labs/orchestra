@@ -72,6 +72,8 @@ docker pull ghcr.io/ruska-ai/orchestra:latest
 
 ### 1. Environment Setup
 
+See the [canonical environment-variable guide](../docs/environment-variables.md) before creating the deployment file.
+
 Create a `.env.docker` file in the `backend/` directory:
 
 ```bash
@@ -175,6 +177,8 @@ docker build -t orchestra:local -f infra/backend.Dockerfile backend
 ```
 
 ## ⚙️ Environment Variables
+
+See the [canonical environment-variable guide](../docs/environment-variables.md). The table below is retained as a quick reference.
 
 ### Application Config
 
