@@ -1,0 +1,30 @@
+# Copy this file to settings.yml and replace the placeholder secret before starting SearXNG.
+use_default_settings: true
+
+server:
+  bind_address: 0.0.0.0
+  limiter: true
+  public_instance: false
+  api: true
+  secret_key: "REPLACE_WITH_A_RANDOM_SECRET"
+
+# Keep production diagnostics disabled. The API and JSON format are intentionally enabled
+# for Orchestra's search integration; the service has no published host port in Compose.
+general:
+  debug: false
+
+search:
+  default_lang: en
+  formats:
+    - html
+    - json
+
+engines:
+  - name: wikipedia
+    disabled: true
+  - name: wikipedia (en)
+    disabled: true
+  - name: wikidata
+    disabled: false
+  - name: startpage
+    disabled: false

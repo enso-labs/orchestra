@@ -1,0 +1,157 @@
+name: orchestra-production
+
+services:
+  api:
+    environment:
+      POSTGRES_CONNECTION_STRING: ${ORCHESTRA_POSTGRES_CONNECTION_STRING:-postgresql://${ORCHESTRA_POSTGRES_USER:-orchestra}:${ORCHESTRA_POSTGRES_PASSWORD}@postgres:5432/${ORCHESTRA_POSTGRES_DB:-orchestra}}
+      POSTGRES_CONNECTION_STRING_SESSION: ${ORCHESTRA_POSTGRES_CONNECTION_STRING_SESSION:-postgresql://${ORCHESTRA_POSTGRES_USER:-orchestra}:${ORCHESTRA_POSTGRES_PASSWORD}@postgres:5432/${ORCHESTRA_POSTGRES_DB:-orchestra}}
+      REDIS_URL: ${ORCHESTRA_REDIS_URL:-redis://:${ORCHESTRA_REDIS_PASSWORD}@redis:6379/0}
+      MINIO_HOST: minio:9000
+      S3_REGION: ${ORCHESTRA_S3_REGION:-us-east-1}
+      ACCESS_KEY_ID: ${ORCHESTRA_MINIO_ROOT_USER:?ORCHESTRA_MINIO_ROOT_USER must be set}
+      ACCESS_SECRET_KEY: ${ORCHESTRA_MINIO_ROOT_PASSWORD:?ORCHESTRA_MINIO_ROOT_PASSWORD must be set}
+      BUCKET: ${ORCHESTRA_MINIO_BUCKET:-orchestra}
+      SEARX_SEARCH_HOST_URL: http://search_engine:8080
+      OLLAMA_BASE_URL: ${ORCHESTRA_OLLAMA_BASE_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio_init:
+        condition: service_completed_successfully
+      search_engine:
+        condition: service_healthy
+
+  worker:
+    environment:
+      POSTGRES_CONNECTION_STRING: ${ORCHESTRA_POSTGRES_CONNECTION_STRING:-postgresql://${ORCHESTRA_POSTGRES_USER:-orchestra}:${ORCHESTRA_POSTGRES_PASSWORD}@postgres:5432/${ORCHESTRA_POSTGRES_DB:-orchestra}}
+      POSTGRES_CONNECTION_STRING_SESSION: ${ORCHESTRA_POSTGRES_CONNECTION_STRING_SESSION:-postgresql://${ORCHESTRA_POSTGRES_USER:-orchestra}:${ORCHESTRA_POSTGRES_PASSWORD}@postgres:5432/${ORCHESTRA_POSTGRES_DB:-orchestra}}
+      REDIS_URL: ${ORCHESTRA_REDIS_URL:-redis://:${ORCHESTRA_REDIS_PASSWORD}@redis:6379/0}
+      MINIO_HOST: minio:9000
+      S3_REGION: ${ORCHESTRA_S3_REGION:-us-east-1}
+      ACCESS_KEY_ID: ${ORCHESTRA_MINIO_ROOT_USER:?ORCHESTRA_MINIO_ROOT_USER must be set}
+      ACCESS_SECRET_KEY: ${ORCHESTRA_MINIO_ROOT_PASSWORD:?ORCHESTRA_MINIO_ROOT_PASSWORD must be set}
+      BUCKET: ${ORCHESTRA_MINIO_BUCKET:-orchestra}
+      SEARX_SEARCH_HOST_URL: http://search_engine:8080
+      OLLAMA_BASE_URL: ${ORCHESTRA_OLLAMA_BASE_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio_init:
+        condition: service_completed_successfully
+      search_engine:
+        condition: service_healthy
+
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${ORCHESTRA_POSTGRES_USER:-orchestra}
+      POSTGRES_PASSWORD: ${ORCHESTRA_POSTGRES_PASSWORD:?ORCHESTRA_POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${ORCHESTRA_POSTGRES_DB:-orchestra}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7.4.10-alpine3.21
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${ORCHESTRA_REDIS_PASSWORD:?ORCHESTRA_REDIS_PASSWORD must be set}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${ORCHESTRA_REDIS_PASSWORD:?ORCHESTRA_REDIS_PASSWORD must be set}"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${ORCHESTRA_MINIO_ROOT_USER:?ORCHESTRA_MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${ORCHESTRA_MINIO_ROOT_PASSWORD:?ORCHESTRA_MINIO_ROOT_PASSWORD must be set}
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  minio_init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${ORCHESTRA_MINIO_ROOT_USER:?ORCHESTRA_MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${ORCHESTRA_MINIO_ROOT_PASSWORD:?ORCHESTRA_MINIO_ROOT_PASSWORD must be set}
+      ORCHESTRA_MINIO_BUCKET: ${ORCHESTRA_MINIO_BUCKET:-orchestra}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set orchestra http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        && mc mb --ignore-existing "orchestra/$$ORCHESTRA_MINIO_BUCKET"
+
+  search_engine:
+    image: searxng/searxng:2026.8.5-1689cb1b5
+    restart: unless-stopped
+    environment:
+      SEARXNG_SETTINGS_PATH: /etc/searxng/settings.yml
+    volumes:
+      - searxng_cache:/var/cache/searxng
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=5).read()
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  ollama:
+    image: ollama/ollama:0.32.6
+    profiles: ["ollama"]
+    restart: unless-stopped
+    command: ["serve"]
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  searxng_cache:
+  ollama_data:

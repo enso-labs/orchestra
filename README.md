@@ -42,7 +42,7 @@ Self-host for free or let us deploy it for you. Your agents, your data, your inf
 
 | Option | Best For | Get Started |
 |--------|----------|-------------|
-| **Community (Free)** | Developers, self-hosting | `docker pull ghcr.io/ruska-ai/orchestra:latest` |
+| **Community (Free)** | Developers, self-hosting | `docker pull ghcr.io/ruska-ai/orchestra-api:latest` |
 | **Managed Cloud** | Teams wanting convenience | [chat.ruska.ai](https://chat.ruska.ai) |
 | **Enterprise** | Organizations needing SSO, compliance, SLA | [Contact Us](https://ruska.ai/enterprise) |
 
@@ -58,10 +58,11 @@ This project includes tools for running shell commands and Docker container oper
 
 ## 🐳 Docker Deployment (GHCR)
 
-We publish the backend image to GitHub Container Registry (GHCR). For the full Docker/Docker Compose deployment guide (env setup, services, migrations, troubleshooting), jump to [Docker Deployment details](#-docker-deployment-ghcr--docker-compose).
+We publish separate API and worker images to GitHub Container Registry (GHCR). For the full Docker/Docker Compose deployment guide (env setup, services, migrations, troubleshooting), jump to [Docker Deployment details](#-docker-deployment-ghcr--docker-compose).
 
 ```bash
-docker pull ghcr.io/ruska-ai/orchestra:latest
+docker pull ghcr.io/ruska-ai/orchestra-api:latest
+docker pull ghcr.io/ruska-ai/orchestra-worker:latest
 ```
 
 ## 📋 Prerequisites
@@ -109,7 +110,7 @@ For all commands, see `backend/Makefile`.
 
     ```bash
     cd <project-root>
-    docker compose up postgres
+    docker compose -f infra/docker-compose.yml up postgres
     ```
 
 ### Dockerized Dev Stack
@@ -290,250 +291,198 @@ We partner with you to deploy Orchestra inside your infrastructure. [Contact us]
 
 ## 🐳 Docker Deployment (GHCR / Docker Compose)
 
-This section covers deploying the Orchestra backend using Docker. For local development, see the sections above.
+This section covers the production registry deployment. For local development, use
+`infra/docker-compose.yml`; it is intentionally separate from the production files.
+The production files are self-contained under `deploy/` and never build images.
 
-### 📋 Prerequisites
+### 📋 VM prerequisites
 
--   [Docker](https://docs.docker.com/engine/install/) installed
--   [Docker Compose](https://docs.docker.com/compose/install/) installed
--   Access to AI provider API keys (OpenAI, Anthropic, etc.)
+Use a supported Linux VM with:
 
-### 🚀 Quick Start
+- [Docker Engine](https://docs.docker.com/engine/install/) and the Compose v2 plugin
+- At least 2 vCPUs, 4 GB RAM, and persistent disk sized for Postgres, MinIO, and logs
+- A firewall that permits SSH and your TLS reverse proxy, but not database, Redis,
+  MinIO, SearXNG, or Ollama ports
+- A DNS name and TLS termination in front of the API if it will be internet-facing
 
-#### Using Pre-built Image
+### 🔐 GHCR and environment setup
 
-Pull the latest image from GitHub Container Registry:
-
-```bash
-docker pull ghcr.io/ruska-ai/orchestra:latest
-```
-
-#### 1. Environment Setup
-
-See the [canonical environment-variable guide](./docs/environment-variables.md) before creating the deployment file.
-
-Create a `.env.docker` file in the `backend/` directory:
+The images are private registry images in some deployments. Authenticate on the VM
+with a GitHub token that has `read:packages` (do not put the token in a committed file):
 
 ```bash
-cd backend
-cp .example.env .env.docker
+export GHCR_USERNAME=your-github-user
+read -rsp 'GHCR token: ' GHCR_TOKEN; echo
+echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+unset GHCR_TOKEN
 ```
 
-Update the following values for Docker networking:
+Create the ignored runtime env file from the tracked production template. Replace
+all `replace-with-*` values, use URL-safe database credentials when the overlay will
+construct a connection URL, and never commit the copied file:
 
 ```bash
-# Database - use container name instead of localhost
-POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@postgres:5432/orchestra?sslmode=disable"
-
-# Tools - use container names for internal services
-SEARX_SEARCH_HOST_URL="http://search_engine:8080"
+cp deploy/.example.env deploy/orchestra.env
+chmod 600 deploy/orchestra.env
+# Edit deploy/orchestra.env with strong keys, service URLs, and at least one model provider key.
 ```
 
-#### 2. Start Services
-
-From the project root directory:
+Generate signing keys, for example. `APP_SECRET_KEY` is a Fernet key, while
+`JWT_SECRET_KEY` can be any long random signing value:
 
 ```bash
-# Start database and backend
-docker compose up postgres orchestra
-
-# Or start all services
-docker compose up
+openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n'                                # APP_SECRET_KEY (Fernet)
+openssl rand -hex 32                                                                         # JWT_SECRET_KEY
 ```
 
-#### 3. Verify Deployment
+### 🚀 Base-only deployment (external dependencies)
 
-The API will be available at `http://localhost:8000`
-
--   API Docs: `http://localhost:8000/docs`
--   Health Check: `http://localhost:8000/health`
-
-### 🧩 Docker Compose Services
-
-| Service         | Port      | Description                        |
-| --------------- | --------- | ---------------------------------- |
-| `orchestra`     | 8000      | Backend API                        |
-| `postgres`      | 5432      | PostgreSQL with pgvector           |
-| `minio`         | 9000/9001 | S3-compatible file storage         |
-| `search_engine` | 8080      | SearXNG search engine              |
-| `ollama`        | 11434     | Local LLM inference (requires GPU) |
-| `redis`         | 6379      | Redis message broker (for workers) |
-| `worker`        | -         | TaskIQ worker (no exposed port)    |
-
-### 🧱 Docker Compose Example
-
-```yaml
-services:
-    # PGVector
-    postgres:
-        image: pgvector/pgvector:pg16
-        container_name: postgres
-        environment:
-            POSTGRES_USER: admin
-            POSTGRES_PASSWORD: test1234
-            POSTGRES_DB: postgres
-        ports:
-            - "5432:5432"
-
-    # Server (use pre-built image or build locally)
-    orchestra:
-        image: ghcr.io/ruska-ai/orchestra:latest
-        container_name: orchestra
-        env_file: .env.docker
-        ports:
-            - "8000:8000"
-        depends_on:
-            - postgres
-```
-
-### 🏗️ Build Commands
-
-#### Build with Script (Recommended)
-
-The build script copies the Docker deployment README into the image and handles tagging:
+The base stack contains only the registry API and worker images. It does not start
+Postgres, Redis, MinIO, SearXNG, or Ollama, so all dependency URLs can point to
+managed or separately operated services. `ORCHESTRA_IMAGE_TAG` defaults to `latest` and the
+API binds only to loopback; put a reverse proxy in front of it when remote access is
+needed.
 
 ```bash
-# From project root
+cd /path/to/orchestra
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml up -d
+
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml ps
+curl --fail "http://$(docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml port api 8000)/api/info/health"
+```
+
+For a release tag, set `ORCHESTRA_IMAGE_TAG=your-tag` in the runtime environment.
+Production startup runs migrations automatically. If you need a separate migration
+step, use the entrypoint override below before routing traffic:
+
+```bash
+# Production startup runs Alembic automatically. To run it explicitly without
+# starting the API entrypoint, override the image entrypoint:
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml run --rm --no-deps --entrypoint python api \
+  -m alembic upgrade head
+```
+
+### 🧩 Explicit database overlay
+
+The database overlay is opt-in. It adds private-network-only Postgres with pgvector,
+Redis, MinIO, and SearXNG, and overrides API/worker URLs and dependency ordering to
+use the Compose service names. It also runs an idempotent MinIO bucket initializer.
+It does not load merely because it is next to the base file; always pass both files explicitly:
+
+```bash
+mkdir -p deploy/searxng
+cp deploy/searxng/settings.example.yml deploy/searxng/settings.yml
+sed -i "s/REPLACE_WITH_A_RANDOM_SECRET/$(openssl rand -hex 32)/" \
+  deploy/searxng/settings.yml
+chmod 600 deploy/searxng/settings.yml
+
+# Replace the overlay credentials in deploy/orchestra.env first. The template includes
+# ORCHESTRA_POSTGRES_PASSWORD, ORCHESTRA_REDIS_PASSWORD,
+# ORCHESTRA_MINIO_ROOT_USER, and ORCHESTRA_MINIO_ROOT_PASSWORD.
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml up -d
+
+# Production startup runs Alembic automatically. To run it explicitly:
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml \
+  run --rm --no-deps --entrypoint python api -m alembic upgrade head
+```
+
+Dependency ports are not published to the VM host. SearXNG has API and JSON enabled
+but is reachable only by the API and worker on the private Compose network. The
+tracked `settings.example.yml` is non-debug and contains no usable secret; generate
+and keep the ignored `deploy/searxng/settings.yml` on the VM.
+
+### 🦙 Optional Ollama profile
+
+Ollama is in the database overlay but has its own `ollama` profile. Enabling the
+database overlay alone does not require a GPU or download a model. To use local
+inference, set `ORCHESTRA_OLLAMA_BASE_URL=http://ollama:11434` in
+`deploy/orchestra.env`, then start the profile:
+
+```bash
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml \
+  --profile ollama up -d
+
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml \
+  exec ollama ollama pull llama3.2
+```
+
+The profile uses the standard `ollama serve` command and persists models in the
+`ollama_data` volume. Configure a suitable CPU/GPU VM separately; model downloads
+are intentionally an explicit operator action. For production updates, set an
+immutable `ORCHESTRA_IMAGE_TAG` and pull before recreating the API and worker:
+`docker compose ... pull api worker` followed by `docker compose ... up -d --pull always`.
+
+### ✅ Health checks and lifecycle
+
+Inspect health and logs with the same file list used to start the stack:
+
+```bash
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml ps
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml logs --tail=100 api worker
+```
+
+Use `docker compose stop` for a temporary pause and `docker compose start` to resume.
+Use `docker compose down` to remove containers and the network while retaining named
+volumes. Do not use `down -v` unless you intentionally want to destroy application
+data. Back up Postgres (including pgvector data), MinIO buckets, and the runtime
+SearXNG settings before VM replacement or any volume cleanup; test restores before
+calling a backup usable.
+
+### 🛠️ Custom image builds (development)
+
+The production deployment consumes the tagged GHCR images and never builds on the VM.
+For local development or a custom image, use the existing build script or Dockerfile:
+
+```bash
 bash backend/scripts/build.sh
-
-# Or with custom tag
-bash backend/scripts/build.sh v1.0.0
-```
-
-#### Build with Docker Compose
-
-```bash
-docker compose build orchestra
-```
-
-#### Manual Build
-
-```bash
-# Copy README first, then build (Dockerfile lives in infra/)
+# Or build a local API image directly:
 cp infra/README.md backend/README.md
 docker build -t orchestra:local -f infra/backend.Dockerfile backend
 ```
 
-### ⚙️ Environment Variables
+The Dockerized development stack remains `infra/docker-compose.yml`; it is separate
+from the production files under `deploy/`.
 
-#### Application Config
+### ⚙️ Environment reference
 
-| Variable         | Description                          | Default       |
-| ---------------- | ------------------------------------ | ------------- |
-| `APP_ENV`        | Environment (development/production) | `development` |
-| `APP_LOG_LEVEL`  | Logging level                        | `DEBUG`       |
-| `APP_SECRET_KEY` | Application secret key               | -             |
-| `JWT_SECRET_KEY` | JWT signing key                      | -             |
-| `USER_AGENT`     | User agent string for requests       | `ruska-dev`    |
-| `TEST_USER_ID`   | Test user UUID                       | -             |
+The tracked `deploy/.example.env` is the production-oriented starting point. The
+[canonical environment-variable guide](./docs/environment-variables.md) remains the
+source of truth for provider and application settings.
 
-#### Database
-
-| Variable                     | Description                  | Default |
-| ---------------------------- | ---------------------------- | ------- |
-| `POSTGRES_CONNECTION_STRING` | PostgreSQL connection string | -       |
-
-#### AI Providers (at least one required)
-
-| Variable            | Description       | Default |
-| ------------------- | ----------------- | ------- |
-| `OPENAI_API_KEY`    | OpenAI API key    | -       |
-| `GROQ_API_KEY`      | Groq API key      | -       |
-| `ANTHROPIC_API_KEY` | Anthropic API key | -       |
-| `XAI_API_KEY`       | xAI API key       | -       |
-| `OLLAMA_BASE_URL`   | Ollama server URL | -       |
-
-#### Tool Config
-
-| Variable                | Description              | Default                      |
-| ----------------------- | ------------------------ | ---------------------------- |
-| `SEARX_SEARCH_HOST_URL` | SearXNG search endpoint  | `http://localhost:8080`      |
-| `TAVILY_API_KEY`        | Tavily search API key    | -                            |
-
-#### Distributed Workers (Optional)
-
-| Variable              | Description                    | Default |
-| --------------------- | ------------------------------ | ------- |
-| `REDIS_URL`           | Redis connection for task queue | -       |
-| `DISTRIBUTED_WORKERS` | Enable distributed worker mode | `false` |
-
-> **Note**: When enabled, run the worker process separately: `make dev.worker`
-
-#### Storage
-
-| Variable            | Description       | Default    |
-| ------------------- | ----------------- | ---------- |
-| `MINIO_HOST`        | MinIO/S3 host URL | -          |
-| `S3_REGION`         | S3 region         | -          |
-| `ACCESS_KEY_ID`     | S3 access key     | -          |
-| `ACCESS_SECRET_KEY` | S3 secret key     | -          |
-| `BUCKET`            | S3 bucket name    | `enso_dev` |
-
-### 🗄️ Database Migrations
-
-Run migrations inside the container:
-
-```bash
-# Using docker compose exec
-docker compose exec orchestra alembic upgrade head
-
-# Or run migrations before starting
-docker compose run --rm orchestra alembic upgrade head
-```
-
-### 🚢 Production Considerations
-
-#### Security
-
--   Generate strong values for `APP_SECRET_KEY` and `JWT_SECRET_KEY`
--   Use SSL/TLS termination (nginx, traefik, etc.)
--   Restrict database access to internal networks
--   Never expose `.env` files
-
-#### Performance
-
--   Configure appropriate resource limits in `docker-compose.yml`
--   Use a reverse proxy for load balancing
--   Enable PostgreSQL connection pooling for high traffic
-
-#### Dockerfile Features
-
-The Dockerfile uses a multi-stage build:
-
-1. **Builder Stage**: Installs dependencies, compiles Python to bytecode (`.pyc`)
-2. **Runtime Stage**: Ships only compiled bytecode for smaller image size
-
-> **Note**: Migration files (`.py`) are preserved since Alembic requires source files.
+| Variable | Production role |
+|----------|-----------------|
+| `APP_ENV` | Set to `production` to run startup migrations |
+| `APP_SECRET_KEY` | Fernet key for encrypted application values |
+| `JWT_SECRET_KEY` | JWT signing key |
+| `POSTGRES_CONNECTION_STRING` | External PostgreSQL URL in base-only mode |
+| `REDIS_URL` | External Redis URL in base-only mode |
+| `MINIO_HOST` / `ACCESS_KEY_ID` / `ACCESS_SECRET_KEY` / `BUCKET` | External S3-compatible storage in base-only mode |
+| `SEARX_SEARCH_HOST_URL` | External SearXNG URL in base-only mode |
+| `DISTRIBUTED_WORKERS` | Enabled by the production API/worker stack |
+| `ORCHESTRA_*` | Credentials and service settings for the explicit dependency overlay |
 
 ### 🧰 Troubleshooting
 
-#### Container won't start
-
 ```bash
-# Check logs
-docker compose logs orchestra
+# Inspect the production services and recent logs
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml ps
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml logs --tail=100 api worker
 
-# Verify environment file exists
-ls -la backend/.env.docker
+# Verify the loopback health endpoint
+curl --fail "http://$(docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml port api 8000)/api/info/health"
 ```
 
-#### Database connection failed
-
-```bash
-# Ensure postgres is running
-docker compose ps postgres
-
-# Check postgres logs
-docker compose logs postgres
-```
-
-#### Port already in use
-
-```bash
-# Check what's using the port
-lsof -i :8000
-
-# Or change the port mapping in docker-compose.yml
-ports:
-  - "8001:8000"  # Map to different host port
-```
+For application configuration details, see the [environment-variable guide](./docs/environment-variables.md).

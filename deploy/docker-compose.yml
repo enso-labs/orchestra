@@ -1,0 +1,86 @@
+name: orchestra-production
+
+services:
+  api:
+    image: ghcr.io/ruska-ai/orchestra-api:${ORCHESTRA_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ./orchestra.env
+    environment:
+      APP_ENV: ${ORCHESTRA_APP_ENV:-production}
+      APP_LOG_LEVEL: ${ORCHESTRA_APP_LOG_LEVEL:-INFO}
+      APP_VERSION: ${ORCHESTRA_IMAGE_TAG:-latest}
+      APP_SECRET_KEY: ${APP_SECRET_KEY:?APP_SECRET_KEY must be set}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set}
+      POSTGRES_CONNECTION_STRING: ${POSTGRES_CONNECTION_STRING:?POSTGRES_CONNECTION_STRING must be set}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL must be set}
+      MINIO_HOST: ${MINIO_HOST:-}
+      S3_REGION: ${S3_REGION:-us-east-2}
+      ACCESS_KEY_ID: ${ACCESS_KEY_ID:-}
+      ACCESS_SECRET_KEY: ${ACCESS_SECRET_KEY:-}
+      BUCKET: ${BUCKET:-orchestra}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      SEARX_SEARCH_HOST_URL: ${SEARX_SEARCH_HOST_URL:-}
+      DISTRIBUTED_WORKERS: "true"
+    ports:
+      - "127.0.0.1:${ORCHESTRA_API_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/api/info/health', timeout=5).read()
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    image: ghcr.io/ruska-ai/orchestra-worker:${ORCHESTRA_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ./orchestra.env
+    environment:
+      APP_ENV: ${ORCHESTRA_APP_ENV:-production}
+      APP_LOG_LEVEL: ${ORCHESTRA_APP_LOG_LEVEL:-INFO}
+      APP_VERSION: ${ORCHESTRA_IMAGE_TAG:-latest}
+      APP_SECRET_KEY: ${APP_SECRET_KEY:?APP_SECRET_KEY must be set}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set}
+      POSTGRES_CONNECTION_STRING: ${POSTGRES_CONNECTION_STRING:?POSTGRES_CONNECTION_STRING must be set}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL must be set}
+      MINIO_HOST: ${MINIO_HOST:-}
+      S3_REGION: ${S3_REGION:-us-east-2}
+      ACCESS_KEY_ID: ${ACCESS_KEY_ID:-}
+      ACCESS_SECRET_KEY: ${ACCESS_SECRET_KEY:-}
+      BUCKET: ${BUCKET:-orchestra}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      SEARX_SEARCH_HOST_URL: ${SEARX_SEARCH_HOST_URL:-}
+      DISTRIBUTED_WORKERS: "true"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          import os
+          import sys
+
+          found = False
+          for pid in os.listdir('/proc'):
+              if not pid.isdigit():
+                  continue
+              try:
+                  found = 'taskiq' in open('/proc/' + pid + '/cmdline', 'rb').read().decode(errors='ignore')
+              except OSError:
+                  continue
+              if found:
+                  break
+          sys.exit(not found)
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
