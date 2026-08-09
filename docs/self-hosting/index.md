@@ -9,16 +9,99 @@ This guide covers environment configuration for self-hosting Orchestra with vari
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- PostgreSQL database
-- (Optional) S3-compatible storage (MinIO)
+For a VM deployment, use Linux with Docker Engine and the Compose v2 plugin, at least
+2 vCPUs and 4 GB RAM, persistent disk for Postgres and MinIO, SSH access, and a DNS
+name with TLS termination. Keep database, Redis, MinIO, SearXNG, and Ollama ports on
+the private Docker network; publish only the loopback-bound API or a reverse proxy.
+
+## Production Docker deployment
+
+The registry-only base stack is `deploy/docker-compose.yml`. It runs only the GHCR
+API and worker images and expects externally managed dependency URLs. Set
+`ORCHESTRA_IMAGE_TAG` to deploy a release tag; it defaults to `latest`. Authenticate
+to GHCR with a token that has `read:packages` before pulling private images:
+
+```bash
+export GHCR_USERNAME=your-github-user
+read -rsp 'GHCR token: ' GHCR_TOKEN; echo
+echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+unset GHCR_TOKEN
+```
+
+Create the ignored runtime file from the tracked production template. Replace all
+`replace-with-*` values, use URL-safe database credentials when the overlay will
+construct a connection URL, and never commit the copied file or provider credentials.
+
+```bash
+cp deploy/.example.env deploy/orchestra.env
+chmod 600 deploy/orchestra.env
+# Edit it with strong signing keys, service URLs, and at least one provider key, then:
+# APP_SECRET_KEY: python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
+# JWT_SECRET_KEY: openssl rand -hex 32
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml up -d
+curl --fail "http://$(docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml port api 8000)/api/info/health"
+```
+
+The database stack is an explicit overlay, never an implicit `COMPOSE_FILE`:
+
+```bash
+mkdir -p deploy/searxng
+cp deploy/searxng/settings.example.yml deploy/searxng/settings.yml
+sed -i "s/REPLACE_WITH_A_RANDOM_SECRET/$(openssl rand -hex 32)/" \
+  deploy/searxng/settings.yml
+chmod 600 deploy/searxng/settings.yml
+
+# Replace the overlay credentials from deploy/.example.env in deploy/orchestra.env.
+# The overlay constructs its internal URLs from those ORCHESTRA_* values.
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml up -d
+```
+
+The overlay provides private Postgres with pgvector, Redis, MinIO, and SearXNG with
+persistent named volumes, healthchecks, credentials from environment variables, and
+service-name URLs for API/worker dependencies. An idempotent MinIO initializer creates
+the configured bucket. The tracked SearXNG example enables API/JSON and disables
+debug; the generated `deploy/searxng/settings.yml` is ignored. Production startup
+runs migrations automatically; to run them explicitly without the API entrypoint:
+
+```bash
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml \
+  run --rm --no-deps --entrypoint python api -m alembic upgrade head
+```
+
+Ollama is separately gated behind the `ollama` profile, so enabling the database
+overlay does not require GPU support or model downloads. To use local inference, set
+`ORCHESTRA_OLLAMA_BASE_URL=http://ollama:11434` in `deploy/orchestra.env`, then start
+standard `ollama serve` with its persistent volume:
+
+```bash
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml \
+  --profile ollama up -d
+# Pull models explicitly when desired:
+docker compose --env-file deploy/orchestra.env \
+  -f deploy/docker-compose.yml -f deploy/docker-compose.database.yml \
+  exec ollama ollama pull llama3.2
+```
+
+For production updates, set an immutable `ORCHESTRA_IMAGE_TAG`, run
+`docker compose ... pull api worker`, then recreate with `docker compose ... up -d --pull always`.
+Check service health and logs with `docker compose ... ps` and `docker compose ...
+logs`. Use `stop`/`start` for pauses and `down` to remove containers while retaining
+named volumes. Avoid `down -v` unless destroying data. Back up and test restores for
+Postgres, MinIO, and runtime settings before VM replacement or volume cleanup.
 
 ## Environment Configuration
 
-Orchestra uses environment variables to configure AI providers. Copy the example environment file and configure your providers:
+Orchestra uses environment variables to configure AI providers. For general
+application development, copy the tracked template to a user-local ignored file:
 
 ```bash
-cp backend/.example.env ~/.env/orchestra/.env.backend
+mkdir -p ~/.config/orchestra
+cp backend/.example.env ~/.config/orchestra/.env
 ```
 
 ### AI Provider Configuration
@@ -171,9 +254,10 @@ make dev
 
 ### Production with Docker
 
-```bash
-docker compose up -d
-```
+Use the production commands in [Production Docker deployment](#production-docker-deployment)
+above. Do not use `docker compose up -d` without explicitly naming the production
+files, and do not use `infra/docker-compose.yml` for a VM deployment; that file is
+the development stack.
 
 ## Verifying Configuration
 

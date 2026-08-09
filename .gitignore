@@ -1,4 +1,6 @@
 **/.env*
+/deploy/searxng/settings.yml
+/deploy/orchestra.env
 **/.venv
 **/data/
 **/sandbox/graphs/*

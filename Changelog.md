@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.8.9
+
+### Added
+  - task/980-registry-vm-deploy (#980) — add a registry-only production base stack for the GHCR API and worker images, plus an explicit private-database overlay for Postgres/pgvector, Redis, MinIO, SearXNG, and an opt-in Ollama profile. Document VM prerequisites, GHCR authentication, secret handling, migrations, health checks, lifecycle, and backup cautions.
+
 ## 2026.8.7
 
 ### Fixed
