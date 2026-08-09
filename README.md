@@ -88,6 +88,8 @@ For all commands, see `backend/Makefile`.
 
 1. **Environment Variables:**
 
+    See the [canonical environment-variable guide](./docs/environment-variables.md) for required values, optional defaults, and provider setup.
+
     Create a `.env` file in the root directory and add your API key(s):
 
     ```bash
