@@ -329,7 +329,7 @@ Generate signing keys, for example. `APP_SECRET_KEY` is a Fernet key, while
 `JWT_SECRET_KEY` can be any long random signing value:
 
 ```bash
-python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'  # APP_SECRET_KEY
+openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n'                                # APP_SECRET_KEY (Fernet)
 openssl rand -hex 32                                                                         # JWT_SECRET_KEY
 ```
 

@@ -36,7 +36,7 @@ construct a connection URL, and never commit the copied file or provider credent
 cp deploy/.example.env deploy/orchestra.env
 chmod 600 deploy/orchestra.env
 # Edit it with strong signing keys, service URLs, and at least one provider key, then:
-# APP_SECRET_KEY: python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
+# APP_SECRET_KEY: openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n'
 # JWT_SECRET_KEY: openssl rand -hex 32
 docker compose --env-file deploy/orchestra.env \
   -f deploy/docker-compose.yml up -d
