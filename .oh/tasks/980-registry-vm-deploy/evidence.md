@@ -1,7 +1,7 @@
 # Evidence — 980-registry-vm-deploy
 
 - **PR**: [#981](https://github.com/mifunedev/orchestra/pull/981) (`mifunedev/orchestra`, base `development`) · **Branch**: `feat/980-registry-vm-deploy`
-- **Audit run**: `audit-20260809T202321Z-2021491` · **Verdict**: `PR-AUDIT-PROMOTABLE`
+- **Audit run**: `audit-20260809T202733Z-2030602` · **Verdict**: `PR-AUDIT-PROMOTABLE`
 
 ## What was broken, and what now holds
 
@@ -14,7 +14,7 @@ Orchestra had development-only Docker infrastructure and no production registry 
 | Task graph | No PRD/task graph was supplied for this deployment request | N/A — acceptance was tracked directly in the issue and PR | N/A |
 | Deployment static validation | YAML parse plus assertions for service sets, no builds, loopback API binding, private dependency ports, profile gating, dependency conditions, image tags, and SearXNG settings | `deployment static validation: PASS` | PASS |
 | Python/config checks | Fernet recipe validation, backend syntax compilation, and diff whitespace check | `Fernet generation recipe: PASS`; `python syntax check: PASS`; `branch diff check: PASS` | PASS |
-| Regression / CI | GitHub Actions workflow for PR head `bfdee05a` | `test-backend success`; `test-frontend success`; `test-e2e skipped` | PASS |
+| Regression / CI | GitHub Actions workflow 31334194103 for PR head `fb0b482f` | `test-backend success`; `test-frontend success`; `test-e2e skipped` | PASS |
 | PR audit | `pr-acquire.sh` + `pr-classify.sh`, correlated to the run above | `CI PASS`, `mergeable MERGEABLE`, `mergeStateStatus CLEAN`, `evidenceComplete true`, `promotable true` | PASS |
 | VM runtime | Pull/start/health smoke test | Not run from this sandbox per operator instruction not to manage Docker here | N/A |
 
@@ -34,12 +34,13 @@ branch diff check: PASS
 ```
 
 ```text
-$ gh run view 31334017466 --repo mifunedev/orchestra --json status,conclusion,jobs
+$ gh run view 31334194103 --repo mifunedev/orchestra --json status,conclusion,jobs
 {"conclusion":"success","jobs":[{"conclusion":"success","name":"test-backend","status":"completed"},{"conclusion":"success","name":"test-frontend","status":"completed"},{"conclusion":"skipped","name":"test-e2e","status":"completed"}],"status":"completed"}
 ```
 
 ```text
-$ git log --format='%h %G? %s' -3
+$ git log --format='%h %G? %s' -4
+fb0b482f G audit: record deployment PR evidence
 bfdee05a G Merge origin/development into feat/980-registry-vm-deploy
 23716b1d G fix: document Fernet key generation
 fb31a2ff G fix: clarify overlay secret encoding
@@ -47,7 +48,7 @@ fb31a2ff G fix: clarify overlay secret encoding
 
 ```text
 $ .oh/skills/audit/scripts/audit-run.sh pr 981 --repo mifunedev/orchestra --base development -- .oh/skills/audit/scripts/route-driver.sh
-Run: audit-20260809T202321Z-2021491
+Run: audit-20260809T202733Z-2030602
 Acquisition: pr-acquire.sh exit 0, schema v1 envelope, evidence intact
 Classification: pr-classify.sh exit 0
 CI: PASS
