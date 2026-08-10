@@ -30,14 +30,14 @@ This file records the verification performed for US-009 before US-008 and US-010
 
 ## Correlated CI
 
-Run `31353403928` for commit `68101ccd` completed successfully:
+Run `31357043260` for commit `9b5ccbb4` completed successfully:
 
 | Check | Result | Evidence |
 |---|---|---|
-| `test-backend` | PASS, 2m15s | [job 93348362986](https://github.com/mifunedev/orchestra/actions/runs/31353403928/job/93348362986) |
-| `test-frontend` | PASS, 1m03s | [job 93348362945](https://github.com/mifunedev/orchestra/actions/runs/31353403928/job/93348362945) |
-| `test-e2e` | PASS, 3m40s | [job 93348362968](https://github.com/mifunedev/orchestra/actions/runs/31353403928/job/93348362968) |
-| CodeRabbit | skipped review, 216 files exceed its 100-file limit | PR check output |
+| `test-backend` | PASS, 2m25s | [job 93358560756](https://github.com/mifunedev/orchestra/actions/runs/31357043260/job/93358560756) |
+| `test-frontend` | PASS, 54s | [job 93358560727](https://github.com/mifunedev/orchestra/actions/runs/31357043260/job/93358560727) |
+| `test-e2e` | PASS, 4m11s | [job 93358560654](https://github.com/mifunedev/orchestra/actions/runs/31357043260/job/93358560654) |
+| CodeRabbit | skipped review, 217 files exceed its 100-file limit | PR check output |
 
 ## `/audit pr` reviewer classification
 
@@ -47,9 +47,9 @@ Invocation:
 /audit pr 977 --repo mifunedev/orchestra --base development --dry-run
 ```
 
-Native result: **PR-AUDIT-PROMOTABLE** (`AUDIT-EVIDENCE: PR-AUDIT-PROMOTABLE`). Run ID: `audit-20260810T034816Z-2877776`; audit exit status `0`.
+Native result: **PR-AUDIT-PROMOTABLE** (`AUDIT-EVIDENCE: PR-AUDIT-PROMOTABLE`). Run ID: `audit-20260810T050051Z-2993237`; audit exit status `0`.
 
-The read-only classifier acquired the remote #977 envelope successfully: CI `PASS`, `mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`, no blocking review decision, `promotable=true`, and `evidenceComplete=true`. The PR is not a draft, so `readyForReview=false`; it is eligible to merge once the human review gate is satisfied (`readyToMerge=true`). The only flag is non-blocking `size-convention` for 220 changed files. The branch title follows the required `FROM task/976-aegra-full-inversion TO development` convention. No proof comment, ready/merge action, or repository write was performed by the audit route. This classification is remote PR state; it is not a claim that the route reviewed diff correctness.
+The read-only classifier acquired the remote #977 envelope successfully: CI `PASS`, `mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`, no blocking review decision, `promotable=true`, and `evidenceComplete=true`. The PR is not a draft, so `readyForReview=false`; it is eligible to merge once the human review gate is satisfied (`readyToMerge=true`). The only flag is non-blocking `size-convention` for 221 changed files. The branch title follows the required `FROM task/976-aegra-full-inversion TO development` convention. No proof comment, ready/merge action, or repository write was performed by the audit route. This classification is remote PR state; it is not a claim that the route reviewed diff correctness.
 
 ## Merge reconciliation
 
