@@ -43,6 +43,8 @@ type SdkStreamEvent = {
 };
 
 const AGENT_API_FALLBACK = "http://localhost:8000";
+const PROTOCOL_METADATA_KEY = /^[A-Za-z0-9_-]{1,64}$/;
+const PROTOCOL_METADATA_MAX_VALUE_LENGTH = 512;
 
 /**
  * Agent Protocol is mounted at the origin root in production.  The optional
@@ -91,6 +93,31 @@ function withoutTenantIdentity(
 }
 
 /**
+ * Aegra metadata is trace/filter metadata, not a payload container.  Keep only
+ * the primitive values accepted by the Agent Protocol and leave assistant
+ * configuration in `context`, where arrays, objects, and nulls are valid.
+ */
+function toProtocolMetadata(
+	value: Record<string, unknown>,
+): Record<string, string | number | boolean> {
+	const result: Record<string, string | number | boolean> = {};
+	for (const [key, candidate] of Object.entries(withoutTenantIdentity(value))) {
+		if (!PROTOCOL_METADATA_KEY.test(key) || candidate == null) continue;
+		if (
+			typeof candidate === "string" &&
+			candidate.length <= PROTOCOL_METADATA_MAX_VALUE_LENGTH
+		) {
+			result[key] = candidate;
+		} else if (typeof candidate === "number" && Number.isFinite(candidate)) {
+			result[key] = candidate;
+		} else if (typeof candidate === "boolean") {
+			result[key] = candidate;
+		}
+	}
+	return result;
+}
+
+/**
  * Map a canonical Orchestra assistant to the one production Aegra graph.
  * Assistant settings remain in authenticated context; only the production
  * graph assistant ID is sent as the SDK's assistant argument.
@@ -117,7 +144,7 @@ export function mapAssistantToProductionGraph(
 		metadata: assistantMetadata,
 		project_id: metadata.project_id ?? assistantMetadata.project_id ?? null,
 	});
-	const protocolMetadata = withoutTenantIdentity({
+	const protocolMetadata = toProtocolMetadata({
 		...metadata,
 		assistant_id: assistantId,
 		orchestra_assistant_id: assistantId,

@@ -105,6 +105,27 @@ describe("assistant mapping and stream contract", () => {
 		});
 	});
 
+	it("keeps only valid primitive values in protocol metadata", () => {
+		const mapping = mapAssistantToProductionGraph(
+			{ id: undefined, model: "openai:gpt-4.1-mini" },
+			{
+				orchestra_assistant_id: null,
+				project_id: null,
+				tools: [],
+				mcp: {},
+				system_prompt: "x".repeat(513),
+				feature_flag: true,
+				attempt: 2,
+			},
+		);
+
+		expect(mapping.metadata).toEqual({
+			feature_flag: true,
+			attempt: 2,
+			graph_id: "orchestra",
+		});
+	});
+
 	it("adapts messages tuples, values, custom, subgraphs, and terminal errors", () => {
 		expect(AGENT_STREAM_MODES).toEqual(["messages-tuple", "values", "custom"]);
 
