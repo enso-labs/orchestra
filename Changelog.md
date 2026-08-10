@@ -8,7 +8,7 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ## 2026.8.10
 
 ### Changed
-  - task/976-aegra-full-inversion — make Aegra the sole backend runtime on `:8000` and move graph operations to the LangGraph SDK client, retaining Orchestra assistant metadata at the SDK boundary.
+  - task/976-aegra-full-inversion — make Aegra the sole backend runtime on `:8000` and move graph operations to the LangGraph SDK client, retaining Orchestra assistant metadata at the SDK boundary; default OpenAI to `openai:gpt-5.6-luna` with `max` reasoning effort.
 
 ### Removed
   - task/976-aegra-full-inversion — remove the TaskIQ worker/sidecar and legacy graph transport; schedules and prompt distillation are explicit deferred capabilities until a future implementation.

@@ -38,7 +38,7 @@ from src.agents import (
     prepare_memory_files,
     resolve_sandbox_backend,
 )
-from src.constants.llm import DEFAULT_CHAT_MODEL
+from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_REASONING_EFFORT
 from src.contexts.service import ServiceContext
 from src.schemas.contexts import ContextSchema
 from src.schemas.entities import Config, LLMRequest
@@ -168,14 +168,16 @@ async def _resolve_user_settings(
 ) -> tuple[str, str | None, str | None, str | None, str | None, str | None]:
     """Resolve user defaults and provider credentials once per factory call."""
     if not user_id:
-        return model or DEFAULT_CHAT_MODEL, None, None, None, None, reasoning_effort
+        return model or DEFAULT_CHAT_MODEL, None, None, None, None, reasoning_effort or DEFAULT_REASONING_EFFORT
 
     settings_repo = UserSettingsRepo(user_id, store)
     settings = await settings_repo._get_or_create()
     user_keys = settings_repo._decrypt_keys(settings)
 
     resolved_model = model or getattr(settings, "default_model", None) or DEFAULT_CHAT_MODEL
-    resolved_reasoning = reasoning_effort or getattr(settings, "default_reasoning_effort", None)
+    resolved_reasoning = (
+        reasoning_effort or getattr(settings, "default_reasoning_effort", None) or DEFAULT_REASONING_EFFORT
+    )
     default_sandbox = getattr(settings, "default_sandbox", None)
     mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
     mcp_api_key = user_keys.get("MCP_SANDBOX_API_KEY") if user_keys else None

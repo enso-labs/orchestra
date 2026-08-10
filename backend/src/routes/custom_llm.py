@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi_cache.decorator import cache
 
 from src.constants import GROQ_API_KEY
-from src.constants.llm import DEFAULT_CHAT_MODEL, get_all_models, get_free_models
+from src.constants.llm import DEFAULT_CHAT_MODEL, DEFAULT_REASONING_EFFORT, get_all_models, get_free_models
 from src.repos.user_settings_repo import UserSettingsRepo
 from src.services.db import get_store
 from src.utils.llm import audio_to_text
@@ -70,14 +70,15 @@ async def list_models(
     store=Depends(get_store),
 ):
     default_model = DEFAULT_CHAT_MODEL
-    default_reasoning_effort = None
+    default_reasoning_effort = DEFAULT_REASONING_EFFORT
     if user:
         try:
             settings_repo = UserSettingsRepo(user.id, store)
             settings, _ = await settings_repo.get_settings()
             if settings.default_model:
                 default_model = settings.default_model
-            default_reasoning_effort = settings.default_reasoning_effort
+            if settings.default_reasoning_effort is not None:
+                default_reasoning_effort = settings.default_reasoning_effort
         except Exception:
             logger.warning("failed_to_load_user_model_settings")
 

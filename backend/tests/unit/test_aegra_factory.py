@@ -76,6 +76,28 @@ async def test_factory_uses_runtime_identity_and_cleans_sandbox(execution_runtim
     assert sandbox.stop.await_count == 1
 
 
+@pytest.mark.asyncio
+async def test_anonymous_factory_uses_application_model_and_reasoning_defaults():
+    with (
+        patch.object(factory, "DEFAULT_CHAT_MODEL", "openai:gpt-5.6-luna"),
+        patch.object(factory, "DEFAULT_REASONING_EFFORT", "max"),
+    ):
+        resolved = await factory._resolve_user_settings(None, SimpleNamespace(), None, None)
+
+    assert resolved == ("openai:gpt-5.6-luna", None, None, None, None, "max")
+
+
+@pytest.mark.asyncio
+async def test_explicit_model_and_reasoning_override_application_defaults():
+    with (
+        patch.object(factory, "DEFAULT_CHAT_MODEL", "openai:gpt-5.6-luna"),
+        patch.object(factory, "DEFAULT_REASONING_EFFORT", "max"),
+    ):
+        resolved = await factory._resolve_user_settings(None, SimpleNamespace(), "anthropic:claude-sonnet-4-5", "low")
+
+    assert resolved == ("anthropic:claude-sonnet-4-5", None, None, None, None, "low")
+
+
 def test_runtime_user_id_ignores_client_config():
     runtime = SimpleNamespace(
         user=SimpleNamespace(identity="trusted", is_authenticated=True),

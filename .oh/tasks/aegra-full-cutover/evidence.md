@@ -57,6 +57,13 @@ The read-only classifier acquired the remote #977 envelope successfully: CI `PAS
 - Resolved the four documentation/template conflicts while preserving the Aegra-only runtime contract; rewrote the inherited environment guide so it does not reintroduce removed worker-era settings.
 - `python3 backend/scripts/cutover_static_scan.py` — PASS after reconciliation.
 
+## Follow-up: Luna max default
+
+- `POSTGRES_CONNECTION_STRING=... APP_SECRET_KEY=dummy JWT_SECRET_KEY=dummy OPENAI_API_KEY=dummy PYTHONPATH=.:src .venv/bin/python -c '...'` — PASS; application defaults resolve to `openai:gpt-5.6-luna` and `max` reasoning effort.
+- Focused backend suite (`tests/unit/test_aegra_factory.py` and `tests/unit/utils/test_reasoning.py`) — **30 passed**.
+- Ruff check/format and Python compile checks on changed backend files — PASS.
+- Explicit model/reasoning settings remain authoritative; the new fallback applies only when unset. No story `passes` value was changed.
+
 ## Intentionally unrun local gates
 
 No local PostgreSQL administration/content-digest/restore check, live Aegra HTTP startup, MCP-over-HTTP check, or local browser execution was run. The CI workflow did execute the blocking backend/frontend/browser checks in its configured service environment, and all three required jobs passed. No destructive database operation or secret read occurred.
