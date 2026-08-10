@@ -5,10 +5,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/auth";
-
-const CHAT_INPUT =
-	'textarea[placeholder="How can I help you be more productive?"]';
-const SUBMIT_BUTTON = '[data-tour="chat-submit-button"]';
+import { chatInput, chatSubmitButton, waitForChatInput } from "./helpers/chat";
 
 function streamBody() {
 	return [
@@ -46,9 +43,7 @@ test.describe("Agent Protocol duplicate run contract", () => {
 			await route.continue();
 		});
 		await page.goto("/chat", { waitUntil: "domcontentloaded" });
-		await page
-			.locator(CHAT_INPUT)
-			.waitFor({ state: "visible", timeout: 30_000 });
+		await waitForChatInput(page);
 	});
 
 	test("rapid duplicate clicks create one SDK run", async ({ page }) => {
@@ -62,10 +57,23 @@ test.describe("Agent Protocol duplicate run contract", () => {
 			});
 		});
 
-		await page.locator(CHAT_INPUT).fill("first submission");
-		const submit = page.locator(SUBMIT_BUTTON);
-		await submit.click({ force: true });
-		await submit.click({ force: true });
+		await chatInput(page).fill("first submission");
+		const submit = chatSubmitButton(page);
+		await expect(submit).toBeVisible();
+
+		// Dispatch both events in one browser task. A normal second Playwright
+		// click waits for React to commit the first state update, by which point
+		// the submit control has intentionally become the abort control (and the
+		// onboarding wrapper may be hidden). The two immediate events reach the
+		// same submit button and exercise the queue's duplicate guard directly.
+		await submit.evaluate((button) => {
+			const dispatchClick = () =>
+				button.dispatchEvent(
+					new MouseEvent("click", { bubbles: true, cancelable: true }),
+				);
+			dispatchClick();
+			dispatchClick();
+		});
 
 		await expect(
 			page.getByText("first submission", { exact: true }),

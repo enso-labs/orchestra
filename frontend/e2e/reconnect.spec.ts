@@ -7,10 +7,7 @@ import { createServer, type Server } from "node:http";
 import { once } from "node:events";
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/auth";
-
-const CHAT_INPUT =
-	'textarea[placeholder="How can I help you be more productive?"]';
-const SUBMIT_BUTTON = '[data-tour="chat-submit-button"]';
+import { chatInput, chatSubmitButton, waitForChatInput } from "./helpers/chat";
 
 let mockServer: Server;
 let mockBaseUrl: string;
@@ -105,9 +102,7 @@ test.describe("Agent Protocol resumable stream contract", () => {
 			await route.continue();
 		});
 		await page.goto("/chat", { waitUntil: "domcontentloaded" });
-		await page
-			.locator(CHAT_INPUT)
-			.waitFor({ state: "visible", timeout: 30_000 });
+		await waitForChatInput(page);
 	});
 
 	test("resumes with the cursor after the stream connection resets", async ({
@@ -120,8 +115,8 @@ test.describe("Agent Protocol resumable stream contract", () => {
 			});
 		});
 
-		await page.locator(CHAT_INPUT).fill("resume this response");
-		await page.locator(SUBMIT_BUTTON).click({ force: true });
+		await chatInput(page).fill("resume this response");
+		await chatSubmitButton(page).click();
 
 		await expect(page.getByText("resumed", { exact: true })).toBeVisible({
 			timeout: 30_000,

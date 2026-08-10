@@ -116,3 +116,11 @@ Final post-format verification: `frontend/npm test` exit 0 (461 passed, no skips
 - Added `evidence.md` with commands, exact outcomes, the read-only `/audit pr 977 --repo mifunedev/orchestra --base development --dry-run` classification, and the intentionally unrun live DB/Aegra/browser boundaries. No `prd.json` story was marked passed.
 
 Final local results: backend compile, Ruff check/format, lock check, and focused suite (55 passed) green; frontend test (461 passed), build/typecheck, lint (0 errors), formatting, static scan, and browser test discovery green. The full backend suite collected 623 tests and ran 590 passing with 1 pre-existing skip; its remaining 32 setup errors were expected PostgreSQL connection-refused blockers because live DB checks were prohibited. Live browser/Aegra, migration/content-digest, MCP HTTP, and destructive DB gates remain unclaimed.
+
+## Task #15 — blocking browser contract fixes (2026-08-10)
+
+- Replaced the correlation-error SSE fixture's non-hex `run-browser-error` value with the deterministic UUID `00000000-0000-4000-8000-000000000001`; production runtime code is unchanged.
+- Added `frontend/e2e/helpers/chat.ts` with a visible-first chat-input locator, editable readiness wait, and actual visible submit-button locator. Updated the three blocking specs to share it, avoiding stale hidden composers during Pixel 5 layout transitions.
+- Made the duplicate-run contract dispatch two click events on the same submit button in one browser task, before React swaps the submit control for the active-run control; no assertion or CI gate was weakened.
+- Verification: `npm test` — PASS (50 files, 461 tests); `npx tsc -b` — PASS; `npm run lint` — PASS (0 errors, 3 existing warnings); targeted Prettier check — PASS.
+- `npx playwright test e2e/correlation-id.spec.ts e2e/idempotency.spec.ts e2e/reconnect.spec.ts` was attempted with the local API/frontend processes available but could not launch because the Playwright Chromium executable is absent at `/home/sandbox/.cache/ms-playwright/chromium_headless_shell-1223/...`; no browser result is claimed. All PRD story `passes` values remain false.
