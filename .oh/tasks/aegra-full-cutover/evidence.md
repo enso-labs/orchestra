@@ -17,7 +17,7 @@ This file records the verification performed for US-009 before US-008 and US-010
 | Frontend typecheck/build | `npm run build` — PASS | Includes `tsc -b` and Vite production output to `backend/src/public`; only existing large-chunk warnings were emitted.
 | Frontend lint | `npm run lint` — PASS | 0 errors; 3 existing unused-eslint-disable warnings.
 | Frontend formatting | `npx prettier --check` on changed frontend/config/e2e files — PASS | Includes the new resumable/idempotency browser specs.
-| Static cutover scan | `python3 backend/scripts/cutover_static_scan.py` — PASS | 842 tracked/non-ignored files plus built assets; historical-document allowlist is only `Changelog.md`, `.oh/tasks/**`, and `evals/**`; the scanner source itself is separately exempt so it can contain the forbidden patterns.
+| Static cutover scan | `python3 backend/scripts/cutover_static_scan.py` — PASS | 844 tracked/non-ignored files plus built assets; historical-document allowlist is only `Changelog.md`, `.oh/tasks/**`, and `evals/**`; the scanner source itself is separately exempt so it can contain the forbidden patterns.
 | Browser discovery | `npx playwright test --list` — PASS | 6 blocking tests across desktop/mobile: run error, duplicate-run, and resumable reconnect contracts.
 
 ## Test replacement evidence
@@ -28,6 +28,17 @@ This file records the verification performed for US-009 before US-008 and US-010
 - Kept the run-error/correlation browser contract and existing SDK cancellation/error unit contracts.
 - Removed the only Vitest `describe.skip` and the mobile-only Playwright `test.skip`; browser discovery reports no skipped tests.
 
+## Correlated CI
+
+Run `31353403928` for commit `68101ccd` completed successfully:
+
+| Check | Result | Evidence |
+|---|---|---|
+| `test-backend` | PASS, 2m15s | [job 93348362986](https://github.com/mifunedev/orchestra/actions/runs/31353403928/job/93348362986) |
+| `test-frontend` | PASS, 1m03s | [job 93348362945](https://github.com/mifunedev/orchestra/actions/runs/31353403928/job/93348362945) |
+| `test-e2e` | PASS, 3m40s | [job 93348362968](https://github.com/mifunedev/orchestra/actions/runs/31353403928/job/93348362968) |
+| CodeRabbit | skipped review, 216 files exceed its 100-file limit | PR check output |
+
 ## `/audit pr` reviewer classification
 
 Invocation:
@@ -36,10 +47,16 @@ Invocation:
 /audit pr 977 --repo mifunedev/orchestra --base development --dry-run
 ```
 
-Native result: **PR-AUDIT-PROMOTABLE** (`AUDIT-EVIDENCE: PR-AUDIT-PROMOTABLE`). Run ID: `audit-20260810T015448Z-2641419`.
+Native result: **PR-AUDIT-PROMOTABLE** (`AUDIT-EVIDENCE: PR-AUDIT-PROMOTABLE`). Run ID: `audit-20260810T034816Z-2877776`; audit exit status `0`.
 
-The read-only classifier acquired the remote #977 envelope successfully: CI `PASS`, mergeable `MERGEABLE`, state `CLEAN`, no blocking review decision, `promotable=true`, and `evidenceComplete=true`. No proof comment, ready/merge action, or repository write was performed. This classification is remote PR state; it is not a claim that the current unpushed worktree diff was reviewed for correctness (the route explicitly excludes diff correctness).
+The read-only classifier acquired the remote #977 envelope successfully: CI `PASS`, `mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`, no blocking review decision, `promotable=true`, and `evidenceComplete=true`. The PR is not a draft, so `readyForReview=false`; it is eligible to merge once the human review gate is satisfied (`readyToMerge=true`). The only flag is non-blocking `size-convention` for 220 changed files. The branch title follows the required `FROM task/976-aegra-full-inversion TO development` convention. No proof comment, ready/merge action, or repository write was performed by the audit route. This classification is remote PR state; it is not a claim that the route reviewed diff correctness.
 
-## Intentionally unrun gates
+## Merge reconciliation
 
-Per the task constraint, no live browser execution, live Aegra HTTP startup, PostgreSQL migration/content-digest/restore check, MCP-over-HTTP check, or destructive database operation was run. The blocking CI workflow now runs those gates in the configured service environment; no local evidence claims those behaviors.
+- Fetched `origin/development` at `2c7ccd28` and merged it into the feature branch as `68101ccd`.
+- Resolved the four documentation/template conflicts while preserving the Aegra-only runtime contract; rewrote the inherited environment guide so it does not reintroduce removed worker-era settings.
+- `python3 backend/scripts/cutover_static_scan.py` — PASS after reconciliation.
+
+## Intentionally unrun local gates
+
+No local PostgreSQL administration/content-digest/restore check, live Aegra HTTP startup, MCP-over-HTTP check, or local browser execution was run. The CI workflow did execute the blocking backend/frontend/browser checks in its configured service environment, and all three required jobs passed. No destructive database operation or secret read occurred.
