@@ -13,6 +13,7 @@ Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day
 ### Fixed
   - task/976-aegra-full-inversion — initialize the FastAPI cache during Aegra startup so cached custom API routes do not fail before their first request.
   - task/976-aegra-full-inversion — keep null and structured assistant settings out of Agent Protocol metadata, preventing first-message 422 responses while retaining them in the run context.
+  - task/976-aegra-full-inversion — use the stateful sandbox backend by default; Daytona and auto-probing remain explicit opt-ins.
 
 ### Removed
   - task/976-aegra-full-inversion — remove the TaskIQ worker/sidecar and legacy graph transport; schedules and prompt distillation are explicit deferred capabilities until a future implementation.

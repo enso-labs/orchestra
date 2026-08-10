@@ -57,7 +57,7 @@ async def test_factory_uses_runtime_identity_and_cleans_sandbox(execution_runtim
         patch.object(
             factory,
             "_resolve_user_settings",
-            AsyncMock(return_value=("openai:gpt-4.1-mini", None, None, None, None, None)),
+            AsyncMock(return_value=("openai:gpt-4.1-mini", None, "state", None, None, None)),
         ),
         patch.object(factory, "prepare_memory_files", AsyncMock(return_value=({}, None))),
         patch.object(factory, "resolve_context_files", AsyncMock(return_value={})),
@@ -84,7 +84,7 @@ async def test_anonymous_factory_uses_application_model_and_reasoning_defaults()
     ):
         resolved = await factory._resolve_user_settings(None, SimpleNamespace(), None, None)
 
-    assert resolved == ("openai:gpt-5.6-luna", None, None, None, None, "max")
+    assert resolved == ("openai:gpt-5.6-luna", None, "state", None, None, "max")
 
 
 @pytest.mark.asyncio
@@ -95,7 +95,7 @@ async def test_explicit_model_and_reasoning_override_application_defaults():
     ):
         resolved = await factory._resolve_user_settings(None, SimpleNamespace(), "anthropic:claude-sonnet-4-5", "low")
 
-    assert resolved == ("anthropic:claude-sonnet-4-5", None, None, None, None, "low")
+    assert resolved == ("anthropic:claude-sonnet-4-5", None, "state", None, None, "low")
 
 
 def test_runtime_user_id_ignores_client_config():

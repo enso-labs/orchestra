@@ -54,6 +54,7 @@ from src.repos.user_settings_repo import UserSettingsRepo
 # custom assistant ID is carried in run context/config and is resolved through
 # Orchestra's existing store namespace instead of Aegra's unscoped store.
 PRODUCTION_GRAPH_ID = "orchestra"
+DEFAULT_SANDBOX = "state"
 
 
 _READ_GRAPH: Any | None = None
@@ -168,7 +169,14 @@ async def _resolve_user_settings(
 ) -> tuple[str, str | None, str | None, str | None, str | None, str | None]:
     """Resolve user defaults and provider credentials once per factory call."""
     if not user_id:
-        return model or DEFAULT_CHAT_MODEL, None, None, None, None, reasoning_effort or DEFAULT_REASONING_EFFORT
+        return (
+            model or DEFAULT_CHAT_MODEL,
+            None,
+            DEFAULT_SANDBOX,
+            None,
+            None,
+            reasoning_effort or DEFAULT_REASONING_EFFORT,
+        )
 
     settings_repo = UserSettingsRepo(user_id, store)
     settings = await settings_repo._get_or_create()
@@ -178,7 +186,7 @@ async def _resolve_user_settings(
     resolved_reasoning = (
         reasoning_effort or getattr(settings, "default_reasoning_effort", None) or DEFAULT_REASONING_EFFORT
     )
-    default_sandbox = getattr(settings, "default_sandbox", None)
+    default_sandbox = getattr(settings, "default_sandbox", None) or DEFAULT_SANDBOX
     mcp_sandbox_url = getattr(settings, "default_mcp_sandbox_url", None)
     mcp_api_key = user_keys.get("MCP_SANDBOX_API_KEY") if user_keys else None
     api_key = resolve_api_key(resolved_model, user_keys if user_keys else None)

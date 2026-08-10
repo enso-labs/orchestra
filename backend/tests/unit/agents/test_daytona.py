@@ -95,7 +95,7 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime)
+            backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type="auto")
 
             assert sandbox is mock_sandbox
             assert backend is not None
@@ -119,7 +119,7 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            result_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime)
+            result_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type="auto")
 
             assert sandbox is None
             assert result_backend is not None
@@ -136,7 +136,7 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            result_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime)
+            result_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type="auto")
 
             assert sandbox is None
             assert result_backend is not None
@@ -162,7 +162,7 @@ class TestResolveSandboxBackend:
             from src.agents import resolve_sandbox_backend
 
             # Should not raise
-            cleanup_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime)
+            cleanup_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type="auto")
 
             assert sandbox is None
             assert cleanup_backend is not None
@@ -182,7 +182,7 @@ class TestResolveSandboxBackend:
         ):
             from src.agents import resolve_sandbox_backend
 
-            result_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime)
+            result_backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type="auto")
 
             assert sandbox is None
             assert result_backend is not None
@@ -196,7 +196,7 @@ class TestResolveSandboxBackendDispatch:
     """Tests for sandbox_type dispatch in resolve_sandbox_backend()."""
 
     def test_auto_uses_daytona_when_available(self):
-        """sandbox_type=None (auto) uses Daytona when it is available."""
+        """Explicit sandbox_type='auto' uses Daytona when it is available."""
         mock_sandbox = MagicMock()
         mock_daytona_backend = MagicMock()
         mock_daytona_backend.execute = MagicMock()
@@ -214,13 +214,13 @@ class TestResolveSandboxBackendDispatch:
         ):
             from src.agents import resolve_sandbox_backend
 
-            backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type=None)
+            backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type="auto")
 
             assert sandbox is mock_sandbox
             assert backend is not None
 
     def test_auto_falls_back_to_state(self):
-        """sandbox_type=None (auto) falls back to StateBackend when Daytona is unavailable."""
+        """Explicit sandbox_type='auto' falls back to StateBackend when Daytona is unavailable."""
         mock_runtime = MagicMock()
 
         with patch(
@@ -229,7 +229,7 @@ class TestResolveSandboxBackendDispatch:
         ):
             from src.agents import resolve_sandbox_backend
 
-            backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type=None)
+            backend, sandbox, _effective_type = resolve_sandbox_backend(mock_runtime, sandbox_type="auto")
 
             assert sandbox is None
             assert backend is not None
