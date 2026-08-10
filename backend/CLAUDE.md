@@ -10,68 +10,63 @@ This file provides guidance to AI agents when working with the Orchestra backend
 cd backend
 
 # Create virtual environment (if not exists)
-uv venv
+uv venv --python 3.12
 
 # Activate virtual environment
 source .venv/bin/activate
 
 # Install dependencies
-uv sync
+uv sync --python 3.12
 ```
 
 ### 2. Environment Configuration
 
-The backend uses environment files stored at `~/.config/orchestra/.env`.
+The backend uses the runtime environment file at `~/.config/orchestra/.env.backend`. Override Make targets with `ENV_FILE=/path/to/file`; direct Compose commands use `ORCHESTRA_ENV_FILE=/path/to/file`.
 
 ```bash
 # Ensure the env directory exists
 mkdir -p ~/.config/orchestra
 
 # Copy example env if setting up for first time
-cp .example.env ~/.config/orchestra/.env
+cp .example.env ~/.config/orchestra/.env.backend
 ```
 
 ### 3. Start the Application
 
 **Default (port 8000):**
 ```bash
-make dev
+# Run the ordered migration init first when using a real database.
+make migrate.up
+AEGRA_CONFIG=$PWD/aegra.json RUN_MIGRATIONS_ON_STARTUP=false \
+  uv run --python 3.12 uvicorn aegra_api.main:app --reload --host 0.0.0.0 --port 8000 \
+  --log-level debug --env-file ~/.config/orchestra/.env.backend
 ```
 
 **With explicit port (use if default port is taken):**
 ```bash
-# Port 8001
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8001 --log-level debug --env-file ~/.config/orchestra/.env
-
-# Port 8002
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8002 --log-level debug --env-file ~/.config/orchestra/.env
+AEGRA_CONFIG=$PWD/aegra.json RUN_MIGRATIONS_ON_STARTUP=false \
+  uv run --python 3.12 uvicorn aegra_api.main:app --reload --host 0.0.0.0 --port 8001 \
+  --log-level debug --env-file ~/.config/orchestra/.env.backend
 ```
 
-**Auto-increment port if default is taken:**
-```bash
-# Check if port 8000 is in use, increment to next available
-PORT=8000
-while lsof -i :$PORT >/dev/null 2>&1; do
-  PORT=$((PORT + 1))
-done
-uv run uvicorn main:app --reload --host 0.0.0.0 --port $PORT --log-level debug --env-file ~/.config/orchestra/.env
-```
+The Aegra API is the only backend runtime. Do not start a separate worker or
+run migrations from the API lifespan; use `scripts/migrate.py`/`make migrate.up`.
 
 ## Common Commands
 
 | Command | Description |
 |---------|-------------|
-| `make dev` | Start dev server on port 8000 |
+| `make dev` | Start the Aegra dev server on port 8000 |
 | `make test` | Run all tests |
 | `make format` | Format code with Ruff |
 | `make seeds.user` | Seed default users |
-| `make migrate.up` | Run all pending migrations |
+| `make migrate.up` | Run Orchestra then Aegra migration/preflight init |
 | `make migrate.down` | Rollback one migration |
 | `make migrate.history` | View migration history |
 
 ## Database Migrations
 
-All migration commands use the env file at `~/.config/orchestra/.env`:
+All migration commands use the env file at `~/.config/orchestra/.env.backend` by default:
 
 ```bash
 # Apply all migrations
@@ -105,7 +100,7 @@ uv run pytest --cov=src --cov-report=html
 
 ```
 backend/
-├── main.py              # FastAPI application entry point
+├── main.py              # Legacy app entry point retained for compatibility
 ├── src/
 │   ├── controllers/     # Request handlers
 │   ├── routes/          # API route definitions

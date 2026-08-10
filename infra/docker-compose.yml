@@ -28,7 +28,7 @@ services:
                     memory: 2G
 
     ##############################################
-    ## Redis (Message Broker for Distributed Workers)
+    ## Redis (Aegra event broker)
     ##############################################
     redis:
         image: redis:7-alpine
@@ -105,7 +105,47 @@ services:
                     memory: 1G
 
     ##############################################
-    ## App (FastAPI Backend — api target)
+    ## Ordered database migration/preflight
+    ##############################################
+    migrate:
+        build:
+            context: ../backend
+            dockerfile: ../infra/backend.Dockerfile
+            target: api
+        image: ghcr.io/ruska-ai/orchestra-api:local
+        working_dir: /app
+        init: true
+        env_file:
+            # Override with ORCHESTRA_ENV_FILE=/path/to/file.
+            - ${ORCHESTRA_ENV_FILE:-~/.config/orchestra/.env.backend}
+        environment:
+            APP_ENV: development
+            APP_LOG_LEVEL: DEBUG
+            POSTGRES_CONNECTION_STRING: "${POSTGRES_CONNECTION_STRING:?POSTGRES_CONNECTION_STRING must be set}"
+            DATABASE_URL: "${DATABASE_URL:-}"
+            MIGRATION_DATABASE_NAME: "${MIGRATION_DATABASE_NAME:-}"
+            AEGRA_CONFIG: /app/aegra.json
+            REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+            REDIS_BROKER_ENABLED: "true"
+        volumes:
+            - ../backend:/app
+            - backend_venv:/app/.venv
+            - backend_uv_cache:/root/.cache/uv
+        extra_hosts:
+            - host.docker.internal:host-gateway
+        command:
+            [
+                "/bin/sh",
+                "-lc",
+                "uv sync --frozen --no-dev --no-install-project && exec python -B scripts/migrate.py",
+            ]
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: "no"
+
+    ##############################################
+    ## Single Aegra API runtime on :8000
     ##############################################
     app:
         build:
@@ -116,14 +156,20 @@ services:
         working_dir: /app
         init: true
         env_file:
-            - ~/.config/orchestra/.env
+            # Override with ORCHESTRA_ENV_FILE=/path/to/file.
+            - ${ORCHESTRA_ENV_FILE:-~/.config/orchestra/.env.backend}
         environment:
             APP_ENV: development
             APP_LOG_LEVEL: DEBUG
-            POSTGRES_CONNECTION_STRING: "postgresql://admin:test1234@postgres:5432/lg_template_dev"
-            REDIS_URL: redis://redis:6379/0
+            PORT: "8000"
+            POSTGRES_CONNECTION_STRING: "${POSTGRES_CONNECTION_STRING:?POSTGRES_CONNECTION_STRING must be set}"
+            DATABASE_URL: "${DATABASE_URL:-}"
+            MIGRATION_DATABASE_NAME: "${MIGRATION_DATABASE_NAME:-}"
+            AEGRA_CONFIG: /app/aegra.json
+            RUN_MIGRATIONS_ON_STARTUP: "false"
+            REDIS_URL: "${REDIS_URL:-redis://redis:6379/0}"
+            REDIS_BROKER_ENABLED: "true"
             SEARX_SEARCH_HOST_URL: http://search_engine:8080
-            DISTRIBUTED_WORKERS: "true"
         ports:
             - "8000:8000"
         volumes:
@@ -136,72 +182,27 @@ services:
             [
                 "/bin/sh",
                 "-lc",
-                "uv sync --frozen --dev --no-install-project && uv run alembic upgrade head && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000 --log-level debug",
+                "uv sync --frozen --no-dev --no-install-project && exec python -B -m uvicorn aegra_api.main:app --reload --host 0.0.0.0 --port 8000 --log-level debug",
             ]
         depends_on:
             postgres:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+            migrate:
+                condition: service_completed_successfully
         healthcheck:
             test:
                 [
                     "CMD",
                     "python",
                     "-c",
-                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/info/health', timeout=5).read()",
+                    "import urllib.request; [urllib.request.urlopen('http://127.0.0.1:8000' + path, timeout=5).read() for path in ('/health', '/api/info/health')]",
                 ]
             interval: 15s
             timeout: 5s
             retries: 10
             start_period: 45s
-        deploy:
-            resources:
-                limits:
-                    cpus: "2"
-                    memory: 2G
-
-    ##############################################
-    ## Worker (TaskIQ — worker target)
-    ##############################################
-    worker:
-        build:
-            context: ../backend
-            dockerfile: ../infra/backend.Dockerfile
-            target: worker
-        working_dir: /app
-        init: true
-        env_file:
-            - ~/.config/orchestra/.env
-        environment:
-            APP_ENV: development
-            APP_LOG_LEVEL: DEBUG
-            POSTGRES_CONNECTION_STRING: "postgresql://admin:test1234@postgres:5432/lg_template_dev"
-            REDIS_URL: redis://redis:6379/0
-            DISTRIBUTED_WORKERS: "true"
-        volumes:
-            - ../backend:/app
-            - backend_venv:/app/.venv
-            - backend_uv_cache:/root/.cache/uv
-        extra_hosts:
-            - host.docker.internal:host-gateway
-        command:
-            [
-                "/bin/sh",
-                "-lc",
-                "uv sync --frozen --dev --no-install-project && uv run taskiq worker src.workers.tasks:broker",
-            ]
-        depends_on:
-            redis:
-                condition: service_healthy
-            postgres:
-                condition: service_healthy
-        healthcheck:
-            test: ["CMD", "pgrep", "-f", "taskiq"]
-            interval: 15s
-            timeout: 5s
-            retries: 10
-            start_period: 30s
         deploy:
             resources:
                 limits:

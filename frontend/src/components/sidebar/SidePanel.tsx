@@ -2,7 +2,6 @@ import { type ReactNode } from "react";
 import type { PanelId } from "./ActivityBar";
 import { ThreadsPanel } from "./panels/ThreadsPanel";
 import { ProjectsPanel } from "./panels/ProjectsPanel";
-import { SchedulesPanel } from "./panels/SchedulesPanel";
 import { Project } from "@/lib/entities/project";
 
 interface SidePanelProps {
@@ -61,7 +60,6 @@ export function SidePanel({
 					renderProjectItem={renderProjectItem}
 				/>
 			)}
-			{activePanel === "schedules" && <SchedulesPanel />}
 		</div>
 	);
 }

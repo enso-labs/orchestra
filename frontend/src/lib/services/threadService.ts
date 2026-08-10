@@ -1,390 +1,168 @@
-import apiClient from "@/lib/utils/apiClient";
-import {
-	SemanticThread,
-	ThreadPayload,
-	ThreadSearchRequest,
-} from "@/lib/entities";
-import { DEFAULT_OPTIMIZE_MODEL } from "@/lib/config/llm";
-import { VITE_API_URL } from "@/lib/config";
-import { getAuthToken } from "@/lib/utils/auth";
-import { SSE, SSEOptions } from "sse.js";
-import { Agent } from "./agentService";
-import {
-	StreamSource,
-	SyncStreamSource,
-	DistributedStreamSource,
-	type DistributedStreamOptions,
-} from "@/lib/utils/streamSource";
-import { isDistributedResponse } from "@/lib/entities/stream";
+import { SemanticThread, ThreadSearchRequest } from "@/lib/entities";
+import { agentClient } from "@/lib/api/agentClient";
 
-const SYSTEM_PROMPT = `GOAL:
-Generate a system prompt for an AI Agent.
-
-RETURN FORMAT:
-Do no return anything except the final system.
-
-WARNING:
-Attention to formatting. Not adhering to return format will result in failure.
-
-CONTEXT:
-You are an expert prompt engineer who uses optimizes system prompts for AI agents. Your agents need to know they're EXPERTS!`;
-
-const getSystemPrompt = (previousSystemPrompt?: string) => {
-	if (previousSystemPrompt) {
-		return SYSTEM_PROMPT + `\n\nPROMPT TO ALTER:\n${previousSystemPrompt}`;
-	}
-
-	return SYSTEM_PROMPT;
-};
-
-export const findThread = async (threadId: string) => {
-	try {
-		const response = await apiClient.get(`/llm/thread/${threadId}`);
-		return response;
-	} catch (error: any) {
-		console.error("Error finding thread:", error);
-		throw new Error(error.response?.data?.detail || "Failed to find thread");
-	}
-};
-
+/** Read a thread through the sole Agent Protocol client. */
 export const getThread = async (threadId: string) => {
-	const headers: Record<string, string> = {};
-	const token = getAuthToken();
-	if (token) {
-		headers.Authorization = `Bearer ${token}`;
-	}
-
-	const response = await apiClient.get(`/threads/${threadId}`, { headers });
-
-	return response.data.thread;
+	return agentClient.threads.get(threadId);
 };
 
-/**
- * Creates a new thread with the provided payload
- * @param payload - Thread configuration containing system prompt and other settings
- * @returns The created thread data
- */
-export const createJsonThread = async (payload: ThreadPayload) => {
-	try {
-		const response = await apiClient.post("/llm/thread", payload, {
-			headers: {
-				Accept: "application/json",
-			},
-		});
-		return response.data;
-	} catch (error: any) {
-		console.error("Error creating thread:", error);
-		throw new Error(error.response?.data?.detail || "Failed to create thread");
-	}
+type ThreadAction = "list_threads" | "list_checkpoints" | "get_checkpoint";
+type ThreadFilter = {
+	thread_id?: string;
+	checkpoint_id?: string;
+	assistant_id?: string;
+	project_id?: string | null;
+	metadata?: Record<string, unknown>;
 };
 
-export const optimizeSystemPrompt = async (payload: ThreadPayload) => {
-	payload.system = SYSTEM_PROMPT;
-	payload.model = DEFAULT_OPTIMIZE_MODEL;
-	try {
-		const response = await apiClient.post("/llm/chat", payload);
-		return response.data.answer.content;
-	} catch (error: any) {
-		console.error("Error optimizing system prompt:", error);
-		throw new Error(
-			error.response?.data?.detail || "Failed to optimize system prompt",
-		);
-	}
-};
-
-export const alterSystemPrompt = async (payload: ThreadPayload) => {
-	payload.system = getSystemPrompt(payload.system);
-	payload.model = DEFAULT_OPTIMIZE_MODEL;
-	try {
-		const response = await apiClient.post("/llm/chat", payload);
-		return response.data.answer.content;
-	} catch (error: any) {
-		console.error("Error altering system prompt:", error);
-		throw new Error(
-			error.response?.data?.detail || "Failed to alter system prompt",
-		);
-	}
-};
-
-type MessageContent = string | Array<{ type: string; [key: string]: any }>;
-type Messages = { role: string; content: MessageContent; [key: string]: any }[];
-type Input = { messages: Messages };
-// type Metadata = { thread_id?: string; checkpoint_id?: string; [key: string]: any };
-type A2A = { [key: string]: any };
-type MCP = { [key: string]: any };
-type Tools = string[];
-type Subagents = Agent[];
-type Files = Record<
-	string,
-	{ content: string[]; created_at: string; modified_at: string }
->;
-interface StreamThreadPayload {
-	system_prompt?: string;
-	input: Input & { files?: Files };
-	model: string;
-	metadata: any;
-	a2a?: A2A;
-	mcp?: MCP;
-	tools?: Tools;
-	subagents?: Subagents;
-}
-
-export const streamThread = (payload: StreamThreadPayload): SSE => {
-	try {
-		const headers: Record<string, string> = {
-			"Content-Type": "application/json",
-			Accept: "text/event-stream",
-		};
-		const token = getAuthToken();
-		if (token) headers.Authorization = `Bearer ${token}`;
-
-		if (payload.system_prompt?.trim() === "") {
-			delete payload.system_prompt;
-		}
-		const newConfig: SSEOptions = {
-			headers: headers,
-			payload: JSON.stringify(payload),
-			method: "POST",
-			start: false,
-		};
-		const source = new SSE(`${VITE_API_URL}/llm/stream`, newConfig);
-		return source;
-	} catch (error: unknown) {
-		console.error("Error streaming thread:", error);
-		throw error;
-	}
-};
-
-/**
- * Initiates a stream request. Handles both sync and distributed modes.
- * Returns a unified StreamSource interface.
- *
- * @param payload - Stream request payload
- * @returns StreamSource that can be used to read events
- * @throws Error on network/auth failures
- */
-export async function initiateStream(
-	payload: StreamThreadPayload,
-): Promise<StreamSource> {
-	const headers: Record<string, string> = {
-		"Content-Type": "application/json",
-		Accept: "text/event-stream",
+function protocolMetadata(filter: ThreadFilter): Record<string, unknown> {
+	const metadata = {
+		...(filter.metadata ?? {}),
+		...Object.fromEntries(
+			Object.entries(filter).filter(
+				([key, value]) =>
+					!["thread_id", "checkpoint_id", "metadata"].includes(key) &&
+					value !== undefined,
+			),
+		),
 	};
-
-	const token = getAuthToken();
-	if (token) {
-		headers["Authorization"] = `Bearer ${token}`;
+	if (filter.assistant_id) {
+		metadata.orchestra_assistant_id = filter.assistant_id;
 	}
-
-	// Clean up empty system prompt
-	if (payload.system_prompt?.trim() === "") {
-		delete payload.system_prompt;
-	}
-
-	const response = await fetch(`${VITE_API_URL}/llm/stream`, {
-		method: "POST",
-		headers,
-		body: JSON.stringify(payload),
-	});
-
-	// Distributed mode: 202 Accepted
-	if (response.status === 202) {
-		const data = await response.json();
-
-		if (!isDistributedResponse(data)) {
-			throw new Error("Invalid distributed response format");
-		}
-
-		// Detect if this is a first turn (no existing thread_id) or follow-up
-		// For first turn, we can skip the initial delay since there's no stale stream
-		// For follow-up, we need the delay to avoid race condition with worker startup
-		const isFirstTurn = !payload.metadata?.thread_id;
-		const options: DistributedStreamOptions = {
-			skipInitialDelay: isFirstTurn,
-		};
-
-		return new DistributedStreamSource(data.thread_id, data.run_id, options);
-	}
-
-	// Sync mode: 200 OK
-	if (response.status === 200) {
-		return new SyncStreamSource(response);
-	}
-
-	// Error responses
-	if (response.status === 401) {
-		throw new Error("Authentication required");
-	}
-
-	if (response.status === 429) {
-		throw new Error("Rate limit exceeded");
-	}
-
-	throw new Error(`Unexpected response: ${response.status}`);
+	return metadata;
 }
 
-export const searchThreads = async (
-	action: "list_threads" | "list_checkpoints" | "get_checkpoint",
-	filter: { thread_id?: string; checkpoint_id?: string } = {},
-	limit: number = 20,
-	offset: number = 0,
-) => {
-	let payload;
-	if (action === "list_threads") {
-		payload = {
-			limit: limit,
-			offset: offset,
-			filter: filter,
-		};
-	} else if (action === "list_checkpoints") {
-		payload = {
-			limit: limit,
-			offset: offset,
-			filter: { thread_id: filter.thread_id },
-		};
-	} else if (action === "get_checkpoint") {
-		payload = {
-			limit: limit,
-			offset: offset,
-			filter: {
-				thread_id: filter.thread_id,
-				checkpoint_id: filter.checkpoint_id,
-			},
-		};
-	}
-	const response = await apiClient.post(`/threads/search`, payload, {
-		headers: {
-			"Content-Type": "application/json",
+function toLegacyThread(thread: any): any {
+	const values =
+		thread?.values && typeof thread.values === "object" ? thread.values : {};
+	const metadata =
+		thread?.metadata && typeof thread.metadata === "object"
+			? thread.metadata
+			: {};
+	return {
+		...thread,
+		key: thread.thread_id,
+		value: {
+			...values,
+			...metadata,
+			thread_id: thread.thread_id,
+			assistant_id:
+				metadata.orchestra_assistant_id ??
+				metadata.assistant_id ??
+				values.assistant_id,
+			project_id: metadata.project_id ?? values.project_id,
 		},
-	});
-	const data = await response.data;
+	};
+}
 
+/**
+ * SDK-backed Protocol resource access. This preserves the old action-shaped
+ * service API for callers while every graph/thread request uses SDK methods
+ * and their documented HTTP verbs.
+ */
+export const searchThreads = async (
+	action: ThreadAction,
+	filter: ThreadFilter = {},
+	limit = 20,
+	offset = 0,
+): Promise<any> => {
 	if (action === "list_threads") {
-		return data.threads;
-	} else if (action === "list_checkpoints") {
-		return data.checkpoints;
-	} else if (action === "get_checkpoint") {
-		return data.checkpoint;
+		const threads = await agentClient.threads.search({
+			limit,
+			offset,
+			metadata: protocolMetadata(filter),
+			sortBy: "updated_at",
+			sortOrder: "desc",
+			select: [
+				"thread_id",
+				"created_at",
+				"updated_at",
+				"metadata",
+				"values",
+				"status",
+			],
+		});
+		return threads.map(toLegacyThread);
 	}
+
+	if (!filter.thread_id) return [];
+	if (action === "list_checkpoints") {
+		return agentClient.threads.getHistory(filter.thread_id, { limit });
+	}
+
+	return agentClient.threads.getState(filter.thread_id, filter.checkpoint_id, {
+		subgraphs: true,
+	});
 };
 
-export const deleteThread = async (threadId: string, assistantId?: string) => {
-	try {
-		let url = `/threads/${threadId}`;
-		if (assistantId) {
-			url = `/a/${assistantId}/threads/${threadId}`;
-		}
-		const response = await apiClient.delete(url, {
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-				Authorization: `Bearer ${getAuthToken()}`,
-			},
-		});
-		return response;
-	} catch (error: any) {
-		console.error("Error deleting thread:", error);
-		throw new Error(error.response?.data?.detail || "Failed to delete thread");
-	}
+export const deleteThread = async (threadId: string) => {
+	await agentClient.threads.delete(threadId);
+	return true;
 };
 
 export const searchThreadsByProject = async (
 	projectId: string,
-	limit: number = 20,
-	offset: number = 0,
+	limit = 20,
+	offset = 0,
 ) => {
-	try {
-		const payload = {
-			limit: limit,
-			offset: offset,
-			filter: { project_id: projectId },
-		};
-		const response = await apiClient.post(`/threads/search`, payload, {
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
-		return response.data.threads || [];
-	} catch (error: any) {
-		console.error("Error searching threads by project:", error);
-		throw new Error(
-			error.response?.data?.detail || "Failed to search threads by project",
-		);
-	}
+	const threads = await agentClient.threads.search({
+		limit,
+		offset,
+		metadata: { project_id: projectId },
+		sortBy: "updated_at",
+		sortOrder: "desc",
+		select: [
+			"thread_id",
+			"created_at",
+			"updated_at",
+			"metadata",
+			"values",
+			"status",
+		],
+	});
+	return threads.map(toLegacyThread);
 };
 
 export const updateThreadProject = async (
 	threadId: string,
 	projectId: string | null,
 ) => {
-	try {
-		const response = await apiClient.patch(
-			`/threads/${threadId}`,
-			{ project_id: projectId },
-			{
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${getAuthToken()}`,
-				},
-			},
-		);
-		return response.data;
-	} catch (error: any) {
-		console.error("Error updating thread project:", error);
-		throw new Error(
-			error.response?.data?.detail || "Failed to update thread project",
-		);
-	}
-};
-
-export const searchThreadsSemantic = async (
-	request: ThreadSearchRequest,
-): Promise<{ threads: SemanticThread[] }> => {
-	try {
-		const response = await apiClient.post(`/threads/search`, request, {
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${getAuthToken()}`,
-			},
-		});
-		return response.data;
-	} catch (error: any) {
-		console.error("Error searching threads semantically:", error);
-		throw new Error(error.response?.data?.detail || "Failed to search threads");
-	}
+	const current = await agentClient.threads.get(threadId);
+	return agentClient.threads.update(threadId, {
+		metadata: { ...(current.metadata ?? {}), project_id: projectId },
+	});
 };
 
 /**
- * Sends an abort signal to a running distributed worker task.
- * The worker will gracefully terminate at the next iteration checkpoint.
- *
- * @param threadId - The thread ID of the running task
- * @returns Promise resolving to abort response with status and message
- * @throws Error on auth failure (401), not found (404), or forbidden (403)
+ * Agent Protocol does not expose a text-search field. Fetch the SDK thread
+ * page and perform the presentation-only text filter locally rather than
+ * constructing a second transport or calling a legacy graph URL.
  */
-export const abortThread = async (
-	threadId: string,
-): Promise<{ status: string; thread_id: string; message: string }> => {
-	try {
-		const response = await apiClient.post(
-			`/threads/${threadId}/abort`,
-			{},
-			{
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${getAuthToken()}`,
-				},
-			},
-		);
-		return response.data;
-	} catch (error: any) {
-		console.error("Error aborting thread:", error);
-		if (error.response?.status === 403) {
-			throw new Error("Not authorized to abort this thread");
-		}
-		if (error.response?.status === 404) {
-			throw new Error("Thread not found");
-		}
-		throw new Error(error.response?.data?.detail || "Failed to abort thread");
-	}
+export const searchThreadsSemantic = async (
+	request: ThreadSearchRequest,
+): Promise<{ threads: SemanticThread[] }> => {
+	const threads = await agentClient.threads.search({
+		limit: request.limit ?? 20,
+		metadata: request.assistant_id
+			? { orchestra_assistant_id: request.assistant_id }
+			: undefined,
+		select: ["thread_id", "updated_at", "metadata", "values"],
+	});
+	const query = request.query.toLowerCase();
+	return {
+		threads: threads
+			.filter((thread) => {
+				const values = (thread.values ?? {}) as Record<string, unknown>;
+				return JSON.stringify(values).toLowerCase().includes(query);
+			})
+			.map((thread) => ({
+				id: thread.thread_id,
+				messages: ((thread.values as any)?.messages ?? []) as any[],
+				files: ((thread.values as any)?.files ?? []) as any[],
+				score: 1,
+				updated_at: thread.updated_at ?? null,
+			})),
+	};
 };
+
+export type { ThreadFilter, ThreadAction };

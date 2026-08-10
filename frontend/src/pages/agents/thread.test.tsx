@@ -23,10 +23,6 @@ vi.mock("@/hooks/useModel", () => ({
 	default: () => mockUseModel(),
 }));
 
-vi.mock("@/hooks/useActiveStreamRecovery", () => ({
-	default: () => ({ isRecovering: false }),
-}));
-
 vi.mock("nuqs", () => ({
 	useQueryState: () => [null, mockSetActiveTab],
 }));

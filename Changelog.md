@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.8.10
+
+### Changed
+  - task/976-aegra-full-inversion — make Aegra the sole backend runtime on `:8000` and move graph operations to the LangGraph SDK client, retaining Orchestra assistant metadata at the SDK boundary; default OpenAI to `openai:gpt-5.6-luna` with `max` reasoning effort.
+
+### Fixed
+  - task/976-aegra-full-inversion — initialize the FastAPI cache during Aegra startup so cached custom API routes do not fail before their first request.
+  - task/976-aegra-full-inversion — keep null and structured assistant settings out of Agent Protocol metadata, preventing first-message 422 responses while retaining them in the run context.
+  - task/976-aegra-full-inversion — use the stateful sandbox backend by default; Daytona and auto-probing remain explicit opt-ins.
+
+### Removed
+  - task/976-aegra-full-inversion — remove the TaskIQ worker/sidecar and legacy graph transport; schedules and prompt distillation are explicit deferred capabilities until a future implementation.
+
 ## 2026.8.7
 
 ### Fixed

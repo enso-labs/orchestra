@@ -18,8 +18,12 @@ This guide covers environment configuration for self-hosting Orchestra with vari
 Orchestra uses environment variables to configure AI providers. Copy the example environment file and configure your providers:
 
 ```bash
-cp backend/.example.env ~/.env/orchestra/.env.backend
+mkdir -p ~/.config/orchestra
+cp backend/.example.env ~/.config/orchestra/.env.backend
 ```
+
+Compose accepts `ORCHESTRA_ENV_FILE=/path/to/file` as an explicit backend
+runtime env-file override; Make targets accept `ENV_FILE=/path/to/file`.
 
 ### AI Provider Configuration
 

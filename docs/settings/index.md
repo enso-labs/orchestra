@@ -74,8 +74,8 @@ curl -X 'PATCH' 'https://chat.ruska.ai/api/settings/default' \
   -d '{ "reasoning_effort": "high" }'
 ```
 
-Or override it for a single call — `POST /api/llm/invoke` and `POST /api/llm/stream`
-both accept `reasoning_effort`, which takes precedence over the saved default. An effort
+The Agent Protocol run request accepts `reasoning_effort`, which takes precedence
+over the saved default. An effort
 the named model does not support is rejected with `422`. A *saved* default that a later
 model does not support is dropped rather than rejected, so switching models never breaks
 your chats. In the chat input, the effort picker appears beside the model badge only for

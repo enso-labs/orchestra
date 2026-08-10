@@ -79,7 +79,7 @@ Deleting an epic permanently removes it and all of its tasks. This action cannot
 
 -   **[Assistants](../assistants/index.md)**: Create agents to work on epic tasks
 -   **[Projects](../projects/index.md)**: Organize conversations into workspaces
--   **[Schedules](../schedules/index.md)**: Automate recurring work
+-   **[Deferred jobs](../schedules/index.md)**: Scheduled execution follow-up and current unsupported behavior
 
 ---
 

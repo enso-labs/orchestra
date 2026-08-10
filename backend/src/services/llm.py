@@ -147,8 +147,6 @@ class LLMService:
                     metadata=params.metadata,
                     reasoning_effort=params.reasoning_effort,
                 )
-                # Preserve user's stream_mode from the original request
-                assistant_request.stream_mode = params.stream_mode
                 if explicit_request_system_prompt:
                     assistant_request.system_prompt = params.system_prompt
                 else:

@@ -1,51 +1,40 @@
 #!/bin/bash
+set -euo pipefail
 
-# Get the project root directory (one level up from backend)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BACKEND_DIR="$PROJECT_ROOT/backend"
-
-SHORT_SHA=$(git rev-parse --short HEAD)
-
-# Set TAG to first argument if provided, otherwise use SHORT_SHA
+SHORT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
 TAG=${1:-$SHORT_SHA}
 
-########################################################################
-## Container Registry
-########################################################################
 REGISTRY="ghcr.io"
 REPOSITORY="ruska-ai"
 IMAGE_NAME="orchestra"
 FULL_IMAGE="$REGISTRY/$REPOSITORY/$IMAGE_NAME"
 
-# Copy Docker README to backend for inclusion in image
-cp "$PROJECT_ROOT/docker/README.md" "$BACKEND_DIR/README.md"
+# The frontend build is expected to have populated backend/src/public before
+# this command, just as the tagged CI build does.
+cp "$PROJECT_ROOT/infra/README.md" "$BACKEND_DIR/README.md"
 cp "$PROJECT_ROOT/LICENSE" "$BACKEND_DIR/LICENSE"
 
-# Build both targets
-docker build --target api -t $FULL_IMAGE-api:$TAG -t $FULL_IMAGE-api:latest "$BACKEND_DIR"
-docker build --target worker -t $FULL_IMAGE-worker:$TAG -t $FULL_IMAGE-worker:latest "$BACKEND_DIR"
-
-# Backward compat alias (orchestra:TAG -> orchestra-api:TAG)
-docker tag $FULL_IMAGE-api:$TAG $FULL_IMAGE:$TAG
-docker tag $FULL_IMAGE-api:latest $FULL_IMAGE:latest
+docker build --target api \
+  -f "$PROJECT_ROOT/infra/backend.Dockerfile" \
+  -t "$FULL_IMAGE-api:$TAG" \
+  -t "$FULL_IMAGE-api:latest" \
+  -t "$FULL_IMAGE:$TAG" \
+  -t "$FULL_IMAGE:latest" \
+  "$BACKEND_DIR"
 
 echo ""
-echo "=== Built Images ==="
-docker images | grep "$FULL_IMAGE" | head -6
+echo "=== Built single Aegra API image ==="
+docker images "$FULL_IMAGE" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -5
 
-########################################################################
-## GitHub Container Registry
-########################################################################
 echo ""
-echo "Do you want to push the images to GitHub Container Registry? (y/n)"
+echo "Do you want to push the image to GitHub Container Registry? (y/n)"
 read -r response
-if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
-then
-  docker push $FULL_IMAGE-api:$TAG
-  docker push $FULL_IMAGE-api:latest
-  docker push $FULL_IMAGE-worker:$TAG
-  docker push $FULL_IMAGE-worker:latest
-  docker push $FULL_IMAGE:$TAG
-  docker push $FULL_IMAGE:latest
+if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]; then
+  docker push "$FULL_IMAGE-api:$TAG"
+  docker push "$FULL_IMAGE-api:latest"
+  docker push "$FULL_IMAGE:$TAG"
+  docker push "$FULL_IMAGE:latest"
 fi

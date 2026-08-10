@@ -32,4 +32,7 @@
 **/.last-branch
 **/.cloudflared/
 **/.images
-tasks/
+# Legacy root-level Ralph workdir, removed in c3b72531. Root-scoped so it cannot
+# swallow a source directory named `tasks` at any depth — task specs now live in
+# .oh/tasks/ and are tracked. See .oh/tasks/README.md.
+/tasks/

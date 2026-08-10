@@ -19,8 +19,7 @@ different shape:
 - **per-task**: five connections are established and torn down on every task and
   every job, so the connect round-trip is on the critical path of each one; and
 - **per-concurrency**: C tasks running at once hold C separate pools, so
-  `5 x C` backends exist simultaneously -- with the taskiq default of two worker
-  processes, that multiplies quickly.
+  `5 x C` backends exist simultaneously when callers each create a pool.
 
 `test_concurrent_callers_share_one_pool` measures the second directly, comparing
 the two patterns side by side. That is the honest, falsifiable version of the

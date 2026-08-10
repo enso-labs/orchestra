@@ -12,7 +12,7 @@ backend:
     description: This is the REST API for the ./frontend and ./cli clients.
     deployment: https://chat.ruska.ai/docs
     commands:
-        - `make test` Run ALL test cases (uses ENV_FILE=~/.config/orchestra/.env).
+        - `make test` Run ALL test cases (uses ENV_FILE=~/.config/orchestra/.env.backend).
         - `make test ENV_FILE=~/.config/orchestra/.env.test` Run tests with test env.
         - `make format` Format project files with ruff. Use after making changes.
         - `make lint` Lint check with ruff (no auto-fix).
@@ -60,16 +60,16 @@ The main way external AI Agents find out information about RUSKA will be from th
 
 ## Build, Test, and Development Commands
 - **Setup**: Run `make setup` from the repo root to install pre-commit hooks.
-- Backend: `cd backend && uv venv && source .venv/bin/activate && uv sync` installs dependencies, `make dev` runs the API with reload, and `make test` executes the suite. Use `ENV_FILE=~/.config/orchestra/.env.test` for the test environment.
+- Backend: `cd backend && uv venv --python 3.12 && source .venv/bin/activate && uv sync --python 3.12` installs dependencies, `make dev` runs the Aegra API with reload, and `make test` executes the suite. Use `ENV_FILE=~/.config/orchestra/.env.test` for the test environment.
 - Frontend: `cd frontend && npm install`, `npm run dev` for local dev, `npm run build` for production bundles, and `npm run docs` regenerates MkDocs API docs.
-- Infrastructure: the full stack lives in `infra/docker-compose.yml`; `make dev.docker.up` builds and starts it, `make dev.docker.down` stops it.
+- Infrastructure: the full stack lives in `infra/docker-compose.yml`; `make dev.docker.up` builds and starts the single Aegra API plus its ordered migration init, Postgres, Redis, and supporting services, and `make dev.docker.down` stops it.
 
 ## Docker Development Environment
-- **When to use**: Backend development requiring all services (app, worker, postgres, redis, search_engine, minio, ollama) running together. The entire stack is one file: `infra/docker-compose.yml`.
+- **When to use**: Backend development requiring the single Aegra API, ordered migration init, postgres, redis, search_engine, minio, and ollama. The entire stack is one file: `infra/docker-compose.yml`.
 - **Start the stack**: `make dev.docker.up` — builds and starts all services in detached mode (`docker compose -f infra/docker-compose.yml up --build -d`).
 - **Services and ports**:
-  - `app` — :8000 (FastAPI with hot-reload)
-  - `worker` — TaskIQ worker (auto-reloads on code changes)
+  - `app` — :8000 (Aegra FastAPI runtime with hot-reload)
+  - `migrate` — one-shot Orchestra-then-Aegra migration/preflight init
   - `postgres` — :5432 (pgvector/pg16)
   - `redis` — :6379
   - `minio` — :9000/:9001 (S3-compatible storage)
@@ -77,12 +77,12 @@ The main way external AI Agents find out information about RUSKA will be from th
   - `search_engine` — :8080 (SearXNG)
 - **Frontend**: Run from the host (`cd frontend && npm run dev`) and connect to the backend API on :8000. Use the `agent-browser` skill for browser-based testing.
 - **Management commands**:
-  - `make dev.docker.logs` — tail app + worker logs (override with `DOCKER_DEV_LOG_SERVICES="app worker"`)
+  - `make dev.docker.logs` — tail the Aegra API logs (override `DOCKER_DEV_LOG_SERVICES`)
   - `make dev.docker.ps` — show running containers
   - `make dev.docker.down` — stop and clean up
-  - `make dev.docker.migrate` — run Alembic migrations inside the app container
+  - `make dev.docker.migrate` — run the ordered migration/preflight init container
   - `make dev.docker.test.up` — run the stack against the test database (adds `infra/docker-compose.test.yml`)
-- **Key details**: Source directories are volume-mounted for hot-reload. The app runs `uv sync` and `alembic upgrade head` on startup automatically. Backend env is loaded from `~/.config/orchestra/.env` via the compose `env_file`.
+- **Key details**: Source directories are volume-mounted for hot-reload. The `migrate` init runs `scripts/migrate.py` before the API; Aegra's in-process startup migration is disabled. Backend env defaults to `~/.config/orchestra/.env.backend` via the compose `env_file`; override direct Compose with `ORCHESTRA_ENV_FILE=/path/to/file` or Make targets with `ENV_FILE=/path/to/file`.
 
 ## Coding Style & Naming Conventions
 - Run `pre-commit run --all-files`; hooks run backend format/lint/test and frontend prettier/lint/test.

@@ -1,9 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import type { RunError } from "@/hooks/useChat";
-
-const mockReplayRun = vi.fn();
 
 const chatContextValue: Record<string, any> = {
 	streamingRate: null,
@@ -13,7 +11,7 @@ const chatContextValue: Record<string, any> = {
 	appendToQuery: vi.fn(),
 	displayModel: "openai:gpt-4.1-mini",
 	runError: null as RunError | null,
-	replayRun: mockReplayRun,
+	streamStatus: null,
 };
 
 vi.mock("@/context/AppContext", () => ({
@@ -31,53 +29,36 @@ const renderWithRunError = (runError: RunError) => {
 	return render(<ChatMessages messages={[]} />);
 };
 
-describe("ChatMessages run error banner", () => {
+describe("ChatMessages run states", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		chatContextValue.runError = null;
+		chatContextValue.streamStatus = null;
 	});
 
-	it("hides the replay button for a non-recoverable failure (no DLQ entry to replay)", () => {
+	it("renders an accessible inline error with no legacy replay action", () => {
 		renderWithRunError({
 			runId: "run-1",
-			message: "MCP sandbox unreachable: connection refused",
+			message: "You do not have access to this thread.",
 			recoverable: false,
 		});
 
-		expect(screen.getByTestId("message-error")).toBeInTheDocument();
+		expect(screen.getByTestId("message-error")).toHaveAttribute(
+			"role",
+			"alert",
+		);
 		expect(
-			screen.getByText("MCP sandbox unreachable: connection refused"),
+			screen.getByText("You do not have access to this thread."),
 		).toBeInTheDocument();
 		expect(screen.queryByTestId("replay-button")).not.toBeInTheDocument();
 	});
 
-	it("renders exactly one replay button for a recoverable failure with a run id", () => {
-		renderWithRunError({
-			runId: "run-1",
-			message: "The request failed permanently.",
-			recoverable: true,
-		});
+	it("renders cancellation in a polite live region", () => {
+		chatContextValue.streamStatus = "The request was stopped.";
+		render(<ChatMessages messages={[]} />);
 
-		expect(screen.getAllByTestId("replay-button")).toHaveLength(1);
-	});
-
-	it("hides the replay button when there is no run id to replay", () => {
-		renderWithRunError({
-			runId: "",
-			message: "The request failed permanently.",
-			recoverable: true,
-		});
-
-		expect(screen.queryByTestId("replay-button")).not.toBeInTheDocument();
-	});
-
-	it("renders the failure heading above the backend message", () => {
-		renderWithRunError({
-			runId: "run-1",
-			message: "Something broke.",
-			recoverable: true,
-		});
-
-		expect(screen.getByText("The request failed.")).toBeInTheDocument();
+		expect(screen.getByRole("status")).toHaveTextContent(
+			"The request was stopped.",
+		);
 	});
 });

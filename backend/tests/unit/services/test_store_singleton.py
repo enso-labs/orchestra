@@ -20,12 +20,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.services import db as db_module
-from src.services.db import (
-    RunScopedStore,
-    close_shared_store,
-    get_shared_store,
-    get_store_application_name,
-)
+from src.services.db import close_shared_store, get_shared_store, get_store_application_name
 
 
 class FakeStore:
@@ -202,62 +197,6 @@ class TestCloseSharedStore:
             await close_shared_store()
 
         assert task.cancelled() or task.done()
-
-
-class TestRunScopedStore:
-    """`fields` isolation for the shared store.
-
-    Six sites assign `store.fields` (`utils/stream.py`, `services/schedule.py`,
-    `controllers/llm.py`, `workers/tasks.py`, `repos/thread_repo.py`,
-    `repos/source_repo.py`). Nothing reads it today — it is not a langgraph API —
-    so this is defence-in-depth rather than a fix for a live bug, but sharing one
-    store object across concurrent runs is what would make it one.
-    """
-
-    def test_field_writes_are_isolated_per_run(self):
-        shared = FakeStore()
-        shared.fields = ["original"]
-
-        a = RunScopedStore(shared)
-        b = RunScopedStore(shared)
-        a.fields = ["messages", "files"]
-        b.fields = ["page_content"]
-
-        assert a.fields == ["messages", "files"]
-        assert b.fields == ["page_content"]
-        assert shared.fields == ["original"]
-
-    def test_fields_are_seeded_explicitly_not_from_the_shared_store(self):
-        """Seeding via `getattr(store, "fields", [])` would be a read-side race.
-
-        A scheduler job would inherit whatever an in-flight request last wrote.
-        """
-        shared = FakeStore()
-        shared.fields = ["leaked-from-another-run"]
-
-        assert RunScopedStore(shared).fields == []
-        assert RunScopedStore(shared, ["explicit"]).fields == ["explicit"]
-
-    def test_non_field_attributes_delegate_to_the_shared_store(self):
-        shared = FakeStore()
-        proxy = RunScopedStore(shared)
-
-        assert proxy.tag == "fake"
-        proxy.tag = "written-through"
-        assert shared.tag == "written-through"
-
-    async def test_async_with_on_the_proxy_raises(self):
-        """Implicit special-method lookup goes through `type(obj)`.
-
-        So `async with proxy` fails even though `hasattr(proxy, "__aenter__")` is
-        True — which is why the re-entry cleanup had to land before the call
-        sites were migrated, and why nobody should write a `hasattr` guard here.
-        """
-        proxy = RunScopedStore(FakeStore())
-
-        with pytest.raises(TypeError):
-            async with proxy:
-                pass
 
 
 def test_application_name_identifies_the_process():

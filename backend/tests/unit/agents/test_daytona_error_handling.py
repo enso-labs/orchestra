@@ -40,11 +40,21 @@ class TestResolveSandboxBackendReturnType:
 
     @patch("src.agents._create_daytona_backend_checked", return_value=None)
     def test_auto_mode_fallback_returns_state_type(self, _mock):
-        """When Daytona is unavailable in auto mode, should fallback to 'state'."""
+        """When Daytona is unavailable in explicit auto mode, should fallback to 'state'."""
         runtime = MagicMock()
-        backend, sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type=None)
+        backend, sandbox, effective_type = resolve_sandbox_backend(runtime, sandbox_type="auto")
         assert effective_type == "state"
         assert sandbox is None
+
+    @patch("src.agents._create_daytona_backend_checked")
+    def test_default_mode_uses_state_without_trying_daytona(self, mock_checked):
+        """Unset sandbox selection must not instantiate Daytona."""
+        runtime = MagicMock()
+        backend, sandbox, effective_type = resolve_sandbox_backend(runtime)
+        assert effective_type == "state"
+        assert sandbox is None
+        assert backend is not None
+        mock_checked.assert_not_called()
 
     @patch("src.agents._create_daytona_backend_checked")
     def test_auto_mode_daytona_available_returns_daytona_type(self, mock_checked):

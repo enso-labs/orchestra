@@ -6,15 +6,13 @@ import { defineConfig, devices } from "@playwright/test";
  * baseURL is the externally-provided Vite dev server (http://localhost:5173).
  * No webServer block — the stack is started externally before tests run.
  *
- * Resiliency specs are authored with test.fail() at baseline so they pass CI
- * today even though the resilient behaviours are not yet implemented.  Once a
- * fix lands, remove the corresponding test.fail() annotation and the test will
- * become a hard failure on regression (the GREEN signal).
+ * Runtime contract specs are blocking: a failing Aegra/SDK behavior must fail
+ * the browser job rather than being hidden by a skipped or allowed failure.
  */
 export default defineConfig({
   testDir: "./e2e",
 
-  /* CI runs the full stack (postgres + redis + api + worker + vite) on a single
+  /* CI runs the full stack (postgres + redis + Aegra API + vite) on a single
    * runner. Unbounded parallel Playwright workers starve the Vite dev server and
    * the React app misses its 30s mount window (the chat input/submit never
    * appears in time). Serialize in CI and retry to absorb cold-start/contention;

@@ -106,11 +106,7 @@ function ThreadItem({ thread, projects }: ThreadItemProps) {
 		if (window.confirm("Are you sure you want to delete this thread?")) {
 			try {
 				let deleted: boolean | AxiosResponse<any, any> = false;
-				if (agent.id) {
-					deleted = await deleteThread(thread.key, agent.id);
-				} else {
-					deleted = await deleteThread(thread.key);
-				}
+				deleted = await deleteThread(thread.key);
 				if (deleted) {
 					setThreads(threads.filter((t: any) => t.key !== thread.key));
 				}

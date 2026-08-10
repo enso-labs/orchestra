@@ -35,10 +35,6 @@ vi.mock("@/hooks/useMediaQuery", () => ({
 	useMediaQuery: () => false,
 }));
 
-vi.mock("@/hooks/useActiveStreamRecovery", () => ({
-	default: () => ({ isRecovering: false }),
-}));
-
 vi.mock("@/layouts/chat-layout-v2", () => ({
 	default: ({ children }: { children: ReactNode }) => (
 		<div data-testid="chat-layout">{children}</div>

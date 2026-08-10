@@ -1,5 +1,4 @@
 import { useChatContext } from "@/context/ChatContext";
-import { removeActiveStreamRecovery } from "@/lib/utils/activeStreamRecovery";
 import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -23,12 +22,8 @@ function NewThreadButton() {
 			window.open(window.location.href, "_blank");
 		} else {
 			// Abort active stream BEFORE clearing to prevent race condition
-			// where SSE handler re-populates stale thread_id after clear
+			// where a previous run could re-populate stale thread_id after clear
 			abortQuery();
-			if (metadata?.thread_id) {
-				removeActiveStreamRecovery(metadata.thread_id);
-			}
-
 			// Capture navigation values before clearing metadata
 			const pathname = location.pathname;
 			const threadId = metadata?.thread_id;

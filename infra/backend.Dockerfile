@@ -1,79 +1,44 @@
-# =============================================================================
-# Stage 1: Base builder — shared deps (langchain, DB, auth, redis, taskiq)
-# =============================================================================
+# Single production image: Aegra owns the API process and Orchestra's
+# migration init command runs from this same image before the API starts.
 FROM python:3.12-slim-bookworm AS base-builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 WORKDIR /app
 
-# Copy only dep files first for caching
-COPY pyproject.toml uv.lock* /app/
-
-# Install runtime deps (no dev). Since #953 the API packages are part of the
-# default dependency set, so this single sync serves both the API and worker.
+# Keep dependency installation cacheable and use the backend lockfile as the
+# only source of truth for Aegra and Orchestra runtime dependencies.
+COPY pyproject.toml uv.lock /app/
 RUN python -m venv /app/.venv && \
     . /app/.venv/bin/activate && \
-    uv sync --frozen --no-cache --no-dev
+    uv sync --frozen --no-cache --no-dev --no-install-project
 
-# =============================================================================
-# Stage 2: API builder — adds frontend assets
-# =============================================================================
 FROM base-builder AS api-builder
 
-# Copy app code (includes src/public/ with frontend build)
+# The frontend CI build writes src/public/ into this backend build context.
+# Copy all Python source rather than deleting modules after bytecode compilation:
+# Aegra resolves aegra.json, custom_app.py, aegra_auth.py, and the graph factory
+# by source path at runtime.
 COPY . /app
+RUN test -f /app/aegra.json && \
+    test -f /app/custom_app.py && \
+    test -f /app/aegra_auth.py && \
+    test -f /app/src/agents/factory.py && \
+    test -f /app/scripts/migrate.py
 
-# Compile to bytecode + remove source
-RUN python -m compileall -b -f -q /app && \
-    find /app -type f -name "*.py" \
-      ! -path "/app/migrations/*" \
-      ! -path "/app/seeds/*" \
-      -delete
-
-# =============================================================================
-# Stage 3: Worker builder — same deps as the API, no API files
-# =============================================================================
-FROM base-builder AS worker-builder
-
-# Copy app code
-COPY . /app
-
-# Remove files the Worker never needs
-RUN rm -rf /app/src/public /app/src/routes /app/main.py
-
-# Compile to bytecode + remove source
-RUN python -m compileall -b -f -q /app && \
-    find /app -type f -name "*.py" \
-      ! -path "/app/migrations/*" \
-      ! -path "/app/seeds/*" \
-      -delete
-
-# =============================================================================
-# Stage 4: API runtime
-# =============================================================================
 FROM python:3.12-slim-bookworm AS api
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    AEGRA_CONFIG=/app/aegra.json \
+    RUN_MIGRATIONS_ON_STARTUP=false
 
 WORKDIR /app
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 COPY --from=api-builder /app /app
 
-ENTRYPOINT ["python", "-B", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# =============================================================================
-# Stage 5: Worker runtime
-# =============================================================================
-FROM python:3.12-slim-bookworm AS worker
-
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/app/.venv/bin:$PATH"
-
-WORKDIR /app
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
-COPY --from=worker-builder /app /app
-
-ENTRYPOINT ["python", "-B", "-m", "taskiq", "worker", "src.workers.tasks:broker"]
+# The entrypoint only derives Aegra's DATABASE_URL from the existing
+# POSTGRES_CONNECTION_STRING when an operator has not supplied both. It does
+# not create databases or perform any migration itself.
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+CMD ["python", "-B", "-m", "uvicorn", "aegra_api.main:app", "--host", "0.0.0.0", "--port", "8000"]

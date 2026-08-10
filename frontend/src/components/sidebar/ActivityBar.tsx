@@ -1,10 +1,4 @@
-import {
-	Bot,
-	Brain,
-	FolderKanban,
-	Calendar,
-	MessageSquare,
-} from "lucide-react";
+import { Bot, Brain, FolderKanban, MessageSquare } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ActivityBarItem } from "./ActivityBarItem";
 
@@ -12,7 +6,6 @@ export type PanelId =
 	| "assistants"
 	| "memories"
 	| "projects"
-	| "schedules"
 	| "threads";
 
 interface ActivityBarProps {
@@ -34,7 +27,6 @@ const NAV_ITEMS: {
 		label: "Projects",
 		tour: "projects-section",
 	},
-	{ id: "schedules", icon: Calendar, label: "Schedules" },
 	{
 		id: "threads",
 		icon: MessageSquare,

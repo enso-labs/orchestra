@@ -6,7 +6,7 @@ const EMPTY_MODELS: ModelsResponse = { default: "", free: [], models: [] };
 
 /**
  * Standalone hook to fetch the available models list from /llm/models.
- * Can be used independently of ChatContext (e.g., in schedule forms).
+ * Can be used independently of ChatContext.
  */
 export function useModelsList() {
 	const { data: models = EMPTY_MODELS, isLoading } = useQuery({

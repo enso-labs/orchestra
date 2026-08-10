@@ -55,7 +55,7 @@ After signing in, you'll land on the main chat page. Here's what you'll see:
 -   **Assistants** — browse and select pre-configured AI agents
 -   **Memories** — manage persistent context that the AI remembers across conversations
 -   **Projects** — organize document indexes for knowledge bases
--   **Schedules** — set up scheduled agent tasks
+-   **Deferred jobs** — scheduled execution is visibly unavailable until the Aegra-native follow-up
 -   **Threads** — view and resume previous conversations
 
 ### Main Chat Area (Center)

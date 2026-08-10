@@ -19,7 +19,6 @@ import AgentIndexPage from "@/pages/agents";
 import AgentEditPage from "@/pages/agents/edit";
 import PublicAgentPage from "@/pages/agents/public";
 import SharedThreadPage from "@/pages/share/SharedThreadPage";
-import SchedulesIndexPage from "@/pages/schedules";
 import PromptsIndexPage from "@/pages/prompts";
 import PromptCreatePage from "@/pages/prompts/create";
 import PromptEditPage from "@/pages/prompts/edit";
@@ -111,14 +110,6 @@ const AppRoutes: React.FC = () => {
 						element={
 							<PrivateRoute>
 								<AgentCreatePage />
-							</PrivateRoute>
-						}
-					/>
-					<Route
-						path="/schedules"
-						element={
-							<PrivateRoute>
-								<SchedulesIndexPage />
 							</PrivateRoute>
 						}
 					/>

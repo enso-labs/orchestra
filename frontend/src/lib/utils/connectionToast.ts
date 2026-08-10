@@ -41,7 +41,7 @@ export function isNetworkError(error: unknown): boolean {
  *
  * The title is deliberately generic. Because every caller shares one id, only
  * one of them can ever be on screen, so a models-specific title would be a
- * lie whenever the schedules or memories page happened to lose the race.
+ * lie whenever another settings surface happens to lose the race.
  */
 export function notifyConnectionLost(onRetry?: () => void) {
 	toast.error("Failed to reach the server", {

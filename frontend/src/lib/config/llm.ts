@@ -12,7 +12,6 @@ export enum ModelName {
 }
 
 export const DEFAULT_CHAT_MODEL = ModelName.OPENAI_GPT_5_NANO;
-export const DEFAULT_OPTIMIZE_MODEL = ModelName.OPENAI_GPT_5_NANO;
 
 // Helper to check if a model is valid
 export function isValidModelName(model: string | null): boolean {
@@ -21,7 +20,6 @@ export function isValidModelName(model: string | null): boolean {
 
 class LLLMConfig {
 	static DEFAULT_CHAT_MODEL = DEFAULT_CHAT_MODEL;
-	static DEFAULT_OPTIMIZE_MODEL = DEFAULT_OPTIMIZE_MODEL;
 	static MODELS = ModelName;
 }
 

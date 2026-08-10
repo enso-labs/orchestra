@@ -353,13 +353,6 @@ def is_mcp_sandbox_error(exc: Exception) -> bool:
 MCP_SANDBOX_UNREACHABLE = "mcp_sandbox_unreachable"
 
 
-_SANDBOX_FACTORIES: dict[str, Callable] = {
-    "daytona": _create_daytona_backend_checked,
-    "mcp": _create_mcp_backend_checked,
-    "state": _create_state_backend,
-}
-
-
 def resolve_sandbox_backend(
     runtime: ToolRuntime,
     sandbox_type: str | None = None,
@@ -369,36 +362,39 @@ def resolve_sandbox_backend(
     """Resolve a sandbox backend based on *sandbox_type*.
 
     Dispatch rules:
-    * ``None`` / ``"auto"`` — try Daytona, then MCP (if URL), then State.
+    * ``None`` — use StateBackend directly (the safe application default).
+    * ``"auto"`` — try Daytona, then MCP (if URL), then State.
     * ``"state"`` — use StateBackend directly.
     * ``"daytona"`` — try Daytona, fall back to State.
     * ``"mcp"`` — try MCP (if URL), fall back to State.
-    * Any unknown value — treated as ``"auto"``.
+    * Any unknown value — use StateBackend directly.
 
     Returns ``(backend, sandbox_or_None, effective_type)``
     where effective_type is ``"daytona"``, ``"mcp"``, or ``"state"``.
     """
-    effective = sandbox_type if sandbox_type in _SANDBOX_FACTORIES else None
-
-    if effective == "state":
+    if sandbox_type is None or sandbox_type == "state":
         backend, sandbox = _create_state_backend(runtime)
         return backend, sandbox, "state"
 
-    if effective == "mcp":
+    if sandbox_type == "mcp":
         result = _create_mcp_backend_checked(runtime, mcp_sandbox_url, mcp_api_key=mcp_api_key)
         if result is not None:
             return result[0], result[1], "mcp"
         backend, sandbox = _create_state_backend(runtime)
         return backend, sandbox, "state"
 
-    if effective == "daytona":
+    if sandbox_type == "daytona":
         result = _create_daytona_backend_checked(runtime)
         if result is not None:
             return result[0], result[1], "daytona"
         backend, sandbox = _create_state_backend(runtime)
         return backend, sandbox, "state"
 
-    # auto (None) — try Daytona, then MCP, then State
+    if sandbox_type != "auto":
+        backend, sandbox = _create_state_backend(runtime)
+        return backend, sandbox, "state"
+
+    # Explicit auto mode — try Daytona, then MCP, then State.
     result = _create_daytona_backend_checked(runtime)
     if result is not None:
         return result[0], result[1], "daytona"

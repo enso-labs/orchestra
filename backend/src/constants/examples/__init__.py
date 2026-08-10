@@ -322,90 +322,6 @@ LOGIN_RESPONSE_EXAMPLE = Example(
     },
 )
 
-SCHEDULE_CREATED_RESPONSE_EXAMPLE = Example(
-    {
-        "schedule": {
-            "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
-            "task": {
-                "metadata": {
-                    "thread_id": "thread-uuid-here",  # Required
-                    "assistant_id": "assistant-uuid-here",  # Required
-                },
-            },
-            "next_run_time": "2025-10-04T18:27:00-06:00",
-        }
-    }
-)
-
-SCHEDULE_FIND_EXAMPLE = Example(
-    {
-        "schedule": {
-            "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
-            "trigger": {"type": "cron", "expression": "0 1 * * *"},
-            "task": {
-                "model": "openai:gpt-5-nano",
-                "system": "You are a helpful assistant.",
-                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
-            },
-            "next_run_time": "2025-10-04T18:27:00-06:00",
-        }
-    }
-)
-
-SCHEDULE_LIST_EXAMPLE = Example(
-    {
-        "schedules": [
-            {
-                "id": "3e2d3989-c701-43c2-bac7-05490508eabc",
-                "trigger": {"type": "cron", "expression": "0 1 * * *"},
-                "task": {
-                    "model": "openai:gpt-5-nano",
-                    "system": "You are a helpful assistant.",
-                    "tools": ["get_weather"],
-                    "a2a": {},
-                    "mcp": {},
-                    "subagents": [],
-                    "metadata": {},
-                    "messages": [{"role": "user", "content": "Weather in Dallas?"}],
-                },
-                "next_run_time": "2025-10-04T18:27:00-06:00",
-            }
-        ]
-    }
-)
-SCHEDULE_CREATE_EXAMPLE = Example(
-    {
-        "title": "Daily Weather Check",
-        "trigger": {"type": "cron", "expression": "0 1 * * *"},
-        "task": {
-            "model": "openai:gpt-5-nano",
-            "system": "You are a helpful assistant.",
-            "messages": [{"role": "user", "content": "Weather in Dallas?"}],
-            "tools": ["get_weather"],
-            "metadata": {
-                "thread_id": "thread-uuid-here",  # Required
-            },
-        },
-    }
-)
-
-SCHEDULE_UPDATE_EXAMPLE = Example(
-    {
-        "title": "Updated Daily Weather Check",
-        "trigger": {"type": "cron", "expression": "0 2 * * *"},
-        "task": {
-            "model": "openai:gpt-5-nano",
-            "system": "You are a helpful assistant.",
-            "messages": [{"role": "user", "content": "Updated weather check for Dallas?"}],
-            "tools": ["get_weather"],
-            "metadata": {
-                "thread_id": "thread-uuid-here",  # Required
-            },
-        },
-    }
-)
-
-
 THREAD_CREATE_EXAMPLE = Example(
     summary="thread_create",
     description="Create Thread",
@@ -461,25 +377,6 @@ THREAD_CREATE_EXAMPLE_WITH_ASSISTANT = Example(
     },
 )
 
-SCHEDULE_CREATE_ASSISTANT_EXAMPLE = Example(
-    summary="schedule_create_assistant",
-    description="Create Schedule with Assistant ID",
-    value={
-        "title": "Daily Weather Check",
-        "trigger": {"type": "cron", "expression": "*/1 * * * *"},
-        "task": {
-            "input": {
-                "messages": [{"role": "user", "content": "Weather in Dallas?"}],
-            },
-            "metadata": {
-                ## TODO: Add support when files work correctly for llm requests
-                # "thread_id": "thread-uuid-here",
-                "assistant_id": "assistant-uuid-here",
-            },
-        },
-    },
-)
-
 
 class Examples:
     ASSISTANT_SEARCH_EXAMPLES = {
@@ -506,14 +403,6 @@ class Examples:
     ADD_DOCUMENTS_EXAMPLE = ADD_DOCUMENTS_EXAMPLE
     LIST_DOCUMENTS_EXAMPLE = LIST_DOCUMENTS_EXAMPLE
     A2A_GET_AGENT_CARD_EXAMPLE = A2A_GET_AGENT_CARD_EXAMPLE
-    SCHEDULE_LIST_EXAMPLE = SCHEDULE_LIST_EXAMPLE
-    SCHEDULE_CREATED_RESPONSE_EXAMPLE = SCHEDULE_CREATED_RESPONSE_EXAMPLE
-    SCHEDULE_CREATE_EXAMPLES = {
-        # "schedule_create": SCHEDULE_CREATE_EXAMPLE,
-        "schedule_create_assistant": SCHEDULE_CREATE_ASSISTANT_EXAMPLE,
-    }
-    SCHEDULE_UPDATE_EXAMPLE = SCHEDULE_UPDATE_EXAMPLE
-    SCHEDULE_FIND_EXAMPLE = SCHEDULE_FIND_EXAMPLE
     THREAD_CREATE_EXAMPLES = {
         "thread_create": THREAD_CREATE_EXAMPLE,
         "thread_create_with_assistant": THREAD_CREATE_EXAMPLE_WITH_ASSISTANT,

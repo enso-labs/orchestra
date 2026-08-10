@@ -11,7 +11,6 @@ from fastapi import (
     Response,
     Query,
 )
-from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi_cache.decorator import cache
 from pydantic import BaseModel, Field
@@ -330,39 +329,25 @@ async def embed_chat(
         client_ip=client_ip,
     )
 
-    # Build LLMRequest from the assistant config + user message
-    from src.schemas.entities.llm import LLMInput, Config
+    # Public/embed chat uses the same Agent Protocol run endpoint as the
+    # authenticated client.  Do not revive the removed graph-controller/SSE
+    # transport here: the Aegra route owns run, checkpoint, and cancellation
+    # lifecycle for guests too.
+    from aegra_api.api.runs import create_and_stream_run
+    from aegra_api.models import RunCreate, User as AegraUser
+    from src.services.assistant_mapping import build_run_request, public_identity
 
     thread_id = body.thread_id or str(uuid.uuid4())
-
-    llm_input = LLMInput(
-        messages=[LLMInput.ChatMessage(role="user", content=body.message)],
-        files={},
+    run_payload = build_run_request(assistant, body.message, thread_id)
+    run_request = RunCreate.model_validate(run_payload)
+    guest_identity = public_identity(assistant_id, request.client.host if request.client else None)
+    guest_user = AegraUser(
+        identity=guest_identity,
+        display_name="Public guest",
+        is_authenticated=False,
+        permissions=[],
     )
-    metadata = Config(
-        thread_id=thread_id,
-        assistant_id=assistant_id,
-    )
-    llm_request = assistant.to_llm_request(input=llm_input, metadata=metadata)
-
-    # Use existing streaming infrastructure
-    from src.agents import init_config
-    from src.controllers.llm import LLMController
-
-    config = init_config(llm_request, user_id=None)
-    llm_controller = LLMController(user_id=None, store=store, config=config)
-    stream = await llm_controller.llm_stream(llm_request)
-
-    return StreamingResponse(
-        stream,
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-            "X-Thread-Id": thread_id,
-        },
-    )
+    return await create_and_stream_run(thread_id=thread_id, request=run_request, user=guest_user)
 
 
 ################################################################################
@@ -450,51 +435,3 @@ async def unpublish_assistant(
     except Exception as e:
         logger.exception(f"Error unpublishing assistant: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-
-################################################################################
-### Distillation Routes
-################################################################################
-@router.post(
-    "/{assistant_id}/distill",
-    name="Distill Assistant Prompt",
-    operation_id="ruska_distill_assistant",
-)
-async def distill_assistant(
-    assistant_id: str = Path(..., description="The ID of the assistant to distill"),
-    user: ProtectedUser = Depends(verify_credentials),
-    store: AsyncPostgresStore = Depends(get_store),
-):
-    """Manually trigger prompt distillation for an assistant. Requires ownership."""
-    # Input validation
-    try:
-        uuid.UUID(assistant_id, version=4)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid assistant ID format",
-        )
-
-    # Verify ownership
-    service_context = ServiceContext(user_id=user.id, store=store)
-    assistant = await service_context.assistant_service.get(assistant_id)
-
-    if not assistant:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assistant not found")
-
-    if assistant.owner_id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the assistant owner can trigger distillation",
-        )
-
-    # Run distillation
-    from src.services.prompt.optimize import PromptOptimizer
-
-    optimizer = PromptOptimizer(model=assistant.model)
-    revision_id = await optimizer.distill(user_id=user.id, assistant_id=assistant_id, store=store)
-
-    if revision_id is not None:
-        return {"revision_id": revision_id, "status": "completed"}
-    else:
-        return {"revision_id": None, "status": "no_improvement"}

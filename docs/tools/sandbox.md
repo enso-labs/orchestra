@@ -312,7 +312,7 @@ The assistant will select the appropriate sandbox tool based on the task.
 | Health check fails | Ensure port `3005` is not in use and the container is running with `docker ps` |
 | Authentication error (401) | Verify the `x-api-key` header matches the `API_KEY` env var on the container |
 | Tool not appearing in Orchestra | Confirm the MCP config is saved and the URL is reachable from the Orchestra backend |
-| MCP tools silently not loading | Check backend/worker logs for `Error fetching MCP tools`. MCP errors are caught silently — the agent proceeds without MCP tools and no error is shown in the UI |
+| MCP tools silently not loading | Check the Aegra API logs for `Error fetching MCP tools`. MCP errors are caught silently — the agent proceeds without MCP tools and no error is shown in the UI |
 | Docker Compose cross-stack URL | Use `http://host.docker.internal:3005/mcp` when exec_server runs in a separate compose stack from the backend |
 | Agent says tool is unavailable despite config | The agent may be reading stale workspace memory files. Start a fresh thread or clear the agent's `/memory/` files |
 | Command timeout | Commands have a 120-second limit; break long-running tasks into smaller steps |

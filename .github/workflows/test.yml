@@ -7,10 +7,8 @@ on:
             - "**"
         paths-ignore:
             - "Changelog.md"
-            - "infra/**"
             - "decks/**"
             - "docs/**"
-            - ".dockerignore"
             - "README.md"
             - "deployment/**"
             - "examples/**"
@@ -69,6 +67,10 @@ jobs:
               working-directory: ./frontend
               run: npm run build
 
+            - name: Run single-runtime static gate
+              working-directory: ./backend
+              run: python3 scripts/cutover_static_scan.py
+
     ###############################################################
     ## Test Backend use Cache
     ###############################################################
@@ -80,9 +82,12 @@ jobs:
             APP_LOG_LEVEL: debug
             APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
             POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@localhost:5432/lg_template_test
+            DATABASE_URL: postgresql://admin:test1234@localhost:5432/lg_template_test
+            MIGRATION_DATABASE_NAME: lg_template_test
+            AEGRA_CONFIG: ./backend/aegra.json
+            RUN_MIGRATIONS_ON_STARTUP: "false"
             OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-            REDIS_URL: redis://localhost:6379/0
         services:
             postgres:
                 image: pgvector/pgvector:pg16
@@ -113,7 +118,7 @@ jobs:
             - name: Setup Python
               uses: actions/setup-python@v5
               with:
-                  python-version: "3.11"
+                  python-version: "3.12"
 
             - name: Cache Python dependencies
               id: cache-python
@@ -146,12 +151,24 @@ jobs:
               run: |
                   timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U admin; do sleep 1; done'
 
-            - name: Run database migrations
+            - name: Run ordered migration preflight
+              working-directory: ./backend
+              env:
+                  PYTHONPATH: ./src:.
+                  DATABASE_URL: postgresql://admin:test1234@localhost:5432/lg_template_test
+                  MIGRATION_DATABASE_NAME: lg_template_test
+                  AEGRA_CONFIG: ./aegra.json
+                  RUN_MIGRATIONS_ON_STARTUP: "false"
+              run: |
+                  uv run python scripts/migrate.py
+
+            - name: Run Python compile and lint gates
               working-directory: ./backend
               env:
                   PYTHONPATH: ./src:.
               run: |
-                  uv run alembic upgrade head
+                  uv run python -m compileall -q src scripts migrations main.py
+                  uv run ruff check
 
             - name: Run tests
               working-directory: ./backend
@@ -164,26 +181,11 @@ jobs:
                   uv run pytest -rs
 
     ###############################################################
-    ## E2E Tests (Playwright) — non-blocking
-    ## Specs are authored with test.fail() at baseline so they
-    ## pass today even though the resilient behaviours are not yet
-    ## implemented.  Once a resiliency fix lands, remove the
-    ## corresponding test.fail() annotation to flip the spec to a
-    ## hard failure (the GREEN signal).
-    # TODO: make blocking (remove continue-on-error) once full
-    #       stack bring-up in CI is reliable and all specs pass.
+    ## E2E Tests (Playwright) — blocking single-runtime smoke gate
     ###############################################################
     test-e2e:
-        # Manual-only. This job is the workflow's critical path (~8m50s versus
-        # ~2m for test-backend and test-frontend combined), and it was already
-        # non-blocking, so running it on every push cost wall-clock without
-        # gating anything. Trigger it from the Actions tab ("Run workflow")
-        # when a change warrants full-stack coverage.
-        if: github.event_name == 'workflow_dispatch'
         runs-on: ubuntu-latest
         environment: Test
-        # Non-blocking: failures here do not fail required checks.
-        continue-on-error: true
         env:
             APP_ENV: test
             APP_LOG_LEVEL: debug
@@ -191,13 +193,10 @@ jobs:
             POSTGRES_CONNECTION_STRING: postgresql://admin:test1234@localhost:5432/lg_template_test
             OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
             ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-            REDIS_URL: redis://localhost:6379/0
-            # The resiliency features (idempotency dedup, DLQ + replay,
-            # correlation-id bind, drain) live in the worker's run_agent_stream,
-            # and the frontend uses the distributed POST /llm/stream + SSE-poll
-            # flow. Both are gated on DISTRIBUTED_WORKERS; without it the API
-            # streams in-process, the worker stays idle, and every e2e spec fails.
-            DISTRIBUTED_WORKERS: "true"
+            DATABASE_URL: postgresql://admin:test1234@localhost:5432/lg_template_test
+            MIGRATION_DATABASE_NAME: lg_template_test
+            AEGRA_CONFIG: ./backend/aegra.json
+            RUN_MIGRATIONS_ON_STARTUP: "false"
         services:
             postgres:
                 image: pgvector/pgvector:pg16
@@ -233,7 +232,7 @@ jobs:
             - name: Setup Python
               uses: actions/setup-python@v5
               with:
-                  python-version: "3.11"
+                  python-version: "3.12"
 
             - name: Install Python dependencies
               working-directory: ./backend
@@ -248,19 +247,22 @@ jobs:
               run: |
                   timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U admin; do sleep 1; done'
 
-            - name: Run database migrations
+            - name: Run ordered migration preflight
               working-directory: ./backend
               env:
                   PYTHONPATH: ./src:.
+                  DATABASE_URL: postgresql://admin:test1234@localhost:5432/lg_template_test
+                  MIGRATION_DATABASE_NAME: lg_template_test
+                  AEGRA_CONFIG: ./aegra.json
+                  RUN_MIGRATIONS_ON_STARTUP: "false"
               run: |
-                  uv run alembic upgrade head
+                  uv run python scripts/migrate.py
 
             - name: Seed default user
               working-directory: ./backend
               env:
                   PYTHONPATH: ./src:.
-              run: |
-                  uv run python -m seeds.user_seeder || echo "Seeder not found or failed — skipping"
+              run: uv run python -m seeds.user_seeder
 
             - name: Install frontend dependencies
               working-directory: ./frontend
@@ -270,42 +272,29 @@ jobs:
               working-directory: ./frontend
               run: npx playwright install --with-deps chromium
 
-            - name: Start backend API
+            - name: Start single Aegra API
               working-directory: ./backend
               env:
                   PYTHONPATH: ./src:.
+                  AEGRA_CONFIG: ./aegra.json
+                  RUN_MIGRATIONS_ON_STARTUP: "false"
               run: |
-                  uv run uvicorn main:app --host 0.0.0.0 --port 8000 &
+                  uv run --python 3.12 uvicorn aegra_api.main:app --host 0.0.0.0 --port 8000 &
                   echo "API_PID=$!" >> "$GITHUB_ENV"
-                  # Wait for the API to be ready
-                  timeout 60 bash -c 'until curl -sf http://localhost:8000/health; do sleep 2; done' \
-                    || echo "Warning: API health check timed out"
-
-            - name: Start background worker
-              working-directory: ./backend
-              env:
-                  PYTHONPATH: ./src:.
-              run: |
-                  uv run taskiq worker src.workers.tasks:broker --workers 1 &
-                  echo "WORKER_PID=$!" >> "$GITHUB_ENV"
+                  timeout 60 bash -c 'until curl -sf http://localhost:8000/health && curl -sf http://localhost:8000/api/info/health; do sleep 2; done'
 
             - name: Start frontend dev server
               working-directory: ./frontend
               run: |
                   # Pre-bundle deps so the first spec doesn't pay Vite's cold optimize cost.
-                  npx vite optimize --force >/dev/null 2>&1 || true
+                  npx vite optimize --force
                   VITE_API_URL=http://localhost:8000/api npx vite --port 5173 --host 0.0.0.0 &
                   echo "VITE_PID=$!" >> "$GITHUB_ENV"
-                  # Wait for Vite to be ready
-                  timeout 60 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 2; done' \
-                    || echo "Warning: Vite health check timed out"
-                  # Warm the full module graph in a real browser so the first Playwright spec
-                  # finds a hot dev server. The first on-demand compile of the /chat route
-                  # under single-runner CPU contention can exceed the per-test timeout; a
-                  # timeout escapes test.fail() and becomes a hard failure, so the RED
-                  # baseline probes must fail by assertion, not by cold-compile timeout.
-                  node -e "const {chromium}=require('@playwright/test');(async()=>{const b=await chromium.launch();const p=await b.newPage();await p.goto('http://localhost:5173/chat',{waitUntil:'networkidle',timeout:90000}).catch(()=>{});await b.close();})().catch(()=>{})" \
-                    || echo "Warning: frontend warm-up navigation failed (non-fatal)"
+                  # Wait for Vite to be ready; failure must block the browser gate.
+                  timeout 60 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 2; done'
+                  # Warm the full module graph in a real browser so the first blocking
+                  # Playwright spec finds a hot dev server.
+                  node -e "const {chromium}=require('@playwright/test');(async()=>{const b=await chromium.launch();const p=await b.newPage();await p.goto('http://localhost:5173/chat',{waitUntil:'networkidle',timeout:90000});await b.close();})()"
 
             - name: Run Playwright E2E specs
               working-directory: ./frontend

@@ -26,7 +26,7 @@ describe("StreamMessageHandler.toolCall", () => {
 	});
 
 	it("should accumulate args across multi-chunk single tool call", () => {
-		// Chunk 1: id present, name present, args empty (matches real SSE data)
+		// Chunk 1: id present, name present, args empty (matches the SDK event shape)
 		handler.toolCall({
 			id: "run--686299fe-5a47-499c-86e5-b37d8aad0acc",
 			tool_call_chunks: [

@@ -305,7 +305,7 @@ export function useFileSystem(): FileSystemHook {
 
 	/**
 	 * Import multiple files (merge with existing)
-	 * Used when receiving files from SSE stream
+	 * Used when receiving files from an SDK graph-run event
 	 */
 	const importFiles = useCallback((files: Map<string, FileData>) => {
 		if (!files || files.size === 0) return;

@@ -12,7 +12,6 @@ import ChatLayout from "@/layouts/chat-layout-v2";
 import { ChatNav } from "@/components/nav/ChatNav";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import useModel from "@/hooks/useModel";
-import useActiveStreamRecovery from "@/hooks/useActiveStreamRecovery";
 
 const DEFAULT_TAB = "assistant";
 
@@ -39,8 +38,6 @@ function AgentThreadPage() {
 
 	useEffectGetAgent(agentId!);
 	useEffectGetAgents();
-	useActiveStreamRecovery(threadId);
-
 	// Load thread data using modularized hook
 	useLoadThreadEffect(threadId, {
 		setCheckpoints,
