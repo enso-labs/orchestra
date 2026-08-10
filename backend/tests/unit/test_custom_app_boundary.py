@@ -6,11 +6,13 @@ import json
 import os
 import subprocess
 import sys
+from unittest.mock import patch
 
 import pytest
+from fastapi_cache import FastAPICache
 from httpx import ASGITransport, AsyncClient
 
-from custom_app import app
+from custom_app import app, lifespan
 
 
 def test_custom_app_import_has_no_legacy_runtime_dependencies():
@@ -62,3 +64,16 @@ async def test_retained_custom_health_route_is_json_and_does_not_use_spa_fallbac
     assert response.json()["status"] == "healthy"
     assert missing_protocol.headers["content-type"].startswith("application/json")
     assert "<html" not in missing_protocol.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_custom_lifespan_initializes_route_cache():
+    """Cached custom routes must be usable after Aegra merges the lifespans."""
+
+    FastAPICache.reset()
+
+    with patch("aegra_api.core.database.db_manager.get_store", return_value=object()):
+        async with lifespan(app):
+            assert FastAPICache.get_prefix() == "orchestra-cache"
+
+    FastAPICache.reset()

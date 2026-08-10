@@ -38,6 +38,7 @@ from src.routes.v0.settings import router as settings
 from src.routes.v0.share import router as share
 from src.routes.v0.storage import router as storage
 from src.routes.v0.tool import router as tool
+from src.utils.cache import init_cache
 from src.utils.logger import logger
 from src.utils.rate_limit import limiter
 
@@ -91,6 +92,7 @@ async def lifespan(app: FastAPI):
     api_app.state.store = store
     app.state.aegra_store = store
     app.state.aegra_db = db_manager
+    init_cache()
 
     async with mcp_app.lifespan(app):
         yield
