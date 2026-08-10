@@ -25,7 +25,7 @@ function streamBody() {
 test.describe("Agent Protocol duplicate run contract", () => {
 	test.beforeEach(async ({ page }) => {
 		await loginAsAdmin(page);
-		await page.route("**/threads*", async (route) => {
+		await page.route("**/threads", async (route) => {
 			const request = route.request();
 			const pathname = new URL(request.url()).pathname;
 			if (request.method() === "POST" && pathname === "/threads") {
@@ -76,7 +76,9 @@ test.describe("Agent Protocol duplicate run contract", () => {
 		});
 
 		await expect(
-			page.getByText("first submission", { exact: true }),
+			page.locator("div.py-2.whitespace-pre-wrap.break-words").filter({
+				hasText: "first submission",
+			}),
 		).toBeVisible({
 			timeout: 30_000,
 		});
