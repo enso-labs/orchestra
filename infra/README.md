@@ -47,6 +47,9 @@ after those protocol routes without a SPA catch-all.
 
 ## Configuration
 
+See the [canonical environment-variable guide](../docs/environment-variables.md)
+for required values and operator-local secret-file handling.
+
 Required database settings:
 
 ```dotenv

@@ -3,6 +3,9 @@
 The backend is a single Aegra API runtime. It serves Agent Protocol routes at
 the root and Orchestra-specific routes under `/api` on port `8000`.
 
+See the [canonical environment-variable guide](../docs/environment-variables.md)
+for local secret-file paths and runtime configuration.
+
 ## Local development
 
 ```bash

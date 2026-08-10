@@ -86,6 +86,8 @@ For all commands, see `backend/Makefile`.
 
 1. **Environment Variables:**
 
+    See the [canonical environment-variable guide](./docs/environment-variables.md) for required values and secret-file locations.
+
     Store backend secrets in `~/.config/orchestra/.env.backend` and frontend
     settings in the distinct `~/.config/orchestra/.env.frontend` file:
 
