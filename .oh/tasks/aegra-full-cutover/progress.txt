@@ -1,0 +1,118 @@
+# Aegra full cutover — implementation and verification progress
+
+## Scope
+
+Implemented the backend factory/auth/custom-app and single-runtime Aegra deployment slices. Frontend build and local image/Compose contracts were validated; live database administration, migration, Aegra HTTP startup, and browser validation were intentionally not run.
+
+## US-001 — production factory
+
+Implementation is complete for the locally testable contract:
+
+- Added `backend/src/agents/factory.py` with the two-argument `RunnableConfig`/`ServerRuntime[ContextSchema]` Aegra factory.
+- Non-execution access contexts return a cached cheap graph before assistant/settings/memory/backend/sandbox work.
+- Tenant identity is read from `runtime.user.identity`; `configurable.user_id` is removed before Orchestra service construction.
+- Assistant resolution, user settings, memory/context files, sandbox backend, and agent construction are wired once per execution.
+- The factory passes no checkpointer and stops/closes a sandbox on context exit.
+- Added production `backend/aegra.json` using `./src/agents/factory.py:build_graph`.
+- `backend/src/common/client/client.py` was not changed.
+
+Evidence:
+
+- `uv run python -m compileall -q ...` — exit 0.
+- `make lint` — exit 0.
+- Focused factory/auth/app/mapping tests — 10 passed.
+
+## US-002 — Aegra auth and custom routes
+
+Implementation is complete for the locally testable contract:
+
+- Added `backend/aegra_auth.py` with fail-soft JWT/API-key authentication, scoped `AsyncSessionLocal` lookups, API-key precedence, public-run/free-model authorization, store scoping, and tenant authorization handlers.
+- Added `backend/custom_app.py` with explicit surviving `/api` routers, nested Aegra store/session state wiring, nested MCP lifespan, request logging/rate-limit state, CORS, and no SPA catch-all.
+- Added `backend/src/services/assistant_mapping.py`; canonical Orchestra assistant IDs/configuration travel in context while one production Aegra graph/default assistant ID is used.
+- Replaced public/embed chat's legacy graph stream call with the Aegra Agent Protocol run contract.
+- Made `src.routes.v0` imports lazy and deferred scheduler construction in `ServiceContext`; importing `custom_app` does not load TaskIQ, APScheduler, workers, or legacy graph routes.
+- Added non-graph LLM utilities in `backend/src/routes/custom_llm.py`.
+- Added `aegra-api==0.9.25` to backend dependencies/lockfile.
+
+Evidence:
+
+- `make lint` — exit 0.
+- `uv run python -m compileall -q ...` — exit 0.
+- `POSTGRES_CONNECTION_STRING=... OPENAI_API_KEY=dummy USER_AGENT=test PYTHONPATH=. uv run pytest --confcutdir=tests/unit -q tests/unit/test_aegra_factory.py tests/unit/test_aegra_auth.py tests/unit/test_custom_app_boundary.py tests/unit/test_assistant_mapping.py` — exit 0; 10 passed, 1 deprecation warning.
+- The import-boundary test confirms no `taskiq`, `apscheduler`, `src.workers`, `src.controllers.llm`, `src.routes.v0.llm`, `src.routes.v0.thread`, or `src.routes.v0.schedule` modules load, and no SPA catch-all is registered.
+
+## Unverified / blockers
+
+- No live PostgreSQL, migration/content-digest, API-key/JWT database lookup, MCP-over-HTTP, Aegra startup, or browser check was run. The repository's default pytest conftest requires a reachable PostgreSQL server; the focused tests were run with the parent DB conftest excluded and do not claim live database behavior.
+
+## US-004 / US-003 — single-runtime deployment implementation
+
+Implemented the deployment/database slice without changing the factory/auth contracts:
+
+- Added `backend/scripts/migrate.py` as the one ordered init/preflight. It verifies the two configured database URLs and `current_database()`, rejects ambiguous version-table ownership, runs Orchestra's `orchestra_alembic_version` chain before Aegra's pinned `alembic_version` chain, initializes LangGraph checkpoint/store tables, compares pre-existing `checkpoints`, `store`, and `store_vectors` fingerprints, and fails closed unless both chains are at head and required tables exist.
+- Removed the legacy Orchestra Alembic database-creation side effect from `backend/migrations/env.py`; `backend/alembic.ini` no longer names `lg_template_dev`, so migration commands require the configured existing target.
+- Disabled Aegra's in-process migrations in the image/Compose/CI/VM entrypoints (`RUN_MIGRATIONS_ON_STARTUP=false`); the API depends on the successful `migrate` init service.
+- Updated `infra/backend.Dockerfile` to one Python 3.12 API image, retained source modules/static assets/config for Aegra source-path loading, and added a non-mutating `scripts/entrypoint.sh` URL fallback.
+- `backend/aegra.json` is the only production config and uses `/app`-relative factory/auth/custom-app paths with only the `orchestra` graph.
+- Replaced the Compose app command with `aegra_api.main:app` on `:8000`, retained Postgres/Redis, removed the worker service/target and all deployment/VM/Make worker launches, and removed the temporary root/sidecar Aegra files.
+- Added explicit `/chat`, asset, and static-directory routes after `/api` in `custom_app.py`; no SPA catch-all can shadow Agent Protocol routes.
+- Updated active README/runbook, Make/build/test-image scripts, Python 3.12 CI, blocking E2E job, Docker deploy, and VM deploy. The pre-cleanup SHA-256 manifest is `.oh/tasks/aegra-full-cutover/deployment-manifest.md`.
+
+Evidence run in this sandbox:
+
+- `backend/.venv/bin/python -m pytest --confcutdir=tests/unit -q tests/unit/test_cutover_contract.py tests/unit/test_custom_app_boundary.py tests/unit/test_aegra_factory.py tests/unit/test_aegra_auth.py tests/unit/test_assistant_mapping.py` — exit 0; 15 passed, 1 warning.
+- `backend/.venv/bin/python -m compileall -q backend/src backend/scripts backend/main.py backend/migrations` — exit 0.
+- `make lint` from `backend/` — exit 0.
+- `uv lock --check` — exit 0.
+- Python YAML parse of all `.github/*.yml` and `infra/*.yml` — exit 0.
+- `docker compose ... config` with dummy non-secret database variables — exit 0; services were `app, migrate, minio, ollama, postgres, redis, search_engine`, the API command was `aegra_api.main:app`, `app` depended on successful `migrate`, and its healthcheck covered `/health` plus `/api/info/health`.
+- `bash -n` for changed shell entrypoints — exit 0.
+- Aegra app import with `backend/aegra.json` and dummy non-secret env — exit 0; `/health`, `/api/info/health`, `/chat`, and `/assets` routes loaded, with no `/{filename:path}` catch-all.
+- ASGI route/static smoke with the built frontend — exit 0; `GET /api/info/health` and `/chat` returned 200, and `GET /manifest.json` returned 200 JSON.
+- `frontend/npm run build` (including `tsc -b` and Vite output into `backend/src/public`) — exit 0; Vite emitted only pre-existing CommonJS/chunk-size/dynamic-import warnings.
+- `docker build --target api -t orchestra-api:cutover -f infra/backend.Dockerfile backend` — exit 0; final image build completed with the production config, source-path modules, migration script, and static assets present.
+- `docker run --rm orchestra-api:cutover ... python -c ...` import/static contract — exit 0; `/app/aegra.json`, factory/auth/custom app, migration script, `src/public/index.html`, `/health`, `/api/info/health`, `/chat`, and `/assets` were present; no SPA catch-all loaded.
+- Built-image `scripts/entrypoint.sh` URL fallback smoke — exit 0 with a dummy non-secret target; `docker image inspect` confirmed entrypoint `/app/scripts/entrypoint.sh` and default command `python -B -m uvicorn aegra_api.main:app ... --port 8000`.
+- Final `docker image inspect orchestra-api:cutover` — exit 0; image ID `sha256:013b1a2e3fce`, entrypoint `/app/scripts/entrypoint.sh`, default command `python -B -m uvicorn aegra_api.main:app --host 0.0.0.0 --port 8000`.
+- `scripts/migrate.py` against a deliberately non-routable dummy target — exit 1 with the expected PostgreSQL DNS/connection blocker; a mismatched `MIGRATION_DATABASE_NAME` also failed closed before connection; no database was started, restored, renamed, or modified.
+- Deployment-surface scan of `.github`, `infra`, Makefiles, and `backend/scripts` — clear for `DISTRIBUTED_WORKERS`, `taskiq worker`, worker image/target/container names, sidecar config/targets, and `:2026`.
+
+Unverified/blockers remain explicit: no PostgreSQL restore/rename/admin action, live migration or content-digest run, clean image startup, Aegra HTTP route check, or browser check was performed. No task story was marked passed.
+
+## Corrective note — runtime env location
+- Runtime defaults now use `~/.config/orchestra/.env.backend`; `ORCHESTRA_ENV_FILE`/`ENV_FILE` remain explicit overrides, while `.env.test` and `.env.frontend` stay distinct. No story status changed.
+
+## US-005 / US-006 / US-007 — frontend SDK migration
+
+Implemented the frontend-only SDK cutover. No story is marked passed because live Aegra/HTTP and browser gates were not run.
+
+- Added exact `@langchain/langgraph-sdk` `1.9.28` dependency and lockfile entries.
+- Added `frontend/src/lib/api/agentClient.ts` as the sole plain SDK `Client`, with same-origin production URL, request-time `getAuthToken()` auth, token rotation, production graph/assistant mapping, one `adaptEvent()` boundary, resumable stream mode, and safe error descriptions.
+- Rewrote `useChat` to create/use SDK threads and `client.runs.stream` with `messages-tuple`, `values`, `custom`, subgraphs, `streamResumable`, and SDK idle reconnect; cancellation calls run-scoped `runs.cancel`, is idempotent, preserves partial output, and exposes accessible status/error states.
+- Rewrote thread/history/list/delete/project operations around SDK `threads.search`, `get`, `getHistory`, `getState`, `update`, and `delete`; canonical Orchestra assistant IDs remain metadata/context while the production graph ID is used for Agent Protocol.
+- Added root Vite proxies for `/threads`, `/assistants`, `/runs`, `/store`, `/crons`, `/info`, and `/health`; `/api` remains the custom-route proxy.
+- Migrated file inference streaming to the SDK and removed legacy frontend SSE/recovery/polling files, DLQ replay UI/e2e, and distributed transport tests. No feature flag or fallback transport remains in `frontend/`.
+
+Frontend evidence (all exit 0):
+
+- `frontend/npx vitest run src/lib/api/agentClient.test.ts src/hooks/useChat.test.tsx src/hooks/useThread.test.tsx src/components/lists/ChatMessages.test.tsx` — 17 passed.
+- `frontend/npm test` — 461 passed; 50 files passed, with no skipped tests.
+- `frontend/npx tsc -b` — exit 0.
+- `frontend/npm run build` — exit 0; Vite emitted only existing large-chunk warnings.
+- `frontend/npm run lint` — exit 0; 3 pre-existing unused eslint-disable warnings, no errors.
+- `frontend/npx prettier --check` on all changed frontend source/config files — exit 0 after formatting.
+- Frontend scan for `streamThread`, `initiateStream`, `SyncStreamSource`, `DistributedStreamSource`, `fetchStreamReader`, local active-stream recovery, `VITE_USE_AGENT_PROTOCOL`, `sse.js`, `/llm/stream`, and `/llm/dlq` — no matches.
+
+Frontend blockers: no live Aegra Agent Protocol endpoint, PostgreSQL-backed history, deployment startup, authenticated HTTP stream/cancel/resume, or browser/agent-browser check was run per scope. Existing backend/deployment stories remain unverified as documented above; no task story is marked passed.
+
+Final post-format verification: `frontend/npm test` exit 0 (461 passed, no skips); `frontend/npx tsc -b` exit 0; targeted SDK/chat/thread/accessibility tests exit 0 (18 passed); `frontend/npm run build` exit 0 with existing large-chunk warnings; `frontend/npm run lint` exit 0 with 3 pre-existing unused-disable warnings; changed-file Prettier check exit 0.
+
+## US-009 / US-008 / US-010 — final local verification pass
+
+- Added the explicit deferred capability contract for schedule, execution, enable/disable, prompt optimization, distillation, and trajectory paths. All tested operations return JSON `501 unsupported_capability` with actionable follow-up copy and no scheduler/queue/worker imports or side effects.
+- Removed remaining migration-era prompt optimizer/resiliency test artifacts and stale prompt-generation UI/service affordance, replaced the Redis cache test's external `fakeredis` dependency with an in-memory test double, removed the stale stream entity export, and removed the last skipped Vitest/Playwright tests.
+- Added blocking SDK duplicate-run and resumable reconnect browser specs, plus duplicate-submit and late-run-acknowledgement cancellation `useChat` unit contracts. Resumable runs use `onDisconnect: "continue"`; explicit aborts call the run-scoped cancel endpoint. `npx playwright test --list` discovers 6 desktop/mobile tests with no skips.
+- Added `backend/scripts/cutover_static_scan.py` as the tracked/non-ignored plus built-asset fail-closed scan; it passes across 842 files with only the documented historical allowlist and rejects `continue-on-error`. CI health checks, Vite warm-up, and seed steps are blocking rather than masked fallbacks.
+- Added `evidence.md` with commands, exact outcomes, the read-only `/audit pr 977 --repo mifunedev/orchestra --base development --dry-run` classification, and the intentionally unrun live DB/Aegra/browser boundaries. No `prd.json` story was marked passed.
+
+Final local results: backend compile, Ruff check/format, lock check, and focused suite (55 passed) green; frontend test (461 passed), build/typecheck, lint (0 errors), formatting, static scan, and browser test discovery green. The full backend suite collected 623 tests and ran 590 passing with 1 pre-existing skip; its remaining 32 setup errors were expected PostgreSQL connection-refused blockers because live DB checks were prohibited. Live browser/Aegra, migration/content-digest, MCP HTTP, and destructive DB gates remain unclaimed.

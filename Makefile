@@ -1,11 +1,18 @@
-.PHONY: setup tag changelog dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.test.up dev.docker.test.down dev.aegra.up dev.aegra.down dev.aegra.logs benchmark.images test.images
+.PHONY: setup tag changelog dev.docker.up dev.docker.down dev.docker.logs dev.docker.ps dev.docker.migrate dev.docker.test.up dev.docker.test.down benchmark.images test.images
 
 ENV ?= dev
+# Override with ENV_FILE=/path/to/file; Compose receives it as ORCHESTRA_ENV_FILE.
+ENV_FILE ?= $(HOME)/.config/orchestra/.env.backend
 COMPOSE = docker compose -f infra/docker-compose.yml
 COMPOSE_TEST = docker compose -f infra/docker-compose.yml -f infra/docker-compose.test.yml
-# Stage-1 Aegra sidecar (US-003). Additive overlay; serves no traffic.
-COMPOSE_AEGRA = docker compose -f infra/docker-compose.yml -f infra/docker-compose.aegra.yml
-DOCKER_DEV_LOG_SERVICES ?= app worker
+DOCKER_DEV_LOG_SERVICES ?= app
+
+# Compose interpolates the database URL before it reads service env_file
+# entries, so load the operator-selected env file explicitly for all targets.
+define compose_with_env
+	@test -f "$(ENV_FILE)" || { echo "Missing ENV_FILE=$(ENV_FILE)" >&2; exit 1; }
+	@set -a && . "$(ENV_FILE)" && set +a && ORCHESTRA_ENV_FILE="$(ENV_FILE)" $(1)
+endef
 
 # Install pre-commit hooks
 setup:
@@ -37,40 +44,28 @@ tag:
 	@bash backend/scripts/tag.sh $(TAG)
 
 dev.docker.up:
-	@$(COMPOSE) up --build -d
+	$(call compose_with_env,$(COMPOSE) up --build -d)
 
 dev.docker.down:
-	@$(COMPOSE) down --remove-orphans
+	$(call compose_with_env,$(COMPOSE) down --remove-orphans)
 
 dev.docker.logs:
-	@$(COMPOSE) logs -f --tail=200 $(DOCKER_DEV_LOG_SERVICES)
+	$(call compose_with_env,$(COMPOSE) logs -f --tail=200 $(DOCKER_DEV_LOG_SERVICES))
 
 dev.docker.ps:
-	@$(COMPOSE) ps
+	$(call compose_with_env,$(COMPOSE) ps)
 
 dev.docker.migrate:
-	@$(COMPOSE) run --rm app uv run alembic upgrade head
-
-# Aegra sidecar (stage 1 of the Aegra migration, US-003). Runs on :2026 against
-# the `orchestra_aegra` COPY database. Starts only the `aegra` service, so the
-# operator's live stack is never rebuilt or restarted by these targets.
-dev.aegra.up:
-	@$(COMPOSE_AEGRA) up --build -d aegra
-
-dev.aegra.down:
-	@$(COMPOSE_AEGRA) stop aegra && $(COMPOSE_AEGRA) rm -f aegra
-
-dev.aegra.logs:
-	@$(COMPOSE_AEGRA) logs -f --tail=200 aegra
+	$(call compose_with_env,$(COMPOSE) run --rm migrate)
 
 # Local end-to-end test stack (default + test overlay). CI uses pytest + GH services.
 dev.docker.test.up:
-	@$(COMPOSE_TEST) up --build -d
+	$(call compose_with_env,$(COMPOSE_TEST) up --build -d)
 
 dev.docker.test.down:
-	@$(COMPOSE_TEST) down --remove-orphans
+	$(call compose_with_env,$(COMPOSE_TEST) down --remove-orphans)
 
-# Image benchmarks — build both targets and report sizes
+# Image benchmark — build the single API target and report its size
 benchmark.images:
 	bash backend/scripts/benchmark-images.sh
 

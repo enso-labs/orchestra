@@ -13,10 +13,10 @@ if __name__ == "__main__":
         env_path = Path(args.env_file).expanduser()
         load_dotenv(env_path, override=True)
     else:
-        load_dotenv()
+        load_dotenv(Path.home() / ".config" / "orchestra" / ".env.backend")
 else:
-    # When imported as a module, load default .env
-    load_dotenv()
+    # When imported as a module, load the backend runtime environment.
+    load_dotenv(Path.home() / ".config" / "orchestra" / ".env.backend")
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -50,8 +50,8 @@ async def seed_admin():
             await db.commit()
             print("Admin user created successfully!")
         except Exception as e:
-            print(f"Error creating admin user: {e}")
             await db.rollback()
+            raise RuntimeError("Failed to seed admin user") from e
 
 
 async def seed_user():
@@ -72,8 +72,8 @@ async def seed_user():
             await db.commit()
             print("Test user created successfully!")
         except Exception as e:
-            print(f"Error creating test user: {e}")
             await db.rollback()
+            raise RuntimeError("Failed to seed test user") from e
 
 
 async def main():

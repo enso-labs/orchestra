@@ -29,7 +29,7 @@ The memories lifecycle follows this flow:
 4. **Injected as Files** — Each memory is converted into a file and injected into the agent's context. For example, a memory with path `AGENTS.md` becomes a file the agent can read just as if it were attached to the thread
 5. **Personalized Responses** — The agent reads the memory files and tailors its responses accordingly
 
-This happens automatically in every entry point — streaming, worker, and invoke — so you never need to manually pass memories into conversations.
+This happens automatically in the authenticated Aegra Agent Protocol run, so you never need to manually pass memories into conversations.
 
 :::tip Store AGENTS.md as a Memory
 The most powerful use of memories is storing your [AGENTS.md](/agents-md) instructions as a memory. This gives every conversation consistent agent behavior without manually attaching the file. See the [Memory Tutorial](./tutorial.md#step-6-store-agentsmd-as-a-memory) for a step-by-step guide.

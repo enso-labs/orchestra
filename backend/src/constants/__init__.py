@@ -48,8 +48,7 @@ DB_POOL_MAX_SIZE = int(os.getenv("DB_POOL_MAX_SIZE", "20"))
 DB_POOL_MAX_IDLE_TIME = int(os.getenv("DB_POOL_MAX_IDLE_TIME", "300"))  # 5 minutes
 DB_POOL_MAX_LIFETIME = int(os.getenv("DB_POOL_MAX_LIFETIME", "3600"))  # 1 hour
 
-# SQLAlchemy async engine pool settings (per process — dev runs one uvicorn plus
-# two taskiq workers, each with its own pool, against a single Postgres).
+# SQLAlchemy async engine pool settings (per API process).
 # pool_timeout is deliberately short: queueing silently for 30s is what turns a
 # burst into a cascade of 500s, because callers keep piling up behind the queue.
 DB_SQLA_POOL_SIZE = int(os.getenv("DB_SQLA_POOL_SIZE", "10"))
@@ -57,37 +56,10 @@ DB_SQLA_POOL_MAX_OVERFLOW = int(os.getenv("DB_SQLA_POOL_MAX_OVERFLOW", "10"))
 DB_SQLA_POOL_TIMEOUT = int(os.getenv("DB_SQLA_POOL_TIMEOUT", "5"))  # seconds
 DB_SQLA_POOL_RECYCLE = int(os.getenv("DB_SQLA_POOL_RECYCLE", "1800"))  # 30 minutes
 
-
-# Checkpoint Database Configuration
-# Use session-mode connection (port 5432) for checkpointing stability with Supavisor
-def get_db_uri_session():
-    """Get session-mode connection string for checkpointing.
-
-    Falls back to main DB_URI if not explicitly set.
-    Session mode (port 5432) is required for LangGraph checkpointing
-    due to pipeline mode requirements with Supabase Supavisor.
-    """
-    uri = os.getenv("POSTGRES_CONNECTION_STRING_SESSION")
-    return uri if uri else DB_URI
-
-
-DB_URI_SESSION = get_db_uri_session()
-
-# TCP Keepalive Settings for long-running checkpoint connections
+# TCP keepalive settings for long-running LangGraph connections.
 DB_KEEPALIVE_IDLE = int(os.getenv("DB_KEEPALIVE_IDLE", "60"))  # seconds before first probe
 DB_KEEPALIVE_INTERVAL = int(os.getenv("DB_KEEPALIVE_INTERVAL", "15"))  # seconds between probes
 DB_KEEPALIVE_COUNT = int(os.getenv("DB_KEEPALIVE_COUNT", "4"))  # failed probes before dead
-
-# Checkpoint Resilience Settings
-CHECKPOINT_MAX_RETRIES = int(os.getenv("CHECKPOINT_MAX_RETRIES", "3"))
-CHECKPOINT_RETRY_DELAY = float(os.getenv("CHECKPOINT_RETRY_DELAY", "1.0"))  # seconds
-CHECKPOINT_MAX_DELAY = float(os.getenv("CHECKPOINT_MAX_DELAY", "30.0"))  # max backoff cap
-CHECKPOINT_JITTER = float(os.getenv("CHECKPOINT_JITTER", "0.1"))  # randomization factor
-CHECKPOINT_HEALTH_CHECK_INTERVAL = int(os.getenv("CHECKPOINT_HEALTH_CHECK_INTERVAL", "30"))  # seconds
-
-# Feature Flags for checkpoint resilience
-CHECKPOINT_USE_RESILIENT = os.getenv("CHECKPOINT_USE_RESILIENT", "false").lower() == "true"
-CHECKPOINT_ENABLE_FALLBACK = os.getenv("CHECKPOINT_ENABLE_FALLBACK", "false").lower() == "true"
 
 
 class UserTokenKey(Enum):
@@ -143,9 +115,6 @@ TEST_USER_ID = os.getenv("TEST_USER_ID", "00000000-0000-0000-0000-000000000000")
 
 # GridSite
 MICROSOFT_TEAMS_WEBHOOK_URL = os.getenv("MICROSOFT_TEAMS_WEBHOOK_URL")
-
-# Distributed Workers
-DISTRIBUTED_WORKERS = os.getenv("DISTRIBUTED_WORKERS", "false").lower() == "true"
 
 # Thread Search
 # Number of recent messages to store per thread snapshot for semantic search

@@ -103,7 +103,6 @@ frontend/
 │   │   ├── chat/          # Chat interface pages
 │   │   ├── projects/      # Project management pages
 │   │   ├── prompts/       # Prompt management pages
-│   │   ├── schedules/     # Schedule management pages
 │   │   ├── settings/      # Settings pages
 │   │   └── threads/       # Thread management pages
 │   ├── routes/            # React Router configuration
@@ -221,7 +220,6 @@ All API calls go through service files in `src/lib/services/`:
 - `threadService.ts` - Thread management
 - `projectService.ts` - Project management
 - `promptService.ts` - Prompt management
-- `scheduleService.ts` - Schedule management
 - `modelService.ts` - Model configuration
 - `settingService.ts` - User settings
 - `serverService.ts` - Server status
@@ -239,21 +237,15 @@ const response = await apiClient.get("/api/agents");
 
 ### Streaming
 
-For SSE/streaming responses, use `src/lib/utils/streamClient.ts`.
+Graph runs stream through the sole SDK client in `src/lib/api/agentClient.ts`; keep
+SDK event adaptation in `src/hooks/useChat.ts`. Do not add a second transport or
+manual SSE/reconnect client.
 
 ## Development Proxy
 
-The Vite dev server proxies `/api` requests to the backend:
-
-```ts
-// vite.config.ts
-proxy: {
-  "/api": {
-    target: "http://localhost:8000",
-    changeOrigin: true,
-  },
-}
-```
+The Vite dev server proxies custom `/api` requests and root Agent Protocol
+prefixes to the single backend. Keep these proxy entries aligned with
+`frontend/src/lib/api/agentClient.ts`; do not add a legacy graph transport.
 
 Ensure the backend is running on port 8000 (or adjust the proxy).
 

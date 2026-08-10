@@ -1,12 +1,5 @@
 import { useEffect, useRef, useCallback, memo, useState } from "react";
-import {
-	Loader2,
-	Edit,
-	Check,
-	X,
-	AlertTriangle,
-	RotateCcw,
-} from "lucide-react";
+import { Loader2, Edit, Check, X, AlertTriangle } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { useAppContext } from "@/context/AppContext";
@@ -258,37 +251,16 @@ export const Message = memo(
 	},
 );
 
-// Persistent error surface for permanently-failed runs. Rendered inline in the
-// chat message area (not a toast) so it survives until the user replays or
-// submits a fresh request. Drives the DLQ replay affordance.
-function RunErrorBanner({
-	runError,
-	onReplay,
-}: {
-	runError: RunError;
-	onReplay: (runId: string) => void | Promise<void>;
-}) {
-	const [isReplaying, setIsReplaying] = useState(false);
-	// Replay POSTs /llm/dlq/<runId>/replay. Only offer it for runs that actually
-	// have a DLQ entry: explicitly non-recoverable failures (e.g. an unreachable
-	// MCP sandbox) have nothing to replay, and a run with no id has no target.
-	const canReplay = runError.recoverable !== false && Boolean(runError.runId);
-
-	const handleReplay = async () => {
-		if (isReplaying) return;
-		setIsReplaying(true);
-		try {
-			await onReplay(runError.runId);
-		} finally {
-			setIsReplaying(false);
-		}
-	};
-
+// Persistent error surface for failed runs. Rendered inline in the chat
+// message area (not a toast) so it survives until the user submits a fresh
+// request. Aegra's run identifier remains available for support diagnostics.
+function RunErrorBanner({ runError }: { runError: RunError }) {
 	return (
 		<div className="flex justify-start p-3 max-w-4xl mx-auto px-5 w-full">
 			<div
 				data-testid="message-error"
 				role="alert"
+				aria-live="assertive"
 				className="flex w-full max-w-[90vw] md:max-w-[80%] flex-col gap-2 rounded-lg border border-destructive-accent/70 bg-destructive/10 px-4 py-3 text-sm text-foreground"
 			>
 				<div className="flex items-start gap-2">
@@ -312,22 +284,6 @@ function RunErrorBanner({
 						) : null}
 					</div>
 				</div>
-				{canReplay && (
-					<div className="flex justify-end">
-						<button
-							type="button"
-							data-testid="replay-button"
-							onClick={handleReplay}
-							disabled={isReplaying}
-							className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
-						>
-							<RotateCcw
-								className={`h-3.5 w-3.5 ${isReplaying ? "animate-spin" : ""}`}
-							/>
-							{isReplaying ? "Replaying…" : "Replay"}
-						</button>
-					</div>
-				)}
 			</div>
 		</div>
 	);
@@ -343,7 +299,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 		appendToQuery,
 		displayModel,
 		runError,
-		replayRun,
+		streamStatus,
 	} = useChatContext();
 	const [elapsedTime, setElapsedTime] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -457,7 +413,15 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 			<div className="flex flex-col justify-center items-center h-full">
 				{runError ? (
 					<div className="w-full">
-						<RunErrorBanner runError={runError} onReplay={replayRun} />
+						<RunErrorBanner runError={runError} />
+					</div>
+				) : streamStatus ? (
+					<div
+						role="status"
+						aria-live="polite"
+						className="p-4 text-center text-muted-foreground"
+					>
+						{streamStatus}
 					</div>
 				) : (
 					<p className="text-muted-foreground">No messages yet</p>
@@ -518,7 +482,11 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 					})}
 				</div>
 				{loading && (
-					<div className="flex justify-start p-3 max-w-4xl mx-auto px-5">
+					<div
+						role="status"
+						aria-live="polite"
+						className="flex justify-start p-3 max-w-4xl mx-auto px-5"
+					>
 						<Loader2 className="h-5 w-5 animate-spin mx-2" />
 						<span className="text-muted-foreground">{loadingMessage}</span>
 						{(elapsedTime !== null || ttft !== null) && (
@@ -528,9 +496,7 @@ const ChatMessages = memo(({ messages }: { messages: any[] }) => {
 						)}
 					</div>
 				)}
-				{runError && !loading && (
-					<RunErrorBanner runError={runError} onReplay={replayRun} />
-				)}
+				{runError && !loading && <RunErrorBanner runError={runError} />}
 			</div>
 		</div>
 	);

@@ -4,12 +4,39 @@ import json
 import unittest
 from unittest.mock import AsyncMock, patch
 
-import fakeredis.aioredis
 from langgraph.store.memory import InMemoryStore
 
 from src.repos.user_settings_repo import UserSettingsRepo, _CACHE_TTL
 
 TEST_USER_ID = "cache-test-user-001"
+
+
+class FakeRedis:
+    """Minimal in-memory cache double; no Redis server or client dependency."""
+
+    def __init__(self) -> None:
+        self.values: dict[str, str] = {}
+        self.ttls: dict[str, int] = {}
+
+    async def get(self, key: str):
+        return self.values.get(key)
+
+    async def set(self, key: str, value: str, ex: int | None = None):
+        self.values[key] = value
+        if ex is not None:
+            self.ttls[key] = ex
+        return True
+
+    async def delete(self, key: str):
+        self.values.pop(key, None)
+        self.ttls.pop(key, None)
+        return 1
+
+    async def ttl(self, key: str):
+        return self.ttls.get(key, -2)
+
+    async def aclose(self):
+        return None
 
 
 def _mock_encrypt(value: dict) -> str:
@@ -29,7 +56,7 @@ class TestUserSettingsCache(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.store = InMemoryStore()
-        self.redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+        self.redis = FakeRedis()
         self.repo = UserSettingsRepo(user_id=TEST_USER_ID, store=self.store)
         # Patch get_redis_client to return our fake Redis
         self._redis_patch = patch(

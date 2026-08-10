@@ -76,20 +76,6 @@ describe("queryKeys", () => {
 		});
 	});
 
-	describe("schedules keys", () => {
-		it("should return all schedules key", () => {
-			expect(queryKeys.schedules.all()).toEqual(["schedules"]);
-		});
-
-		it("should return schedule executions key", () => {
-			expect(queryKeys.schedules.executions("s-123")).toEqual([
-				"schedules",
-				"executions",
-				"s-123",
-			]);
-		});
-	});
-
 	describe("sandboxHealth key", () => {
 		it("should return sandbox health key with url", () => {
 			expect(queryKeys.sandboxHealth("http://localhost:3005")).toEqual([

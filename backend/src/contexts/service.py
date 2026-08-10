@@ -1,7 +1,6 @@
 from typing import Optional
 from langchain_core.runnables import RunnableConfig
 from langgraph.pregel.main import BaseCheckpointSaver
-from src.services.schedule import ScheduleService
 from src.services.llm import LLMService
 from src.services.project import ProjectService
 from src.services.checkpoint import CheckpointService
@@ -35,7 +34,6 @@ class ServiceContext:
         self.thread_service = ThreadService(user_id=self.user_id, store=store)
         self.prompt_service = PromptService(user_id=self.user_id, store=store)
         self.project_service = ProjectService(user_id=self.user_id, store=store)
-        self.schedule_service = ScheduleService(user_id=self.user_id, store=store)
         self.assistant_service = AssistantService(user_id=self.user_id, store=store)
         self.llm_service = LLMService(
             user_id=self.user_id,
@@ -61,9 +59,7 @@ class ServiceContext:
 
         # Best-effort checkpoint cleanup. Orphaned checkpoints are invisible to
         # the user and can be reclaimed separately, so a failure here is logged
-        # but must not resurrect the thread or fail the request. Notably, the
-        # resilient checkpointer historically did not implement adelete_thread
-        # (raising NotImplementedError); that must not break thread deletion.
+        # but must not resurrect the thread or fail the request.
         checkpoint_service = getattr(self, "checkpoint_service", None)
         if checkpoint_service is not None:
             try:

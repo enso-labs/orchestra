@@ -5,46 +5,12 @@ from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 from main import app
 from sqlalchemy import text
-from sqlalchemy.engine.url import make_url
-from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from src.constants import DB_URI
 from src.services.db import get_async_db, get_store, get_store_db, get_checkpoint_db
 from src.utils.db import get_asyncpg_connect_args, get_asyncpg_url
 from langgraph.store.memory import InMemoryStore
-from taskiq import InMemoryBroker
-
-
-async def ensure_database_exists(db_uri: str) -> None:
-    """Create the database if it doesn't exist."""
-    if "/" not in db_uri:
-        return
-
-    url = make_url(db_uri)
-    db_name = url.database
-    postgres_uri = url.set(database="postgres")
-
-    try:
-        engine = create_async_engine(
-            get_asyncpg_url(postgres_uri),
-            isolation_level="AUTOCOMMIT",
-            connect_args=get_asyncpg_connect_args(postgres_uri, statement_cache_size=None),
-        )
-        async with engine.connect() as conn:
-            result = await conn.execute(
-                text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
-                {"dbname": db_name},
-            )
-            if not result.fetchone():
-                await conn.execute(text(f'CREATE DATABASE "{db_name}"'))
-        await engine.dispose()
-    except (OperationalError, ProgrammingError):
-        pass
-
-
-# Ensure database exists before tests run
-asyncio.run(ensure_database_exists(DB_URI))
 
 
 class TestInMemoryStore(InMemoryStore):
@@ -66,8 +32,8 @@ def reset_store_singleton():
     collection-order-dependent.
 
     Deliberately **synchronous**. pytest does not apply async autouse fixtures to
-    `unittest.IsolatedAsyncioTestCase` classes (`tests/unit/services/prompt/
-    test_distill.py` has two), and those build a fresh event loop per test
+    `unittest.IsolatedAsyncioTestCase` classes, which build a fresh event loop
+    per test
     method — exactly the case where a cached, loop-bound store does the most
     damage. Dropping the references is enough here; tests that create a *real*
     store are responsible for awaiting `close_shared_store()` themselves.
@@ -343,45 +309,3 @@ async def mock_external_services():
 #     assert response.status_code == 200, f"Login failed: {response.text}"
 #     token = response.json()["access_token"]
 #     return {"Authorization": f"Bearer {token}", "accept": "application/json"}
-
-
-###############################################################################
-# TaskIQ / Redis Fixtures for Distributed Workers Testing
-###############################################################################
-@pytest.fixture
-def in_memory_broker():
-    """Provide an InMemoryBroker for testing tasks without Redis."""
-    return InMemoryBroker()
-
-
-@pytest.fixture
-async def fake_redis():
-    """Provide a FakeRedis async client for testing Redis streams."""
-    import fakeredis.aioredis
-
-    client = fakeredis.aioredis.FakeRedis(decode_responses=False)
-    yield client
-    await client.flushall()
-    await client.aclose()
-
-
-@pytest.fixture
-def sample_llm_request_dict():
-    """Provide a sample LLMRequest as dict for task testing."""
-    return {
-        "input": {"messages": [{"role": "user", "content": "Hello, test!"}]},
-        "model": "openai:gpt-4.1-mini",
-        "metadata": {"user_id": None, "thread_id": None},
-    }
-
-
-@pytest.fixture
-def sample_config_dict():
-    """Provide a sample config dict for task testing."""
-    return {
-        "configurable": {
-            "thread_id": "test-thread-123",
-            "assistant_id": "test-assistant",
-        },
-        "metadata": {"files": {}, "todos": []},
-    }

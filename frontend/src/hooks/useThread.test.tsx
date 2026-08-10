@@ -1,26 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEffect } from "react";
 import useThread from "./useThread";
 
-const mockSearchThreads = vi.fn();
-
-vi.mock("@/lib/services/threadService", () => ({
-	searchThreads: (...args: any[]) => mockSearchThreads(...args),
+const { mockAgentClient } = vi.hoisted(() => ({
+	mockAgentClient: {
+		threads: {
+			getHistory: vi.fn(),
+			getState: vi.fn(),
+			search: vi.fn(),
+		},
+	},
 }));
 
+vi.mock("@/lib/api/agentClient", () => ({ agentClient: mockAgentClient }));
 vi.mock("@/lib/utils/format", () => ({
 	formatMessages: (messages: any[]) => messages,
 }));
-
 vi.mock("@/lib/utils/message", () => ({
-	latestHumanMessage: () => ({ model: "openai:gpt-4.1-mini" }),
+	latestHumanMessage: (messages: any[]) =>
+		messages.find((message) => message.type === "human"),
 }));
-
-type HookState = {
-	threadLoading: boolean;
-	threadError: string | null;
-};
 
 type ThreadCallbacks = {
 	setCheckpoints: (checkpoints: any[]) => void;
@@ -31,87 +31,42 @@ type ThreadCallbacks = {
 	setModel: (model: string) => void;
 };
 
-function UseLoadThreadEffectHarness({
-	threadId,
-	enabled,
-	onStateChange,
+function Harness({
 	callbacks,
+	threadId = "thread-1",
 }: {
-	threadId: string;
-	enabled: boolean;
-	onStateChange: (state: HookState) => void;
-	callbacks?: ThreadCallbacks;
+	callbacks: ThreadCallbacks;
+	threadId?: string;
 }) {
 	const thread = useThread();
-	const threadCallbacks = callbacks || {
-		setCheckpoints: vi.fn(),
-		setMessages: vi.fn(),
-		setMetadata: vi.fn(),
-		setFilesMap: vi.fn(),
-		setTodos: vi.fn(),
-		setModel: vi.fn(),
-	};
-
-	thread.useLoadThreadEffect(threadId, threadCallbacks, { enabled });
-
-	useEffect(() => {
-		onStateChange({
-			threadLoading: thread.threadLoading,
-			threadError: thread.threadError,
-		});
-	}, [onStateChange, thread.threadError, thread.threadLoading]);
-
+	thread.useLoadThreadEffect(threadId, callbacks);
 	return null;
 }
 
-describe("useThread", () => {
+describe("useThread Agent Protocol hydration", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it("clears stale thread errors and loading state when hydration is disabled", async () => {
-		mockSearchThreads.mockResolvedValueOnce([]);
-
-		const state: HookState = {
-			threadLoading: false,
-			threadError: null,
-		};
-
-		const { rerender } = render(
-			<UseLoadThreadEffectHarness
-				threadId="thread-123"
-				enabled={true}
-				onStateChange={(nextState) => Object.assign(state, nextState)}
-			/>,
-		);
-
-		await waitFor(() => {
-			expect(state.threadError).toBe("No checkpoints found for thread");
-		});
-
-		rerender(
-			<UseLoadThreadEffectHarness
-				threadId="thread-123"
-				enabled={false}
-				onStateChange={(nextState) => Object.assign(state, nextState)}
-			/>,
-		);
-
-		await waitFor(() => {
-			expect(state.threadError).toBeNull();
-			expect(state.threadLoading).toBe(false);
-		});
-	});
-
-	it("does not apply late thread hydration after the effect is disabled", async () => {
-		let resolveSearch: (value: any[]) => void = () => undefined;
-		mockSearchThreads.mockImplementationOnce(
-			() =>
-				new Promise<any[]>((resolve) => {
-					resolveSearch = resolve;
-				}),
-		);
-
+	it("loads latest history, workspace files, todos, and model through SDK history", async () => {
+		mockAgentClient.threads.getHistory.mockResolvedValue([
+			{
+				metadata: { project_id: "project-1" },
+				values: {
+					messages: [
+						{
+							id: "human-1",
+							type: "human",
+							model: "openai:gpt-4.1-mini",
+							content: "Hello",
+						},
+						{ id: "ai-1", type: "ai", content: "Hi" },
+					],
+					files: { "/notes.md": { content: ["hello"] } },
+					todos: [{ content: "Check", status: "completed" }],
+				},
+			},
+		]);
 		const callbacks: ThreadCallbacks = {
 			setCheckpoints: vi.fn(),
 			setMessages: vi.fn(),
@@ -121,69 +76,95 @@ describe("useThread", () => {
 			setModel: vi.fn(),
 		};
 
-		const { rerender } = render(
-			<UseLoadThreadEffectHarness
-				threadId="thread-123"
-				enabled={true}
-				callbacks={callbacks}
-				onStateChange={() => undefined}
-			/>,
-		);
+		render(<Harness callbacks={callbacks} />);
 
-		rerender(
-			<UseLoadThreadEffectHarness
-				threadId="thread-123"
-				enabled={false}
-				callbacks={callbacks}
-				onStateChange={() => undefined}
-			/>,
+		await waitFor(() => expect(callbacks.setMessages).toHaveBeenCalled());
+		expect(mockAgentClient.threads.getHistory).toHaveBeenCalledWith(
+			"thread-1",
+			{ limit: 100 },
 		);
+		expect(callbacks.setMetadata).toHaveBeenCalledWith({
+			project_id: "project-1",
+			thread_id: "thread-1",
+		});
+		expect(callbacks.setFilesMap).toHaveBeenCalledWith(
+			new Map([["thread", { "/notes.md": { content: ["hello"] } }]]),
+		);
+		expect(callbacks.setTodos).toHaveBeenCalledWith([
+			{ content: "Check", status: "completed" },
+		]);
+		expect(callbacks.setModel).toHaveBeenCalledWith("openai:gpt-4.1-mini");
+	});
 
+	it("keeps the empty history state explicit", async () => {
+		mockAgentClient.threads.getHistory.mockResolvedValue([]);
+		const callbacks: ThreadCallbacks = {
+			setCheckpoints: vi.fn(),
+			setMessages: vi.fn(),
+			setMetadata: vi.fn(),
+			setFilesMap: vi.fn(),
+			setTodos: vi.fn(),
+			setModel: vi.fn(),
+		};
+		const state: { error: string | null } = { error: null };
+		function StateHarness() {
+			const thread = useThread();
+			thread.useLoadThreadEffect("thread-1", callbacks);
+			useEffect(() => {
+				state.error = thread.threadError;
+			}, [thread.threadError]);
+			return null;
+		}
+		render(<StateHarness />);
+		await waitFor(() =>
+			expect(state.error).toBe("No checkpoints found for thread"),
+		);
+	});
+
+	it("uses SDK POST search semantics for first page and offset pagination", async () => {
+		mockAgentClient.threads.search
+			.mockResolvedValueOnce(
+				Array.from({ length: 20 }, (_, index) => ({
+					thread_id: `thread-${index + 1}`,
+					updated_at: "2026-01-02",
+					metadata: { orchestra_assistant_id: "assistant-1" },
+					values: { messages: [] },
+				})),
+			)
+			.mockResolvedValueOnce([]);
+		let hook: ReturnType<typeof useThread> | null = null;
+		function SearchHarness() {
+			hook = useThread();
+			return null;
+		}
+		render(<SearchHarness />);
 		await act(async () => {
-			resolveSearch([
-				{
-					metadata: {
-						thread_id: "thread-123",
-						files: {},
-						todos: [],
-					},
-					values: {
-						messages: [{ id: "msg-1", role: "user", content: "Hello" }],
-					},
-				},
-			]);
-			await Promise.resolve();
+			await hook?.searchThreads("list_threads", {
+				assistant_id: "assistant-1",
+			});
+		});
+		await act(async () => {
+			await hook?.loadMoreThreads({ assistant_id: "assistant-1" });
 		});
 
-		expect(callbacks.setMessages).not.toHaveBeenCalled();
-		expect(callbacks.setMetadata).not.toHaveBeenCalled();
+		expect(mockAgentClient.threads.search).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({
+				limit: 20,
+				offset: 0,
+				metadata: expect.objectContaining({
+					orchestra_assistant_id: "assistant-1",
+				}),
+			}),
+		);
+		expect(mockAgentClient.threads.search).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({ limit: 20, offset: 20 }),
+		);
 	});
 
-	it("hydrates filesMap from metadata.files when loading a thread", async () => {
-		const threadFiles = {
-			"/historical.txt": {
-				content: ["legacy"],
-				created_at: "2024-01-01T00:00:00Z",
-				modified_at: "2024-01-01T00:00:00Z",
-			},
-		};
-
-		mockSearchThreads.mockResolvedValueOnce([
-			{
-				metadata: {
-					thread_id: "thread-123",
-					files: threadFiles,
-					todos: [],
-				},
-				values: {
-					messages: [
-						{ id: "msg-1", role: "user", content: "Hello" },
-						{ id: "msg-2", role: "assistant", content: "Hi" },
-					],
-				},
-			},
-		]);
-
+	it("maps authorization failures to an explicit thread error", async () => {
+		mockAgentClient.threads.getHistory.mockRejectedValue({ status: 403 });
 		const callbacks: ThreadCallbacks = {
 			setCheckpoints: vi.fn(),
 			setMessages: vi.fn(),
@@ -192,61 +173,16 @@ describe("useThread", () => {
 			setTodos: vi.fn(),
 			setModel: vi.fn(),
 		};
-
-		render(
-			<UseLoadThreadEffectHarness
-				threadId="thread-123"
-				enabled={true}
-				callbacks={callbacks}
-				onStateChange={() => undefined}
-			/>,
-		);
-
-		const expected = new Map<string, any>();
-		expected.set("thread", threadFiles);
-
-		await waitFor(() => {
-			expect(callbacks.setFilesMap).toHaveBeenCalledWith(expected);
-		});
-	});
-
-	it("returns empty filesMap when metadata.files is empty", async () => {
-		mockSearchThreads.mockResolvedValueOnce([
-			{
-				metadata: {
-					thread_id: "thread-123",
-					files: {},
-					todos: [],
-				},
-				values: {
-					messages: [
-						{ id: "msg-1", role: "user", content: "Hello" },
-						{ id: "msg-2", role: "assistant", content: "Hi" },
-					],
-				},
-			},
-		]);
-
-		const callbacks: ThreadCallbacks = {
-			setCheckpoints: vi.fn(),
-			setMessages: vi.fn(),
-			setMetadata: vi.fn(),
-			setFilesMap: vi.fn(),
-			setTodos: vi.fn(),
-			setModel: vi.fn(),
-		};
-
-		render(
-			<UseLoadThreadEffectHarness
-				threadId="thread-123"
-				enabled={true}
-				callbacks={callbacks}
-				onStateChange={() => undefined}
-			/>,
-		);
-
-		await waitFor(() => {
-			expect(callbacks.setFilesMap).toHaveBeenCalledWith(new Map());
-		});
+		const state: { error: string | null } = { error: null };
+		function StateHarness() {
+			const thread = useThread();
+			thread.useLoadThreadEffect("thread-1", callbacks);
+			useEffect(() => {
+				state.error = thread.threadError;
+			}, [thread.threadError]);
+			return null;
+		}
+		render(<StateHarness />);
+		await waitFor(() => expect(state.error).toMatch(/access/i));
 	});
 });

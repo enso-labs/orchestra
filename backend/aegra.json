@@ -1,0 +1,20 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "orchestra": "./src/agents/factory.py:build_graph"
+  },
+  "auth": {
+    "path": "./aegra_auth.py:auth"
+  },
+  "http": {
+    "app": "./custom_app.py:app",
+    "enable_custom_route_auth": false
+  },
+  "store": {
+    "index": {
+      "dims": 1536,
+      "embed": "openai:text-embedding-3-small",
+      "fields": ["page_content", "metadata"]
+    }
+  }
+}

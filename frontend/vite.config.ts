@@ -117,10 +117,19 @@ export default defineConfig({
 			"frontend.ruska.dev",
 		],
 		proxy: {
+			// Orchestra custom routes stay under /api. Agent Protocol is mounted
+			// at the backend origin root and must not be swallowed by the SPA.
 			"/api": {
 				target: proxyTarget,
 				changeOrigin: true,
 			},
+			"/threads": { target: proxyTarget, changeOrigin: true },
+			"/assistants": { target: proxyTarget, changeOrigin: true },
+			"/runs": { target: proxyTarget, changeOrigin: true },
+			"/store": { target: proxyTarget, changeOrigin: true },
+			"/crons": { target: proxyTarget, changeOrigin: true },
+			"/info": { target: proxyTarget, changeOrigin: true },
+			"/health": { target: proxyTarget, changeOrigin: true },
 		},
 	},
 });

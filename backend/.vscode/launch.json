@@ -2,13 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: LangGraph Bot",
+            "name": "Python: Aegra API",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/main.py",
+            "module": "uvicorn",
+            "args": ["aegra_api.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
             "console": "integratedTerminal",
             "justMyCode": false,
-            "envFile": "/home/ryaneggz/.config/orchestra/.env"
+            "envFile": "${env:HOME}/.config/orchestra/.env.backend"
         },
         {
             "name": "Python: Single Test",
@@ -18,7 +19,7 @@
             "args": ["tests/integration/test_project_routes.py", "-v"],
             "console": "integratedTerminal",
             "justMyCode": true,
-            "envFile": "/home/ryaneggz/.config/orchestra/.env.test"
+            "envFile": "${env:HOME}/.config/orchestra/.env.test"
         },
         {
             "name": "Python: Run Tests",
@@ -28,7 +29,7 @@
             "args": ["tests/", "-v"],
             "console": "integratedTerminal",
             "justMyCode": false,
-            "envFile": "/home/ryaneggz/.config/orchestra/.env.test"
+            "envFile": "${env:HOME}/.config/orchestra/.env.test"
         },
         {
             "name": "Python: Run Unit Tests Only",
@@ -38,7 +39,7 @@
             "args": ["tests/unit/", "-v"],
             "console": "integratedTerminal",
             "justMyCode": false,
-            "envFile": "/home/ryaneggz/.config/orchestra/.env.test"
+            "envFile": "${env:HOME}/.config/orchestra/.env.test"
         },
         {
             "name": "Python: Run Integration Tests Only",
@@ -48,17 +49,7 @@
             "args": ["tests/integration/", "-v"],
             "console": "integratedTerminal",
             "justMyCode": false,
-            "envFile": "/home/ryaneggz/.config/orchestra/.env.test"
-        },
-        {
-            "name": "Python: TaskIQ Worker",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "taskiq",
-            "args": ["worker", "src.workers.tasks:broker"],
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "envFile": "/home/ryaneggz/.config/orchestra/.env"
+            "envFile": "${env:HOME}/.config/orchestra/.env.test"
         },
         {
             "name": "Python: Remote Attach",

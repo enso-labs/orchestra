@@ -1,10 +1,19 @@
-import { useEffect, useState, useCallback } from "react";
-import { searchThreads } from "@/lib/services/threadService";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { agentClient } from "@/lib/api/agentClient";
 import { formatMessages } from "@/lib/utils/format";
 import { latestHumanMessage } from "@/lib/utils/message";
 import type { Todo } from "@/components/lists/TodoList";
 
 const LIMIT = 20;
+const HISTORY_LIMIT = 100;
+
+type ThreadFilter = {
+	thread_id?: string;
+	checkpoint_id?: string;
+	assistant_id?: string;
+	project_id?: string | null;
+	metadata?: Record<string, unknown>;
+};
 
 export type ThreadData = {
 	checkpoints: any[];
@@ -24,14 +33,14 @@ export type ThreadContextType = {
 	setCheckpoint: (checkpoint: any) => void;
 	searchThreads: (
 		action: "list_threads" | "list_checkpoints" | "get_checkpoint",
-		metadata: { thread_id?: string; checkpoint_id?: string },
-	) => void;
-	useListThreadsEffect: (trigger?: boolean) => void;
+		filter: ThreadFilter,
+	) => Promise<any>;
+	useListThreadsEffect: (trigger?: boolean, filter?: ThreadFilter) => void;
 	useListCheckpointsEffect: (
 		trigger?: boolean,
 		metadata?: { thread_id?: string },
 	) => void;
-	loadMoreThreads: (filter?: any) => Promise<void>;
+	loadMoreThreads: (filter?: ThreadFilter) => Promise<void>;
 	hasMoreThreads: boolean;
 	isLoadingMoreThreads: boolean;
 	loadThread: (threadId: string) => Promise<ThreadData | null>;
@@ -47,78 +56,118 @@ export type ThreadContextType = {
 			setTodos: (todos: Todo[]) => void;
 			setModel: (model: string) => void;
 		},
-		options?: {
-			enabled?: boolean;
-		},
+		options?: { enabled?: boolean },
 	) => void;
 };
+
+function assistantMetadata(filter: ThreadFilter): Record<string, unknown> {
+	const metadata = {
+		...(filter.metadata ?? {}),
+		...Object.fromEntries(
+			Object.entries(filter).filter(
+				([key, value]) =>
+					!["thread_id", "checkpoint_id", "metadata"].includes(key) &&
+					value !== undefined,
+			),
+		),
+	};
+	if (filter.assistant_id) {
+		metadata.orchestra_assistant_id = filter.assistant_id;
+	}
+	return metadata;
+}
+
+function normalizeThread(thread: any): any {
+	const values =
+		thread?.values && typeof thread.values === "object" ? thread.values : {};
+	const metadata =
+		thread?.metadata && typeof thread.metadata === "object"
+			? thread.metadata
+			: {};
+	return {
+		...thread,
+		key: thread.thread_id,
+		value: {
+			...values,
+			...metadata,
+			thread_id: thread.thread_id,
+			assistant_id:
+				metadata.orchestra_assistant_id ??
+				metadata.assistant_id ??
+				values.assistant_id,
+			project_id: metadata.project_id ?? values.project_id,
+		},
+	};
+}
 
 export default function useThread(): ThreadContextType {
 	const [threads, setThreads] = useState<any[]>([]);
 	const [checkpoints, setCheckpoints] = useState<any[]>([]);
 	const [checkpoint, setCheckpoint] = useState<any>(null);
 	const [cursor, setCursor] = useState<string | null>(null);
-	const [hasMoreThreads, setHasMoreThreads] = useState<boolean>(true);
-	const [isLoadingMoreThreads, setIsLoadingMoreThreads] =
-		useState<boolean>(false);
-	const [threadLoading, setThreadLoading] = useState<boolean>(false);
+	const [hasMoreThreads, setHasMoreThreads] = useState(true);
+	const [isLoadingMoreThreads, setIsLoadingMoreThreads] = useState(false);
+	const [threadLoading, setThreadLoading] = useState(false);
 	const [threadError, setThreadError] = useState<string | null>(null);
 
 	const loadThread = useCallback(
 		async (threadId: string): Promise<ThreadData | null> => {
 			if (!threadId) return null;
-
 			setThreadLoading(true);
 			setThreadError(null);
-
 			try {
-				// Load checkpoints directly for this specific thread
-				// Backend returns checkpoints when thread_id is passed
-				const checkpointsData = await searchThreads("list_checkpoints", {
-					thread_id: threadId,
+				const history = await agentClient.threads.getHistory(threadId, {
+					limit: HISTORY_LIMIT,
 				});
-
-				if (!checkpointsData || checkpointsData.length === 0) {
+				if (!history || history.length === 0) {
 					setThreadError("No checkpoints found for thread");
 					return null;
 				}
 
-				// Get thread data from the first checkpoint
-				const latestCheckpoint = checkpointsData[0];
-				const threadData = latestCheckpoint.metadata || {};
-
-				// Extract todos (backend sends as array)
-				const todos: Todo[] = Array.isArray(threadData.todos)
-					? threadData.todos
-					: [];
-
-				// Restore thread-scoped files from the backend checkpoint metadata
+				const latest = history[0];
+				const values = (
+					latest.values && typeof latest.values === "object"
+						? latest.values
+						: {}
+				) as Record<string, any>;
+				const stateMetadata =
+					latest.metadata && typeof latest.metadata === "object"
+						? latest.metadata
+						: {};
+				const threadMetadata = { ...stateMetadata, thread_id: threadId };
+				const threadFiles =
+					values.files && typeof values.files === "object"
+						? values.files
+						: stateMetadata.files && typeof stateMetadata.files === "object"
+							? stateMetadata.files
+							: {};
+				const threadTodos = Array.isArray(values.todos)
+					? values.todos
+					: Array.isArray(stateMetadata.todos)
+						? stateMetadata.todos
+						: [];
 				const filesMap = new Map<string, any>();
-				if (
-					threadData.files &&
-					typeof threadData.files === "object" &&
-					Object.keys(threadData.files).length > 0
-				) {
-					filesMap.set("thread", threadData.files);
-				}
-
-				// Format messages
-				const messages = formatMessages(checkpointsData[0].values.messages);
-
-				// Build metadata including thread_id
-				const metadata = { ...threadData, thread_id: threadId };
+				if (Object.keys(threadFiles).length > 0)
+					filesMap.set("thread", threadFiles);
+				const messages = formatMessages(
+					Array.isArray(values.messages) ? values.messages : [],
+				);
 
 				return {
-					checkpoints: checkpointsData,
+					checkpoints: history,
 					messages,
-					metadata,
-					todos,
+					metadata: threadMetadata,
+					todos: threadTodos,
 					filesMap,
 					model: latestHumanMessage(messages)?.model,
 				};
-			} catch (err) {
-				console.error("Failed to load thread:", err);
-				setThreadError("Failed to load thread");
+			} catch (error) {
+				const status = (error as { status?: number })?.status;
+				setThreadError(
+					status === 401 || status === 403
+						? "You do not have access to this thread"
+						: "Failed to load thread",
+				);
 				return null;
 			} finally {
 				setThreadLoading(false);
@@ -137,140 +186,153 @@ export default function useThread(): ThreadContextType {
 			setTodos: (todos: Todo[]) => void;
 			setModel: (model: string) => void;
 		},
-		options: {
-			enabled?: boolean;
-		} = {},
+		options: { enabled?: boolean } = {},
 	) => {
 		const enabled = options.enabled ?? true;
-
+		const callbacksRef = useRef(callbacks);
+		callbacksRef.current = callbacks;
 		useEffect(() => {
 			if (!enabled) {
 				setThreadLoading(false);
 				setThreadError(null);
 				return;
 			}
-
+			let isActive = true;
 			if (threadId) {
 				setThreadLoading(true);
 				setThreadError(null);
 			}
 
-			let isActive = true;
-
-			const fetchThread = async () => {
+			void (async () => {
 				if (!threadId) return;
-
 				const data = await loadThread(threadId);
-				if (!isActive || !data) {
-					return;
-				}
-
-				if (data) {
-					callbacks.setCheckpoints(data.checkpoints);
-					callbacks.setMessages(data.messages);
-					callbacks.setMetadata(data.metadata);
-					callbacks.setFilesMap(data.filesMap);
-					// Always set todos to clear stale data when switching threads
-					callbacks.setTodos(data.todos);
-					callbacks.setModel(data.model);
-				}
-			};
-
-			fetchThread();
+				if (!isActive || !data) return;
+				callbacksRef.current.setCheckpoints(data.checkpoints);
+				callbacksRef.current.setMessages(data.messages);
+				callbacksRef.current.setMetadata(data.metadata);
+				callbacksRef.current.setFilesMap(data.filesMap);
+				callbacksRef.current.setTodos(data.todos);
+				callbacksRef.current.setModel(data.model);
+			})();
 
 			return () => {
 				isActive = false;
 			};
-		}, [threadId, enabled]);
+		}, [enabled, loadThread, threadId]);
 	};
 
-	const fetchThreads = async (
-		action: "list_threads" | "list_checkpoints" | "get_checkpoint",
-		filter: {
-			thread_id?: string;
-			checkpoint_id?: string;
-			metadata?: { assistant_id?: string; project_id?: string };
-		} = {},
-	) => {
-		// Always pass limit and offset (defaults: 20, 0) to searchThreads
-		const data = await searchThreads(action, filter, LIMIT, 0);
-
-		if (action === "list_threads") {
-			setThreads(data);
-			// Extract cursor from last thread for pagination
-			if (data.length > 0) {
-				const lastThread = data[data.length - 1];
-				setCursor(lastThread.updated_at);
+	const fetchThreads = useCallback(
+		async (
+			action: "list_threads" | "list_checkpoints" | "get_checkpoint",
+			filter: ThreadFilter = {},
+			limit = LIMIT,
+			offset = 0,
+		) => {
+			if (action === "list_threads") {
+				const data = await agentClient.threads.search({
+					limit,
+					offset,
+					metadata: assistantMetadata(filter),
+					sortBy: "updated_at",
+					sortOrder: "desc",
+					select: [
+						"thread_id",
+						"created_at",
+						"updated_at",
+						"metadata",
+						"values",
+						"status",
+					],
+				});
+				const normalized = data.map(normalizeThread);
+				setThreads(normalized);
+				const last = data[data.length - 1];
+				setCursor(last?.updated_at ?? null);
+				setHasMoreThreads(data.length === LIMIT);
+				return normalized;
 			}
-			// Set hasMore based on whether we got a full page
-			setHasMoreThreads(data.length === LIMIT);
-		} else if (action === "list_checkpoints") {
-			setCheckpoints(data);
-		} else if (action === "get_checkpoint") {
-			setCheckpoint(data);
-		}
-	};
-
-	const loadMoreThreads = async (filter: any = {}) => {
-		if (isLoadingMoreThreads || !hasMoreThreads) {
-			return;
-		}
-
-		try {
-			setIsLoadingMoreThreads(true);
-
-			// Build filter with cursor for pagination
-			const paginationFilter = { ...filter };
-			if (cursor) {
-				// Use cursor-based pagination: fetch threads older than cursor
-				paginationFilter.updated_at = { $lt: cursor };
+			if (!filter.thread_id) return [];
+			if (action === "list_checkpoints") {
+				const data = await agentClient.threads.getHistory(filter.thread_id, {
+					limit,
+				});
+				setCheckpoints(data);
+				return data;
 			}
-
-			// Fetch threads with limit (offset=0 since we use cursor-based pagination)
-			const newThreads = await searchThreads(
-				"list_threads",
-				paginationFilter,
-				LIMIT,
-				0,
+			const data = await agentClient.threads.getState(
+				filter.thread_id,
+				filter.checkpoint_id,
+				{ subgraphs: true },
 			);
+			setCheckpoint(data);
+			return data;
+		},
+		[],
+	);
 
-			setThreads((prev) => [...prev, ...newThreads]);
+	const searchThreads = useCallback(
+		(
+			action: "list_threads" | "list_checkpoints" | "get_checkpoint",
+			filter: ThreadFilter,
+		) => fetchThreads(action, filter),
+		[fetchThreads],
+	);
 
-			// Extract cursor from last thread for next page
-			if (newThreads.length > 0) {
-				const lastThread = newThreads[newThreads.length - 1];
-				setCursor(lastThread.updated_at);
+	const loadMoreThreads = useCallback(
+		async (filter: ThreadFilter = {}) => {
+			if (isLoadingMoreThreads || !hasMoreThreads) return;
+			setIsLoadingMoreThreads(true);
+			try {
+				const data = await agentClient.threads.search({
+					limit: LIMIT,
+					offset: threads.length,
+					metadata: assistantMetadata(filter),
+					sortBy: "updated_at",
+					sortOrder: "desc",
+					select: [
+						"thread_id",
+						"created_at",
+						"updated_at",
+						"metadata",
+						"values",
+						"status",
+					],
+				});
+				setThreads((previous) => [...previous, ...data.map(normalizeThread)]);
+				const last = data[data.length - 1];
+				setCursor(last?.updated_at ?? cursor);
+				setHasMoreThreads(data.length === LIMIT);
+			} catch {
+				// The initial list remains visible; callers can retry pagination.
+			} finally {
+				setIsLoadingMoreThreads(false);
 			}
-
-			setHasMoreThreads(newThreads.length === LIMIT);
-		} catch (error) {
-			console.error("Error loading more threads:", error);
-		} finally {
-			setIsLoadingMoreThreads(false);
-		}
-	};
+		},
+		[cursor, hasMoreThreads, isLoadingMoreThreads, threads.length],
+	);
 
 	const useListThreadsEffect = (
 		trigger?: boolean,
-		filter: { metadata?: { [key: string]: any } } = {},
+		filter: ThreadFilter = {},
 	) => {
+		const filterRef = useRef(filter);
+		filterRef.current = filter;
 		useEffect(() => {
-			// Reset pagination state for fresh load
 			setCursor(null);
 			setHasMoreThreads(true);
-			// Don't clear threads immediately - let fetchThreads replace them
-			// This prevents breaking checkpoint fetching that may run concurrently
-			fetchThreads("list_threads", filter);
-		}, [trigger]);
+			void fetchThreads("list_threads", filterRef.current);
+		}, [fetchThreads, trigger]);
 	};
 
 	const useListCheckpointsEffect = (
 		trigger?: boolean,
 		metadata: { thread_id?: string } = {},
 	) => {
+		const metadataRef = useRef(metadata);
+		metadataRef.current = metadata;
 		useEffect(() => {
-			fetchThreads("list_checkpoints", metadata);
-		}, [trigger]);
+			void fetchThreads("list_checkpoints", metadataRef.current);
+		}, [fetchThreads, trigger]);
 	};
 
 	return {

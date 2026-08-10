@@ -21,6 +21,12 @@ def _build_alembic_config() -> Config:
     # from the repo root would otherwise silently pick up nothing.
     ini_path = Path(__file__).resolve().parents[2] / "alembic.ini"
     alembic_cfg = Config(str(ini_path))
+    script_location = alembic_cfg.get_main_option("script_location")
+    if script_location and not Path(script_location).is_absolute():
+        alembic_cfg.set_main_option(
+            "script_location",
+            str((ini_path.parent / script_location).resolve()),
+        )
     alembic_cfg.set_main_option("version_table", ORCHESTRA_VERSION_TABLE)
     return alembic_cfg
 

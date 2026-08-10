@@ -14,10 +14,10 @@ if __name__ == "__main__":
         env_path = Path(args.env_file).expanduser()
         load_dotenv(env_path, override=True)
     else:
-        load_dotenv()
+        load_dotenv(Path.home() / ".config" / "orchestra" / ".env.backend")
 else:
-    # When imported as a module, load default .env
-    load_dotenv()
+    # When imported as a module, load the backend runtime environment.
+    load_dotenv(Path.home() / ".config" / "orchestra" / ".env.backend")
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker

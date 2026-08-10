@@ -120,6 +120,38 @@ async def verify_credentials(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> User:
+    # Aegra authenticates the request before custom `/api` dependencies run.
+    # Reuse that scoped identity instead of opening a second credential lookup
+    # for the duration of the custom handler.  Standalone Orchestra (and its
+    # existing tests) has no scope user and continues through the legacy path.
+    scoped_user = request.scope.get("user")
+    if scoped_user is not None:
+        is_authenticated = bool(getattr(scoped_user, "is_authenticated", False))
+        identity = getattr(scoped_user, "identity", None)
+        if not is_authenticated or not identity or identity == "anonymous":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        try:
+            from aegra_auth import AegraUser
+
+            data = scoped_user.to_dict() if hasattr(scoped_user, "to_dict") else {}
+            return AegraUser(
+                id=str(identity),
+                identity=str(identity),
+                username=data.get("username"),
+                email=data.get("email"),
+                name=data.get("display_name") or data.get("name"),
+                is_authenticated=True,
+                permissions=list(data.get("permissions") or []),
+            )  # type: ignore[return-value]
+        except ImportError:
+            # If the custom adapter is not installed, fall through to the
+            # standalone verifier rather than changing legacy behavior.
+            pass
+
     # 1. Check for API Key in headers
     api_key = request.headers.get("x-api-key")
     if api_key:

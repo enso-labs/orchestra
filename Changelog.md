@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Versioning: `YYYY.M.D` (date-based, e.g. `2026.2.22`). Multiple releases per day use `-N` suffix (e.g. `2026.2.22-2`).
 
+## 2026.8.10
+
+### Changed
+  - task/976-aegra-full-inversion — make Aegra the sole backend runtime on `:8000` and move graph operations to the LangGraph SDK client, retaining Orchestra assistant metadata at the SDK boundary.
+
+### Removed
+  - task/976-aegra-full-inversion — remove the TaskIQ worker/sidecar and legacy graph transport; schedules and prompt distillation are explicit deferred capabilities until a future implementation.
+
 ## 2026.8.7
 
 ### Fixed

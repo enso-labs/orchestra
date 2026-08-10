@@ -21,13 +21,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from src.constants import (
-    CHECKPOINT_ENABLE_FALLBACK,
-    CHECKPOINT_HEALTH_CHECK_INTERVAL,
-    CHECKPOINT_JITTER,
-    CHECKPOINT_MAX_DELAY,
-    CHECKPOINT_MAX_RETRIES,
-    CHECKPOINT_RETRY_DELAY,
-    CHECKPOINT_USE_RESILIENT,
     DB_KEEPALIVE_COUNT,
     DB_KEEPALIVE_IDLE,
     DB_KEEPALIVE_INTERVAL,
@@ -39,7 +32,6 @@ from src.constants import (
     DB_SQLA_POOL_SIZE,
     DB_SQLA_POOL_TIMEOUT,
     DB_URI,
-    DB_URI_SESSION,
 )
 from src.utils.db import get_asyncpg_connect_args, get_asyncpg_url
 from src.utils.logger import logger
@@ -135,65 +127,22 @@ def get_checkpoint_connection_kwargs() -> dict:
 
 
 @asynccontextmanager
-async def get_resilient_checkpoint_db():
-    """
-    Create a ResilientAsyncPostgresSaver with connection resilience.
-
-    Uses DB_URI_SESSION (session-mode connection) for better stability
-    with long-running checkpoint operations.
-
-    Features:
-    - TCP keepalive for connection health
-    - Auto-reconnection on connection loss
-    - Exponential backoff retry on transient failures
-    - Optional fallback to in-memory storage
-    """
-    from src.services.checkpoint_resilient import ResilientAsyncPostgresSaver
-
-    saver = ResilientAsyncPostgresSaver(
-        connection_string=DB_URI_SESSION,
-        max_retries=CHECKPOINT_MAX_RETRIES,
-        base_delay=CHECKPOINT_RETRY_DELAY,
-        max_delay=CHECKPOINT_MAX_DELAY,
-        jitter=CHECKPOINT_JITTER,
-        enable_fallback=CHECKPOINT_ENABLE_FALLBACK,
-        health_check_interval=CHECKPOINT_HEALTH_CHECK_INTERVAL,
-        keepalives=1,
-        keepalives_idle=DB_KEEPALIVE_IDLE,
-        keepalives_interval=DB_KEEPALIVE_INTERVAL,
-        keepalives_count=DB_KEEPALIVE_COUNT,
-    )
-    try:
-        await saver.connect()
-        yield saver
-    finally:
-        await saver.close()
-
-
-@asynccontextmanager
 async def get_checkpoint_db() -> AsyncIterator[AsyncPostgresSaver]:
     """
     Create an AsyncPostgresSaver with explicit connection kwargs.
-
-    If CHECKPOINT_USE_RESILIENT is enabled, returns a ResilientAsyncPostgresSaver
-    instead, which provides automatic retry and reconnection capabilities.
 
     Uses the solution from: https://github.com/langchain-ai/langgraph/issues/2755
     - autocommit=True: Required for checkpoint operations
     - prepare_threshold=0: Disables prepared statements for connection pooler compatibility
     - row_factory=dict_row: Required by AsyncPostgresSaver
     """
-    if CHECKPOINT_USE_RESILIENT:
-        async with get_resilient_checkpoint_db() as saver:
-            yield saver
-    else:
-        async with await AsyncConnection.connect(
-            DB_URI,
-            autocommit=True,
-            prepare_threshold=None,  # MUST be 0 for pgbouncer
-            row_factory=dict_row,
-        ) as conn:
-            yield AsyncPostgresSaver(conn)
+    async with await AsyncConnection.connect(
+        DB_URI,
+        autocommit=True,
+        prepare_threshold=None,  # MUST be 0 for pgbouncer
+        row_factory=dict_row,
+    ) as conn:
+        yield AsyncPostgresSaver(conn)
 
 
 def get_store_application_name(pid: int | None = None) -> str:
@@ -265,11 +214,8 @@ def get_store_db(
 ########################################################
 ## Process-level store singleton
 ########################################################
-# One AsyncPostgresStore per OS process. The API process, each taskiq worker, and
-# anything else that imports this module get their own; it cannot be shared across
-# processes, which is why `app.state` -- what #957 suggested -- is not sufficient:
-# `workers/tasks.py` and the module-level pickled APScheduler job functions in
-# `services/schedule.py` have no `Request` and no app in scope.
+# One AsyncPostgresStore per API process. The Aegra lifespan owns the store and
+# request handlers receive it through app state.
 _shared_store: Optional[AsyncPostgresStore] = None
 _shared_store_stack: Optional[contextlib.AsyncExitStack] = None
 _shared_store_lock = asyncio.Lock()
@@ -306,8 +252,7 @@ async def get_shared_store() -> AsyncPostgresStore:
     ``asyncio.get_running_loop()`` and every async method schedules futures and
     tasks on it, so the store must be created on, and used from, one loop per
     process. That is also why there is no ``atexit`` hook -- there is no running
-    loop at interpreter exit. Shutdown is owned by the FastAPI lifespan and by
-    ``WorkerState``.
+    loop at interpreter exit. Shutdown is owned by the FastAPI lifespan.
 
     ``setup()`` is intentionally not called here: DDL stays an explicit startup
     act (``main.py``), not a side effect of first access from a worker or a job.
@@ -359,8 +304,7 @@ async def get_shared_store() -> AsyncPostgresStore:
 async def close_shared_store() -> None:
     """Close this process's shared store and clear it. Idempotent.
 
-    Safe to call twice -- ``WorkerState`` invokes it from both the failure branch
-    of ``initialize()`` and from ``shutdown()``. Also tolerant of test doubles,
+    Safe to call twice. Also tolerant of test doubles,
     which is why the batch-task cancellation is guarded rather than assumed
     awaitable.
     """
@@ -408,42 +352,3 @@ async def _cancel_store_batch_task(store: Any) -> None:
         pass
     except Exception as e:  # pragma: no cover - defensive
         logger.warning("Error cancelling shared store batch task: %s", e)
-
-
-class RunScopedStore:
-    """Thin proxy around a shared store that isolates mutable attributes per-run.
-
-    The process-level ``AsyncPostgresStore`` is shared across concurrent task,
-    job, and request executions. Downstream code (``ThreadRepo``,
-    ``LLMController``, ``utils/stream``) assigns ``store.fields`` to signal which
-    columns it wants. Nothing currently *reads* that attribute -- it is not a
-    langgraph API -- but the assignments land on the shared object, so this proxy
-    keeps them per-run as defence-in-depth.
-
-    Two things to know before using it:
-
-    - It isolates ``fields`` and **nothing else**. Every other attribute write is
-      delegated straight through to the shared store.
-    - ``async with proxy`` raises ``TypeError``: implicit special-method lookup
-      goes through ``type(obj)`` and bypasses ``__getattr__``, even though
-      ``hasattr(proxy, "__aenter__")`` is ``True``. That is a feature here -- the
-      shared store must never be entered -- but do not write ``hasattr`` guards
-      against it.
-    """
-
-    __slots__ = ("_store", "fields")
-
-    def __init__(self, store, fields: Optional[list[str]] = None):
-        object.__setattr__(self, "_store", store)
-        # Seeded explicitly rather than from `store.fields`: reading the shared
-        # object would let a run inherit whatever another run last wrote.
-        object.__setattr__(self, "fields", [] if fields is None else list(fields))
-
-    def __getattr__(self, name):
-        return getattr(object.__getattribute__(self, "_store"), name)
-
-    def __setattr__(self, name, value):
-        if name in ("fields",):
-            object.__setattr__(self, name, value)
-        else:
-            setattr(object.__getattribute__(self, "_store"), name, value)

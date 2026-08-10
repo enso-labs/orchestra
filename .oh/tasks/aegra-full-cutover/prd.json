@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "project": "Orchestra",
+  "branchName": "task/976-aegra-full-inversion",
+  "description": "Atomic Aegra full cutover: Aegra owns the sole :8000 runtime and the frontend uses @langchain/langgraph-sdk as its only graph client.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create the production Aegra factory graph",
+      "description": "As the runtime, I want one Aegra factory graph to construct Orchestra's agent from Aegra execution context so Aegra owns the run lifecycle without duplicate legacy execution paths.",
+      "acceptanceCriteria": [
+        "Add `backend/src/agents/factory.py` exporting the production graph factory with the Aegra `RunnableConfig` and `ServerRuntime` contract.",
+        "The factory has an execution-context guard and returns a cheap schema/read graph for non-execution requests; schema extraction and assistant/thread reads create zero sandboxes.",
+        "User identity comes only from `runtime.user.identity`; client-supplied `configurable.user_id` is rejected or ignored.",
+        "The factory resolves assistant settings, user settings, memory/context files, backend, tools, subagents, and middleware exactly once, reusing existing differentiated Orchestra helpers where they remain useful.",
+        "The compiled graph is returned without a client-supplied checkpointer so Aegra can inject its own checkpoint runtime.",
+        "Sandbox cleanup happens on factory context exit.",
+        "`backend/src/common/client/client.py` remains importable and its A2A behavior is unchanged.",
+        "Backend unit tests cover execution versus schema/read contexts, identity sourcing, zero-sandbox schema reads, and cleanup.",
+        "`make lint` and the affected backend tests pass."
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Implemented and locally syntax/lint/focused-test verified. `progress.txt` records 10 passing focused tests. Live Aegra/PostgreSQL schema extraction and production sandbox checks were intentionally not run."
+    },
+    {
+      "id": "US-002",
+      "title": "Port auth, tenancy, and custom routes into Aegra",
+      "description": "As a user, I want existing JWT, API-key, public, and tenant-isolation behavior to survive the runtime change while Agent Protocol routes remain distinct from Orchestra's custom API.",
+      "acceptanceCriteria": [
+        "Add `backend/aegra_auth.py` with the existing JWT and global API-key credential behavior, preserving scoped database-session cleanup.",
+        "Missing/invalid credentials remain non-fatal at authentication time; protected handlers enforce auth and public/share/embed handlers remain guest-capable.",
+        "Add `backend/custom_app.py` mounting only surviving Orchestra custom routes under `/api` and the MCP surface; it contains no SPA catch-all and wires the Aegra-provided store/session lifespan required by `get_store()` and API-key auth.",
+        "Split or replace eager `src.routes.v0` imports so importing `custom_app` cannot import TaskIQ, scheduler, or legacy graph execution modules.",
+        "Keep app-specific endpoints such as auth, settings, tools, storage, memory, RAG, project, prompt, health/config, assistant publish/fork/embed, and non-graph LLM utilities where they remain supported.",
+        "Orchestra assistant records remain canonical in their existing custom `/api` namespace and are never replaced by unscoped Aegra SDK store calls; the SDK run uses one production graph identifier plus authenticated custom assistant ID/config metadata.",
+        "Assistant CRUD, publish, fork, embed, public access, and per-assistant model/prompt/tool settings all use that mapping for pre-existing and newly-created assistants.",
+        "Public/embed chat is migrated to the same Agent Protocol run contract with anonymous authorization tests; it cannot retain `LLMController.llm_stream` or be silently marked unsupported.",
+        "Remove graph/run/thread handlers from the legacy custom route surface when their Agent Protocol equivalents exist, while explicitly classifying HITL, semantic search, project filtering, and other non-equivalent routes as retained, migrated, or removed.",
+        "A user cannot read, search, update, or delete another user's Aegra thread/assistant through Agent Protocol routes; missing identity never falls back to a shared `TEST_USER_ID` tenant.",
+        "The exact SDK method/path/HTTP verb contract is pinned in fixtures (including the current `POST /threads/search`, assistant search, thread history, and store calls); tests prove invalid methods do not reach the SPA.",
+        "Root protocol routes, `/api` routes, MCP, CORS, rate limiting, correlation IDs, logging, and production static hosting are route-ordered and tested without SPA shadowing.",
+        "Tests cover JWT, API key precedence/rotation, missing versus invalid credentials, anonymous/public isolation, protected 401, paid-model 403, cross-tenant access, store lifespan, MCP nested lifespan/tag filtering, assistant mapping, and custom-app import without legacy dependencies.",
+        "Python compile check, `make lint`, and affected backend tests pass."
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Implemented and locally syntax/lint/focused-test verified. `progress.txt` records import-boundary, auth, mapping, and factory evidence. Live JWT/API-key database lookups, Aegra root route integration, MCP HTTP behavior, deployment/static hosting, and browser checks were intentionally not run."
+    },
+    {
+      "id": "US-004",
+      "title": "Complete the database and migration cutover preflight",
+      "description": "As an operator, I want both migration chains and the selected database to be unambiguous before Aegra boots.",
+      "acceptanceCriteria": [
+        "Orchestra owns `orchestra_alembic_version`; Aegra owns its upstream `alembic_version` table.",
+        "The runbook documents the one-time rename, rollback precondition, fresh-copy restore, and startup order; it is not implemented as an Alembic revision.",
+        "The production migration init/preflight is the single startup mechanism: it verifies configured database identity, `orchestra_alembic_version`, Aegra `alembic_version`, and required checkpoint/store tables, refuses the wrong database or ambiguous ownership, and completes before the API health check.",
+        "Existing `checkpoints`, `store`, and `store_vectors` stable keys and content digests remain unchanged across first Aegra boot.",
+        "An authenticated Aegra Agent Protocol store read returns a known pre-existing LangGraph item in its expected namespace, while Orchestra assistant records remain accessed through their custom `/api` namespace; a pre-existing assistant/thread fixture retains its custom ID, project metadata, files, todos, and message history through the SDK mapping.",
+        "No code or environment default points the validation runtime at `lg_template_dev` when a copy database is required.",
+        "The database preflight and restore evidence are recorded with the task artifacts."
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Implemented and locally contract-verified. Full DB migration/content-digest, restore, and Aegra store-read evidence remain intentionally unrun; see progress.txt and evidence.md. passes remains false."
+    },
+    {
+      "id": "US-003",
+      "title": "Replace the sidecar deployment with one Aegra API runtime",
+      "description": "As an operator, I want one deployable API service so there is no second Aegra process, port, database runtime, or worker to coordinate.",
+      "acceptanceCriteria": [
+        "Before cleanup, record a SHA-256 manifest and final disposition for the dirty stage-0/1 paths (`Makefile`, `aegra.json`, `infra/aegra*`, sidecar Compose/Docker files, and runbook changes); no reset or cleanup discards them silently.",
+        "Move the production Aegra configuration to `/app/aegra.json` in the backend image and register only the production graph, for example `\"orchestra\": \"./src/agents/factory.py:build_graph\"`; do not register `hello` or development-only `deepagent` smoke graphs in production.",
+        "Add the Aegra runtime dependency to the backend dependency set and lockfile; the shipped image contains Aegra and all factory dependencies.",
+        "Update `infra/backend.Dockerfile` and `infra/docker-compose.yml` so the single API service runs `aegra_api.main:app` on `:8000` with the configured `POSTGRES_CONNECTION_STRING`, `DATABASE_URL`, Redis, and provider environment.",
+        "The image build preserves/imports the factory, custom app, auth adapter, route modules, migration hooks, static assets, and any modules required by the configured Aegra graph; bytecode/source cleanup cannot delete an importable runtime module.",
+        "Keep the existing Postgres and Redis services as dependencies; do not create a second Postgres service or hardcode a database name in application code.",
+        "Create one production-wired migration init/preflight command that runs Orchestra's `orchestra_alembic_version` chain, then the pinned Aegra migration chain, and make the API depend on its successful completion; do not race migrations from API lifespan.",
+        "Remove the worker service/image target and all production references to `:2026`.",
+        "Delete `infra/docker-compose.aegra.yml`, `infra/aegra.Dockerfile`, `infra/aegra/hello_graph.py`, `infra/aegra/deepagent_graph.py`, `infra/aegra/pyproject.toml`, and `infra/aegra/uv.lock` after their production-only responsibilities are replaced.",
+        "Remove `make dev.aegra.*` targets and update development/runbook instructions to start the single API runtime.",
+        "The deployment exposes Agent Protocol routes at the root and custom Orchestra routes below `/api`, with static frontend serving ordered after both.",
+        "Every CI/deployment/VM/Make entrypoint uses Python 3.12 and the Aegra app; no workflow builds or starts TaskIQ, sets `DISTRIBUTED_WORKERS`, or masks browser failures with `continue-on-error`.",
+        "CI runs the relevant deployment/infrastructure workflow when `infra/**`, Dockerfiles, workflows, or backend runtime files change; the browser job is blocking rather than dispatch-only.",
+        "A clean image starts one API process, the Aegra-native health route and retained custom health route succeed, `/chat` and its assets are reachable, and no worker or `:2026` process is required."
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Single-runtime Compose/CI/Docker/static contracts and local image-independent checks are implemented. Live clean-image startup, Aegra HTTP, and deployment checks remain intentionally unrun; see evidence.md. passes remains false."
+    },
+    {
+      "id": "US-005",
+      "title": "Add the sole authenticated LangGraph SDK client",
+      "description": "As a frontend maintainer, I want one official SDK client so authentication and Agent Protocol transport are not reimplemented in each hook or service.",
+      "acceptanceCriteria": [
+        "Add a pinned, supported `@langchain/langgraph-sdk` version to `frontend/package.json` and `frontend/package-lock.json`, paired with the exact Aegra version in the backend lockfile.",
+        "Add `frontend/src/lib/api/agentClient.ts` exporting the sole SDK client/factory for runs, threads, assistants, and Agent Protocol requests.",
+        "Commit versioned fixtures/tests for the SDK's exact search/history/store methods, assistant-to-production-graph mapping, stream event variants, terminal/error payloads, cancel responses, and resumable cursor headers/body.",
+        "The client attaches the current `getAuthToken()` value on every request, handles token changes after login/logout, and does not log credentials.",
+        "Production uses the same-origin Agent Protocol base URL; local Vite development proxies root Agent Protocol prefixes (`/threads`, `/assistants`, `/runs`, `/store`, and other required protocol paths) to the single backend while `/api` remains the custom-route proxy.",
+        "No `VITE_USE_AGENT_PROTOCOL` or equivalent feature flag is added.",
+        "No localStorage stream records, custom reconnect ladder, distributed polling, legacy SSE fallback, or compatibility transport remains; the plain SDK `Client` is the only graph client.",
+        "No other frontend module constructs an Agent Protocol client or manually calls Agent Protocol run/thread URLs.",
+        "Unit tests cover base URL, auth header, token rotation, and non-JSON/error responses.",
+        "`npm run test` and `npx tsc -b` pass."
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "SDK client, auth rotation, production mapping, and request-contract tests are implemented; frontend tests/build/typecheck pass. Live Agent Protocol HTTP and browser execution remain intentionally unrun. passes remains false."
+    },
+    {
+      "id": "US-006",
+      "title": "Replace chat streaming, cancellation, and reconnect with SDK runs",
+      "description": "As a user, I want chat turns to stream through Aegra's native run protocol so tokens, tools, subagents, cancellation, and reconnect are handled by maintained infrastructure.",
+      "acceptanceCriteria": [
+        "Rewrite `frontend/src/hooks/useChat.ts` to use `client.runs.stream(...)` as its only interactive graph transport.",
+        "Request `messages-tuple`, `values`, and `custom` stream modes with subgraph streaming enabled, using the production assistant/config contract rather than the legacy `/llm/stream` payload.",
+        "Add one `adaptEvent()` boundary that converts SDK chunks into the existing `ChatContext`/reducer event contract; do not rewrite the reducer or duplicate event parsing across components.",
+        "Token streaming preserves assistant messages, tool calls, subagent activity, files, todos, metadata, TTFT, and auto-scroll/user-scroll behavior.",
+        "Cancel invokes the SDK run-cancel API and immediately stops local rendering without discarding already received content.",
+        "Reconnect explicitly requests the installed Aegra resumable-stream mode and resumes with its documented cursor/`Last-Event-ID` contract; transcript equality proves no duplicated or dropped tokens.",
+        "Cancel is idempotent and run-scoped: cancel-before-first-token, cancel-after-partial-output, repeated/late cancel, refresh during cancellation, and stale-run cancellation cannot affect another run on the same thread.",
+        "401/403, rate limit, timeout, cancellation, malformed/non-JSON, and terminal run errors map to explicit existing UI states without browser alerts or silent hangs; status/reconnect uses accessible live regions and focus remains usable.",
+        "Delete the legacy `streamThread`, `initiateStream`, `SyncStreamSource`, `DistributedStreamSource`, `fetchStreamReader`, and legacy SSE fallback paths after the SDK path is live.",
+        "Unit/integration tests cover message tuples, values/custom updates, tools/subgraphs, cancellation, error mapping, and forced disconnect/resume.",
+        "`npm run test` and `npx tsc -b` pass.",
+        "Verify in browser using the agent-browser skill."
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "SDK stream adapter, resumable/cancel options, error states, and replacement unit/browser contracts are implemented; local frontend gates pass. Live Aegra stream/cancel/reconnect behavior remains intentionally unrun. passes remains false."
+    },
+    {
+      "id": "US-007",
+      "title": "Move thread listing and history to the SDK",
+      "description": "As a user, I want thread lists, history, read, and delete operations to use the same Agent Protocol as chat runs.",
+      "acceptanceCriteria": [
+        "Rewrite `frontend/src/hooks/useThread.ts` to use the pinned SDK thread search, read, history, and delete operations with their actual HTTP methods and pagination semantics.",
+        "Define and test the mapping from Orchestra assistant IDs to the production Aegra graph/assistant identifier plus custom assistant metadata; preserve per-assistant model, prompt, tools, and tenant settings.",
+        "Preserve pagination, project metadata filtering, selected-thread navigation, message formatting, files, todos, model metadata, and empty/error states across multiple checkpoints and history pages.",
+        "Use SDK assistant/thread methods for Agent Protocol resources; retain `apiClient`/custom services only for non-Protocol Orchestra routes such as publish, fork, embed, and app-specific updates.",
+        "A pre-existing thread reloads with its latest history and workspace context through the single Aegra API.",
+        "Tests cover first page, pagination, project filtering, history replay, missing history, delete, authorization failure, and API error states.",
+        "`npm run test` and `npx tsc -b` pass.",
+        "Verify in browser using the agent-browser skill."
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Thread/history/project operations use the sole SDK client and local frontend tests/build pass. Live authenticated history and tenant integration remain intentionally unrun. passes remains false."
+    },
+    {
+      "id": "US-009",
+      "title": "Make deferred jobs explicitly unsupported",
+      "description": "As a user, I want removed scheduled/background capabilities to fail clearly rather than appear to succeed without execution.",
+      "acceptanceCriteria": [
+        "Remove TaskIQ-backed scheduled LLM execution and trajectory-distillation dispatch; no replacement worker is introduced in this PR.",
+        "Disable scheduler startup, schedule CRUD mutators, manual assistant distillation, MCP-exposed schedule/distillation operations, post-run trajectory extraction, and every other discovered enqueue/execute entry point before deleting their worker dependencies.",
+        "Preserve existing stored schedule/trajectory records unless deletion is required solely to remove dead runtime code.",
+        "Schedule create/enable/execute and every trajectory-distillation entry point return a documented unsupported response (501 or the repository's equivalent) and never enqueue, mutate, or execute work.",
+        "Frontend schedule/distillation creation, edit, submit, and replay affordances are removed or rendered visibly unavailable with actionable copy; no empty success state is shown.",
+        "Existing read-only data has a clear unavailable-state treatment.",
+        "Add tests proving unsupported operations do not create tasks and return the expected status/body.",
+        "Documentation names Aegra-native jobs/trajectory work as a follow-up, not as a hidden compatibility path.",
+        "`npm run test`, backend tests, and `npx tsc -b` pass.",
+        "Verify in browser using the agent-browser skill."
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Completed before US-008: deferred routes return explicit side-effect-free 501 responses; obsolete scheduler/distillation UI/runtime/tests were removed or replaced. Focused backend tests (55 passed), static scan, and frontend gates pass; live browser/Aegra checks remain unrun. passes remains false."
+    },
+    {
+      "id": "US-008",
+      "title": "Remove TaskIQ and legacy interactive runtime infrastructure",
+      "description": "As an operator, I want no separate worker architecture so interactive runs execute only through Aegra's API lifecycle.",
+      "acceptanceCriteria": [
+        "Complete US-009's explicit schedule/distillation shutdown and no-side-effect tests before deleting any worker or stream dependency.",
+        "Remove `DISTRIBUTED_WORKERS` and all interactive branching that enqueues `run_agent_stream`.",
+        "Remove TaskIQ and TaskIQ-Redis dependencies, broker configuration, worker service/image, worker state/heartbeat, Redis stream polling, DLQ/replay, custom abort signaling, idempotency keys, and worker-only resilient checkpointer code when no remaining caller requires them.",
+        "Remove legacy interactive `/llm/stream` and `/llm/invoke` graph execution routes/controllers; preserve only explicitly supported non-graph LLM utilities under custom `/api` routes.",
+        "Remove duplicate controller/worker execution paths while retaining reusable agent tools, middleware, prompts, services, and factory helpers that the Aegra graph still calls.",
+        "Remove frontend worker-loss, DLQ replay, active-stream recovery, and distributed-stream copy/UI; run errors use Aegra/SDK semantics.",
+        "Preserve `backend/src/common/client/client.py` and its A2A tests.",
+        "A repository scan finds no runtime references to `DISTRIBUTED_WORKERS`, `taskiq`, `run_agent_stream`, the removed Redis stream/DLQ symbols, or interactive `/llm/stream`.",
+        "Python compile check, backend dependency/import/unit/integration/lint checks pass."
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Completed after US-009's deferred tests: TaskIQ/worker/legacy stream/sidecar runtime files, dependencies, routes, and UI artifacts were removed; compile, Ruff, focused tests, and static scan pass. Full backend DB-dependent tests and live runtime checks remain unrun. passes remains false."
+    },
+    {
+      "id": "US-010",
+      "title": "Replace migration-era tests with single-runtime gates",
+      "description": "As a maintainer, I want tests to prove the final architecture rather than preserve tests for the deleted worker and sidecar.",
+      "acceptanceCriteria": [
+        "Replace worker-loss/Redis-polling e2e coverage with an Agent Protocol reconnect test that kills the stream and verifies cursor-based continuation with no duplicate or missing tokens.",
+        "Replace DLQ replay coverage with Aegra run-error/cancellation behavior; the UI no longer offers DLQ Replay.",
+        "Replace distributed-worker duplicate coverage with an Agent Protocol duplicate-run/idempotency test using Aegra's documented contract.",
+        "Keep correlation/request identity coverage and update it to Aegra `run_id` where needed.",
+        "Add a startup/route smoke test using the pinned SDK methods/HTTP verbs proving the protocol search/history/store calls are JSON, the Aegra-native and retained custom health routes are healthy, `/api/auth/login` works, and no SPA catch-all shadows protocol routes.",
+        "Add a deployment/static gate scanning tracked and untracked source, tests, CI, Docker, Make targets, lockfiles, and built assets for one API runtime, no worker service, no `:2026`, no feature flag, and no deleted transport symbols, with an explicit historical-document allowlist.",
+        "Run backend Python compile/lint/tests, `frontend/npm run test`, `frontend/npx tsc -b`, and a blocking browser smoke suite (not dispatch-only or `continue-on-error`) covering auth/public chat, tools, history, cancel, reconnect, route precedence, deferred UI, mobile, and accessibility.",
+        "Update active `README.md` and `infra/README.md` worker/runtime documentation, and explicitly classify every dirty sidecar artifact in the final disposition.",
+        "The task evidence records the commands, route results, and browser outcomes."
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Replacement single-runtime gates are implemented: fail-closed static scan, JSON route/import smoke, SDK duplicate-run/reconnect/error contracts, and blocking CI/browser configuration. Local browser test discovery passes (6 tests); live browser/Aegra execution remains intentionally unrun. Read-only /audit pr classification is recorded in evidence.md. passes remains false."
+    }
+  ]
+}

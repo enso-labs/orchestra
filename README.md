@@ -67,7 +67,7 @@ docker pull ghcr.io/ruska-ai/orchestra:latest
 ## 📋 Prerequisites
 
 -   [Docker](https://docs.docker.com/engine/install/ubuntu/) Installed
--   Python 3.11 or higher
+-   Python 3.12 or higher
 -   Access to OpenAI API (for GPT-4o model) or Anthropic API (for Claude 3.5 Sonnet)
 
 ## 🛠️ Development
@@ -76,30 +76,33 @@ docker pull ghcr.io/ruska-ai/orchestra:latest
 
 | Command           | Description                      |
 |-------------------|----------------------------------|
-| `make dev`        | Start backend server (port 8000) |
-| `make dev.worker` | Start TaskIQ worker              |
+| `make dev`        | Start the Aegra API (port 8000)  |
 | `make test`       | Run all backend tests            |
 | `make format`     | Format code with Ruff            |
 | `make seeds.user` | Seed default users               |
-| `make migrate.up` | Apply all pending migrations     |
+| `make migrate.up` | Run ordered migration preflight  |
 
 For all commands, see `backend/Makefile`.
 
 1. **Environment Variables:**
 
-    Create a `.env` file in the root directory and add your API key(s):
+    Store backend secrets in `~/.config/orchestra/.env.backend` and frontend
+    settings in the distinct `~/.config/orchestra/.env.frontend` file:
 
     ```bash
-    # Backend
+    mkdir -p ~/.config/orchestra
+
+    # Backend runtime
     cd <project-root>/backend
-    cp .example.env .env
+    cp .example.env ~/.config/orchestra/.env.backend
 
     # Frontend
     cd <project-root>/frontend
-    cp .example.env .env
+    cp .example.env ~/.config/orchestra/.env.frontend
     ```
 
-    Ensure that your `.env` file is not tracked by git by checking the `.gitignore`:
+    Compose accepts `ORCHESTRA_ENV_FILE=/path/to/file` as an explicit backend
+    env-file override; Make targets accept `ENV_FILE=/path/to/file`.
 
 2. **Start Docker Services**
 
@@ -112,9 +115,10 @@ For all commands, see `backend/Makefile`.
 
 ### Dockerized Dev Stack
 
-For containerized local development with hot reload, the whole stack (app, worker,
-postgres, redis, minio, ollama, search_engine) runs from the single
-`infra/docker-compose.yml`. The frontend runs on the host (`cd frontend && npm run dev`).
+For containerized local development with hot reload, the whole stack (single Aegra
+app, ordered migration init, postgres, redis, minio, ollama, search_engine) runs
+from the single `infra/docker-compose.yml`. The frontend runs on the host
+(`cd frontend && npm run dev`).
 
 ```bash
 cd <project-root>
@@ -146,9 +150,9 @@ make dev.docker.logs
 
     ```bash
     cd <project-root>/backend
-    uv venv
+    uv venv --python 3.12
     source .venv/bin/activate
-    uv sync
+    uv sync --python 3.12
     bash scripts/dev.sh
     ```
     </details>
@@ -168,15 +172,19 @@ make dev.docker.logs
 
 ## Database Migrations
 
-This project uses Alembic for database migrations. Here's how to work with migrations:
+This project uses two explicit Alembic chains. The ordered migration init runs
+Orchestra's `orchestra_alembic_version` chain first, then Aegra's
+`alembic_version` chain, and finally verifies LangGraph tables/content before
+Aegra starts. It does not create, restore, or rename databases.
 
 ### Initial Setup
 
-1. Create the database (if not exists):
+1. Configure `POSTGRES_CONNECTION_STRING` and `DATABASE_URL` for the same
+   existing database, then run:
 
     ```bash
     cd backend
-    alembic upgrade head
+    make migrate.up
     ```
 
     ```bash
@@ -246,13 +254,13 @@ Stay up to date on [Discord](https://discord.com/invite/QRfjg4YNzU). Full releas
 | [Migrate Memories Seeder](https://github.com/ruska-ai/orchestra/issues/787) | Data | ✅ Shipped |
 | [Docs Agent Guidance](https://github.com/ruska-ai/orchestra/issues/804) | Docs | 🟡 In Progress |
 | [RLM Skill](https://github.com/ruska-ai/orchestra/issues/736) | Skills | ✅ Shipped |
-| [Frontend Schedule Refactor](https://github.com/ruska-ai/orchestra/issues/722) | Scheduling | ✅ Shipped |
+| Deferred jobs and trajectory support | Runtime | Follow-up after Aegra cutover |
 
 ### January 2026
 
 | Feature | Category | Status |
 |---------|----------|--------|
-| [Distributed Workers (TaskIQ)](https://github.com/ruska-ai/orchestra/issues/656) | Infra | ✅ Shipped |
+| Single Aegra API runtime | Infra | ✅ Shipped |
 | [Public Agents](https://github.com/ruska-ai/orchestra/issues/471) | Agents | ✅ Shipped |
 | [File Tree Sidebar](https://github.com/ruska-ai/orchestra/issues/650) | UX | ✅ Shipped |
 | [AWS Model Support](https://github.com/ruska-ai/orchestra/issues/666) | Integrations | ✅ Shipped |
@@ -308,18 +316,24 @@ docker pull ghcr.io/ruska-ai/orchestra:latest
 
 #### 1. Environment Setup
 
-Create a `.env.docker` file in the `backend/` directory:
+Create the backend runtime environment file at `~/.config/orchestra/.env.backend`:
 
 ```bash
 cd backend
-cp .example.env .env.docker
+mkdir -p ~/.config/orchestra
+cp .example.env ~/.config/orchestra/.env.backend
 ```
+
+Use `ORCHESTRA_ENV_FILE=/path/to/file` to override the Compose default, or
+`ENV_FILE=/path/to/file` with Make targets.
 
 Update the following values for Docker networking:
 
 ```bash
-# Database - use container name instead of localhost
-POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@postgres:5432/orchestra?sslmode=disable"
+# Database - provide both URLs for the same configured target
+POSTGRES_CONNECTION_STRING="postgresql://admin:test1234@postgres:5432/<configured-db>?sslmode=disable"
+DATABASE_URL="postgresql://admin:test1234@postgres:5432/<configured-db>?sslmode=disable"
+MIGRATION_DATABASE_NAME=<configured-db>
 
 # Tools - use container names for internal services
 SEARX_SEARCH_HOST_URL="http://search_engine:8080"
@@ -330,16 +344,16 @@ SEARX_SEARCH_HOST_URL="http://search_engine:8080"
 From the project root directory:
 
 ```bash
-# Start database and backend
-docker compose up postgres orchestra
+# Start Postgres/Redis, the ordered migration init, and one Aegra API
+docker compose -f infra/docker-compose.yml up --build postgres redis migrate app
 
-# Or start all services
-docker compose up
+# Or start all supporting services and the API
+docker compose -f infra/docker-compose.yml up --build
 ```
 
 #### 3. Verify Deployment
 
-The API will be available at `http://localhost:8000`
+The single Aegra API will be available at `http://localhost:8000`; the migration init must complete before it starts.
 
 -   API Docs: `http://localhost:8000/docs`
 -   Health Check: `http://localhost:8000/health`
@@ -348,13 +362,13 @@ The API will be available at `http://localhost:8000`
 
 | Service         | Port      | Description                        |
 | --------------- | --------- | ---------------------------------- |
-| `orchestra`     | 8000      | Backend API                        |
+| `app`           | 8000      | Single Aegra API runtime           |
+| `migrate`       | -         | Ordered migration/preflight init   |
 | `postgres`      | 5432      | PostgreSQL with pgvector           |
 | `minio`         | 9000/9001 | S3-compatible file storage         |
 | `search_engine` | 8080      | SearXNG search engine              |
 | `ollama`        | 11434     | Local LLM inference (requires GPU) |
-| `redis`         | 6379      | Redis message broker (for workers) |
-| `worker`        | -         | TaskIQ worker (no exposed port)    |
+| `redis`         | 6379      | Aegra event broker                 |
 
 ### 🧱 Docker Compose Example
 
@@ -372,14 +386,22 @@ services:
             - "5432:5432"
 
     # Server (use pre-built image or build locally)
-    orchestra:
+    migrate:
+        image: ghcr.io/ruska-ai/orchestra:latest
+        env_file: ${ORCHESTRA_ENV_FILE:-~/.config/orchestra/.env.backend}
+        command: ["python", "-B", "scripts/migrate.py"]
+        depends_on:
+            - postgres
+
+    app:
         image: ghcr.io/ruska-ai/orchestra:latest
         container_name: orchestra
-        env_file: .env.docker
+        env_file: ${ORCHESTRA_ENV_FILE:-~/.config/orchestra/.env.backend}
         ports:
             - "8000:8000"
         depends_on:
-            - postgres
+            migrate:
+                condition: service_completed_successfully
 ```
 
 ### 🏗️ Build Commands
@@ -399,7 +421,7 @@ bash backend/scripts/build.sh v1.0.0
 #### Build with Docker Compose
 
 ```bash
-docker compose build orchestra
+docker compose -f infra/docker-compose.yml build app
 ```
 
 #### Manual Build
@@ -427,7 +449,9 @@ docker build -t orchestra:local -f infra/backend.Dockerfile backend
 
 | Variable                     | Description                  | Default |
 | ---------------------------- | ---------------------------- | ------- |
-| `POSTGRES_CONNECTION_STRING` | PostgreSQL connection string | -       |
+| `POSTGRES_CONNECTION_STRING` | Orchestra PostgreSQL connection string | -       |
+| `DATABASE_URL`               | Aegra PostgreSQL connection string     | same target as above |
+| `MIGRATION_DATABASE_NAME`    | Optional expected database name for preflight | - |
 
 #### AI Providers (at least one required)
 
@@ -446,14 +470,14 @@ docker build -t orchestra:local -f infra/backend.Dockerfile backend
 | `SEARX_SEARCH_HOST_URL` | SearXNG search endpoint  | `http://localhost:8080`      |
 | `TAVILY_API_KEY`        | Tavily search API key    | -                            |
 
-#### Distributed Workers (Optional)
+#### Aegra Runtime
 
-| Variable              | Description                    | Default |
-| --------------------- | ------------------------------ | ------- |
-| `REDIS_URL`           | Redis connection for task queue | -       |
-| `DISTRIBUTED_WORKERS` | Enable distributed worker mode | `false` |
-
-> **Note**: When enabled, run the worker process separately: `make dev.worker`
+| Variable               | Description                          | Default |
+| ---------------------- | ------------------------------------ | ------- |
+| `REDIS_URL`            | Aegra event broker connection        | -       |
+| `REDIS_BROKER_ENABLED` | Enable Aegra's Redis event broker    | `true`  |
+| `AEGRA_CONFIG`         | Image-relative Aegra config path     | `/app/aegra.json` |
+| `RUN_MIGRATIONS_ON_STARTUP` | Disabled; init runs migrations | `false` |
 
 #### Storage
 
@@ -467,15 +491,21 @@ docker build -t orchestra:local -f infra/backend.Dockerfile backend
 
 ### 🗄️ Database Migrations
 
-Run migrations inside the container:
+The one-shot `migrate` service runs Orchestra's `orchestra_alembic_version`
+chain first, then Aegra's `alembic_version` chain, initializes LangGraph
+checkpoint/store tables, verifies the configured database identity, and checks
+pre-existing content digests before the API starts:
 
 ```bash
-# Using docker compose exec
-docker compose exec orchestra alembic upgrade head
-
-# Or run migrations before starting
-docker compose run --rm orchestra alembic upgrade head
+make dev.docker.migrate
+# or, with an already configured shell:
+docker compose -f infra/docker-compose.yml run --rm migrate
 ```
+
+Set `DATABASE_URL` and (optionally) `MIGRATION_DATABASE_NAME` to the same target
+as `POSTGRES_CONNECTION_STRING`. The init step never creates, restores, or
+renames databases; those operator-only actions are documented in
+`.oh/tasks/aegra-full-inversion/runbook-us003.md`.
 
 ### 🚢 Production Considerations
 
@@ -496,10 +526,12 @@ docker compose run --rm orchestra alembic upgrade head
 
 The Dockerfile uses a multi-stage build:
 
-1. **Builder Stage**: Installs dependencies, compiles Python to bytecode (`.pyc`)
-2. **Runtime Stage**: Ships only compiled bytecode for smaller image size
+1. **Builder Stage**: Installs the pinned backend/Aegra dependencies.
+2. **Runtime Stage**: Ships the source modules, migration hooks, config, and
+   built `src/public` assets required by Aegra's source-path loaders.
 
-> **Note**: Migration files (`.py`) are preserved since Alembic requires source files.
+> **Note**: Python source is intentionally retained: Aegra resolves the graph,
+> auth, and custom-app paths from `/app/aegra.json` at startup.
 
 ### 🧰 Troubleshooting
 
@@ -507,10 +539,10 @@ The Dockerfile uses a multi-stage build:
 
 ```bash
 # Check logs
-docker compose logs orchestra
+docker compose -f infra/docker-compose.yml logs app
 
 # Verify environment file exists
-ls -la backend/.env.docker
+ls -la ~/.config/orchestra/.env.backend
 ```
 
 #### Database connection failed

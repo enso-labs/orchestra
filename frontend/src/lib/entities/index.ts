@@ -13,7 +13,6 @@ export interface ThreadPayload {
 }
 
 export * from "./thread";
-export * from "./stream";
 export * from "./queue";
 
 export type Agent = {
@@ -56,17 +55,3 @@ export type Server = {
 export * from "./memory";
 
 export type DashboardTabOption = "agents" | "workflows" | "servers";
-
-export type LLMStreamPayload = {
-	model: string;
-	system?: string;
-	instructions?: string;
-	stream_mode: string;
-	messages: {
-		role: string;
-		content: string;
-	}[];
-	metadata?: {
-		[key: string]: any;
-	};
-};

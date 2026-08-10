@@ -101,7 +101,7 @@ The memory is now stored and will be automatically injected into every conversat
 You can enable or disable any memory without deleting it. This is useful when you want to temporarily turn off your AGENTS.md instructions for certain workflows — hover over the memory and use the toggle to disable it.
 
 :::info How It Works Under the Hood
-Each memory is stored with a path (e.g., `AGENTS.md`). When a conversation starts, Orchestra's `prepare_memory_files()` function fetches all enabled memories, converts them into files, and injects them into the agent's context. This happens automatically across all entry points — streaming, invoke, and distributed workers.
+Each memory is stored with a path (e.g., `AGENTS.md`). When a conversation starts, Orchestra's `prepare_memory_files()` function fetches all enabled memories, converts them into files, and injects them into the Aegra graph context.
 :::
 
 For more details on the AGENTS.md format, supported content structures, and precedence rules, see the [AGENTS.md documentation](/agents-md).

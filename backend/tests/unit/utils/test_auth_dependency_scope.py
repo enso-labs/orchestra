@@ -1,10 +1,8 @@
 """Auth must not hold a pooled DB connection for the duration of a request.
 
 Previously these dependencies took `db: AsyncSession = Depends(get_async_db, scope="function")`.
-Function scope releases the session when the *path operation function* returns — which for
-/llm/invoke is after a full agent turn, and for the SSE path after the whole stream. One
-pooled connection was therefore pinned per in-flight request, exhausting the pool and
-returning 500 for every authenticated route (issue #955).
+Function scope releases the session when the *path operation function* returns. A pooled
+connection was therefore pinned for the whole request, exhausting the pool under load.
 
 Auth now opens its own short-lived session around the user lookup, so these tests assert
 the stronger property: no session dependency at all.
@@ -26,7 +24,7 @@ AUTH_DEPENDENCIES = (
 
 
 def test_auth_does_not_take_a_session_dependency() -> None:
-    """A `db` parameter here means the connection is held for the whole request again."""
+    """A `db` parameter here would hold the connection for the whole request again."""
     for dependency in AUTH_DEPENDENCIES:
         parameters = inspect.signature(dependency).parameters
         assert "db" not in parameters, (

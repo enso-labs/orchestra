@@ -24,6 +24,11 @@ import {
 import { useVoiceVisualizer, VoiceVisualizer } from "react-voice-visualizer";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import apiClient from "@/lib/utils/apiClient";
+import {
+	agentClient,
+	adaptEvent,
+	mapAssistantToProductionGraph,
+} from "@/lib/api/agentClient";
 import { MainToolTip } from "../tooltips/MainToolTip";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -91,6 +96,7 @@ export default function FileEditorPanel() {
 		savePersistentContextFiles,
 		setViewMode,
 		inputRef,
+		metadata,
 	} = useChatContext() as {
 		fileSystem: Map<
 			string,
@@ -118,6 +124,7 @@ export default function FileEditorPanel() {
 		}) => Promise<boolean>;
 		setViewMode: (mode: string) => void;
 		inputRef: React.RefObject<HTMLTextAreaElement>;
+		metadata: Record<string, any>;
 	};
 
 	const [copied, setCopied] = useState(false);
@@ -276,86 +283,81 @@ export default function FileEditorPanel() {
 							filesMap[selectedFile] = currentFileContent;
 						}
 
-						// Build payload with file_system in input for LLM agent access
-						const payload = {
-							input: {
-								messages: [{ role: "user", content: transcribedText }],
-								files: Object.keys(filesMap).length > 0 ? filesMap : undefined,
-							},
-							generate_files: true,
-							target_file: selectedFile,
-							file_context: currentFileContent || undefined,
-						};
-
-						const streamResponse = await apiClient.post(
-							"/llm/stream",
-							payload,
+						// File inference is also an Agent Protocol run. The SDK owns
+						// authentication, framing, and resumable reconnects.
+						const mapping = mapAssistantToProductionGraph(
 							{
-								responseType: "text",
-								headers: {
-									Accept: "text/event-stream",
+								...metadata,
+								id: metadata?.assistant_id,
+							},
+							metadata,
+						);
+						const stream = agentClient.runs.stream(
+							metadata?.thread_id ?? null,
+							mapping.assistantId,
+							{
+								input: {
+									messages: [{ role: "user", content: transcribedText }],
+									files:
+										Object.keys(filesMap).length > 0 ? filesMap : undefined,
 								},
+								config: mapping.config,
+								context: {
+									...mapping.context,
+									generate_files: true,
+									target_file: selectedFile,
+									file_context: currentFileContent || undefined,
+								},
+								metadata: mapping.metadata,
+								streamMode: ["messages-tuple", "values", "custom"],
+								streamSubgraphs: true,
+								streamResumable: true,
+								streamIdleReconnect: "auto",
+								onDisconnect: "continue",
 							},
 						);
-
-						// Parse SSE response for file content
-						// Response format: data: ["stream_type", {payload}]
-						const lines = streamResponse.data.split("\n");
 						let generatedContent = "";
 
-						for (const line of lines) {
-							if (line.startsWith("data:")) {
-								try {
-									const data = JSON.parse(line.slice(5).trim());
-
-									// Stream response is a tuple: [type, payload]
-									if (Array.isArray(data) && data.length === 2) {
-										const [streamType, payload] = data;
-
-										// Handle "values" events which contain files
-										if (streamType === "values" && payload?.files) {
-											Object.entries(payload.files).forEach(
-												([filePath, content]) => {
-													if (typeof content === "string") {
-														if (fileSystem.has(filePath)) {
-															updateFile(filePath, content);
-														} else {
-															createFile(filePath, content);
-														}
-													}
-												},
-											);
-										}
-
-										// Handle "values" events to get AI response content
-										if (streamType === "values" && payload?.messages) {
-											// Get the last AI message content as generated content
-											for (const msg of payload.messages) {
-												if (msg.type === "ai" || msg.role === "assistant") {
-													if (typeof msg.content === "string") {
-														generatedContent = msg.content;
-													}
-												}
-											}
-										}
-
-										// Handle "messages" events for streaming content
-										if (streamType === "messages") {
-											const [msgData] = Array.isArray(payload)
-												? payload
-												: [payload];
-											if (
-												msgData?.type === "ai" ||
-												msgData?.role === "assistant"
-											) {
-												if (typeof msgData.content === "string") {
-													generatedContent += msgData.content;
-												}
-											}
-										}
+						for await (const event of stream) {
+							const adapted = adaptEvent(event);
+							if (!adapted) continue;
+							const payload = adapted.data as any;
+							if (adapted.type === "values" && payload?.files) {
+								Object.entries(payload.files).forEach(([filePath, content]) => {
+									const text =
+										typeof content === "string"
+											? content
+											: Array.isArray(content)
+												? content.join("\n")
+												: String((content as any)?.content ?? content);
+									if (fileSystem.has(filePath)) updateFile(filePath, text);
+									else createFile(filePath, text);
+								});
+							}
+							if (
+								adapted.type === "values" &&
+								Array.isArray(payload?.messages)
+							) {
+								for (const message of payload.messages) {
+									if (
+										(message.type === "ai" || message.role === "assistant") &&
+										typeof message.content === "string"
+									) {
+										generatedContent = message.content;
 									}
-								} catch {
-									// Ignore non-JSON lines
+								}
+							}
+							if (adapted.type === "messages" && Array.isArray(payload)) {
+								const [message] = payload;
+								if (
+									(message?.type === "ai" || message?.role === "assistant") &&
+									typeof message.content === "string"
+								) {
+									generatedContent = message.content.startsWith(
+										generatedContent,
+									)
+										? message.content
+										: generatedContent + message.content;
 								}
 							}
 						}

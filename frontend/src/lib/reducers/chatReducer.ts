@@ -1,7 +1,6 @@
 import { useReducer, useRef } from "react";
 import { ThreadPayload } from "../entities";
 import { Model } from "@/lib/services/modelService";
-import { SSE } from "sse.js";
 
 // Action Types Enum
 export enum ChatActionType {
@@ -45,7 +44,7 @@ type ChatState = {
 	};
 	availableTools: any[];
 	controller: AbortController | null;
-	conn: SSE | null;
+	conn: unknown | null;
 };
 
 type ChatAction = {

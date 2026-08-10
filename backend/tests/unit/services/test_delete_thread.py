@@ -44,8 +44,7 @@ async def test_happy_path_deletes_thread_then_checkpoints():
 
 @pytest.mark.asyncio
 async def test_thread_deleted_even_when_checkpoint_cleanup_raises():
-    # Reproduces the resilient checkpointer's historical NotImplementedError:
-    # a checkpoint-cleanup failure must not abort the thread deletion.
+    # A checkpoint-cleanup failure must not abort the thread deletion.
     ctx = _context(checkpoint="raise")
     assert await ctx.delete_thread("t1") is True
     ctx.thread_service.delete.assert_awaited_once_with("t1")

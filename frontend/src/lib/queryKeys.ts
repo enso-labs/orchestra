@@ -22,10 +22,5 @@ export const queryKeys = {
 	memories: (params?: { query?: string; page?: number }) =>
 		["memories", params] as const,
 
-	schedules: {
-		all: () => ["schedules"] as const,
-		executions: (id?: string) => ["schedules", "executions", id] as const,
-	},
-
 	sandboxHealth: (url: string | null) => ["sandboxHealth", url] as const,
 };
